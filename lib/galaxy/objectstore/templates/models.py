@@ -7,6 +7,7 @@ from typing import (
 
 from pydantic import (
     Field,
+    model_validator,
     RootModel,
 )
 
@@ -14,6 +15,7 @@ from galaxy.objectstore.badges import (
     BadgeDict,
     StoredBadgeDict,
 )
+from galaxy.objectstore.cloud_auth import validate_user_defined_auth
 from galaxy.util.config_templates import (
     EnvironmentDict,
     expand_raw_config,
@@ -224,19 +226,15 @@ class Boto3ObjectStoreConfiguration(StrictModel):
     badges: BadgeList = None
 
 
-# The provider-agnostic (cloudbridge) object store. The auth model is flat:
-# which fields apply depends on the provider, and the store validates the
-# combination at construction time.
+# The provider-agnostic (cloudbridge) object store. The auth model is flat --
+# which fields apply depends on the provider -- so the validator below rejects
+# provider/credential combinations the store cannot authenticate with.
 CloudProviderType = Literal["aws", "azure", "google", "openstack"]
 
 
-# User-defined stores are persisted in the database and have to keep working
-# indefinitely, so these models expose only what a user can meaningfully supply
-# and Galaxy can keep honoring: no short-lived credentials (which would expire
-# and leave a dead store), and no server-side file paths (which a user cannot
-# create and should not be able to point Galaxy at). The store itself still
-# supports those options through object_store_conf.yml, where an admin owns the
-# configuration and can change it at will.
+# Fields a user cannot supply or Galaxy cannot keep honoring are omitted:
+# short-lived credentials expire and leave a dead store, and server-side file
+# paths are an admin's to set in object_store_conf.yml.
 
 
 class CloudAuthTemplate(StrictModel):
@@ -342,6 +340,13 @@ class CloudObjectStoreTemplateConfiguration(StrictModel):
     template_start: str | None = None
     template_end: str | None = None
 
+    @model_validator(mode="after")
+    def _validate_provider_auth(self) -> "CloudObjectStoreTemplateConfiguration":
+        # Catch an admin catalog that names credentials the provider cannot use
+        # at load time, rather than when a user first instantiates the store.
+        validate_user_defined_auth(self.provider, self.auth.model_dump(exclude_none=True))
+        return self
+
 
 class CloudObjectStoreConfiguration(StrictModel):
     type: Literal["cloud"]
@@ -351,6 +356,11 @@ class CloudObjectStoreConfiguration(StrictModel):
     connection: CloudConnection | None = None
     transfer: CloudTransfer | None = None
     badges: BadgeList = None
+
+    @model_validator(mode="after")
+    def _validate_provider_auth(self) -> "CloudObjectStoreConfiguration":
+        validate_user_defined_auth(self.provider, self.auth.model_dump(exclude_none=True))
+        return self
 
 
 class DiskObjectStoreTemplateConfiguration(StrictModel):

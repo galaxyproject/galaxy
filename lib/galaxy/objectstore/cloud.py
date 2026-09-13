@@ -5,8 +5,13 @@ Object Store plugin for Cloud storage.
 import logging
 import os
 import os.path
+from typing import (
+    Any,
+    Literal,
+    Optional,
+)
 
-from galaxy.util import string_as_bool
+from galaxy.util import asbool
 from ._caching_base import (
     CachingConcreteObjectStore,
     RemoteDataStream,
@@ -16,6 +21,13 @@ from .caching import (
     CacheShardManager,
     CacheTarget,
     enable_cache_monitor,
+)
+from .cloud_auth import (
+    AUTH_KEY_MAP,
+    CONNECTION_KEY_MAP,
+    NON_XML_AUTH_KEYS,
+    PROVIDER_LIST_NAMES,
+    validate_auth,
 )
 from .s3 import parse_config_xml
 
@@ -85,24 +97,23 @@ class Cloud(CachingConcreteObjectStore):
                 f"multipart upload parts of at least {MIN_MULTIPART_CHUNKSIZE} bytes (5 MiB)."
             )
 
-        # The endpoint scheme conveys http/https, so no is_secure here (matching
-        # the boto3 store); the legacy host/port/... keys the s3 parser emits are
-        # not used by this store.
+        # The endpoint URL's scheme carries http/https, so there is no is_secure key.
         connection_dict = config_dict.get("connection") or {}
-        self.connection_dict = {}
+        self.connection_dict: dict[str, Any] = {}
         for key in ("endpoint_url", "signature_version"):
             value = connection_dict.get(key)
             if value:
                 self.connection_dict[key] = value
         validate_certs = connection_dict.get("validate_certs")
         if validate_certs is not None:
-            self.connection_dict["validate_certs"] = string_as_bool(validate_certs)
+            self.connection_dict["validate_certs"] = asbool(validate_certs)
 
-        if self.provider == "google":
-            has_file = bool(self.credentials.get("credentials_file"))
-            has_dict = bool(self.credentials.get("credentials_dict"))
-            if has_file == has_dict:
-                raise Exception("The google provider requires exactly one of credentials_file or credentials_dict.")
+        # Sibling stores take the region from <connection>; accept it there too
+        # rather than dropping it silently when a boto3 stanza is ported over.
+        if not self.credentials.get("region") and connection_dict.get("region"):
+            self.credentials = dict(self.credentials, region=connection_dict["region"])
+
+        validate_auth(self.provider, self.credentials)
 
         self.cache_updated_data = cache_dict.get("cache_updated_data", True)
         self._cache_shards = CacheShardManager.from_config(cache_dict, self.config)
@@ -119,87 +130,28 @@ class Cloud(CachingConcreteObjectStore):
         self._start_cache_monitor_if_needed()
 
     @staticmethod
-    def _map_config_values(source, key_map):
+    def _map_config_values(source: dict[str, Any], key_map: tuple[tuple[str, str], ...]) -> dict[str, Any]:
         return {mapped_key: source[key] for key, mapped_key in key_map if source.get(key) is not None}
 
     @staticmethod
-    def _get_connection(provider, credentials, connection_config=None):
+    def _get_connection(provider: str, credentials: dict[str, Any], connection_config: dict[str, Any] | None = None):
         log.debug(f"Configuring `{provider}` Connection")
-        connection_config = connection_config or {}
-        if provider == "aws":
-            config = {"aws_access_key": credentials.get("access_key"), "aws_secret_key": credentials.get("secret_key")}
-            config.update(
-                Cloud._map_config_values(
-                    credentials,
-                    (
-                        ("session_token", "aws_session_token"),
-                        ("region", "aws_region_name"),
-                    ),
-                )
-            )
-            config.update(
-                Cloud._map_config_values(
-                    connection_config,
-                    (
-                        ("endpoint_url", "s3_endpoint_url"),
-                        ("validate_certs", "s3_validate_certs"),
-                        ("signature_version", "s3_signature_version"),
-                    ),
-                )
-            )
-            connection = CloudProviderFactory().create_provider(ProviderList.AWS, config)
-        elif provider == "azure":
-            config = Cloud._map_config_values(
-                credentials,
-                (
-                    ("subscription_id", "azure_subscription_id"),
-                    ("client_id", "azure_client_id"),
-                    ("secret", "azure_secret"),
-                    ("tenant", "azure_tenant"),
-                    ("access_token", "azure_access_token"),
-                    ("storage_account", "azure_storage_account"),
-                    ("resource_group", "azure_resource_group"),
-                    ("region", "azure_region_name"),
-                ),
-            )
-            connection = CloudProviderFactory().create_provider(ProviderList.AZURE, config)
-        elif provider == "google":
-            config = Cloud._map_config_values(
-                credentials,
-                (
-                    ("credentials_file", "gcp_service_creds_file"),
-                    ("credentials_dict", "gcp_service_creds_dict"),
-                    ("region", "gcp_region_name"),
-                ),
-            )
-            connection = CloudProviderFactory().create_provider(ProviderList.GCP, config)
-        elif provider == "openstack":
-            config = Cloud._map_config_values(
-                credentials,
-                (
-                    ("username", "os_username"),
-                    ("password", "os_password"),
-                    ("project_name", "os_project_name"),
-                    ("auth_url", "os_auth_url"),
-                    ("region", "os_region_name"),
-                    ("user_domain_name", "os_user_domain_name"),
-                    ("project_domain_name", "os_project_domain_name"),
-                    ("application_credential_id", "os_application_credential_id"),
-                    ("application_credential_secret", "os_application_credential_secret"),
-                ),
-            )
-            connection = CloudProviderFactory().create_provider(ProviderList.OPENSTACK, config)
-        else:
+        if provider not in AUTH_KEY_MAP:
             raise Exception(f"Unsupported provider `{provider}`.")
+        # An option left unset is omitted rather than passed as None, so the
+        # provider falls back to its own default (for AWS, the environment and
+        # then the instance role).
+        config = Cloud._map_config_values(credentials, AUTH_KEY_MAP[provider])
+        config.update(Cloud._map_config_values(connection_config or {}, CONNECTION_KEY_MAP.get(provider, ())))
+        connection = CloudProviderFactory().create_provider(
+            getattr(ProviderList, PROVIDER_LIST_NAMES[provider]), config
+        )
 
         # Deliberately no connection.authenticate() here: cloudbridge's
         # credential check is compute-scoped (e.g. listing EC2 key pairs on
         # AWS), so a least-privilege credential authorized only for bucket
         # access would fail it even though it can fully serve the object
         # store (https://github.com/CloudVE/cloudbridge/issues/120).
-        # Credentials are exercised by the storage-scoped bucket lookup in
-        # _initialize instead, and errors from real API calls are handled
-        # where they occur.
         return connection
 
     @classmethod
@@ -236,84 +188,34 @@ class Cloud(CachingConcreteObjectStore):
             config["provider"] = provider
 
             # Read any provider-specific configuration.
-            auth_element = config_xml.findall("auth")[0]
-            missing_config = []
-            if provider == "aws":
-                akey = auth_element.get("access_key")
-                skey = auth_element.get("secret_key")
-                config["auth"] = {"access_key": akey, "secret_key": skey}
-                for key in ("session_token", "region"):
-                    value = auth_element.get(key)
-                    if value:
-                        config["auth"][key] = value
-            elif provider == "azure":
-                auth = {}
-                for key in (
-                    "subscription_id",
-                    "client_id",
-                    "secret",
-                    "tenant",
-                    "access_token",
-                    "storage_account",
-                    "resource_group",
-                    "region",
-                ):
-                    value = auth_element.get(key)
-                    if value is not None:
-                        auth[key] = value
-                if "access_token" not in auth:
-                    # Without an access token the service-principal quartet is required.
-                    for key in ("subscription_id", "client_id", "secret", "tenant"):
-                        if key not in auth:
-                            missing_config.append(key)
-                config["auth"] = auth
-            elif provider == "google":
-                cre = auth_element.get("credentials_file")
-                if cre is None:
-                    missing_config.append("credentials_file")
-                elif not os.path.isfile(cre):
-                    msg = f"The following file specified for GCP credentials not found: {cre}"
-                    log.error(msg)
-                    raise OSError(msg)
-                config["auth"] = {"credentials_file": cre}
-                region = auth_element.get("region")
-                if region:
-                    config["auth"]["region"] = region
-            elif provider == "openstack":
-                auth = {}
-                for key in (
-                    "username",
-                    "password",
-                    "project_name",
-                    "auth_url",
-                    "region",
-                    "user_domain_name",
-                    "project_domain_name",
-                    "application_credential_id",
-                    "application_credential_secret",
-                ):
-                    value = auth_element.get(key)
-                    if value is not None:
-                        auth[key] = value
-                if "auth_url" not in auth:
-                    missing_config.append("auth_url")
-                if "application_credential_id" not in auth and "application_credential_secret" not in auth:
-                    # Without an application credential, password authentication is required.
-                    for key in ("username", "password", "project_name"):
-                        if key not in auth:
-                            missing_config.append(key)
-                config["auth"] = auth
-            else:
+            if provider not in AUTH_KEY_MAP:
                 msg = f"Unsupported provider `{provider}`."
                 log.error(msg)
                 raise Exception(msg)
+            auth_element = config_xml.findall("auth")[0]
+            auth = {}
+            for key, _ in AUTH_KEY_MAP[provider]:
+                if key in NON_XML_AUTH_KEYS:
+                    continue
+                value = auth_element.get(key)
+                if value is not None:
+                    auth[key] = value
+            if provider == "aws":
+                # An AWS store with no keys is supported (the provider then falls
+                # back to the environment and the instance role), so record both
+                # keys either way to keep the serialized config self-describing.
+                auth.setdefault("access_key", None)
+                auth.setdefault("secret_key", None)
+            elif provider == "google":
+                credentials_file = auth.get("credentials_file")
+                if credentials_file is not None and not os.path.isfile(credentials_file):
+                    msg = f"The following file specified for GCP credentials not found: {credentials_file}"
+                    log.error(msg)
+                    raise OSError(msg)
+            config["auth"] = auth
 
-            if len(missing_config) > 0:
-                msg = f"The following configuration required for {provider} cloud backend are missing: {missing_config}"
-                log.error(msg)
-                raise Exception(msg)
-            else:
-                return config
+            validate_auth(provider, auth)
+            return config
         except Exception:
             log.exception("Malformed ObjectStore Configuration XML -- unable to continue")
             raise
@@ -337,10 +239,8 @@ class Cloud(CachingConcreteObjectStore):
         }
         return config
 
-    def _transfer_config(self, direction):
-        # A direction-prefixed key overrides the bare key; any value left
-        # unset falls back to cloudbridge's own defaults (the CB_MULTIPART_*
-        # settings). With nothing configured pass no config at all.
+    def _transfer_config(self, direction: Literal["upload", "download"]) -> Optional["TransferConfig"]:
+        # Unset values fall back to cloudbridge's CB_MULTIPART_* defaults.
         values = {}
         for key in TRANSFER_OPTION_KEYS:
             value = self.transfer_dict.get(f"{direction}_{key}", self.transfer_dict.get(key))
@@ -369,7 +269,7 @@ class Cloud(CachingConcreteObjectStore):
             # These two generic exceptions will be replaced by specific exceptions
             # once proper exceptions are exposed by CloudBridge.
             log.exception(f"Could not get bucket '{bucket_name}'")
-        raise Exception
+        raise Exception(f"Could not get bucket '{bucket_name}'")
 
     def _get_remote_size(self, rel_path):
         try:
@@ -434,12 +334,10 @@ class Cloud(CachingConcreteObjectStore):
             with self._atomic_download(local_file_path) as tmp:
                 self._download_to(obj, tmp)
 
-    def _download_to(self, key, local_destination):
-        # cloudbridge fetches objects above the transfer threshold as parallel
-        # ranged reads, so no external downloader (axel) is needed.
+    def _download_to(self, key, local_destination: str) -> None:
         key.download_to_file(local_destination, config=self._transfer_config("download"))
 
-    def _get_or_create_object(self, rel_path: str):
+    def _get_or_create_object(self, rel_path: str) -> Any:
         return self.bucket.objects.get(rel_path) or self.bucket.objects.create(rel_path)
 
     def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
@@ -462,7 +360,6 @@ class Cloud(CachingConcreteObjectStore):
 
     def _delete_remote_all(self, rel_path: str) -> bool:
         try:
-            # iter() (unlike list()) pages through the full result set.
             for key in self.bucket.objects.iter(prefix=rel_path):
                 log.debug("Deleting key %s", key.name)
                 key.delete()
