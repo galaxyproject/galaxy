@@ -15,6 +15,7 @@ import JobStepJobs from "./JobStepJobs.vue";
 
 vi.mock("vue-router/composables", () => ({
     useRoute: vi.fn(() => ({})),
+    useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
 
 const localVue = getLocalVue();
