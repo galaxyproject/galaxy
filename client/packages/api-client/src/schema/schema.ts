@@ -26446,15 +26446,11 @@ export interface components {
             profile?: number | null;
             /**
              * requirements
-             * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
+             * @description JavaScript helpers and compute resource requests needed to execute this tool. Set the container image with the top-level container field.
              * @default []
              */
             requirements:
-                | (
-                      | components["schemas"]["JavascriptRequirement"]
-                      | components["schemas"]["ResourceRequirement"]
-                      | components["schemas"]["ContainerRequirement"]
-                  )[]
+                | (components["schemas"]["JavascriptRequirement"] | components["schemas"]["ResourceRequirement"])[]
                 | null;
             /**
              * shell_command
@@ -26553,15 +26549,11 @@ export interface components {
             profile?: number | null;
             /**
              * requirements
-             * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
+             * @description JavaScript helpers and compute resource requests needed to execute this tool. Set the container image with the top-level container field.
              * @default []
              */
             requirements:
-                | (
-                      | components["schemas"]["JavascriptRequirement"]
-                      | components["schemas"]["ResourceRequirement"]
-                      | components["schemas"]["ContainerRequirement"]
-                  )[]
+                | (components["schemas"]["JavascriptRequirement"] | components["schemas"]["ResourceRequirement"])[]
                 | null;
             /**
              * shell_command
