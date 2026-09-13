@@ -290,6 +290,8 @@ def test_fill_defaults():
     assert with_defaults["parameter"] == 1
     with_defaults = fill_state_for({}, "parameters/gx_float")
     assert with_defaults["parameter"] == 1.0
+    with_defaults = fill_state_for({}, "parameters/gx_numeric_zero_user_y")
+    assert with_defaults == {"integer": 0, "float": 0.0, "optional_integer": 0, "optional_float": 0.0}
     with_defaults = fill_state_for({}, "parameters/gx_boolean")
     assert with_defaults["parameter"] is False
     with_defaults = fill_state_for({}, "parameters/gx_boolean_optional")
