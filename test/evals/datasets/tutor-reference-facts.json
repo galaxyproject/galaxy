@@ -120,6 +120,16 @@
             ]
         },
         {
+            "id": "error_messages_guide_troubleshooting",
+            "fact": "Galaxy error messages and tool logs can help choose the next troubleshooting check, including whether to inspect tool settings, input data, or a tool problem; collecting that evidence does not by itself assert a diagnosis.",
+            "sources": [
+                {
+                    "uri": "https://training.galaxyproject.org/training-material/faqs/galaxy/analysis_troubleshooting.html",
+                    "revision_or_access_date": "2026-09-13"
+                }
+            ]
+        },
+        {
             "id": "job_api_id_is_distinct",
             "fact": "Job Information displays a Job API ID as a job field; this is distinct from the history content or dataset ID shown in Dataset Information.",
             "sources": [

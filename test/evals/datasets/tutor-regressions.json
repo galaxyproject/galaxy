@@ -44,7 +44,12 @@
     "critical_claims": [
       {
         "quote": "**Align** the reads to a reference genome (STAR, HISAT2, or a pseudo‑aligner like Salmon/Kallisto).",
-        "dimension": "Correctness"
+        "dimension": "Correctness",
+        "atom_terms": [
+          "Salmon",
+          "Kallisto",
+          "reference genome"
+        ]
       }
     ]
   },

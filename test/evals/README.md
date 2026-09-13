@@ -202,9 +202,33 @@ Nonfactual requests and expressions of intent are identified separately. An
 instruction is not evidence that the tutor performed an action; ordinary advice
 can be justified by general knowledge without a service lookup. GTN search
 availability is separate from the learner's Galaxy tool-panel search.
-The application derives grounding, correctness, and context failures from those
-claims; the judge also reviews context and pedagogy across the whole answer.
-One failed claim cannot be offset by a good teaching style. `JudgmentComplete`
+The experimental `claims-propositions` style adds a second, unanchored pass over
+expanded source spans before deriving grounding, correctness, and context
+failures. That pass receives the response blocks, candidate spans, observed
+evidence, and reference facts, but not the first pass's verdicts or calibration
+labels. It is asked to atomize and recheck every candidate while preserving
+negation, scope, targets, and qualifications. Both raw stages are retained as
+`ClaimReview` and `PropositionReview`; the verified atoms replace the first
+factual verdicts rather than acting only as an additional veto. The first judge
+still reviews interface suitability and pedagogy across the whole answer.
+
+This experimental pass does not yet prove that every atom under a shared
+predicate was extracted, and physical-line source expansion can miss context
+carried across a line break. Keep `claims` as the default evaluator; do not use
+`claims-propositions` as an acceptance authority until those coverage limits and
+the recorded false rejections are resolved.
+
+The preserved September 13 checks are red. The first repeated eight-case run
+reduced false acceptance to 0/6 but falsely rejected 6/10 valid controls and
+detected 4/6 annotated critical claims. A refined repeated run remained at 0/6
+false acceptance while falsely rejecting 4/10 controls and detecting only 2/6
+critical claims. The subsequent five-case atomic diagnostic detected both
+critical claims and both known failures, but falsely rejected 2/3 controls. It
+was intentionally not expanded to the broader corpus. These runs exercised
+successive dirty working-tree versions, so they are diagnostic evidence rather
+than a performance comparison for the current code.
+
+One failed proposition cannot be offset by a good teaching style. `JudgmentComplete`
 requires coverage of every paragraph, valid quotes/evidence IDs, and no unresolved
 judgments. Invalid structure gets one bounded correction attempt, then an error.
 Quote matching tolerates whitespace, straight/curly quotation marks, and hyphen
@@ -213,7 +237,11 @@ retaining the original text in the audit. Other paraphrases fail validation.
 The judge returns schema-validated JSON text, avoiding proxy tool-call parsers
 that can corrupt nested objects. Unsupported claims always fail grounding, even
 if the judge also assigns them to another dimension.
-The full claim review is retained in the JSON `ClaimReview` label.
+In the experimental style, typed affirmative exact-ID assertions require a
+matching structured record returned by an installed-tool lookup. Missing records
+make the claim unsupported; current tutor wrapper results are opaque and therefore
+unresolved. Negated cautions, questions, ordinary canonical tool names, and
+instructions to search the tool panel do not trigger the deterministic ID check.
 
 `tutor-reference-facts.json` supplies sourced scientific and Galaxy UI facts to
 the judge. These facts do not establish which tools are installed, what learner
@@ -258,7 +286,8 @@ inspected. Its reviewed classes are seven failures and five valid controls; the
 original run's six/six labels are preserved in the dated external artifacts.
 
 `--judge-style legacy` replays the former whole-answer rubric for comparison;
-`--judge-style claims` is the default. Experiment metadata records judge version,
+`--judge-style claims` is the default, and `--judge-style claims-propositions`
+selects the incomplete experimental second pass. Experiment metadata records judge version,
 corpus hashes and repetition count. Keep answers and evidence fixed when comparing
 judges; keep the judge fixed when comparing tutor changes.
 

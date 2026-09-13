@@ -122,7 +122,7 @@ class CalibrationMatch(Evaluator[dict, dict, dict]):
         ]
         if verdict != ctx.metadata["expected_overall"]:
             differences.append("overall answer verdict")
-        if self.judge_style == "claims" and ctx.metadata.get("critical_claims"):
+        if self.judge_style in {"claims", "claims-propositions"} and ctx.metadata.get("critical_claims"):
             missing = missed_critical_claims(ctx.metadata["critical_claims"], actual)
             actual["CriticalClaimDetection"] = EvaluationReason(
                 value=not missing,
@@ -140,11 +140,14 @@ class CalibrationMatch(Evaluator[dict, dict, dict]):
 
 
 def answer_verdict(checks: dict, required: list[str]) -> str:
-    review = checks.get("ClaimReview")
-    if review is not None and review.value == "unresolved":
+    for name in ("ClaimReview", "PropositionReview"):
+        review = checks.get(name)
+        if review is not None and review.value == "unresolved":
+            return "unresolved"
+        if review is not None and review.value != "complete":
+            return "incomplete"
+    if any(name in checks and checks[name].value == "unresolved" for name in required):
         return "unresolved"
-    if review is not None and review.value != "complete":
-        return "incomplete"
     if not required or any(name not in checks or type(checks[name].value) is not bool for name in required):
         return "incomplete"
     if any(name in checks and checks[name].value is False for name in ("EvidenceComplete", "JudgmentComplete")):
@@ -153,12 +156,17 @@ def answer_verdict(checks: dict, required: list[str]) -> str:
 
 
 def missed_critical_claims(expected: list[dict], checks: dict) -> list[str]:
-    review = checks.get("ClaimReview")
+    proposition_review = checks.get("PropositionReview")
+    review = proposition_review or checks.get("ClaimReview")
     if review is None or review.value == "invalid":
         return [claim["quote"] for claim in expected]
-    blocks = json.loads(review.reason)["assessment"]["blocks"]
+    details = json.loads(review.reason)
+    blocks = details.get("effective_assessment", details["assessment"])["blocks"]
     rejected = [
-        claim for block in blocks for claim in block["claims"] if claim["verdict"] in {"unsupported", "contradicted"}
+        claim
+        for block in blocks
+        for claim in block.get("propositions", block.get("claims", []))
+        if claim["verdict"] in {"unsupported", "contradicted"}
     ]
     missing = []
     for claim in expected:
@@ -171,6 +179,16 @@ def missed_critical_claims(expected: list[dict], checks: dict) -> list[str]:
             and (
                 quote in normalize_quote(found["quote"])
                 or (len(found["quote"]) >= 20 and normalize_quote(found["quote"]) in quote)
+            )
+            and (
+                proposition_review is None
+                or all(
+                    normalize_quote(term)
+                    in normalize_quote(
+                        " ".join(str(found.get(field, "")) for field in ("statement", "subject", "relation", "object"))
+                    )
+                    for term in claim.get("atom_terms", [])
+                )
             )
             for found in rejected
         ):
@@ -210,6 +228,8 @@ def load_calibration_examples(paths: list[Path] | None = None) -> list[dict]:
             for claim in example.get("critical_claims", []):
                 if not claim["quote"] or claim["quote"] not in calibration_output(example)["content"]:
                     raise ValueError(f"Critical claim is not in the recorded answer: {name}")
+                if any(not isinstance(term, str) or not term for term in claim.get("atom_terms", [])):
+                    raise ValueError(f"Critical claim atom terms are invalid: {name}")
             examples.append(example)
     return examples
 
@@ -282,7 +302,7 @@ async def amain() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-config")
     parser.add_argument("--judge-model", required=True)
-    parser.add_argument("--judge-style", choices=("legacy", "claims"), default="claims")
+    parser.add_argument("--judge-style", choices=("legacy", "claims", "claims-propositions"), default="claims")
     parser.add_argument("--only", help="Comma-separated calibration example names.")
     parser.add_argument(
         "--examples", nargs="+", type=Path, help="Example files; defaults to legacy and captured cases."
@@ -304,7 +324,7 @@ async def amain() -> int:
         "judge_style": args.judge_style,
         "judge_version": (
             review_version()
-            if args.judge_style == "claims"
+            if args.judge_style in {"claims", "claims-propositions"}
             else "legacy-" + hashlib.sha256(_JUDGE_PROMPT.encode()).hexdigest()[:12]
         ),
         "examples": [{"path": str(path), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()} for path in paths],

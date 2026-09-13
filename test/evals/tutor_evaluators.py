@@ -224,13 +224,14 @@ class TutorQuality(Evaluator[dict, dict, dict]):
             raise ValueError("Tutor quality evaluation requires a judge model.")
         if ctx.output.get("evidence_complete") is not True:
             return {}
-        if self.style == "claims":
+        if self.style in {"claims", "claims-propositions"}:
             return await review_claims(
                 self.model,
                 question=ctx.inputs["query"],
                 expectation=(ctx.metadata or {}).get("expectation", "Provide useful, appropriate guidance."),
                 output=ctx.output,
                 tool_calls=final_tool_calls(ctx.output),
+                verify_propositions=self.style == "claims-propositions",
             )
         if self.style != "legacy":
             raise ValueError(f"Unknown tutor judge style: {self.style}")
