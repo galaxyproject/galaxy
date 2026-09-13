@@ -19,6 +19,7 @@ from test.evals.run_evals import (
 from test.evals.tutor_claims import (
     assessment_checks,
     ClaimAssessment,
+    normalize_quote,
     response_blocks,
     review_claims,
 )
@@ -119,6 +120,11 @@ def test_typographic_quotes_can_match_without_accepting_a_paraphrase():
     assert actual["JudgmentComplete"].value is False
 
 
+def test_word_hyphen_typography_does_not_rewrite_command_flags():
+    assert normalize_quote("quality\u2011control") == normalize_quote("quality\u2013control")
+    assert normalize_quote("fastqc \u2013t 4") != normalize_quote("fastqc -t 4")
+
+
 @pytest.mark.parametrize("value", ["invalid", "unknown", True])
 def test_unknown_claim_review_verdict_cannot_pass(value):
     actual = checks(assessment())
@@ -139,7 +145,8 @@ def test_missing_required_judgment_cannot_pass():
     assert answer_verdict(actual, []) == "incomplete"
 
 
-async def test_claim_judge_receives_every_block_and_only_observed_evidence():
+@pytest.mark.parametrize("scenario, search_available", [("search_empty", True), ("search_unavailable", False)])
+async def test_claim_judge_receives_every_block_and_only_observed_evidence(scenario, search_available):
     content = "FastQC diagnoses quality.\n\nWhat report do you see?"
 
     def judge(messages, info):
@@ -148,6 +155,7 @@ async def test_claim_judge_receives_every_block_and_only_observed_evidence():
         assert payload["observed_evidence"]["tool:0"]["result"] == "No matches"
         assert set(payload["observed_evidence"]) == {"question", "environment", "tool:0"}
         assert "scenario" not in payload["observed_evidence"]["environment"]
+        assert payload["observed_evidence"]["environment"]["training_search_available"] is search_available
         assert "expected" not in payload
         review = assessment().model_dump()
         review["blocks"][0]["claims"][0]["evidence_ids"] = []
@@ -158,7 +166,7 @@ async def test_claim_judge_receives_every_block_and_only_observed_evidence():
         FunctionModel(judge),
         question="What is FastQC?",
         expectation="Answer directly.",
-        output={"content": content, "environment": {"interface": "galaxy", "scenario": "search_empty"}},
+        output={"content": content, "environment": {"interface": "galaxy", "scenario": scenario}},
         tool_calls=[{"name": "search_training_materials", "result": "No matches"}],
     )
     assert actual["JudgmentComplete"].value is True

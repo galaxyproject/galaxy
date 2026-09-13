@@ -115,7 +115,8 @@ pedagogy decisions cannot override claim failures. Keep reasons brief but identi
 def normalize_quote(text: str) -> str:
     # Transport typography changes must not turn an otherwise identical quote into a missing claim.
     typography = str.maketrans({"\u201c": '"', "\u201d": '"', "\u2018": "'", "\u2019": "'"})
-    return " ".join(text.translate(typography).split())
+    text = re.sub(r"(?<=\w)[\u2010\u2011\u2013](?=\w)", "-", text.translate(typography))
+    return " ".join(text.split())
 
 
 def response_blocks(content: str) -> list[dict]:
@@ -198,6 +199,9 @@ async def review_claims(model, *, question: str, expectation: str, output: dict,
     blocks = response_blocks(output["content"])
     # Fixture selectors describe harness behavior, not unavailable controls in the learner's UI.
     environment = {key: value for key, value in output["environment"].items() if key != "scenario"}
+    scenario = output["environment"].get("scenario")
+    if scenario in {"search_unavailable", "command_line", "search_empty", "search_qc", "failed_job"}:
+        environment.setdefault("training_search_available", scenario not in {"search_unavailable", "command_line"})
     evidence = {"question": question, "environment": environment}
     evidence.update({f"tool:{index}": call for index, call in enumerate(tool_calls)})
     facts = reference_facts()

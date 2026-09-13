@@ -207,7 +207,8 @@ claims; the judge also reviews context and pedagogy across the whole answer.
 One failed claim cannot be offset by a good teaching style. `JudgmentComplete`
 requires coverage of every paragraph, valid quotes/evidence IDs, and no unresolved
 judgments. Invalid structure gets one bounded correction attempt, then an error.
-Quote matching tolerates whitespace and straight/curly quotation marks while
+Quote matching tolerates whitespace, straight/curly quotation marks, and hyphen
+typography within words while
 retaining the original text in the audit. Other paraphrases fail validation.
 The judge returns schema-validated JSON text, avoiding proxy tool-call parsers
 that can corrupt nested objects. Unsupported claims always fail grounding, even
@@ -251,6 +252,10 @@ a successful calibration exit. They are never silently treated as good answers.
 first fresh check. They exposed over-rejection and informed the next correction;
 they are now development data. Select them explicitly with `--examples`, and use
 new examples when assessing behavior beyond this tuning set.
+`tutor-validation-second.json` retains a later twelve-answer check, including
+review notes correcting two author-label mistakes before its model results were
+inspected. Its reviewed classes are seven failures and five valid controls; the
+original run's six/six labels are preserved in the dated external artifacts.
 
 `--judge-style legacy` replays the former whole-answer rubric for comparison;
 `--judge-style claims` is the default. Experiment metadata records judge version,
