@@ -3,6 +3,7 @@ import random
 import string
 import subprocess
 import time
+from typing import Any
 
 import boto3
 from botocore.client import Config
@@ -150,6 +151,18 @@ class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase, i
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    def upload_dataset_and_wait_for_hash(self, history_id: str, **new_dataset_kwds) -> dict[str, Any]:
+        """Upload a dataset and block until its ``compute_dataset_hash`` task has run.
+
+        The upload job is visible as terminal before ``JobWrapper.finish`` dispatches that task,
+        and the task reads the dataset file, pulling it back into the object store cache if it is
+        no longer there. A test that evicts cache files and then counts them must not leave the
+        task pending, or it (or the next test in the class) sees a stray file.
+        """
+        hda = self.dataset_populator.new_dataset(history_id, wait=True, **new_dataset_kwds)
+        self.dataset_populator.wait_for_dataset_hashes(history_id, hda["id"])
+        return hda
 
 
 def get_files(directory):
