@@ -64,7 +64,7 @@ async function onRename(newName: string) {
         show
         :ok-text="localize('Rename')"
         :ok-disabled="nameInvalid || renaming"
-        :title="`Rename ${capitalizeFirstLetter(props.itemType)}: ${props.name}`"
+        :title="`Rename ${capitalizeFirstLetter(props.itemType)}: ${props.name.trim() || `Unnamed ${props.itemType}`}`"
         confirm
         :close-on-ok="false"
         @ok="onRename(nameModel)"
