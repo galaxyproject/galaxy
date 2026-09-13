@@ -416,6 +416,8 @@ function onKeyDown(event: KeyboardEvent) {
                                                     v-g-tooltip.hover
                                                     class="inline-icon-button g-card-rename"
                                                     transparent
+                                                    icon-only
+                                                    color="blue"
                                                     :title="localize(props.renameTitle)"
                                                     @click="emit('rename')">
                                                     <FontAwesomeIcon :icon="faPen" fixed-width />
@@ -467,6 +469,8 @@ function onKeyDown(event: KeyboardEvent) {
                                         v-g-tooltip.hover
                                         class="inline-icon-button"
                                         transparent
+                                        icon-only
+                                        color="blue"
                                         :title="props.bookmarked ? 'Remove bookmark' : 'Add to bookmarks'"
                                         @click="toggleBookmark">
                                         <FontAwesomeIcon :icon="props.bookmarked ? faStar : farStar" fixed-width />
@@ -477,6 +481,8 @@ function onKeyDown(event: KeyboardEvent) {
                                         v-g-tooltip.hover
                                         class="inline-icon-button"
                                         transparent
+                                        icon-only
+                                        color="blue"
                                         :title="localize('Bookmarking...')"
                                         disabled>
                                         <FontAwesomeIcon :icon="faSpinner" spin fixed-width />
@@ -566,7 +572,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 v-g-tooltip.hover
                                                 class="inline-icon-button"
                                                 :title="localize(indicator.title)"
-                                                v-bind="variantToColor(indicator.variant || 'outline-secondary')"
+                                                v-bind="variantToColor(indicator.variant || 'link')"
                                                 :size="sizeToGSize(indicator.size || 'sm')"
                                                 :to="indicator.to"
                                                 :href="indicator.href"
@@ -648,7 +654,7 @@ function onKeyDown(event: KeyboardEvent) {
                                 <GButtonGroup
                                     v-if="props.secondaryActions?.length"
                                     :id="getElementId(props.id, 'secondary-actions')"
-                                    class="mt-1">
+                                    class="g-card-secondary-actions mt-1">
                                     <template v-for="sa in props.secondaryActions">
                                         <GButton
                                             v-if="sa.visible ?? true"
@@ -850,6 +856,15 @@ function onKeyDown(event: KeyboardEvent) {
         .g-card-secondary-action-label {
             @container g-card (max-width: #{$breakpoint-sm}) {
                 display: none;
+            }
+        }
+
+        .g-card-secondary-actions .g-button {
+            @container g-card (max-width: #{$breakpoint-sm}) {
+                // With the label hidden only the icon is left in an inline-flex box, which has
+                // no line box and collapses to `1em` tall; keep these as tall as the labelled
+                // primary actions beside them (`1.5em` line box plus padding and border).
+                min-height: calc(1.5em + 2 * var(--spacing-1) + 2px);
             }
         }
     }

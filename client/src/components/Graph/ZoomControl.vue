@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
 import { getZoomInLevel, getZoomOutLevel, isMaxZoom, isMinZoom } from "@/utils/zoomLevels";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
-import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 
 const props = defineProps({
     zoomLevel: { type: Number, default: 1 },
@@ -31,20 +32,23 @@ function onZoomReset() {
 </script>
 
 <template>
-    <GButtonGroup class="zoom-control float-right">
+    <div class="zoom-control float-right">
         <GButton
             :disabled="isMinZoom(props.zoomLevel)"
-            class="fa fa-minus"
             title="Zoom Out"
             size="small"
+            outline
             icon-only
             aria-label="Zoom Out"
-            @click="onZoomOut" />
+            @click="onZoomOut">
+            <FontAwesomeIcon :icon="faMinus" fixed-width />
+        </GButton>
         <GButton
             tooltip
             class="zoom-reset"
-            transparent
+            outline
             title="Reset Zoom Level"
+            pill
             size="small"
             aria-label="Reset Zoom Level"
             @click="onZoomReset">
@@ -52,17 +56,20 @@ function onZoomReset() {
         </GButton>
         <GButton
             :disabled="isMaxZoom(props.zoomLevel)"
-            class="fa fa-plus"
             title="Zoom In"
             size="small"
+            outline
             icon-only
             aria-label="Zoom In"
-            @click="onZoomIn" />
-    </GButtonGroup>
+            @click="onZoomIn">
+            <FontAwesomeIcon :icon="faPlus" fixed-width />
+        </GButton>
+    </div>
 </template>
 
 <style scoped>
 .zoom-reset {
+    display: block;
     width: 4rem;
 }
 .zoom-control {
@@ -71,5 +78,8 @@ function onZoomReset() {
     bottom: 1rem;
     cursor: pointer;
     z-index: 2000;
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
 }
 </style>
