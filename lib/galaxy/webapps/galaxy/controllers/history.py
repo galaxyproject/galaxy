@@ -197,30 +197,16 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 histories.append(history)
         if not histories:
             raise exceptions.RequestParameterMissingException("No history or histories specified.")
-        private_role = trans.app.security_agent.get_private_user_role(trans.user)
-        user_roles = trans.user.all_roles()
-        private_permissions = {
-            trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS: [private_role],
-            trans.app.security_agent.permitted_actions.DATASET_ACCESS: [private_role],
-        }
+        skipped_datasets = self.history_manager.make_private(trans, histories)
+        sharing_status_changed = False
         for history in histories:
-            # Set default role for history to private
-            trans.app.security_agent.history_set_default_permissions(history, private_permissions)
-            # Set private role for all datasets
-            for hda in history.datasets:
-                if (
-                    not hda.dataset.library_associations
-                    and not trans.app.security_agent.dataset_is_private_to_user(trans, hda.dataset)
-                    and trans.app.security_agent.can_manage_dataset(user_roles, hda.dataset)
-                ):
-                    # If it's not private to me, and I can manage it, set fixed private permissions.
-                    trans.app.security_agent.set_all_dataset_permissions(hda.dataset, private_permissions)
-
             importable = history.importable
             link_access = self.service.shareable_service.disable_link_access(trans, history.id)
+            sharing_status_changed = sharing_status_changed or importable != link_access.importable
         return {
             "message": f"Success, requested permissions have been changed in {'all histories' if all_histories else history.name}.",
-            "sharing_status_changed": importable != link_access.importable,
+            "sharing_status_changed": sharing_status_changed,
+            "skipped_datasets": skipped_datasets,
         }
 
     # ......................................................................... actions/orig. async

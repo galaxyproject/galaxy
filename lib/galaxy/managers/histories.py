@@ -520,6 +520,44 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
                 else:
                     log.warning(f"User without permissions tried to make dataset with id: {dataset.id} public")
 
+    def make_private(self, trans: ProvidesUserContext, histories: list[model.History]) -> int:
+        """Make the datasets in ``histories`` private and set private default permissions.
+
+        Permissions live on the dataset, not on the history association, so a
+        dataset that the user cannot manage (typically one shared from another
+        user's history through an import) is left untouched. Returns the number
+        of such datasets that stayed shared.
+        """
+        user = trans.user
+        assert user
+        security_agent = self.app.security_agent
+        private_role = security_agent.get_private_user_role(user)
+        private_permissions = {
+            security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS: [private_role],
+            security_agent.permitted_actions.DATASET_ACCESS: [private_role],
+        }
+        user_roles = user.all_roles()
+        seen_datasets: set[int] = set()
+        skipped_datasets: set[int] = set()
+
+        for history in histories:
+            security_agent.history_set_default_permissions(history, private_permissions)
+            for hda in history.datasets:
+                dataset = hda.dataset
+                assert dataset
+                if dataset.id in seen_datasets:
+                    continue
+                seen_datasets.add(dataset.id)
+                if dataset.library_associations or security_agent.dataset_is_private_to_user(trans, dataset):
+                    continue
+                if not security_agent.can_manage_dataset(user_roles, dataset):
+                    skipped_datasets.add(dataset.id)
+                    continue
+                security_agent.set_all_dataset_permissions(dataset, private_permissions, flush=False)
+
+        self.session().commit()
+        return len(skipped_datasets)
+
     def archive_history(self, history: model.History, archive_export_id: Optional[int]):
         """Marks the history with the given id as archived and optionally associates it with the given archive export record.
 
