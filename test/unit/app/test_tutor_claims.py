@@ -25,7 +25,7 @@ from test.evals.tutor_claims import (
 
 from pydantic_ai.messages import (
     ModelResponse,
-    ToolCallPart,
+    TextPart,
 )
 from pydantic_ai.models.function import FunctionModel
 from pydantic_evals.evaluators import EvaluationReason
@@ -80,9 +80,9 @@ def test_incomplete_or_invented_claim_reviews_cannot_pass(defect):
     assert answer_verdict(actual, ["JudgmentComplete", "Correctness"]) == "incomplete"
 
 
-def test_reference_knowledge_does_not_authorize_retrieved_tutorial_claims():
-    actual = checks(assessment(category="tutorial"))
-    assert actual["Grounding"].value is False
+def test_category_alone_does_not_make_supported_advice_require_an_observation():
+    actual = checks(assessment(category="action"))
+    assert actual["Grounding"].value is True
     assert actual["Correctness"].value is True
 
 
@@ -97,6 +97,25 @@ def test_semantic_uncertainty_stays_unresolved():
     actual = checks(assessment(verdict="unresolved"))
     assert actual["ClaimReview"].value == "unresolved"
     assert answer_verdict(actual, ["Correctness", "JudgmentComplete"]) == "unresolved"
+
+
+def test_unsupported_claim_always_fails_grounding():
+    actual = checks(assessment(verdict="unsupported", dimensions=["Context"]))
+    assert actual["Grounding"].value is False
+    assert not missed_critical_claims([{"quote": "FastQC diagnoses quality.", "dimension": "Grounding"}], actual)
+
+
+def test_nonfactual_language_is_not_an_unsupported_fact():
+    actual = checks(assessment(verdict="nonfactual"))
+    assert actual["JudgmentComplete"].value is True
+    assert actual["Grounding"].value is True
+
+
+@pytest.mark.parametrize("value", ["invalid", "unknown", True])
+def test_unknown_claim_review_verdict_cannot_pass(value):
+    actual = checks(assessment())
+    actual["ClaimReview"] = EvaluationReason(value=value, reason="Unexpected status")
+    assert answer_verdict(actual, ["Correctness", "JudgmentComplete"]) == "incomplete"
 
 
 def test_critical_span_requires_the_actual_claim_and_dimension():
@@ -124,7 +143,7 @@ async def test_claim_judge_receives_every_block_and_only_observed_evidence():
         review = assessment().model_dump()
         review["blocks"][0]["claims"][0]["evidence_ids"] = []
         review["blocks"].append({"block_id": 1, "claims": [], "nonfactual_reason": "Question without a premise."})
-        return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, review)])
+        return ModelResponse(parts=[TextPart(json.dumps(review))])
 
     actual = await review_claims(
         FunctionModel(judge),
@@ -147,7 +166,7 @@ async def test_invalid_review_gets_one_correction_attempt():
         review["blocks"][0]["claims"][0]["evidence_ids"] = []
         if calls == 1:
             review["blocks"][0]["claims"][0]["quote"] = "Paraphrased, not quoted."
-        return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, review)])
+        return ModelResponse(parts=[TextPart(json.dumps(review))])
 
     actual = await review_claims(
         FunctionModel(judge),
@@ -179,7 +198,7 @@ async def test_unresolved_judge_exits_incomplete_despite_reference_labels():
             }
             for block in payload["response_blocks"]
         ]
-        return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, review)])
+        return ModelResponse(parts=[TextPart(json.dumps(review))])
 
     dataset = calibration_dataset(FunctionModel(judge), only=["direct_fastqc"])
     report = await dataset.evaluate(replay_answer, progress=False)

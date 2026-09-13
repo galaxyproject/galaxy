@@ -71,8 +71,7 @@ def _answer_verdict(record: Any) -> str:
     explicit = labels.get("AnswerVerdict") if isinstance(labels, Mapping) else None
     if explicit is not None:
         verdict = _normalise_verdict(explicit)
-        if verdict is not None:
-            return verdict
+        return verdict if verdict is not None else "incomplete"
 
     assertions = _assertions(record)
     metadata = _metadata(record)

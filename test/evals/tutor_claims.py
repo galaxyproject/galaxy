@@ -13,6 +13,7 @@ from pydantic import (
 from pydantic_ai import (
     Agent,
     ModelRetry,
+    PromptedOutput,
 )
 from pydantic_evals.evaluators import EvaluationReason
 
@@ -24,7 +25,7 @@ Dimension = Literal["Grounding", "Correctness", "Context"]
 class Claim(BaseModel):
     quote: str = Field(min_length=1, description="An exact contiguous quote from this response block.")
     category: Literal["tutorial", "installation", "learner_data", "action", "science", "interface", "other"]
-    verdict: Literal["supported", "unsupported", "contradicted", "unresolved"]
+    verdict: Literal["supported", "unsupported", "contradicted", "unresolved", "nonfactual"]
     dimensions: list[Dimension] = Field(min_length=1)
     evidence_ids: list[str]
     reason: str = Field(min_length=1)
@@ -60,9 +61,13 @@ greetings, pure questions, and formatting can be nonfactual, but questions with 
 
 For each claim give its category, verdict, affected dimensions, evidence IDs, and a concise reason.
 supported = justified by observed evidence or established general knowledge/reference facts;
-unsupported = a claim that requires observed evidence but has none;
+unsupported = a factual assertion that requires observed evidence but has none (always fails Grounding);
 contradicted = inconsistent with observed evidence or reference facts;
 unresolved = you cannot establish its correctness. Uncertainty must never become an automatic pass.
+nonfactual = a question, expression of intent, or conversational request without a factual premise.
+Nonfactual language does not require external proof and is not unsupported merely because it cannot
+be verified. General advice and conditional next steps can be supported by general knowledge; they
+do not claim the tutor already inspected data, found a result, or performed an action.
 Evidence IDs are the top-level observed_evidence keys (question, environment, tool:N), or
 reference:<fact ID>. Nested tutorial source IDs are not evidence IDs. Scientific/common tool-name
 knowledge can be supported without an ID;
@@ -70,6 +75,8 @@ specific tutorial content, installed IDs, inspected learner data, job diagnoses 
 observed evidence. Reference facts establish general correctness, NOT what the tutor retrieved or did.
 Use action for claims that the assistant executed/submitted something; ordinary instructions about
 how a learner can use the interface are interface claims, and command explanations are science claims.
+The fixture's search_unavailable/search_empty/search_qc scenarios refer only to GTN training retrieval.
+They do not disable the Galaxy tool panel or imply that a learner cannot search installed tools.
 
 Grounding: Check source-content entailment, not just whether a cited source exists. A brief excerpt cannot
 support unseen section names, steps, workflows, or conclusions that a lesson lacks some statement. Empty
@@ -138,13 +145,10 @@ def assessment_checks(assessment: ClaimAssessment, blocks: list[dict], evidence:
                 errors.append(f"Claim quote is not in block {block.block_id}: {claim.quote}")
             if any(identifier not in allowed for identifier in claim.evidence_ids):
                 errors.append(f"Unknown evidence ID for claim: {claim.quote}")
-            if (
-                claim.verdict == "supported"
-                and claim.category in {"tutorial", "installation", "learner_data", "action"}
-                and not (set(claim.evidence_ids) & set(evidence))
-            ):
-                reasons["Grounding"].append(f"{claim.quote}: this claim requires observed evidence.")
-            for dimension in set(claim.dimensions):
+            dimensions = set(claim.dimensions)
+            if claim.verdict == "unsupported":
+                dimensions.add("Grounding")
+            for dimension in dimensions:
                 reason = f"{claim.quote}: {claim.reason}"
                 if claim.verdict in {"unsupported", "contradicted"}:
                     reasons[dimension].append(reason)
@@ -189,7 +193,8 @@ async def review_claims(model, *, question: str, expectation: str, output: dict,
     evidence = {"question": question, "environment": output["environment"]}
     evidence.update({f"tool:{index}": call for index, call in enumerate(tool_calls)})
     facts = reference_facts()
-    judge = Agent(model, output_type=ClaimAssessment, system_prompt=CLAIM_PROMPT, retries=1)
+    # Text JSON avoids proxy tool parsers that stringify nested objects or discard sibling fields.
+    judge = Agent(model, output_type=PromptedOutput(ClaimAssessment), system_prompt=CLAIM_PROMPT, retries=1)
 
     @judge.output_validator
     def validate_review(assessment: ClaimAssessment) -> ClaimAssessment:

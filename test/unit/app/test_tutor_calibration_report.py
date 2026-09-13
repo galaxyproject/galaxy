@@ -177,6 +177,19 @@ def test_old_report_derivation_ignores_calibration_match():
     assert summary["totals"]["known_good"]["accepted"] == 1
 
 
+def test_unknown_explicit_verdict_cannot_fall_back_to_passing_assertions():
+    unknown = case(
+        "unknown",
+        expected_overall="fail",
+        expected={"Grounding": False},
+        assertions={"Grounding": True},
+        labels={"AnswerVerdict": result("AnswerVerdict", "unknown")},
+    )
+    summary = summarize_calibration(report(unknown))
+    assert summary["totals"]["known_bad"]["incomplete"] == 1
+    assert summary["totals"]["known_bad"]["accepted"] == 0
+
+
 def test_unresolved_status_wins_over_partial_or_conflicting_reference_fields():
     unresolved = case(
         "unresolved-status",

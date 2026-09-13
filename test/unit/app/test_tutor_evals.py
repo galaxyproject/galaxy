@@ -589,6 +589,11 @@ async def test_old_judge_only_baseline_is_explicitly_not_comparable():
     assert "scoring changed; baseline is not comparable" in render_markdown([result], baseline=[old])
 
 
+async def test_unknown_answer_verdict_cannot_pass_calibration():
+    result = await evaluated_result({"CalibrationMatch": True, "AnswerVerdict": "unknown"}, ["CalibrationMatch"])
+    assert evaluation_exit_code([result]) == 2
+
+
 @pytest.mark.parametrize("field", ["judge_model", "judge_version", "examples"])
 async def test_changed_judge_or_corpus_does_not_become_a_quality_improvement(field):
     old = await evaluated_result({"Grounding": False}, ["Grounding"])

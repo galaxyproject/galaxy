@@ -140,6 +140,8 @@ def answer_verdict(checks: dict, required: list[str]) -> str:
     review = checks.get("ClaimReview")
     if review is not None and review.value == "unresolved":
         return "unresolved"
+    if review is not None and review.value != "complete":
+        return "incomplete"
     if not required or any(name not in checks or type(checks[name].value) is not bool for name in required):
         return "incomplete"
     if any(name in checks and checks[name].value is False for name in ("EvidenceComplete", "JudgmentComplete")):
@@ -159,7 +161,10 @@ def missed_critical_claims(expected: list[dict], checks: dict) -> list[str]:
     for claim in expected:
         quote = " ".join(claim["quote"].split())
         if not any(
-            claim["dimension"] in found["dimensions"]
+            (
+                claim["dimension"] in found["dimensions"]
+                or (claim["dimension"] == "Grounding" and found["verdict"] == "unsupported")
+            )
             and (
                 quote in " ".join(found["quote"].split())
                 or (len(found["quote"]) >= 20 and " ".join(found["quote"].split()) in quote)

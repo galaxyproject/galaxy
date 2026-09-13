@@ -198,11 +198,18 @@ provenance. A direct factual answer can explicitly opt out of reference delivery
 The default judge reviews each response paragraph for factual claims and
 actionable instructions. It quotes each claim, identifies the evidence used,
 and decides whether it is supported, unsupported, contradicted, or unresolved.
+Nonfactual requests and expressions of intent are identified separately. An
+instruction is not evidence that the tutor performed an action; ordinary advice
+can be justified by general knowledge without a service lookup. GTN search
+availability is separate from the learner's Galaxy tool-panel search.
 The application derives grounding, correctness, and context failures from those
 claims; the judge also reviews context and pedagogy across the whole answer.
 One failed claim cannot be offset by a good teaching style. `JudgmentComplete`
 requires coverage of every paragraph, valid quotes/evidence IDs, and no unresolved
 judgments. Invalid structure gets one bounded correction attempt, then an error.
+The judge returns schema-validated JSON text, avoiding proxy tool-call parsers
+that can corrupt nested objects. Unsupported claims always fail grounding, even
+if the judge also assigns them to another dimension.
 The full claim review is retained in the JSON `ClaimReview` label.
 
 `tutor-reference-facts.json` supplies sourced scientific and Galaxy UI facts to
@@ -238,6 +245,10 @@ not educator judgments. `--examples PATH [PATH ...]` selects a corpus; the defau
 loads both. `--labels reviewed` selects the labelled subset for a regression gate;
 the default includes unresolved examples, whose missing reference verdicts prevent
 a successful calibration exit. They are never silently treated as good answers.
+`tutor-validation.json` preserves six separately authored bad/good pairs from the
+first fresh check. They exposed over-rejection and informed the next correction;
+they are now development data. Select them explicitly with `--examples`, and use
+new examples when assessing behavior beyond this tuning set.
 
 `--judge-style legacy` replays the former whole-answer rubric for comparison;
 `--judge-style claims` is the default. Experiment metadata records judge version,

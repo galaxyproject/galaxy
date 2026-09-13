@@ -74,7 +74,7 @@ def case_verdict(result: DatasetResult, case) -> tuple[str, list[str]]:
     if case.evaluator_failures:
         return "incomplete", reasons
     answer = case.labels.get("AnswerVerdict")
-    if answer is not None and answer.value in {"incomplete", "unresolved"}:
+    if answer is not None and answer.value not in {"pass", "fail"}:
         return "incomplete", [f"Answer judgment is {answer.value}."]
     if required is not None or result.primary_score == "RequiredChecks":
         if not required:
