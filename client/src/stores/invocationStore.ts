@@ -2,16 +2,20 @@ import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
 import { GalaxyApi } from "@/api";
-import type {
-    InvocationJobsSummary,
-    InvocationStep,
-    StepJobSummary,
-    WorkflowInvocation,
-    WorkflowInvocationRequest,
-    WorkflowJobMetric,
+import {
+    type InvocationJobsSummary,
+    type InvocationStep,
+    isWorkflowInvocationElementView,
+    type StepJobSummary,
+    type WorkflowInvocation,
+    type WorkflowInvocationRequest,
+    type WorkflowJobMetric,
 } from "@/api/invocations";
+import { getData as getInvocationsData } from "@/components/Grid/configs/invocations";
 import { numTerminal } from "@/components/WorkflowInvocationState/util";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
 import { rethrowSimple, rethrowSimpleWithStatus } from "@/utils/simple-error";
 
 export const useInvocationStore = defineStore("invocationStore", () => {
@@ -122,13 +126,22 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         }
     }
 
+    /**
+     * `fetchLatestInvocations` seeds this cache with list summaries: the invocations index serializes the
+     * collection view, which has no `steps`, `inputs` or `outputs`. So `getInvocationById` must upgrade a
+     * cached summary to the element view rather than treat it as already loaded.
+     */
+    const shouldFetchInvocationDetails = computed(() => {
+        return (invocation?: WorkflowInvocation) => !invocation || !isWorkflowInvocationElementView(invocation);
+    });
+
     const {
         fetchItemById: fetchInvocationById,
         getItemById: getInvocationById,
         getItemLoadError: getInvocationLoadError,
         isLoadingItem: isLoadingInvocation,
         storedItems: storedInvocations,
-    } = useKeyedCache<WorkflowInvocation>(fetchInvocationDetails);
+    } = useKeyedCache<WorkflowInvocation>(fetchInvocationDetails, shouldFetchInvocationDetails);
 
     const { getItemById: getInvocationJobsSummaryById, fetchItemById: fetchInvocationJobsSummaryForId } =
         useKeyedCache<InvocationJobsSummary>(fetchInvocationJobsSummary);
@@ -258,8 +271,91 @@ export const useInvocationStore = defineStore("invocationStore", () => {
 
     const totalInvocationCount = ref<number | undefined>(undefined);
 
+    /** Ids of the most recently created invocations, in the order the server returned them. */
+    const latestInvocationIds = ref<string[]>([]);
+    const isLoadingLatestInvocations = ref(false);
+    /**
+     * Whether the latest invocations have been fetched at least once. An empty
+     * result counts as loaded, so consumers can tell "nothing invoked yet" from
+     * "not fetched yet" instead of requesting the list over and over.
+     */
+    const hasLoadedLatestInvocations = ref(false);
+    let latestInvocationsPromise: Promise<WorkflowInvocation[]> | null = null;
+
+    /**
+     * The latest invocation summaries (see `fetchLatestInvocations`), resolved against the shared
+     * invocation cache -- so consumers always see the freshest version of an invocation, no matter
+     * which part of the app loaded it.
+     */
+    const latestInvocations = computed<WorkflowInvocation[]>(() =>
+        latestInvocationIds.value
+            .map((id) => storedInvocations.value[id])
+            .filter((invocation): invocation is WorkflowInvocation => invocation !== undefined),
+    );
+
+    /**
+     * Resolves the history and workflow names an invocation is displayed with.
+     *
+     * The grid's `getData` starts these lookups but does not await them, so a
+     * list rendered right after the fetch (the command palette) would show bare
+     * ids. Both stores share their in-flight request per id, so awaiting the
+     * same lookups here adds no requests. A failing lookup only costs a name,
+     * never the invocation row, and is therefore ignored.
+     */
+    async function fetchInvocationNames(invocations: WorkflowInvocation[]) {
+        const historyStore = useHistoryStore();
+        const workflowStore = useWorkflowStore();
+        const historyIds = new Set(invocations.map((invocation) => invocation.history_id).filter(Boolean));
+        const workflowIds = new Set(invocations.map((invocation) => invocation.workflow_id).filter(Boolean));
+        await Promise.all([
+            ...[...historyIds].map((historyId) =>
+                historyStore.getHistoryById(historyId, false)
+                    ? Promise.resolve()
+                    : historyStore.loadHistoryById(historyId).catch(() => undefined),
+            ),
+            ...[...workflowIds].map((workflowId) =>
+                workflowStore.fetchWorkflowForInstanceIdCached(workflowId).catch(() => undefined),
+            ),
+        ]);
+    }
+
+    /**
+     * Fetches the `limit` most recently created invocations and merges them into the shared
+     * invocation cache (no separate copy of the data is kept -- only the ordered list of ids).
+     *
+     * Reuses the invocations grid's `getData`, which also populates the history and workflow name
+     * caches needed to display an invocation. Concurrent calls share a single request.
+     */
+    async function fetchLatestInvocations(limit = 15): Promise<WorkflowInvocation[]> {
+        if (latestInvocationsPromise) {
+            return latestInvocationsPromise;
+        }
+        isLoadingLatestInvocations.value = true;
+        latestInvocationsPromise = (async () => {
+            try {
+                const [invocations] = await getInvocationsData(0, limit, "", "create_time", true);
+                const ids: string[] = [];
+                for (const invocation of invocations) {
+                    updateInvocation(invocation.id, invocation);
+                    if (!ids.includes(invocation.id)) {
+                        ids.push(invocation.id);
+                    }
+                }
+                latestInvocationIds.value = ids;
+                hasLoadedLatestInvocations.value = true;
+                await fetchInvocationNames(invocations);
+                return latestInvocations.value;
+            } finally {
+                isLoadingLatestInvocations.value = false;
+                latestInvocationsPromise = null;
+            }
+        })();
+        return latestInvocationsPromise;
+    }
+
     return {
         cancelWorkflowScheduling,
+        fetchLatestInvocations,
         fetchInvocationById,
         fetchInvocationJobsSummaryForId,
         fetchInvocationStepJobsSummaryForId,
@@ -275,8 +371,11 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         getInvocationRequestById,
         getInvocationRequestByIdError,
         getInvocationCountByWorkflowId,
+        hasLoadedLatestInvocations,
         isLoadingInvocation,
         isLoadingInvocationStep,
+        isLoadingLatestInvocations,
+        latestInvocations,
         sortedStoredInvocations,
         totalInvocationCount,
         updateInvocation,

@@ -4614,6 +4614,52 @@ mapping:
 
           Admins can schedule and broadcast notifications that will be visible to all users, including special server-wide announcements such as scheduled maintenance, high load warnings, and event announcements, to name a few examples.
 
+      enable_command_palette:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Master toggle for the command palette, the searchable overlay that lets users jump to
+          tools, workflows, histories, datasets and other Galaxy resources from anywhere in the
+          interface.
+
+          When disabled, the search button in the masthead is hidden and the Ctrl/Cmd-K keyboard
+          shortcut that opens the palette is not registered.
+
+      command_palette_allow_anonymous:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Whether anonymous (not logged in) users may use the command palette.
+
+          When false, the palette is only available to logged in users. This option is only
+          relevant when ``enable_command_palette`` is true.
+
+      command_palette_disabled_providers:
+        type: seq
+        sequence:
+          - type: str
+        required: false
+        desc: |
+          List of command palette providers to disable.
+
+          Valid provider ids are: ``actions``, ``navigation``, ``tools``, ``workflows``,
+          ``histories``, ``datasets``, ``visualizations``, ``invocations``, ``reports`` and
+          ``interactiveTools``.
+
+          Disabling a provider removes its search scopes, its category tab and its results from
+          the palette.
+
+      command_palette_placeholder:
+        type: str
+        required: false
+        desc: |
+          Overrides the leading phrase of the command palette input placeholder and the text and
+          tooltip of the search button in the masthead.
+
+          When unset, the client uses a localized "Search Galaxy".
+
       enable_mcp_server:
         type: bool
         default: false

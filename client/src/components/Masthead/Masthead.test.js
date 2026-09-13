@@ -92,10 +92,43 @@ describe("Masthead.vue", () => {
     }
 
     it("should render simple tab item links", () => {
-        expect(wrapper.findAll("li.nav-item").length).toBe(4);
+        // window manager, extension tab, command palette search, help, user
+        expect(wrapper.findAll("li.nav-item").length).toBe(5);
         // Ensure specified link title respected.
         expect(wrapper.find("#help").text()).toBe("Support, Contact, and Community");
         expect(wrapper.find("#help a").attributes("href")).toBe("/about");
+    });
+
+    it("should open the command palette from the search button", async () => {
+        const { useCommandPalette } = await import("@/composables/useCommandPalette");
+        useCommandPalette().closePalette();
+        await wrapper.find("[data-description='masthead search button']").trigger("click");
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        useCommandPalette().closePalette();
+    });
+
+    it("labels the search button with the phrase the instance configured", async () => {
+        const button = () => wrapper.find("[data-description='masthead search button']");
+        expect(button().find(".search-placeholder").text()).toBe("Search Galaxy");
+        expect(button().attributes("title")).toBe("Search Galaxy (Ctrl+K)");
+
+        await remount({ command_palette_placeholder: "Search UseGalaxy.eu" });
+
+        expect(button().find(".search-placeholder").text()).toBe("Search UseGalaxy.eu");
+        expect(button().attributes("title")).toBe("Search UseGalaxy.eu (Ctrl+K)");
+    });
+
+    it.each([
+        ["the palette is disabled", { enable_command_palette: false }, currentUser],
+        [
+            "an anonymous user may not use it",
+            { command_palette_allow_anonymous: false },
+            { id: "anonymous", isAnonymous: true },
+        ],
+    ])("hides the search button when %s", async (_reason, variantConfig, user) => {
+        await remount(variantConfig, user);
+
+        expect(wrapper.find("[data-description='masthead search button']").exists()).toBe(false);
     });
 
     it("should display window manager button", async () => {
