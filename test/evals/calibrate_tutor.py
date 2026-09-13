@@ -30,7 +30,10 @@ from .run_evals import (
     write_eval_report,
 )
 from .tutor import QC_URL
-from .tutor_claims import review_version
+from .tutor_claims import (
+    normalize_quote,
+    review_version,
+)
 from .tutor_evaluators import (
     _JUDGE_PROMPT,
     tutor_metadata,
@@ -159,15 +162,15 @@ def missed_critical_claims(expected: list[dict], checks: dict) -> list[str]:
     ]
     missing = []
     for claim in expected:
-        quote = " ".join(claim["quote"].split())
+        quote = normalize_quote(claim["quote"])
         if not any(
             (
                 claim["dimension"] in found["dimensions"]
                 or (claim["dimension"] == "Grounding" and found["verdict"] == "unsupported")
             )
             and (
-                quote in " ".join(found["quote"].split())
-                or (len(found["quote"]) >= 20 and " ".join(found["quote"].split()) in quote)
+                quote in normalize_quote(found["quote"])
+                or (len(found["quote"]) >= 20 and normalize_quote(found["quote"]) in quote)
             )
             for found in rejected
         ):

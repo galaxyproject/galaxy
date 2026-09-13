@@ -207,6 +207,8 @@ claims; the judge also reviews context and pedagogy across the whole answer.
 One failed claim cannot be offset by a good teaching style. `JudgmentComplete`
 requires coverage of every paragraph, valid quotes/evidence IDs, and no unresolved
 judgments. Invalid structure gets one bounded correction attempt, then an error.
+Quote matching tolerates whitespace and straight/curly quotation marks while
+retaining the original text in the audit. Other paraphrases fail validation.
 The judge returns schema-validated JSON text, avoiding proxy tool-call parsers
 that can corrupt nested objects. Unsupported claims always fail grounding, even
 if the judge also assigns them to another dimension.

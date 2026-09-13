@@ -68,8 +68,12 @@ nonfactual = a question, expression of intent, or conversational request without
 Nonfactual language does not require external proof and is not unsupported merely because it cannot
 be verified. General advice and conditional next steps can be supported by general knowledge; they
 do not claim the tutor already inspected data, found a result, or performed an action.
+General procedural reasoning is allowed: asking to inspect an error because it can help choose a
+next check does not promise a definitive diagnosis. Check whether a statement is qualified (can,
+may, if needed) before treating it as a guarantee about unseen data. Do not require a service lookup
+for ordinary reasoning, useful search terms, or asking the learner to share diagnostic information.
 Evidence IDs are the top-level observed_evidence keys (question, environment, tool:N), or
-reference:<fact ID>. Nested tutorial source IDs are not evidence IDs. Scientific/common tool-name
+reference:<fact ID>. Nested tutorial source IDs are not evidence IDs. Scientific/procedural/tool-name
 knowledge can be supported without an ID;
 specific tutorial content, installed IDs, inspected learner data, job diagnoses and execution claims need
 observed evidence. Reference facts establish general correctness, NOT what the tutor retrieved or did.
@@ -108,8 +112,10 @@ pedagogy decisions cannot override claim failures. Keep reasons brief but identi
 """
 
 
-def _normalized(text: str) -> str:
-    return " ".join(text.split())
+def normalize_quote(text: str) -> str:
+    # Transport typography changes must not turn an otherwise identical quote into a missing claim.
+    typography = str.maketrans({"\u201c": '"', "\u201d": '"', "\u2018": "'", "\u2019": "'"})
+    return " ".join(text.translate(typography).split())
 
 
 def response_blocks(content: str) -> list[dict]:
@@ -141,7 +147,7 @@ def assessment_checks(assessment: ClaimAssessment, blocks: list[dict], evidence:
         if not block.claims and not block.nonfactual_reason.strip():
             errors.append(f"Block {block.block_id} has neither claims nor a nonfactual explanation.")
         for claim in block.claims:
-            if _normalized(claim.quote) not in _normalized(lookup.get(block.block_id, "")):
+            if normalize_quote(claim.quote) not in normalize_quote(lookup.get(block.block_id, "")):
                 errors.append(f"Claim quote is not in block {block.block_id}: {claim.quote}")
             if any(identifier not in allowed for identifier in claim.evidence_ids):
                 errors.append(f"Unknown evidence ID for claim: {claim.quote}")
@@ -190,7 +196,9 @@ def assessment_checks(assessment: ClaimAssessment, blocks: list[dict], evidence:
 
 async def review_claims(model, *, question: str, expectation: str, output: dict, tool_calls: list[dict]) -> dict:
     blocks = response_blocks(output["content"])
-    evidence = {"question": question, "environment": output["environment"]}
+    # Fixture selectors describe harness behavior, not unavailable controls in the learner's UI.
+    environment = {key: value for key, value in output["environment"].items() if key != "scenario"}
+    evidence = {"question": question, "environment": environment}
     evidence.update({f"tool:{index}": call for index, call in enumerate(tool_calls)})
     facts = reference_facts()
     # Text JSON avoids proxy tool parsers that stringify nested objects or discard sibling fields.

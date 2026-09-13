@@ -111,6 +111,14 @@ def test_nonfactual_language_is_not_an_unsupported_fact():
     assert actual["Grounding"].value is True
 
 
+def test_typographic_quotes_can_match_without_accepting_a_paraphrase():
+    text = "Try “quality control” as a search term."
+    actual = checks(assessment(quote='Try "quality control" as a search term.'), text)
+    assert actual["JudgmentComplete"].value is True
+    actual = checks(assessment(quote='Try "quality control" to find a tutorial.'), text)
+    assert actual["JudgmentComplete"].value is False
+
+
 @pytest.mark.parametrize("value", ["invalid", "unknown", True])
 def test_unknown_claim_review_verdict_cannot_pass(value):
     actual = checks(assessment())
@@ -139,6 +147,7 @@ async def test_claim_judge_receives_every_block_and_only_observed_evidence():
         assert payload["response_blocks"] == response_blocks(content)
         assert payload["observed_evidence"]["tool:0"]["result"] == "No matches"
         assert set(payload["observed_evidence"]) == {"question", "environment", "tool:0"}
+        assert "scenario" not in payload["observed_evidence"]["environment"]
         assert "expected" not in payload
         review = assessment().model_dump()
         review["blocks"][0]["claims"][0]["evidence_ids"] = []
@@ -149,7 +158,7 @@ async def test_claim_judge_receives_every_block_and_only_observed_evidence():
         FunctionModel(judge),
         question="What is FastQC?",
         expectation="Answer directly.",
-        output={"content": content, "environment": {"interface": "galaxy"}},
+        output={"content": content, "environment": {"interface": "galaxy", "scenario": "search_empty"}},
         tool_calls=[{"name": "search_training_materials", "result": "No matches"}],
     )
     assert actual["JudgmentComplete"].value is True
