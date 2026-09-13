@@ -63,6 +63,7 @@ const TOOLTIP_STYLES = `
     top: 0;
     left: 0;
     opacity: 1;
+    overflow-wrap: anywhere;
 }
 .g-tooltip-d.g-tooltip-danger {
     background-color: var(--color-red-700, #dc3545);
