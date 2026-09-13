@@ -2136,9 +2136,11 @@ class MinimalJobWrapper(HasResourceParameters):
                     user=job.user,
                     tag_handler=self.app.tag_handler.create_tag_handler_session(job.galaxy_session),
                 )
-                import_model_store.perform_import(history=job.history, job=job)
-                if job.state == job.states.ERROR:
-                    final_job_state = job.state
+                object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
+                # The import leaves job.state untouched so nothing polling the job can see it finish before
+                # exec_after_process and the final commit below have run.
+                if object_import_tracker.job_states_by_id.get(job.id) == job.states.ERROR:
+                    final_job_state = job.states.ERROR
             except store.FileTracebackException as e:
                 job.traceback = e.traceback
                 log.exception(f"Problem generating command line for Job {job.id}.\n{job.traceback}")
