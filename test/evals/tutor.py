@@ -116,6 +116,8 @@ def _tool_calls(messages: list) -> list[dict[str, Any]]:
                     call["status"] = "returned" if part.part_kind == "tool-return" else "retry"
                     if getattr(part, "outcome", "success") != "success":
                         call["status"] = "failed"
+                    if part.part_kind == "tool-return" and isinstance(part.metadata, dict):
+                        call["sources"] = part.metadata.get("tutor_sources", [])
     return calls
 
 
@@ -150,6 +152,9 @@ async def run_tutor_case(
                 raise
             finally:
                 attempt["tool_calls"] = _tool_calls(messages)
+                attempt["model_responses"] = [
+                    part.content for message in messages for part in message.parts if part.part_kind == "text"
+                ]
                 attempt["retrieved_materials"] = (
                     list(tutor.gtn_db.retrieved_materials) if tutor.gtn_db is not None else []
                 )

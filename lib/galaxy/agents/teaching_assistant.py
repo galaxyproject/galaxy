@@ -8,12 +8,25 @@ material integration to help users learn computational biology.
 
 import json
 import logging
+import re
+import string
+from html import unescape
 from pathlib import Path
 from typing import (
     Any,
 )
+from urllib.parse import (
+    unquote,
+    urlsplit,
+)
+from uuid import uuid4
 
-from pydantic_ai import Agent
+from pydantic_ai import (
+    Agent,
+    ModelRetry,
+    RunContext,
+)
+from pydantic_ai.messages import ToolReturn
 
 from galaxy.managers.learning_state import LearningStateManager
 from galaxy.schema.agents import ConfidenceLevel
@@ -30,6 +43,67 @@ from .gtn import GTNSearchDB
 from .operations import AgentOperationsManager
 
 log = logging.getLogger(__name__)
+_SEARCH_TOOLS = {"search_training_materials", "suggest_tutorials"}
+_REFERENCE = re.compile(r"\[\[tutorial:([a-f0-9]{12})\]\]")
+_GTN_LINK = re.compile(r"training\.galaxyproject\.org([^\s<>`\"'\[\]()]*)", re.IGNORECASE)
+
+
+def _plain_markdown(value: str) -> str:
+    return re.sub(f"([{re.escape(string.punctuation)}])", r"\\\1", " ".join(value.split()))
+
+
+def _render_tutorial_references(ctx: RunContext[GalaxyAgentDependencies], content: str) -> str:
+    sources = {}
+    for message in ctx.messages:
+        # Conversation history and failed transport attempts cannot authorize new citations.
+        if not ctx.run_id or message.run_id != ctx.run_id:
+            continue
+        for part in message.parts:
+            if (
+                part.part_kind == "tool-return"
+                and part.tool_name in _SEARCH_TOOLS
+                and getattr(part, "outcome", "success") == "success"
+                and isinstance(part.metadata, dict)
+            ):
+                sources.update((s["id"], s) for s in part.metadata.get("tutor_sources", []))
+
+    ids = _REFERENCE.findall(content)
+    link_text = unquote(unescape(re.sub(r"\\([\W_])", r"\1", content)))
+    has_link = any(m.group(1).rstrip("/.,;:!?") for m in _GTN_LINK.finditer(link_text))
+    has_path = re.search(r"(?:training-material/|topics/[\w-]+/tutorials/)", link_text, re.IGNORECASE)
+    remaining = _REFERENCE.sub("", content)
+    misplaced = len(re.findall(f"^{_REFERENCE.pattern}[ \t]*$", content, re.MULTILINE)) != len(ids)
+    fence = ""
+    for line in content.splitlines():
+        if match := re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line):
+            marker, suffix = match.groups()
+            if not fence:
+                fence = marker
+            elif marker[0] == fence[0] and len(marker) >= len(fence) and not suffix.strip():
+                fence = ""
+        elif fence and _REFERENCE.search(line):
+            misplaced = True
+    if (
+        has_link
+        or has_path
+        or misplaced
+        or any(source_id not in sources for source_id in ids)
+        or "[[tutorial" in remaining.lower()
+    ):
+        raise ModelRetry(
+            "Use only [[tutorial:ID]] markers returned by a search in this run, each on its own line outside code blocks; "
+            "Galaxy renders the references. "
+            "Remove authored tutorial URLs, unknown markers, and unsupported tutorial claims. "
+            "If no source was retrieved, give useful general guidance and say you cannot verify a specific tutorial."
+        )
+
+    def render(match: re.Match) -> str:
+        source = sources[match.group(1)]
+        title = _plain_markdown(source["title"])
+        excerpt = _plain_markdown(source["excerpt"])
+        return f"\n\n[{title}](<{source['url']}>)" + (f"\n\n> {excerpt}" if excerpt else "") + "\n\n"
+
+    return _REFERENCE.sub(render, content).strip()
 
 
 class TeachingAssistantAgent(BaseGalaxyAgent):
@@ -74,6 +148,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             self._get_model(),
             deps_type=GalaxyAgentDependencies,
             system_prompt=self.get_system_prompt(),
+            retries=2,
         )
 
         teaching_assistant = self
@@ -82,46 +157,17 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
         def runtime_capabilities() -> str:
             return teaching_assistant._build_capability_context()
 
-        @agent.tool
-        async def search_training_materials(ctx, query: str) -> str:
-            """Search GTN training materials for relevant tutorials."""
-            if teaching_assistant.gtn_db is None:
-                return "Training material search is not available right now."
-            try:
-                results = teaching_assistant.gtn_db.search(query, limit=5)
-            except Exception:
-                log.exception("Training material search failed")
-                return "Training material search failed. No sources were retrieved; tutorial availability is unknown."
-            if not results:
-                return "No matching training materials found."
-            formatted = []
-            for r in results:
-                d = r.to_dict()
-                formatted.append(
-                    f"- **{d['title']}** ({d.get('topic', 'general')})\n"
-                    f"  {d.get('snippet') or d.get('description', '')}\n"
-                    f"  URL: {d.get('url', 'N/A')}"
-                )
-            return f"Found {len(results)} relevant tutorials:\n\n" + "\n".join(formatted)
+        agent.output_validator(_render_tutorial_references)
 
         @agent.tool
-        async def suggest_tutorials(ctx, topic: str) -> str:
+        async def search_training_materials(ctx, query: str) -> str | ToolReturn:
+            """Search GTN training materials for relevant tutorials."""
+            return teaching_assistant._search_tutorials(query, limit=5)
+
+        @agent.tool
+        async def suggest_tutorials(ctx, topic: str) -> str | ToolReturn:
             """Suggest an ordered set of tutorials for a topic, easiest first."""
-            if teaching_assistant.gtn_db is None:
-                return "Tutorial search is not available right now."
-            try:
-                results = teaching_assistant.gtn_db.search(topic, limit=8)
-            except Exception:
-                log.exception("Tutorial search failed")
-                return "Tutorial search failed. No sources were retrieved; tutorial availability is unknown."
-            if not results:
-                return f"No tutorials found for '{topic}'."
-            difficulty_order = {"introductory": 0, "beginner": 0, "intermediate": 1, "advanced": 2}
-            ordered = sorted(results, key=lambda r: difficulty_order.get((r.difficulty or "").lower(), 1))
-            formatted = []
-            for i, r in enumerate(ordered, start=1):
-                formatted.append(f"{i}. **{r.title}** (difficulty: {r.difficulty or 'unknown'})\n  URL: {r.url}")
-            return f"Suggested tutorials for '{topic}', easiest first:\n\n" + "\n".join(formatted)
+            return teaching_assistant._search_tutorials(topic, limit=8, easiest_first=True)
 
         @agent.tool
         async def check_user_context(ctx) -> str:
@@ -253,6 +299,48 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
 
         return agent
 
+    def _search_tutorials(self, query: str, limit: int, easiest_first: bool = False) -> str | ToolReturn:
+        if self.gtn_db is None:
+            return "Training material search is not available right now."
+        try:
+            results = self.gtn_db.search(query, limit=limit)
+            if easiest_first:
+                difficulty_order = {"introductory": 0, "beginner": 0, "intermediate": 1, "advanced": 2}
+                results = sorted(results, key=lambda r: difficulty_order.get((r.difficulty or "").lower(), 1))
+            sources = []
+            for result in results:
+                record = result.to_dict()
+                url = record.get("url", "")
+                parsed = urlsplit(url)
+                if (
+                    parsed.scheme != "https"
+                    or parsed.netloc != "training.galaxyproject.org"
+                    or re.search(r"[\s<>]", url)
+                    or not record.get("title")
+                ):
+                    continue
+                sources.append(
+                    {
+                        "id": uuid4().hex[:12],
+                        "title": record["title"],
+                        "url": url,
+                        "excerpt": record.get("snippet") or record.get("description", ""),
+                        "difficulty": result.difficulty or "unknown",
+                    }
+                )
+        except Exception:
+            log.exception("Training material search failed")
+            return "Training material search failed. No sources were retrieved; tutorial availability is unknown."
+        if not results:
+            return "No matching training materials found. This does not establish that no tutorial exists."
+        if not sources:
+            return "Search returned no usable tutorial references. Tutorial availability is unknown."
+        # URLs stay in application metadata; the model selects records instead of writing links.
+        return ToolReturn(
+            return_value={"sources": [{k: v for k, v in source.items() if k != "url"} for source in sources]},
+            metadata={"tutor_sources": sources},
+        )
+
     def get_system_prompt(self) -> str:
         """Get system prompt with dynamic learning context injected."""
         prompt_path = Path(__file__).parent / "prompts" / "teaching_assistant.md"
@@ -323,7 +411,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
     def _get_fallback_content(self) -> str:
         """Tutor-specific fallback message."""
         return (
-            "I'm having trouble connecting to the AI service right now. "
+            "I couldn't produce a reliable answer to that request. "
             "In the meantime, you can explore tutorials at "
             "https://training.galaxyproject.org/ or ask your question "
             "in task mode for a direct answer."

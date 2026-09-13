@@ -1,6 +1,7 @@
 """Unit tests for the Teaching Assistant agent and learning state management."""
 
 import json
+from types import SimpleNamespace
 from unittest import mock
 
 import pytest
@@ -13,7 +14,10 @@ from galaxy.agents import (
 )
 from galaxy.agents.base import JOB_LOG_EXCERPT_CHARS
 from galaxy.agents.registry import build_default_registry
-from galaxy.agents.teaching_assistant import TeachingAssistantAgent
+from galaxy.agents.teaching_assistant import (
+    _render_tutorial_references,
+    TeachingAssistantAgent,
+)
 
 agent_registry = build_default_registry()
 from galaxy.managers.learning_state import (
@@ -187,6 +191,48 @@ class TestTeachingAssistantAgent:
         assert "search failed" in result
         assert "availability is unknown" in result
         assert "private database path" not in result
+
+    def test_source_records_preserve_distinct_excerpts_and_escape_markdown(self):
+        agent = TeachingAssistantAgent(self.deps)
+        record = {"title": "Quality [control]", "url": "https://training.galaxyproject.org/qc"}
+        first = mock.Mock(difficulty="introductory")
+        first.to_dict.return_value = {**record, "snippet": "First excerpt."}
+        second = mock.Mock(difficulty="advanced")
+        second.to_dict.return_value = {
+            **record,
+            "snippet": "[invented](https://example.org) <b>text</b> https://example.org [[tutorial:000000000000]]",
+        }
+        agent.gtn_db = mock.Mock()
+        agent.gtn_db.search.return_value = [second, first]
+        result = agent._search_tutorials("QC", 8, easiest_first=True)
+        sources = result.metadata["tutor_sources"]
+        assert sources[0]["excerpt"] == "First excerpt."
+        assert sources[0]["id"] != sources[1]["id"]
+        part = SimpleNamespace(part_kind="tool-return", tool_name="suggest_tutorials", metadata=result.metadata)
+        ctx = SimpleNamespace(run_id="current", messages=[SimpleNamespace(run_id="current", parts=[part])])
+        rendered = _render_tutorial_references(ctx, f"[[tutorial:{sources[1]['id']}]]")
+        assert "[Quality \\[control\\]](<https://training.galaxyproject.org/qc>)" in rendered
+        assert "[invented](" not in rendered
+        assert "<b>" not in rendered
+        assert "https://example.org" not in rendered
+        assert "[[tutorial:" not in rendered
+        marker = f"[[tutorial:{sources[0]['id']}]]"
+        rendered = _render_tutorial_references(ctx, marker + "\nMy own explanation.")
+        assert "> First excerpt\\.\n\n\nMy own explanation." in rendered
+        for misplaced in [f"See {marker}", f"```\n{marker}\n```", f"    {marker}"]:
+            with pytest.raises(pydantic_ai.ModelRetry):
+                _render_tutorial_references(ctx, misplaced)
+
+    @pytest.mark.parametrize("tool_name, run_id", [("recommend_tools", "current"), ("suggest_tutorials", None)])
+    def test_only_current_search_records_authorize_references(self, tool_name, run_id):
+        part = SimpleNamespace(
+            part_kind="tool-return",
+            tool_name=tool_name,
+            metadata={"tutor_sources": [{"id": "000000000000", "title": "Invented"}]},
+        )
+        ctx = SimpleNamespace(run_id=run_id, messages=[SimpleNamespace(run_id=run_id, parts=[part])])
+        with pytest.raises(pydantic_ai.ModelRetry):
+            _render_tutorial_references(ctx, "[[tutorial:000000000000]]")
 
 
 class TestLearningStateManager:

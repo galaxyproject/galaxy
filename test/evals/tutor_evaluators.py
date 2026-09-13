@@ -66,6 +66,17 @@ class TutorEvidence(Evaluator[dict, dict, dict]):
         for call in calls:
             if call.get("name") in _SEARCH_TOOLS and call.get("status") == "returned":
                 # Specialist model prose is not an authoritative source of tutorial references.
+                if isinstance(call.get("result"), dict):
+                    for source in call.get("sources", []):
+                        visible = {k: v for k, v in source.items() if k != "url"}
+                        if visible in call["result"].get("sources", []) and any(
+                            source.get("url") == record.get("url")
+                            and source.get("title") == record.get("title")
+                            and source.get("excerpt") == (record.get("snippet") or record.get("description", ""))
+                            for record in attempts[-1]["retrieved_materials"]
+                        ):
+                            supported.update(_urls(source["url"]))
+                # Preserve the original evidence format for frozen calibration answers and replays.
                 for line in str(call.get("result", "")).splitlines():
                     if line.strip().startswith("URL:"):
                         supported.update(_urls(line) & retrieved)

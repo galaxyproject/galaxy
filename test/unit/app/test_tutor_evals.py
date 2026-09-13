@@ -90,7 +90,7 @@ async def test_tutor_receives_current_capabilities_with_history(search_available
     [
         ("search_unavailable", "not available"),
         ("search_empty", "No matching"),
-        ("search_qc", QC_URL),
+        ("search_qc", "Quality Control"),
     ],
 )
 async def test_tutor_records_actual_search_results(scenario, expected):
@@ -107,7 +107,7 @@ async def test_tutor_records_actual_search_results(scenario, expected):
     call = result["attempts"][0]["tool_calls"][0]
     assert call["id"] == "search-1"
     assert call["status"] == "returned"
-    assert expected in call["result"]
+    assert expected in str(call["result"])
     assert result["environment"]["tool_execution_enabled"] is False
 
 
@@ -134,7 +134,7 @@ async def test_tutor_capture_keeps_retries_separate():
             raise ConnectionError("temporary connection failure")
         if not any(p.part_kind == "tool-return" for m in messages for p in m.parts):
             return ModelResponse(parts=[ToolCallPart("search_training_materials", {"query": "QC"}, "search-2")])
-        return ModelResponse(parts=[TextPart(f"See {QC_URL}")])
+        return ModelResponse(parts=[TextPart(selected_reference(messages))])
 
     result = await run_tutor_case(tutor_deps(model), {"query": "Find QC training", "scenario": "search_qc"})
 
@@ -142,7 +142,7 @@ async def test_tutor_capture_keeps_retries_separate():
     assert len(result["attempts"]) == 2
     assert result["attempts"][0]["completed"] is False
     assert result["attempts"][1]["completed"] is True
-    assert QC_URL in result["attempts"][1]["tool_calls"][0]["result"]
+    assert QC_URL == result["attempts"][1]["tool_calls"][0]["sources"][0]["url"]
 
 
 async def test_tutor_fallback_is_incomplete():
@@ -180,8 +180,136 @@ async def test_tutor_concurrent_cases_do_not_share_evidence():
         *(run_tutor_case(tutor_deps(model), {"query": "Find QC", "scenario": s}) for s in ("search_qc", "search_empty"))
     )
 
-    assert QC_URL in results[0]["attempts"][0]["tool_calls"][0]["result"]
-    assert QC_URL not in results[1]["attempts"][0]["tool_calls"][0]["result"]
+    assert QC_URL == results[0]["attempts"][0]["tool_calls"][0]["sources"][0]["url"]
+    assert not results[1]["attempts"][0]["tool_calls"][0].get("sources")
+
+
+def selected_reference(messages):
+    source = next(
+        part.content["sources"][0]
+        for message in messages
+        for part in message.parts
+        if part.part_kind == "tool-return" and isinstance(part.content, dict) and "sources" in part.content
+    )
+    assert "url" not in source
+    return f"[[tutorial:{source['id']}]]"
+
+
+@pytest.mark.parametrize(
+    "tool_name, argument", [("search_training_materials", "query"), ("suggest_tutorials", "topic")]
+)
+async def test_tutor_renders_source_records_and_evaluator_checks_provenance(tool_name, argument):
+    def model(messages, info):
+        if not any(p.part_kind == "tool-return" for m in messages for p in m.parts):
+            return ModelResponse(parts=[ToolCallPart(tool_name, {argument: "QC"}, "search")])
+        return ModelResponse(parts=[TextPart("Start here:\n\n" + selected_reference(messages))])
+
+    result = await run_tutor_case(tutor_deps(model), {"query": "Find QC", "scenario": "search_qc"})
+    assert f"[Quality Control](<{QC_URL}>)" in result["content"]
+    assert r"> Assess short\-read FASTQ quality" in result["content"]
+    assert "[[tutorial:" not in result["content"]
+    assert "[[tutorial:" in result["attempts"][0]["model_responses"][-1]
+    ctx = SimpleNamespace(inputs={"scenario": "search_qc"}, output=result, metadata={})
+    assert TutorEvidence().evaluate(ctx)["CitationsSupported"].value
+    result["attempts"][0]["retrieved_materials"].clear()
+    assert not TutorEvidence().evaluate(ctx)["CitationsSupported"].value
+
+
+@pytest.mark.parametrize(
+    "invalid",
+    [
+        QC_URL,
+        f"[Invented title]({QC_URL}#invented)",
+        "https://TRAINING.GALAXYPROJECT.ORG/invented",
+        "training.galaxyproject.org/invented",
+        "https://training&#46;galaxyproject.org/invented",
+        r"https://training\.galaxyproject.org/invented",
+        "/training-material/topics/sequence-analysis/tutorials/invented/tutorial.html",
+        "[[tutorial:000000000000]]",
+        "[[tutorial:not-a-source]]",
+    ],
+)
+async def test_tutor_corrects_invalid_references_before_delivery(invalid):
+    def model(messages, info):
+        if any(p.part_kind == "retry-prompt" for m in messages for p in m.parts):
+            return ModelResponse(parts=[TextPart("FastQC reports read quality. I cannot verify a tutorial here.")])
+        return ModelResponse(parts=[TextPart(invalid)])
+
+    result = await run_tutor_case(tutor_deps(model), {"query": "Find QC", "scenario": "search_unavailable"})
+    assert result["evidence_complete"]
+    assert "FastQC reports" in result["content"]
+    assert result["attempts"][0]["model_responses"][0] == invalid
+
+
+async def test_tutor_reference_retry_exhaustion_is_incomplete():
+    result = await run_tutor_case(
+        tutor_deps(lambda messages, info: ModelResponse(parts=[TextPart(QC_URL)])),
+        {"query": "Find QC", "scenario": "search_unavailable"},
+    )
+    assert not result["evidence_complete"]
+    assert len(result["attempts"][0]["model_responses"]) == 3
+    assert QC_URL not in result["content"]
+    assert "reliable answer" in result["content"]
+
+
+async def test_tutor_cannot_reuse_sources_from_conversation_history():
+    def model(messages, info):
+        if not any(p.part_kind == "tool-return" for m in messages for p in m.parts):
+            return ModelResponse(parts=[ToolCallPart("search_training_materials", {"query": "QC"}, "search")])
+        return ModelResponse(parts=[TextPart(selected_reference(messages))])
+
+    tutor = _FixtureTutor(_fixture_deps(tutor_deps(model)), "search_qc")
+    first = await tutor.agent.run("Find QC", deps=tutor.deps)
+    assert QC_URL in first.output
+    second = await tutor.process("Show that tutorial again", context={"conversation_history": first.all_messages()})
+    assert second.metadata["fallback"]
+    assert QC_URL not in second.content
+
+
+async def test_tutor_cannot_reuse_sources_from_a_failed_transport_attempt():
+    calls = 0
+    previous = ""
+
+    def model(messages, info):
+        nonlocal calls, previous
+        calls += 1
+        if calls == 1:
+            return ModelResponse(parts=[ToolCallPart("search_training_materials", {"query": "QC"}, "search")])
+        if calls == 2:
+            previous = selected_reference(messages)
+            raise ConnectionError("temporary failure")
+        return ModelResponse(parts=[TextPart(previous)])
+
+    result = await run_tutor_case(tutor_deps(model), {"query": "Find QC", "scenario": "search_qc"})
+    assert len(result["attempts"]) == 2
+    assert result["attempts"][0]["retrieved_materials"]
+    assert not result["attempts"][1]["retrieved_materials"]
+    assert not result["evidence_complete"]
+
+
+async def test_concurrent_runs_on_one_tutor_do_not_share_sources():
+    retrieved = asyncio.Event()
+    previous = ""
+
+    async def model(messages, info):
+        nonlocal previous
+        query = next(p.content for m in messages for p in m.parts if p.part_kind == "user-prompt")
+        if query == "Find QC":
+            if not any(p.part_kind == "tool-return" for m in messages for p in m.parts):
+                return ModelResponse(parts=[ToolCallPart("search_training_materials", {"query": "QC"}, "search")])
+            previous = selected_reference(messages)
+            retrieved.set()
+        else:
+            await retrieved.wait()
+        return ModelResponse(parts=[TextPart(previous)])
+
+    tutor = _FixtureTutor(_fixture_deps(tutor_deps(model)), "search_qc")
+    found, unverified = await asyncio.gather(
+        tutor.process("Find QC"), tutor.process("Reuse a source without searching")
+    )
+    assert QC_URL in found.content
+    assert unverified.metadata["fallback"]
+    assert QC_URL not in unverified.content
 
 
 def evidence_context(content, scenario="search_unavailable", search_return=None):
