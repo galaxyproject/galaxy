@@ -78,7 +78,7 @@
     "name": "supported_qc_tutorial",
     "query": "Find a Galaxy tutorial to help me interpret FastQC results.",
     "scenario": "search_qc",
-    "response": "The GTN Quality Control tutorial covers assessing short-read quality with FastQC: https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html",
+    "response": "The GTN [Quality Control tutorial](https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html) covers assessing short-read quality with FastQC.",
     "search_return": "qc",
     "expected": "pass",
     "source": "Locally reviewed calibration example; educator review pending"

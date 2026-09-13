@@ -189,7 +189,13 @@ corrections remain incomplete, never successful answers.
 and returned to the tutor. Echoed query text and specialist model prose cannot
 authorize citations. A GTN homepage link is allowed as general navigation. These
 checks establish URL provenance, not whether every description of a tutorial is
-correct. The judge sees the actual evidence and separately evaluates grounding,
+correct. When a case requests a tutorial and its fixture returns a source,
+`ReferenceDelivered` requires a usable Markdown link to a retrieved tutorial;
+a raw URL, code block, image, or homepage alone does not satisfy it. Cases with
+empty/unavailable retrieval do not require an invented link. `SourceIdsHidden`
+rejects exposed source identifiers and unfinished markers independently of URL
+provenance. A direct factual answer can explicitly opt out of reference delivery.
+The judge sees the actual evidence and separately evaluates grounding,
 scientific correctness, context, and pedagogy, recording a reason for each.
 Required content and lookup actions are checked only for applicable cases.
 

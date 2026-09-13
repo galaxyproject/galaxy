@@ -9,6 +9,7 @@ from urllib.parse import (
     urlsplit,
 )
 
+from markdown_it import MarkdownIt
 from pydantic import (
     BaseModel,
     Field,
@@ -23,7 +24,15 @@ from pydantic_evals.evaluators import (
 
 from .tutor import JOB_ID
 
-REQUIRED_ASSERTIONS = ("EvidenceComplete", "CitationsSupported", "Grounding", "Correctness", "Context", "Pedagogy")
+REQUIRED_ASSERTIONS = (
+    "EvidenceComplete",
+    "CitationsSupported",
+    "SourceIdsHidden",
+    "Grounding",
+    "Correctness",
+    "Context",
+    "Pedagogy",
+)
 QUALITY_ASSERTIONS = ("Grounding", "Correctness", "Context", "Pedagogy")
 _URL = re.compile(r"https?://[^\s<>\[\]\"`*\u201c\u201d\u2018\u2019]+")
 _SEARCH_TOOLS = {"search_training_materials", "suggest_tutorials"}
@@ -36,6 +45,25 @@ def _urls(text: str) -> set[str]:
 def final_tool_calls(output: dict) -> list[dict]:
     attempts = output.get("attempts") or []
     return attempts[-1].get("tool_calls", []) if attempts and attempts[-1].get("completed") is True else []
+
+
+def _visible_links(content: str) -> set[str]:
+    links = set()
+    # Match the client's Markdown links, excluding code blocks, images, and empty anchors.
+    for token in MarkdownIt(options_update={"html": False}).parse(content):
+        destination = None
+        label = ""
+        for child in token.children or []:
+            if child.type == "link_open":
+                destination = child.attrGet("href")
+                label = ""
+            elif child.type == "link_close":
+                if destination and label.strip():
+                    links.update(_urls(destination))
+                destination = None
+            elif destination and child.type in {"text", "code_inline"}:
+                label += child.content
+    return links
 
 
 class TutorEvidence(Evaluator[dict, dict, dict]):
@@ -62,6 +90,7 @@ class TutorEvidence(Evaluator[dict, dict, dict]):
             return results
         calls = final_tool_calls(output)
         supported = {"https://training.galaxyproject.org"}
+        source_ids = set()
         retrieved = {url for item in attempts[-1]["retrieved_materials"] for url in _urls(item["url"])}
         for call in calls:
             if call.get("name") in _SEARCH_TOOLS and call.get("status") == "returned":
@@ -76,6 +105,8 @@ class TutorEvidence(Evaluator[dict, dict, dict]):
                             for record in attempts[-1]["retrieved_materials"]
                         ):
                             supported.update(_urls(source["url"]))
+                            if source.get("id"):
+                                source_ids.add(source["id"])
                 # Preserve the original evidence format for frozen calibration answers and replays.
                 for line in str(call.get("result", "")).splitlines():
                     if line.strip().startswith("URL:"):
@@ -88,6 +119,28 @@ class TutorEvidence(Evaluator[dict, dict, dict]):
                 f"Unretrieved tutorial URLs: {', '.join(unsupported)}" if unsupported else "No unsupported GTN URLs."
             ),
         )
+        leaked = sorted(
+            source_id
+            for source_id in source_ids
+            if re.search(rf"(?<!\w){re.escape(source_id)}(?!\w)", output["content"])
+        )
+        unfinished_marker = "[[tutorial:" in output["content"]
+        results["SourceIdsHidden"] = EvaluationReason(
+            value=not leaked and not unfinished_marker,
+            reason=(
+                "Unrendered source identifiers in the answer." if leaked or unfinished_marker else "No source ID leak."
+            ),
+        )
+        if (ctx.metadata or {}).get("requires_tutorial_reference", ctx.inputs["scenario"] == "search_qc"):
+            delivered = _visible_links(output["content"]) & (supported - {"https://training.galaxyproject.org"})
+            results["ReferenceDelivered"] = EvaluationReason(
+                value=bool(delivered),
+                reason=(
+                    "A usable link to a retrieved tutorial was delivered."
+                    if delivered
+                    else "The requested retrieved tutorial has no usable link in the answer."
+                ),
+            )
         keywords = (ctx.metadata or {}).get("must_mention") or []
         if keywords:
             missing = [word for word in keywords if word.lower() not in output["content"].lower()]
@@ -195,9 +248,13 @@ def tutor_metadata(proto: dict[str, Any]) -> dict[str, Any]:
         required.append("RequiredContent")
     if proto.get("scenario") in {"search_qc", "search_empty", "failed_job"}:
         required.append("TaskAction")
+    requires_reference = proto.get("requires_tutorial_reference", proto.get("scenario") == "search_qc")
+    if requires_reference:
+        required.append("ReferenceDelivered")
     return {
         "must_mention": proto.get("must_mention", []),
         "mode": proto.get("mode", "direct"),
         "expectation": proto["expectation"],
+        "requires_tutorial_reference": requires_reference,
         "required_assertions": required,
     }

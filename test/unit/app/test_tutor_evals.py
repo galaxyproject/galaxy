@@ -31,6 +31,7 @@ from test.evals.tutor import (
 )
 from test.evals.tutor_evaluators import (
     QUALITY_ASSERTIONS,
+    tutor_metadata,
     TutorEvidence,
     TutorQuality,
 )
@@ -342,6 +343,65 @@ def test_saved_fabricated_urls_fail_without_a_judge(name):
 def test_supported_citation_or_direct_answer_passes(content):
     result = TutorEvidence().evaluate(evidence_context(content, scenario="search_qc", search_return="qc"))
     assert result["CitationsSupported"].value
+
+
+@pytest.mark.parametrize(
+    "content, delivered",
+    [
+        (f"See [Quality Control](<{QC_URL}>).", True),
+        (f"See <{QC_URL}>.", True),
+        (f"See [QC][lesson].\n\n[lesson]: {QC_URL}", True),
+        (f"```\n[Quality Control]({QC_URL})\n```", False),
+        (f"`[Quality Control]({QC_URL})`", False),
+        (f"![Quality Control]({QC_URL})", False),
+        (f"[]({QC_URL})", False),
+        (f'<a href="{QC_URL}">Quality Control</a>', False),
+        (QC_URL, False),
+        ("See [GTN](https://training.galaxyproject.org).", False),
+        ("I found the tutorial.", False),
+    ],
+)
+def test_requested_reference_must_be_a_usable_retrieved_link(content, delivered):
+    ctx = evidence_context(content, scenario="search_qc", search_return="qc")
+    result = TutorEvidence().evaluate(ctx)
+    assert result["CitationsSupported"].value
+    assert result["ReferenceDelivered"].value is delivered
+
+
+def test_reference_requirement_depends_on_the_task():
+    metadata = tutor_metadata({"scenario": "search_qc", "expectation": "Find the tutorial"})
+    assert "ReferenceDelivered" in metadata["required_assertions"]
+    ctx = evidence_context("FastQC reports quality.", scenario="search_qc", search_return="qc")
+    ctx.metadata = tutor_metadata(
+        {"scenario": "search_qc", "expectation": "Explain FastQC", "requires_tutorial_reference": False}
+    )
+    assert "ReferenceDelivered" not in TutorEvidence().evaluate(ctx)
+    assert "ReferenceDelivered" not in ctx.metadata["required_assertions"]
+    for scenario in ("search_empty", "search_unavailable"):
+        ctx = evidence_context("No tutorial could be verified.", scenario=scenario)
+        assert "ReferenceDelivered" not in TutorEvidence().evaluate(ctx)
+
+
+async def test_raw_source_id_leak_fails_even_when_provenance_passes():
+    def model(messages, info):
+        if not any(p.part_kind == "tool-return" for m in messages for p in m.parts):
+            return ModelResponse(parts=[ToolCallPart("search_training_materials", {"query": "QC"}, "search")])
+        marker = selected_reference(messages)
+        return ModelResponse(parts=[TextPart(f"The tutorial source ID is `{marker[11:-2]}`.")])
+
+    output = await run_tutor_case(tutor_deps(model), {"query": "Find QC", "scenario": "search_qc"})
+    ctx = SimpleNamespace(inputs={"scenario": "search_qc"}, output=output, metadata={})
+    result = TutorEvidence().evaluate(ctx)
+    assert result["CitationsSupported"].value
+    assert not result["SourceIdsHidden"].value
+    assert not result["ReferenceDelivered"].value
+
+
+def test_unretrieved_link_cannot_satisfy_reference_delivery():
+    ctx = evidence_context(f"[Invented]({QC_URL})", scenario="search_qc")
+    result = TutorEvidence().evaluate(ctx)
+    assert not result["CitationsSupported"].value
+    assert not result["ReferenceDelivered"].value
 
 
 def test_specialist_prose_cannot_authorize_a_tutorial_url():
