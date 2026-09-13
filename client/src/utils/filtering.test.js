@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { nameMatchScore } from "@/utils/filtering";
 
 const filterTexts = [
     "name:'name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state:success extension:ext tag:first deleted:False visible:'TRUE'",
@@ -234,6 +235,60 @@ describe("filtering", () => {
         filterTexts.forEach((filterText) => {
             expect(Object.fromEntries(HistoryFilters.getFiltersForText(filterText))).toEqual(parsedFilters);
         });
+    });
+    test("name filter matches words in any separator", () => {
+        const item = { name: "UMI tools dedup", deleted: false, visible: true };
+        // Whichever separator the user types, the item still matches.
+        ["umi-tools", "umi tools", "umi_tools", "UMI-Tools", "umi.tools"].forEach((filterText) => {
+            const filters = HistoryFilters.getFiltersForText(filterText);
+            expect(HistoryFilters.testFilters(filters, { ...item })).toBe(true);
+        });
+        // Each word only has to appear somewhere, so a truncated word still hits.
+        expect(HistoryFilters.testFilters(HistoryFilters.getFiltersForText("um-tool"), { ...item })).toBe(true);
+        // Every word has to appear though, so the search still narrows.
+        expect(HistoryFilters.testFilters(HistoryFilters.getFiltersForText("umi bowtie"), { ...item })).toBe(false);
+        expect(HistoryFilters.testFilters(HistoryFilters.getFiltersForText("umi dedup"), { ...item })).toBe(true);
+        // A trailing separator is a normal state while typing, and behaves as if
+        // it were not there rather than falling back to a literal match.
+        expect(HistoryFilters.testFilters(HistoryFilters.getFiltersForText("umi-"), { ...item })).toBe(true);
+        // A query of nothing but separators matches literally, so it matches
+        // nothing here, rather than an empty term list matching every item.
+        expect(HistoryFilters.testFilters(HistoryFilters.getFiltersForText("___"), { ...item })).toBe(false);
+    });
+    test("name filter tolerates separators typed either way", () => {
+        const item = { name: "UMI-tools deduplicate", deleted: false, visible: true };
+        // The name spells out a separator the query leaves out, and vice versa.
+        ["umitools", "umi-tools", "umi tools", "UMI_Tools"].forEach((filterText) => {
+            const filters = HistoryFilters.getFiltersForText(filterText);
+            expect(HistoryFilters.testFilters(filters, { ...item })).toBe(true);
+        });
+    });
+    test("name filter tolerates a misspelling", () => {
+        const item = { name: "UMI-tools deduplicate", deleted: false, visible: true };
+        // The server matches these with trigram similarity; the local re-filter
+        // has to accept them too or it would discard the rows it was sent.
+        ["umitoos", "umitols", "umi tols"].forEach((filterText) => {
+            const filters = HistoryFilters.getFiltersForText(filterText);
+            expect(HistoryFilters.testFilters(filters, { ...item })).toBe(true);
+        });
+        // Still narrows: an unrelated word of similar length does not match.
+        expect(HistoryFilters.testFilters(HistoryFilters.getFiltersForText("bowtie2"), { ...item })).toBe(false);
+    });
+    test("ranks literal matches above similar ones", () => {
+        const q = "mrd2020-022";
+        // The case from the report: a name containing the query must outrank a
+        // near-miss that only matches by edit distance.
+        expect(nameMatchScore("MRD2020-022_new_round3", q)).toBeGreaterThan(nameMatchScore("MRD2020-023", q));
+        // Exact beats prefix beats substring beats separator-insensitive.
+        expect(nameMatchScore("MRD2020-022", q)).toBeGreaterThan(nameMatchScore("MRD2020-022_new_round3", q));
+        expect(nameMatchScore("run MRD2020-022 final", q)).toBeGreaterThan(nameMatchScore("mrd2020 022", q));
+        // A name that does not match at all scores zero.
+        expect(nameMatchScore("bowtie run", q)).toBe(0);
+    });
+    test("name filter still sends the raw value to the backend", () => {
+        // The terms are split server-side too, so the query key is unchanged.
+        const queryDict = HistoryFilters.getQueryDict("umi-tools");
+        expect(queryDict["name-contains"]).toBe("umi-tools");
     });
     test("named tag (hash) conversion", () => {
         const filters = HistoryFilters.getFiltersForText("tag:#test");

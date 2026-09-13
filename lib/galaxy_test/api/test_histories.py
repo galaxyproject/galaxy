@@ -345,6 +345,35 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 0
 
+    def test_index_search_by_tag_and_multiple_terms(self):
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            unique_id = uuid4()
+            tagged_id = self._create_history(f"Tagged history_{unique_id}")["id"]
+            self._update(tagged_id, {"tags": [f"alpha_{unique_id}", f"beta_{unique_id}"]})
+            self._create_history(f"Untagged history_{unique_id}")
+
+            # A tag matches even though it appears nowhere in the name.
+            data = dict(search=f"tag:alpha_{unique_id}", show_published=False)
+            assert len(self._get("histories", data=data).json()) == 1
+
+            # Several tag terms all have to match the same history.
+            data = dict(search=f"tag:alpha_{unique_id} tag:beta_{unique_id}", show_published=False)
+            assert len(self._get("histories", data=data).json()) == 1
+            data = dict(search=f"tag:alpha_{unique_id} tag:missing_{unique_id}", show_published=False)
+            assert len(self._get("histories", data=data).json()) == 0
+
+            # A history carrying several tags is returned once, not once per tag.
+            data = dict(search=f"Tagged history_{unique_id}", show_published=False)
+            assert len(self._get("histories", data=data).json()) == 1
+
+            # Free text matches against the tags as well as the name.
+            data = dict(search=f"alpha_{unique_id}", show_published=False)
+            assert len(self._get("histories", data=data).json()) == 1
+
+            # Every raw term has to match, so an unrelated one excludes the rest.
+            data = dict(search=f"history_{unique_id} nomatch_{unique_id}", show_published=False)
+            assert len(self._get("histories", data=data).json()) == 0
+
             # Archived public histories should be included when filtering by show_published and show_archived
             data = dict(search="is:published", show_archived=True)
             index_response = self._get("histories", data=data).json()

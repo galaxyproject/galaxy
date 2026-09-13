@@ -38,6 +38,9 @@ import {
 } from "@/watch/watchHistory";
 
 const PAGINATION_LIMIT = 10;
+/** Page size when pulling the whole list in for client-side searching. Larger
+ * than PAGINATION_LIMIT because this is one deliberate load, not a scroll. */
+const LOAD_ALL_LIMIT = 500;
 const isLoadingHistory = new Set<string>();
 const retryCounts: { [key: string]: number } = {};
 const CONTENT_STATS_KEYS = ["size", "contents_active", "update_time"] as const;
@@ -45,6 +48,9 @@ const CONTENT_STATS_KEYS = ["size", "contents_active", "update_time"] as const;
 export const useHistoryStore = defineStore("historyStore", () => {
     const historiesLoading = ref(false);
     const historiesOffset = ref(0);
+    /** Whether the user's full history list is in the store, so searching can
+     * be answered locally. Reset when the set of histories changes. */
+    const allHistoriesLoaded = ref(false);
     const totalHistoryCount = ref(0);
     const pinnedHistories = useUserLocalStorage<{ id: string }[]>("history-store-pinned-histories", []);
     const storedCurrentHistoryId = ref<string | null>(null);
@@ -349,6 +355,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
     async function handleTotalCountChange(count = 0, reduction = false) {
         const adjustment = !reduction ? count : -count;
         historiesOffset.value = Math.max(0, historiesOffset.value + adjustment);
+        // The set of histories changed, so the locally held copy is no longer
+        // known to be complete. Once it is complete the scroll pagination stops
+        // calling this, so a full list is not repeatedly discarded.
+        allHistoriesLoaded.value = false;
         await loadTotalHistoryCount();
     }
 
@@ -360,6 +370,42 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
 
         totalHistoryCount.value = data;
+    }
+
+    /** Loads every history the user owns, so searching them can be done in the
+     * browser instead of asking the server on every change of the search text.
+     *
+     * Fetched in bounded pages rather than one request: a search previously
+     * omitted the limit entirely, so a single response had to carry every
+     * match at once. Matching a few thousand names locally is immediate, and
+     * the list is fetched once rather than once per search.
+     */
+    async function loadAllHistories() {
+        if (allHistoriesLoaded.value || historiesLoading.value) {
+            return;
+        }
+        setHistoriesLoading(true);
+        try {
+            let offset = 0;
+            for (;;) {
+                const page = (await getHistoryList(offset, LOAD_ALL_LIMIT)) as HistorySummary[];
+                setHistories(page);
+                offset += page.length;
+                // A short page means there is nothing left; going by the total
+                // count instead would loop forever if the two ever disagreed.
+                if (page.length < LOAD_ALL_LIMIT) {
+                    break;
+                }
+            }
+            // Scroll pagination continues from here rather than refetching.
+            historiesOffset.value = Math.max(historiesOffset.value, offset);
+            allHistoriesLoaded.value = true;
+            await loadTotalHistoryCount();
+        } catch (error) {
+            rethrowSimple(error);
+        } finally {
+            setHistoriesLoading(false);
+        }
     }
 
     /** TODO:
@@ -663,6 +709,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         loadCurrentHistory,
         loadCurrentHistoryId,
         loadHistories,
+        loadAllHistories,
         loadHistoryById,
         secureHistory,
         updateHistory,
@@ -670,6 +717,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         unarchiveHistoryById,
         historiesLoading,
         historiesOffset,
+        allHistoriesLoaded,
         totalHistoryCount,
         updateContentStats,
     };
