@@ -41,6 +41,18 @@ class TestFrontendLogin(PlaywrightTestCase):
     def test_change_password(self):
         self._create_and_login()
 
+    def test_forgot_password(self):
+        user = random_name(prefix="shduser")
+        email = f"{user}@galaxyproject.org"
+        self.create(email=email, password=TEST_PASSWORD, username=user)
+        self.visit_url("/login")
+        page = self._page
+        expect(page.locator(Locators.forgot_password_link)).to_be_visible()
+        page.click(Locators.forgot_password_link)
+        self._browser.fill_form_value("forgot_password", "email", email)
+        self._browser.submit_form_with_name("forgot_password", "reset_password_button")
+        expect(page.locator(Locators.reset_password_sent)).to_be_visible()
+
     def _create_and_login(self):
         user = random_name(prefix="shduser")
         email = f"{user}@galaxyproject.org"

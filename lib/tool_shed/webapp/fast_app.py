@@ -135,6 +135,8 @@ FRONT_END_ROUTES = [
     "/user/api_key",
     "/user/change_password",
     "/user/change_password_success",
+    "/user/forgot_password",
+    "/user/reset_password",
     "/view/{username}",
     "/view/{username}/{repository_name}",
     "/view/{username}/{repository_name}/{changeset_revision}",
