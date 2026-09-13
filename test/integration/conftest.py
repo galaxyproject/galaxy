@@ -9,6 +9,10 @@ import pytest
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
+from galaxy.celery import (
+    celery_app,
+    CELERY_APP_DEFAULTS,
+)
 from galaxy.tool_util.deps.mulled.util import NAMESPACE_HAS_REPO_NAME_KEY
 from galaxy_test import shard
 from galaxy_test.conftest import pytest_plugins  # noqa: F401
@@ -78,31 +82,25 @@ def celery_includes():
     return ["galaxy.celery.tasks"]
 
 
-# Integration instances enable Celery tasks, which sends dataset uploads
-# through a Celery chain instead of the job handler. Class-based tests get the
-# session worker through UsesCeleryTasks' autouse fixtures, but those never
-# attach to the module-level tool tests that integration_tool_runner generates,
-# so such a test only worked when a class-based test happened to run earlier in
-# the same session. Start the worker for every integration session, as the API
-# test conftest does.
+# UsesCeleryTasks' autouse fixtures never attach to the module-level tool tests
+# that integration_tool_runner generates, so such a test only worked when a
+# class-based test happened to run earlier in the same session.
 @pytest.fixture(autouse=True, scope="session")
 def request_celery_app(celery_session_app, celery_config):
     try:
         yield
     finally:
         if os.environ.get("GALAXY_TEST_EXTERNAL") is None:
-            from galaxy.celery import celery_app
-
             celery_app.fork_pool.stop()
             celery_app.fork_pool.join(timeout=5)
 
 
 @pytest.fixture(autouse=True, scope="session")
-def request_celery_worker(celery_session_worker, celery_config, celery_worker_parameters):
+def request_celery_worker(celery_session_worker):
     yield
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def celery_worker_parameters():
     return {
         "queues": ("galaxy.internal", "galaxy.external"),
@@ -111,10 +109,7 @@ def celery_worker_parameters():
 
 @pytest.fixture(scope="session")
 def celery_parameters():
-    return {
-        "task_create_missing_queues": True,
-        "task_default_queue": "galaxy.internal",
-    }
+    return CELERY_APP_DEFAULTS
 
 
 @pytest.fixture
