@@ -55,6 +55,7 @@ FileSourceTemplateType = Literal[
     "omero",
     "ssh",
     "ckan",
+    "arc",
 ]
 
 FileSourceTemplateAlertVariant = Literal[
@@ -542,6 +543,22 @@ class CKANFileSourceConfiguration(StrictModel):
     writable: bool = True
 
 
+class ARCFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["arc"]
+    base_url: str | TemplateExpansion
+    token: str | TemplateExpansion | None = None
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class ARCFileSourceConfiguration(StrictModel):
+    type: Literal["arc"]
+    base_url: str
+    token: str | None = None
+    writable: bool = False
+
+
 FileSourceTemplateConfiguration = Annotated[
     PosixFileSourceTemplateConfiguration
     | S3FSFileSourceTemplateConfiguration
@@ -566,7 +583,8 @@ FileSourceTemplateConfiguration = Annotated[
     | MaveDBFileSourceTemplateConfiguration
     | OmeroFileSourceTemplateConfiguration
     | SshFileSourceTemplateConfiguration
-    | CKANFileSourceTemplateConfiguration,
+    | CKANFileSourceTemplateConfiguration
+    | ARCFileSourceTemplateConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -594,7 +612,8 @@ FileSourceConfiguration = Annotated[
     | MaveDBFileSourceConfiguration
     | OmeroFileSourceConfiguration
     | SshFileSourceConfiguration
-    | CKANFileSourceConfiguration,
+    | CKANFileSourceConfiguration
+    | ARCFileSourceConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -683,6 +702,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "omero": OmeroFileSourceConfiguration,
     "ssh": SshFileSourceConfiguration,
     "ckan": CKANFileSourceConfiguration,
+    "arc": ARCFileSourceConfiguration,
 }
 
 

@@ -13271,7 +13271,8 @@ export interface components {
                 | "mavedb"
                 | "omero"
                 | "ssh"
-                | "ckan";
+                | "ckan"
+                | "arc";
             /** Variables */
             variables?:
                 | (
@@ -26037,7 +26038,8 @@ export interface components {
                 | "mavedb"
                 | "omero"
                 | "ssh"
-                | "ckan";
+                | "ckan"
+                | "arc";
             /** Uri Root */
             uri_root: string;
             /**

@@ -390,6 +390,9 @@ class ConditionalDependencies(BaseConditionalDependencies):
     def check_mavedb_fsspec(self):
         return "mavedb" in self.file_sources
 
+    def check_arcfs_fsspec(self):
+        return "arc" in self.file_sources
+
 
 def strip_comment(line):
     # lifted from https://github.com/tox-dev/tox/commit/3c6b4f204e89852c4b7536b246a66d20be6d39ec
