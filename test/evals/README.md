@@ -195,8 +195,21 @@ a raw URL, code block, image, or homepage alone does not satisfy it. Cases with
 empty/unavailable retrieval do not require an invented link. `SourceIdsHidden`
 rejects exposed source identifiers and unfinished markers independently of URL
 provenance. A direct factual answer can explicitly opt out of reference delivery.
-The judge sees the actual evidence and separately evaluates grounding,
-scientific correctness, context, and pedagogy, recording a reason for each.
+The default judge reviews each response paragraph for factual claims and
+actionable instructions. It quotes each claim, identifies the evidence used,
+and decides whether it is supported, unsupported, contradicted, or unresolved.
+The application derives grounding, correctness, and context failures from those
+claims; the judge also reviews context and pedagogy across the whole answer.
+One failed claim cannot be offset by a good teaching style. `JudgmentComplete`
+requires coverage of every paragraph, valid quotes/evidence IDs, and no unresolved
+judgments. Invalid structure gets one bounded correction attempt, then an error.
+The full claim review is retained in the JSON `ClaimReview` label.
+
+`tutor-reference-facts.json` supplies sourced scientific and Galaxy UI facts to
+the judge. These facts do not establish which tools are installed, what learner
+data contains, or what the tutor retrieved or executed. Evidence-ID and paragraph
+validation cannot prove semantic entailment or that the judge extracted every
+claim; calibration and independent review remain necessary.
 Required content and lookup actions are checked only for applicable cases.
 
 The saved September 12 answers exposed a judge that awarded full scores to
@@ -226,11 +239,28 @@ loads both. `--labels reviewed` selects the labelled subset for a regression gat
 the default includes unresolved examples, whose missing reference verdicts prevent
 a successful calibration exit. They are never silently treated as good answers.
 
-`CalibrationMatch` compares the evaluator's decisions with reference labels;
-`FalseAcceptance` counts approvals of known failures, and `FalseRejection` counts
-rejections of valid examples. A disagreement or incomplete judgment makes the
-calibration CLI fail. The examples were reviewed during development and still
-need educator review and a separate held-out set. Agreement on this small set
+`--judge-style legacy` replays the former whole-answer rubric for comparison;
+`--judge-style claims` is the default. Experiment metadata records judge version,
+corpus hashes and repetition count. Keep answers and evidence fixed when comparing
+judges; keep the judge fixed when comparing tutor changes.
+
+`CalibrationMatch` compares the evaluator's dimensions and overall decision with
+reference labels. Captured failures also require detection of their annotated
+critical claim in the expected dimension; rejecting a different part of the
+answer does not satisfy that check. Critical-claim detection uses quoted span
+overlap, so inspect disagreements instead of treating it as semantic proof.
+
+Markdown and JSON report whole-answer false acceptance over **all known bad
+answers**, false rejection over **all known good answers**, per-dimension errors,
+and critical-claim detection. Unresolved judgments and execution failures remain
+in class denominators and are shown separately; a zero error rate with missing
+coverage is not success. Missing reference labels are separate from a judge's
+own uncertainty. A disagreement exits 1; an unresolved or incomplete judgment
+exits 2. Calibration latency reflects replay, not inference time; absent usage
+instrumentation cannot establish judge token cost.
+
+The examples were reviewed during development and still need educator review
+and a separate held-out set. Agreement on this small set
 does not establish general judge reliability, independent validation when the
 candidate and judge are the same model, or learning effectiveness.
 

@@ -42,10 +42,15 @@ from pydantic_evals.reporting import (
 )
 
 from galaxy.agents.base import GalaxyAgentDependencies
+from .calibration_report import (
+    render_calibration_summary,
+    summarize_calibration,
+)
 from .judge import build_judge_model
 from .pricing import model_cost
 from .specs import SPECS
 from .tasks import make_deps
+from .tutor_claims import review_version
 
 DepsFactory = Callable[[str, str, str], GalaxyAgentDependencies]
 
@@ -68,6 +73,9 @@ def case_verdict(result: DatasetResult, case) -> tuple[str, list[str]]:
     reasons = [f.error_message for f in case.evaluator_failures]
     if case.evaluator_failures:
         return "incomplete", reasons
+    answer = case.labels.get("AnswerVerdict")
+    if answer is not None and answer.value in {"incomplete", "unresolved"}:
+        return "incomplete", [f"Answer judgment is {answer.value}."]
     if required is not None or result.primary_score == "RequiredChecks":
         if not required:
             return "incomplete", ["No required checks were declared."]
@@ -76,7 +84,7 @@ def case_verdict(result: DatasetResult, case) -> tuple[str, list[str]]:
             return "incomplete", [f"Missing checks: {', '.join(missing)}"]
         failed = [name for name in required if case.assertions[name].value is not True]
         reasons = [f"{name}: {case.assertions[name].reason or 'failed'}" for name in failed]
-        if "EvidenceComplete" in failed:
+        if "EvidenceComplete" in failed or "JudgmentComplete" in failed:
             return "incomplete", reasons
         return ("fail" if failed else "pass"), reasons
     primary = case.scores.get(result.primary_score)
@@ -512,6 +520,9 @@ def render_markdown(
     if baseline:
         lines.append(_render_diff_section(all_results, baseline))
     for results in by_dataset.values():
+        for result in results:
+            if result.dataset == "tutor_calibration":
+                lines.append(render_calibration_summary(result.report))
         lines.append(_render_dataset_section(results))
     return "\n".join(lines)
 
@@ -533,6 +544,15 @@ def _render_diff_section(
         ds_name, model = key
         if new_result.primary_score != base_index[key].primary_score:
             lines += [f"{ds_name} | {model}: scoring changed; baseline is not comparable.", ""]
+            any_change = True
+            continue
+        old_experiment = base_index[key].report.experiment_metadata or {}
+        new_experiment = new_result.report.experiment_metadata or {}
+        if any(
+            old_experiment.get(name) != new_experiment.get(name)
+            for name in ("judge_model", "judge_version", "examples")
+        ):
+            lines += [f"{ds_name} | {model}: judge or corpus changed; baseline is not comparable.", ""]
             any_change = True
             continue
         if new_result.report.report_evaluator_failures or base_index[key].report.report_evaluator_failures:
@@ -599,6 +619,9 @@ def _serialize_results(all_results: list["DatasetResult"]) -> str:
                 "model": r.model,
                 "primary_score": r.primary_score,
                 "report": EvaluationReportAdapter.dump_python(r.report, mode="json"),
+                **(
+                    {"calibration_summary": summarize_calibration(r.report)} if r.dataset == "tutor_calibration" else {}
+                ),
                 "usage": {
                     "per_call": r.usage,
                     "totals": totals,
@@ -749,6 +772,8 @@ async def run_eval_suite(
                 max_concurrency=max_concurrency,
                 repeat=repeat,
             )
+            if ds_name in {"tutor_socratic", "tutor_variants"}:
+                report.experiment_metadata = {"judge_model": judge_model_name, "judge_version": review_version()}
             report.print(include_input=False, include_output=False)
             all_results.append(
                 DatasetResult(

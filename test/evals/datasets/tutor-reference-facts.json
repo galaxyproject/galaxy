@@ -1,0 +1,190 @@
+{
+    "version": 1,
+    "scope": "Reference facts for judging correctness; these do not establish what the tutor retrieved, which tools are installed, or any learner data.",
+    "facts": [
+        {
+            "id": "fastqc_is_read_only_diagnostic",
+            "fact": "FastQC performs quality-control analyses and produces reports; it does not repair, trim, filter, or rewrite the input reads.",
+            "sources": [
+                {
+                    "revision_or_access_date": "8559b907",
+                    "repository": "galaxyproject/tools-iuc",
+                    "path": "tools/fastqc/rgFastQC.xml"
+                },
+                {
+                    "uri": "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/",
+                    "revision_or_access_date": "2026-09-12"
+                }
+            ]
+        },
+        {
+            "id": "fastqc_cli_report_archive",
+            "fact": "The FastQC command-line program commonly produces an HTML report and a ZIP archive of report data; this describes the external program and can differ from a Galaxy wrapper's exposed outputs.",
+            "sources": [
+                {
+                    "uri": "https://raw.githubusercontent.com/s-andrews/FastQC/v0.12.1/uk/ac/babraham/FastQC/Report/HTMLReportArchive.java",
+                    "revision_or_access_date": "v0.12.1"
+                }
+            ]
+        },
+        {
+            "id": "galaxy_fastqc_wrapper_outputs",
+            "fact": "The checked IUC Galaxy FastQC wrapper declares an HTML Webpage output and a TXT RawData output; wrapper output labels are deployment and wrapper specific.",
+            "sources": [
+                {
+                    "revision_or_access_date": "8559b907",
+                    "repository": "galaxyproject/tools-iuc",
+                    "path": "tools/fastqc/rgFastQC.xml"
+                }
+            ]
+        },
+        {
+            "id": "fastq_record_structure",
+            "fact": "In the common unwrapped FASTQ representation, a record has four lines: an identifier beginning with @, a sequence, a required + separator that may optionally repeat the identifier, and a quality string with one encoded value per base.",
+            "sources": [
+                {
+                    "uri": "https://www.ncbi.nlm.nih.gov/sra/docs/submitformats/",
+                    "revision_or_access_date": "2026-09-12"
+                }
+            ]
+        },
+        {
+            "id": "fastq_at_sign_can_be_quality",
+            "fact": "An @ character can occur in a FASTQ quality string, so counting every line beginning with @ can overcount records; Galaxy's FASTQ metadata counter recognizes a header only at a record boundary.",
+            "sources": [
+                {
+                    "uri": "https://www.ncbi.nlm.nih.gov/sra/docs/submitformats/",
+                    "revision_or_access_date": "2026-09-12"
+                },
+                {
+                    "revision_or_access_date": "f99f7ea3cd1",
+                    "repository": "galaxyproject/galaxy",
+                    "path": "lib/galaxy/datatypes/sequence.py"
+                }
+            ]
+        },
+        {
+            "id": "paired_fastq_order_and_counts",
+            "fact": "Paired FASTQ mates represent corresponding records in the same order; filtering, trimming, truncating, or concatenating only one mate can create unequal or unsynchronized inputs that a paired-end aligner cannot process as a pair. Corresponding records must have matching underlying read identifiers (mate suffixes may differ). Equal counts alone do not establish pairing, and shortening one file to equalize counts does not repair arbitrary mismatched pairs.",
+            "sources": [
+                {
+                    "uri": "https://www.ncbi.nlm.nih.gov/sra/docs/submitformats/",
+                    "revision_or_access_date": "2026-09-12"
+                }
+            ]
+        },
+        {
+            "id": "salmon_kallisto_transcript_targets",
+            "fact": "Salmon and kallisto quantify RNA against transcript targets; they are distinct from ordinary genome-aligning tools such as HISAT2 or STAR.",
+            "sources": [
+                {
+                    "uri": "https://salmon.readthedocs.io/en/latest/salmon.html",
+                    "revision_or_access_date": "2026-09-12"
+                },
+                {
+                    "uri": "https://pachterlab.github.io/kallisto/manual",
+                    "revision_or_access_date": "2026-09-12"
+                }
+            ]
+        },
+        {
+            "id": "dataset_details_information_route",
+            "fact": "In the checked Galaxy client, the dataset information icon opens Dataset Details, which includes the dataset information component and the creating job information when available.",
+            "sources": [
+                {
+                    "revision_or_access_date": "f99f7ea3cd1",
+                    "repository": "galaxyproject/galaxy",
+                    "path": "client/src/components/History/Content/Dataset/DatasetActions.vue"
+                },
+                {
+                    "revision_or_access_date": "f99f7ea3cd1",
+                    "repository": "galaxyproject/galaxy",
+                    "path": "client/src/components/DatasetInformation/DatasetDetails.vue"
+                }
+            ]
+        },
+        {
+            "id": "tool_standard_error_inline",
+            "fact": "The checked Galaxy client displays Tool Standard Error as an inline job-information row with an expand/collapse control. There is no separate Standard Error tab or selectable View Tool Standard Error action.",
+            "sources": [
+                {
+                    "revision_or_access_date": "f99f7ea3cd1",
+                    "repository": "galaxyproject/galaxy",
+                    "path": "client/src/components/JobInformation/JobInformation.vue"
+                },
+                {
+                    "revision_or_access_date": "f99f7ea3cd1",
+                    "repository": "galaxyproject/galaxy",
+                    "path": "client/src/components/JobInformation/CodeRow.vue"
+                }
+            ]
+        },
+        {
+            "id": "job_api_id_is_distinct",
+            "fact": "Job Information displays a Job API ID as a job field; this is distinct from the history content or dataset ID shown in Dataset Information.",
+            "sources": [
+                {
+                    "revision_or_access_date": "f99f7ea3cd1",
+                    "repository": "galaxyproject/galaxy",
+                    "path": "client/src/components/JobInformation/JobInformation.vue"
+                },
+                {
+                    "revision_or_access_date": "f99f7ea3cd1",
+                    "repository": "galaxyproject/galaxy",
+                    "path": "client/src/components/DatasetInformation/DatasetInformation.vue"
+                }
+            ]
+        },
+        {
+            "id": "dataset_read_counts_are_optional",
+            "fact": "Dataset Information has no fixed Number of reads field in the checked client. FASTQ sequence metadata and a history sequences blurb can be optional or unset, including when metadata processing is skipped for large files.",
+            "sources": [
+                {
+                    "revision_or_access_date": "f99f7ea3cd1",
+                    "repository": "galaxyproject/galaxy",
+                    "path": "client/src/components/DatasetInformation/DatasetInformation.vue"
+                },
+                {
+                    "revision_or_access_date": "f99f7ea3cd1",
+                    "repository": "galaxyproject/galaxy",
+                    "path": "lib/galaxy/datatypes/sequence.py"
+                }
+            ]
+        },
+        {
+            "id": "tool_panel_sections_are_configured",
+            "fact": "Galaxy tool-panel sections, labels, and tools come from configured tool-panel files and installation order, so a category such as Quality Control is not guaranteed across deployments.",
+            "sources": [
+                {
+                    "revision_or_access_date": "f99f7ea3cd1",
+                    "repository": "galaxyproject/galaxy",
+                    "path": "doc/source/admin/tool_panel.rst"
+                }
+            ]
+        },
+        {
+            "id": "fastqc_duplication_needs_context",
+            "fact": "FastQC duplication warnings require biological and library context; high duplication can have expected biological causes and does not by itself establish that deduplication is required.",
+            "sources": [
+                {
+                    "uri": "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/3%20Analysis%20Modules/8%20Duplicate%20Sequences.html",
+                    "revision_or_access_date": "2026-09-12"
+                }
+            ]
+        },
+        {
+            "id": "warnings_do_not_require_automatic_trimming",
+            "fact": "FastQC warnings do not automatically determine a trimming action: interpretation depends on the quality pattern and library context, and some aligners can soft-clip adapter sequence.",
+            "sources": [
+                {
+                    "uri": "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/3%20Analysis%20Modules/2%20Per%20Base%20Sequence%20Quality.html",
+                    "revision_or_access_date": "2026-09-12"
+                },
+                {
+                    "uri": "https://cutadapt.readthedocs.io/en/stable/guide.html",
+                    "revision_or_access_date": "2026-09-12"
+                }
+            ]
+        }
+    ]
+}

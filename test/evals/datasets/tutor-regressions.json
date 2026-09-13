@@ -138,10 +138,6 @@
       {
         "quote": "(If you need a reference genome, the “Get Data → Import from NCBI” tool can pull a FASTA and build the index for you.)",
         "dimension": "Grounding"
-      },
-      {
-        "quote": "1. **Quality control** – run FastQC (or the “FastQC” tool) on your raw FASTQ files and look at the reports.",
-        "dimension": "Pedagogy"
       }
     ]
   },

@@ -23,11 +23,13 @@ from pydantic_evals.evaluators import (
 )
 
 from .tutor import JOB_ID
+from .tutor_claims import review_claims
 
 REQUIRED_ASSERTIONS = (
     "EvidenceComplete",
     "CitationsSupported",
     "SourceIdsHidden",
+    "JudgmentComplete",
     "Grounding",
     "Correctness",
     "Context",
@@ -212,15 +214,26 @@ decision and evidence-based reason; strengths on another dimension cannot excuse
 @dataclass
 class TutorQuality(Evaluator[dict, dict, dict]):
     model: Model | None = None
+    style: str = "claims"
 
     def build_serialization_arguments(self):
-        return {"model": self.model.model_id if self.model else None}
+        return {"model": self.model.model_id if self.model else None, "style": self.style}
 
     async def evaluate(self, ctx: EvaluatorContext[dict, dict, dict]):
         if self.model is None:
             raise ValueError("Tutor quality evaluation requires a judge model.")
         if ctx.output.get("evidence_complete") is not True:
             return {}
+        if self.style == "claims":
+            return await review_claims(
+                self.model,
+                question=ctx.inputs["query"],
+                expectation=(ctx.metadata or {}).get("expectation", "Provide useful, appropriate guidance."),
+                output=ctx.output,
+                tool_calls=final_tool_calls(ctx.output),
+            )
+        if self.style != "legacy":
+            raise ValueError(f"Unknown tutor judge style: {self.style}")
         judge = Agent(self.model, output_type=TutorAssessment, system_prompt=_JUDGE_PROMPT)
         result = await judge.run(
             json.dumps(
@@ -236,9 +249,12 @@ class TutorQuality(Evaluator[dict, dict, dict]):
             model_settings={"temperature": 0, "max_tokens": 2500},
         )
         return {
-            name: EvaluationReason(value=judgment.passed, reason=judgment.reason)
-            for name in QUALITY_ASSERTIONS
-            for judgment in [getattr(result.output, name.lower())]
+            "JudgmentComplete": EvaluationReason(value=True, reason="All legacy dimensions returned."),
+            **{
+                name: EvaluationReason(value=judgment.passed, reason=judgment.reason)
+                for name in QUALITY_ASSERTIONS
+                for judgment in [getattr(result.output, name.lower())]
+            },
         }
 
 

@@ -59,7 +59,9 @@ def test_replays_do_not_mutate_saved_evidence_or_other_repetitions():
 
 
 async def test_unresolved_reference_labels_cannot_pass_calibration():
-    dataset = calibration_dataset(FunctionModel(approving_judge), paths=[REGRESSIONS], labels="unresolved")
+    dataset = calibration_dataset(
+        FunctionModel(approving_judge), paths=[REGRESSIONS], labels="unresolved", judge_style="legacy"
+    )
     report = await dataset.evaluate(replay_answer, progress=False)
     assert len(report.cases) == 9
     assert all("CalibrationMatch" not in case.assertions for case in report.cases)

@@ -454,7 +454,7 @@ async def test_quality_judge_receives_evidence_and_preserves_separate_reasons():
         }
         return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, judgments)])
 
-    result = await TutorQuality(FunctionModel(model)).evaluate(
+    result = await TutorQuality(FunctionModel(model), style="legacy").evaluate(
         evidence_context("Here is an invented tutorial.", search_return="unavailable")
     )
     assert result["Grounding"].value is False
@@ -467,13 +467,15 @@ async def test_calibration_detects_a_judge_that_approves_everything():
         judgments = {name.lower(): {"passed": True, "reason": "Looks plausible."} for name in QUALITY_ASSERTIONS}
         return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, judgments)])
 
-    dataset = calibration_dataset(FunctionModel(model), only=["saved_explicit_just_tell_me", "direct_fastqc"])
+    dataset = calibration_dataset(
+        FunctionModel(model), only=["saved_explicit_just_tell_me", "direct_fastqc"], judge_style="legacy"
+    )
     report = await dataset.evaluate(replay_answer, progress=False)
 
     cases = {c.name: c for c in report.cases}
     bad = cases["saved_explicit_just_tell_me"]
     assert bad.assertions["CalibrationMatch"].value is False
-    assert bad.scores["FalseAcceptance"].value == 1.0
+    assert bad.labels["AnswerVerdict"].value == "pass"
     assert cases["direct_fastqc"].assertions["CalibrationMatch"].value is True
 
 
@@ -585,6 +587,16 @@ async def test_old_judge_only_baseline_is_explicitly_not_comparable():
     result = await evaluated_result({"Grounding": False}, ["Grounding"])
     old = DatasetResult("tutor_socratic", "test", "LLMJudge", result.report)
     assert "scoring changed; baseline is not comparable" in render_markdown([result], baseline=[old])
+
+
+@pytest.mark.parametrize("field", ["judge_model", "judge_version", "examples"])
+async def test_changed_judge_or_corpus_does_not_become_a_quality_improvement(field):
+    old = await evaluated_result({"Grounding": False}, ["Grounding"])
+    new = await evaluated_result({"Grounding": True}, ["Grounding"])
+    new.report.experiment_metadata = {field: "changed"}
+    report = render_markdown([new], baseline=[old])
+    assert "judge or corpus changed; baseline is not comparable" in report
+    assert "**Improvements:**" not in report
 
 
 async def test_incomplete_baseline_does_not_become_a_quality_improvement():

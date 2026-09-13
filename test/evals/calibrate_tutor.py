@@ -1,6 +1,7 @@
 """Replay fixed answers to check whether the tutor evaluator accepts known failures."""
 
 import argparse
+import hashlib
 import json
 import sys
 from copy import deepcopy
@@ -29,7 +30,9 @@ from .run_evals import (
     write_eval_report,
 )
 from .tutor import QC_URL
+from .tutor_claims import review_version
 from .tutor_evaluators import (
+    _JUDGE_PROMPT,
     tutor_metadata,
     TutorEvidence,
     TutorQuality,
@@ -96,13 +99,16 @@ def calibration_output(example: dict) -> dict:
 @dataclass
 class CalibrationMatch(Evaluator[dict, dict, dict]):
     model: Model
+    judge_style: str = "claims"
 
     def build_serialization_arguments(self):
-        return {"model": self.model.model_id}
+        return {"model": self.model.model_id, "judge_style": self.judge_style}
 
     async def evaluate(self, ctx):
         actual = TutorEvidence().evaluate(ctx)
-        actual.update(await TutorQuality(self.model).evaluate(ctx))
+        actual.update(await TutorQuality(self.model, style=self.judge_style).evaluate(ctx))
+        verdict = answer_verdict(actual, ctx.metadata["answer_required_assertions"])
+        actual["AnswerVerdict"] = verdict
         if ctx.metadata["label_status"] == "unresolved":
             # Missing reference labels cannot establish calibration success.
             actual["ReferenceLabels"] = "unresolved"
@@ -111,17 +117,57 @@ class CalibrationMatch(Evaluator[dict, dict, dict]):
         differences = [
             name for name, value in expected.items() if name not in actual or actual[name].value is not value
         ]
+        if verdict != ctx.metadata["expected_overall"]:
+            differences.append("overall answer verdict")
+        if self.judge_style == "claims" and ctx.metadata.get("critical_claims"):
+            missing = missed_critical_claims(ctx.metadata["critical_claims"], actual)
+            actual["CriticalClaimDetection"] = EvaluationReason(
+                value=not missing,
+                reason=(
+                    "All annotated critical claims were rejected." if not missing else "Missed: " + "; ".join(missing)
+                ),
+            )
+            if missing:
+                differences.append("critical claims")
         actual["CalibrationMatch"] = EvaluationReason(
             value=not differences,
             reason="Matches reference labels." if not differences else f"Disagrees on: {', '.join(differences)}",
         )
-        actual["FalseAcceptance"] = float(
-            any(expected[n] is False and actual[n].value is True for n in differences if n in actual)
-        )
-        actual["FalseRejection"] = float(
-            any(expected[n] is True and actual[n].value is False for n in differences if n in actual)
-        )
         return actual
+
+
+def answer_verdict(checks: dict, required: list[str]) -> str:
+    review = checks.get("ClaimReview")
+    if review is not None and review.value == "unresolved":
+        return "unresolved"
+    if not required or any(name not in checks or type(checks[name].value) is not bool for name in required):
+        return "incomplete"
+    if any(name in checks and checks[name].value is False for name in ("EvidenceComplete", "JudgmentComplete")):
+        return "incomplete"
+    return "pass" if all(checks[name].value for name in required) else "fail"
+
+
+def missed_critical_claims(expected: list[dict], checks: dict) -> list[str]:
+    review = checks.get("ClaimReview")
+    if review is None or review.value == "invalid":
+        return [claim["quote"] for claim in expected]
+    blocks = json.loads(review.reason)["assessment"]["blocks"]
+    rejected = [
+        claim for block in blocks for claim in block["claims"] if claim["verdict"] in {"unsupported", "contradicted"}
+    ]
+    missing = []
+    for claim in expected:
+        quote = " ".join(claim["quote"].split())
+        if not any(
+            claim["dimension"] in found["dimensions"]
+            and (
+                quote in " ".join(found["quote"].split())
+                or (len(found["quote"]) >= 20 and " ".join(found["quote"].split()) in quote)
+            )
+            for found in rejected
+        ):
+            missing.append(claim["quote"])
+    return missing
 
 
 def load_calibration_examples(paths: list[Path] | None = None) -> list[dict]:
@@ -145,6 +191,14 @@ def load_calibration_examples(paths: list[Path] | None = None) -> list[dict]:
                 raise ValueError(f"Reviewed example has no reference labels: {name}")
             if status == "unresolved" and expected:
                 raise ValueError(f"Unresolved example cannot declare reference verdicts: {name}")
+            overall = example.get("expected_overall")
+            if overall is not None and (
+                overall not in {"pass", "fail", "unresolved"}
+                or (status == "unresolved" and overall != "unresolved")
+                or (overall == "pass" and isinstance(expected, dict) and False in expected.values())
+                or (overall == "fail" and expected == "pass")
+            ):
+                raise ValueError(f"Inconsistent overall reference verdict for {name}")
             for claim in example.get("critical_claims", []):
                 if not claim["quote"] or claim["quote"] not in calibration_output(example)["content"]:
                     raise ValueError(f"Critical claim is not in the recorded answer: {name}")
@@ -153,7 +207,12 @@ def load_calibration_examples(paths: list[Path] | None = None) -> list[dict]:
 
 
 def calibration_dataset(
-    model: Model, only: list[str] | None = None, *, paths: list[Path] | None = None, labels: str = "all"
+    model: Model,
+    only: list[str] | None = None,
+    *,
+    paths: list[Path] | None = None,
+    labels: str = "all",
+    judge_style: str = "claims",
 ):
     cases = []
     for example in load_calibration_examples(paths):
@@ -168,6 +227,17 @@ def calibration_dataset(
         )
         if expected == "pass":
             expected = dict.fromkeys(metadata["required_assertions"], True)
+        expected_overall = example.get("expected_overall")
+        if expected_overall is None:
+            expected_overall = (
+                "fail"
+                if False in expected.values()
+                else (
+                    "pass"
+                    if all(expected.get(name) is True for name in metadata["required_assertions"])
+                    else "unresolved"
+                )
+            )
         cases.append(
             Case(
                 name=example["name"],
@@ -181,10 +251,7 @@ def calibration_dataset(
                     "expected": expected,
                     "source": example["source"],
                     "label_status": label_status,
-                    "expected_overall": example.get(
-                        "expected_overall",
-                        "fail" if False in expected.values() else "pass" if expected else "unresolved",
-                    ),
+                    "expected_overall": expected_overall,
                     "pair_id": example.get("pair_id"),
                     "answer_kind": example.get("answer_kind", "authored"),
                     "review_reason": example.get("review_reason"),
@@ -196,7 +263,7 @@ def calibration_dataset(
         )
     if not cases:
         raise ValueError("No calibration examples matched the requested selection.")
-    return Dataset(name="tutor_calibration", cases=cases, evaluators=[CalibrationMatch(model)])
+    return Dataset(name="tutor_calibration", cases=cases, evaluators=[CalibrationMatch(model, judge_style)])
 
 
 def replay_answer(case_input: dict) -> dict:
@@ -207,6 +274,7 @@ async def amain() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-config")
     parser.add_argument("--judge-model", required=True)
+    parser.add_argument("--judge-style", choices=("legacy", "claims"), default="claims")
     parser.add_argument("--only", help="Comma-separated calibration example names.")
     parser.add_argument(
         "--examples", nargs="+", type=Path, help="Example files; defaults to legacy and captured cases."
@@ -222,10 +290,28 @@ async def amain() -> int:
     model = build_judge_model(
         args.judge_model, _resolve_proxy_url(args.judge_model, config), _resolve_api_key(args.judge_model, config)
     )
+    paths = args.examples if args.examples is not None else [EXAMPLES, REGRESSIONS]
+    experiment = {
+        "judge_model": args.judge_model,
+        "judge_style": args.judge_style,
+        "judge_version": (
+            review_version()
+            if args.judge_style == "claims"
+            else "legacy-" + hashlib.sha256(_JUDGE_PROMPT.encode()).hexdigest()[:12]
+        ),
+        "examples": [{"path": str(path), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()} for path in paths],
+        "labels": args.labels,
+        "repeat": args.repeat,
+    }
     dataset = calibration_dataset(
-        model, only=args.only.split(",") if args.only else None, paths=args.examples, labels=args.labels
+        model,
+        only=args.only.split(",") if args.only else None,
+        paths=paths,
+        labels=args.labels,
+        judge_style=args.judge_style,
     )
     report = await dataset.evaluate(replay_answer, max_concurrency=args.max_concurrency, repeat=args.repeat)
+    report.experiment_metadata = experiment
     results = [DatasetResult("tutor_calibration", args.judge_model, "RequiredChecks", report)]
     paths = write_eval_report(results, ["tutor_calibration"], Path(args.results_dir))
     print(render_markdown(results))
