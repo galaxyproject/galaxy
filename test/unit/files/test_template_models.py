@@ -292,6 +292,103 @@ def test_production_aws_public_bucket():
     assert configuration_obj.bucket == "encode-public"
 
 
+def _ftp_production_template_variables(host, root=None, **extra):
+    variables = {
+        "host": host,
+        "user": "anonymous",
+        "port": 21,
+        "writable": False,
+    }
+    if root is not None:
+        variables["root"] = root
+    variables.update(extra)
+    return variables
+
+
+def test_production_ftp_plain_host_no_root_v0():
+    template = _get_example_template_by_version("production_ftp.yml", 0)
+    configuration_obj = template_to_configuration(
+        template,
+        _ftp_production_template_variables("ftp.example.org"),
+        {"password": ""},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, FtpFileSourceConfiguration)
+    assert configuration_obj.host == "ftp.example.org"
+    assert configuration_obj.root is None
+
+
+def test_production_ftp_plain_host_no_root_v1():
+    template = _get_example_template_by_version("production_ftp.yml", 1)
+    configuration_obj = template_to_configuration(
+        template,
+        _ftp_production_template_variables("ftp.example.org", tls=False),
+        {"password": ""},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, FtpFileSourceConfiguration)
+    assert configuration_obj.host == "ftp.example.org"
+    assert configuration_obj.root is None
+
+
+def test_production_ftp_host_with_path_no_root_v0():
+    template = _get_example_template_by_version("production_ftp.yml", 0)
+    configuration_obj = template_to_configuration(
+        template,
+        _ftp_production_template_variables("ftp.example.org/pub/"),
+        {"password": ""},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, FtpFileSourceConfiguration)
+    assert configuration_obj.host == "ftp.example.org"
+    assert configuration_obj.root == "/pub/"
+
+
+def test_production_ftp_host_with_path_no_root_v1():
+    template = _get_example_template_by_version("production_ftp.yml", 1)
+    configuration_obj = template_to_configuration(
+        template,
+        _ftp_production_template_variables("ftp.example.org/pub/", tls=False),
+        {"password": ""},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, FtpFileSourceConfiguration)
+    assert configuration_obj.host == "ftp.example.org"
+    assert configuration_obj.root == "/pub/"
+
+
+def test_production_ftp_host_with_path_blank_root():
+    template = _get_example_template_by_version("production_ftp.yml", 0)
+    configuration_obj = template_to_configuration(
+        template,
+        _ftp_production_template_variables("ftp.example.org/pub/", root=""),
+        {"password": ""},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, FtpFileSourceConfiguration)
+    assert configuration_obj.host == "ftp.example.org"
+    assert configuration_obj.root == "/pub/"
+
+
+def test_production_ftp_plain_host_blank_root():
+    template = _get_example_template_by_version("production_ftp.yml", 0)
+    configuration_obj = template_to_configuration(
+        template,
+        _ftp_production_template_variables("ftp.example.org", root=""),
+        {"password": ""},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, FtpFileSourceConfiguration)
+    assert configuration_obj.host == "ftp.example.org"
+    assert configuration_obj.root is None
+
+
 def test_examples_parse():
     # Ensure every YAML example in `lib/galaxy/files/templates/examples/` parses without error
     examples_dir = Path(__file__).resolve().parents[3] / "lib" / "galaxy" / "files" / "templates" / "examples"
@@ -307,6 +404,14 @@ def _assert_example_parses(filename: str):
 
 def _get_example_template(filename: str) -> FileSourceTemplate:
     return _assert_has_one_template(_get_example_library(filename))
+
+
+def _get_example_template_by_version(filename: str, version: int) -> FileSourceTemplate:
+    catalog = _get_example_library(filename)
+    for template in catalog.root:
+        if template.version == version:
+            return template
+    raise AssertionError(f"No template with version {version} in {filename}")
 
 
 def _get_example_library(filename: str) -> FileSourceTemplateCatalog:

@@ -5,6 +5,8 @@ from typing import (
     Optional,
 )
 
+import pytest
+
 from galaxy.exceptions import (
     RequestParameterInvalidException,
     RequestParameterMissingException,
@@ -15,6 +17,7 @@ from galaxy.tool_util_models.parameter_validators import (
     RegexParameterValidatorModel,
 )
 from galaxy.util.config_templates import (
+    split_ftp_host_path,
     StrictModel,
     TemplateEnvironmentEntry,
     TemplateSecret,
@@ -297,6 +300,90 @@ def test_length_validator_min_only():
     instance = _test_instance_with_variables({"description": "test"})
     e = assert_validation_throws(instance, template)
     assert isinstance(e, RequestParameterInvalidException)
+
+
+# --- split_ftp_host_path tests ---
+
+
+@pytest.mark.parametrize(
+    "data, expected_host, expected_root",
+    [
+        # Plain host, no path
+        ({"host": "ftp.gnu.org"}, "ftp.gnu.org", None),
+        # Host with path
+        ({"host": "ftp.gnu.org/gnu/"}, "ftp.gnu.org", "/gnu/"),
+        ({"host": "ftp.ensemblgenomes.org/pub/version/"}, "ftp.ensemblgenomes.org", "/pub/version/"),
+        # Protocol prefix
+        ({"host": "ftp://ftp.gnu.org/gnu/"}, "ftp.gnu.org", "/gnu/"),
+        ({"host": "ftps://ftp.gnu.org/gnu/"}, "ftp.gnu.org", "/gnu/"),
+        ({"host": "ftp://ftp.gnu.org"}, "ftp.gnu.org", None),
+        # Trailing slash only
+        ({"host": "ftp.gnu.org/"}, "ftp.gnu.org", "/"),
+        # Host with port and path
+        ({"host": "ftp.gnu.org:2121/gnu/"}, "ftp.gnu.org:2121", "/gnu/"),
+        # No host
+        ({"port": 21}, None, None),
+    ],
+)
+def test_split_ftp_host_path(data, expected_host, expected_root):
+    result = split_ftp_host_path(data)
+    if expected_host is None:
+        assert "host" not in result or result.get("host") == data.get("host")
+    else:
+        assert result["host"] == expected_host
+    if expected_root is None:
+        assert "root" not in result
+    else:
+        assert result["root"] == expected_root
+
+
+@pytest.mark.parametrize(
+    "root_value",
+    ["/custom"],
+)
+def test_split_ftp_host_path_explicit_root_not_overridden(root_value):
+    result = split_ftp_host_path({"host": "ftp.gnu.org/gnu/", "root": root_value})
+    assert result["host"] == "ftp.gnu.org/gnu/"
+    assert result["root"] == root_value
+
+
+def test_split_ftp_host_path_blank_root_treated_as_unset():
+    result = split_ftp_host_path({"host": "ftp.gnu.org/gnu/", "root": ""})
+    assert result["host"] == "ftp.gnu.org"
+    assert result["root"] == "/gnu/"
+
+
+def test_split_ftp_host_path_preserves_other_keys():
+    result = split_ftp_host_path({"host": "ftp.gnu.org/gnu/", "user": "anon", "port": 21})
+    assert result["host"] == "ftp.gnu.org"
+    assert result["root"] == "/gnu/"
+    assert result["user"] == "anon"
+    assert result["port"] == 21
+
+
+@pytest.mark.parametrize("non_dict", [None, "ftp://ftp.gnu.org", 42, []])
+def test_split_ftp_host_path_non_dict_input(non_dict):
+    assert split_ftp_host_path(non_dict) == non_dict
+
+
+def test_split_ftp_host_path_does_not_mutate_input():
+    original = {"host": "ftp.gnu.org/gnu/"}
+    split_ftp_host_path(original)
+    assert original == {"host": "ftp.gnu.org/gnu/"}
+
+
+@pytest.mark.parametrize(
+    "root",
+    ["../etc", "/gnu/../etc", "/..", "foo/../bar", "/gnu/../../etc"],
+)
+def test_split_ftp_host_path_rejects_traversal_in_explicit_root(root):
+    with pytest.raises(ValueError, match="must not contain '\\.\\.'"):
+        split_ftp_host_path({"host": "ftp.gnu.org", "root": root})
+
+
+def test_split_ftp_host_path_rejects_traversal_in_host_derived_root():
+    with pytest.raises(ValueError, match="must not contain '\\.\\.'"):
+        split_ftp_host_path({"host": "ftp.gnu.org/../etc"})
 
 
 def test_length_validator_max_only():
