@@ -108,6 +108,35 @@ class TestAdminResendActivationEmail(integration_util.IntegrationTestCase):
         config["email_from"] = "galaxy-noreply@example.com"
         config["smtp_server"] = f"mock_emails_to_path://{cls.email_directory}/email.json"
 
+    def test_email_change_deactivates_and_mails_the_new_address(self):
+        old_email = "email-change-before@test.gx"
+        new_email = "email-change-after@test.gx"
+        user = self._setup_user(old_email)
+
+        with self._different_user(email=old_email):
+            response = self._put(f"users/{user['id']}", data={"email": new_email}, json=True)
+            self._assert_status_code_is_ok(response)
+            updated = response.json()
+
+        assert updated["email"] == new_email
+
+        # Changing the address has to re-verify it, otherwise activation is a
+        # one-time gate that any later edit walks straight past. `active` is not on
+        # DetailedUserModel, so it is read back from the index.
+        listed = self._get("users", data={"f_email": new_email}, admin=True).json()
+        assert [u for u in listed if u["email"] == new_email][0]["active"] is False
+
+        with open(os.path.join(self.email_directory, "email.json")) as f:
+            email = json.loads(f.read())
+        assert email["to"] == new_email
+        assert email["subject"] == "Galaxy Account Activation"
+
+        # The private role is named for the email and is what dataset permissions
+        # are granted against, so it has to follow the address.
+        role_names = [role["name"] for role in self._get("roles", admin=True).json()]
+        assert new_email in role_names
+        assert old_email not in role_names
+
     def test_resend_activation_includes_qualified_link(self):
         user = self._setup_user("resend-activation@test.gx")
         response = self._post(f"users/{user['id']}/send_activation_email", admin=True)

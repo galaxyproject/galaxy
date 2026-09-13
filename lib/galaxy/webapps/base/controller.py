@@ -59,11 +59,6 @@ from galaxy.web import (
     error,
     url_for,
 )
-from galaxy.web.form_builder import (
-    AddressField,
-    CheckboxField,
-    PasswordField,
-)
 from galaxy.workflow.modules import WorkflowModuleInjector
 
 if TYPE_CHECKING:
@@ -699,54 +694,6 @@ class UsesFormDefinitionsMixin:
             return [fdc.latest_form for fdc in fdc_list]
         else:
             return [fdc.latest_form for fdc in fdc_list if fdc.latest_form.type == form_type]
-
-    def save_widget_field(self, trans: ProvidesUserContext, field_obj, widget_name, **kwd):
-        # Save a form_builder field object
-        params = util.Params(kwd)
-        if isinstance(field_obj, trans.model.UserAddress):
-            field_obj.desc = util.restore_text(params.get(f"{widget_name}_short_desc", ""))
-            field_obj.name = util.restore_text(params.get(f"{widget_name}_name", ""))
-            field_obj.institution = util.restore_text(params.get(f"{widget_name}_institution", ""))
-            field_obj.address = util.restore_text(params.get(f"{widget_name}_address", ""))
-            field_obj.city = util.restore_text(params.get(f"{widget_name}_city", ""))
-            field_obj.state = util.restore_text(params.get(f"{widget_name}_state", ""))
-            field_obj.postal_code = util.restore_text(params.get(f"{widget_name}_postal_code", ""))
-            field_obj.country = util.restore_text(params.get(f"{widget_name}_country", ""))
-            field_obj.phone = util.restore_text(params.get(f"{widget_name}_phone", ""))
-            trans.sa_session.add(field_obj)
-            trans.sa_session.commit()
-
-    def get_form_values(self, trans: ProvidesUserContext, user, form_definition, **kwd):
-        """
-        Returns the name:value dictionary containing all the form values
-        """
-        params = util.Params(kwd)
-        values = {}
-        for field in form_definition.fields:
-            field_type = field["type"]
-            field_name = field["name"]
-            input_value = params.get(field_name, "")
-            field_value: int | str | bool
-            if field_type == AddressField.__name__:
-                input_text_value = util.restore_text(input_value)
-                if input_text_value == "new":
-                    # Save this new address in the list of this user's addresses
-                    user_address = trans.model.UserAddress(user=user)
-                    self.save_widget_field(trans, user_address, field_name, **kwd)
-                    trans.sa_session.refresh(user)
-                    field_value = int(user_address.id)
-                elif input_text_value in ["", "none", "None", None]:
-                    field_value = ""
-                else:
-                    field_value = int(input_text_value)
-            elif field_type == CheckboxField.__name__:
-                field_value = CheckboxField.is_checked(input_value)
-            elif field_type == PasswordField.__name__:
-                field_value = kwd.get(field_name, "")
-            else:
-                field_value = util.restore_text(input_value)
-            values[field_name] = field_value
-        return values
 
 
 class SharableMixin:
