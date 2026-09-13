@@ -12,6 +12,7 @@ import {
     getValidPanelItems,
     getValidToolsInEachSection,
     searchObjectsByKeys,
+    searchTools,
     type SearchCommonKeys,
 } from "./utilities";
 import type { Tool, ToolPanelItem, ToolSection, ToolSectionLabel } from "@/stores/toolStore";
@@ -491,5 +492,70 @@ describe("getValidPanelItems", () => {
         expect(result["collection_operations"]).toBeUndefined();
         expect(result["liftOver"]).toBeUndefined();
         expect(result["testlabel1"]).toBeDefined();
+    });
+});
+
+describe("searchTools tool-lineage de-duplication", () => {
+    // Regression for issue #23151: an instance can install and place more than one
+    // version of the same tool (sometimes across different sections). Searching the
+    // tool's name previously returned every placed version as a separate result,
+    // rendering as a duplicate. Search results should collapse to a single entry
+    // per tool lineage.
+    const pgt38 = "toolshed.g2.bx.psu.edu/repos/iuc/pygenometracks/pygenomeTracks/3.8+galaxy2";
+    const pgt39 = "toolshed.g2.bx.psu.edu/repos/iuc/pygenometracks/pygenomeTracks/3.9+galaxy0";
+
+    const twoVersionTools = [
+        { id: pgt38, name: "pyGenomeTracks", description: "Plot genomic tracks", version: "3.8+galaxy2" },
+        { id: pgt39, name: "pyGenomeTracks", description: "Plot genomic tracks", version: "3.9+galaxy0" },
+    ] as unknown as Tool[];
+
+    const twoSectionPanel = {
+        graph_display_data: {
+            model_class: "ToolSection",
+            id: "graph_display_data",
+            name: "Graph/Display Data",
+            tools: [pgt38],
+        },
+        plots: {
+            model_class: "ToolSection",
+            id: "plots",
+            name: "Plots",
+            tools: [pgt39],
+        },
+    } as unknown as Record<string, ToolPanelItem>;
+
+    it("collapses a tool placed at multiple versions across sections to a single result", () => {
+        const { results, resultPanel } = searchTools(twoVersionTools, "pyGenomeTracks", twoSectionPanel);
+
+        // Only one lineage entry survives (the first / highest-ranked occurrence)
+        expect(results).toEqual([pgt38]);
+
+        // The sectioned result panel no longer renders the dropped version;
+        // the section left empty by the dropped version is removed.
+        const remainingToolIds = Object.values(resultPanel).flatMap((item) => (item as ToolSection).tools ?? []);
+        expect(remainingToolIds).toEqual([pgt38]);
+    });
+
+    it("keeps distinct tools that merely share a search term", () => {
+        const distinctTools = [
+            { id: "pygenometracks/1.0", name: "pyGenomeTracks", description: "Plot tracks", version: "1.0" },
+            {
+                id: "pygenometracks_utils/1.0",
+                name: "pyGenomeTracks utils",
+                description: "Track helpers",
+                version: "1.0",
+            },
+        ] as unknown as Tool[];
+        const panel = {
+            plots: {
+                model_class: "ToolSection",
+                id: "plots",
+                name: "Plots",
+                tools: ["pygenometracks/1.0", "pygenometracks_utils/1.0"],
+            },
+        } as unknown as Record<string, ToolPanelItem>;
+
+        const { results } = searchTools(distinctTools, "pyGenomeTracks", panel);
+        expect(results).toHaveLength(2);
     });
 });
