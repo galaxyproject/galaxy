@@ -142,6 +142,9 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
         """
         return bool(getattr(self.deps.config, "tutor_allow_tool_execution", False))
 
+    def _get_temperature(self) -> float:
+        return self._get_agent_config("temperature", 0.2)
+
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, str]:
         """Create the teaching assistant agent with tools."""
         agent = Agent(
@@ -301,7 +304,10 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
 
     def _search_tutorials(self, query: str, limit: int, easiest_first: bool = False) -> str | ToolReturn:
         if self.gtn_db is None:
-            return "Training material search is not available right now."
+            return (
+                "Training material search is not available right now. No catalog evidence is available. "
+                "Do not assert that GTN has or lacks tutorials on this or related topics."
+            )
         try:
             results = self.gtn_db.search(query, limit=limit)
             if easiest_first:
@@ -332,7 +338,10 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             log.exception("Training material search failed")
             return "Training material search failed. No sources were retrieved; tutorial availability is unknown."
         if not results:
-            return "No matching training materials found. This does not establish that no tutorial exists."
+            return (
+                "No matching training materials found. This does not establish that no tutorial exists. "
+                "No evidence was retrieved for related tutorials either. Do not claim the catalog has or lacks them."
+            )
         if not sources:
             return "Search returned no usable tutorial references. Tutorial availability is unknown."
         # URLs stay in application metadata; the model selects records instead of writing links.
@@ -363,7 +372,11 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
         search = (
             "Available. Search before recommending specific tutorials; a search can still fail or return no matches."
             if self.gtn_db is not None
-            else "Unavailable. You cannot verify specific tutorials here. Offer general guidance without inventing references."
+            else (
+                "Unavailable. You cannot determine whether GTN has or lacks a tutorial on any topic. "
+                "Say 'I cannot verify whether GTN has a tutorial on that topic here.' "
+                "You may suggest search terms, but never claim matching lessons, sections, or related tutorials exist."
+            )
         )
         execution = (
             "Enabled. demonstrate_concept can submit a job with valid inputs and an active history; submission is not completion."
