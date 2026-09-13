@@ -82,7 +82,11 @@ from ._types import (
     ToolTestDescriptionDict,
     ValueStateRepresentationT,
 )
-from .wait import wait_on
+from .wait import (
+    DEFAULT_POLLING_BACKOFF,
+    DEFAULT_POLLING_DELTA,
+    wait_on,
+)
 
 log = getLogger(__name__)
 
@@ -96,6 +100,13 @@ VERBOSE_ERRORS = util.asbool(os.environ.get("GALAXY_TEST_VERBOSE_ERRORS", False)
 UPLOAD_ASYNC = util.asbool(os.environ.get("GALAXY_TEST_UPLOAD_ASYNC", True))
 ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
 DEFAULT_TOOL_TEST_WAIT: int = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400))
+# How often a test asks Galaxy whether a job has finished. The default polls
+# at a fixed 4Hz for as long as a job runs, which a large parallel test run
+# multiplies into a substantial and largely uninformative request rate.
+# Raising the backoff grows the interval as a job goes on, trading a little
+# latency on short jobs for far fewer requests on long ones.
+POLLING_DELTA: float = float(os.environ.get("GALAXY_TEST_POLLING_DELTA", DEFAULT_POLLING_DELTA))
+POLLING_BACKOFF: float = float(os.environ.get("GALAXY_TEST_POLLING_BACKOFF", DEFAULT_POLLING_BACKOFF))
 CLEANUP_TEST_HISTORIES = "GALAXY_TEST_NO_CLEANUP" not in os.environ
 DEFAULT_TARGET_HISTORY = os.environ.get("GALAXY_TEST_HISTORY_ID", None)
 
@@ -483,7 +494,7 @@ class GalaxyInteractorApi:
 
     def wait_for(self, func: Callable, what: str = "tool test run", **kwd) -> None:
         walltime_exceeded = int(kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT))
-        return wait_on(func, what, walltime_exceeded)
+        return wait_on(func, what, walltime_exceeded, delta=POLLING_DELTA, polling_backoff=POLLING_BACKOFF)
 
     def get_job_stdio(self, job_id: str) -> dict[str, Any]:
         return self.__get_job_stdio(job_id).json()

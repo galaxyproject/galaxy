@@ -90,3 +90,49 @@ def test_timeout_backoff():
     assert sleeper.sleeps[1] == 3  # delta of 2 + 1 backoff
     assert sleeper.sleeps[2] == 4  # delta of 2 + 2 backoff
     assert exception_called
+
+
+def test_polling_cadence_is_configurable(monkeypatch):
+    """The interactor's poll interval comes from the environment.
+
+    A large parallel test run multiplies this interval into its request
+    rate, so it has to be adjustable without patching the client.
+    """
+    monkeypatch.setenv("GALAXY_TEST_POLLING_DELTA", "1.5")
+    monkeypatch.setenv("GALAXY_TEST_POLLING_BACKOFF", "0.5")
+    import importlib
+
+    from galaxy.tool_util.verify import interactor
+
+    importlib.reload(interactor)
+    try:
+        assert interactor.POLLING_DELTA == 1.5
+        assert interactor.POLLING_BACKOFF == 0.5
+
+        sleeper = Sleeper()
+        condition = WaitCondition(after_call_count=3)
+        wait_on(
+            condition,
+            "test",
+            10,
+            delta=interactor.POLLING_DELTA,
+            polling_backoff=interactor.POLLING_BACKOFF,
+            sleep_=sleeper.sleep,
+        )
+        # Grows by the backoff each time instead of staying flat.
+        assert sleeper.sleeps == [1.5, 2.0, 2.5]
+    finally:
+        monkeypatch.delenv("GALAXY_TEST_POLLING_DELTA")
+        monkeypatch.delenv("GALAXY_TEST_POLLING_BACKOFF")
+        importlib.reload(interactor)
+
+
+def test_polling_cadence_defaults_are_unchanged():
+    from galaxy.tool_util.verify import interactor
+    from galaxy.tool_util.verify.wait import (
+        DEFAULT_POLLING_BACKOFF,
+        DEFAULT_POLLING_DELTA,
+    )
+
+    assert interactor.POLLING_DELTA == DEFAULT_POLLING_DELTA
+    assert interactor.POLLING_BACKOFF == DEFAULT_POLLING_BACKOFF
