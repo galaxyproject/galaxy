@@ -1,5 +1,6 @@
 """Tests for adapting test output properties onto dataset API response keys."""
 
+import time
 from typing import (
     Any,
     Literal,
@@ -14,7 +15,10 @@ from galaxy.tool_util.verify.interactor import (
     GalaxyInteractorApi,
     get_metadata_to_test,
     PathOrLocation,
+    POLLING_BACKOFF,
+    POLLING_DELTA,
 )
+from galaxy.tool_util.verify.wait import DEFAULT_POLLING_DELTA
 
 
 def test_ftype_maps_onto_file_ext():
@@ -227,3 +231,23 @@ def test_wait_for_job_surfaces_http_status(interactor, mocked):
 def test_wait_for_job_returns_when_job_is_ok(interactor, mocked):
     mocked.get(f"{API}/jobs/job1", json={"state": "ok"})
     interactor.wait_for_job("job1")
+
+
+def test_polling_cadence_defaults_to_the_module_settings():
+    interactor = GalaxyInteractorApi(galaxy_url=GALAXY_URL, master_api_key="admin", api_key="key")
+    assert interactor.polling_delta == POLLING_DELTA
+    assert interactor.polling_backoff == POLLING_BACKOFF
+
+
+def test_configured_polling_delta_paces_job_status_checks(mocked):
+    # Deliberately slower than the default cadence, so a delta that never
+    # reaches wait_on fails this rather than passing on the default sleep.
+    delta = DEFAULT_POLLING_DELTA * 2
+    interactor = GalaxyInteractorApi(
+        galaxy_url=GALAXY_URL, master_api_key="admin", api_key="key", polling_delta=delta, polling_backoff=0
+    )
+    mocked.get(f"{API}/jobs/job1", json={"state": "running"})
+    mocked.get(f"{API}/jobs/job1", json={"state": "ok"})
+    started = time.monotonic()
+    interactor.wait_for_job("job1")
+    assert time.monotonic() - started >= delta
