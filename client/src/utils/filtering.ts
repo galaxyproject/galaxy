@@ -12,6 +12,8 @@
 import { isEqual, omit } from "lodash";
 import type { DefineComponent } from "vue";
 
+import levenshteinDistance from "@/utils/levenshtein";
+
 export type Converter<T> = (value: T) => T;
 type Handler<T> = (v: T, q: T) => boolean;
 
@@ -212,6 +214,101 @@ export function contains<T>(attribute: string, query?: string, converter?: Conve
                 q = converter(q);
             }
             return toLower(v).includes(toLower(q));
+        },
+    };
+}
+
+/** Characters that separate words in a name but that a user should not have to
+ * reproduce exactly to get a hit. Keep in sync with `NAME_TERM_SEPARATORS` in
+ * `lib/galaxy/util/search.py`, which the backend applies to the same filter.
+ */
+const NAME_TERM_SEPARATORS = /[\s\-_.,:;/\\|()[\]{}'"]+/;
+/** Same separators, for stripping every occurrence out of a value. */
+const NAME_TERM_SEPARATORS_GLOBAL = /[\s\-_.,:;/\\|()[\]{}'"]+/g;
+/** Below this length a typo is indistinguishable from a different word. */
+const MINIMUM_FUZZY_LENGTH = 5;
+/** Each term becomes its own comparison, so cap them as the backend does. */
+const MAX_NAME_TERMS = 8;
+
+/** Splits a search value into lowercased, separator-insensitive terms.
+ * @param value the raw search value
+ * @returns the distinct terms to match independently
+ */
+export function splitNameSearchTerms(value: string): string[] {
+    const terms: string[] = [];
+    for (const part of toLower(value).split(NAME_TERM_SEPARATORS)) {
+        if (!part || terms.includes(part)) {
+            continue;
+        }
+        terms.push(part);
+        if (terms.length >= MAX_NAME_TERMS) {
+            break;
+        }
+    }
+    return terms;
+}
+
+/** Shortest edit distance from `query` to any same-length run inside `value`.
+ *
+ * Compares against windows of the value rather than the whole thing, so a short
+ * query is not penalised for appearing in a long name.
+ */
+function isCloseMatch(query: string, value: string): boolean {
+    // Too short to tell a typo from a different word.
+    if (query.length < MINIMUM_FUZZY_LENGTH || value.length < query.length) {
+        return false;
+    }
+    const maxDistance = Math.floor(query.length / 4);
+    if (maxDistance < 1) {
+        return false;
+    }
+    for (let start = 0; start + query.length - maxDistance <= value.length; start++) {
+        for (const width of [query.length, query.length - maxDistance, query.length + maxDistance]) {
+            if (width <= 0 || start + width > value.length) {
+                continue;
+            }
+            if (levenshteinDistance(query, value.substr(start, width), true) <= maxDistance) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Checks if every word of the query appears in the item value, independently of
+ * the separators used. Searching `umi-tools` finds `umi tools`, and a truncated
+ * word still matches because each term is itself a substring check.
+ * @param attribute of the content item
+ * @param query parameter if the attribute does not match the server query key
+ */
+export function containsTerms<T>(attribute: string, query?: string): HandlerReturn<T> {
+    return {
+        attribute,
+        query: query || `${attribute}-contains`,
+        handler: (v: T, q: T) => {
+            const value = toLower(v);
+            const terms = splitNameSearchTerms(String(q));
+            if (!terms.length) {
+                // Nothing but separators: match it literally, as the backend does,
+                // rather than letting an empty term list match every item.
+                return value.includes(toLower(q));
+            }
+            if (terms.every((term) => value.includes(term))) {
+                return true;
+            }
+            // The name may spell out separators the query left out, so compare
+            // both sides with them stripped: "umitools" finds "UMI-tools".
+            const squashedValue = value.replace(NAME_TERM_SEPARATORS_GLOBAL, "");
+            const squashedQuery = terms.join("");
+            if (squashedValue.includes(squashedQuery)) {
+                return true;
+            }
+            // Finally tolerate misspellings, so "umitoos" still finds
+            // "UMI-tools". The server does this with trigram similarity where
+            // the database supports it; this keeps the local re-filter from
+            // discarding the rows it returned.
+            return isCloseMatch(squashedQuery, squashedValue);
         },
     };
 }

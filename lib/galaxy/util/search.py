@@ -13,6 +13,32 @@ QUOTE_PATTERN = re.compile(r"\'(.*?)\'")
 DEFAULT_MIN_RAW_TERM_LENGTH = 4
 DEFAULT_MAX_RAW_TERMS = 7
 
+# Characters that separate words in a name but that a user should not have to
+# reproduce exactly to get a hit: searching for ``umi-tools`` is expected to
+# find a dataset named ``umi tools`` or ``umi_tools``, and vice versa.
+NAME_TERM_SEPARATORS = re.compile(r"[\s\-_.,:;/\\|()\[\]{}'\"]+")
+# Each term becomes its own LIKE clause, so cap them the way `filter_terms` does.
+DEFAULT_MAX_NAME_TERMS = 8
+
+
+def split_name_search_terms(value: str, max_terms: int = DEFAULT_MAX_NAME_TERMS) -> list[str]:
+    """Split a name search value into lowercased, separator-insensitive terms.
+
+    Matching every term independently rather than the value as a whole is what
+    makes the separators interchangeable, so ``umi-tools``, ``umi tools`` and
+    ``umi_tools`` all find each other. Duplicate terms are dropped since they
+    would only add a redundant clause, and the count is capped to bound the
+    cost of a pathological query.
+    """
+    terms: list[str] = []
+    for part in NAME_TERM_SEPARATORS.split(value.lower()):
+        if not part or part in terms:
+            continue
+        terms.append(part)
+        if len(terms) >= max_terms:
+            break
+    return terms
+
 
 def parse_filters(search_term: str, filters: dict[str, str] | None = None) -> ParseFilterResultT:
     """Support github-like filters for narrowing the results.
@@ -141,9 +167,11 @@ def filter_terms(
 
 
 __all__ = (
+    "DEFAULT_MAX_NAME_TERMS",
     "DEFAULT_MAX_RAW_TERMS",
     "DEFAULT_MIN_RAW_TERM_LENGTH",
     "filter_terms",
     "parse_filters",
     "parse_filters_structured",
+    "split_name_search_terms",
 )

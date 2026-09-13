@@ -2,6 +2,7 @@ import { STATES } from "@/components/History/Content/model/states";
 import Filtering, {
     compare,
     contains,
+    containsTerms,
     equals,
     expandNameTag,
     quotaSourceFilter,
@@ -15,7 +16,7 @@ const excludeStates = ["empty", "failed", "upload", "placeholder", "failed_popul
 const states = Object.keys(STATES).filter((state) => !excludeStates.includes(state));
 
 const validFilters = {
-    name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+    name: { placeholder: "name", type: String, handler: containsTerms("name"), menuItem: true },
     name_eq: { handler: equals("name"), menuItem: false },
     extension: { placeholder: "extension", type: String, handler: equals("extension"), menuItem: true },
     history_content_type: {
