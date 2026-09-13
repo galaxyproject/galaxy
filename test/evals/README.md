@@ -26,6 +26,12 @@ Current datasets:
   explicit terminal help, and disabled execution. Uses controlled service fixtures
   and the production tutor prompt, tools, and processing path. Every required
   assertion must pass; good pedagogy cannot compensate for unsupported claims.
+- **tutor_variants**: six separately reported variations on frustration, requested
+  terminal help, pressure to invent references, empty-search interpretation,
+  unsupported tutorial quotes, and direct facts followed by coaching. Uses the
+  same fixtures and judging criteria as `tutor_socratic`. Keep baseline cases and
+  criteria fixed when measuring tutor changes; these variants are development
+  checks, not educator-reviewed or permanently held-out validation.
 - **routing**: (query, expected handoff target) pairs against `QueryRouterAgent`.
   Scored by `HandoffMatch` (deterministic).
 - **error_analysis**: prose failure descriptions against `ErrorAnalysisAgent`.
@@ -172,6 +178,13 @@ Capturing attempts separately prevents retry evidence from being attached to the
 wrong answer. Fallbacks are incomplete. Search unavailable and search with no
 matches are distinct fixtures.
 
+Search tools now return source IDs, titles, and excerpts to the model; URLs stay
+in application metadata. The tutor validates source selections against the
+current run and renders references itself. Eval artifacts retain both rendered
+answers and model drafts (including rejected drafts), with source metadata
+cross-checked against the independent search fixture. Exhausted reference
+corrections remain incomplete, never successful answers.
+
 `TutorEvidence` checks that GTN citation URLs were both retrieved as actual records
 and returned to the tutor. Echoed query text and specialist model prose cannot
 authorize citations. A GTN homepage link is allowed as general navigation. These
@@ -187,11 +200,13 @@ answers and valid alternatives to evaluate the evaluator itself:
 ```bash
 # From the repository root, with the configured proxy key exported:
 PYTHONPATH=lib:test .venv/bin/python -m evals.calibrate_tutor \
-    --model-config test/evals/models.yaml --judge-model gpt-oss-120b --repeat 2
+    --model-config test/evals/models.yaml --judge-model gpt-oss-120b --repeat 2 \
+    --results-dir test/evals/results
 
 PYTHONPATH=lib:test .venv/bin/python -m evals.run_evals \
-    --model-config test/evals/models.yaml --datasets tutor_socratic \
-    --models gpt-oss-120b --judge-model gpt-oss-120b
+    --model-config test/evals/models.yaml --datasets tutor_socratic,tutor_variants \
+    --models gpt-oss-120b --judge-model gpt-oss-120b \
+    --results-dir test/evals/results
 ```
 
 Calibration replays fixed answers; it does not ask a candidate model to regenerate

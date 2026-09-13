@@ -33,6 +33,7 @@ from .datasets import (
     staining_quantification_dataset,
     tool_recommendation_dataset,
     tutor_socratic_dataset,
+    tutor_variants_dataset,
 )
 from .evaluators import (
     ContainerVerified,
@@ -276,6 +277,20 @@ def build_tutor_socratic(
     )
 
 
+def build_tutor_variants(
+    deps: GalaxyAgentDependencies,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
+    include_galaxy_required: bool = False,
+    usage_buffer: list[dict[str, int]] | None = None,
+) -> BuiltDataset:
+    return BuiltDataset(
+        dataset=tutor_variants_dataset(judge_model=judge_model, only=only),
+        task=make_tutor_socratic_task(deps, usage_buffer=usage_buffer),
+        primary_score="RequiredChecks",
+    )
+
+
 def build_custom_tool(
     deps: GalaxyAgentDependencies,
     judge_model: Model | None = None,
@@ -392,6 +407,7 @@ SPECS: dict[str, Callable[..., BuiltDataset]] = {
     "error_analysis": build_error_analysis,
     "tool_recommendation": build_tool_recommendation,
     "tutor_socratic": build_tutor_socratic,
+    "tutor_variants": build_tutor_variants,
     "custom_tool": build_custom_tool,
     "router_tool_use": build_router_tool_use,
     "bioinformatics_workflows": build_bioinformatics_workflows,

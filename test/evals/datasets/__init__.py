@@ -17,6 +17,7 @@ from .routing_followup import routing_followup_dataset
 from .staining_quantification import staining_quantification_dataset
 from .tool_recommendation import tool_recommendation_dataset
 from .tutor_socratic import tutor_socratic_dataset
+from .tutor_variants import tutor_variants_dataset
 
 __all__ = [
     "bioinformatics_workflows_dataset",
@@ -34,4 +35,5 @@ __all__ = [
     "staining_quantification_dataset",
     "tool_recommendation_dataset",
     "tutor_socratic_dataset",
+    "tutor_variants_dataset",
 ]
