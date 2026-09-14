@@ -55,6 +55,14 @@ describe("Tool Version Utilities", () => {
             });
         });
 
+        it("recognises a version carrying a dot after the build separator", () => {
+            expect(parseRequestedToolParts("toolshed.g2.bx.psu.edu/repos/iuc/snpeff/snpEff/4.3+T.galaxy1")).toEqual({
+                tool_shed_id: "toolshed.g2.bx.psu.edu/repos/iuc/snpeff",
+                name: "snpEff",
+                requested_version: "4.3+T.galaxy1",
+            });
+        });
+
         it("keeps the shed repository id for unversioned tool shed ids", () => {
             expect(parseRequestedToolParts("toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa_tool")).toEqual({
                 tool_shed_id: "toolshed.g2.bx.psu.edu/repos/devteam/bwa",
