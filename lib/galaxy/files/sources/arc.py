@@ -124,11 +124,13 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
                 # A local path that Galaxy staged, not anything in the ARC. Saying the ARC is missing
                 # would be wrong, and would put a server-side path in front of the user.
                 raise MessageException(f"Problem {description}. Reason: {e.strerror or e}") from e
-            # arcfs raises this bare for an ARC without any commit yet, where it carries the numeric
-            # project id, and for one that was removed or is invisible to these credentials.
+            # Raised for an ARC without any commit yet, for one that was removed, and for one that
+            # is invisible to these credentials. arcfs' own text is a numeric project id, a bare
+            # repo-internal path, or a whole sentence depending on the raise site, so none of it
+            # reads correctly inside a sentence. ``description`` already names what was asked for.
             raise ObjectNotFound(
-                f"Could not find {e} in {self.label}. The ARC may be empty, may have been removed, "
-                "or may not be visible with your credentials."
+                f"Problem {description}. Not found in {self.label}. The ARC may be empty, may have "
+                "been removed, or may not be visible with your credentials."
             ) from e
         except Exception as e:
             # aiohttp reports HTTP failures as ClientResponseError, which is not an OSError, so they
@@ -164,8 +166,10 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
                     f"Problem {description}. {self.label} is rate limiting these requests"
                     f"{self._retry_hint(e)}. Please wait and try again."
                 ) from e
-            # Some errors carry no text at all, which would render as a bare "Reason: ".
-            reason = str(e) or type(e).__name__
+            # Statuses outside the ladder above still must not render the exception itself: for an
+            # aiohttp error that is the internal API URL and its query string. Errors with no text
+            # at all would otherwise leave a bare "Reason: ".
+            reason = detail if isinstance(status, int) else (str(e) or type(e).__name__)
             raise MessageException(f"Problem {description}. Reason: {reason}") from e
         finally:
             if fs is not None:
@@ -198,6 +202,12 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
                 )
             with self._filesystem(context, f"listing file source path {path}") as (fs, config):
                 entries, total = self._list_recursive(fs, self._to_filesystem_path(path, config), config)
+                if query:
+                    # Without this the filter is silently dropped and the whole subtree comes back
+                    # looking like a result set. The cap in ``_list_recursive`` applies first, so a
+                    # match beyond it is still not found, exactly as on the non-recursive path.
+                    entries = self._filter_by_name(entries, query)
+                    total = len(entries)
                 return self._apply_pagination(entries, limit, offset), total
 
         with self._filesystem(context, f"listing file source path {path}") as (fs, config):
@@ -206,14 +216,14 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
             if query:
                 # The generic implementation globs, which needs ``_info``; arcfs implements no
                 # ``_info``, so globbing fails with a bare NotImplementedError.
-                entries, total = self._read_window(fs, fs_path, config, 0, MAX_ITEMS_LIMIT)
+                entries, total = self._read_window(fs, fs_path, config, 0, MAX_ITEMS_LIMIT, write_intent)
                 if total > len(entries):
                     self._on_listing_exceeded()
                 matched = self._filter_by_name(entries, query)
                 return self._apply_pagination(matched, limit, offset), len(matched)
 
             if limit is None:
-                entries, total = self._read_window(fs, fs_path, config, 0, MAX_ITEMS_LIMIT)
+                entries, total = self._read_window(fs, fs_path, config, 0, MAX_ITEMS_LIMIT, write_intent)
                 if total > len(entries):
                     self._on_listing_exceeded()
                 return self._apply_pagination(entries, limit, offset), total
@@ -222,7 +232,7 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
                 # Nothing bounds the limit a caller may ask for, and arcfs will fetch as many
                 # GitLab pages as it takes to fill it.
                 self._on_listing_exceeded()
-            return self._read_window(fs, fs_path, config, offset or 0, min(limit, MAX_ITEMS_LIMIT))
+            return self._read_window(fs, fs_path, config, offset or 0, min(limit, MAX_ITEMS_LIMIT), write_intent)
 
     def _read_window(
         self,
@@ -231,14 +241,19 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
         config: ARCFileSourceConfiguration,
         start: int,
         count: int,
+        membership: bool = False,
     ) -> tuple[list[AnyRemoteEntry], int]:
         """Return up to ``count`` entries from ``start``.
 
         Since 0.1.11 arcfs serves any window from the GitLab pages that cover it, so this only
         has to convert what comes back. On a server that reports no total it returns a lower
         bound that grows as the caller pages, and zero for a window past the end.
+
+        ``membership`` narrows a root listing to the projects the credentials belong to. It is
+        used when Galaxy is asking where a file may be written, since every visible ARC can be
+        read but only some can be pushed to. arcfs ignores it below the root.
         """
-        infos, total = fs.list_page(fs_path, True, offset=start, limit=count)
+        infos, total = fs.list_page(fs_path, True, offset=start, limit=count, membership=membership)
         return [self._info_to_entry(info, config) for info in infos], total
 
     def _adapt_entry_path(self, filesystem_path: str, config: ARCFileSourceConfiguration) -> str:
@@ -273,6 +288,15 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
         native_path: str,
         context: FilesSourceRuntimeContext[ARCFileSourceConfiguration],
     ):
+        if ROOT_MARKER not in target_path:
+            # Without the marker arcfs cannot tell where the project path ends, so it probes
+            # prefixes and then builds the whole project index before failing, with a message
+            # about a missing ARC for a path that never named one.
+            raise RequestParameterInvalidException(
+                "Exports have to name a file inside an ARC, in the form the file browser produces "
+                f"(group/project{ROOT_MARKER}/folder/file). The top level of this file source lists "
+                "the ARCs themselves and cannot hold files."
+            )
         with self._filesystem(context, f"writing to file source path {target_path}") as (fs, config):
             fs.put_file(native_path, self._to_filesystem_path(target_path, config))
 
