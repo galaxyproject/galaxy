@@ -28,6 +28,7 @@ const errorMessage = ref("");
 const showButton = computed(
     () =>
         isConfigLoaded.value &&
+        config.value?.enable_notification_system &&
         config.value?.enable_tool_installation_request_form &&
         !userStore.isAnonymous &&
         props.missingToolIds.length > 0,

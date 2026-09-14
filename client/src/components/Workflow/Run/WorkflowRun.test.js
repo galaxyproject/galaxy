@@ -144,7 +144,7 @@ describe("WorkflowRun.vue", () => {
         }
 
         beforeEach(() => {
-            setMockConfig({ enable_tool_installation_request_form: true });
+            setMockConfig({ enable_notification_system: true, enable_tool_installation_request_form: true });
         });
 
         it("offers the install request for the tools reported missing", async () => {

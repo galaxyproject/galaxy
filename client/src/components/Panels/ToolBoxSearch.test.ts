@@ -527,7 +527,11 @@ const REQUEST_BUTTON = '[data-description="request tool installation button"]';
 describe("ToolBox — Request Tool Installation button", () => {
     beforeEach(() => {
         vi.useFakeTimers();
-        setMockConfig({ toolbox_auto_sort: true, enable_tool_installation_request_form: true });
+        setMockConfig({
+            toolbox_auto_sort: true,
+            enable_notification_system: true,
+            enable_tool_installation_request_form: true,
+        });
     });
 
     afterEach(() => {
@@ -552,7 +556,24 @@ describe("ToolBox — Request Tool Installation button", () => {
     });
 
     it("is hidden when enable_tool_installation_request_form config is false", async () => {
-        setMockConfig({ toolbox_auto_sort: true, enable_tool_installation_request_form: false });
+        setMockConfig({
+            toolbox_auto_sort: true,
+            enable_notification_system: true,
+            enable_tool_installation_request_form: false,
+        });
+        const wrapper = await mountDefaultPanelToolBox();
+        await searchFor(wrapper, "xyznonexistenttool123");
+
+        expect(wrapper.find(".alert-warning").exists()).toBe(true);
+        expect(wrapper.find(REQUEST_BUTTON).exists()).toBe(false);
+    });
+
+    it("is hidden when the notification system is off, which the request needs", async () => {
+        setMockConfig({
+            toolbox_auto_sort: true,
+            enable_notification_system: false,
+            enable_tool_installation_request_form: true,
+        });
         const wrapper = await mountDefaultPanelToolBox();
         await searchFor(wrapper, "xyznonexistenttool123");
 
