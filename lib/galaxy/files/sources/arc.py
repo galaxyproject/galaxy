@@ -33,7 +33,6 @@ except ImportError:
 ROOT_MARKER = ":-:"
 # GitLab silently caps ``per_page`` at 100, while arcfs derives the page number from the requested
 # limit, so larger pages have to be assembled from several requests instead of asked for directly.
-GITLAB_MAX_PER_PAGE = 100
 
 
 class ARCFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
@@ -91,9 +90,9 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
             base_url=config.base_url,
             token=config.token,
             asynchronous=False,
-            # Without this, fsspec caches one instance per (base_url, token) for the whole process:
-            # closing it at the end of one request would tear down the aiohttp session that other
-            # requests are still reading from, and arcfs' own listing cache would never expire.
+            # Without this, fsspec caches one instance per (base_url, token) for the whole process,
+            # so closing it at the end of one request would tear down the aiohttp session that other
+            # requests are still reading from.
             skip_instance_cache=True,
             **cache_options,
         )
@@ -207,28 +206,25 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
             if query:
                 # The generic implementation globs, which needs ``_info``; arcfs implements no
                 # ``_info``, so globbing fails with a bare NotImplementedError.
-                entries, total = self._collect_window(fs, fs_path, config, 0, MAX_ITEMS_LIMIT)
+                entries, total = self._read_window(fs, fs_path, config, 0, MAX_ITEMS_LIMIT)
                 if total > len(entries):
                     self._on_listing_exceeded()
                 matched = self._filter_by_name(entries, query)
                 return self._apply_pagination(matched, limit, offset), len(matched)
 
             if limit is None:
-                entries, total = self._collect_window(fs, fs_path, config, 0, MAX_ITEMS_LIMIT)
+                entries, total = self._read_window(fs, fs_path, config, 0, MAX_ITEMS_LIMIT)
                 if total > len(entries):
                     self._on_listing_exceeded()
                 return self._apply_pagination(entries, limit, offset), total
 
-            start = offset or 0
-            if limit <= GITLAB_MAX_PER_PAGE and start % limit == 0:
-                # arcfs maps this straight onto one GitLab page. Any other window would make it fetch
-                # the whole listing instead, so those go through the window collector below.
-                infos, total = fs.list_page(fs_path, True, offset=start, limit=limit)
-                return [self._info_to_entry(info, config) for info in infos], total
+            if limit > MAX_ITEMS_LIMIT:
+                # Nothing bounds the limit a caller may ask for, and arcfs will fetch as many
+                # GitLab pages as it takes to fill it.
+                self._on_listing_exceeded()
+            return self._read_window(fs, fs_path, config, offset or 0, min(limit, MAX_ITEMS_LIMIT))
 
-            return self._collect_window(fs, fs_path, config, start, limit)
-
-    def _collect_window(
+    def _read_window(
         self,
         fs: "GitLabARCFileSystem",
         fs_path: str,
@@ -236,30 +232,14 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
         start: int,
         count: int,
     ) -> tuple[list[AnyRemoteEntry], int]:
-        """Return up to ``count`` entries from ``start``, read as whole aligned pages.
+        """Return up to ``count`` entries from ``start``.
 
-        arcfs serves a window from one GitLab page only when the offset is a multiple of the limit,
-        and otherwise fetches the entire listing and slices it. Asking for whole pages keeps every
-        request on the cheap path, and reading only the pages that cover the window means a far page
-        does not cost a walk from the beginning.
+        Since 0.1.11 arcfs serves any window from the GitLab pages that cover it, so this only
+        has to convert what comes back. On a server that reports no total it returns a lower
+        bound that grows as the caller pages, and zero for a window past the end.
         """
-        page_size = GITLAB_MAX_PER_PAGE
-        page_start = (start // page_size) * page_size
-        entries: list[AnyRemoteEntry] = []
-        total = 0
-        position = page_start
-        while position < start + count:
-            infos, total = fs.list_page(fs_path, True, offset=position, limit=page_size)
-            entries.extend(self._info_to_entry(info, config) for info in infos)
-            position += page_size
-            if len(infos) < page_size:
-                break
-        window = entries[start - page_start : start - page_start + count]
-        if not entries:
-            # The window starts past the end, so ``page_start`` says nothing about how many entries
-            # exist. Claiming it as the total would keep a pager offering pages that are all empty.
-            return window, total
-        return window, max(total, page_start + len(entries))
+        infos, total = fs.list_page(fs_path, True, offset=start, limit=count)
+        return [self._info_to_entry(info, config) for info in infos], total
 
     def _adapt_entry_path(self, filesystem_path: str, config: ARCFileSourceConfiguration) -> str:
         """Insert a "/" after the marker, turning ``group/repo:-:file`` into ``group/repo:-:/file``."""
