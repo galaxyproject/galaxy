@@ -4,8 +4,8 @@
 
 import type { Tool } from "@/stores/toolStore";
 
-/** Matches segments that look like a version (e.g. "1.13", "2.4.2+galaxy0"). */
-const VERSION_SEGMENT_REGEX = /^\d+(\.\d+)*[-+\w]*$/;
+/** Matches segments that look like a version (e.g. "1.13", "2.4.2+galaxy0", "4.3+T.galaxy1"). */
+const VERSION_SEGMENT_REGEX = /^\d+(\.\d+)*[-+.\w]*$/;
 
 /**
  * Extracts the base tool ID from a versioned tool ID.
