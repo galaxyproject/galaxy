@@ -2,10 +2,9 @@
 import { describe, expect, it } from "vitest";
 
 /**
- * The package ships raw source and declares peer ranges spanning two major
- * versions of Vue and vue-router, so every consumer compiles these files with
- * its own stack: the Galaxy client on Vue 2.7 / vue-router 3, external
- * consumers (the Tool Shed frontend) on Vue 3 / vue-router 4.
+ * The package ships raw source, so every consumer compiles these files with its
+ * own stack: the Galaxy client on Vue 3 under @vue/compat with vue-router 5, the
+ * Tool Shed frontend on plain Vue 3 with vue-router 4.
  *
  * An import that only resolves on one of them type-checks and builds fine for
  * whoever added it and breaks the other consumer at compile time, which is how

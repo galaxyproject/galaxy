@@ -128,9 +128,8 @@ describe("GButton.vue router-link root", () => {
         expect(wrapper.get("a").attributes("title")).toBeUndefined();
     });
 
-    // vue-router 3 never emits a `click` component event and does not merge `$listeners`,
-    // so a plain `@click` on the RouterLink root is dead. GButton also binds `@click.native`,
-    // which reaches the rendered anchor.
+    // The click listener reaches the RouterLink's rendered anchor by fallthrough, alongside
+    // RouterLink's own navigation handler.
     it("emits click exactly once from a router-link root", async () => {
         const router = routerWithRoutes();
         const wrapper = mount(GButton as object, {
@@ -144,8 +143,7 @@ describe("GButton.vue router-link root", () => {
         expect(wrapper.emitted("click")).toHaveLength(1);
     });
 
-    // The mirror case: `@click.native` must not double up with `@click` on a plain root,
-    // where Vue 2 ignores `nativeOn`.
+    // The plain roots bind the same single listener directly.
     it("emits click exactly once from a plain button root", async () => {
         const wrapper = mountGButton({});
 
