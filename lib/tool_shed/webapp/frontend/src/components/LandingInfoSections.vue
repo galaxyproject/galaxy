@@ -16,7 +16,7 @@ import { RouterLink } from "vue-router"
             </div>
         </div>
 
-        <q-separator />
+        <hr />
 
         <div class="info-section q-py-lg">
             <div class="row items-start justify-end">
@@ -35,7 +35,7 @@ import { RouterLink } from "vue-router"
             </div>
         </div>
 
-        <q-separator />
+        <hr />
 
         <div class="info-section q-py-lg">
             <div class="row items-start">
@@ -50,7 +50,7 @@ import { RouterLink } from "vue-router"
             </div>
         </div>
 
-        <q-separator />
+        <hr />
 
         <div class="info-section q-py-lg">
             <div class="row items-start justify-end">

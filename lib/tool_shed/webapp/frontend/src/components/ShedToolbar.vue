@@ -48,7 +48,7 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
                 </q-item>
                 <!--
                     In the future would love to have tool centric exploration
-                <q-separator inset spaced />
+                <hr class="spaced" />
                 <q-item-label header>Tools</q-item-label>
                 -->
             </q-list>

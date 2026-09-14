@@ -220,7 +220,7 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                 </p>
                 <repository-links :repository="repository" :current-revision="currentRevision" v-if="repository" />
             </q-card-section>
-            <q-separator />
+            <hr />
             <q-card-section>
                 <InstallingHowto
                     v-if="repositoryName && repositoryOwner"
@@ -228,11 +228,11 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                     :repository-owner="repositoryOwner"
                 />
             </q-card-section>
-            <q-separator />
+            <hr />
             <q-card-section v-if="canManage">
                 <manage-push-access :repository-id="repositoryId"> </manage-push-access>
             </q-card-section>
-            <q-separator />
+            <hr />
             <q-card-section v-if="empty">
                 This repository is empty.
                 <span v-if="canPush">
@@ -259,7 +259,7 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                         <strong>This repository revision has been marked as malicious and cannot be installed.</strong>
                     </q-banner>
                     <p v-for="(content, key) of readmes" :key="key">
-                        <span v-html="content"></span>
+                        <span class="repository-readme" v-html="content"></span>
                     </p>
                     <!-- <span class="repository-select-label text-h6 q-mr-lg">Tools</span> -->
                     <q-list bordered class="rounded-borders" v-if="tools && tools.length > 0">

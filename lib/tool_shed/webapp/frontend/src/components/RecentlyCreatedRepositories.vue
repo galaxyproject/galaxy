@@ -31,7 +31,7 @@ onMounted(async () => {
             <error-banner :error="error" v-if="error" />
             <loading-div message="Loading most recently created repositories" v-else-if="loading" />
             <div v-else>
-                <q-separator spaced />
+                <hr class="spaced" />
                 <span v-for="repository of repositories" :key="repository.id">
                     <repository-creation :repository="repository" />
                 </span>

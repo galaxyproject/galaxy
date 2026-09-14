@@ -9,7 +9,7 @@ const attrs = useAttrs()
         <q-card-section>
             <div class="text-h6">{{ attrs.title }}</div>
         </q-card-section>
-        <q-separator horizontal />
+        <hr />
         <slot></slot>
     </q-card>
 </template>

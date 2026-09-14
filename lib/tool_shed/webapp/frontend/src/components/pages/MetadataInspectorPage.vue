@@ -88,7 +88,7 @@ function onResetComplete() {
                 <q-tab name="reset" label="Reset Metadata" v-if="canManage" />
             </q-tabs>
 
-            <q-separator />
+            <hr />
 
             <q-tab-panels v-model="activeTab">
                 <q-tab-panel name="revisions">

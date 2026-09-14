@@ -111,7 +111,7 @@ const linkedFromOlderRevision = computed(() => {
             <q-card-section>
                 {{ tool?.description }}
             </q-card-section>
-            <q-separator />
+            <hr />
             <q-card-section>
                 <q-list bordered separator>
                     <q-item v-if="repository && repositoryRevision && repositoryLink">
@@ -167,7 +167,7 @@ const linkedFromOlderRevision = computed(() => {
                     </q-item>
                 </q-list>
             </q-card-section>
-            <q-separator />
+            <hr />
             <q-card-section v-if="xrefs.length > 0">
                 <div class="text-h5 q-mr-lg">External links</div>
                 <q-list bordered separator>
@@ -187,12 +187,12 @@ const linkedFromOlderRevision = computed(() => {
                     </q-item>
                 </q-list>
             </q-card-section>
-            <q-separator />
+            <hr />
             <q-card-section>
                 <div class="text-h5 q-mr-lg">Help</div>
                 <preformatted-content :contents="tool?.help?.content ?? ''" />
             </q-card-section>
-            <q-separator />
+            <hr />
             <q-card-section>
                 <div class="text-h5 q-mr-lg">References</div>
                 <span v-if="citations.length < 1"><i>This tool does not define any references.</i></span>

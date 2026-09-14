@@ -43,6 +43,19 @@ export default defineComponent({
   &:focus
     top: 0
 
+// Horizontal rules, standing in for Quasar's q-separator
+hr
+  // Quasar's reset zeroes hr height, so draw the line as a border instead
+  border: none
+  border-top: 1px solid var(--color-grey-200)
+  margin: 0
+  &.spaced
+    margin: 0.5rem 0
+
+// Rendered READMEs bring their own rules and expect the usual spacing around them
+.repository-readme hr
+  margin: 1rem 0
+
 // Focus indicators for keyboard navigation
 *:focus-visible
   outline: 3px solid $accent !important

@@ -58,7 +58,7 @@ async function onResetPassword() {
         <div v-if="searchResults">
             {{ searchResults }}
         </div>
-        <q-separator class="q-my-lg" />
+        <hr class="q-my-lg" />
         <h6 class="q-my-md">Reset a user's password</h6>
         <q-form class="q-gutter-md" style="max-width: 30rem" action="#" @submit.prevent="onResetPassword">
             <select-user

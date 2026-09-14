@@ -18,7 +18,7 @@ defineProps({
                 <q-item-label v-if="description" caption class="text-grey-6">{{ description }}</q-item-label>
             </q-item-section>
         </q-item>
-        <q-separator horizontal />
+        <hr />
         <q-card-section vertical>
             <slot></slot>
         </q-card-section>
