@@ -361,7 +361,7 @@ class ToolOutputCollection(ToolOutputBase):
         return output_parts
 
     @property
-    def dynamic_structure(self):
+    def dynamic_structure(self) -> bool:
         return self.structure.dynamic
 
     @property
