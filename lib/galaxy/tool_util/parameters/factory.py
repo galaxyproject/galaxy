@@ -103,7 +103,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             optional = input_source.parse_optional()
             value = input_source.get("value")
             int_value: Optional[int]
-            if value:
+            if value or (value == 0 and not isinstance(value, bool)):
                 int_value = int(value)
             elif optional:
                 int_value = None
@@ -162,7 +162,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             optional = input_source.parse_optional()
             value = input_source.get("value")
             float_value: Optional[float]
-            if value:
+            if value or (value == 0 and not isinstance(value, bool)):
                 float_value = float(value)
             elif optional:
                 float_value = None
