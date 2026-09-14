@@ -902,6 +902,7 @@ steps:
             assert_ok=False,
         )
         job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id)
         icj_id = failed_hdca["implicit_collection_jobs_id"]
         assert icj_id
         index = self.__jobs_index(data=dict(implicit_collection_jobs_id=icj_id))
