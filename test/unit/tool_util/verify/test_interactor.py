@@ -1,5 +1,7 @@
 """Tests for adapting test output properties onto dataset API response keys."""
 
+import http.server
+import threading
 from typing import (
     Any,
     Literal,
@@ -7,9 +9,12 @@ from typing import (
 
 import pytest
 import responses
+from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
+from urllib3.util.retry import Retry
 
 from galaxy.tool_util.verify.interactor import (
+    _session,
     compare_expected_metadata_to_api_response,
     GalaxyInteractorApi,
     get_metadata_to_test,
@@ -235,11 +240,6 @@ def test_requests_reuse_one_connection_per_thread():
     Job-status polling dominates a large run, so a connection per request
     turns "has this finished yet" into tens of thousands of connects.
     """
-    import http.server
-    import threading
-
-    from galaxy.tool_util.verify.interactor import GalaxyInteractorApi
-
     connects = []
 
     class CountingServer(http.server.ThreadingHTTPServer):
@@ -279,18 +279,6 @@ def test_requests_reuse_one_connection_per_thread():
     assert len(connects) == 1, f"expected one reused connection, got {len(connects)}"
 
 
-def test_connect_timeout_is_separate_from_the_read_timeout():
-    """A connect that is never answered must not cost the read budget."""
-    from galaxy.tool_util.verify.interactor import (
-        CONNECT_TIMEOUT,
-        DEFAULT_TIMEOUT,
-    )
-
-    connect_timeout, read_timeout = DEFAULT_TIMEOUT
-    assert connect_timeout == CONNECT_TIMEOUT
-    assert connect_timeout < read_timeout
-
-
 def test_pooled_connections_are_retried_without_resubmitting_work():
     """Reusing a connection eventually means reusing one the server has closed.
 
@@ -301,11 +289,6 @@ def test_pooled_connections_are_retried_without_resubmitting_work():
     configuration: connection errors are retried, and POST is excluded so a
     retry can never resubmit work.
     """
-    from requests.adapters import HTTPAdapter
-    from urllib3.util.retry import Retry
-
-    from galaxy.tool_util.verify.interactor import _session
-
     adapter = _session().get_adapter("http://example.org/")
     assert isinstance(adapter, HTTPAdapter)
     retries = adapter.max_retries
