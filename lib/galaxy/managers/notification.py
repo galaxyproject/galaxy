@@ -86,10 +86,6 @@ from galaxy.util import now
 
 log = logging.getLogger(__name__)
 
-# Sentinel for the cached workflow_name lookup: distinguishes "not yet resolved"
-# from "resolved to None" (a valid result when the workflow cannot be found).
-
-
 NOTIFICATION_PREFERENCES_SECTION_NAME = "notifications"
 
 
