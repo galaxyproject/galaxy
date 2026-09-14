@@ -4,7 +4,9 @@ import pytest
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
+from galaxy.tool_util.deps.conda_util import CondaTarget
 from galaxy.tool_util.deps.container_resolvers import ResolutionCache
+from galaxy.tool_util.deps.container_resolvers.mulled import targets_to_mulled_name
 from galaxy.tool_util.deps.mulled.util import (
     _namespace_has_repo_name,
     mulled_tags_for,
@@ -51,3 +53,31 @@ def test_targets_to_mulled_name(resolution_cache):
     cache[TAG_CACHE_KEY] = {"bioconda": {"mytool3000": ["1.0", "1.1"]}}
     tags = mulled_tags_for(namespace="bioconda", image="mytool3000", resolution_cache=resolution_cache)
     assert tags == ["1.1", "1.0"]
+
+
+def test_targets_to_mulled_name_uses_persistent_cache(resolution_cache):
+    cache_key = "ns[biocontainers]__single__bwa__@__0.7.17"
+    resolution_cache.mulled_resolution_cache[cache_key] = "bwa:0.7.17--h7132678_9"
+
+    name = targets_to_mulled_name(
+        [CondaTarget("bwa", "0.7.17")],
+        hash_func="v2",
+        namespace="biocontainers",
+        resolution_cache=resolution_cache,
+    )
+
+    assert name == "bwa:0.7.17--h7132678_9"
+
+
+def test_mulled_tags_are_written_back_to_persistent_cache(resolution_cache, monkeypatch):
+    resolution_cache.mulled_resolution_cache[NAMESPACE_HAS_REPO_NAME_KEY] = ["mytool3000"]
+    monkeypatch.setattr("galaxy.tool_util.deps.mulled.util.quay_versions", lambda *args, **kwargs: ["1.0"])
+    assert mulled_tags_for("biocontainers", "mytool3000", resolution_cache=resolution_cache) == ["1.0"]
+
+    fresh_request_cache = ResolutionCache()
+    fresh_request_cache.mulled_resolution_cache = resolution_cache.mulled_resolution_cache
+    monkeypatch.setattr(
+        "galaxy.tool_util.deps.mulled.util.quay_versions",
+        lambda *args, **kwargs: pytest.fail("cached tags should prevent a second Quay request"),
+    )
+    assert mulled_tags_for("biocontainers", "mytool3000", resolution_cache=fresh_request_cache) == ["1.0"]
