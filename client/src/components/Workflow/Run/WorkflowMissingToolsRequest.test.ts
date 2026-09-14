@@ -76,7 +76,7 @@ function mountComponent(props: Record<string, unknown> = {}): Wrapper<Vue> {
 describe("WorkflowMissingToolsRequest", () => {
     beforeEach(() => {
         mockSubmitToolInstallationRequest.mockReset();
-        setMockConfig({ enable_tool_installation_request_form: true });
+        setMockConfig({ enable_notification_system: true, enable_tool_installation_request_form: true });
     });
 
     afterEach(() => {
@@ -90,7 +90,14 @@ describe("WorkflowMissingToolsRequest", () => {
     });
 
     it("does not render when feature flag is disabled", async () => {
-        setMockConfig({ enable_tool_installation_request_form: false });
+        setMockConfig({ enable_notification_system: true, enable_tool_installation_request_form: false });
+        const wrapper = mountComponent();
+        await flushPromises();
+        expect(wrapper.find(REQUEST_BUTTON).exists()).toBe(false);
+    });
+
+    it("does not render when the notification system is off, which the request needs", async () => {
+        setMockConfig({ enable_notification_system: false, enable_tool_installation_request_form: true });
         const wrapper = mountComponent();
         await flushPromises();
         expect(wrapper.find(REQUEST_BUTTON).exists()).toBe(false);
