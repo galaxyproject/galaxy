@@ -52,6 +52,7 @@ const emit = defineEmits(["onChange", "onChangePostJobActions"]);
 const modeOptions = [
     ["First non-null (error if all null)", "first_non_null"],
     ["First non-null (skip if all null)", "first_or_skip"],
+    ["First non-null, non-failed (skip if none)", "first_ok_or_skip"],
     ["The only non-null (error if != 1)", "the_only_non_null"],
     ["All non-null (as collection)", "all_non_null"],
 ];
@@ -124,7 +125,7 @@ if (connections) {
             title="Selection Mode"
             type="select"
             :options="modeOptions"
-            help="How to select among the connected inputs."
+            help="How to select among the connected inputs. The non-failed mode ignores failed inputs and skips when none remain."
             @input="onMode" />
         <div v-if="datatypes && step.outputs && step.outputs.length > 0" class="mt-2 mb-4">
             <Heading h2 separator bold size="sm"> Additional Options </Heading>

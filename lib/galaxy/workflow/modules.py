@@ -2070,13 +2070,13 @@ class PickValueModule(WorkflowModule):
 
     Accepts N inputs from conditional steps and produces a single output
     based on the configured selection mode. Supports first_non_null,
-    first_or_skip, the_only_non_null, and all_non_null modes.
+    first_or_skip, first_ok_or_skip, the_only_non_null, and all_non_null modes.
     """
 
     type = "pick_value"
     name = "Pick Value"
 
-    MODES = ("first_non_null", "first_or_skip", "the_only_non_null", "all_non_null")
+    MODES = ("first_non_null", "first_or_skip", "first_ok_or_skip", "the_only_non_null", "all_non_null")
 
     def __init__(self, trans: "ProvidesHistoryContext", content_id=None, **kwds):
         super().__init__(trans, content_id=content_id, **kwds)
@@ -2175,47 +2175,59 @@ class PickValueModule(WorkflowModule):
         return state
 
     @staticmethod
-    def _is_null_or_skipped(value) -> bool:
+    def _is_null_or_skipped(value, step: WorkflowStep) -> bool:
         """Check if a replacement value represents a skipped/null output."""
         if value is NO_REPLACEMENT:
             return True
         if isinstance(value, model.HistoryDatasetAssociation):
-            if value.extension == "expression.json" and value.blurb == "skipped":
-                return True
+            if value.extension == "expression.json":
+                if value.blurb == "skipped":
+                    return True
+                if not value.is_ok:
+                    # A failed expression output has no readable value, but failure is
+                    # not null. Preserve it so downstream failure filters can handle it.
+                    return False
+                return read_expression_json(value, step=step) is None
         return False
+
+    @staticmethod
+    def _is_failed(value) -> bool:
+        """Check whether a replacement value has an invalid tool-input state."""
+        return isinstance(value, model.DatasetInstance) and value.state not in model.Dataset.valid_input_states
 
     def _pick_from_replacements(self, trans: "ProvidesHistoryContext", invocation_step, mode, replacements):
         """Apply pick logic to a list of replacement values. Returns the picked output."""
         step = invocation_step.workflow_step
-        non_null = [r for r in replacements if not self._is_null_or_skipped(r)]
+        non_null = [r for r in replacements if not self._is_null_or_skipped(r, step)]
+        selectable = [r for r in non_null if mode != "first_ok_or_skip" or not self._is_failed(r)]
 
         if mode == "first_non_null":
-            if not non_null:
+            if not selectable:
                 raise FailWorkflowEvaluation(
                     why=InvocationFailureExpressionEvaluationFailed(
                         reason=FailureReason.expression_evaluation_failed,
                         workflow_step_id=step.id,
                     )
                 )
-            return non_null[0]
+            return selectable[0]
 
-        elif mode == "first_or_skip":
-            if not non_null:
+        elif mode in ("first_or_skip", "first_ok_or_skip"):
+            if not selectable:
                 return self._create_skipped_output(trans, invocation_step)
-            return non_null[0]
+            return selectable[0]
 
         elif mode == "the_only_non_null":
-            if len(non_null) != 1:
+            if len(selectable) != 1:
                 raise FailWorkflowEvaluation(
                     why=InvocationFailureExpressionEvaluationFailed(
                         reason=FailureReason.expression_evaluation_failed,
                         workflow_step_id=step.id,
                     )
                 )
-            return non_null[0]
+            return selectable[0]
 
         elif mode == "all_non_null":
-            return self._create_collection_from_list(trans, invocation_step, non_null)
+            return self._create_collection_from_list(trans, invocation_step, selectable)
 
         else:
             raise ValueError(f"Unknown pick_value mode: {mode}")
@@ -2230,6 +2242,8 @@ class PickValueModule(WorkflowModule):
         step = invocation_step.workflow_step
         mode = step.tool_inputs.get("mode", "first_non_null") if step.tool_inputs else "first_non_null"
         all_inputs = self.get_all_inputs()
+
+        self._ensure_inputs_ready(trans, progress, step, all_inputs)
 
         collection_info = self.compute_collection_info(progress, step, all_inputs)
 
@@ -2247,6 +2261,17 @@ class PickValueModule(WorkflowModule):
         progress.set_step_outputs(invocation_step, {"output": output})
         self._apply_post_job_actions(trans, step, output, progress.effective_replacement_dict())
         return None
+
+    def _ensure_inputs_ready(self, trans: "WorkRequestContext", progress: "WorkflowProgress", step, all_inputs) -> None:
+        """Delay this step until the inputs it picks from have been produced.
+
+        A tool step can be scheduled against a dataset that is still running - the job queue
+        orders the work. This module cannot. It reads the inputs to decide which one to pick,
+        and the picked output aliases that dataset rather than copying it, so a post job
+        action on this step mutates an upstream job's output. Both need that job finished.
+        """
+        for input_dict in all_inputs:
+            progress.replacement_for_input(trans, step, input_dict, require_ready=True)
 
     def _execute_mapped(self, trans: "ProvidesHistoryContext", invocation_step, mode, all_inputs, collection_info):
         """Execute pick_value mapped over collection inputs."""
@@ -2288,7 +2313,7 @@ class PickValueModule(WorkflowModule):
         return self._create_mapped_output_collection(trans, history, mode, per_element_outputs)
 
     def _create_skipped_output(self, trans: "ProvidesHistoryContext", invocation_step):
-        """Create a skipped HDA for first_or_skip when all inputs are null."""
+        """Create a skipped HDA when no input is selectable in a skip-capable mode."""
         invocation = invocation_step.workflow_invocation
         history = invocation.history
         hda = model.HistoryDatasetAssociation(
@@ -2376,7 +2401,7 @@ class PickValueModule(WorkflowModule):
         Uses execute_on_mapped_over which operates on step_outputs dict
         rather than requiring a Job object. Skipped outputs are left untouched.
         """
-        if self._is_null_or_skipped(output):
+        if self._is_null_or_skipped(output, step):
             return
         step_outputs = {"output": output}
         step_inputs: dict[str, Any] = {}
