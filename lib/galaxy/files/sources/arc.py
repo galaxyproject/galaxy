@@ -132,14 +132,37 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
                 "or may not be visible with your credentials."
             ) from e
         except Exception as e:
-            # GitLab answers 401/403 for a missing, invalid, expired or insufficiently scoped token.
-            # aiohttp reports those as ClientResponseError, which is not an OSError, so it arrives
-            # here. Matching on the status keeps this module importable without aiohttp, which the
-            # standalone galaxy-files package does not depend on.
+            # aiohttp reports HTTP failures as ClientResponseError, which is not an OSError, so they
+            # arrive here. Matching on the status keeps this module importable without aiohttp, which
+            # the standalone galaxy-files package does not depend on.
             status = getattr(e, "status", None)
-            if status in (401, 403):
-                raise AuthenticationRequired(self._credentials_message(f"{status} {getattr(e, 'message', e)}"))
-            raise MessageException(f"Problem {description}. Reason: {e}") from e
+            detail = getattr(e, "message", None) or e
+            if status == 401:
+                # A missing, invalid, expired or revoked token.
+                raise AuthenticationRequired(self._credentials_message(f"{status} {detail}"))
+            if status == 403:
+                # The token authenticated but is not allowed to do this, most often because it was
+                # created without the "api" scope.
+                raise AuthenticationRequired(
+                    self._credentials_message(f"{status} {detail}. The token may lack the 'api' scope.")
+                )
+            if status == 405:
+                # GitLab limits how far an offset listing may page and answers 405 once past it,
+                # with no hint that paging is what it objected to. It enforces this only for
+                # unauthenticated requests, so a token removes the limit entirely.
+                raise MessageException(
+                    f"Problem {description}. {self.label} would not list any further into the "
+                    "catalogue. Some GitLab servers cap how deep an anonymous listing can page. "
+                    "Search for the ARC by name, or add an access token for this file source."
+                ) from e
+            if status == 429:
+                raise MessageException(
+                    f"Problem {description}. {self.label} is rate limiting these requests"
+                    f"{self._retry_hint(e)}. Please wait and try again."
+                ) from e
+            # Some errors carry no text at all, which would render as a bare "Reason: ".
+            reason = str(e) or type(e).__name__
+            raise MessageException(f"Problem {description}. Reason: {reason}") from e
         finally:
             if fs is not None:
                 fs.close()
@@ -278,6 +301,16 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
             f"Permission Denied. Reason: {reason}. "
             f"Please check your credentials in your preferences for {self.label}."
         )
+
+    @staticmethod
+    def _retry_hint(error: object) -> str:
+        """Turn GitLab's ``Retry-After`` into something worth telling the user."""
+        headers = getattr(error, "headers", None) or {}
+        try:
+            retry_after = headers.get("Retry-After")
+        except AttributeError:
+            return ""
+        return f" and asked us to wait {retry_after} seconds" if retry_after else ""
 
     @staticmethod
     def _is_source_root(path: str) -> bool:

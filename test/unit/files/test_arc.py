@@ -469,6 +469,54 @@ def test_unauthorized_response_becomes_authentication_required(fake_fs, status):
         source.list("/", limit=5, offset=0, user_context=user_context_fixture())
 
 
+def test_forbidden_response_mentions_the_token_scope(fake_fs):
+    """403 usually means the token authenticated but was created without the api scope."""
+    fake_fs.list_page_error = _response_error(403, "Forbidden")
+    source = _arc_source()
+    with pytest.raises(AuthenticationRequired, match="'api' scope"):
+        source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+
+
+def test_offset_limit_response_explains_paging_and_the_token_remedy(fake_fs):
+    """GitLab answers 405 once an anonymous listing pages past its offset limit.
+
+    The bare status says nothing about paging, and the limit applies only to
+    unauthenticated requests, so the message has to supply both.
+    """
+    fake_fs.list_page_error = _response_error(405, "Method Not Allowed")
+    source = _arc_source()
+    with pytest.raises(MessageException, match="access token") as excinfo:
+        source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+    assert "page" in str(excinfo.value)
+    assert "Method Not Allowed" not in str(excinfo.value)
+
+
+def test_rate_limited_response_passes_on_the_retry_delay(fake_fs):
+    """GitLab says how long to wait in Retry-After, which is worth telling the user."""
+    error = _response_error(429, "Too Many Requests")
+    error.headers = CIMultiDictProxy(CIMultiDict({"Retry-After": "60"}))
+    fake_fs.list_page_error = error
+    source = _arc_source()
+    with pytest.raises(MessageException, match="rate limiting") as excinfo:
+        source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+    assert "60 seconds" in str(excinfo.value)
+
+
+def test_rate_limited_response_without_a_retry_header_still_reads_well(fake_fs):
+    fake_fs.list_page_error = _response_error(429, "Too Many Requests")
+    source = _arc_source()
+    with pytest.raises(MessageException, match="rate limiting these requests. Please wait"):
+        source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+
+
+def test_error_without_any_text_does_not_render_an_empty_reason(fake_fs):
+    """Some errors stringify to nothing, which would leave a dangling "Reason: "."""
+    fake_fs.list_page_error = TimeoutError()
+    source = _arc_source()
+    with pytest.raises(MessageException, match="Reason: TimeoutError"):
+        source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+
+
 def test_server_error_response_becomes_message_exception(fake_fs):
     fake_fs.list_page_error = _response_error(500, "Internal Server Error")
     source = _arc_source()
