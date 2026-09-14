@@ -91,6 +91,7 @@ class FakeRecorder:
         self.put_file_calls: list[tuple[str, str]] = []
         self.closed = 0
         self.list_page_error: Exception | None = None
+        self.put_file_error: Exception | None = None
 
 
 def _make_fake_fs_class(recorder: FakeRecorder, tree: dict, files: dict):
@@ -141,6 +142,8 @@ def _make_fake_fs_class(recorder: FakeRecorder, tree: dict, files: dict):
                 f.write(files[key])
 
         def put_file(self, lpath, rpath, **kwargs):
+            if recorder.put_file_error is not None:
+                raise recorder.put_file_error
             recorder.put_file_calls.append((lpath, self._key(rpath)))
 
         def close(self):
@@ -515,6 +518,39 @@ def test_error_without_any_text_does_not_render_an_empty_reason(fake_fs):
     source = _arc_source()
     with pytest.raises(MessageException, match="Reason: TimeoutError"):
         source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+
+
+def test_error_without_a_reason_phrase_does_not_leak_the_api_url(fake_fs):
+    """aiohttp leaves ``message`` empty when the server sends no reason phrase.
+
+    The exception itself stringifies to the full internal request URL, so it must
+    not be used as a stand-in for the missing text.
+    """
+    fake_fs.list_page_error = _response_error(401, "")
+    source = _arc_source()
+    with pytest.raises(AuthenticationRequired) as excinfo:
+        source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+    message = str(excinfo.value)
+    assert "401" in message
+    assert "http" not in message, "the internal API URL must not reach the user"
+    assert "message=''" not in message
+
+
+def test_offset_limit_on_a_write_is_not_described_as_a_listing(fake_fs):
+    """``_filesystem`` is shared, so the paging wording must not leak into writes."""
+    fake_fs.put_file_error = _response_error(405, "Method Not Allowed")
+    file_sources = configured_file_sources([_source_config(writable=True)])
+    with pytest.raises(MessageException) as excinfo:
+        write_from(
+            file_sources,
+            "gxfiles://test1/group/repo1:-:/galaxy_exports/result.txt",
+            "result\n",
+            user_context=user_context_fixture(),
+        )
+    message = str(excinfo.value)
+    assert "writing to file source path" in message
+    assert "list any further" not in message
+    assert "Search for the ARC by name" not in message
 
 
 def test_server_error_response_becomes_message_exception(fake_fs):
