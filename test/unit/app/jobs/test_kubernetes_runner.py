@@ -1,6 +1,10 @@
 """Unit tests for the Kubernetes job runner pod security context."""
 
 from types import SimpleNamespace
+from typing import (
+    Any,
+    cast,
+)
 
 import pytest
 
@@ -23,7 +27,7 @@ SECURITY_CONTEXT_SPECS = dict(
 
 
 def _runner(runner_params=None):
-    runner = KubernetesJobRunner.__new__(KubernetesJobRunner)
+    runner = cast(Any, object.__new__(KubernetesJobRunner))
     runner.app = SimpleNamespace(config=SimpleNamespace(gid=10001))
     runner.runner_params = RunnerParams(specs=SECURITY_CONTEXT_SPECS, params=runner_params or {})
     return runner
