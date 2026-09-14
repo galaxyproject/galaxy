@@ -82,7 +82,11 @@ from ._types import (
     ToolTestDescriptionDict,
     ValueStateRepresentationT,
 )
-from .wait import wait_on
+from .wait import (
+    DEFAULT_POLLING_BACKOFF,
+    DEFAULT_POLLING_DELTA,
+    wait_on,
+)
 
 log = getLogger(__name__)
 
@@ -96,6 +100,8 @@ VERBOSE_ERRORS = util.asbool(os.environ.get("GALAXY_TEST_VERBOSE_ERRORS", False)
 UPLOAD_ASYNC = util.asbool(os.environ.get("GALAXY_TEST_UPLOAD_ASYNC", True))
 ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
 DEFAULT_TOOL_TEST_WAIT: int = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400))
+POLLING_DELTA: float = float(os.environ.get("GALAXY_TEST_POLLING_DELTA", DEFAULT_POLLING_DELTA))
+POLLING_BACKOFF: float = float(os.environ.get("GALAXY_TEST_POLLING_BACKOFF", DEFAULT_POLLING_BACKOFF))
 CLEANUP_TEST_HISTORIES = "GALAXY_TEST_NO_CLEANUP" not in os.environ
 DEFAULT_TARGET_HISTORY = os.environ.get("GALAXY_TEST_HISTORY_ID", None)
 
@@ -282,6 +288,8 @@ class GalaxyInteractorApi:
         self.keep_outputs_dir = kwds.get("keep_outputs_dir", None)
         self.download_attempts = kwds.get("download_attempts", 1)
         self.download_sleep = kwds.get("download_sleep", 1)
+        self.polling_delta = kwds.get("polling_delta", POLLING_DELTA)
+        self.polling_backoff = kwds.get("polling_backoff", POLLING_BACKOFF)
         # Local test data directories.
         self.test_data_directories = kwds.get("test_data") or []
 
@@ -483,7 +491,7 @@ class GalaxyInteractorApi:
 
     def wait_for(self, func: Callable, what: str = "tool test run", **kwd) -> None:
         walltime_exceeded = int(kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT))
-        return wait_on(func, what, walltime_exceeded)
+        return wait_on(func, what, walltime_exceeded, delta=self.polling_delta, polling_backoff=self.polling_backoff)
 
     def get_job_stdio(self, job_id: str) -> dict[str, Any]:
         return self.__get_job_stdio(job_id).json()
