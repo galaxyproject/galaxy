@@ -30,6 +30,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.files.models import (
+    FilesSourceOptions,
     RemoteDirectory,
     RemoteFile,
 )
@@ -91,6 +92,7 @@ class FakeRecorder:
         self.put_file_calls: list[tuple[str, str]] = []
         self.closed = 0
         self.list_page_error: Exception | None = None
+        self.list_page_membership: list = []
         self.put_file_error: Exception | None = None
 
 
@@ -114,6 +116,7 @@ def _make_fake_fs_class(recorder: FakeRecorder, tree: dict, files: dict):
         def list_page(self, path, detail=True, *, offset=0, limit=50, **kwargs):
             key = self._key(path)
             recorder.list_page_calls.append({"path": key, "offset": offset, "limit": limit})
+            recorder.list_page_membership.append(kwargs.get("membership"))
             if recorder.list_page_error is not None:
                 raise recorder.list_page_error
             entries = tree.get(key, [])
@@ -317,9 +320,10 @@ def test_recursive_listing_translates_errors(fake_fs, monkeypatch):
         raise FileNotFoundError("4481")
 
     monkeypatch.setattr(source, "_list_recursive", boom)
-    with pytest.raises(ObjectNotFound, match="4481"):
+    with pytest.raises(ObjectNotFound, match="Not found in") as excinfo:
         source.list("group/repo1:-:/", recursive=True, user_context=user_context_fixture())
     assert fake_fs.closed == 1
+    assert "4481" not in str(excinfo.value), "the internal project id must not reach the user"
 
 
 def test_recursive_listing_of_the_root_is_rejected(fake_fs):
@@ -566,8 +570,9 @@ def test_missing_or_empty_project_becomes_object_not_found(fake_fs):
     """arcfs reports an ARC without commits, or one it cannot see, as a FileNotFoundError."""
     fake_fs.list_page_error = FileNotFoundError("4481")
     source = _arc_source()
-    with pytest.raises(ObjectNotFound, match="4481"):
+    with pytest.raises(ObjectNotFound, match="Not found in") as excinfo:
         source.list("group/newarc:-:/", limit=5, offset=0, user_context=user_context_fixture())
+    assert "4481" not in str(excinfo.value), "the internal project id must not reach the user"
 
 
 def test_other_errors_become_message_exception(fake_fs):
@@ -759,3 +764,64 @@ def test_export_to_writable_repository_creates_lfs_merge_request():
             ), "expected git to hold an LFS pointer"
             return
     pytest.fail(f"uploaded file {inside_path} not found with the expected content on any merge request branch")
+
+
+def test_recursive_listing_honours_a_query(fake_fs):
+    """A recursive search must filter, not return the whole subtree as if it matched."""
+    source = _arc_source()
+    entries, total = source.list(
+        "group/repo1:-:/",
+        recursive=True,
+        query="README",
+        limit=10,
+        offset=0,
+        user_context=user_context_fixture(),
+    )
+    assert [e.name for e in entries] == ["README.md"]
+    assert total == 1
+
+
+def test_search_treats_wildcards_literally(fake_fs):
+    """Documents the behaviour: search is a substring match, not a glob.
+
+    The base class preserves ``*`` and ``?`` as wildcards, but arcfs has no ``_info`` for
+    globbing, so this source filters by name instead. A user typing a wildcard gets no
+    matches rather than an error.
+    """
+    source = _arc_source()
+    plain, _ = source.list("/", query="repo", limit=10, offset=0, user_context=user_context_fixture())
+    assert len(plain) == 3
+
+    for pattern in ("*repo*", "re?o"):
+        starred, total = source.list("/", query=pattern, limit=10, offset=0, user_context=user_context_fixture())
+        assert starred == [], f"{pattern} is matched literally, not as a glob"
+        assert total == 0
+
+
+def test_writable_listing_asks_only_for_reachable_arcs(fake_fs):
+    """Every visible ARC can be read, but only some can be pushed to."""
+    source = _arc_source()
+    source.list(
+        "/",
+        limit=5,
+        offset=0,
+        opts=FilesSourceOptions(write_intent=True),
+        user_context=user_context_fixture(),
+    )
+    assert fake_fs.list_page_membership == [True]
+
+
+def test_read_listing_does_not_narrow_to_own_arcs(fake_fs):
+    """Browsing and importing is the primary use, and public ARCs must stay visible."""
+    source = _arc_source()
+    source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+    assert fake_fs.list_page_membership == [False]
+
+
+@pytest.mark.parametrize("target", ["/history.tgz", "/exports/history.tgz", "/"])
+def test_write_outside_an_arc_is_rejected(fake_fs, target):
+    """Without the marker arcfs builds the whole project index before failing obscurely."""
+    file_sources = configured_file_sources([_source_config(writable=True)])
+    with pytest.raises(RequestParameterInvalidException, match="inside an ARC"):
+        write_from(file_sources, f"gxfiles://test1{target}", "data\n", user_context=user_context_fixture())
+    assert fake_fs.put_file_calls == [], "nothing may reach arcfs"
