@@ -133,6 +133,7 @@ describe("RevisionsTab", () => {
             await nextTick()
 
             expect(wrapper.text()).toContain(invalidTools[0].tool_config)
+            expect(wrapper.text()).toContain(invalidTools[0].error_message)
         })
     })
 
