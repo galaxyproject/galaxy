@@ -47,6 +47,7 @@ class ToolOutputBase(Dictifiable):
     label: str | None
     hidden: bool
     precreate_directory: bool
+    from_work_dir: str | None
 
     def __init__(
         self,
@@ -528,11 +529,11 @@ class ToolOutputCollectionPart:
         return effective_output_name
 
     @staticmethod
-    def is_named_collection_part_name(name):
+    def is_named_collection_part_name(name: str) -> bool:
         return "|__part__|" in name
 
     @staticmethod
-    def split_output_name(name):
+    def split_output_name(name: str) -> list[str]:
         assert ToolOutputCollectionPart.is_named_collection_part_name(name)
         return name.split("|__part__|")
 

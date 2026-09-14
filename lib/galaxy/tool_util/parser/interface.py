@@ -61,6 +61,10 @@ if TYPE_CHECKING:
         ToolOutputBase,
         ToolOutputCollection,
     )
+    from .stdio import (
+        ToolStdioExitCode,
+        ToolStdioRegex,
+    )
 
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
@@ -228,7 +232,7 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_command(self):
+    def parse_command(self) -> str | None:
         """Return string contianing command to run."""
 
     def parse_shell_command(self) -> str | None:
@@ -248,7 +252,7 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_environment_variables(self):
+    def parse_environment_variables(self) -> list[dict[str, Any]]:
         """Return environment variable templates to expose."""
 
     def parse_home_target(self):
@@ -276,7 +280,7 @@ class ToolSource(metaclass=ABCMeta):
         ] + self.parse_tmp_directory_vars()
 
     @abstractmethod
-    def parse_interpreter(self):
+    def parse_interpreter(self) -> str | None:
         """Return string containing the interpreter to prepend to the command
         (for instance this might be 'python' to run a Python wrapper located
         adjacent to the tool).
@@ -380,7 +384,7 @@ class ToolSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def parse_stdio(self):
+    def parse_stdio(self) -> tuple[list["ToolStdioExitCode"], list["ToolStdioRegex"]]:
         """Builds lists of ToolStdioExitCode and ToolStdioRegex objects
         to describe tool execution error conditions.
         """
