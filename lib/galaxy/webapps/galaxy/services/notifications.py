@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import NoReturn
 
@@ -39,6 +40,8 @@ from galaxy.schema.notifications import (
 from galaxy.schema.schema import AsyncTaskResultSummary
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.work.context import SessionRequestContext
+
+log = logging.getLogger(__name__)
 
 
 class NotificationService(ServiceBase):
@@ -88,9 +91,15 @@ class NotificationService(ServiceBase):
         # act on -- return that one, not the last iteration's (confirmation) result.
         response: NotificationCreatedResponse | AsyncTaskResultSummary | None = None
         for index, request in enumerate(requests):
-            sent = self.send_internal_notification(request, force_sync=False)
             if index == 0:
-                response = sent
+                response = self.send_internal_notification(request, force_sync=False)
+                continue
+            # The admin notification is already away, so a failed confirmation must
+            # not fail the request: a retry would notify the admins a second time.
+            try:
+                self.send_internal_notification(request, force_sync=False)
+            except Exception:
+                log.exception("Failed to send the submitter's confirmation copy")
         assert response is not None
         return response
 
