@@ -6,6 +6,7 @@ from typing import (
     cast,
     TYPE_CHECKING,
 )
+from unittest.mock import patch
 
 from galaxy import model
 from galaxy.app_unittest_utils.job_runner_support import MockJobWrapper
@@ -71,6 +72,18 @@ class TestPulsarFinishingRecovery(TestCase, UsesTools):
         method, job_state = self.runner.work_queue.get_nowait()
         assert method == self.runner._finish_staged_job
         assert job_state.job_wrapper is self.job_wrapper
+
+    def test_finishing_state_does_not_propagate_to_outputs(self):
+        self.job_wrapper.metadata_strategy = "celery"
+        with (
+            patch.object(self.runner, "_verify_celery_config"),
+            patch("galaxy.celery.tasks.set_job_metadata.delay") as delay,
+        ):
+            self.runner._handle_metadata_externally(cast(MinimalJobWrapper, self.job_wrapper))
+
+        delay.return_value.get.assert_called_once_with()
+        assert self.job_wrapper.state == model.Job.states.FINISHING
+        assert self.job_wrapper.last_state_change_updated_outputs is False
 
     def test_finish_staged_job_uses_local_exit_code_and_streams(self):
         outputs_directory = os.path.join(self.job_wrapper.working_directory, "outputs")

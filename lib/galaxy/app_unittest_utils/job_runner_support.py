@@ -105,8 +105,9 @@ class MockJobWrapper:
     def get_state(self):
         return self.state
 
-    def change_state(self, state, job=None):
+    def change_state(self, state, job=None, update_output_states=True):
         self.state = state
+        self.last_state_change_updated_outputs = update_output_states
 
     @property
     def job_io(self):

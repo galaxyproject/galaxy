@@ -110,13 +110,13 @@ class TestPulsarFinishingRecoveryIntegration(integration_util.IntegrationTestCas
 
         # Recreate the durable database snapshot a handler restart can leave
         # after staging and remote cleanup but before job_wrapper.finish().
+        job.output_datasets[0].dataset.state = model.Dataset.states.RUNNING
         job.state = model.Job.states.FINISHING
         job.state_history.append(model.JobStateHistory(job=job))
-        job.update_output_states(supports_skip_locked=False)
         job.output_datasets[0].dataset.metadata.data_lines = 0
         sa_session.commit()
         sa_session.expire_all()
-        assert job.output_datasets[0].dataset.state == model.Dataset.states.SETTING_METADATA
+        assert job.output_datasets[0].dataset.state == model.Dataset.states.RUNNING
 
         self.restart()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
