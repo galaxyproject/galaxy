@@ -34,9 +34,9 @@ from galaxy.files.models import (
     RemoteFile,
 )
 from galaxy.files.sources import arc
+from galaxy.files.sources._fsspec import MAX_ITEMS_LIMIT
 from galaxy.files.sources.arc import (
     ARCFilesSource,
-    GITLAB_MAX_PER_PAGE,
     ROOT_MARKER,
 )
 from galaxy.util import requests
@@ -117,10 +117,8 @@ def _make_fake_fs_class(recorder: FakeRecorder, tree: dict, files: dict):
             if recorder.list_page_error is not None:
                 raise recorder.list_page_error
             entries = tree.get(key, [])
-            if limit > 0 and offset % limit != 0:
-                # arcfs can only map a window onto a GitLab page when the offset is a multiple of
-                # the limit; anything else makes it fetch and keep the whole listing.
-                recorder.ls_calls.append(key)
+            # Since 0.1.11 arcfs serves any window from the pages that cover it, so the fake
+            # simply slices; no offset is special.
             return entries[offset : offset + limit], len(entries)
 
         def walk(self, path, detail=True, **kwargs):
@@ -254,31 +252,35 @@ def test_paginated_listing_uses_list_page_and_reports_total(fake_fs):
     assert fake_fs.closed == 1, "the filesystem should be closed after a paginated listing"
 
 
-def test_window_arcfs_cannot_page_is_read_as_whole_pages(fake_fs):
-    """arcfs fetches the entire listing unless the offset is a multiple of the limit."""
+def test_unaligned_window_is_requested_as_asked(fake_fs):
+    """An offset that is not a multiple of the limit is passed straight through.
+
+    0.1.10 fetched the entire listing for such a window, so Galaxy had to ask for whole
+    aligned pages and slice them. 0.1.11 serves any window, so the workaround is gone.
+    """
     source = _arc_source()
     entries, total = source.list("/", limit=2, offset=1, user_context=user_context_fixture())
     assert [e.path for e in entries] == ["group/sub/repo2:-:/", "other/repo3:-:/"]
     assert total == 3
     assert fake_fs.ls_calls == [], "no request may fall back to a full listing"
-    assert all(call["offset"] % call["limit"] == 0 for call in fake_fs.list_page_calls)
+    assert fake_fs.list_page_calls == [{"path": "", "offset": 1, "limit": 2}]
 
 
-def test_unpaginated_listing_is_assembled_from_pages(fake_fs):
-    """``fs.ls()`` would make arcfs fetch and retain the whole catalogue and reports no total."""
+def test_unpaginated_listing_is_bounded(fake_fs):
+    """``fs.ls()`` reports no total and makes arcfs keep the whole catalogue, so it is not used."""
     source = _arc_source()
     entries, total = source.list("/", user_context=user_context_fixture())
     assert fake_fs.ls_calls == []
-    assert fake_fs.list_page_calls == [{"path": "", "offset": 0, "limit": GITLAB_MAX_PER_PAGE}]
+    assert fake_fs.list_page_calls == [{"path": "", "offset": 0, "limit": MAX_ITEMS_LIMIT}]
     assert total == 3
     assert all(isinstance(e, RemoteDirectory) for e in entries)
 
 
-def test_large_limit_is_assembled_from_capped_pages(large_fake_fs):
-    """GitLab caps ``per_page`` at 100, so a bigger page must be built from several requests."""
+def test_large_limit_is_served_in_one_request(large_fake_fs):
+    """arcfs splits a window across GitLab pages itself, so Galaxy asks once."""
     source = _arc_source()
     entries, total = source.list("/", limit=150, offset=0, user_context=user_context_fixture())
-    assert all(call["limit"] <= GITLAB_MAX_PER_PAGE for call in large_fake_fs.list_page_calls)
+    assert large_fake_fs.list_page_calls == [{"path": "", "offset": 0, "limit": 150}]
     assert large_fake_fs.ls_calls == []
     assert total == 250
     assert len(entries) == 150
@@ -584,7 +586,7 @@ def test_window_beyond_the_listing_cap_still_returns_entries(huge_fake_fs):
     assert entries[-1].name == "group/repo1199"
     assert total == 1500
     # Only the pages covering the window, not a walk from the beginning.
-    assert [call["offset"] for call in huge_fake_fs.list_page_calls] == [1000, 1100]
+    assert [call["offset"] for call in huge_fake_fs.list_page_calls] == [1000]
 
 
 def test_window_past_the_end_reports_the_real_total(huge_fake_fs):
