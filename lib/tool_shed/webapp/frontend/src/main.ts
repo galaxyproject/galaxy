@@ -1,5 +1,5 @@
 import { createApp } from "vue"
-import { Quasar, Notify, Cookies } from "quasar"
+import { Quasar, Cookies } from "quasar"
 import App from "./App.vue"
 // <q-icon icon="<icon_name>"
 import "@quasar/extras/material-icons/material-icons.css"
@@ -23,6 +23,6 @@ import "@fontsource/atkinson-hyperlegible/700-italic.css"
 import router from "@/router"
 import { createPinia } from "pinia"
 
-const quasarPlugins = { Notify, Cookies }
+const quasarPlugins = { Cookies }
 const quasarConfig = { plugins: quasarPlugins }
 createApp(App).use(createPinia()).use(router).use(Quasar, quasarConfig).mount("#app")

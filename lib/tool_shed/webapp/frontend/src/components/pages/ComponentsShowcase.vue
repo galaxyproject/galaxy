@@ -4,12 +4,14 @@ import LoadingDiv from "@/components/LoadingDiv.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
 import ComponentShowcase from "@/components/ComponentShowcase.vue"
 import ComponentShowcaseExample from "@/components/ComponentShowcaseExample.vue"
-import { GButton, GCheckbox, GHeading, GLink } from "@galaxyproject/galaxy-ui"
+import { GButton, GCheckbox, GHeading, GLink, useToast } from "@galaxyproject/galaxy-ui"
 import RecentlyCreatedRepositories from "@/components/RecentlyCreatedRepositories.vue"
 import RepositoryLink from "@/components/RepositoryLink.vue"
 import RepositoryActions from "@/components/RepositoryActions.vue"
 import LandingSearchBox from "@/components/LandingSearchBox.vue"
 import LandingInfoSections from "@/components/LandingInfoSections.vue"
+
+const { addToast } = useToast()
 
 // MetadataInspector components
 import ChangesetSummaryTable from "@/components/MetadataInspector/ChangesetSummaryTable.vue"
@@ -132,6 +134,15 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
             <q-separator />
             <component-showcase-example title="GCheckbox">
                 <GCheckbox>Labeled checkbox</GCheckbox>
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="Toasts (notify)">
+                <GButton color="green" @click="addToast('Repository saved', { variant: 'success' })">Success</GButton>
+                <GButton color="blue" @click="addToast('Indexing started', { variant: 'info' })">Info</GButton>
+                <GButton color="orange" @click="addToast('Revision is outdated', { variant: 'warning' })">
+                    Warning
+                </GButton>
+                <GButton color="red" @click="addToast('Request failed', { variant: 'danger' })">Error</GButton>
             </component-showcase-example>
         </component-showcase>
 

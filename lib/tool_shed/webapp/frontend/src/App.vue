@@ -9,16 +9,19 @@
                 <router-view />
             </q-page-container>
         </q-layout>
+        <GToast />
     </div>
 </template>
 
 <script lang="ts">
+import { GToast } from "@galaxyproject/galaxy-ui"
 import { defineComponent } from "vue"
 import ShedToolbar from "./components/ShedToolbar.vue"
 
 export default defineComponent({
     name: "App",
     components: {
+        GToast,
         ShedToolbar,
     },
 })
