@@ -136,20 +136,25 @@ class ARCFilesSource(FsspecFilesSource[ARCFileSourceTemplateConfiguration, ARCFi
             # arrive here. Matching on the status keeps this module importable without aiohttp, which
             # the standalone galaxy-files package does not depend on.
             status = getattr(e, "status", None)
-            detail = getattr(e, "message", None) or e
+            # aiohttp leaves ``message`` empty when the server sends no reason phrase, and the
+            # exception itself stringifies to the full internal API URL, so it cannot stand in.
+            reason_phrase = getattr(e, "message", None)
+            detail = f"{status} {reason_phrase}" if reason_phrase else str(status)
             if status == 401:
                 # A missing, invalid, expired or revoked token.
-                raise AuthenticationRequired(self._credentials_message(f"{status} {detail}"))
+                raise AuthenticationRequired(self._credentials_message(detail))
             if status == 403:
                 # The token authenticated but is not allowed to do this, most often because it was
                 # created without the "api" scope.
                 raise AuthenticationRequired(
-                    self._credentials_message(f"{status} {detail}. The token may lack the 'api' scope.")
+                    self._credentials_message(f"{detail}. The token may lack the 'api' scope.")
                 )
-            if status == 405:
+            if status == 405 and description.startswith("listing"):
                 # GitLab limits how far an offset listing may page and answers 405 once past it,
                 # with no hint that paging is what it objected to. It enforces this only for
-                # unauthenticated requests, so a token removes the limit entirely.
+                # unauthenticated requests, so a token removes the limit entirely. The cap applies
+                # to listings, and this handler is shared with reading and writing, so only a
+                # listing gets this wording.
                 raise MessageException(
                     f"Problem {description}. {self.label} would not list any further into the "
                     "catalogue. Some GitLab servers cap how deep an anonymous listing can page. "
