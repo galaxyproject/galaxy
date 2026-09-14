@@ -63,6 +63,14 @@ log = logging.getLogger(__name__)
 
 __all__ = ("KubernetesJobRunner",)
 
+# Valid values for the pod-level securityContext.fsGroupChangePolicy field.
+K8S_FS_GROUP_CHANGE_POLICIES = ("OnRootMismatch", "Always")
+
+
+def valid_fs_group_change_policy(value):
+    """An unset or empty policy leaves the Kubernetes default (Always) in place."""
+    return not value or value in K8S_FS_GROUP_CHANGE_POLICIES
+
 
 @dataclass
 class RetryableDeleteJobState(JobState):
@@ -127,6 +135,7 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             k8s_fs_group_id=dict(
                 map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or s.isdigit(), default=None
             ),
+            k8s_fs_group_change_policy=dict(map=str, valid=valid_fs_group_change_policy, default=None),
             k8s_cleanup_job=dict(map=str, valid=lambda s: s in {"onsuccess", "always", "never"}, default="always"),
             k8s_pod_retries=dict(
                 map=int, valid=lambda x: int(x) >= 0, default=1
@@ -537,6 +546,9 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             security_context["supplementalGroups"] = [supplemental_group]
         if fs_group and fs_group > 0:
             security_context["fsGroup"] = fs_group
+        fs_group_change_policy = self.__get_overridable_params(job_wrapper, "k8s_fs_group_change_policy")
+        if fs_group_change_policy:
+            security_context["fsGroupChangePolicy"] = fs_group_change_policy
         return security_context
 
     def __get_k8s_restart_policy(self, job_wrapper):

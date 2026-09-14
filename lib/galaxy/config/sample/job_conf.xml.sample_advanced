@@ -335,6 +335,13 @@
                  a requirement of the other.
 
                  -->
+
+            <!-- <param id="k8s_fs_group_change_policy">OnRootMismatch</param> -->
+            <!-- When k8s_fs_group_id is set, Kubernetes recursively changes the ownership and permissions of every
+                 file on each mounted volume when the pod starts, which can delay job start-up considerably on large
+                 volumes. Set the policy to OnRootMismatch to skip the recursive change when the root of the volume
+                 already has the expected group. Valid values are OnRootMismatch and Always (the Kubernetes default).
+                 This can also be overridden per destination. -->
             <!-- <param id="k8s_run_as_user_id">10001</param> -->
             <!-- ID of user that should be used by the tool command in the job containers -->
             <!-- <param id="k8s_run_as_group_id">10001</param> -->
