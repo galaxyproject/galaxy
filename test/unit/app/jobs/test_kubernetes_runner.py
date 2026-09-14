@@ -11,25 +11,15 @@ import pytest
 from galaxy.jobs.runners import RunnerParams
 from galaxy.jobs.runners.kubernetes import (
     KubernetesJobRunner,
+    RUNNER_PARAM_SPECS,
     valid_fs_group_change_policy,
-)
-
-# The specs for the parameters consulted by __get_k8s_security_context. Mirrors
-# the definitions in KubernetesJobRunner.__init__ so a runner can be built
-# without a Galaxy app or a Kubernetes API client.
-SECURITY_CONTEXT_SPECS = dict(
-    k8s_supplemental_group_id=dict(map=str, default=None),
-    k8s_run_as_user_id=dict(map=str, default=None),
-    k8s_run_as_group_id=dict(map=str, default=None),
-    k8s_fs_group_id=dict(map=str, default=None),
-    k8s_fs_group_change_policy=dict(map=str, default=None),
 )
 
 
 def _runner(runner_params=None):
     runner = cast(Any, object.__new__(KubernetesJobRunner))
     runner.app = SimpleNamespace(config=SimpleNamespace(gid=10001))
-    runner.runner_params = RunnerParams(specs=SECURITY_CONTEXT_SPECS, params=runner_params or {})
+    runner.runner_params = RunnerParams(specs=RUNNER_PARAM_SPECS, params=runner_params or {})
     return runner
 
 
@@ -87,6 +77,5 @@ def test_fs_group_change_policy_runner_param_validation():
 
 
 def test_fs_group_change_policy_rejected_by_runner_params():
-    specs = dict(k8s_fs_group_change_policy=dict(map=str, valid=valid_fs_group_change_policy, default=None))
     with pytest.raises(Exception, match="k8s_fs_group_change_policy"):
-        RunnerParams(specs=specs, params=dict(k8s_fs_group_change_policy="Never"))
+        RunnerParams(specs=RUNNER_PARAM_SPECS, params=dict(k8s_fs_group_change_policy="Never"))
