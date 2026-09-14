@@ -72,6 +72,7 @@ class AbstractTool:
     name: str
     version: str
     tool_type: str
+    hidden: bool
     command: str | None
     interpreter: str | None
     shell_command: str | None

@@ -11,7 +11,7 @@ from .parser import ensure_tool_conf_item
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesHistoryContext
-    from galaxy.tools import Tool
+    from galaxy.tool_util.abstract_tool import AbstractTool
 
 
 class panel_item_types(str, Enum):
@@ -177,7 +177,7 @@ class ToolPanelElements(odict[str, Any], HasPanelItems):
             return self._section_by_tool[tool_id]
         return (None, None)
 
-    def replace_tool_for_id(self, tool_id: str, new_tool: "Tool") -> None:
+    def replace_tool_for_id(self, tool_id: str, new_tool: "AbstractTool") -> None:
         tool_key = f"tool_{tool_id}"
         for key, val in self.items():
             if key == tool_key:
