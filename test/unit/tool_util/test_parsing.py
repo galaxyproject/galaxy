@@ -329,7 +329,7 @@ class TestXmlLoader(BaseLoaderTestCase):
 
     def test_tool_source_to_string(self):
         # Previously this threw an Exception - test for regression.
-        str(self._tool_source)
+        assert str(self._tool_source).startswith("XmlToolSource[")
 
     def test_version(self):
         assert self._tool_source.parse_version() == "1.0.1"
