@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faDownload, faMagnifyingGlass, faQuoteLeft, faUpload } from "@fortawesome/free-solid-svg-icons"
 import { RouterLink } from "vue-router"
 </script>
 <template>
     <div class="landing-info-sections">
         <div class="info-section q-py-lg">
             <div class="row items-start">
-                <q-icon name="search" color="primary" size="48px" class="q-mr-lg" />
+                <FontAwesomeIcon :icon="faMagnifyingGlass" class="text-primary q-mr-lg" style="font-size: 48px" />
                 <div class="info-text">
                     <div class="text-h6 text-weight-bold">Find</div>
                     <div class="text-body1">
@@ -31,7 +33,7 @@ import { RouterLink } from "vue-router"
                         >.
                     </div>
                 </div>
-                <q-icon name="download" color="primary" size="48px" class="q-ml-lg" />
+                <FontAwesomeIcon :icon="faDownload" class="text-primary q-ml-lg" style="font-size: 48px" />
             </div>
         </div>
 
@@ -39,7 +41,7 @@ import { RouterLink } from "vue-router"
 
         <div class="info-section q-py-lg">
             <div class="row items-start">
-                <q-icon name="upload" color="primary" size="48px" class="q-mr-lg" />
+                <FontAwesomeIcon :icon="faUpload" class="text-primary q-mr-lg" style="font-size: 48px" />
                 <div class="info-text">
                     <div class="text-h6 text-weight-bold">Publish</div>
                     <div class="text-body1">
@@ -61,7 +63,7 @@ import { RouterLink } from "vue-router"
                         <a href="https://galaxyproject.org/citing-galaxy/#toolshed" target="_blank">Galaxy Hub</a>.
                     </div>
                 </div>
-                <q-icon name="format_quote" color="primary" size="48px" class="q-ml-lg" />
+                <FontAwesomeIcon :icon="faQuoteLeft" class="text-primary q-ml-lg" style="font-size: 48px" />
             </div>
         </div>
     </div>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons"
 import { GButton } from "@galaxyproject/galaxy-ui"
 import { ref, computed } from "vue"
 import { storeToRefs } from "pinia"
@@ -73,7 +75,7 @@ function onResetComplete() {
             <!-- Invalid tools warning banner -->
             <q-banner v-if="totalInvalidTools > 0" class="bg-warning text-white">
                 <template #avatar>
-                    <q-icon name="sym_r_warning" />
+                    <FontAwesomeIcon :icon="faTriangleExclamation" />
                 </template>
                 {{ totalInvalidTools }} invalid tool(s) found across revisions.
                 <template #action>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCheck, faCircleQuestion, faXmark } from "@fortawesome/free-solid-svg-icons"
 import type { components } from "@/schema"
 
 type ChangesetMetadataStatus = components["schemas"]["ChangesetMetadataStatus"]
@@ -54,12 +56,13 @@ const comparisonTooltips: Record<string, string> = {
         <template #header-cell-comparison_result="props">
             <q-th :props="props">
                 {{ props.col.label }}
-                <q-icon name="sym_r_help" size="xs" class="q-ml-xs cursor-help">
+                <span class="q-ml-xs cursor-help">
+                    <FontAwesomeIcon :icon="faCircleQuestion" style="font-size: 18px" />
                     <q-tooltip max-width="300px">
                         How this changeset's metadata changed compared to the previous revision. Snapshots are created
                         when tools are removed or modified, preserving installable history.
                     </q-tooltip>
-                </q-icon>
+                </span>
             </q-th>
         </template>
         <template #body-cell-comparison_result="props">
@@ -76,12 +79,13 @@ const comparisonTooltips: Record<string, string> = {
         <template #header-cell-record_operation="props">
             <q-th :props="props">
                 {{ props.col.label }}
-                <q-icon name="sym_r_help" size="xs" class="q-ml-xs cursor-help">
+                <span class="q-ml-xs cursor-help">
+                    <FontAwesomeIcon :icon="faCircleQuestion" style="font-size: 18px" />
                     <q-tooltip max-width="300px">
                         Whether this revision was saved as an installable snapshot. "Created" means a new snapshot was
                         made; "updated" means an existing snapshot was refreshed.
                     </q-tooltip>
-                </q-icon>
+                </span>
             </q-th>
         </template>
         <template #body-cell-record_operation="props">
@@ -99,9 +103,9 @@ const comparisonTooltips: Record<string, string> = {
         </template>
         <template #body-cell-tools="props">
             <q-td :props="props">
-                <q-icon
-                    :name="props.value ? 'sym_r_check' : 'sym_r_close'"
-                    :color="props.value ? 'positive' : 'grey'"
+                <FontAwesomeIcon
+                    :icon="props.value ? faCheck : faXmark"
+                    :class="props.value ? 'text-positive' : 'text-grey'"
                 />
             </q-td>
         </template>

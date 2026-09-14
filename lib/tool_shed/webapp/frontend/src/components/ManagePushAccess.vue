@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faTrash } from "@fortawesome/free-solid-svg-icons"
+import { GButton } from "@galaxyproject/galaxy-ui"
 import { useRepositoryStore } from "@/stores"
 import { storeToRefs } from "pinia"
 import SelectUser from "@/components/SelectUser.vue"
@@ -39,7 +42,15 @@ function removeUserAccess(username: string) {
                 <q-item-label class="push-access-username">{{ username }}</q-item-label>
             </q-item-section>
             <q-item-section avatar>
-                <q-icon class="push-access-remove" name="delete" @click="removeUserAccess(username)" />
+                <GButton
+                    class="push-access-remove"
+                    icon-only
+                    transparent
+                    aria-label="Remove push access"
+                    @click="removeUserAccess(username)"
+                >
+                    <FontAwesomeIcon :icon="faTrash" />
+                </GButton>
             </q-item-section>
         </q-item>
         <select-user @selected-user="addUserAccess" class="q-ma-md push-access-add"> </select-user>

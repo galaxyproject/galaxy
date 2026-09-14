@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCircleInfo } from "@fortawesome/free-solid-svg-icons"
 import { GButton } from "@galaxyproject/galaxy-ui"
 import { ref } from "vue"
 import { ToolShedApi } from "@/schema"
@@ -71,7 +73,7 @@ function clearPreview() {
         <!-- Initial state -->
         <q-banner v-if="!previewResult" class="bg-blue-1 q-mb-md">
             <template #avatar>
-                <q-icon name="sym_r_info" color="primary" />
+                <FontAwesomeIcon :icon="faCircleInfo" class="text-primary" />
             </template>
             <div><strong>Reset metadata</strong> regenerates all revision metadata from repository contents.</div>
             <div class="q-mt-sm text-caption">

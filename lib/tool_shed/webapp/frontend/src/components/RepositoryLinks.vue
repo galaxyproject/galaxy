@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faCode, faHouse, faLink } from "@fortawesome/free-solid-svg-icons"
 import { GButton } from "@galaxyproject/galaxy-ui"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCopy } from "@fortawesome/free-solid-svg-icons"
@@ -28,21 +29,21 @@ const dev_url = computed(() => props.repository.remote_repository_url)
 </script>
 <template>
     <p v-if="currentRevision">
-        <q-icon name="link" size="md" class="q-pl-xs q-pr-md" />
+        <FontAwesomeIcon :icon="faLink" class="q-pl-xs q-pr-md" style="font-size: 32px" />
         <a class="text-primary text-bold" :href="link">{{ link }}</a>
         <GButton icon-only transparent aria-label="Copy link" @click="copyLink(link)">
             <FontAwesomeIcon :icon="faCopy" />
         </GButton>
     </p>
     <p v-if="homepage">
-        <q-icon name="home" size="md" class="q-pl-xs q-pr-md" />
+        <FontAwesomeIcon :icon="faHouse" class="q-pl-xs q-pr-md" style="font-size: 32px" />
         <a class="text-primary text-bold" :href="homepage">{{ homepage }}</a>
         <GButton icon-only transparent aria-label="Copy link" @click="copyLink(homepage)">
             <FontAwesomeIcon :icon="faCopy" />
         </GButton>
     </p>
     <p v-if="dev_url">
-        <q-icon name="code" size="md" class="q-pl-xs q-pr-md" />
+        <FontAwesomeIcon :icon="faCode" class="q-pl-xs q-pr-md" style="font-size: 32px" />
         <a class="text-primary text-bold" :href="dev_url">{{ dev_url }}</a>
         <GButton icon-only transparent aria-label="Copy link" @click="copyLink(dev_url)">
             <FontAwesomeIcon :icon="faCopy" />

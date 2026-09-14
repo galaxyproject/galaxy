@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faQuoteLeft } from "@fortawesome/free-solid-svg-icons"
 import { CommonProps, useCommonProps } from "./_util"
 
 const props = defineProps<CommonProps>()
 const { classes, size } = useCommonProps(props)
 </script>
 <template>
-    <q-icon name="format_quote" color="primary" :size="size" />
+    <FontAwesomeIcon :icon="faQuoteLeft" class="text-primary" :style="{ fontSize: size }" />
     <div :class="classes">
         <div class="text-subtitle1 text-weight-bold">Cite</div>
         <div class="text-body1">

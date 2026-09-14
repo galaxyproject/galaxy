@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCircleCheck, faCircleXmark } from "@fortawesome/free-solid-svg-icons"
 import { ref, computed, watch } from "vue"
 import MetadataJsonViewer from "./MetadataJsonViewer.vue"
 import type { components } from "@/schema"
@@ -67,9 +69,9 @@ watch(
             >
                 <template #header>
                     <q-item-section avatar>
-                        <q-icon
-                            :name="rev.data.downloadable ? 'sym_r_check_circle' : 'sym_r_cancel'"
-                            :color="rev.data.downloadable ? 'positive' : 'negative'"
+                        <FontAwesomeIcon
+                            :icon="rev.data.downloadable ? faCircleCheck : faCircleXmark"
+                            :class="rev.data.downloadable ? 'text-positive' : 'text-negative'"
                         />
                     </q-item-section>
                     <q-item-section>

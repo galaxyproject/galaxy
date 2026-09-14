@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons"
 import { CommonProps, useCommonProps } from "./_util"
 
 const props = defineProps<CommonProps>()
@@ -6,7 +8,7 @@ const { classes, size } = useCommonProps(props)
 </script>
 
 <template>
-    <q-icon name="search" color="primary" :size="size" />
+    <FontAwesomeIcon :icon="faMagnifyingGlass" class="text-primary" :style="{ fontSize: size }" />
     <div :class="classes">
         <div class="text-subtitle1 text-weight-bold">Explore</div>
         <div class="text-body1">

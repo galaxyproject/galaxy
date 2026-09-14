@@ -111,22 +111,16 @@ describe("ChangesetSummaryTable", () => {
             const changesets = [makeChangeset({ has_tools: true })]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
-            const icons = wrapper.findAll(".q-icon")
-            const checkIcon = icons.find(
-                (icon) => icon.text().includes("check") || icon.attributes("name")?.includes("check"),
-            )
-            expect(checkIcon).toBeTruthy()
+            expect(wrapper.find('[data-icon="check"]').exists()).toBe(true)
+            expect(wrapper.find('[data-icon="xmark"]').exists()).toBe(false)
         })
 
         it("shows close icon when has_tools is false", () => {
             const changesets = [makeChangeset({ has_tools: false })]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
-            const icons = wrapper.findAll(".q-icon")
-            const closeIcon = icons.find(
-                (icon) => icon.text().includes("close") || icon.attributes("name")?.includes("close"),
-            )
-            expect(closeIcon).toBeTruthy()
+            expect(wrapper.find('[data-icon="xmark"]').exists()).toBe(true)
+            expect(wrapper.find('[data-icon="check"]').exists()).toBe(false)
         })
     })
 

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCircleExclamation } from "@fortawesome/free-solid-svg-icons"
 import { computed, watch, ref } from "vue"
 import { storeToRefs } from "pinia"
 import { useRepositoryStore } from "@/stores"
@@ -279,7 +281,7 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
                         <q-item v-for="invalidTool in invalidTools" :key="invalidTool.tool_config">
                             <q-item-section>
                                 <q-item-label>
-                                    <q-icon name="error" color="negative" class="q-mr-xs" />
+                                    <FontAwesomeIcon :icon="faCircleExclamation" class="text-negative q-mr-xs" />
                                     <code>{{ invalidTool.tool_config }}</code>
                                 </q-item-label>
                                 <q-item-label caption v-if="invalidTool.error_message">
