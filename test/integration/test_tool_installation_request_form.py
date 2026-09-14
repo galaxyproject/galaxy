@@ -211,4 +211,6 @@ class TestToolInstallationRequestFormRateLimitIntegration(ToolInstallationReques
             ]
         statuses = [response.status_code for response in responses]
         assert statuses == [200, 200, 200, 429], statuses
-        assert "3 per 1 minute" in responses[-1].json()["error"]
+        body = responses[-1].json()
+        assert "3 per 1 minute" in body["err_msg"]
+        assert body["err_code"] == 429001
