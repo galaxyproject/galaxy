@@ -1,6 +1,26 @@
 import pytest
 
-from galaxy.tool_util.deps.mulled.util import version_sorted
+from galaxy.tool_util.deps.mulled.util import (
+    quay_repositories,
+    version_sorted,
+)
+
+
+def test_quay_repositories_paginates(mocker):
+    first_page = mocker.Mock()
+    first_page.json.return_value = {
+        "repositories": [{"name": "bwa"}],
+        "next_page": "page-2",
+    }
+    second_page = mocker.Mock()
+    second_page.json.return_value = {"repositories": [{"name": "samtools"}]}
+    get = mocker.patch("galaxy.tool_util.deps.mulled.util.requests.get", side_effect=[first_page, second_page])
+
+    assert quay_repositories("biocontainers") == ["bwa", "samtools"]
+    assert get.call_args_list[0].kwargs["params"] == {"public": "true", "namespace": "biocontainers"}
+    assert get.call_args_list[1].kwargs["params"]["next_page"] == "page-2"
+    first_page.raise_for_status.assert_called_once_with()
+    second_page.raise_for_status.assert_called_once_with()
 
 
 @pytest.mark.parametrize(
