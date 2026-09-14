@@ -50,6 +50,7 @@ const showRequestToolButton = computed(
     () =>
         !props.workflow &&
         isConfigLoaded.value &&
+        config.value?.enable_notification_system &&
         config.value?.enable_tool_installation_request_form &&
         !isAnonymous.value,
 );
