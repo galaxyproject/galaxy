@@ -182,13 +182,19 @@ function onTagClicked(tag: string) {
 
 <style lang="scss" scoped>
 .stateless-tags {
-    .toggle-link {
+    // The `.g-button.g-transparent:not(.g-pressed)` part is what lifts these rules above
+    // GButton's own scoped rules, which are otherwise the more specific of the two: on a
+    // plain `.toggle-link` selector the padding tie is decided by bundle order and the
+    // hover paints a solid blue pill instead of leaving a bare link.
+    .toggle-link.g-button.g-transparent:not(.g-pressed) {
         padding: 0;
         border: none;
 
         &:hover {
             background-color: transparent;
             border: none;
+            color: var(--color-blue-700);
+            text-decoration: underline;
         }
     }
 }

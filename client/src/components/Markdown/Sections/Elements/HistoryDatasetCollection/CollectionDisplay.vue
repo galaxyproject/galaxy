@@ -18,7 +18,6 @@
                 <GButton
                     v-if="currentUser && currentHistoryId"
                     v-g-tooltip.hover
-                    href="#"
                     transparent
                     title="Import Collection"
                     size="small"
