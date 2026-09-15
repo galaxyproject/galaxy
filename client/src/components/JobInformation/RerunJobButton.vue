@@ -18,7 +18,7 @@ const rerunUrl = computed(() => `/?job_id=${props.jobId}`);
 
 <template>
     <GButton
-        title="Rerun job"
+        title="Run Job Again"
         size="small"
         color="blue"
         :outline="props.outline"
@@ -26,6 +26,6 @@ const rerunUrl = computed(() => `/?job_id=${props.jobId}`);
         :pressed="route.fullPath === rerunUrl"
         :to="rerunUrl">
         <FontAwesomeIcon fixed-width :icon="faRedo" />
-        <span>Run Job Again</span>
+        <span>Run again</span>
     </GButton>
 </template>
