@@ -30,7 +30,6 @@ from tool_shed.managers.users import (
     get_api_user,
     index,
     send_password_reset_email,
-    set_user_password,
 )
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.webapp.fast_app import limiter
@@ -225,10 +224,9 @@ class FastAPIUsers:
         user = suc.get_user(trans.app, encoded_user_id)
         if user is None:
             raise ObjectNotFound()
-        set_user_password(trans, user, password_request.password, password_request.confirm)
-        # An admin reset is how a compromised account is recovered, so the sessions
-        # opened with the old password must not survive it.
-        invalidate_user_sessions(trans.sa_session, user.id)
+        # An admin reset is how a compromised account is recovered: set_password
+        # drops that account's sessions and any outstanding reset token with it.
+        self.user_manager.set_password(trans, user, password_request.password, password_request.confirm)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     def _get_user(self, trans: SessionRequestContext, encoded_user_id: str):
@@ -296,11 +294,6 @@ class FastAPIUsers:
             # Redeeming a reset token is how a locked out user gets back in, so this
             # branch is reachable while logged out.
             user, message = self.user_manager.change_password(trans, password=password, token=token, confirm=confirm)
-            if user:
-                # change_password only clears sessions other than the caller's own, and an
-                # anonymous caller has none - whoever was holding the old password keeps
-                # their session unless the account's sessions are dropped here.
-                invalidate_user_sessions(trans.sa_session, user.id)
         else:
             if trans.user is None:
                 raise InsufficientPermissionsException("Must be logged into use this functionality")
@@ -328,7 +321,7 @@ class FastAPIUsers:
     ):
         if reset_request.bear_field != "":
             raise RequestParameterInvalidException(LOOKS_LIKE_A_BOT)
-        send_password_reset_email(trans, reset_request.email)
+        send_password_reset_email(trans, self.user_manager, reset_request.email)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.put(

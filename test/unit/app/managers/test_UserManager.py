@@ -292,7 +292,7 @@ class TestUserManager(BaseTestCase):
             assert to == "user@nopassword.com"
             assert subject == "Galaxy Password Reset"
             assert "reset your Galaxy password" in body
-            assert "{'token': 'reset_token'}" in body
+            assert "{'token': 'reset_token', 'qualified': True}" in body
 
         with patch("galaxy.util.send_mail", side_effect=validate_send_email) as mock_send_mail:
             with patch("galaxy.model.unique_id", return_value="reset_token") as mock_unique_id:
@@ -302,6 +302,19 @@ class TestUserManager(BaseTestCase):
                 mock_send_mail.assert_called_once()
                 mock_unique_id.assert_called_once()
         assert result is None
+
+    def test_failed_password_reset_delivery_expires_the_token(self):
+        user = self.user_manager.create(email="user@nopassword.com", username="nopassword")
+
+        with patch("galaxy.util.send_mail", side_effect=OSError("smtp down")):
+            self.user_manager.request_password_reset(
+                self.trans, user.email, reset_url_for=lambda token: f"https://reset/{token}"
+            )
+
+        (prt,) = self.trans.sa_session.scalars(
+            select(model.PasswordResetToken).where(model.PasswordResetToken.user_id == user.id)
+        )
+        assert prt.expiration_time <= now()
 
     def test_reset_email_user_deleted(self):
         self.trans.app.config.allow_user_deletion = True

@@ -168,6 +168,8 @@ class ToolShedTestDriver(driver_util.TestDriver):
         tool_shed_test_host = tool_shed_server_wrapper.host
         tool_shed_test_port = tool_shed_server_wrapper.port
         log.info(f"Functional tests will be run against {tool_shed_test_host}:{tool_shed_test_port}")
+        # The assigned port is only available after startup.
+        tool_shed_server_wrapper.app.config.tool_shed_url = f"http://{tool_shed_test_host}:{tool_shed_test_port}"
 
         # Used by get_filename in tool shed's testcase
         if "TOOL_SHED_TEST_FILE_DIR" not in os.environ:
