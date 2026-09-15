@@ -10,10 +10,12 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed } from "vue";
+import { computed, toRef } from "vue";
 
 import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
+import { useJobDetails } from "@/composables/jobDetails";
 import { useEntryPointStore } from "@/stores/entryPointStore";
+import { stateIsTerminal } from "@/utils/utils";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
@@ -24,6 +26,7 @@ const props = defineProps<{
 }>();
 
 const { entryPointsForJob } = storeToRefs(useEntryPointStore());
+const { job } = useJobDetails(toRef(props, "jobId"));
 
 const badges = computed<CardBadge[]>(() => {
     const total = entryPointsForJob.value(props.jobId).length;
@@ -61,10 +64,18 @@ const secondaryActions: CardAction[] = [
 
 const currentStatus = computed<{ title: string; icon: IconDefinition; class?: string }>(() => {
     if (entryPointsForJob.value(props.jobId).length === 0) {
-        return {
-            title: "No Interactive Tool sessions are currently available",
-            icon: faMinus,
-        };
+        if (!job.value || !stateIsTerminal(job.value)) {
+            return {
+                title: "Waiting for Interactive Tool session(s) to become available",
+                icon: faSpinner,
+                class: "fa-spin",
+            };
+        } else {
+            return {
+                title: "No Interactive Tool sessions are currently available",
+                icon: faMinus,
+            };
+        }
     } else if (entryPointsForJob.value(props.jobId).length === 1) {
         if (entryPointsForJob.value(props.jobId)[0]?.active) {
             return {
