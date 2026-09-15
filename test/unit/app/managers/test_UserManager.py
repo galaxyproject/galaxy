@@ -385,12 +385,12 @@ class TestUserManager(BaseTestCase):
             assert "{'token': 'reset_token', 'qualified': True}" in body
 
         with patch("galaxy.util.send_mail", side_effect=validate_send_email) as mock_send_mail:
-            with patch("galaxy.model.unique_id", return_value="reset_token") as mock_unique_id:
+            with patch("galaxy.model.secrets.token_hex", return_value="reset_token") as mock_token_hex:
                 result = self.user_manager.send_reset_email(
                     cast("GalaxyWebTransaction", self.trans), dict(email="user@nopassword.com")
                 )
                 mock_send_mail.assert_called_once()
-                mock_unique_id.assert_called_once()
+                mock_token_hex.assert_called_once()
         assert result is None
 
     def test_failed_password_reset_delivery_expires_the_token(self):
