@@ -166,6 +166,9 @@
     <datatype extension="geojson" type="galaxy.datatypes.text:GeoJson" mimetype="application/json" display_in_upload="True">
       <visualization plugin="openlayers" />
     </datatype>
+    <datatype extension="varri.json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="True" description="Annotated RNA-RNA interactions in a JSON object.">
+      <visualization plugin="varri" />
+    </datatype>
     <datatype extension="vitessce.json" type="galaxy.datatypes.text:VitessceJson" mimetype="application/json" display_in_upload="True">
       <visualization plugin="vitessce" />
     </datatype>
