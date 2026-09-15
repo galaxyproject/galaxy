@@ -56,6 +56,7 @@ FileSourceTemplateType = Literal[
     "ssh",
     "ckan",
     "commoncrawl",
+    "arc",
 ]
 
 FileSourceTemplateAlertVariant = Literal[
@@ -550,8 +551,24 @@ class CommonCrawlFileSourceTemplateConfiguration(StrictModel):
     template_end: str | None = None
 
 
+class ARCFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["arc"]
+    base_url: str | TemplateExpansion
+    token: str | TemplateExpansion | None = None
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
 class CommonCrawlFileSourceConfiguration(StrictModel):
     type: Literal["commoncrawl"]
+    writable: bool = False
+
+
+class ARCFileSourceConfiguration(StrictModel):
+    type: Literal["arc"]
+    base_url: str
+    token: str | None = None
     writable: bool = False
 
 
@@ -580,7 +597,8 @@ FileSourceTemplateConfiguration = Annotated[
     | OmeroFileSourceTemplateConfiguration
     | SshFileSourceTemplateConfiguration
     | CKANFileSourceTemplateConfiguration
-    | CommonCrawlFileSourceTemplateConfiguration,
+    | CommonCrawlFileSourceTemplateConfiguration
+    | ARCFileSourceTemplateConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -609,7 +627,8 @@ FileSourceConfiguration = Annotated[
     | OmeroFileSourceConfiguration
     | SshFileSourceConfiguration
     | CKANFileSourceConfiguration
-    | CommonCrawlFileSourceConfiguration,
+    | CommonCrawlFileSourceConfiguration
+    | ARCFileSourceConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -699,6 +718,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "ssh": SshFileSourceConfiguration,
     "ckan": CKANFileSourceConfiguration,
     "commoncrawl": CommonCrawlFileSourceConfiguration,
+    "arc": ARCFileSourceConfiguration,
 }
 
 
