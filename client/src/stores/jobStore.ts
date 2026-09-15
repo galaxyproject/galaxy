@@ -35,23 +35,30 @@ export const useJobStore = defineStore("jobStore", () => {
         isLoadingItem: isLoadingJob,
     } = useKeyedCache<ShowFullJobResponse>(fetchJobById);
 
+    /** A track of all active polls so we don't duplicate polls for the same ID */
+    const activePolls = new Set<string>();
+
     function pollJobUntilTerminal(params: FetchParams) {
+        if (activePolls.has(params.id)) {
+            return;
+        }
+        activePolls.add(params.id);
+
         function poll() {
             fetchJob(params);
-            setTimeout(pollJobUntilTerminal, 1000, params);
+            setTimeout(tick, 1000);
         }
 
-        const job = getJob.value(params.id);
-        if (job) {
-            const jobState = job.state;
-            if (TERMINAL_STATES.indexOf(jobState) !== -1) {
+        function tick() {
+            const job = getJob.value(params.id);
+            if (job && TERMINAL_STATES.indexOf(job.state) !== -1) {
+                activePolls.delete(params.id);
                 return;
-            } else {
-                poll();
             }
-        } else {
             poll();
         }
+
+        poll();
     }
 
     return {
