@@ -235,9 +235,8 @@ class FastAPIUsers:
         user = suc.get_user(trans.app, encoded_user_id)
         if user is None:
             raise ObjectNotFound()
-        # An admin reset is how a compromised account is recovered: set_password
-        # drops that account's sessions and any outstanding reset token with it.
         self.user_manager.set_password(trans, user, password_request.password, password_request.confirm)
+        log.info("Admin %s set the password of user %s.", trans.user and trans.user.id, user.id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     def _get_user(self, trans: SessionRequestContext, encoded_user_id: str):

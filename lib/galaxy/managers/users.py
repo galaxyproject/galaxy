@@ -513,6 +513,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             message = self.__set_password(trans, user, password, confirm)
             if message:
                 return None, message
+            log.info("Password reset token redeemed for user %s.", user.id)
             return user, "Password has been changed. Token has been invalidated."
         else:
             if not isinstance(id, int):
