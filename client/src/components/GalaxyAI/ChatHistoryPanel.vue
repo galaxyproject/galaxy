@@ -174,14 +174,14 @@ async function deleteSelected() {
                         <FontAwesomeIcon :icon="selectedIds.has(item.id) ? faCheckSquare : faSquare" fixed-width />
                     </span>
                     <div class="history-content">
-                        <div class="history-query">{{ item.query }}</div>
+                        <div class="history-query">{{ item.name ?? item.query }}</div>
                         <div class="history-meta">
                             <span class="history-agent">
                                 <FontAwesomeIcon :icon="getAgentIcon(item.agent_type)" fixed-width />
                             </span>
                             <span class="history-time">
                                 <FontAwesomeIcon :icon="faClock" class="mr-1" />
-                                <UtcDate :date="item.timestamp" mode="elapsed" />
+                                <UtcDate v-if="item.timestamp" :date="item.timestamp" mode="elapsed" />
                             </span>
                         </div>
                     </div>
