@@ -217,6 +217,7 @@ class FastAPIUsers:
         self.api_key_manager.delete_api_key(user)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+    # JSON PUT requests require a CORS preflight; these password routes disallow cross-origin access.
     @router.put(
         "/api/users/{encoded_user_id}/password",
         summary="Set a user's password, without requiring their current one",
