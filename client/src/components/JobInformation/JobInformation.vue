@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed, ref, toRef, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type JobConsoleOutput, NON_TERMINAL_STATES, type ShowFullJobResponse } from "@/api/jobs";
-import { JobConsoleOutputProvider, JobDetailsProvider } from "@/components/providers/JobProvider";
+import { useJobConsoleOutput, useJobDetails } from "@/composables/jobDetails";
 import { rethrowSimple } from "@/utils/simple-error";
+import { stateIsTerminal } from "@/utils/utils";
 
 import type { JobMessage } from "../../api/jobs";
 
@@ -33,26 +34,16 @@ const props = withDefaults(
     { invocationId: undefined },
 );
 
-const job = ref<ShowFullJobResponse | null>(null);
 const fetchedInvocationId = ref<string | null | undefined>(props.invocationId);
 
-const stdout_length = ref(50000);
-const stdout_text = ref("");
-const stderr_length = ref(50000);
-const stderr_text = ref("");
+const { job } = useJobDetails(toRef(props, "jobId"));
 
-const stdout_position = computed(() => stdout_text.value.length);
-const stderr_position = computed(() => stderr_text.value.length);
+const jobIsRunning = computed(() => job.value?.state === "running");
 
-function jobStateIsTerminal(jobState: string) {
-    return jobState && !NON_TERMINAL_STATES.includes(jobState);
-}
+// Console output is only polled while the job is actively running
+const consoleOutputJobId = computed(() => (jobIsRunning.value ? props.jobId : undefined));
+const { stdout: stdout_text, stderr: stderr_text } = useJobConsoleOutput(consoleOutputJobId);
 
-function jobStateIsRunning(jobState: string) {
-    return jobState == "running";
-}
-
-const jobIsRunning = computed(() => (job.value?.state ? jobStateIsRunning(job.value.state) : false));
 const routeToInvocation = computed(() => `/workflows/invocations/${fetchedInvocationId.value}`);
 
 // Curious as to why we're trying to access tool_version and traceback like this, when they don't exist on
@@ -84,29 +75,14 @@ const metadataDetail = ref<Record<string, string>>({
     error_level: `NO_ERROR = 0</br>LOG = 1</br>QC = 1.1</br>WARNING = 2</br>FATAL = 3</br>FATAL_OOM = 4</br>MAX = 4`,
 });
 
-function updateJob(newJob: ShowFullJobResponse) {
-    job.value = newJob;
-    if (jobStateIsTerminal(newJob?.state)) {
-        if (newJob.tool_stdout) {
-            stdout_text.value = newJob.tool_stdout;
-        }
-        if (newJob.tool_stderr) {
-            stderr_text.value = newJob.tool_stderr;
-        }
+// Once the job reaches a terminal state, prefer its own tool_stdout/tool_stderr as the final,
+// complete output
+watch(job, (newJob) => {
+    if (newJob && stateIsTerminal({ state: newJob.state })) {
+        stdout_text.value = newJob.tool_stdout ?? "";
+        stderr_text.value = newJob.tool_stderr ?? "";
     }
-}
-
-function updateConsoleOutputs(output: JobConsoleOutput) {
-    // Keep stdout in memory and only fetch new text via JobProvider
-    if (output) {
-        if (output.stdout != null) {
-            stdout_text.value += output.stdout;
-        }
-        if (output.stderr != null) {
-            stderr_text.value += output.stderr;
-        }
-    }
-}
+});
 
 function filterMetadata(jobMessages: JobMessage[]): Partial<JobMessage>[] {
     return jobMessages.map((item) => {
@@ -159,17 +135,6 @@ watch(
 
 <template>
     <div>
-        <JobDetailsProvider auto-refresh :job-id="props.jobId" @update:result="updateJob" />
-        <JobConsoleOutputProvider
-            v-if="jobIsRunning"
-            auto-refresh
-            :job-id="props.jobId"
-            :stdout_position="stdout_position"
-            :stdout_length="stdout_length"
-            :stderr_position="stderr_position"
-            :stderr_length="stderr_length"
-            @update:result="updateConsoleOutputs" />
-
         <template v-if="job && props.includeTitle">
             <JobHeader :job="job" />
             <hr />

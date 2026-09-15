@@ -3,6 +3,7 @@
  */
 import { createLocalVue } from "@vue/test-utils";
 import BootstrapVue from "bootstrap-vue";
+import flushPromises from "flush-promises";
 import { PiniaVuePlugin } from "pinia";
 import { expect, vi } from "vitest";
 import VueRouter from "vue-router";
@@ -175,4 +176,14 @@ export function mockUnprivilegedToolsRequest(server, http) {
             return response(200).json([]);
         }),
     );
+}
+
+/**
+ * Advances Vitest's fake timers by `ms`, then flushes promises.
+ * Requires `vi.useFakeTimers()` to have been called in the test file.
+ * @example await advanceTimersAndFlush(1000);
+ */
+export async function advanceTimersAndFlush(ms) {
+    vi.advanceTimersByTime(ms);
+    await flushPromises();
 }
