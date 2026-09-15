@@ -72,13 +72,16 @@ describe("JobInformation/JobInformation.vue", () => {
         // table should exist
         expect(jobInfoTable).toBeTruthy();
         const rows = jobInfoTable.findAll("tr");
-        // should contain 10 rows
-        expect(rows.length).toBe(10);
+        // should contain 6 rows
+        expect(rows.length).toBe(6);
+        const codeRows = wrapper.findAll(".code-row");
+        // should contain 4 code rows
+        expect(codeRows.length).toBe(4);
     });
 
     it("stdout and stderr should be rendered", async () => {
         ["stdout", "stderr"].forEach((std) => {
-            const label = jobInfoTable.find("#" + std);
+            const label = wrapper.find("#" + std);
             const value = label.find(".code");
             expect(value.text()).toBe(std);
         });
