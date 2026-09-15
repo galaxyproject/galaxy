@@ -27,6 +27,10 @@ export const objectStoreTemplateTypes: ObjectStoreTemplateType = {
         icon: faPython,
         message: typeMessage("Boto3"),
     },
+    cloud: {
+        icon: faCloud,
+        message: typeMessage("Cloud (CloudBridge)"),
+    },
     disk: {
         icon: faHdd,
         message: typeMessage("Disk"),
