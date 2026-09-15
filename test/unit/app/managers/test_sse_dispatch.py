@@ -23,6 +23,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from galaxy.managers.sse_dispatch import SSEEventDispatcher
+from galaxy.queues import WEBAPP_CONTROL_ROUTING_KEY
 
 
 @dataclass
@@ -188,7 +189,7 @@ def test_dispatcher_enqueues_payload_and_records_metrics_on_send(
     assert sent[0].payload["kwargs"]["user_ids"] == [1, 2]
     assert sent[0].payload["kwargs"]["payload"] == "hello"
     assert "event_id" in sent[0].payload["kwargs"]
-    assert sent[0].routing_key == "control.*"
+    assert sent[0].routing_key == WEBAPP_CONTROL_ROUTING_KEY
     assert sent[0].expiration == 10
 
     # Counter + timer both recorded with matching task tag.
