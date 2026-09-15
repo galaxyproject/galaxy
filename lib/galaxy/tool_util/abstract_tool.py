@@ -8,6 +8,7 @@ on ``galaxy-app``.
 """
 
 import itertools
+import json
 import logging
 import os
 from collections.abc import Sequence
@@ -35,6 +36,7 @@ from galaxy.tool_util.parser.output_objects import (
     ToolOutput,
     ToolOutputCollection,
 )
+from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
 from galaxy.tool_util.version import parse_version
 from galaxy.util import (
     parse_xml_string_to_etree,
@@ -47,6 +49,7 @@ from galaxy.util.template import (
 )
 
 if TYPE_CHECKING:
+    from galaxy.tool_util.deps.requirements import ToolRequirements
     from galaxy.tool_util.parser.interface import ToolSource
     from galaxy.tool_util.parser.output_objects import ToolOutputBase
     from galaxy.tool_util.parser.stdio import (
@@ -56,6 +59,7 @@ if TYPE_CHECKING:
     from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
     from galaxy.tool_util.version import LegacyVersion
     from galaxy.tool_util_models import ParsedTool
+    from galaxy.tool_util_models.parameters import ToolParameterT
     from galaxy.tool_util_models.tool_source import (
         FileSourceConfigFile,
         HelpContent,
@@ -132,6 +136,10 @@ class AbstractTool:
     raw_help: "HelpContent | None"
     xrefs: "list[XrefDict]"
     config_files: "Sequence[TemplateConfigFile | InputConfigFile | FileSourceConfigFile]"
+    requirements: "ToolRequirements"
+    parameters: "list[ToolParameterT] | None"
+    _tests: str | None
+    _tests_parsed: bool
 
     @property
     def version_object(self) -> "LegacyVersion | Version":
@@ -233,6 +241,29 @@ class AbstractTool:
         self.config_files.extend(tool_source.parse_input_configfiles())
         self.config_files.extend(tool_source.parse_template_configfiles())
         self.config_files.extend(tool_source.parse_file_sources())
+
+    def parse_tests(self) -> None:
+        self._tests_parsed = True
+        source = self.tool_source
+        # ``Tool.__init__`` calls ``tool_source.mem_optimize()`` after parsing,
+        # which frees an ``XmlToolSource``'s element tree (``root`` becomes
+        # ``None``). A deferred test parse therefore rebuilds the source from
+        # its retained string — the same round-trip a stored tool source uses.
+        # Non-XML sources have no ``root`` and keep their data, so they parse
+        # directly.
+        if getattr(source, "root", False) is None:
+            try:
+                source = get_tool_source(raw_tool_source=source.to_string(), tool_source_class=type(source).__name__)
+            except Exception:
+                self._tests = None
+                log.exception("Failed to rebuild tool source for deferred test parsing of '%s'", self.id)
+                return
+        test_descriptions = parse_tool_test_descriptions(source, self.id, self.parameters)
+        try:
+            self._tests = json.dumps([t.to_dict() for t in test_descriptions], indent=None)
+        except Exception:
+            self._tests = None
+            log.exception("Failed to parse tool tests for tool '%s'", self.id)
 
     @property
     def _repository_dir(self) -> str | None:
@@ -363,6 +394,13 @@ class AbstractTool:
         for output in self.outputs.values():
             patterns.extend(output.output_discover_patterns)
         return patterns
+
+    @property
+    def tool_requirements(self) -> "ToolRequirements":
+        """
+        Return all requirements of type package
+        """
+        return self.requirements.packages
 
     def check_workflow_compatible(self, tool_source: "ToolSource") -> bool:
         """
