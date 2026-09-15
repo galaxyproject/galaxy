@@ -1677,7 +1677,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 if tag_limit := destination_total_concurrent_jobs.get(tag):
                     destination_tag_limits[tag] = tag_limit
 
-        conditions = [Job.id == job.id]
+        conditions = [Job.id == job.id, Job.state.in_((Job.states.NEW, Job.states.RESUBMITTED))]
 
         if job.user_id:
             user_job_count = (
