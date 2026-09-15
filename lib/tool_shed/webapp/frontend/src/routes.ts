@@ -15,6 +15,8 @@ import RepositoryPage from "@/components/pages/RepositoryPage.vue"
 import MetadataInspectorPage from "@/components/pages/MetadataInspectorPage.vue"
 import ManageApiKey from "@/components/pages/ManageApiKey.vue"
 import ChangePassword from "@/components/pages/ChangePassword.vue"
+import ForgotPassword from "@/components/pages/ForgotPassword.vue"
+import ResetPassword from "@/components/pages/ResetPassword.vue"
 import CitableRepositoryPage from "@/components/pages/CitableRepositoryPage.vue"
 
 import type { RouteRecordRaw } from "vue-router"
@@ -111,6 +113,14 @@ const routes: Array<RouteRecordRaw> = [
     {
         path: "/user/change_password",
         component: ChangePassword,
+    },
+    {
+        path: "/user/forgot_password",
+        component: ForgotPassword,
+    },
+    {
+        path: "/user/reset_password",
+        component: ResetPassword,
     },
     // legacy style access - was thought of as a citable URL
     // so lets keep this path.
