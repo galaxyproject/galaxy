@@ -376,17 +376,6 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         assert self._genome_builds is not None
         return self._genome_builds
 
-    def wait_for_toolbox_reload(self, old_toolbox):
-        timer = ExecutionTimer()
-        log.debug("Waiting for toolbox reload")
-        while timer.elapsed < INSTALLATION_RELOAD_TIMEOUT:
-            if self.toolbox.has_reloaded(old_toolbox):
-                log.debug("Finished waiting for toolbox reload %s", timer)
-                break
-            time.sleep(0.1)
-        else:
-            log.warning("Waiting for toolbox reload timed out after %s seconds", INSTALLATION_RELOAD_TIMEOUT)
-
     def _configure_tool_config_files(self):
         self.config.tool_configs = self.config.all_tool_config_files()
 
@@ -713,6 +702,17 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     """Extends the MinimalGalaxyApplication with most managers that are not tied to a web or job handling context."""
 
     model: GalaxyModelMapping
+
+    def wait_for_toolbox_reload(self, old_toolbox):
+        timer = ExecutionTimer()
+        log.debug("Waiting for toolbox reload")
+        while timer.elapsed < INSTALLATION_RELOAD_TIMEOUT:
+            if self.toolbox.has_reloaded(old_toolbox):
+                log.debug("Finished waiting for toolbox reload %s", timer)
+                break
+            time.sleep(0.1)
+        else:
+            log.warning("Waiting for toolbox reload timed out after %s seconds", INSTALLATION_RELOAD_TIMEOUT)
 
     def __init__(
         self,

@@ -48,6 +48,31 @@ id
 tags
 : A comma-separated set of strings that optional define tags to which this handler belongs.
 
+#### Ready window size
+
+The ready window limits how many pending jobs each handler checks per user on each pass. It defaults to 100 and can be configured in `job_conf.yml`:
+
+```yaml
+handling:
+  ready_window_size: 100
+```
+
+The equivalent XML setting is the `ready_window_size` attribute on `<handlers>`:
+
+```xml
+<handlers ready_window_size="100">
+    <!-- Existing handler definitions go here. -->
+</handlers>
+```
+
+This setting limits the work spent checking pending jobs; concurrency limits separately control how many jobs may run. A smaller window can improve responsiveness for other users when one user has a large backlog. Each anonymous session has its own window, while authenticated sessions share their user's window. This setting does not apply to SQLite or in-memory job queues.
+
+When a dynamic destination rule defers a job, the handler continues checking later jobs for that user over subsequent passes. For example, with a window of two, five deferred jobs followed by a sixth runnable job are checked in three passes: jobs 1–2, then 3–4, then 5–6. The sixth job can run without waiting for the first five to become runnable, provided it meets the usual input and concurrency requirements.
+
+The handler then returns to the beginning to retry deferred jobs. This means an earlier job may wait for the handler to finish checking the existing backlog before it is checked again, even if its resources become available sooner. A smaller window can increase this delay. Jobs arriving during this traversal are considered on the next traversal, so new submissions cannot indefinitely postpone retries.
+
+For administrators writing dynamic destination rules, this behavior is triggered by `JobNotReadyException` when it leaves the job waiting; deferred jobs remain in the `new` state. Ordinary concurrency waits alone do not start a traversal, but an existing traversal continues through them. Progress is local to each handler and resets when the handler restarts.
+
 ### Job Destinations
 
 The `<destinations>` collection defines the parameters that should be used to run a job that is sent to the specified destination. This configuration element should define a ``default``

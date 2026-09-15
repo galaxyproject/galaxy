@@ -14,6 +14,14 @@ jobs:
   ghcrbuild:
     name: Build container image for GHCR
     runs-on: ubuntu-latest
+    # Fork enablement only: publishes an image to the fork's own GHCR
+    # namespace using just GITHUB_TOKEN, since forks cannot run the
+    # credential-gated build job below. The main repo publishes to Docker Hub
+    # and Quay.io instead and does not use GHCR images.
+    if: github.repository_owner != 'galaxyproject'
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v7.0.1
         with:

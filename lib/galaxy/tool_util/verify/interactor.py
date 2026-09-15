@@ -27,14 +27,12 @@ from typing import (
 
 from packaging.version import Version
 from requests import Response
-from requests.adapters import HTTPAdapter
 from requests.cookies import RequestsCookieJar
 from typing_extensions import (
     NotRequired,
     Protocol,
     TypedDict,
 )
-from urllib3.util.retry import Retry
 
 from galaxy import util
 from galaxy.exceptions import RequestParameterInvalidException
@@ -86,7 +84,11 @@ from ._types import (
     ToolTestDescriptionDict,
     ValueStateRepresentationT,
 )
-from .wait import wait_on
+from .wait import (
+    DEFAULT_POLLING_BACKOFF,
+    DEFAULT_POLLING_DELTA,
+    wait_on,
+)
 
 log = getLogger(__name__)
 
@@ -100,44 +102,26 @@ VERBOSE_ERRORS = util.asbool(os.environ.get("GALAXY_TEST_VERBOSE_ERRORS", False)
 UPLOAD_ASYNC = util.asbool(os.environ.get("GALAXY_TEST_UPLOAD_ASYNC", True))
 ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
 
-# Module-level requests.get() and friends open a fresh TCP connection for
-# every call. Job-status polling makes that the dominant cost of a large
-# run: tens of thousands of connects to ask a question whose answer has
-# usually not changed. A Session reuses the connection instead.
-#
-# requests.Session is not thread-safe and --parallel-tests runs tests in a
-# thread pool, so keep one per thread rather than sharing. Cookie storage is
-# blocked so behaviour otherwise matches the module-level calls, which
-# discard their session - callers pass cookies explicitly.
-_thread_local = threading.local()
 
-
-def _session() -> requests.Session:
-    session = getattr(_thread_local, "session", None)
-    if session is None:
-        session = requests.Session()
-        session.cookies.set_policy(DefaultCookiePolicy(allowed_domains=[]))
-        # Reusing a connection means eventually reusing one the server has
-        # already closed, which surfaces as a reset rather than a clean
-        # retry - requests mounts its adapters with max_retries=0. urllib3's
-        # default allowed_methods covers only idempotent verbs, so a POST is
-        # never resent; anything else gets one more attempt on a connection
-        # that turned out to be dead.
-        adapter = HTTPAdapter(max_retries=Retry(total=3, connect=3, read=3, status=0, backoff_factor=0.1))
-        session.mount("http://", adapter)
-        session.mount("https://", adapter)
-        _thread_local.session = session
+def _new_session() -> requests.Session:
+    # RetrySession because requests mounts its adapters with max_retries=0,
+    # so a connection the server closed while pooled is surfaced rather than
+    # retried. urllib3's default allowed_methods excludes POST, so no retry
+    # can resubmit work.
+    session = requests.RetrySession(total=3, connect=3, read=3, status=0)
+    # Cookie storage is blocked so behaviour matches the module-level
+    # helpers, which discard their session - callers pass cookies explicitly.
+    session.cookies.set_policy(DefaultCookiePolicy(allowed_domains=[]))
     return session
 
 
 DEFAULT_TOOL_TEST_WAIT: int = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400))
-# A TCP connect either completes promptly or is not going to. Passing a
-# single scalar applies the read budget to the connect as well, so a connect
-# that is never answered costs the full read timeout before the test is
-# failed - ten minutes, by default, of waiting for something that will not
-# arrive.
+# Split, because a single scalar would apply the read budget to the connect
+# too - a connect nothing answers would cost the full read timeout.
 CONNECT_TIMEOUT: float = float(os.environ.get("GALAXY_TEST_CONNECT_TIMEOUT", 30))
 DEFAULT_TIMEOUT: tuple[float, float] = (CONNECT_TIMEOUT, util.DEFAULT_SOCKET_TIMEOUT)
+POLLING_DELTA: float = float(os.environ.get("GALAXY_TEST_POLLING_DELTA", DEFAULT_POLLING_DELTA))
+POLLING_BACKOFF: float = float(os.environ.get("GALAXY_TEST_POLLING_BACKOFF", DEFAULT_POLLING_BACKOFF))
 CLEANUP_TEST_HISTORIES = "GALAXY_TEST_NO_CLEANUP" not in os.environ
 DEFAULT_TARGET_HISTORY = os.environ.get("GALAXY_TEST_HISTORY_ID", None)
 
@@ -324,6 +308,10 @@ class GalaxyInteractorApi:
         self.keep_outputs_dir = kwds.get("keep_outputs_dir", None)
         self.download_attempts = kwds.get("download_attempts", 1)
         self.download_sleep = kwds.get("download_sleep", 1)
+        self.polling_delta = kwds.get("polling_delta", POLLING_DELTA)
+        self.polling_backoff = kwds.get("polling_backoff", POLLING_BACKOFF)
+        self._session_factory = kwds.get("session_factory", _new_session)
+        self._sessions = threading.local()
         # Local test data directories.
         self.test_data_directories = kwds.get("test_data") or []
 
@@ -525,7 +513,7 @@ class GalaxyInteractorApi:
 
     def wait_for(self, func: Callable, what: str = "tool test run", **kwd) -> None:
         walltime_exceeded = int(kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT))
-        return wait_on(func, what, walltime_exceeded)
+        return wait_on(func, what, walltime_exceeded, delta=self.polling_delta, polling_backoff=self.polling_backoff)
 
     def get_job_stdio(self, job_id: str) -> dict[str, Any]:
         return self.__get_job_stdio(job_id).json()
@@ -1310,6 +1298,19 @@ class GalaxyInteractorApi:
             header["x-api-key"] = key
         return header
 
+    def _session(self) -> requests.Session:
+        """One Session per thread, reused across requests.
+
+        A connection per request turns job-status polling into tens of
+        thousands of connects. requests.Session is not thread-safe and
+        script.py shares one interactor across its worker pool, so the
+        session is per thread rather than per instance or per call.
+        """
+        session = getattr(self._sessions, "session", None)
+        if session is None:
+            session = self._sessions.session = self._session_factory()
+        return session
+
     def _post(
         self,
         path: str,
@@ -1325,7 +1326,7 @@ class GalaxyInteractorApi:
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, files=files, as_json=json, headers=headers)
         kwd["timeout"] = kwd.pop("timeout", DEFAULT_TIMEOUT)
-        return _session().post(url, **kwd)
+        return self._session().post(url, **kwd)
 
     def _options(
         self,
@@ -1341,28 +1342,28 @@ class GalaxyInteractorApi:
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, as_json=json, headers=headers)
         kwd["timeout"] = kwd.pop("timeout", DEFAULT_TIMEOUT)
-        return _session().options(url, **kwd)
+        return self._session().options(url, **kwd)
 
     def _delete(self, path, data=None, key=None, headers=None, admin=False, anon=False, json=False, params=None):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, as_json=json, params=params, headers=headers)
         kwd["timeout"] = kwd.pop("timeout", DEFAULT_TIMEOUT)
-        return _session().delete(url, **kwd)
+        return self._session().delete(url, **kwd)
 
     def _patch(self, path, data=None, key=None, headers=None, admin=False, anon=False, json=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, as_json=json, headers=headers)
         kwd["timeout"] = kwd.pop("timeout", DEFAULT_TIMEOUT)
-        return _session().patch(url, **kwd)
+        return self._session().patch(url, **kwd)
 
     def _put(self, path, data=None, key=None, headers=None, admin=False, anon=False, json=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, as_json=json, headers=headers)
         kwd["timeout"] = kwd.pop("timeout", DEFAULT_TIMEOUT)
-        return _session().put(url, **kwd)
+        return self._session().put(url, **kwd)
 
     def _get(self, path, data=None, key=None, headers=None, admin=False, anon=False, allow_redirects=True):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
@@ -1371,7 +1372,7 @@ class GalaxyInteractorApi:
         if self.cookies:
             kwargs["cookies"] = self.cookies
         # no data for GET
-        return _session().get(
+        return self._session().get(
             url,
             params=data,
             headers=headers,
@@ -1387,7 +1388,7 @@ class GalaxyInteractorApi:
         if self.cookies:
             kwargs["cookies"] = self.cookies
         # no data for HEAD
-        return _session().head(url, params=data, headers=headers, timeout=DEFAULT_TIMEOUT, **kwargs)
+        return self._session().head(url, params=data, headers=headers, timeout=DEFAULT_TIMEOUT, **kwargs)
 
     def get_api_url(self, path: str) -> str:
         if path.startswith("http"):

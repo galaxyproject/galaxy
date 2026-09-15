@@ -330,10 +330,11 @@ class S3ObjectStore(CachingConcreteObjectStore):
         local_destination = cache_path
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, local_destination)
-            if not self._caching_allowed(rel_path, cache_target=cache_target):
+            remote_size = self._get_remote_size(rel_path)
+            if not self._caching_allowed(rel_path, cache_target=cache_target, remote_size=remote_size):
                 return False
             config = self._transfer_config("download")
-            with self._atomic_download(local_destination) as tmp:
+            with self._atomic_download(local_destination, remote_size) as tmp:
                 self._client.download_file(self.bucket, rel_path, tmp, Config=config)
             return True
         except ClientError:
@@ -387,11 +388,18 @@ class S3ObjectStore(CachingConcreteObjectStore):
             for content in page.get("Contents", ()):
                 yield content["Key"]
 
+    def _keys_with_sizes(self, prefix: str):
+        s3_paginator = self._client.get_paginator("list_objects_v2")
+        prefix = prefix.lstrip("/")
+        for page in s3_paginator.paginate(Bucket=self.bucket, Prefix=prefix):
+            for content in page.get("Contents", ()):
+                yield content["Key"], content["Size"]
+
     def _download_directory_into_cache(self, rel_path, cache_path):
-        for key in self._keys(rel_path):
+        for key, size in self._keys_with_sizes(rel_path):
             local_file_path = os.path.join(cache_path, os.path.relpath(key, rel_path))
             os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-            with self._atomic_download(local_file_path) as tmp:
+            with self._atomic_download(local_file_path, size) as tmp:
                 self._client.download_file(self.bucket, key, tmp)
 
     def _get_object_url(self, obj, content_disposition=None, content_type=None, **kwargs):

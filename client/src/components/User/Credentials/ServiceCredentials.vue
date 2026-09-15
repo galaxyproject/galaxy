@@ -36,7 +36,7 @@ import {
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BButton } from "bootstrap-vue";
+import { BBadge } from "bootstrap-vue";
 import { faX, faXmark } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
@@ -545,7 +545,7 @@ const groupIndicators = computed(() => (group: ServiceCredentialGroupResponse): 
 <template>
     <div>
         <div>
-            <BButton class="service-title" block variant="outline-info" @click="isExpanded = !isExpanded">
+            <GButton class="service-title w-100" color="blue" outline @click="isExpanded = !isExpanded">
                 <span class="d-flex align-items-center flex-gapx-1">
                     <FontAwesomeIcon v-if="!isExpanded" :icon="faCaretRight" />
                     <FontAwesomeIcon v-else :icon="faCaretRight" rotation="90" />
@@ -580,7 +580,7 @@ const groupIndicators = computed(() => (group: ServiceCredentialGroupResponse): 
                     </span>
                     <span v-else> No credential group selected </span>
                 </span>
-            </BButton>
+            </GButton>
         </div>
 
         <GCollapse v-model="isExpanded" class="px-2">

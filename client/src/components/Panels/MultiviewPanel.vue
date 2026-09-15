@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faPlus, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BButton, BButtonGroup } from "bootstrap-vue";
+import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
@@ -14,6 +14,8 @@ import { localize } from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import HistoryList from "@/components/History/HistoryScrollList.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
@@ -95,18 +97,19 @@ function userTitle(title: string) {
 <template>
     <ActivityPanel title="Select Histories">
         <template v-slot:header-buttons>
-            <BButtonGroup>
-                <BButton
+            <GButtonGroup>
+                <GButton
                     v-g-tooltip.bottom.hover
                     data-description="create new history for multiview"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
+                    icon-only
                     :title="userTitle('Create new history and show in multiview')"
                     :disabled="isAnonymous"
                     @click="createAndPin">
                     <FontAwesomeIcon :icon="faPlus" fixed-width />
-                </BButton>
-            </BButtonGroup>
+                </GButton>
+            </GButtonGroup>
         </template>
 
         <template v-slot:header>
@@ -118,19 +121,19 @@ function userTitle(title: string) {
                 :loading="historiesLoading || loading"
                 :show-advanced.sync="showAdvanced" />
             <section v-if="!showAdvanced">
-                <BButtonGroup
+                <GButtonGroup
                     v-if="route.path === '/histories/view_multiple'"
                     v-g-tooltip.hover.bottom
                     class="w-100 mt-2"
                     :aria-label="pinRecentTitle"
                     :title="pinRecentTitle">
-                    <BButton size="sm" :disabled="!pinnedHistoryCount" @click="pinRecent">
+                    <GButton size="small" :disabled="!pinnedHistoryCount" @click="pinRecent">
                         <span class="position-relative">
                             <FontAwesomeIcon v-if="pinnedHistoryCount" :icon="faUndo" class="mr-1" />
                             <b>{{ pinRecentText }}</b>
                         </span>
-                    </BButton>
-                </BButtonGroup>
+                    </GButton>
+                </GButtonGroup>
             </section>
         </template>
 

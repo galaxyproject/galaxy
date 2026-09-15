@@ -22,6 +22,7 @@ import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
 import { setupMonaco } from "./YamlJs";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 // Configure Monaco environment with worker factory before loading
@@ -200,31 +201,25 @@ async function generateViaLLM() {
         </b-alert>
         <div class="d-flex flex-gapx-1">
             <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Tool Editor</Heading>
-            <b-button
-                variant="secondary"
-                size="m"
+            <GButton
                 title="Generate via AI"
                 data-description="Generate via AI"
+                icon-only
                 :disabled="generating"
                 @click="generateViaLLM"
                 ><FontAwesomeIcon :icon="faLightbulb"
-            /></b-button>
-            <b-button
-                variant="secondary"
-                size="m"
-                title="Import from URL"
-                data-description="Import from a URL"
-                @click="importFromUrl"
+            /></GButton>
+            <GButton title="Import from URL" data-description="Import from a URL" icon-only @click="importFromUrl"
                 ><FontAwesomeIcon :icon="faArrowAltCircleUp"
-            /></b-button>
-            <b-button
-                variant="primary"
-                size="m"
+            /></GButton>
+            <GButton
+                color="blue"
                 title="Save Custom Tool"
                 data-description="save custom tool"
+                icon-only
                 @click="saveTool"
                 ><FontAwesomeIcon :icon="faSave"
-            /></b-button>
+            /></GButton>
         </div>
         <VueMonacoEditor
             v-model="yamlRepresentation"

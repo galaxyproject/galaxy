@@ -666,6 +666,26 @@ class Registry:
         """Returns a datatype object based on an extension"""
         return self.datatypes_by_extension.get(ext, None)
 
+    def sniff_directory(self, path: str) -> str:
+        """Detect the datatype of the extra-files directory at ``path``.
+
+        Return the matching extension with the deepest inheritance hierarchy,
+        or ``directory`` if none match.
+        """
+        matches = []
+        for datatype in self.datatypes_by_extension.values():
+            if not isinstance(datatype, data.Directory):
+                continue
+            try:
+                if datatype.sniff_directory(path):
+                    matches.append(datatype)
+            except Exception:
+                self.log.exception("Directory sniffing failed for datatype %s", datatype.file_ext)
+        if not matches:
+            return data.Directory.file_ext
+        best = max(matches, key=lambda datatype: len(type(datatype).__mro__))
+        return best.file_ext
+
     def change_datatype(self, data, ext):
         if data.extension != ext:
             data.extension = ext

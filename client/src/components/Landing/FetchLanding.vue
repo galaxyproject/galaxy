@@ -8,6 +8,7 @@ import { useFetchJobMonitor } from "@/composables/fetch";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import FetchGrids from "./FetchGrids.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -57,7 +58,7 @@ const { fetchAndWatch, fetchComplete, fetchError, waitingOnFetch } = useFetchJob
         :icon="faUpload"
         :version="undefined">
         <template v-slot:buttons>
-            <b-button-group class="tool-card-buttons">
+            <GButtonGroup class="tool-card-buttons">
                 <ButtonSpinner
                     id="execute"
                     class="text-nowrap"
@@ -67,7 +68,7 @@ const { fetchAndWatch, fetchComplete, fetchError, waitingOnFetch } = useFetchJob
                     :wait="waitingOnFetch"
                     :tooltip="runTooltip"
                     @onClick="onExecute" />
-            </b-button-group>
+            </GButtonGroup>
         </template>
         <template v-slot>
             <LoadingSpan v-if="!currentHistoryId" />

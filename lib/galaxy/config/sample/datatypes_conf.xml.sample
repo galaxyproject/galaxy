@@ -413,6 +413,12 @@
     <datatype extension="mzml" type="galaxy.datatypes.proteomics:MzML" mimetype="application/xml" display_in_upload="true">
         <infer_from suffix="mzml" />
     </datatype>
+    <datatype extension="mzspeclib.json" type="galaxy.datatypes.proteomics:MzSpecLibJson" mimetype="application/json" display_in_upload="true" description="mzSpecLib in JSON format." description_url="https://github.com/HUPO-PSI/mzSpecLib">
+      <infer_from suffix="mzspeclib.json" />
+    </datatype>
+    <datatype extension="mzspeclib.txt" type="galaxy.datatypes.proteomics:MzSpecLibTxt" mimetype="text/plain" display_in_upload="true" description="mzSpecLib in text format." description_url="https://github.com/HUPO-PSI/mzSpecLib">
+      <infer_from suffix="mzspeclib.txt" />
+    </datatype>
     <datatype extension="nmrml" type="galaxy.datatypes.proteomics:NmrML" mimetype="application/xml" display_in_upload="true" description="nmrML is an open mark-up language for NMR data." description_url="http://nmrml.org/schema/"/>
     <datatype extension="meryldb" type="galaxy.datatypes.binary:Meryldb" subclass="true" display_in_upload="true" description="MerylDB is a tar.gz archive containing 64 binaries + 64 indexes." />
     <datatype extension="bref3" type="galaxy.datatypes.binary:Bref3" display_in_upload="true" description="Bref3 format is a binary format for storing phased, non-missing genotypes for a list of samples. More information in https://faculty.washington.edu/browning/beagle/bref3.14May18.pdf" />
@@ -1373,6 +1379,8 @@
     <sniffer type="galaxy.datatypes.proteomics:MzIdentML"/>
     <sniffer type="galaxy.datatypes.proteomics:MzML"/>
     <sniffer type="galaxy.datatypes.proteomics:MzQuantML"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzSpecLibTxt"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzSpecLibJson"/>
     <sniffer type="galaxy.datatypes.proteomics:MzTab"/>
     <sniffer type="galaxy.datatypes.proteomics:MzTab2"/>
     <sniffer type="galaxy.datatypes.proteomics:ParamXml"/>
