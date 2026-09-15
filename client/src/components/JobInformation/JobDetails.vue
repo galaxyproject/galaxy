@@ -6,6 +6,7 @@ import type { JobBaseModel } from "@/api/jobs";
 import Heading from "../Common/Heading.vue";
 import CodeRow from "./CodeRow.vue";
 import JobInformation from "./JobInformation.vue";
+import JobHeader from "@/components/JobInformation/JobHeader.vue";
 import JobMetrics from "@/components/JobMetrics/JobMetrics.vue";
 import JobParameters from "@/components/JobParameters/JobParameters.vue";
 
@@ -26,7 +27,8 @@ const remoteHost = computed(() => (props.job && "remote_host" in props.job ? (pr
 
 <template>
     <div v-if="id">
-        <JobInformation :job-id="id" include-times :include-title="showHeader" :invocation-id="invocationId">
+        <JobHeader v-if="props.showHeader" :job-id="id" />
+        <JobInformation :job-id="id" include-times :invocation-id="invocationId">
             <template v-slot:extra-code-rows>
                 <!-- only needed for admin job component -->
                 <CodeRow v-if="info" :code-label="'Info'" :code-item="info" />
