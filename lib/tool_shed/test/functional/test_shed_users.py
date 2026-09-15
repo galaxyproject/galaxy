@@ -1,6 +1,4 @@
-import json
 import os
-import re
 from urllib.parse import urljoin
 
 from requests import (
@@ -18,6 +16,8 @@ from ..base.api_util import (
     email_to_username,
     ensure_user_with_email,
     get_admin_api_key,
+    mock_mailbox_path,
+    reset_password_token,
 )
 
 
@@ -107,23 +107,60 @@ class TestShedUsersApi(ShedApiTestCase):
         self._request_password_reset(email)
 
         new_password = "mynewcoolpassword456"
-        response = self._redeem_reset_token(self._reset_token_from_email(), new_password)
+        response = self._redeem_reset_token(reset_password_token(email), new_password)
         api_asserts.assert_status_code_is(response, 204)
         self._verify_username_password(email, new_password)
+
+    def test_password_reset_only_changes_the_password_of_the_account_it_was_issued_for(self):
+        email = "testpasswordresetbinding@bx.psu.edu"
+        other_email = "testpasswordresetbindingother@bx.psu.edu"
+        other_password = "mycoolpassword123"
+        ensure_user_with_email(self.admin_api_interactor, email, "mycoolpassword123")
+        ensure_user_with_email(self.admin_api_interactor, other_email, other_password)
+        self._request_password_reset(email)
+
+        new_password = "mynewcoolpassword456"
+        api_asserts.assert_status_code_is(self._redeem_reset_token(reset_password_token(email), new_password), 204)
+        self._verify_username_password(email, new_password)
+        self._verify_username_password(other_email, other_password)
+
+    def test_password_reset_rejects_honeypot(self):
+        email = "testpasswordresethoneypot@bx.psu.edu"
+        password = "mycoolpassword123"
+        ensure_user_with_email(self.admin_api_interactor, email, password)
+        url = urljoin(self.url, "api_internal/reset_password")
+        api_asserts.assert_status_code_is(post(url, json={"email": email, "bear_field": "honey"}), 400)
+        self._verify_username_password(email, password)
 
     def test_password_reset_token_cannot_be_redeemed_twice(self):
         email = "testpasswordresettwice@bx.psu.edu"
         ensure_user_with_email(self.admin_api_interactor, email, "mycoolpassword123")
         self._request_password_reset(email)
-        token = self._reset_token_from_email()
+        token = reset_password_token(email)
 
         api_asserts.assert_status_code_is(self._redeem_reset_token(token, "mynewcoolpassword456"), 204)
         second_response = self._redeem_reset_token(token, "anotherpassword789")
         api_asserts.assert_status_code_is(second_response, 400)
         self._verify_username_password(email, "mynewcoolpassword456")
 
+    def test_password_reset_rejects_superseded_token(self):
+        email = "testpasswordresetsuperseded@bx.psu.edu"
+        password = "mycoolpassword123"
+        ensure_user_with_email(self.admin_api_interactor, email, password)
+        self._request_password_reset(email)
+        first_token = reset_password_token(email)
+        os.remove(mock_mailbox_path())
+        self._request_password_reset(email)
+        second_token = reset_password_token(email)
+        assert first_token != second_token
+
+        api_asserts.assert_status_code_is(self._redeem_reset_token(first_token, "mynewcoolpassword456"), 400)
+        self._verify_username_password(email, password)
+        api_asserts.assert_status_code_is(self._redeem_reset_token(second_token, "mynewcoolpassword456"), 204)
+        self._verify_username_password(email, "mynewcoolpassword456")
+
     def test_password_reset_does_not_disclose_unknown_email(self):
-        email_path = self._email_path()
+        email_path = mock_mailbox_path()
         if os.path.exists(email_path):
             os.remove(email_path)
         self._request_password_reset("neverregistered@bx.psu.edu")
@@ -134,11 +171,16 @@ class TestShedUsersApi(ShedApiTestCase):
         password = "mycoolpassword123"
         ensure_user_with_email(self.admin_api_interactor, email, password)
         self._request_password_reset(email)
+        token = reset_password_token(email)
 
         url = urljoin(self.url, "api_internal/change_password")
-        body = {"token": self._reset_token_from_email(), "password": "mynewcoolpassword456", "confirm": "typo789"}
+        body = {"token": token, "password": "mynewcoolpassword456", "confirm": "typo789"}
         api_asserts.assert_status_code_is(put(url, json=body), 400)
         self._verify_username_password(email, password)
+
+        new_password = "mynewcoolpassword456"
+        api_asserts.assert_status_code_is(self._redeem_reset_token(token, new_password), 204)
+        self._verify_username_password(email, new_password)
 
     def test_admin_can_set_password(self):
         email = "testadminsetpassword@bx.psu.edu"
@@ -169,19 +211,6 @@ class TestShedUsersApi(ShedApiTestCase):
     def _redeem_reset_token(self, token: str, password: str):
         url = urljoin(self.url, "api_internal/change_password")
         return put(url, json={"token": token, "password": password, "confirm": password})
-
-    def _reset_token_from_email(self) -> str:
-        with open(self._email_path()) as f:
-            email = json.load(f)
-        assert email["subject"] == "Tool Shed Password Reset"
-        match = re.search(r"https?://\S+/user/reset_password\?token=(\w+)", email["body"])
-        assert match, f"No password reset link found in email body:\n{email['body']}"
-        return match.group(1)
-
-    def _email_path(self) -> str:
-        email_path = os.environ.get("TOOL_SHED_TEST_EMAIL_PATH")
-        assert email_path, "Tool shed test driver did not configure a mock mailbox"
-        return email_path
 
     def _user_id(self, email: str) -> str:
         username = email_to_username(email)

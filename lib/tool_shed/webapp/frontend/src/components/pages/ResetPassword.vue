@@ -46,7 +46,7 @@ function dismiss() {
     <modal-form title="Choose a New Password">
         <q-card-section>
             <error-banner v-if="error" :error="error" @dismiss="dismiss" />
-            <q-form class="q-gutter-md" action="#" @submit.prevent="onSubmit">
+            <q-form name="reset_password" class="q-gutter-md" action="#" @submit.prevent="onSubmit">
                 <q-input
                     v-bind="AUTH_FORM_INPUT_PROPS"
                     v-model="password"
