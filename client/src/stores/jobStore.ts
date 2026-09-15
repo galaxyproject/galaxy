@@ -16,8 +16,7 @@ export const useJobStore = defineStore("jobStore", () => {
 
     async function fetchJobById(params: FetchParams): Promise<ShowFullJobResponse> {
         const { data, error, response } = await GalaxyApi().GET("/api/jobs/{job_id}", {
-            params: { path: { job_id: params.id } },
-            query: { full: true },
+            params: { path: { job_id: params.id }, query: { full: true } },
         });
         if (error) {
             rethrowSimpleWithStatus(error, response);
