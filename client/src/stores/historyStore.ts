@@ -81,7 +81,13 @@ export interface FetchHistoryListOptions {
     sortDesc?: boolean;
     /** Discard the cached ids of this variant instead of merging into them. */
     replace?: boolean;
-    /** Merge summaries by id without recording this request as the canonical variant listing. */
+    /**
+     * Whether the fetched entries make up the cached listing of this variant.
+     * Defaults to `true`. A one-off search that is not the listing (the command
+     * palette's root fan-out, say) sets it to `false`: the entries are still
+     * cached as summaries, but the variant's id list, total and loaded flag are
+     * left alone, so a later listing is neither shortened nor skipped.
+     */
     record?: boolean;
 }
 
@@ -469,9 +475,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * - not handling filters with pagination for now
      *   "pausing" pagination at the existing offset if a filter exists
      */
-    async function fetchHistories(paginate: boolean, queryString?: string) {
+    async function fetchHistories(paginate: boolean, queryString?: string, requestedLimit?: number) {
         setHistoriesLoading(true);
-        let limit: number | null = null;
+        let limit: number | null = requestedLimit ?? null;
         if (!queryString || queryString == "") {
             if (paginate) {
                 await loadTotalHistoryCount();
@@ -506,9 +512,15 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * fetch is in flight (the command palette) sees the filled cache instead of
      * an empty one. A *different* load started meanwhile is still skipped: the
      * store fetches one own-history list at a time.
+     *
+     * @param paginate whether to page through the list with the store's offset
+     * @param queryString backend filter, e.g. built by `HistoriesFilters`
+     * @param limit caps an unpaginated load, for consumers that only render a
+     * handful of rows (the command palette) — the panels leave it unset and keep
+     * loading the whole list
      */
-    function loadHistories(paginate = true, queryString?: string): Promise<void> {
-        const key = `${paginate}|${queryString ?? ""}`;
+    function loadHistories(paginate = true, queryString?: string, limit?: number): Promise<void> {
+        const key = `${paginate}|${queryString ?? ""}|${limit ?? ""}`;
         const inFlight = loadHistoriesPromises.get(key);
         if (inFlight) {
             return inFlight;
@@ -516,7 +528,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         if (historiesLoading.value) {
             return Promise.resolve();
         }
-        const promise = fetchHistories(paginate, queryString).finally(() => {
+        const promise = fetchHistories(paginate, queryString, limit).finally(() => {
             loadHistoriesPromises.delete(key);
         });
         loadHistoriesPromises.set(key, promise);
@@ -548,7 +560,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * histories are updated in place.
      *
      * @param variant Which listing to fetch
-     * @param options Pagination, sorting and search options
+     * @param options Pagination, sorting, search and caching options
      * @returns The fetched entries, in the order the backend returned them
      */
     function fetchHistoryList(
@@ -612,6 +624,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
                 listedHistoriesTotal.value[variant] = result.total;
                 listedHistoriesLoaded.value[variant] = true;
             } else {
+                // the entries answer this request alone, so they are cached as
+                // summaries without joining (or completing) the listing
                 mergeListedHistories(result.data);
             }
             return result.data.map((history) => listedHistories.value[history.id] ?? history);
