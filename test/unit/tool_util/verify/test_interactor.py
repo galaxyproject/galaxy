@@ -213,6 +213,19 @@ def mocked():
         yield rsps
 
 
+def test_session_is_available_while_resolving_user_key(mocked):
+    mocked.get(f"{API}/users", json=[{"email": "user@example.org", "id": "user1"}])
+    mocked.post(f"{API}/users/user1/api_key", json="resolved-key")
+
+    interactor = GalaxyInteractorApi(
+        galaxy_url=GALAXY_URL,
+        master_api_key="admin",
+        test_user="user@example.org",
+    )
+
+    assert interactor.api_key == "resolved-key"
+
+
 def test_verify_output_dataset_retries_while_dataset_is_not_ready(interactor, mocked):
     display = f"{API}/histories/hist1/contents/hda1/display"
     mocked.get(display, status=409)

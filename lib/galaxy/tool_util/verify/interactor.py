@@ -300,6 +300,8 @@ class GalaxyInteractorApi:
         self.api_url = f"{kwds['galaxy_url'].rstrip('/')}/api"
         self.cookies = None
         self.master_api_key = kwds["master_api_key"]
+        self._session_factory = kwds.get("session_factory", _new_session)
+        self._sessions = threading.local()
         self.api_key = self._get_user_key(
             kwds.get("api_key"), kwds.get("master_api_key"), test_user=kwds.get("test_user")
         )
@@ -310,8 +312,6 @@ class GalaxyInteractorApi:
         self.download_sleep = kwds.get("download_sleep", 1)
         self.polling_delta = kwds.get("polling_delta", POLLING_DELTA)
         self.polling_backoff = kwds.get("polling_backoff", POLLING_BACKOFF)
-        self._session_factory = kwds.get("session_factory", _new_session)
-        self._sessions = threading.local()
         # Local test data directories.
         self.test_data_directories = kwds.get("test_data") or []
 
