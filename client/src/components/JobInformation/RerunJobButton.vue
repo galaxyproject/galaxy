@@ -26,6 +26,6 @@ const rerunUrl = computed(() => `/?job_id=${props.jobId}`);
         :pressed="route.fullPath === rerunUrl"
         :to="rerunUrl">
         <FontAwesomeIcon fixed-width :icon="faRedo" />
-        <span>Run again</span>
+        <span class="text-nowrap">Run again</span>
     </GButton>
 </template>
