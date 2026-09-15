@@ -871,6 +871,9 @@ class User(Base, Dictifiable, RepresentById):
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     email: Mapped[str] = mapped_column(TrimmedString(255), index=True, unique=True)
     username: Mapped[str | None] = mapped_column(TrimmedString(255), index=True, unique=True)
+    # Free-form name shown in place of the username. Deliberately not unique and
+    # not indexed: nothing resolves a user by it, and it never appears in a URL.
+    display_name: Mapped[str | None] = mapped_column(TrimmedString(255))
     password: Mapped[str] = mapped_column(TrimmedString(255))
     last_password_change: Mapped[datetime | None] = mapped_column(default=now)
     external: Mapped[bool | None] = mapped_column(default=False)
@@ -956,7 +959,7 @@ class User(Base, Dictifiable, RepresentById):
         "preferred_object_store_id",
     ]
 
-    def __init__(self, email=None, password=None, username=None):
+    def __init__(self, email=None, password=None, username=None, display_name=None):
         self.email = email
         self.password = password
         self.external = False
@@ -964,6 +967,7 @@ class User(Base, Dictifiable, RepresentById):
         self.purged = False
         self.active = False
         self.username = username
+        self.display_name = display_name
 
     def get_user_data_tables(self, data_table: str):
         session = required_object_session(self)
