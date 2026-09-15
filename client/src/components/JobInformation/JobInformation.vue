@@ -16,7 +16,6 @@ import GCard from "@/components/Common/GCard.vue";
 import Heading from "@/components/Common/Heading.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import HelpText from "@/components/Help/HelpText.vue";
-import JobHeader from "@/components/JobInformation/JobHeader.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 const props = withDefaults(
@@ -24,8 +23,6 @@ const props = withDefaults(
         jobId: string;
         /** If `true`, the job's update and create times, as well as time to finish are shown. */
         includeTimes?: boolean;
-        /** If `true`, the title is shown. */
-        includeTitle?: boolean;
         /** If `true`, the rerun indicator is shown. */
         includeRerunIndicator?: boolean;
         /** If provided, this component will skip fetching the invocation ID for the job. */
@@ -135,11 +132,6 @@ watch(
 
 <template>
     <div>
-        <template v-if="job && props.includeTitle">
-            <JobHeader :job="job" />
-            <hr />
-        </template>
-
         <div class="job-info-section">
             <div class="job-info-section-icon">
                 <FontAwesomeIcon :icon="faInfoCircle" />

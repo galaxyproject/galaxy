@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { faWrench } from "@fortawesome/free-solid-svg-icons";
+import { toRef } from "vue";
 
-import type { ShowFullJobResponse } from "@/api/jobs";
+import { useJobDetails } from "@/composables/jobDetails";
 import { useToolStore } from "@/stores/toolStore";
 
 import Heading from "@/components/Common/Heading.vue";
@@ -9,26 +10,31 @@ import RerunJobButton from "@/components/JobInformation/RerunJobButton.vue";
 import JobState from "@/components/JobStates/JobState.vue";
 
 const props = defineProps<{
-    job: ShowFullJobResponse;
+    jobId: string;
 }>();
 
 const toolStore = useToolStore();
+
+const { job } = useJobDetails(toRef(props, "jobId"));
 </script>
 
 <template>
-    <div class="d-flex justify-content-between">
-        <div class="job-header">
-            <div class="job-header-title">
-                <JobState v-if="props.job" class="job-information-state-badge" :job="props.job" />
-                <Heading v-if="props.job" :icon="faWrench" inline size="md">
-                    {{ toolStore.getToolNameById(props.job.tool_id, "Job Details") }}
-                </Heading>
+    <div>
+        <div class="d-flex justify-content-between">
+            <div class="job-header">
+                <div class="job-header-title">
+                    <JobState v-if="job" class="job-information-state-badge" :job="job" />
+                    <Heading v-if="job" :icon="faWrench" inline size="md">
+                        {{ toolStore.getToolNameById(job.tool_id, "Job Details") }}
+                    </Heading>
+                </div>
+                <slot name="details" />
             </div>
-            <slot name="details" />
+            <div>
+                <RerunJobButton :job-id="props.jobId" outline />
+            </div>
         </div>
-        <div v-if="props.job">
-            <RerunJobButton :job-id="props.job.id" outline />
-        </div>
+        <hr />
     </div>
 </template>
 
