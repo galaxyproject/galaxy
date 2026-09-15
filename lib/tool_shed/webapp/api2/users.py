@@ -7,7 +7,10 @@ from fastapi import (
     Response,
     status,
 )
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    field_validator,
+)
 from sqlalchemy import (
     false,
     true,
@@ -57,12 +60,28 @@ log = logging.getLogger(__name__)
 TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT: str | None = os.environ.get("TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT", None)
 SENSITIVE_API_REQUEST_LIMIT = TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT or "10/minute"
 
+INVALID_LOGIN_OR_PASSWORD = "Invalid login or password"
 
-class UiRegisterRequest(BaseModel):
+LOOKS_LIKE_A_BOT = (
+    "You've been flagged as a possible bot. If you are not, please try again and fill the form out carefully."
+)
+
+
+class HasHoneypot(BaseModel):
+    bear_field: str
+
+    @field_validator("bear_field")
+    @classmethod
+    def _honeypot_must_be_empty(cls, bear_field: str) -> str:
+        if bear_field != "":
+            raise RequestParameterInvalidException(LOOKS_LIKE_A_BOT)
+        return bear_field
+
+
+class UiRegisterRequest(HasHoneypot):
     email: str
     username: str
     password: str
-    bear_field: str
 
 
 class HasCsrfToken(BaseModel):
@@ -100,21 +119,13 @@ class UiChangePasswordRequest(BaseModel):
     token: str | None = None
 
 
-class UiResetPasswordRequest(BaseModel):
+class UiResetPasswordRequest(HasHoneypot):
     email: str
-    bear_field: str
 
 
 class SetPasswordRequest(BaseModel):
     password: str
     confirm: str
-
-
-INVALID_LOGIN_OR_PASSWORD = "Invalid login or password"
-
-LOOKS_LIKE_A_BOT = (
-    "You've been flagged as a possible bot. If you are not, please try again and fill the form out carefully."
-)
 
 
 @router.cbv
@@ -252,10 +263,6 @@ class FastAPIUsers:
         trans: SessionRequestContext = DependsOnTrans,
         register_request: UiRegisterRequest = Body(...),
     ) -> UiRegisterResponse:
-        honeypot_field = register_request.bear_field
-        if honeypot_field != "":
-            raise RequestParameterInvalidException(LOOKS_LIKE_A_BOT)
-
         username = register_request.username
         if username == "repos":
             raise RequestParameterInvalidException("Cannot create a user with the username 'repos'")
@@ -319,8 +326,6 @@ class FastAPIUsers:
         trans: SessionRequestContext = DependsOnTrans,
         reset_request: UiResetPasswordRequest = Body(...),
     ):
-        if reset_request.bear_field != "":
-            raise RequestParameterInvalidException(LOOKS_LIKE_A_BOT)
         send_password_reset_email(trans, self.user_manager, reset_request.email)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
