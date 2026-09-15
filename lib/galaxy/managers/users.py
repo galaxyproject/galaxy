@@ -513,8 +513,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             message = self.__set_password(trans, user, password, confirm)
             if message:
                 return None, message
-            token_result.expiration_time = now()
-            trans.sa_session.add(token_result)
             return user, "Password has been changed. Token has been invalidated."
         else:
             if not isinstance(id, int):
@@ -559,6 +557,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 for other_galaxy_session in trans.sa_session.scalars(stmt):
                     other_galaxy_session.is_valid = False
                     trans.sa_session.add(other_galaxy_session)
+                self.expire_reset_tokens(trans, user)
                 trans.sa_session.add(user)
                 trans.sa_session.commit()
                 trans.log_event("User change password")
@@ -682,11 +681,24 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return str(e)
         return None
 
+    def expire_reset_tokens(self, trans: ProvidesAppContext, user) -> None:
+        stmt = select(self.app.model.PasswordResetToken).where(
+            and_(
+                self.app.model.PasswordResetToken.user_id == user.id,
+                self.app.model.PasswordResetToken.expiration_time > now(),
+            )
+        )
+        for token in trans.sa_session.scalars(stmt):
+            token.expiration_time = now()
+            trans.sa_session.add(token)
+
     def get_reset_token(self, trans: ProvidesAppContext, email):
         reset_user = self.by_email(email)
         if not reset_user:
             reset_user = self.by_email(email, case_sensitive=False)
         if reset_user and not reset_user.deleted:
+            # Only the most recent link works, so repeated requests cannot pile up live tokens.
+            self.expire_reset_tokens(trans, reset_user)
             prt = self.app.model.PasswordResetToken(reset_user)
             trans.sa_session.add(prt)
             trans.sa_session.commit()

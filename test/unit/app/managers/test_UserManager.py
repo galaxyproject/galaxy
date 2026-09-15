@@ -11,7 +11,6 @@ from typing import (
 from unittest.mock import patch
 
 import pytest
-
 from sqlalchemy import (
     desc,
     select,
@@ -223,6 +222,64 @@ class TestUserManager(BaseTestCase):
         with pytest.raises(exceptions.RequestParameterInvalidException):
             self.user_manager.set_password(self.trans, user, changed_password, default_password)
         assert check_password(default_password, user.password)
+
+    def test_set_password_expires_outstanding_reset_tokens(self):
+        user = self.user_manager.create(**user2_data)
+        _, prt = self.user_manager.get_reset_token(self.trans, user.email)
+
+        self.user_manager.set_password(self.trans, user, changed_password, changed_password)
+
+        _, message = self.user_manager.change_password(
+            self.trans, token=prt.token, password=default_password, confirm=default_password
+        )
+        assert message == "Invalid or expired password reset token, please request a new one."
+        assert check_password(changed_password, user.password)
+
+    def test_requesting_a_token_expires_the_earlier_ones(self):
+        user = self.user_manager.create(**user2_data)
+        _, first = self.user_manager.get_reset_token(self.trans, user.email)
+        _, second = self.user_manager.get_reset_token(self.trans, user.email)
+
+        _, message = self.user_manager.change_password(
+            self.trans, token=first.token, password=changed_password, confirm=changed_password
+        )
+        assert message == "Invalid or expired password reset token, please request a new one."
+        redeemed, _ = self.user_manager.change_password(
+            self.trans, token=second.token, password=changed_password, confirm=changed_password
+        )
+        assert redeemed is user
+
+    def test_redeeming_a_token_expires_the_others(self):
+        user = self.user_manager.create(**user2_data)
+        first = model.PasswordResetToken(user)
+        second = model.PasswordResetToken(user)
+        self.trans.sa_session.add_all((first, second))
+        self.trans.sa_session.commit()
+
+        redeemed, _ = self.user_manager.change_password(
+            self.trans, token=second.token, password=changed_password, confirm=changed_password
+        )
+        assert redeemed is user
+
+        _, message = self.user_manager.change_password(
+            self.trans, token=first.token, password=default_password, confirm=default_password
+        )
+        assert message == "Invalid or expired password reset token, please request a new one."
+
+    def test_mismatched_confirmation_leaves_the_token_redeemable(self):
+        user = self.user_manager.create(**user2_data)
+        _, prt = self.user_manager.get_reset_token(self.trans, user.email)
+
+        _, message = self.user_manager.change_password(
+            self.trans, token=prt.token, password=changed_password, confirm=default_password
+        )
+        assert message == "Passwords do not match."
+
+        redeemed, _ = self.user_manager.change_password(
+            self.trans, token=prt.token, password=changed_password, confirm=changed_password
+        )
+        assert redeemed is user
+        assert check_password(changed_password, user.password)
 
     def test_login(self):
         self.log("should be able to validate user credentials")
