@@ -1,0 +1,60 @@
+// 2x2 grid: icon | heading (row 1), empty spacer | content (row 2)
+.job-info-section {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    row-gap: 0.5rem;
+    column-gap: 0.5rem;
+
+    .job-info-section-icon {
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: var(--color-blue-100);
+        border: 1px solid var(--color-grey-200);
+        border-radius: 8px;
+        color: var(--color-blue-600);
+    }
+
+    .job-info-section-spacer {
+        align-self: stretch;
+    }
+
+    .heading {
+        margin-bottom: 0;
+    }
+
+    .job-info-table {
+        :deep(tr) {
+            td {
+                padding: 0.25rem 0.5rem;
+                vertical-align: top;
+                border-bottom: none;
+            }
+
+            &:hover td {
+                background-color: var(--color-blue-100);
+            }
+
+            td:first-child {
+                font-size: 0.78rem;
+                font-weight: 700;
+                color: var(--color-grey-600);
+            }
+
+            td:last-child {
+                color: var(--color-blue-700);
+            }
+        }
+    }
+
+    // TODO: Maybe we need to max-width all poppers to 70vw globally?
+    :deep(.popper-element) {
+        max-width: 70vw;
+        text-align: left;
+        white-space: normal !important;
+    }
+}
