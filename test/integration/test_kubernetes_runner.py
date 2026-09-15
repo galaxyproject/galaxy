@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 import time
 from typing import (
+    Any,
     Literal,
     overload,
 )
@@ -95,11 +96,31 @@ spec:
     return KubeSetupConfigTuple(path=volume_claim.name)
 
 
-def job_config(
-    jobs_directory: str,
-    jobs_directory_claim: str = "jobs-directory-claim",
-    tool_directory_claim: str = "tool-directory-claim",
-) -> Config:
+def kubectl_get(kind: str, name: str | None = None) -> dict[str, Any]:
+    """Return ``kubectl get <kind> [<name>] -o json``, parsed.
+
+    Tests observe the cluster through kubectl rather than through pykube_util so
+    that an assertion does not go through the same client the runner used to
+    create the object it is checking.
+    """
+    command = ["kubectl", "get", kind]
+    if name is not None:
+        command.append(name)
+    command += ["-o", "json"]
+    return json.loads(unicodify(subprocess.check_output(command)))
+
+
+def ingress_for_tool(tool_id: str) -> dict[str, Any]:
+    """The single ingress the Kubernetes runner created for ``tool_id``."""
+    ingresses = kubectl_get("ingress")["items"]
+    matching = [
+        i for i in ingresses if (i["metadata"].get("annotations") or {}).get("app.galaxyproject.org/tool_id") == tool_id
+    ]
+    assert len(matching) == 1, f"Expected exactly one ingress for {tool_id}, got {matching}"
+    return matching[0]
+
+
+def job_config(jobs_directory: str, claim_prefix: str = "") -> Config:
     job_conf_template = string.Template("""<job_conf>
     <plugins>
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
@@ -143,9 +164,9 @@ def job_config(
 """)
     job_conf_str = job_conf_template.substitute(
         jobs_directory=jobs_directory,
-        jobs_directory_claim=jobs_directory_claim,
+        jobs_directory_claim=f"{claim_prefix}jobs-directory-claim",
         tool_directory=TOOL_DIR,
-        tool_directory_claim=tool_directory_claim,
+        tool_directory_claim=f"{claim_prefix}tool-directory-claim",
         k8s_config_path=integration_util.k8s_config_path(),
     )
     with tempfile.NamedTemporaryFile(suffix="_kubernetes_integration_job_conf.xml", mode="w", delete=False) as job_conf:
@@ -166,33 +187,24 @@ class KubernetesDatasetPopulator(DatasetPopulator):
             raise
 
 
-@integration_util.skip_unless_kubernetes()
-class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
-    dataset_populator: KubernetesDatasetPopulator
-    job_config: Config
-    jobs_directory: str
+class KubernetesVolumesMixin:
+    """Cluster-wide volumes and claims for the jobs and tool directories.
+
+    Mix in ahead of the integration test case, call :meth:`setup_persistent_volumes`
+    from ``handle_galaxy_config_kwds``, and pass ``claim_prefix`` on to
+    :func:`job_config` so the job config names the claims this created. Test classes
+    that may share a cluster give ``claim_prefix`` distinct values.
+    """
+
+    claim_prefix = ""
     persistent_volume_claims: list[KubeSetupConfigTuple]
     persistent_volumes: list[KubeSetupConfigTuple]
-    container_type = "docker"
-
-    def setUp(self) -> None:
-        super().setUp()
-        self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)
 
     @classmethod
-    def tearDownClass(cls) -> None:
-        for claim in cls.persistent_volume_claims:
-            claim.teardown()
-        for volume in cls.persistent_volumes:
-            volume.teardown()
-        super().tearDownClass()
-
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config) -> None:
-        cls.jobs_directory = os.path.realpath(cls._test_driver.mkdtemp())
+    def setup_persistent_volumes(cls, jobs_directory: str) -> None:
         volumes = [
-            (cls.jobs_directory, "jobs-directory-volume", "jobs-directory-claim"),
-            (TOOL_DIR, "tool-directory-volume", "tool-directory-claim"),
+            (jobs_directory, f"{cls.claim_prefix}jobs-directory-volume", f"{cls.claim_prefix}jobs-directory-claim"),
+            (TOOL_DIR, f"{cls.claim_prefix}tool-directory-volume", f"{cls.claim_prefix}tool-directory-claim"),
         ]
         cls.persistent_volumes = []
         cls.persistent_volume_claims = []
@@ -203,7 +215,36 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
             claim_obj = persistent_volume_claim(volume, claim)
             claim_obj.setup()
             cls.persistent_volume_claims.append(claim_obj)
-        cls.job_config = job_config(jobs_directory=cls.jobs_directory)
+
+    @classmethod
+    def teardown_persistent_volumes(cls) -> None:
+        for claim in cls.persistent_volume_claims:
+            claim.teardown()
+        for volume in cls.persistent_volumes:
+            volume.teardown()
+
+
+@integration_util.skip_unless_kubernetes()
+class TestKubernetesIntegration(KubernetesVolumesMixin, BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
+    dataset_populator: KubernetesDatasetPopulator
+    job_config: Config
+    jobs_directory: str
+    container_type = "docker"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.teardown_persistent_volumes()
+        super().tearDownClass()
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config) -> None:
+        cls.jobs_directory = os.path.realpath(cls._test_driver.mkdtemp())
+        cls.setup_persistent_volumes(cls.jobs_directory)
+        cls.job_config = job_config(cls.jobs_directory, claim_prefix=cls.claim_prefix)
         # TODO: implement metadata setting as separate job, as service or side-car
         super().handle_galaxy_config_kwds(config)
         config["jobs_directory"] = cls.jobs_directory
@@ -254,8 +295,7 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
 
             external_id = job.job_runner_external_id
             assert external_id
-            output = unicodify(subprocess.check_output(["kubectl", "get", "job", external_id, "-o", "json"]))
-            status = json.loads(output)
+            status = kubectl_get("job", external_id)
             assert status["status"]["active"] == 1
 
             delete_response = self.dataset_populator.cancel_job(job_dict["id"])
@@ -291,8 +331,7 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
 
             external_id = job.job_runner_external_id
             assert external_id
-            output = unicodify(subprocess.check_output(["kubectl", "get", "job", external_id, "-o", "json"]))
-            status = json.loads(output)
+            status = kubectl_get("job", external_id)
             assert status["status"]["active"] == 1
 
             output = unicodify(subprocess.check_output(["kubectl", "delete", "job", external_id, "-o", "name"]))
