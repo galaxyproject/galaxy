@@ -761,6 +761,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 # (path_info) or a prefixed deployment ends up with the prefix twice.
                 # The query string is part of where the user was headed; landing
                 # requests carry "?public=true".
+                # Only the path half is quoted: PATH_INFO reaches us already decoded, so
+                # this puts it back into path form, while query_string is still encoded and
+                # is appended as-is. Quoting both would encode the query twice.
                 destination = quote(self.request.path_info)
                 if self.request.query_string:
                     destination = f"{destination}?{self.request.query_string}"
