@@ -531,6 +531,11 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             else:
                 return user, "User not found."
 
+    def set_password(self, trans, user, password, confirm=None) -> None:
+        """Set a password for an authorized caller; raise RequestParameterInvalidException if invalid."""
+        if message := self.__set_password(trans, user, password, confirm):
+            raise exceptions.RequestParameterInvalidException(message)
+
     def __set_password(self, trans: ProvidesUserContext, user, password, confirm):
         if not password:
             return "Please provide a new password."
@@ -542,21 +547,22 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             else:
                 # Save new password
                 user.set_password_cleartext(password)
-                # Invalidate all other sessions
-                if trans.galaxy_session:
-                    stmt = select(self.app.model.GalaxySession).where(
-                        and_(
-                            self.app.model.GalaxySession.user_id == user.id,
-                            self.app.model.GalaxySession.is_valid == true(),
-                            self.app.model.GalaxySession.id != trans.galaxy_session.id,
-                        )
+                # Preserve the caller's session, if any.
+                stmt = select(self.app.model.GalaxySession).where(
+                    and_(
+                        self.app.model.GalaxySession.user_id == user.id,
+                        self.app.model.GalaxySession.is_valid == true(),
                     )
-                    for other_galaxy_session in trans.sa_session.scalars(stmt):
-                        other_galaxy_session.is_valid = False
-                        trans.sa_session.add(other_galaxy_session)
+                )
+                if trans.galaxy_session:
+                    stmt = stmt.where(self.app.model.GalaxySession.id != trans.galaxy_session.id)
+                for other_galaxy_session in trans.sa_session.scalars(stmt):
+                    other_galaxy_session.is_valid = False
+                    trans.sa_session.add(other_galaxy_session)
                 trans.sa_session.add(user)
                 trans.sa_session.commit()
                 trans.log_event("User change password")
+                log.info("Password changed for user %s.", user.id)
         else:
             return "Failed to determine user, access denied."
 

@@ -10,6 +10,8 @@ from typing import (
 )
 from unittest.mock import patch
 
+import pytest
+
 from sqlalchemy import (
     desc,
     select,
@@ -190,6 +192,37 @@ class TestUserManager(BaseTestCase):
             self.trans, token=prt.token, password=default_password, confirm=default_password
         )
         assert message == "Invalid or expired password reset token, please request a new one."
+
+    def test_set_password_invalidates_sessions_of_a_caller_without_one(self):
+        user = self.user_manager.create(**user2_data)
+        session = model.GalaxySession(user=user, is_valid=True)
+        self.trans.sa_session.add(session)
+        self.trans.sa_session.commit()
+        assert self.trans.galaxy_session is None
+
+        self.user_manager.set_password(self.trans, user, changed_password, changed_password)
+
+        assert check_password(changed_password, user.password)
+        assert not session.is_valid
+
+    def test_set_password_keeps_the_caller_session(self):
+        user = self.user_manager.create(**user2_data)
+        caller_session = model.GalaxySession(user=user, is_valid=True)
+        other_session = model.GalaxySession(user=user, is_valid=True)
+        self.trans.sa_session.add_all((caller_session, other_session))
+        self.trans.sa_session.commit()
+        self.mock_trans.galaxy_session = caller_session
+
+        self.user_manager.set_password(self.trans, user, changed_password, changed_password)
+
+        assert caller_session.is_valid
+        assert not other_session.is_valid
+
+    def test_set_password_rejects_mismatched_confirmation(self):
+        user = self.user_manager.create(**user2_data)
+        with pytest.raises(exceptions.RequestParameterInvalidException):
+            self.user_manager.set_password(self.trans, user, changed_password, default_password)
+        assert check_password(default_password, user.password)
 
     def test_login(self):
         self.log("should be able to validate user credentials")
