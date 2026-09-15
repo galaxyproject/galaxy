@@ -9,6 +9,10 @@ import { errorMessageAsString, queryParamToString } from "@/util"
 import router from "@/router"
 
 const token = queryParamToString(useRoute().query.token)
+if (token) {
+    // Remove the credential from browser history and subsequent referrers.
+    router.replace({ query: {} })
+}
 const password = ref("")
 const confirm = ref("")
 const error = ref<string | null>(null)

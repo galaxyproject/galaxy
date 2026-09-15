@@ -42,7 +42,7 @@ async function onResetPassword() {
                 confirm: confirm.value,
             },
         })
-        notify(`Password reset for ${selectedUsername.value}, their open sessions were logged out.`)
+        notify(`Password reset for ${selectedUsername.value}, their other sessions were logged out.`)
         password.value = ""
         confirm.value = ""
     } catch (e) {
