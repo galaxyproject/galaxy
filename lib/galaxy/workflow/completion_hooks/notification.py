@@ -11,8 +11,8 @@ __all__ = ("SendNotificationHook",)
 from typing import TYPE_CHECKING
 
 from galaxy.schema.notifications import (
+    InternalNotificationCreateData,
     MessageNotificationContent,
-    NotificationCreateData,
     NotificationCreateRequest,
     NotificationRecipients,
     NotificationVariant,
@@ -65,7 +65,7 @@ class SendNotificationHook(WorkflowCompletionHook):
         variant = NotificationVariant.info
 
         # Create the notification request
-        notification_data = NotificationCreateData(
+        notification_data = InternalNotificationCreateData(
             source="galaxy",
             category=PersonalNotificationCategory.message,
             variant=variant,

@@ -1,0 +1,52 @@
+{# Shared tool-request field rows for the HTML email body.
+   Included by tool_installation_request-email.html and
+   tool_installation_request_confirmation-email.html. Pure partial body (no
+   >>>>>> doc header). Variables: content (a tool installation request, with a
+   `tools` array of requested-tool dicts). #}
+{% set tools = content['tools'] %}
+{% for tool in tools %}
+<table style="font-size: 12pt; border-collapse: collapse; width: 100%;{% if not loop.last %} margin-bottom: 8px;{% endif %}">
+  <tr>
+    <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Tool</td>
+    <td style="padding: 4px 8px;">{{ tool['name'] or tool['tool_shed_id'] or tool['tool_url'] or "(unspecified)" }}</td>
+  </tr>
+  {% if tool['tool_shed_id'] and tool['name'] %}
+  <tr>
+    <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Tool shed ID</td>
+    <td style="padding: 4px 8px;">{{ tool['tool_shed_id'] }}</td>
+  </tr>
+  {% endif %}
+  {% if tool['tool_url'] and (tool['name'] or tool['tool_shed_id']) %}
+  <tr>
+    <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">URL</td>
+    <td style="padding: 4px 8px;">{{ tool['tool_url'] }}</td>
+  </tr>
+  {% endif %}
+  {% if tool['description'] %}
+  <tr>
+    <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap; vertical-align: top;">Description</td>
+    <td style="padding: 4px 8px; white-space: pre-line;">{{ tool['description'] }}</td>
+  </tr>
+  {% endif %}
+  {% if tool['scientific_domain'] %}
+  <tr>
+    <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Scientific domain</td>
+    <td style="padding: 4px 8px;">{{ tool['scientific_domain'] }}</td>
+  </tr>
+  {% endif %}
+  {% if tool['requested_version'] %}
+  <tr>
+    <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Requested version</td>
+    <td style="padding: 4px 8px;">{{ tool['requested_version'] }}</td>
+  </tr>
+  {% endif %}
+</table>
+{% endfor %}
+{% if content['additional_remarks'] %}
+<table style="font-size: 12pt; border-collapse: collapse; width: 100%;">
+  <tr>
+    <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap; vertical-align: top;">Additional remarks</td>
+    <td style="padding: 4px 8px; white-space: pre-line;">{{ content['additional_remarks'] }}</td>
+  </tr>
+</table>
+{% endif %}
