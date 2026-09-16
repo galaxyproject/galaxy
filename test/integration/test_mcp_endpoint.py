@@ -42,6 +42,9 @@ class TestMCPEndpoint(IntegrationTestCase):
         super().handle_galaxy_config_kwds(config)
         config["enable_mcp_server"] = True
 
+    def test_endpoint_without_trailing_slash(self) -> None:
+        assert mcp_server_info(f"{self.url}api/mcp")["name"] == "Galaxy"
+
     def test_endpoint_with_trailing_slash(self) -> None:
         assert mcp_server_info(f"{self.url}api/mcp/")["name"] == "Galaxy"
 

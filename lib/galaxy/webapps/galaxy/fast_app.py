@@ -19,6 +19,12 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from starlette.datastructures import MutableHeaders
 from starlette.middleware.cors import CORSMiddleware
+from starlette.routing import Route
+from starlette.types import (
+    Receive,
+    Scope,
+    Send,
+)
 from tuspyserver import create_tus_router
 
 from galaxy.schema.generics import ref_to_name
@@ -279,6 +285,32 @@ def get_mcp_lifespan(gx_app):
         return None, None
 
 
+class MCPExactPathApp:
+    """Serve the MCP app at its mount path itself, without a trailing slash.
+
+    ``app.mount(path, ...)`` compiles to ``^<path>/(?P<path>.*)$`` and so only
+    matches paths *below* the mount point. A request for the endpoint itself
+    therefore falls through to the WSGI catch-all mounted at ``/`` and is
+    answered with a 404. MCP clients are configured with the endpoint URL and
+    post to exactly that, so serve the path here instead of redirecting to the
+    trailing-slash form -- MCP clients commonly do not follow redirects on POST.
+    """
+
+    def __init__(self, mcp_app, mcp_path: str) -> None:
+        self.mcp_app = mcp_app
+        self.mcp_path = mcp_path
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        # Hand the MCP app the scope ``Mount`` would have built for the
+        # trailing-slash form of this request.
+        root_path = scope.get("root_path", "")
+        child_scope = dict(scope)
+        child_scope["app_root_path"] = scope.get("app_root_path", root_path)
+        child_scope["root_path"] = root_path + self.mcp_path
+        child_scope["path"] = child_scope["root_path"] + "/"
+        await self.mcp_app(child_scope, receive, send)
+
+
 def include_mcp(app: FastAPI, gx_app, mcp_app):
     """Mount the MCP server if it was initialized."""
     if mcp_app is None:
@@ -289,6 +321,11 @@ def include_mcp(app: FastAPI, gx_app, mcp_app):
         # Requests served by the mounted sub-app see request.app == mcp_app, so
         # share the parent's route name index for UrlBuilder._url_path_for.
         mcp_app.state.route_name_index = app.state.route_name_index
+        exact_path = mcp_path.rstrip("/")
+        if exact_path:
+            app.router.routes.append(
+                Route(exact_path, endpoint=MCPExactPathApp(mcp_app, exact_path), include_in_schema=False)
+            )
         app.mount(mcp_path, mcp_app)
         log.info(f"MCP server (Streamable HTTP) mounted at {mcp_path}")
     except Exception as e:
