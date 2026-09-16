@@ -1,0 +1,30 @@
+- id: gitlab
+  version: 0
+  name: GitLab
+  description: |
+      Browse the projects of a GitLab instance and import files from them. Projects you have access
+      to appear as folders, with their repository contents below. Public projects can be browsed
+      without an access token.
+
+      This file source is read only. To export data to a GitLab instance that hosts ARCs, use the
+      ARC file source instead.
+
+      Requires the ``arcfs-fsspec`` package to be installed on the Galaxy server.
+  variables:
+      base_url:
+          label: GitLab URL (e.g. https://gitlab.com)
+          type: string
+          help: |
+              The URL of the GitLab instance you are connecting to, including the protocol.
+  secrets:
+      token:
+          label: GitLab Access Token
+          optional: true
+          help: |
+              A personal access token with the "api" scope. It is required to see private projects.
+              Public projects can be browsed without one. A token also removes the limit some
+              servers place on how deep an anonymous listing can page.
+  configuration:
+      type: gitlab
+      base_url: "{{ variables.base_url }}"
+      token: "{{ secrets.token }}"

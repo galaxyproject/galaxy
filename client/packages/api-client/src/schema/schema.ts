@@ -13291,6 +13291,7 @@ export interface components {
                 | "openbis"
                 | "ckan"
                 | "commoncrawl"
+                | "gitlab"
                 | "arc";
             /** Variables */
             variables?:
@@ -26256,6 +26257,7 @@ export interface components {
                 | "openbis"
                 | "ckan"
                 | "commoncrawl"
+                | "gitlab"
                 | "arc";
             /** Uri Root */
             uri_root: string;

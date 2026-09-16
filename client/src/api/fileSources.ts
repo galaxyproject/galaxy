@@ -119,6 +119,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faGlobe,
         message: "This is a read-only file repository plugin that connects with the Common Crawl archive.",
     },
+    gitlab: {
+        icon: faNetworkWired,
+        message: "This is a read-only file source that connects with a GitLab instance.",
+    },
     arc: {
         icon: faNetworkWired,
         message:
