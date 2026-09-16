@@ -2,11 +2,7 @@
 
 import logging
 import re
-from typing import (
-    Any,
-    Optional,
-    Set,
-)
+from typing import Any
 
 from galaxy import util
 from . import InstrumentPlugin
@@ -35,7 +31,7 @@ class CpuInfoPlugin(InstrumentPlugin):
 
     plugin_type = "cpuinfo"
     formatter = CpuInfoFormatter()
-    fields: Optional[Set[str]]
+    fields: set[str] | None
 
     def __init__(self, **kwargs):
         self.verbose = util.asbool(kwargs.get("verbose", False))
@@ -54,9 +50,9 @@ class CpuInfoPlugin(InstrumentPlugin):
         return f"cat /proc/cpuinfo > '{self.__instrument_cpuinfo_path(job_directory)}'"
 
     def job_properties(self, job_id, job_directory):
-        properties = {}
+        properties: dict[str, Any] = {}
         processor_count = 0
-        per_field_values: dict = {}
+        per_field_values: dict[str, dict[str, str]] = {}
         with open(self.__instrument_cpuinfo_path(job_directory)) as f:
             current_processor = None
             for line in f:
