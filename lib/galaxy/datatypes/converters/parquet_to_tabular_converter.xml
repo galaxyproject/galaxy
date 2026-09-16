@@ -1,5 +1,5 @@
 <!-- In order to use this converter the admin has to install its dependency pyarrow e.g. through the Galaxy admin UI -->
-<tool id="CONVERTER_parquet_to_tabular" name="Convert Parquet to quoted TSV" version="1.1.0" profile="19.05">
+<tool id="CONVERTER_parquet_to_tabular" name="Convert Parquet to tabular" version="1.1.0" profile="19.05">
     <requirements>
         <requirement type="package" version="24.0.0">pyarrow</requirement>
     </requirements>
@@ -8,18 +8,18 @@
         <param name="input" type="data" format="parquet" label="Parquet file"/>
     </inputs>
     <outputs>
-        <data name="output" format="tsv"/>
+        <data name="output" format="tabular"/>
     </outputs>
     <tests>
         <test>
             <param name="input" ftype="parquet" value="parq_to_tabular_conv.parquet"/>
-            <output name="output" ftype="tsv" value="parq_to_tabular_conv.tabular"/>
+            <output name="output" ftype="tabular" value="parq_to_tabular_conv.tabular"/>
         </test>
     </tests>
     <help>
 What it does
 ------------
-Converts Parquet files to quoted TSV with a header record.
+Converts Parquet files to plain tabular with a header record.
 
 All columns are converted to strings, with nested structures serialized as JSON.
 
@@ -42,8 +42,11 @@ The following Parquet data types are supported:
 - **nested nonfinite floats**: JSON objects with a $float key and string value
 - **null**: Converted to empty string
 
-TSV quoting preserves embedded tabs, carriage returns, newlines, and quote characters
-in both headers and cells. Read the result as TSV, not by splitting physical lines on tabs.
+Fields are separated by tabs and records by newlines. Quote characters are literal.
+Headers or cells containing tabs, carriage returns, or newlines are rejected rather
+than silently corrupting the table. Comment-like data records beginning with # and
+empty one-column data records are also rejected because plain tabular readers may
+ignore them. Use the separate Parquet to quoted TSV converter for these datasets.
 
 This is a text projection, not a lossless Parquet round trip: the original schema is
 not retained, and nulls cannot be distinguished from empty strings in the output.

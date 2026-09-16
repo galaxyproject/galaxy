@@ -11,8 +11,15 @@ from decimal import (
     InvalidOperation,
 )
 
-import pyarrow as pa
-import pyarrow.parquet as parquet
+try:
+    import pyarrow as pa
+    import pyarrow.parquet as parquet
+except ImportError as exc:
+    if __name__ == "__main__":
+        sys.exit("Cannot run conversion: pyarrow is not installed. Install the converter's pyarrow requirement.")
+    raise ImportError(
+        "Cannot run conversion: pyarrow is not installed. Install the converter's pyarrow requirement."
+    ) from exc
 
 INTEGER = re.compile(r"[+-]?(?:0|[1-9][0-9]*)\Z")
 NUMBER = re.compile(r"[+-]?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\Z")
@@ -52,13 +59,22 @@ def read_table(infile, input_format="tabular", header_mode="auto"):
     has_header = header_mode == "first" or (header_mode == "auto" and input_format == "tsv")
     with open(infile, encoding="utf-8", newline="") as handle:
         if input_format == "tsv":
-            csv.field_size_limit(sys.maxsize)
-            rows = list(csv.reader(handle, dialect="excel-tab", strict=True))
+            previous_limit = csv.field_size_limit(sys.maxsize)
+            try:
+                rows = list(csv.reader(handle, dialect="excel-tab", strict=True))
+            finally:
+                csv.field_size_limit(previous_limit)
         else:
             # Galaxy's generic tabular datatype does not interpret CSV quoting.
-            rows = [
-                line.rstrip("\r\n").split("\t") for line in handle if not line.startswith("#") and line.rstrip("\r\n")
-            ]
+            rows = []
+            for line in handle:
+                record = line.rstrip("\r\n")
+                if not record:
+                    continue
+                # An explicit first-record header can itself begin with '#'.
+                if record.startswith("#") and not (has_header and not rows):
+                    continue
+                rows.append(record.split("\t"))
     if not rows or not rows[0]:
         raise ValueError("Input has no columns")
     width = len(rows[0])
@@ -83,7 +99,10 @@ def __main__():
     parser.add_argument("--input-format", choices=("tabular", "tsv"), default="tabular")
     parser.add_argument("--header-mode", choices=("auto", "first", "none"), default="auto")
     args = parser.parse_args()
-    convert(args.infile, args.outfile, input_format=args.input_format, header_mode=args.header_mode)
+    try:
+        convert(args.infile, args.outfile, input_format=args.input_format, header_mode=args.header_mode)
+    except (OSError, ValueError, csv.Error, pa.ArrowException) as exc:
+        parser.exit(1, f"Conversion failed: {exc}\n")
 
 
 if __name__ == "__main__":
