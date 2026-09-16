@@ -1,11 +1,13 @@
-from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.files.models import FilesSourceRuntimeContext
 from galaxy.files.sources.gitlab import (
     GitLabFileSourceConfiguration,
     GitLabFileSourceTemplateConfiguration,
     GitLabFilesSource,
-    ROOT_MARKER,
 )
+
+try:
+    from arcfs.fs import GitLabARCFileSystem
+except ImportError:
+    GitLabARCFileSystem = None  # type: ignore[assignment, misc, unused-ignore]
 
 
 class ARCFileSourceTemplateConfiguration(GitLabFileSourceTemplateConfiguration):
@@ -37,30 +39,14 @@ class ARCFilesSource(GitLabFilesSource):
 
     plugin_type = "arc"
 
+    #: An ARC is a GitLab project, so only the filesystem differs: this one exports through
+    #: Git LFS and a merge request where the GitLab source commits to the branch.
+    required_module = GitLabARCFileSystem
+
+    entity_name = "ARC"
+
     template_config_class = ARCFileSourceTemplateConfiguration
     resolved_config_class = ARCFileSourceConfiguration
-
-    def get_writable(self) -> bool:
-        """Writable when configured so, unlike the read-only GitLab source this extends."""
-        return self.writable
-
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        context: FilesSourceRuntimeContext[GitLabFileSourceConfiguration],
-    ):
-        if ROOT_MARKER not in target_path:
-            # Without the marker the backend cannot tell where the project path ends, so it probes
-            # prefixes and then builds the whole project index before failing, with a message about
-            # a missing ARC for a path that never named one.
-            raise RequestParameterInvalidException(
-                "Exports have to name a file inside an ARC, in the form the file browser produces "
-                f"(group/project{ROOT_MARKER}/folder/file). The top level of this file source lists "
-                "the ARCs themselves and cannot hold files."
-            )
-        with self._filesystem(context, f"writing to file source path {target_path}") as (fs, config):
-            fs.put_file(native_path, self._to_filesystem_path(target_path, config))
 
 
 __all__ = ("ARCFilesSource",)

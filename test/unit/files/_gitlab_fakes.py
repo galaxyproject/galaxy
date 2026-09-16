@@ -6,7 +6,6 @@ network access. ``install_fake`` takes the module and class to patch, because ea
 the filesystem class from its own module.
 """
 
-import pytest
 from aiohttp import (
     ClientResponseError,
     RequestInfo,

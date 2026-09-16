@@ -8,20 +8,12 @@ credentials are unavailable.
 
 import asyncio
 import logging
-import os
-from urllib.parse import quote
-from uuid import uuid4
 
 import pytest
-from aiohttp import (
-    ClientResponseError,
-    RequestInfo,
-)
 from multidict import (
     CIMultiDict,
     CIMultiDictProxy,
 )
-from yarl import URL
 
 from galaxy.exceptions import (
     AuthenticationRequired,
@@ -30,7 +22,6 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.files.models import (
-    FilesSourceOptions,
     RemoteDirectory,
     RemoteFile,
 )
@@ -40,7 +31,6 @@ from galaxy.files.sources.gitlab import (
     GitLabFilesSource,
     ROOT_MARKER,
 )
-from galaxy.util import requests
 from galaxy.util.unittest_utils import (
     skip_if_site_down,
     skip_unless_environ,
@@ -59,7 +49,6 @@ from ._util import (
     assert_realizes_as,
     configured_file_sources,
     user_context_fixture,
-    write_from,
 )
 
 PUBLIC_GITLAB_URL = "https://gitlab.com"
@@ -103,6 +92,24 @@ _response_error = response_error
 def test_plugin_type():
     assert GitLabFilesSource.plugin_type == "gitlab"
     assert GitLabFilesSource.required_package == "arcfs-fsspec"
+
+
+def test_reported_writability_follows_the_accessor(fake_fs, monkeypatch):
+    """What the source reports must be what it honours, whatever the configuration asked for.
+
+    ``to_dict`` is what fills the client's export pickers. While it reported the configured
+    attribute rather than the accessor, a source whose accessor disagreed kept offering itself
+    for exports that then died in ``_ensure_writeable`` with a bare HTTP 500. This source honours
+    its configuration now, so the disagreement is staged deliberately below; ``commoncrawl``
+    still has that shape for real.
+    """
+    source = _gitlab_source(_source_config(writable=True))
+    assert source.get_writable() is True
+    assert source.to_dict()["writable"] is True
+
+    monkeypatch.setattr(GitLabFilesSource, "get_writable", lambda self: False)
+    assert source.writable is True, "the configured value is untouched, which is what makes this a mismatch"
+    assert source.to_dict()["writable"] is False
 
 
 def test_missing_package_gives_actionable_error(monkeypatch):
@@ -339,10 +346,12 @@ def test_realize_downloads_through_get_file(fake_fs):
 
 
 def test_permission_error_becomes_authentication_required(fake_fs):
+    """A ``PermissionError`` carrying no filename is GitLab refusing the credentials."""
     fake_fs.list_page_error = PermissionError("401 Unauthorized")
     source = _gitlab_source()
-    with pytest.raises(AuthenticationRequired, match="Permission Denied"):
+    with pytest.raises(AuthenticationRequired, match="Permission Denied") as excinfo:
         source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+    assert str(excinfo.value).startswith("Problem listing file source path /.")
     assert fake_fs.closed == 1
 
 
@@ -351,16 +360,31 @@ def test_unauthorized_response_becomes_authentication_required(fake_fs, status):
     """GitLab reports a missing or invalid token as an aiohttp error, which is not an OSError."""
     fake_fs.list_page_error = _response_error(status, "Unauthorized")
     source = _gitlab_source()
-    with pytest.raises(AuthenticationRequired, match="check your credentials"):
+    with pytest.raises(AuthenticationRequired, match="check your credentials") as excinfo:
         source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+    # Every other branch of the ladder leads with the operation it failed at. A credentials failure
+    # that dropped it told the user their token was refused without saying what for, which on an
+    # export read as a bare permission complaint about nothing in particular.
+    assert str(excinfo.value).startswith("Problem listing file source path /.")
 
 
-def test_forbidden_response_mentions_the_token_scope(fake_fs):
-    """403 usually means the token authenticated but was created without the api scope."""
+def test_forbidden_response_names_both_kinds_of_token(fake_fs):
+    """403 means the token authenticated but is not allowed to do this.
+
+    Which permission is missing depends on the kind of token, and GitLab's own explanation does
+    not survive aiohttp, so the message has to cover both rather than assert one. The classic
+    scope it names is the one this source needs: reading is all it does, and asking a user to
+    mint a write-capable token to browse would contradict its own template help. ``test_arc.py``
+    holds the other half, where an export does need the wider scope.
+    """
     fake_fs.list_page_error = _response_error(403, "Forbidden")
     source = _gitlab_source()
-    with pytest.raises(AuthenticationRequired, match="'api' scope"):
+    with pytest.raises(AuthenticationRequired) as excinfo:
         source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+    message = str(excinfo.value)
+    assert message.startswith("Problem listing file source path /."), "the operation must survive both hints"
+    assert "'read_api' scope" in message, "a read-only source must not ask for a write scope"
+    assert "fine-grained" in message
 
 
 def test_offset_limit_response_explains_paging_and_the_token_remedy(fake_fs):
@@ -492,9 +516,41 @@ def test_local_file_errors_are_not_blamed_on_the_server(fake_fs, monkeypatch):
             "group/repo1:-:/README.md", "/srv/galaxy/tmp/staging/tmp123", user_context=user_context_fixture()
         )
     message = str(caught.value)
-    assert "ARC may be empty" not in message
+    assert "project may be empty" not in message
     assert "check your credentials" not in message
     assert "/srv/galaxy/tmp/staging" not in message
+
+
+def test_local_permission_errors_are_not_blamed_on_the_credentials(fake_fs, monkeypatch):
+    """A staged file Galaxy may not read is not a token GitLab refused.
+
+    Both reach the handler as a ``PermissionError`` and only the filename tells them apart. This
+    matters most on the ARC write path, where ``put_file`` reads a dataset Galaxy staged for it:
+    were the two arms reordered, or the filename check dropped, a server-side disk permission
+    problem would send the user off to check a token that is fine, and would print the staging
+    path to them on the way.
+    """
+    source = _gitlab_source()
+
+    def unreadable_local_file(rpath, lpath, **kwargs):
+        raise PermissionError(13, "Permission denied", "/srv/galaxy/tmp/staging/tmp123")
+
+    monkeypatch.setattr(source, "_open_fs", lambda *a, **k: _LocalFailureFs(unreadable_local_file, fake_fs))
+    with pytest.raises(MessageException) as caught:
+        source.realize_to(
+            "group/repo1:-:/README.md", "/srv/galaxy/tmp/staging/tmp123", user_context=user_context_fixture()
+        )
+    # ``AuthenticationRequired`` is a ``MessageException``, so the type raised has to be asserted
+    # on rather than left to ``pytest.raises`` above.
+    assert not isinstance(caught.value, AuthenticationRequired)
+    message = str(caught.value)
+    assert message.startswith("Problem reading file source path group/repo1:-:/README.md.")
+    # The OS' own reason is the only useful thing here, so it has to survive too.
+    assert "Reason: Permission denied" in message
+    assert "check your credentials" not in message
+    # The credentials arm renders the exception itself, which for this errno form carries the path.
+    assert "/srv/galaxy/tmp/staging" not in message
+    assert fake_fs.closed == 1
 
 
 class _LocalFailureFs:

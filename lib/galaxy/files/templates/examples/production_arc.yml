@@ -32,8 +32,10 @@
           label: DataHUB Access Token
           optional: true
           help: |
-              A personal access token for the DataHUB (GitLab) instance with the "api" scope. It is
-              required to see private ARCs and to export data; public ARCs can be browsed without it.
+              A personal access token for the DataHUB (GitLab) instance. A classic token needs the
+              "api" scope; a fine-grained one needs to read projects and repositories, and for
+              exports to push code and create branches, commits and merge requests. It is required
+              to see private ARCs and to export data; public ARCs can be browsed without it.
   configuration:
       type: arc
       base_url: "{{ variables.base_url }}"

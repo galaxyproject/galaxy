@@ -585,6 +585,7 @@ class GitLabFileSourceTemplateConfiguration(StrictModel):
     type: Literal["gitlab"]
     base_url: str | TemplateExpansion
     token: str | TemplateExpansion | None = None
+    writable: bool | TemplateExpansion = False
     template_start: str | None = None
     template_end: str | None = None
 
@@ -593,6 +594,7 @@ class GitLabFileSourceConfiguration(StrictModel):
     type: Literal["gitlab"]
     base_url: str
     token: str | None = None
+    writable: bool = False
 
 
 class ARCFileSourceTemplateConfiguration(StrictModel):
