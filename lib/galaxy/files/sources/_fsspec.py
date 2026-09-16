@@ -37,7 +37,7 @@ PACKAGE_MESSAGE = "FilesSource plugin is missing required Python fsspec plugin p
 # Maximum number of items to return in a single listing.
 # This is a safeguard to prevent excessive memory usage and performance issues
 # since is a huge number of items is not practical for browsing in most use cases.
-MAX_ITEMS_LIMIT = 1000
+MAX_ITEMS_LIMIT = 500
 
 
 class FsspecCommonCacheOptions(StrictModel):
