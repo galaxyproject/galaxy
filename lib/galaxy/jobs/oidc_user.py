@@ -58,9 +58,9 @@ class OidcUsernameProvider:
                 claimed = jwt.decode(token, options={"verify_signature": False})[self.claim]
                 match = self.template.match(claimed) if isinstance(claimed, str) else None
                 if match:
-                    # A capture group says which span is the username; without one the
-                    # whole match is, which is why an unanchored template truncates.
-                    username = match.group(1) if self.template.groups else match.group(0)
+                    # Preserve the complete matched username: capture groups can express
+                    # regex structure without requesting a different account mapping.
+                    username = match.group(0)
                     if username:
                         return username
             except Exception:

@@ -86,12 +86,20 @@ def test_job_without_a_user_fails():
         BaseJobRunner._configure_docker_username_from_oidc_token_claim(None, wrapper)
 
 
-def test_template_capture_group_selects_the_username():
+@pytest.mark.parametrize(
+    "claim,template",
+    [
+        ("alice@example.org", r"^([a-z_][a-z0-9_-]*)@example\.org$"),
+        ("alice42", r"^(alice|bob)[0-9]+$"),
+        ("alice", r"^(bob)?alice$"),
+    ],
+)
+def test_template_capture_groups_preserve_the_whole_match(claim, template):
     params = _configure(
-        {"id": _token({"unique_name": "alice@example.org"})},
-        providers={"oidc": {"claim": "unique_name", "template": r"^([a-z_][a-z0-9_-]*)@example\.org$"}},
+        {"id": _token({"unique_name": claim})},
+        providers={"oidc": {"claim": "unique_name", "template": template}},
     )
-    assert params["docker_username_from_token"] == "alice"
+    assert params["docker_username_from_token"] == claim
 
 
 def test_template_without_a_capture_group_uses_the_whole_match():

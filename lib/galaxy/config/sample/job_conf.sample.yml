@@ -545,10 +545,10 @@ execution:
       # a diagnostic in the job's stderr rather than the tool's.
       # Providers are tried in their configured order. For each provider, Galaxy
       # tries the stored access token, then the ID token if no username matched.
-      # claim names a string claim. template is a regex matched against it: if the
-      # regex has a capture group that group is the username, otherwise the matched
-      # prefix is (so an unanchored template truncates - "^[a-z]+" turns
-      # alice@example.org into alice).
+      # claim names a string claim. template is a regex whose whole matched prefix
+      # is the username, even when it contains capture groups. An unanchored template
+      # truncates - "^[a-z]+" turns alice@example.org into alice. Use an end anchor
+      # to require a full match.
       # With set_user false, only expose_as_env is applied and no account lookup
       # is needed. expose_as_env must be a valid environment variable name.
       # Enabled configurations require docker_enabled on the same destination and at
