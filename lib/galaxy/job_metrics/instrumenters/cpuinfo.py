@@ -2,7 +2,11 @@
 
 import logging
 import re
-from typing import Any
+from typing import (
+    Any,
+    Optional,
+    Set,
+)
 
 from galaxy import util
 from . import InstrumentPlugin
@@ -31,9 +35,20 @@ class CpuInfoPlugin(InstrumentPlugin):
 
     plugin_type = "cpuinfo"
     formatter = CpuInfoFormatter()
+    fields: Optional[Set[str]]
 
     def __init__(self, **kwargs):
         self.verbose = util.asbool(kwargs.get("verbose", False))
+        fields_str = kwargs.get("fields", None)
+        if isinstance(fields_str, list):
+            self.fields = {f.lower() for f in fields_str}
+        elif fields_str:
+            self.fields = {f.strip().lower() for f in fields_str.split(",")}
+        else:
+            self.fields = None
+        # Collapse a field to a single key when its value is identical across
+        # every processor, instead of one processor_N_<field> key per core.
+        self.unique = util.asbool(kwargs.get("unique", False))
 
     def pre_execute_instrument(self, job_directory):
         return f"cat /proc/cpuinfo > '{self.__instrument_cpuinfo_path(job_directory)}'"
@@ -41,6 +56,7 @@ class CpuInfoPlugin(InstrumentPlugin):
     def job_properties(self, job_id, job_directory):
         properties = {}
         processor_count = 0
+        per_field_values: dict = {}
         with open(self.__instrument_cpuinfo_path(job_directory)) as f:
             current_processor = None
             for line in f:
@@ -55,9 +71,26 @@ class CpuInfoPlugin(InstrumentPlugin):
                 elif current_processor and self.verbose:
                     # If verbose, dump information about each processor
                     # into database...
-                    key, value = line.split(":", 1)
-                    key = f"processor_{current_processor}_{key.strip()}"
-                    value = value
+                    field, value = line.split(":", 1)
+                    field = field.strip()
+                    if self.fields is not None and field not in self.fields:
+                        continue
+                    value = value.strip()
+                    if self.unique:
+                        per_field_values.setdefault(field, {})[current_processor] = value
+                    else:
+                        properties[f"processor_{current_processor}_{field}"] = value
+
+        if self.unique:
+            for field, by_processor in per_field_values.items():
+                distinct_values = set(by_processor.values())
+                if len(distinct_values) == 1:
+                    properties[field] = distinct_values.pop()
+                else:
+                    # Processors disagree on this field: keep per-processor keys for it.
+                    for processor_id, value in by_processor.items():
+                        properties[f"processor_{processor_id}_{field}"] = value
+
         properties["processor_count"] = processor_count
         return properties
 
