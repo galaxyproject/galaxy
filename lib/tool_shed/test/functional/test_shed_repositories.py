@@ -64,6 +64,49 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert update.homepage_url == "https://www.google.com"
         assert populator.get_repository(repository_id).homepage_url == "https://www.google.com"
 
+    def test_push_collaborator_can_update_repository_info(self):
+        populator = self.populator
+        email = "publishcollaborator@galaxyproject.org"
+        username = "publishcollaborator"
+        password = "testPassword1"
+        create_user(self.admin_api_interactor, {"email": email, "username": username, "password": password})
+        interactor = self._api_interactor_by_credentials(email, password)
+        collaborator = self._get_populator(interactor)
+        category = populator.new_category(prefix="delegatepublishing")
+        repository = populator.new_repository(category.id, prefix="delegatepublishing")
+        request = UpdateRepositoryRequest(
+            description="Published by a push collaborator",
+            homepage_url="https://example.org/tool",
+            remote_repository_url="https://github.com/example/tool",
+            category_ids=[category.id],
+        )
+
+        api_asserts.assert_status_code_is(collaborator.update_raw(repository, request), 403)
+        populator.allow_user_to_push(repository, username)
+        permissions = interactor.get(f"repositories/{repository.id}/permissions")
+        api_asserts.assert_status_code_is_ok(permissions)
+        assert permissions.json()["can_push"] is True
+        assert permissions.json()["can_manage"] is False
+
+        # Exercise the content upload followed by metadata PUT used by shed_update.
+        assert collaborator.upload_revision(repository, COLUMN_MAKER_PATH).is_ok
+        collaborator.update(repository, request)
+        updated = populator.get_repository(repository.id)
+        assert updated.owner == repository.owner
+        assert updated.description == request.description
+        assert updated.homepage_url == request.homepage_url
+        assert updated.remote_repository_url == request.remote_repository_url
+
+        # Publishing permission does not grant control over collaborators or admins.
+        response = interactor.post(f"repositories/{repository.id}/allow_push/{username}")
+        api_asserts.assert_status_code_is(response, 403)
+        api_asserts.assert_status_code_is(collaborator.add_admin_user_raw(repository, username), 403)
+
+        populator.disallow_user_to_push(repository, username)
+        request.description = "Should not be applied after revocation"
+        api_asserts.assert_status_code_is(collaborator.update_raw(repository, request), 403)
+        assert populator.get_repository(repository.id).description == updated.description
+
     def test_update_category(self):
         populator = self.populator
         prefix = "testupdatecategory"
