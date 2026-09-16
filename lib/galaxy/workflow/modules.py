@@ -103,7 +103,10 @@ from galaxy.tools.execute import (
     PartialJobExecution,
 )
 from galaxy.tools.execution_helpers import filter_output
-from galaxy.tools.expressions import do_eval
+from galaxy.tools.expressions import (
+    do_eval,
+    resolve_isolation_command,
+)
 from galaxy.tools.parameters import (
     check_param,
     params_to_incoming,
@@ -380,10 +383,14 @@ def evaluate_value_from_expressions(progress, step, execution_state, extra_step_
         if when_expression == "${inputs.when}":
             # Fallback for workflows defined on 23.0
             when_expression = "$(inputs.when)"
+        isolation_command = resolve_isolation_command(
+            progress.module_injector.trans.app.config.expression_evaluation_isolation_command
+        )
         try:
             as_cwl_value = do_eval(
                 when_expression,
                 step_state,
+                sandbox_command=isolation_command,
             )
         except Exception:
             # Exception contains script and traceback, which could be helpful for debugging workflows,

@@ -56,6 +56,7 @@ dependencies = [
     "python-slugify",
     "PyJWT",
     "PyYAML",
+    "quickjs-ng>=0.16.2.1; python_version >= '3.10'",
     "refgenconf>=0.13.0",
     "regex",
     "requests",

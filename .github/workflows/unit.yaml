@@ -38,8 +38,13 @@ jobs:
         uses: astral-sh/setup-uv@v10.0.1
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get -y install ffmpeg
+      - name: Install ffmpeg and bubblewrap
+        # bubblewrap: exercises the expression-evaluation isolation sandbox tests.
+        # Ubuntu >=24.04 restricts unprivileged user namespaces (which bwrap needs);
+        # allow them so the sandbox test can run.
+        run: |
+          sudo apt-get update && sudo apt-get -y install ffmpeg bubblewrap
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Run tests

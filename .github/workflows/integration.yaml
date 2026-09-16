@@ -114,7 +114,11 @@ jobs:
         run: rm -Rf /usr/share/dotnet
       - name: Install packages
         # ffmpeg: ffprobe needed by media datatypes
-        run: sudo apt-get update && sudo apt-get -y install ffmpeg
+        # bubblewrap: exercises the expression-evaluation isolation sandbox integration test.
+        # Ubuntu >=24.04 restricts unprivileged user namespaces (which bwrap needs); allow them.
+        run: |
+          sudo apt-get update && sudo apt-get -y install ffmpeg bubblewrap
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
       - name: Create the CNI config directory minikube's none driver expects
         # The action chmods /etc/cni/net.d without creating it, and current
         # runner images no longer ship the directory. See

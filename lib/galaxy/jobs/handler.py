@@ -528,8 +528,10 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 elif job_state == JOB_INPUT_DELETED:
                     log.info("(%d) Job unable to run: one or more inputs deleted", job.id)
                 elif job_state == JOB_READY:
-                    self.dispatcher.put(self.job_wrappers.pop(job.id))
-                    log.info("(%d) Job dispatched", job.id)
+                    if self.dispatcher.put(self.job_wrappers.pop(job.id)):
+                        log.info("(%d) Job dispatched", job.id)
+                    else:
+                        log.debug("(%d) Job selected for dispatch but was not queued", job.id)
                 elif job_state == JOB_DELETED:
                     log.info("(%d) Job deleted by user while still queued", job.id)
                 elif job_state == JOB_ADMIN_DELETED:
@@ -1315,13 +1317,13 @@ class DefaultJobDispatcher:
         runner = self.get_job_runner(job_wrapper, get_task_runner=True)
         if runner is None:
             # Something went wrong, we've already failed the job wrapper
-            return
+            return False
         if isinstance(job_wrapper, TaskWrapper):
             # DBTODO Refactor
             log.debug(f"({job_wrapper.job_id}) Dispatching task {job_wrapper.task_id} to task runner")
         else:
             log.debug(f"({job_wrapper.job_id}) Dispatching to {job_wrapper.job_destination.runner} runner")
-        runner.put(job_wrapper)
+        return runner.put(job_wrapper)
 
     def stop(self, job: model.Job, job_wrapper: JobWrapper) -> None:
         """
