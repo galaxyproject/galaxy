@@ -35,7 +35,7 @@ def _column_array(lexemes):
             return pa.array([int(value) if value is not None else None for value in values], type=pa.int64())
     elif non_null and all(NUMBER.fullmatch(value) for value in non_null):
         floats = [float(value) for value in non_null]
-        # Include exponent notation in the precision guard and reject underflow.
+        # Guard all numeric spellings against large-magnitude rounding and underflow.
         if all(_safe_float(value, number) for value, number in zip(non_null, floats)):
             return pa.array([float(value) if value is not None else None for value in values], type=pa.float64())
     return pa.array(values, type=pa.string())
@@ -50,7 +50,9 @@ def _safe_float(text, number):
         return False
     if number == 0 and exact != 0:
         return False
-    return exact != exact.to_integral_value() or exact.copy_abs() <= 2**53
+    # Apply the existing conservative magnitude bound to fractional values too.
+    # Ordinary float64 approximation (for example 0.1) remains intentional.
+    return exact.copy_abs() <= 2**53
 
 
 def read_table(infile, input_format="tabular", header_mode="auto"):
