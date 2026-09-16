@@ -5503,3 +5503,36 @@ class Safetensors(Binary):
         except Exception:
             # Any exception during parsing means it's not a valid safetensors file
             return False
+
+
+@build_sniff_from_prefix
+class TensorBoardEvents(Binary):
+    """TensorBoard event log file."""
+
+    file_ext = "tfevents"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Detect a TensorBoard event log.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname("tensorboard.tfevents")
+        >>> TensorBoardEvents().sniff(fname)
+        True
+        >>> fname = get_test_fname("cellpose_model_safetensors.safetensors")
+        >>> TensorBoardEvents().sniff(fname)
+        False
+        """
+        data = file_prefix.contents_header_bytes
+
+        if len(data) < 16:
+            return False
+
+        record_length = struct.unpack("<Q", data[:8])[0]
+
+        if record_length == 0 or 12 + record_length + 4 > len(data):
+            return False
+
+        payload = data[12 : 12 + record_length]
+
+        return b"brain.Event:" in payload
