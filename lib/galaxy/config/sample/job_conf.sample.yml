@@ -13,10 +13,10 @@ runners:
     #
     # For setting up a DRMAA runner it may be advisable to test with the state set to "error" and use "ok"
     # only if all (including successfull jobs) fail with one of the two exceptions.
-    # 
+    #
     # In case these exceptions may occur transiently a number of retries can be configured.
-    # 
-    # Defaults are shown below. 
+    #
+    # Defaults are shown below.
     # Possible values for the states are "ok" and "error".
     invalidjobexception_state: ok
     invalidjobexception_retries: 0
@@ -362,7 +362,7 @@ runners:
     # RabbitMQ URL from Galaxy server (include credentials).
     amqp_url: <amqp_url>
     # If Pulsar needs to talk to Galaxy at a particular host and port, set that here.
-    #galaxy_url: <galaxy_url>  
+    #galaxy_url: <galaxy_url>
 
   # Using Pulsar and co-execution to run jobs against Google Cloud Platform's Batch service.
   # - https://cloud.google.com/batch/docs/get-started
@@ -540,6 +540,15 @@ execution:
       # When set_user is true, docker_set_user must be unset, null, or empty.
       # Galaxy resolves the username to UID/GID on the execution host with
       # id -u/id -g and adds the user's supplementary groups with --group-add.
+      # The account must exist there and have access to the job's mounted files;
+      # failed account/group lookups abort the job before Docker is invoked.
+      # Providers are tried in their configured order. For each provider, Galaxy
+      # tries the stored access token, then the ID token if no username matched.
+      # claim names a string claim; template is a regex whose matched prefix is
+      # the username (use an end anchor to require a full match).
+      # With set_user false, only expose_as_env is applied and no account lookup
+      # is needed. expose_as_env must be a valid environment variable name.
+      # Enabled configurations require at least one recognized OIDC provider.
       #
       #docker_username_from_oidc_token_claim:
       #  set_user: true
@@ -547,7 +556,7 @@ execution:
       #  providers:
       #    azure:
       #      claim: unique_name
-      #      template: "^.{0,3}"
+      #      template: "^[a-z_][a-z0-9_-]*"
 
       # Pass extra arguments to the docker run command not covered by the
       # above options.
@@ -611,8 +620,8 @@ execution:
       # Container resolvers can be defined per execution environment using
       # either a yaml file
       #container_resolvers_config_file: null
-      
-      # Alternatively the yaml can be defined inline using 
+
+      # Alternatively the yaml can be defined inline using
       #container_resolvers:
 
     singularity_local:
@@ -621,7 +630,7 @@ execution:
       singularity_enabled: true
 
       # See the above documentation for docker_volumes, singularity_volumes works
-      # the same way. 
+      # the same way.
       #singularity_volumes: $defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro
 
       # You can configure singularity to run using sudo - this probably should not

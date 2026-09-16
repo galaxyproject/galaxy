@@ -29,6 +29,40 @@ DEFAULT_SET_USER = None if sys.platform == "darwin" else "$UID"
 DEFAULT_RUN_EXTRA_ARGUMENTS = None
 
 
+def build_docker_user_setup_command(username: str, include_groups: bool = False) -> str:
+    """Resolve a literal account on the execution host, aborting on invalid identity data."""
+    quoted_username = shlex.quote(username)
+    commands = []
+    for variable, flag, label in (
+        ("GALAXY_DOCKER_UID", "-u", "UID"),
+        ("GALAXY_DOCKER_GID", "-g", "GID"),
+    ):
+        commands.append(f"""{variable}=$(id {flag} -- {quoted_username}) || {{
+    echo "Failed to resolve Docker user {label} on the execution host" >&2
+    exit 1
+}}
+case "${variable}" in
+    ''|*[!0-9]*) echo "Invalid Docker user {label} on the execution host" >&2; exit 1;;
+esac""")
+    if include_groups:
+        commands.append(f"""GALAXY_DOCKER_GROUPS=$(id -G -- {quoted_username}) || {{
+    echo "Failed to resolve Docker user groups on the execution host" >&2
+    exit 1
+}}
+case "$GALAXY_DOCKER_GROUPS" in
+    ''|*[!0-9\\ ]*) echo "Invalid Docker user groups on the execution host" >&2; exit 1;;
+esac
+GALAXY_DOCKER_GROUP_ARGS=""
+for galaxy_docker_group in $GALAXY_DOCKER_GROUPS; do
+    GALAXY_DOCKER_GROUP_ARGS="$GALAXY_DOCKER_GROUP_ARGS --group-add $galaxy_docker_group"
+done
+[ -n "$GALAXY_DOCKER_GROUP_ARGS" ] || {{
+    echo "Empty Docker user groups on the execution host" >&2
+    exit 1
+}}""")
+    return "\n".join(commands)
+
+
 def kill_command(container: str, signal: str | None = None, **kwds) -> list[str]:
     args = (["-s", signal] if signal else []) + [container]
     return command_list("kill", args, **kwds)
@@ -110,11 +144,11 @@ def build_docker_run_command(
     sudo_cmd: str = DEFAULT_SUDO_COMMAND,
     auto_rm: bool = DEFAULT_AUTO_REMOVE,
     set_user: str | None = DEFAULT_SET_USER,
-    set_user_from_host: bool = False,
     host: str | None = DEFAULT_HOST,
     guest_ports: bool | str | list[str] = False,
     host_port_cmd: str | None = None,
     container_name: str | None = None,
+    set_user_from_host: bool = False,
 ) -> str:
     env_directives = env_directives or []
     volumes = volumes or []
@@ -159,10 +193,11 @@ def build_docker_run_command(
         command_parts.append("--rm")
     if run_extra_arguments:
         command_parts.append(run_extra_arguments)
+    user_setup_command = ""
     if set_user:
         if set_user_from_host:
-            user_name = shlex.quote(set_user)
-            user = f"`id -u {user_name}`:`id -g {user_name}`"
+            user_setup_command = build_docker_user_setup_command(set_user)
+            user = '"$GALAXY_DOCKER_UID:$GALAXY_DOCKER_GID"'
         elif set_user == DEFAULT_SET_USER:
             # If future-us is ever in here and fixing this for docker-machine just
             # use cwltool.docker_id - it takes care of this default nicely.
@@ -178,7 +213,8 @@ def build_docker_run_command(
         full_image = f"{full_image}:{tag}"
     command_parts.append(shlex.quote(full_image))
     command_parts.append(container_command)
-    return " ".join(command_parts)
+    run_command = " ".join(command_parts)
+    return f"{user_setup_command}\n{run_command}" if user_setup_command else run_command
 
 
 def command_list(command: str, command_args: list[str] | None = None, **kwds) -> list[str]:
