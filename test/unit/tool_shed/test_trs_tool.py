@@ -41,6 +41,7 @@ def test_get_stock_tool(provides_repositories: ProvidesRepositoriesContext, tool
         assert source.parse_version() == version.id
         assert repository_metadata is None
         assert version.author == ["galaxyproject"]
+        assert version.descriptor_type is not None
         assert [descriptor.value for descriptor in version.descriptor_type] == ["GALAXY"]
 
 
