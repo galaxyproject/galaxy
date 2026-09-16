@@ -16,14 +16,20 @@ import {
     type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { type ToastProps, useToast } from "../composables/toast";
+import { activeToastHost } from "../composables/toastHost";
 
 import GButton from "./GButton.vue";
 
 const { toasts, removeToast } = useToast();
 const router = useRouter();
+
+const props = defineProps<{
+    host?: string;
+}>();
 
 const variantIcon: Record<ToastProps["variant"], IconDefinition> = {
     success: faCheckCircle,
@@ -39,10 +45,18 @@ function onClick(toast: ToastProps) {
         window.location.href = toast.href;
     }
 }
+
+const isActiveHost = computed(() => props.host === activeToastHost.value);
 </script>
 
 <template>
-    <TransitionGroup tag="div" name="g-toast" class="g-toast-stack" aria-live="polite" aria-atomic="false">
+    <TransitionGroup
+        v-if="isActiveHost"
+        tag="div"
+        name="g-toast"
+        class="g-toast-stack"
+        aria-live="polite"
+        aria-atomic="false">
         <div
             v-for="toast in toasts"
             :key="toast.id"
