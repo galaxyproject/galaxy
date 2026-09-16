@@ -279,7 +279,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_collection_input_deleted")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_collection_input_sample_sheet_chipseq_example(self):
         editor = self.components.workflow_editor
