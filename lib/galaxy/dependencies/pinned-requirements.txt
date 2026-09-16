@@ -155,6 +155,7 @@ python3-openid==3.2.0
 pytz==2025.2
 pyyaml==6.0.2
 pyzmq==26.4.0
+quickjs-ng==0.16.2.1 ; python_version >= '3.10'
 rdflib==7.1.4
 referencing==0.36.2
 refgenconf==0.12.2

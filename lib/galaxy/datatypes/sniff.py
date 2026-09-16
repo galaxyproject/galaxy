@@ -37,7 +37,11 @@ from galaxy.util.checkers import (
     COMPRESSION_CHECK_FUNCTIONS,
     is_tar,
 )
-from galaxy.util.path import StrPath
+from galaxy.util.path import (
+    safe_contains,
+    safe_relpath,
+    StrPath,
+)
 
 try:
     import pylibmagic  # noqa: F401  # isort:skip
@@ -80,13 +84,21 @@ stream_url_to_file = partial(files_stream_url_to_file, prefix="gx_url_paste")
 
 
 def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts):
+    # ``name`` can be user-controlled (e.g. the ``files_N|NAME`` of an ad-hoc
+    # ``force_composite`` upload), so it must never resolve outside of the
+    # dataset's extra files directory.
+    file_output_path = os.path.join(extra_files, name)
+    if not name or not safe_relpath(name) or not safe_contains(os.path.realpath(extra_files), file_output_path):
+        raise ValueError(
+            f"Invalid composite file name '{name}'; must be a relative path inside the dataset's extra files directory"
+        )
+
     if not is_binary:
         if upload_opts.get("space_to_tab"):
             convert_newlines_sep2tabs(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
         else:
             convert_newlines(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
 
-    file_output_path = os.path.join(extra_files, name)
     shutil.move(src_path, file_output_path)
 
     # groom the dataset file content if required by the corresponding datatype definition

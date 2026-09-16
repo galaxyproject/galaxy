@@ -1,5 +1,9 @@
 from copy import deepcopy
 from json import dumps
+from typing import (
+    Any,
+    Dict,
+)
 
 import yaml
 
@@ -123,8 +127,7 @@ nested_element_regression_payload = {
     "auto_decompress": True,
 }
 
-library_payload = yaml.safe_load(
-    """
+library_payload = yaml.safe_load("""
 destination:
   type: library
   name: "Cool Training Library"
@@ -147,8 +150,7 @@ items:
         src: url
         ext: xml
 
-"""
-)
+""")
 
 
 def test_fetch_data_schema():
@@ -158,6 +160,18 @@ def test_fetch_data_schema():
     assert isinstance(elements[0], PastedDataElement)
     assert isinstance(elements[1], UrlDataElement)
     assert isinstance(elements[2], FileDataElement)
+
+
+def test_fetch_schema_drops_extra_files_elements():
+    request: Dict[str, Any] = deepcopy(example_payload)
+    request["targets"][0]["elements"][0]["extra_files"] = {
+        "src": "pasted",
+        "elements": [{"src": "pasted", "paste_content": "owned\n", "name": "../../escaped.txt"}],
+    }
+    payload = FetchDataPayload(**request)
+    extra_files = payload.model_dump()["targets"][0]["items"][0]["extra_files"]
+    assert extra_files["src"] == "pasted"
+    assert "elements" not in extra_files
 
 
 def test_data_items():
