@@ -7,15 +7,14 @@
       Sync (POST /api/tools, the default GALAXY_TEST_USE_LEGACY_TOOL_API=always): the
       legacy path maps the bare name into the repeat; job runs.
 
-      Async (GALAXY_TEST_USE_LEGACY_TOOL_API=if_needed): min="1" pads an empty repeat
+      Async (GALAXY_TEST_USE_LEGACY_TOOL_API=never): min="1" pads an empty repeat
       instance, whose visited-but-unresolved path `queries_0|input2` is then read as
-      proof the bare `input2` was handled. unhandled_inputs comes back empty, so no
-      fallback to the legacy API happens and the request is built and submitted as
-      {"queries": [{}]} - the value is silently dropped and the job request fails:
+      proof the bare `input2` was handled. unhandled_inputs comes back empty and the
+      request is built and submitted as {"queries": [{}]} - the value is silently
+      dropped and the job request fails:
         queries.0.input2 - Field required
 
-      Drop min="1" and the same tool degrades correctly: the input is reported
-      unhandled, no request is built, and the test falls back to the legacy API.
+      Drop min="1" and the same tool behaves correctly.
       See async_repeat_unqualified_no_min.xml for that control case.
     -->
     <command><![CDATA[
