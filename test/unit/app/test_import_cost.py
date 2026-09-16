@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 
-@pytest.mark.parametrize("module", ["galaxy.jobs"])
+@pytest.mark.parametrize("module", ["galaxy.jobs", "galaxy.app"])
 def test_galaxy_app_import_graph(module):
     root = Path(__file__).resolve().parents[3]
     env = os.environ.copy()

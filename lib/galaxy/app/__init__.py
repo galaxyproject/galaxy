@@ -24,8 +24,6 @@ from galaxy import (
     jobs,
     tools,
 )
-from galaxy.agents.factory import build_registry as build_agent_registry
-from galaxy.agents.registry import AgentRegistry
 from galaxy.carbon_emissions import get_carbon_intensity_entry
 from galaxy.celery.base_task import (
     GalaxyTaskAfterReturn,
@@ -51,7 +49,6 @@ from galaxy.files.plugins import FileSourcePluginLoader
 from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import JobManager
-from galaxy.managers.agents import AgentService
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.collections import DatasetCollectionManager
@@ -997,6 +994,11 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
                 statsd_client=self.execution_timer_factory.galaxy_statsd_client,
             ),
         )
+
+        # Import the agent stack only when constructing the full application.
+        from galaxy.agents.factory import build_registry as build_agent_registry
+        from galaxy.agents.registry import AgentRegistry
+        from galaxy.managers.agents import AgentService
 
         # AI agent registry and service
         agent_registry = build_agent_registry(self.config)

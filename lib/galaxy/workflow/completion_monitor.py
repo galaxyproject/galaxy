@@ -11,7 +11,6 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from galaxy.celery.tasks import execute_workflow_completion_hook
 from galaxy.util.monitors import Monitors
 
 if TYPE_CHECKING:
@@ -161,6 +160,9 @@ class WorkflowCompletionMonitor(Monitors):
             invocation.id,
             hooks_to_queue,
         )
+
+        # Loading Celery tasks also loads optional agent and job runtime dependencies.
+        from galaxy.celery.tasks import execute_workflow_completion_hook
 
         for hook_name in hooks_to_queue:
             try:
