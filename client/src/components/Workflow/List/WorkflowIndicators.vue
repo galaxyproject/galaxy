@@ -10,7 +10,7 @@ import {
     type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BButton } from "bootstrap-vue";
+import { BBadge } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -20,6 +20,7 @@ import { useUserStore } from "@/stores/userStore";
 import { copy } from "@/utils/clipboard";
 import { isUrl } from "@/utils/url";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 interface BadgeData {
@@ -152,15 +153,15 @@ function getStepText(steps: number) {
 
 <template>
     <div class="workflow-indicators">
-        <BButton
+        <GButton
             v-if="workflow.published && !publishedView"
             v-g-tooltip.hover
-            size="sm"
+            size="small"
             class="workflow-published-icon inline-icon-button"
             :title="publishedTitle"
             @click="emit('updateFilter', 'published', true)">
             <FontAwesomeIcon :icon="faGlobe" fixed-width />
-        </BButton>
+        </GButton>
         <FontAwesomeIcon
             v-else-if="workflow.published"
             v-g-tooltip.hover
@@ -169,23 +170,23 @@ function getStepText(steps: number) {
             fixed-width
             size="sm" />
 
-        <BButton
+        <GButton
             v-if="sourceType.includes('trs')"
             v-g-tooltip.hover
-            size="sm"
+            size="small"
             class="workflow-trs-icon inline-icon-button"
             :title="sourceTitle">
             <FontAwesomeIcon :icon="faShieldAlt" fixed-width @click="onCopyLink" />
-        </BButton>
+        </GButton>
 
-        <BButton
+        <GButton
             v-if="sourceType == 'url'"
             v-g-tooltip.hover
-            size="sm"
+            size="small"
             class="workflow-external-link inline-icon-button"
             :title="sourceTitle">
             <FontAwesomeIcon :icon="faFileImport" fixed-width @click="onCopyLink" />
-        </BButton>
+        </GButton>
 
         <span v-if="!noEditTime" class="mr-1">
             <small>

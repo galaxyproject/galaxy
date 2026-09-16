@@ -7,6 +7,7 @@ from typing import Any
 class GalaxyAppConfigurationAttributes:
     """Type annotations for schema-defined "galaxy" config attributes."""
 
+    server_name: str
     config_dir: str
     managed_config_dir: str
     data_dir: str

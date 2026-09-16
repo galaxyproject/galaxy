@@ -11,11 +11,12 @@ from galaxy.files.models import (
     BaseFileSourceTemplateConfiguration,
     FilesSourceRuntimeContext,
 )
+from galaxy.files.templates.models import FtpConfigMixin
 from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
-class FTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+class FTPFileSourceTemplateConfiguration(FtpConfigMixin, BaseFileSourceTemplateConfiguration):
     host: str | TemplateExpansion = ""
     port: int | TemplateExpansion = 21
     user: str | TemplateExpansion = "anonymous"
@@ -24,9 +25,10 @@ class FTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     timeout: int | TemplateExpansion = 10
     proxy: str | TemplateExpansion | None = None
     tls: bool | TemplateExpansion = False
+    root: str | TemplateExpansion | None = None
 
 
-class FTPFileSourceConfiguration(BaseFileSourceConfiguration):
+class FTPFileSourceConfiguration(FtpConfigMixin, BaseFileSourceConfiguration):
     host: str = ""
     port: int = 21
     user: str = "anonymous"
@@ -35,6 +37,7 @@ class FTPFileSourceConfiguration(BaseFileSourceConfiguration):
     timeout: int = 10
     proxy: str | None = None
     tls: bool = False
+    root: str | None = None
 
 
 class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration, FTPFileSourceConfiguration]):
@@ -50,7 +53,7 @@ class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration
             raise self.required_package_exception
 
         config = context.config
-        return FTPFS(
+        fs = FTPFS(
             host=config.host,
             port=config.port,
             user=config.user,
@@ -60,6 +63,7 @@ class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration
             tls=config.tls,
             proxy=config.proxy,
         )
+        return fs.opendir(config.root) if config.root else fs
 
     def _realize_to(
         self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[FTPFileSourceConfiguration]
@@ -86,6 +90,12 @@ class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration
             config.user = user or props["user"]
             config.passwd = passwd or props["passwd"]
             rel_path = props["path"] or url
+        if config.root:
+            root = config.root.rstrip("/")
+            if rel_path == root:
+                rel_path = "/"
+            elif rel_path.startswith(root + "/"):
+                rel_path = rel_path[len(root) :] or "/"
         return rel_path
 
     def _extract_url_props(self, url: str):
@@ -102,15 +112,20 @@ class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration
         # We need to use template_config here because this is called before the template is expanded.
         host = self.template_config.host
         port = self.template_config.port
+        root = self.template_config.root or ""
+        root = root.rstrip("/")
         if host and port and url.startswith(f"ftp://{host}:{port}"):
-            return len(f"ftp://{host}:{port}")
+            score = len(f"ftp://{host}:{port}")
         # For security, we need to ensure that a partial match doesn't work e.g. ftp://{host}something/myfiles
         elif host and (url.startswith(f"ftp://{host}/") or url == f"ftp://{host}"):
-            return len(f"ftp://{host}")
+            score = len(f"ftp://{host}")
         elif not host and url.startswith("ftp://"):
-            return len("ftp://")
+            score = len("ftp://")
         else:
             return super().score_url_match(url)
+        if root and url.startswith(f"ftp://{host}{root}/"):
+            score += len(root)
+        return score
 
 
 __all__ = ("FtpFilesSource",)

@@ -110,7 +110,7 @@ def fill_template(
     futurized=False,
     python_template_version: str | Version | None = "3",
     **kwargs,
-):
+) -> str:
     """Fill a cheetah template out for specified context.
 
     If template_text is None, an exception will be thrown, if context

@@ -64,7 +64,13 @@ class ToolInfo:
         profile: float = -1,
     ):
         if env_pass_through is None:
-            env_pass_through = ["GALAXY_SLOTS", "GALAXY_MEMORY_MB", "GALAXY_MEMORY_MB_PER_SLOT"]
+            env_pass_through = [
+                "GALAXY_SLOTS",
+                "GALAXY_MEMORY_MB",
+                "GALAXY_MEMORY_MB_PER_SLOT",
+                "GALAXY_MEMORY_GB",
+                "GALAXY_MEMORY_GB_PER_SLOT",
+            ]
         if container_descriptions is None:
             container_descriptions = []
         if requirements is None:

@@ -102,6 +102,7 @@ from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
+    output_discovery_job_message,
 )
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tools.evaluation import (
@@ -2220,9 +2221,11 @@ class MinimalJobWrapper(HasResourceParameters):
                     user=job.user,
                     tag_handler=self.app.tag_handler.create_tag_handler_session(job.galaxy_session),
                 )
-                import_model_store.perform_import(history=job.history, job=job)
-                if job.state == job.states.ERROR:
-                    final_job_state = job.state
+                object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
+                # The import leaves job.state untouched so nothing polling the job can see it finish before
+                # exec_after_process and the final commit below have run.
+                if object_import_tracker.job_states_by_id.get(job.id) == job.states.ERROR:
+                    final_job_state = job.states.ERROR
             except store.FileTracebackException as e:
                 job.traceback = e.traceback
                 log.exception(f"Problem generating command line for Job {job.id}.\n{job.traceback}")
@@ -2251,11 +2254,27 @@ class MinimalJobWrapper(HasResourceParameters):
                     else "max_discovered_files"
                 )
                 job.job_messages = [
+                    *(job.job_messages or []),
                     {
                         "type": message_type,
                         "desc": str(e),
                         "error_level": StdioErrorLevel.FATAL,
-                    }
+                    },
+                ]
+            except MessageException as e:
+                log.warning("Job %s failed during output discovery: %s", job.id, e)
+                final_job_state = job.states.ERROR
+                job.job_messages = [
+                    *(job.job_messages or []),
+                    output_discovery_job_message(unicodify(e)),
+                ]
+            except Exception:
+                log.exception("Job %s failed unexpectedly during output discovery", job.id)
+                final_job_state = job.states.ERROR
+                job.traceback = unicodify(traceback.format_exc(), strip_null=True)
+                job.job_messages = [
+                    *(job.job_messages or []),
+                    output_discovery_job_message(),
                 ]
 
             for dataset_assoc in output_dataset_associations:

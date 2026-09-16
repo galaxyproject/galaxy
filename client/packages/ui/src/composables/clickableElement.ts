@@ -11,9 +11,10 @@ export interface ClickableProps {
  * Returns the correct type of clickable root element based on a component's props.
  *
  * A disabled component always renders as a plain `button`. Rendering it as a
- * RouterLink (or anchor) would let clicks fall through to navigation: a
- * component-level `@click` guard does not run for a RouterLink, and an empty
- * `to`/`href` is not a reliable no-op in vue-router.
+ * RouterLink (or anchor) would let clicks fall through to navigation: an empty
+ * `to`/`href` is not a reliable no-op in vue-router, and relying on the click
+ * guard to beat RouterLink's own navigation handler would depend on listener
+ * ordering. A plain `button` root has no navigation behaviour to suppress.
  */
 export function useClickableElement(props: ClickableProps) {
     return computed(() => {

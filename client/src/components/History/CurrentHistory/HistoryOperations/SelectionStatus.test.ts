@@ -1,5 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
-import { shallowMount, type Wrapper } from "@vue/test-utils";
+import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it } from "vitest";
 
@@ -19,7 +19,7 @@ const SOMETHING_SELECTED = {
 };
 
 async function mountHistorySelectionStatusWith(props: Record<string, any>) {
-    const wrapper = shallowMount(HistorySelectionStatus as object, {
+    const wrapper = mount(HistorySelectionStatus as object, {
         propsData: props,
         localVue,
     });

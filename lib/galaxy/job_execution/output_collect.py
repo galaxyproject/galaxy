@@ -14,6 +14,8 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.job_execution.output_format import resolve_format_source
 from galaxy.model import (
     Dataset,
     DatasetInstance,
@@ -29,6 +31,7 @@ from galaxy.model.store.discover import (
     discover_target_directory,
     DiscoveredFile,
     ensure_path_in_directory,
+    get_required_item,
     JsonCollectedDatasetMatch,
     MaxDiscoveredFilesExceededError,
     MetadataSourceProvider as AbstractMetadataSourceProvider,
@@ -131,10 +134,10 @@ def collect_dynamic_outputs(
     # unmapped outputs do not correspond to explicit outputs of the tool, they were inferred entirely
     # from the tool provided metadata (e.g. galaxy.json).
     for unnamed_output_dict in validate_unnamed_outputs(job_context):
-        assert "destination" in unnamed_output_dict
-        assert "elements" in unnamed_output_dict
-        destination = unnamed_output_dict["destination"]
-        elements = unnamed_output_dict["elements"]
+        destination = get_required_item(
+            unnamed_output_dict, "destination", "Must specify a destination for an unnamed output"
+        )
+        elements = get_required_item(unnamed_output_dict, "elements", "Must specify elements for an unnamed output")
 
         # If rows are specified at the collection level, add them to individual elements
         # This is a defensive check in case rows weren't already distributed in data_fetch.py
@@ -145,9 +148,11 @@ def collect_dynamic_outputs(
                 if element_name and element_name in rows_dict and "row" not in element:
                     element["row"] = rows_dict[element_name]
 
-        assert "type" in destination
-        destination_type = destination["type"]
-        assert destination_type in ["library_folder", "hdca", "hdas"]
+        destination_type = get_required_item(
+            destination, "type", "Must specify a destination type for an unnamed output"
+        )
+        if destination_type not in ["library_folder", "hdca", "hdas"]:
+            raise RequestParameterInvalidException(f"Invalid unnamed output destination type [{destination_type}]")
 
         # three destination types we need to handle here - "library_folder" (place discovered files in a library folder),
         # "hdca" (place discovered files in a history dataset collection), and "hdas" (place discovered files in a history
@@ -159,13 +164,14 @@ def collect_dynamic_outputs(
             job_context.persist_library_folder(library_folder)
         elif destination_type == "hdca":
             # create or populate a dataset collection in the history
-            assert "collection_type" in unnamed_output_dict
+            collection_type = get_required_item(
+                unnamed_output_dict, "collection_type", "Must specify an HDCA collection_type"
+            )
             object_id = destination.get("object_id")
             if object_id:
                 hdca = job_context.get_hdca(object_id)
             else:
                 name = unnamed_output_dict.get("name", "unnamed collection")
-                collection_type = unnamed_output_dict["collection_type"]
                 collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
                 structure = UninitializedTree(collection_type_description)
                 hdca = job_context.create_hdca(name, structure)
@@ -206,6 +212,23 @@ def collect_dynamic_outputs(
             dataset_collectors = [
                 dataset_collector(description) for description in output_collection_def.dataset_collector_descriptions
             ]
+            if output_collection_def.format_source:
+                job = job_context.job
+                input_collections = {}
+                if job:
+                    input_collections = {
+                        association.name: association.dataset_collection
+                        for association in job.input_dataset_collections
+                    }
+                default_format = resolve_format_source(
+                    output_collection_def.format_source,
+                    job_context.input_datasets,
+                    input_collections,
+                    output_collection_def.default_format,
+                )
+                for collector in dataset_collectors:
+                    if collector.default_ext is None:
+                        collector.default_ext = default_format
             output_name = output_collection_def.name
             filenames = job_context.find_files(output_name, collection, dataset_collectors)
             job_context.populate_collection_elements(
@@ -246,6 +269,14 @@ class BaseJobContext(ModelPersistenceContext):
     job_working_directory: str
     allows_unnamed_outputs: bool
     allows_external_output_paths: bool
+
+    @property
+    def input_datasets(self) -> dict[str, DatasetInstance | None]:
+        inputs: dict[str, DatasetInstance | None] = {}
+        if job := self.job:
+            for association in job.input_datasets + job.input_library_datasets:
+                inputs.setdefault(association.name, association.dataset)
+        return inputs
 
     def add_dataset_collection(self, collection):
         pass
@@ -297,7 +328,6 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         max_discovered_files: int | None,
         job: Optional["Job"] = None,
     ):
-        # TODO: use a metadata source provider... (pop from inputs and add parameter)
         # Missing capability keys identify params written by Galaxy versions
         # that allowed these behaviors unconditionally. Preserve those jobs
         # while ensuring all newly generated params carry explicit decisions.
@@ -316,6 +346,10 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         self.discovered_file_count = 0
         self._job = job
         self.allows_unnamed_outputs = metadata_params.get("allows_unnamed_outputs", True)
+
+    @property
+    def metadata_source_provider(self) -> MetadataSourceProvider:
+        return MetadataSourceProvider(self.input_datasets)
 
     @property
     def job(self):

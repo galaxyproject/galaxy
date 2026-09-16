@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faChevronDown, faChevronRight } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronRight, faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
@@ -21,6 +21,7 @@ interface Props {
 const props = defineProps<Props>();
 const emit = defineEmits<{
     (e: "toggle"): void;
+    (e: "cancel", batchId: string): void;
 }>();
 
 const historyStore = useHistoryStore();
@@ -30,6 +31,10 @@ const displayInfo = computed(() => getBatchDisplayInfo(props.batch));
 const progressSummary = computed(() => getBatchProgressSummary(props.batch));
 
 const hasError = computed(() => props.batch.status === "error");
+
+const isCancellable = computed(
+    () => props.batch.status === "uploading" || props.batch.status === "creating-collection",
+);
 
 const targetHistoryId = computed<string | null>(() => props.batch.uploads?.[0]?.targetHistoryId ?? null);
 
@@ -50,6 +55,11 @@ const badges = computed<CardBadge[]>(() => [
         type: "badge" as const,
     },
 ]);
+
+function onCancel(event: Event) {
+    event.stopPropagation();
+    emit("cancel", props.batch.id);
+}
 </script>
 
 <template>
@@ -79,6 +89,13 @@ const badges = computed<CardBadge[]>(() => [
                     <span class="text-muted mr-1">Target:</span>
                     <SwitchToHistoryLink :history-id="resolvedTargetHistoryId" inline thin />
                 </span>
+                <button
+                    v-if="isCancellable"
+                    class="btn btn-link text-muted p-0 mr-2 cancel-btn"
+                    title="Cancel batch"
+                    @click="onCancel">
+                    <FontAwesomeIcon :icon="faTimesCircle" fixed-width />
+                </button>
                 <FontAwesomeIcon
                     :icon="expanded ? faChevronDown : faChevronRight"
                     class="expand-icon mr-2 text-muted"
@@ -118,6 +135,7 @@ const badges = computed<CardBadge[]>(() => [
 
 <style scoped lang="scss">
 @import "@/style/scss/theme/blue.scss";
+@import "./uploadButtons";
 
 .batch-name {
     font-weight: 600;
@@ -146,4 +164,6 @@ const badges = computed<CardBadge[]>(() => [
 .fade-leave-to {
     opacity: 0;
 }
+
+@include cancel-button;
 </style>

@@ -25,6 +25,16 @@ mapping:
     required: true
     mapping:
 
+      server_name:
+        type: str
+        default: main
+        desc: |
+          Change this default when running independent Gunicorn instances on the
+          same hostname, assigning each instance a distinct base server name to
+          avoid sharing control queues. See the deployment guidance at:
+
+          https://docs.galaxyproject.org/en/master/admin/scaling.html#unique-server-names-for-independent-gunicorn-instances
+
       config_dir:
         type: str
         required: false
@@ -3841,11 +3851,17 @@ mapping:
         default: 0
         required: false
         desc: |
-          If your network filesystem's caching prevents the Galaxy server from seeing
-          the job's stdout and stderr files when it completes, you can retry reading
-          these files.  The job runner will retry the number of times specified below,
-          waiting 1 second between tries.  For NFS, you may want to try the -noac mount
-          option (Linux) or -actimeo=0 (Solaris).
+          If your network filesystem's caching prevents the Galaxy server from seeing a
+          job's output when it completes, you can retry reading it.  This covers both the
+          job's stdout and stderr files and its output datasets, waiting 1 second between
+          tries.  0 means no retries: stdout and stderr are still read once, but the
+          cache-busting stat of each output dataset is skipped entirely, so raise this if
+          you see datasets marked ok with empty or truncated content.
+          This is most likely on a deployment where a job's output is written by a host
+          other than the one running Galaxy, since nothing guarantees Galaxy's client has
+          a coherent view of the file the moment the job reports done.  For NFS, you may
+          also want to try the -noac mount option (Linux) or -actimeo=0 (Solaris), or a
+          low -actimeo to shrink the staleness window without disabling caching.
 
       tool_evaluation_strategy:
         type: str
@@ -4193,7 +4209,7 @@ mapping:
 
       enable_tool_requests:
         type: bool
-        default: false
+        default: true
         required: false
         desc: |
           Submit tool jobs through the asynchronous tool requests API (`/api/jobs`)

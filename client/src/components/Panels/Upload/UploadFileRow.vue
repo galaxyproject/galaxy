@@ -6,6 +6,7 @@ import {
     faFile,
     faLink,
     faPaste,
+    faTimesCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
@@ -27,6 +28,10 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const emit = defineEmits<{
+    (e: "cancel", id: string): void;
+}>();
+
 const historyStore = useHistoryStore();
 
 const ui = computed(() => getFileProgressUi(props.file));
@@ -42,6 +47,12 @@ const isDifferentHistory = computed(
 );
 
 const hasError = computed(() => props.file.status === "error");
+
+const isCancellable = computed(
+    () =>
+        !props.nested &&
+        (props.file.status === "queued" || props.file.status === "uploading" || props.file.status === "processing"),
+);
 
 const cardBadges = computed(() => {
     const badges = [] as any[];
@@ -86,6 +97,11 @@ function onCardClick() {
         slotsExpanded.value = !slotsExpanded.value;
     }
 }
+
+function onCancel(event: Event) {
+    event.stopPropagation();
+    emit("cancel", props.file.id);
+}
 </script>
 
 <template>
@@ -121,6 +137,13 @@ function onCardClick() {
                 <FontAwesomeIcon :icon="slotsExpanded ? faChevronDown : faChevronRight" fixed-width size="xs" />
                 <span class="ml-1"> {{ compositeSlots.length }} slot{{ compositeSlots.length !== 1 ? "s" : "" }} </span>
             </span>
+            <button
+                v-if="isCancellable"
+                class="btn btn-link text-muted p-0 ml-1 cancel-btn"
+                title="Cancel upload"
+                @click="onCancel">
+                <FontAwesomeIcon :icon="faTimesCircle" fixed-width />
+            </button>
         </template>
 
         <template v-slot:description>
@@ -172,6 +195,7 @@ function onCardClick() {
 
 <style scoped lang="scss">
 @import "@/style/scss/theme/blue.scss";
+@import "./uploadButtons";
 
 .slot-list {
     border-top: 1px solid $border-color;
@@ -182,4 +206,6 @@ function onCardClick() {
 .slot-row + .slot-row {
     border-top: 1px solid $border-color;
 }
+
+@include cancel-button;
 </style>

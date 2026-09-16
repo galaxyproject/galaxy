@@ -90,9 +90,9 @@ describe("FormData", () => {
             product: false,
             values: [{ id: "hda4", src: "hda", map_over_type: null }],
         };
-        const options = wrapper.find(".btn-group").findAll("button");
+        const options = wrapper.find(".g-button-group").findAll("button");
         expect(options.length).toBe(4);
-        expect(options.at(0).classes()).toContain("active");
+        expect(options.at(0).classes()).toContain("g-pressed");
         expect(options.at(0).attributes("title")).toBe("Single dataset");
         expect(wrapper.emitted()!.input![0]![0]).toEqual(value_0);
         expect(wrapper.find(SELECTED_VALUE).text()).toContain("dceName4 (as dataset)");
@@ -150,9 +150,9 @@ describe("FormData", () => {
             optional: true,
             options: defaultOptions,
         });
-        const options = wrapper.find(".btn-group").findAll("button");
+        const options = wrapper.find(".g-button-group").findAll("button");
         expect(options.length).toBe(3);
-        expect(options.at(0).classes()).toContain("active");
+        expect(options.at(0).classes()).toContain("g-pressed");
         expect(options.at(0).attributes("title")).toBe("Multiple datasets");
         expect(wrapper.emitted()!.input![0]![0]).toEqual({
             batch: false,
@@ -521,9 +521,9 @@ describe("FormData", () => {
             options: defaultOptions,
         });
         await wrapper.vm.$nextTick();
-        const options = wrapper.find(".btn-group").findAll("button");
+        const options = wrapper.find(".g-button-group").findAll("button");
         expect(options.length).toBe(3);
-        expect(options.at(1).classes()).toContain("active");
+        expect(options.at(1).classes()).toContain("g-pressed");
         expect(options.at(1).attributes("title")).toBe("Dataset collection");
         for (const i of [0, 1]) {
             expect(wrapper.emitted()!.input![i]![0]).toEqual({
@@ -537,7 +537,7 @@ describe("FormData", () => {
         expect(selectedValues.length).toBe(1);
         expect(selectedValues.at(0).text()).toBe("5: hdcaName5");
         await wrapper.find("[title='Multiple datasets']").trigger("click");
-        expect(options.at(0).classes()).toContain("active");
+        expect(options.at(0).classes()).toContain("g-pressed");
         expect(wrapper.emitted()!.input![2]![0]).toEqual(null);
     });
 

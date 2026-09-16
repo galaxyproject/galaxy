@@ -130,6 +130,7 @@ export async function copyDataset(
     historyId: CopyDatasetParamsType["path"]["history_id"],
     type: CopyDatasetParamsType["path"]["type"] = "dataset",
     source: CopyDatasetBodyType["source"] = "hda",
+    signal?: AbortSignal,
 ) {
     const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents/{type}s", {
         params: {
@@ -145,6 +146,7 @@ export async function copyDataset(
             hide_source_items: null,
             instance_type: null,
         },
+        signal,
     });
     if (error) {
         rethrowSimple(error);

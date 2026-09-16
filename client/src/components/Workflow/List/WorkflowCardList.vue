@@ -131,10 +131,8 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
             :show.sync="showPreview"
             size="large"
             title="Workflow Preview"
-            hide-header
             fixed-height
-            class="workflow-card-preview-modal"
-            centered>
+            class="workflow-card-preview-modal">
             <template v-slot:header>
                 <WorkflowPublishedButtons
                     v-if="workflowPublished?.workflowInfo"
@@ -156,10 +154,6 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
 <style lang="scss">
 .workflow-card-preview-modal {
     max-width: min(1400px, calc(100% - 200px));
-
-    .modal-content {
-        height: min(800px, calc(100vh - 80px));
-    }
 }
 </style>
 

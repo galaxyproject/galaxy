@@ -46,6 +46,13 @@ MAIN_TASK_MODULE = "galaxy.celery.tasks"
 DEFAULT_TASK_QUEUE = "galaxy.internal"
 TASKS_MODULES = [MAIN_TASK_MODULE]
 PYDANTIC_AWARE_SERIALIZER_NAME = "pydantic-aware-json"
+# task_serializer also serializes control (pidbox) replies, which echo task arguments.
+CELERY_APP_DEFAULTS: dict[str, Any] = {
+    "task_default_queue": DEFAULT_TASK_QUEUE,
+    "task_create_missing_queues": True,
+    "task_serializer": PYDANTIC_AWARE_SERIALIZER_NAME,
+    "timezone": "UTC",
+}
 
 APP_LOCAL = local()
 
@@ -242,13 +249,7 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
 
 
 def init_celery_app():
-    celery_app_kwd: dict[str, Any] = {
-        "include": TASKS_MODULES,
-        "task_default_queue": DEFAULT_TASK_QUEUE,
-        "task_create_missing_queues": True,
-        "timezone": "UTC",
-    }
-    celery_app = GalaxyCelery("galaxy", **celery_app_kwd)
+    celery_app = GalaxyCelery("galaxy", include=TASKS_MODULES, **CELERY_APP_DEFAULTS)
     celery_app.set_default()
     config = get_config()
     config_celery_app(config, celery_app)

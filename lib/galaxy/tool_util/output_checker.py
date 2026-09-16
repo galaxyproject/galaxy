@@ -31,7 +31,13 @@ class DETECTED_JOB_STATE(str, Enum):
 ERROR_PEEK_SIZE = 2000
 
 
-JobMessageTypeLiteral = Literal["regex", "exit_code", "max_discovered_files", "output_collection_security"]
+JobMessageTypeLiteral = Literal[
+    "regex",
+    "exit_code",
+    "max_discovered_files",
+    "output_collection_security",
+    "output_discovery",
+]
 
 
 class JobMessage(TypedDict):
@@ -59,7 +65,29 @@ class OutputCollectionSecurityJobMessage(JobMessage):
     type: Literal["output_collection_security"]
 
 
-AnyJobMessage = ExitCodeJobMessage | RegexJobMessage | MaxDiscoveredFilesJobMessage | OutputCollectionSecurityJobMessage
+class OutputDiscoveryJobMessage(JobMessage):
+    type: Literal["output_discovery"]
+
+
+AnyJobMessage = (
+    ExitCodeJobMessage
+    | RegexJobMessage
+    | MaxDiscoveredFilesJobMessage
+    | OutputCollectionSecurityJobMessage
+    | OutputDiscoveryJobMessage
+)
+
+
+def output_discovery_job_message(reason: str | None = None) -> OutputDiscoveryJobMessage:
+    desc = "Failed to collect job outputs"
+    if reason:
+        desc = f"{desc}: {reason}"
+    return OutputDiscoveryJobMessage(
+        type="output_discovery",
+        desc=desc,
+        code_desc=None,
+        error_level=StdioErrorLevel.FATAL,
+    )
 
 
 def check_output_regex(

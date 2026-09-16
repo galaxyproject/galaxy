@@ -9,6 +9,7 @@ from typing import (
 
 import pytest
 
+from galaxy.celery import CELERY_APP_DEFAULTS
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy_test.base.api import (
     AnonymousGalaxyInteractor,
@@ -111,10 +112,7 @@ def celery_worker_parameters():
 
 @pytest.fixture(scope="session")
 def celery_parameters():
-    return {
-        "task_create_missing_queues": True,
-        "task_default_queue": "galaxy.internal",
-    }
+    return CELERY_APP_DEFAULTS
 
 
 @pytest.fixture

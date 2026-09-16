@@ -28,6 +28,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
+from galaxy.tool_util.abstract_tool import parse_tool_version_for_comparison
 from galaxy.tool_util.deps.requirements import (
     ContainerDescription,
     ToolRequirements,
@@ -66,7 +67,6 @@ from galaxy.util.tool_version import (
 from . import (
     create_tool_from_source,
     DataManagerTool,
-    parse_tool_version_for_comparison,
     tool_requires_galaxy_python_environment,
     ToolBox,
 )

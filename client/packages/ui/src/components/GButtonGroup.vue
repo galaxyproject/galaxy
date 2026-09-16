@@ -13,7 +13,7 @@ const styleClasses = computed(() => {
 </script>
 
 <template>
-    <div class="g-button-group" :class="styleClasses">
+    <div class="g-button-group" :class="styleClasses" role="group">
         <slot></slot>
     </div>
 </template>
@@ -23,7 +23,13 @@ const styleClasses = computed(() => {
     display: inline-flex;
     gap: 0;
 
+    // Matches Bootstrap's `.btn-group > .btn`, so a group given a width (`w-100`)
+    // stretches its buttons instead of collapsing them to content width.
     &:not(.g-vertical) {
+        &:deep(> .g-button) {
+            flex: 1 1 auto;
+        }
+
         &:deep(> .g-button:not(:first-child)),
         &:deep(> :not(.g-button):not(:first-child) .g-button) {
             border-top-left-radius: 0;

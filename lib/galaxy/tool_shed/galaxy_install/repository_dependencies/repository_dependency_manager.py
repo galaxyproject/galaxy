@@ -19,7 +19,6 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,
     unicodify,
-    url_get,
 )
 from galaxy.util.tool_shed import (
     common_util,
@@ -367,34 +366,6 @@ class RepositoryDependencyInstallManager:
                 dist_to_shed=False,
             )
         return repository
-
-    def get_repository_dependencies_for_installed_tool_shed_repository(self, app, repository):
-        """
-        Send a request to the appropriate tool shed to retrieve the dictionary of repository dependencies defined
-        for the received repository which is installed into Galaxy.  This method is called only from Galaxy.
-        """
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, str(repository.tool_shed))
-        params = dict(
-            name=str(repository.name),
-            owner=str(repository.owner),
-            changeset_revision=str(repository.changeset_revision),
-        )
-        pathspec = ["repository", "get_repository_dependencies"]
-        try:
-            raw_text = url_get(
-                tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
-            )
-        except Exception:
-            log.exception(
-                "Error while trying to get URL: %s", build_url(tool_shed_url, pathspec=pathspec, params=params)
-            )
-            return ""
-        if len(raw_text) > 2:
-            encoded_text = json.loads(raw_text)
-            text = encoding_util.tool_shed_decode(encoded_text)
-        else:
-            text = ""
-        return text
 
     def get_repository_dependency_by_repository_id(self, install_model, decoded_repository_id):
         return (

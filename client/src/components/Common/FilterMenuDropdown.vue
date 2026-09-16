@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BDropdown, BDropdownItem, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BDropdown, BDropdownItem, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
 import type { QuotaUsage } from "@/api/users";
@@ -9,6 +9,7 @@ import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import type { FilterType, ValidFilter } from "@/utils/filtering";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
+import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
 import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
 
@@ -176,9 +177,9 @@ function setValue(val: FilterValue) {
             </BDropdown>
             <BInputGroupAppend>
                 <!-- append Help Modal toggle for filter if included -->
-                <BButton v-if="props.filter.helpInfo" :title="modalTitle" size="sm" @click="helpToggle = true">
+                <GButton v-if="props.filter.helpInfo" :title="modalTitle" size="small" @click="helpToggle = true">
                     <FontAwesomeIcon :icon="faQuestion" />
-                </BButton>
+                </GButton>
             </BInputGroupAppend>
         </BInputGroup>
 

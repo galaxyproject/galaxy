@@ -714,7 +714,8 @@ class BamNative(CompressedArchive, _BamOrSam):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
         # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
         try:
-            header = gzip.open(filename).read(4)
+            with gzip.open(filename) as compressed_file:
+                header = compressed_file.read(4)
             if header == b"BAM\1":
                 return True
             return False
@@ -1205,7 +1206,8 @@ class Bcf(BaseBcf):
     def sniff(self, filename: str) -> bool:
         # BCF is compressed in the BGZF format, and must not be uncompressed in Galaxy.
         try:
-            header = gzip.open(filename).read(3)
+            with gzip.open(filename) as compressed_file:
+                header = compressed_file.read(3)
             # The first 3 bytes of any BCF file are 'BCF', and the file is binary.
             if header == b"BCF":
                 return True
@@ -1910,10 +1912,24 @@ class Anndata(H5):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         with h5py.File(dataset.get_file_name(), "r", locking=False) as anndata_file:
+            root_encoding_type = anndata_file.attrs.get("encoding-type")
+            if isinstance(root_encoding_type, np.ndarray):
+                root_encoding_type = root_encoding_type[0] if root_encoding_type.size else None
+            if isinstance(root_encoding_type, bytes):
+                root_encoding_type = root_encoding_type.decode()
+            root_encoding_version = anndata_file.attrs.get("encoding-version")
+            if isinstance(root_encoding_version, np.ndarray):
+                root_encoding_version = root_encoding_version[0] if root_encoding_version.size else None
+            if isinstance(root_encoding_version, bytes):
+                root_encoding_version = root_encoding_version.decode()
+
             dataset.metadata.title = anndata_file.attrs.get("title")
             dataset.metadata.description = anndata_file.attrs.get("description")
             dataset.metadata.url = anndata_file.attrs.get("url")
             dataset.metadata.doi = anndata_file.attrs.get("doi")
+            dataset.metadata.anndata_spec_version = (
+                root_encoding_version if root_encoding_type == "anndata" and root_encoding_version else ""
+            )
             dataset.metadata.creation_date = anndata_file.attrs.get("creation_date")
             dataset.metadata.shape = anndata_file.attrs.get("shape", dataset.metadata.shape)
             # none of the above appear to work in any dataset tested, but could be useful for

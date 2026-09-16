@@ -17,6 +17,10 @@ from galaxy.objectstore.caching import (
     CacheShard,
     CacheShardManager,
 )
+from galaxy.tool_util.parser.yaml import YamlToolSource
+from galaxy.tool_util.provided_metadata import NullToolProvidedMetadata
+from galaxy.tool_util_models import UserToolSource
+from galaxy.tools import create_tool_from_source
 from galaxy.util import (
     galaxy_directory,
     safe_makedirs,
@@ -289,6 +293,79 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         self.exec_metadata_command(command)
         # Emulate job stuff here...
 
+    @pytest.mark.parametrize("strategy", ["directory", "extended"])
+    def test_collection_input_sources(self, strategy):
+        self.app.config.metadata_strategy = strategy
+        source = UserToolSource.model_validate(
+            {
+                "class": "GalaxyUserTool",
+                "id": "collection_sources",
+                "name": "Collection sources",
+                "version": "1.0",
+                "container": "busybox",
+                "shell_command": "true",
+                "inputs": [{"name": "input", "type": "data", "format": ["interval"]}],
+                "outputs": [
+                    {
+                        "name": "output",
+                        "type": "collection",
+                        "collection_type": "list",
+                        "format": "txt",
+                        "format_source": "input",
+                        "metadata_source": "input",
+                        "discover_datasets": [
+                            {"pattern": "(?P<name>inherited)"},
+                            {"pattern": "(?P<name>explicit)", "format": "tabular"},
+                            {"pattern": r"(?P<name>captured)\.(?P<ext>txt)", "format": "tabular"},
+                        ],
+                    }
+                ],
+            }
+        )
+        self.tool = create_tool_from_source(self.app, YamlToolSource(source.model_dump(by_alias=True)))
+        input_dataset = self._create_output_dataset(extension="interval")
+        input_dataset.init_meta()
+        input_dataset.metadata.chromCol = 3
+        input_dataset.metadata.startCol = 1
+        input_dataset.metadata.endCol = 2
+        input_dataset.metadata.data_lines = 42
+        self._write_output_dataset_contents(input_dataset, "10\t20\tchr1\n")
+        self.job.add_input_dataset("input", input_dataset)
+        hdca = self._create_output_dataset_collection(
+            collection=model.DatasetCollection(collection_type="list", populated=False)
+        )
+        for filename in ("inherited", "explicit", "captured.txt"):
+            self._write_work_dir_file(filename, "10\t20\tchr1\n")
+        if strategy == "extended":
+            command = self.metadata_command({}, {"output": hdca})
+            self._write_job_files()
+            self.exec_metadata_command(command)
+            populated_path = os.path.join(self.job_working_directory, "metadata", "outputs_populated")
+            with open(os.path.join(populated_path, "datasets_attrs.txt")) as f:
+                datasets = json.load(f)
+            extensions = {dataset["extension"] for dataset in datasets}
+            metadata = next(dataset["metadata"] for dataset in datasets if dataset["extension"] == "interval")
+        else:
+            self.tool.discover_outputs(
+                {},
+                {"output": hdca},
+                NullToolProvidedMetadata(),
+                self.tool_working_directory,
+                self.job,
+                input_ext="interval",
+                input_dbkey="?",
+                inp_data={"input": input_dataset},
+            )
+            self.app.model.session.flush()
+            assert hdca.collection.populated
+            datasets = hdca.collection.dataset_instances
+            extensions = {dataset.extension for dataset in datasets}
+            metadata = next(dataset.metadata for dataset in datasets if dataset.extension == "interval")
+        assert len(datasets) == 3
+        assert extensions == {"interval", "tabular", "txt"}
+        assert (metadata["chromCol"], metadata["startCol"], metadata["endCol"]) == (3, 1, 2)
+        assert metadata["data_lines"] == 1
+
     def test_extended_metadata_rejects_unprivileged_tool_unnamed_outputs(self):
         self.app.config.metadata_strategy = "extended"
         source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
@@ -320,6 +397,49 @@ class TestMetadata(TestCase, tools_support.UsesTools):
         self._assert_extended_metadata_security_failure(
             output_dataset, "This tool is not permitted to create unnamed outputs."
         )
+
+    def test_extended_metadata_reports_invalid_unnamed_output(self):
+        self.app.config.metadata_strategy = "extended"
+        source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat.xml")
+        self._init_tool_for_path(source_file_name)
+        self.tool.uses_tool_provided_metadata = True
+        self.tool.allows_unnamed_outputs = True
+        output_dataset = self._create_output_dataset(extension="txt")
+        self.app.model.session.commit()
+        command = self.metadata_command({"out_file1": output_dataset})
+        self._write_galaxy_json(
+            json.dumps(
+                {
+                    "__unnamed_outputs": [
+                        {
+                            "destination": {"type": "hdca"},
+                            "elements": [],
+                            "name": "missing collection type",
+                        }
+                    ]
+                }
+            )
+        )
+        self._write_output_dataset_contents(output_dataset, "original")
+        self._write_job_files()
+
+        self.exec_metadata_command(command)
+
+        jobs_attrs_path = os.path.join(
+            self.job_working_directory,
+            "metadata",
+            "outputs_populated",
+            "jobs_attrs.txt",
+        )
+        with open(jobs_attrs_path) as jobs_attrs_file:
+            jobs_attrs = json.load(jobs_attrs_file)
+        assert len(jobs_attrs) == 1
+        assert jobs_attrs[0]["state"] == model.Job.states.ERROR
+        discovery_messages = [
+            message for message in jobs_attrs[0]["job_messages"] if message["type"] == "output_discovery"
+        ]
+        assert len(discovery_messages) == 1
+        assert discovery_messages[0]["desc"] == "Failed to collect job outputs: Must specify an HDCA collection_type"
 
     def test_extended_metadata_rejects_dynamic_tool_spoofing_data_fetch(self):
         self.app.config.metadata_strategy = "extended"

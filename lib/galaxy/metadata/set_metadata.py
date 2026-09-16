@@ -30,6 +30,7 @@ import galaxy.datatypes.registry
 import galaxy.model.mapping
 from galaxy.datatypes import sniff
 from galaxy.datatypes.data import validate
+from galaxy.exceptions import MessageException
 from galaxy.job_execution.compute_environment import dataset_path_to_extra_path
 from galaxy.job_execution.output_collect import (
     collect_dynamic_outputs,
@@ -67,6 +68,7 @@ from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
     MaxDiscoveredFilesJobMessage,
+    output_discovery_job_message,
     OutputCollectionSecurityJobMessage,
 )
 from galaxy.tool_util.parser.stdio import (
@@ -395,6 +397,18 @@ def set_metadata_portable(
                     error_level=StdioErrorLevel.FATAL,
                 )
             job_messages.append(message)
+        except MessageException as e:
+            log.warning("Job failed during extended metadata output discovery: %s", e)
+            discovery_failed = True
+            final_job_state = Job.states.ERROR
+            job_messages.append(output_discovery_job_message(unicodify(e)))
+        except Exception:
+            log.exception("Unexpected failure during extended metadata output discovery")
+            discovery_failed = True
+            final_job_state = Job.states.ERROR
+            if job:
+                job.traceback = unicodify(traceback.format_exc(), strip_null=True)
+            job_messages.append(output_discovery_job_message())
 
         if job:
             job.set_streams(tool_stdout=tool_stdout, tool_stderr=tool_stderr, job_messages=job_messages)
