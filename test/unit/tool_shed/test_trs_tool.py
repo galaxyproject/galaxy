@@ -49,15 +49,11 @@ def test_get_unknown_stock_tool(provides_repositories: ProvidesRepositoriesConte
         get_tool(provides_repositories, "unknown_stock_tool")
 
 
-def test_stock_tool_versions_oldest_first(provides_repositories: ProvidesRepositoriesContext, monkeypatch):
-    from galaxy.tool_util.parser import get_tool_source
-
-    sources = {}
-    for version in ["1.10.0", "1.2.0", "1.0.0"]:
-        sources[version] = get_tool_source(
-            tool_source_class="XmlToolSource",
-            raw_tool_source=f'<tool id="stock" name="Stock" version="{version}"><description>Test stock tool</description></tool>',
-        )
-    monkeypatch.setattr("tool_shed.managers.trs.stock_tool_sources_by_id", lambda: {"stock": sources})
-    tool = get_tool(provides_repositories, "stock")
-    assert [version.id for version in tool.versions] == ["1.0.0", "1.2.0", "1.10.0"]
+def test_stock_tool_versions_oldest_first(provides_repositories: ProvidesRepositoriesContext):
+    tool = get_tool(provides_repositories, "multiple_versions_sorted")
+    assert [version.id for version in tool.versions] == ["1.9", "1.10"]
+    for version in tool.versions:
+        source, repository_metadata = tool_source_for(provides_repositories, tool.id, version.id)
+        assert source.parse_id() == tool.id
+        assert source.parse_version() == version.id
+        assert repository_metadata is None
