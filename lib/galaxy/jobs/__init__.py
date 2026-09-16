@@ -34,7 +34,6 @@ from typing import (
 
 import yaml
 from packaging.version import Version
-from pulsar.client.staging import COMMAND_VERSION_FILENAME
 from sqlalchemy import (
     and_,
     func,
@@ -142,6 +141,9 @@ log = logging.getLogger(__name__)
 # Override with config.default_job_shell.
 DEFAULT_JOB_SHELL = "/bin/bash"
 DEFAULT_LOCAL_WORKERS = 4
+
+# Filename shared with Pulsar without importing its client stack at module load.
+COMMAND_VERSION_FILENAME = "COMMAND_VERSION"
 
 DEFAULT_CLEANUP_JOB = "always"
 VALID_TOOL_CLASSES = ["local", "requires_galaxy", "user_defined"]
