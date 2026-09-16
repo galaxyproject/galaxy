@@ -18,8 +18,8 @@ import { useEntryPointStore } from "@/stores/entryPointStore";
 import { stateIsTerminal } from "@/utils/utils";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import DetailBlock from "@/components/Common/DetailBlock.vue";
 import GCard from "@/components/Common/GCard.vue";
-import Heading from "@/components/Common/Heading.vue";
 
 const props = defineProps<{
     jobId: string;
@@ -97,13 +97,7 @@ const currentStatus = computed<{ title: string; icon: IconDefinition; class?: st
 </script>
 
 <template>
-    <div class="job-info-section">
-        <div class="job-info-section-icon">
-            <FontAwesomeIcon :icon="faLaptop" />
-        </div>
-        <Heading inline size="sm" bold separator>Interactive Tools</Heading>
-
-        <div class="job-info-section-spacer"></div>
+    <DetailBlock :header-icon="faLaptop" title="Interactive Tools">
         <GCard
             :content-class="currentStatus.class === 'fa-spin' ? 'entry-points-card-loading' : undefined"
             :badges="badges"
@@ -152,12 +146,10 @@ const currentStatus = computed<{ title: string; icon: IconDefinition; class?: st
                 </i>
             </template>
         </GCard>
-    </div>
+    </DetailBlock>
 </template>
 
 <style scoped lang="scss">
-@import "@/components/JobInformation/job-info-section.scss";
-
 .g-card {
     :deep(.entry-points-card-loading) {
         background-color: var(--color-blue-200);
