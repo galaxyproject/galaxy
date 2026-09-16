@@ -54,7 +54,7 @@ jobs:
         run: tox -e lint_docstring_include_list
       - name: Run mypy checks
         run: tox -e mypy
-      - uses: psf/black@stable
+      - uses: psf/black@24.8.0
         with:
           version: "24.8.0"  # last version supporting Python 3.8
       - uses: isort/isort-action@v1
