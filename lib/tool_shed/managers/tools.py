@@ -24,7 +24,7 @@ from galaxy.tool_util.parser import (
     ToolSource,
 )
 from galaxy.tool_util.version_updates import is_workflow_safe_version
-from galaxy.tools.stock import stock_tool_sources
+from galaxy.tools.stock import stock_tool_sources_by_id
 from galaxy.util import relpath
 from tool_shed.context import (
     ProvidesRepositoriesContext,
@@ -36,8 +36,6 @@ from tool_shed.webapp.search.tool_search import ToolSearch
 from tool_shed_client.schema import ShedParsedTool
 from .repositories import get_repository_revision_metadata_model
 from .trs import trs_tool_id_to_repository_metadata
-
-STOCK_TOOL_SOURCES: Optional[dict[str, dict[str, ToolSource]]] = None
 
 
 def search(trans: SessionRequestContext, q: str, page: int = 1, page_size: int = 10) -> dict:
@@ -172,9 +170,7 @@ def _shed_tool_source_for(
 
 
 def _stock_tool_source_for(tool_id: str, tool_version: str) -> Optional[ToolSource]:
-    _init_stock_tool_sources()
-    assert STOCK_TOOL_SOURCES
-    tool_version_sources = STOCK_TOOL_SOURCES.get(tool_id)
+    tool_version_sources = stock_tool_sources_by_id().get(tool_id)
     if tool_version_sources is None:
         return None
     tool_source = tool_version_sources.get(tool_version)
@@ -184,15 +180,3 @@ def _stock_tool_source_for(tool_id: str, tool_version: str) -> Optional[ToolSour
     if safe_version is not None:
         return tool_version_sources.get(safe_version)
     return None
-
-
-def _init_stock_tool_sources() -> None:
-    global STOCK_TOOL_SOURCES
-    if STOCK_TOOL_SOURCES is None:
-        STOCK_TOOL_SOURCES = {}
-        for tool_source in stock_tool_sources():
-            tool_id = tool_source.parse_id()
-            tool_version = tool_source.parse_version()
-            if tool_id not in STOCK_TOOL_SOURCES:
-                STOCK_TOOL_SOURCES[tool_id] = {}
-            STOCK_TOOL_SOURCES[tool_id][tool_version] = tool_source
