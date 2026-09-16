@@ -13,7 +13,6 @@ from galaxy.app_unittest_utils.job_runner_support import MockJobWrapper
 from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.jobs.runners import local
-from galaxy.util import bunch
 from galaxy.util.unittest import TestCase
 
 if TYPE_CHECKING:
