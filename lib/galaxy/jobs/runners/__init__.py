@@ -35,6 +35,7 @@ from galaxy.job_execution.output_collect import (
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.oidc_user import (
+    OidcUsernameError,
     parse_config as parse_oidc_username_config,
     RESOLVED_PARAM as OIDC_USERNAME_PARAM,
 )
@@ -550,7 +551,7 @@ class BaseJobRunner:
             return
         user = job_wrapper.get_job().user
         if user is None:
-            raise Exception("Failed to get a username for container from OIDC token, job has no user.")
+            raise OidcUsernameError("Failed to get a username for container from OIDC token, job has no user.")
         destination_info[OIDC_USERNAME_PARAM] = oidc_username_config.username_for(user)
 
     def _find_container(

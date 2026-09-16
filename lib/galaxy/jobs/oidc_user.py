@@ -38,6 +38,10 @@ DEFAULT_TEMPLATE = ".*"
 TOKEN_KINDS = ("access", "id")
 
 
+class OidcUsernameError(Exception):
+    """No configured provider could supply a container username for this user."""
+
+
 @dataclass(frozen=True)
 class OidcUsernameProvider:
     name: str
@@ -53,8 +57,12 @@ class OidcUsernameProvider:
             try:
                 claimed = jwt.decode(token, options={"verify_signature": False})[self.claim]
                 match = self.template.match(claimed) if isinstance(claimed, str) else None
-                if match and match.group(0):
-                    return match.group(0)
+                if match:
+                    # A capture group says which span is the username; without one the
+                    # whole match is, which is why an unanchored template truncates.
+                    username = match.group(1) if self.template.groups else match.group(0)
+                    if username:
+                        return username
             except Exception:
                 log.debug(
                     "Failed to extract Docker user from OIDC provider [%s] %s token",
@@ -81,7 +89,7 @@ class OidcUsernameConfig:
             username = provider.username_from(tokens)
             if username:
                 return username
-        raise Exception("Failed to get a username for container from OIDC token, contact Galaxy admin.")
+        raise OidcUsernameError("Failed to get a username for container from OIDC token, contact Galaxy admin.")
 
 
 def parse_config(destination_params: Mapping[str, Any]) -> OidcUsernameConfig | None:

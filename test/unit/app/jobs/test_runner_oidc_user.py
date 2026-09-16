@@ -4,7 +4,10 @@ import jwt
 import pytest
 
 from galaxy.exceptions import ConfigurationError
-from galaxy.jobs.oidc_user import validate_destination
+from galaxy.jobs.oidc_user import (
+    OidcUsernameError,
+    validate_destination,
+)
 from galaxy.jobs.runners import BaseJobRunner
 
 TOKEN_SECRET = "unit-test-signing-key-at-least-32-bytes"
@@ -62,8 +65,49 @@ def test_id_token_fallback_when_access_identity_does_not_match_template():
 
 
 def test_no_usable_identity_fails():
-    with pytest.raises(Exception, match="Failed to get a username"):
+    with pytest.raises(OidcUsernameError, match="Failed to get a username"):
         _configure({"access": "opaque-access-token", "id": _token({"scope": "openid"})})
+
+
+def test_job_without_a_user_fails():
+    wrapper = SimpleNamespace(
+        job_destination=SimpleNamespace(
+            params={
+                "docker_enabled": True,
+                "docker_username_from_oidc_token_claim": {
+                    "set_user": True,
+                    "providers": {"oidc": {"claim": "preferred_username"}},
+                },
+            }
+        ),
+        get_job=lambda: SimpleNamespace(user=None),
+    )
+    with pytest.raises(OidcUsernameError, match="job has no user"):
+        BaseJobRunner._configure_docker_username_from_oidc_token_claim(None, wrapper)
+
+
+def test_template_capture_group_selects_the_username():
+    params = _configure(
+        {"id": _token({"unique_name": "alice@example.org"})},
+        providers={"oidc": {"claim": "unique_name", "template": r"^([a-z_][a-z0-9_-]*)@example\.org$"}},
+    )
+    assert params["docker_username_from_token"] == "alice"
+
+
+def test_template_without_a_capture_group_uses_the_whole_match():
+    params = _configure(
+        {"id": _token({"unique_name": "alice@example.org"})},
+        providers={"oidc": {"claim": "unique_name", "template": "^[a-z_][a-z0-9_-]*"}},
+    )
+    assert params["docker_username_from_token"] == "alice"
+
+
+def test_template_that_cannot_match_falls_through_to_failure():
+    with pytest.raises(OidcUsernameError):
+        _configure(
+            {"id": _token({"unique_name": "alice@example.org"})},
+            providers={"oidc": {"claim": "unique_name", "template": r"^([0-9]+)@example\.org$"}},
+        )
 
 
 def test_explicit_docker_user_conflicts_with_token_user():

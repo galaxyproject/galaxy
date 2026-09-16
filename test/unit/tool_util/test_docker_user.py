@@ -72,12 +72,13 @@ def test_docker_container_can_expose_token_username_without_setting_user():
         }
     )
 
-    command = container.containerize_command("echo hello")
+    result = _execute(container.containerize_command("echo hello"), 'echo "Unexpected identity lookup" >&2; return 1')
 
-    assert "-e GALAXY_TOOL_USER=alice" in command
-    assert "USERGROUPS=`id -G alice`" not in command
-    assert "$GROUPADD" not in command
-    assert "--user `id -u alice`:`id -g alice`" not in command
+    assert result.returncode == 0, result.stderr
+    arguments = result.stdout.splitlines()
+    assert "GALAXY_TOOL_USER=alice" in arguments
+    assert "--user" not in arguments
+    assert "--group-add" not in arguments
 
 
 @pytest.mark.parametrize("set_user", [False, "false", "False", "0"])
