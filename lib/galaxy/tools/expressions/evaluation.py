@@ -1,10 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import (
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING
 
 from cwl_utils.expression import do_eval as _do_eval
 
@@ -24,7 +21,7 @@ if TYPE_CHECKING:
 def do_eval(
     expression: str,
     jobinput: CWLObjectType,
-    context: Optional[CWLOutputType] = None,
+    context: CWLOutputType | None = None,
     sandbox_command: Sequence[str] | None = None,
 ):
     register()
