@@ -288,6 +288,109 @@ def test_quoted_tsv_round_trip_preserves_cells_and_headers(tmp_path):
     assert parquet.read_table(destination).equals(table)
 
 
+@pytest.mark.parametrize("output_format", ["tabular", "tsv"])
+def test_scalar_parquet_round_trip_preserves_inferred_columns(tmp_path, output_format):
+    table = pa.table(
+        {
+            "integer": pa.array([-(2**63), 2**63 - 1, None, 0, 42], type=pa.int64()),
+            "float": pa.array([0.1, 2.5, -3.75, None, 0.0], type=pa.float64()),
+            "mixed": ["1", "text", "001", "NA", None],
+            "identifier": ["001", "000", "009", None, "042"],
+            "large_decimal": ["9007199254740993.5", "1.5", "-9007199254740993.5", None, "9.0071992547409935e15"],
+            "overflow_integer": [str(2**63), "1", None, str(-(2**63) - 1), str(2**63 - 1)],
+            "nonfinite_text": ["inf", "nan", "-inf", None, "infinity"],
+            "literal": ['"quoted"', "[literal]", "{literal}", "日本語", None],
+            "all_null": pa.array([None] * 5, type=pa.string()),
+        }
+    )
+    source = tmp_path / "input.parquet"
+    text = tmp_path / f"export.{output_format}"
+    restored = tmp_path / "restored.parquet"
+    parquet.write_table(table, source)
+    run_converter("parquet_to_tabular_converter", source, text, "--output-format", output_format)
+    run_converter(
+        "tabular_to_parquet_converter",
+        text,
+        restored,
+        "--input-format",
+        output_format,
+        "--header-mode",
+        "first" if output_format == "tabular" else "auto",
+    )
+    actual = parquet.read_table(restored)
+    assert actual.num_rows == table.num_rows
+    assert actual.schema == table.schema
+    assert actual.equals(table)
+
+
+@pytest.mark.parametrize("output_format", ["tabular", "tsv"])
+@pytest.mark.parametrize("header_mode", ["auto", "first"], ids=["headerless", "explicit_commented_header"])
+def test_plain_tabular_round_trip_preserves_all_data_rows(tmp_path, output_format, header_mode):
+    names = (
+        ["#CHROM", "mixed", "identifier", "float", "large_decimal", "literal"]
+        if header_mode == "first"
+        else [f"column{index}" for index in range(1, 7)]
+    )
+    source = tmp_path / "input.tabular"
+    binary = tmp_path / "converted.parquet"
+    exported = tmp_path / f"export.{output_format}"
+    restored = tmp_path / "restored.parquet"
+    header = "\t".join(names) + "\n" if header_mode == "first" else ""
+    # The final tab-only record is an all-null data row, not a blank line.
+    source.write_text(
+        header + "1\tapple\t001\t0.1\t9007199254740993.5\tNA\n2\t1\t002\t2.5\t1.5\ttext\n\t\t\t\t\t\n",
+        encoding="utf-8",
+    )
+    expected = pa.Table.from_arrays(
+        [
+            pa.array([1, 2, None], type=pa.int64()),
+            pa.array(["apple", "1", None]),
+            pa.array(["001", "002", None]),
+            pa.array([0.1, 2.5, None], type=pa.float64()),
+            pa.array(["9007199254740993.5", "1.5", None]),
+            pa.array(["NA", "text", None]),
+        ],
+        names=names,
+    )
+    run_converter("tabular_to_parquet_converter", source, binary, "--header-mode", header_mode)
+    # Assert independently specified values before the reverse conversion too:
+    # a symmetrical bug in both converters must not make this test pass.
+    assert parquet.read_table(binary).equals(expected)
+    run_converter("parquet_to_tabular_converter", binary, exported, "--output-format", output_format)
+    run_converter(
+        "tabular_to_parquet_converter",
+        exported,
+        restored,
+        "--input-format",
+        output_format,
+        "--header-mode",
+        "first" if output_format == "tabular" else "auto",
+    )
+    assert parquet.read_table(restored).equals(expected)
+
+
+@pytest.mark.parametrize("output_format", ["tabular", "tsv"])
+def test_scalar_round_trip_documents_reinference_and_empty_string_loss(tmp_path, output_format):
+    source = tmp_path / "input.parquet"
+    text = tmp_path / f"export.{output_format}"
+    restored = tmp_path / "restored.parquet"
+    parquet.write_table(pa.table({"numeric_text": ["1", "2", None], "empty_text": ["", "filled", None]}), source)
+    run_converter("parquet_to_tabular_converter", source, text, "--output-format", output_format)
+    run_converter(
+        "tabular_to_parquet_converter",
+        text,
+        restored,
+        "--input-format",
+        output_format,
+        "--header-mode",
+        "first" if output_format == "tabular" else "auto",
+    )
+    # Text export cannot distinguish null from empty or recover a numeric column's
+    # original string type. Assert the documented new inference, not schema recovery.
+    expected = pa.table({"numeric_text": [1, 2, None], "empty_text": [None, "filled", None]})
+    assert parquet.read_table(restored).equals(expected)
+
+
 def test_tsv_header_can_be_disabled_and_tabular_quotes_are_literal(tmp_path):
     source = tmp_path / "input.tsv"
     source.write_text('"first"\t1\n"second"\t2\n', encoding="utf-8")
