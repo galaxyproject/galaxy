@@ -140,6 +140,7 @@ test = [
     "onedatafilerestclient==21.2.5.2",
     "pkce",
     "playwright>=1.48.0",  # Python 3.13 support
+    "pyarrow==24.0.0",  # Exercise the Parquet converters with their tool dependency version
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
