@@ -1,0 +1,34 @@
+<tool id="CONVERTER_parquet_to_tsv" name="Convert Parquet to quoted TSV" version="1.0.0" profile="19.05">
+    <requirements>
+        <requirement type="package" version="24.0.0">pyarrow</requirement>
+    </requirements>
+    <command>python '$__tool_directory__/parquet_to_tabular_converter.py' '$input' '$output' --output-format tsv</command>
+    <inputs>
+        <param name="input" type="data" format="parquet" label="Parquet file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="tsv"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="parquet" value="parq_to_tabular_conv.parquet"/>
+            <output name="output" ftype="tsv" value="parq_to_tabular_conv.tabular"/>
+        </test>
+    </tests>
+    <help>
+What it does
+------------
+Converts Parquet files to quoted TSV with a header record. TSV quoting preserves
+embedded tabs, carriage returns, newlines, and quote characters in headers and cells.
+Read the output with a TSV parser, not by splitting physical lines on tabs.
+
+Scalar values are converted to strings and nulls to empty cells. Lists, structs,
+and maps are serialized as JSON, with maps represented as arrays of key/value pairs.
+Binary values use JSON objects with a $binary key and base64 value; nested decimals
+and nonfinite floats use $decimal and $float objects. Dates and times use ISO strings,
+and UUIDs use UUID strings, including inside JSON.
+
+This is a text projection, not a lossless Parquet round trip: the original schema is
+not retained, and nulls cannot be distinguished from empty strings in the output.
+    </help>
+</tool>

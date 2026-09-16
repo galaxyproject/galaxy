@@ -48,6 +48,8 @@ Usage Tips
   representable. Mixed columns and leading-zero identifiers retain their original text.
 - TSV quoting is decoded; generic tabular quotes are literal characters.
 - Generic tabular comments beginning with # and blank lines are ignored, as in Galaxy.
+  With an explicit first-record header, the first nonblank record is preserved as
+  column names even when it begins with # (for example, #CHROM).
 - This conversion infers a new schema. It does not restore Parquet types or nested
   values from a prior text export, and cannot distinguish empty strings from nulls.
     </help>
