@@ -58,7 +58,7 @@ def search_index(request, tmp_path):
 def test_search_pagination(search_index, total, page_size):
     kind, populate, search = search_index
     populate(total)
-    seen = set()
+    seen: set[str] = set()
     for page in (1, 2, 3, 4, 100):
         results = search(page=page, page_size=page_size)
         assert results["total_results"] == str(total)
