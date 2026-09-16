@@ -1,11 +1,23 @@
 <!-- In order to use this converter the admin has to install its dependency pyarrow e.g. through the Galaxy admin UI -->
-<tool id="CONVERTER_tabular_to_parquet" name="Convert tabular to Parquet" version="1.0.0" profile="19.05">
+<tool id="CONVERTER_tabular_to_parquet" name="Convert tabular to Parquet" version="1.1.0" profile="19.05">
     <requirements>
         <requirement type="package" version="24.0.0">pyarrow</requirement>
     </requirements>
-    <command>python '$__tool_directory__/tabular_to_parquet_converter.py' '$input' '$output'</command>
+    <command><![CDATA[
+#if $input.is_of_type('tsv')
+    #set $input_format = 'tsv'
+#else
+    #set $input_format = 'tabular'
+#end if
+python '$__tool_directory__/tabular_to_parquet_converter.py' '$input' '$output' --input-format '$input_format' --header-mode '$header_mode'
+    ]]></command>
     <inputs>
-        <param name="input" type="data" format="tabular" label="Tabular file"/>
+        <param name="input" type="data" format="tabular,tsv" label="Tabular or quoted TSV file"/>
+        <param name="header_mode" type="select" label="Column names">
+            <option value="auto" selected="true">Datatype default: TSV has a header; tabular has no header</option>
+            <option value="first">Use the first record as column names</option>
+            <option value="none">No header; generate column names</option>
+        </param>
     </inputs>
     <outputs>
         <data name="output" format="parquet"/>
@@ -13,6 +25,7 @@
     <tests>
         <test>
             <param name="input" ftype="tabular" value="tabular_to_parquet_conv.tabular"/>
+            <param name="header_mode" value="first"/>
             <output name="output" ftype="parquet" value="tabular_to_parquet_conv.parquet"/>
         </test>
     </tests>
@@ -25,8 +38,17 @@ The output Parquet file uses default compression setting.
 
 Usage Tips
 ----------
-- Ensure your tabular file has a header row with column names
+- By default TSV has a header, while generic tabular retains the first row as data.
+  Override Column names for headerless TSV or tabular files with a header.
+- Headerless inputs receive names column1, column2, etc.
+- Header names must be nonempty and unique; inconsistent row widths are rejected.
 - Empty cells are converted to null/None values in Parquet
-- Numeric-looking strings will be stored as their native types
+- Literal NA is preserved, not treated as null.
+- Entirely numeric columns are inferred as integers or floating-point values when
+  representable. Mixed columns and leading-zero identifiers retain their original text.
+- TSV quoting is decoded; generic tabular quotes are literal characters.
+- Generic tabular comments beginning with # and blank lines are ignored, as in Galaxy.
+- This conversion infers a new schema. It does not restore Parquet types or nested
+  values from a prior text export, and cannot distinguish empty strings from nulls.
     </help>
 </tool>
