@@ -11,6 +11,7 @@ import JobState from "@/components/JobStates/JobState.vue";
 
 const props = defineProps<{
     jobId: string;
+    minimal?: boolean;
 }>();
 
 const toolStore = useToolStore();
@@ -24,17 +25,17 @@ const { job } = useJobDetails(toRef(props, "jobId"));
             <div class="job-header">
                 <div class="job-header-title">
                     <JobState v-if="job" class="job-information-state-badge" :job="job" />
-                    <Heading v-if="job" :icon="faWrench" inline size="md">
+                    <Heading v-if="!props.minimal && job" :icon="faWrench" inline size="md">
                         {{ toolStore.getToolNameById(job.tool_id, "Job Details") }}
                     </Heading>
                 </div>
-                <slot name="details" />
             </div>
             <div>
                 <RerunJobButton :job-id="props.jobId" outline />
             </div>
         </div>
-        <hr />
+        <hr v-if="!props.minimal" />
+        <div v-else class="py-2" />
     </div>
 </template>
 
