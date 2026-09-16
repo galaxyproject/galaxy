@@ -1,0 +1,107 @@
+"""Tests for the writable GitLab filesystem.
+
+The plugin tests in ``test_gitlab.py`` replace the filesystem class outright, so nothing there
+reaches this module. What it decides is what a commit contains, which is where a mistake costs a
+repository rather than an error message, so it is covered here on its own terms. The parts that
+decide that are plain functions rather than methods precisely so they run without the optional
+``arcfs-fsspec`` package, which CI does not install.
+"""
+
+import base64
+
+import pytest
+
+from galaxy.exceptions import MessageException
+from galaxy.files.sources.gitlab import GitLabFilesSource
+from galaxy.files.sources.gitlab_fsspec import (
+    check_commit_size,
+    commit_actions,
+    GITLAB_MAX_COMMIT_REQUEST_BYTES,
+    MAX_COMMIT_BYTES,
+    WritableGitLabFileSystem,
+)
+
+CONTENT = base64.b64encode(b"payload").decode("ascii")
+
+
+def test_a_new_file_is_created():
+    actions = commit_actions("assays/x.txt", CONTENT, None)
+    assert actions == [{"action": "create", "file_path": "assays/x.txt", "content": CONTENT, "encoding": "base64"}]
+
+
+def test_an_existing_file_is_replaced_rather_than_updated():
+    """GitLab runs the Git LFS transformer for ``create`` and for nothing else.
+
+    An ``update`` onto a path ``.gitattributes`` marks as LFS therefore commits the raw bytes
+    where git expects a pointer, and the repository cannot be read back correctly afterwards.
+    Deleting and creating in one commit keeps the transformer in play, so this must never become
+    a single update however much tidier that looks.
+    """
+    actions = commit_actions("assays/x.txt", CONTENT, {"last_commit_id": "abc123"})
+    assert [a["action"] for a in actions] == ["delete", "create"]
+    assert "update" not in {a["action"] for a in actions}
+
+
+def test_a_replacement_carries_the_commit_it_was_read_at():
+    """Without this GitLab accepts both of two concurrent exports and keeps only the later one."""
+    actions = commit_actions("assays/x.txt", CONTENT, {"last_commit_id": "abc123"})
+    assert actions[0]["last_commit_id"] == "abc123"
+
+
+def test_a_replacement_without_a_commit_id_still_replaces():
+    """Older GitLab versions omit the field; losing the guard must not lose the write."""
+    actions = commit_actions("assays/x.txt", CONTENT, {})
+    assert [a["action"] for a in actions] == ["delete", "create"]
+    assert "last_commit_id" not in actions[0]
+
+
+def test_replacing_keeps_the_execute_bit():
+    """The file is created afresh, so a mode the old one carried is dropped unless restored."""
+    actions = commit_actions("bin/run.sh", CONTENT, {"execute_filemode": True})
+    assert actions[-1]["execute_filemode"] is True
+
+
+def test_a_file_without_the_execute_bit_does_not_gain_one():
+    for existing in (None, {}, {"execute_filemode": False}):
+        assert "execute_filemode" not in commit_actions("assays/x.txt", CONTENT, existing)[-1]
+
+
+def test_the_size_limit_leaves_room_for_base64():
+    """The ceiling is GitLab's documented request limit, not a number chosen here.
+
+    Asserting the expression back would pass for any derivation, so what is pinned is the
+    property the derivation exists for: the encoded form of a file at the limit still fits in a
+    request, because base64 spends four bytes for every three.
+    """
+    assert GITLAB_MAX_COMMIT_REQUEST_BYTES == 314_572_800
+    encoded = 4 * ((MAX_COMMIT_BYTES + 2) // 3)
+    assert encoded <= GITLAB_MAX_COMMIT_REQUEST_BYTES
+
+
+def test_a_file_over_the_limit_is_refused_before_it_is_sent():
+    with pytest.raises(MessageException) as excinfo:
+        check_commit_size(MAX_COMMIT_BYTES + 1, "group/repo:-:big.bin")
+    message = str(excinfo.value)
+    assert "group/repo:-:big.bin" in message
+    assert "ARC file source" in message, "the alternative that has no such limit is worth naming"
+
+
+def test_a_file_at_the_limit_is_allowed():
+    check_commit_size(MAX_COMMIT_BYTES, "group/repo:-:big.bin")
+
+
+def test_the_gitlab_source_opens_this_filesystem():
+    """The plugin tests replace ``required_module``, so only this pins what it is by default.
+
+    Without it, deleting the assignment in ``arc.py`` that looks redundant beside the inherited
+    one would leave ARC opening this filesystem, committing raw bytes to the default branch
+    where an ARC expects a pointer behind a merge request, and every suite would stay green.
+    """
+    pytest.importorskip("arcfs")
+    from arcfs.fs import GitLabARCFileSystem
+
+    from galaxy.files.sources.arc import ARCFilesSource
+
+    assert GitLabFilesSource.required_module is WritableGitLabFileSystem
+    assert ARCFilesSource.required_module is GitLabARCFileSystem
+    assert issubclass(WritableGitLabFileSystem, GitLabARCFileSystem)

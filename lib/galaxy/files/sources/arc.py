@@ -33,8 +33,9 @@ class ARCFilesSource(GitLabFilesSource):
     and the merge request the first export opened. A token shared between users therefore collects
     all of their exports together.
 
-    That is how ARCs are meant to receive data, and it is why writing lives here rather than on the
-    GitLab source: a plain GitLab user exporting a file expects a commit, not a merge request.
+    That is how ARCs are meant to receive data, and it is why this class exists: a plain GitLab
+    user exporting a file expects a commit, not a merge request. Only the filesystem differs, so
+    that is the whole of what this class sets.
     """
 
     plugin_type = "arc"

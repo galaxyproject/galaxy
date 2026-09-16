@@ -52,8 +52,8 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     configured credentials as top-level directories, with their repository trees below them.
 
     Exports commit the file to the branch, which is what a GitLab user expects. ARCs take data
-    another way, so ``ARCFilesSource`` opens a filesystem that does that instead.
-    use, so writing lives in the ARC subclass rather than here. See ``ARCFilesSource``.
+    another way, so ``ARCFilesSource`` opens a filesystem that does that instead; the write path
+    itself is shared, because both take the same paths and need the same guard.
 
     Known limitations, all of them properties of the backend rather than choices made here:
 
