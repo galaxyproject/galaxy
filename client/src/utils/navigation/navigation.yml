@@ -34,7 +34,6 @@ _:  # global stuff
       done: '.alert-success'
       info: '.alert-info'
       donelarge: '.donemessagelarge'
-      infolarge: '.infomessagelarge'
       require_login: 'a.require-login-link'
 
 masthead:
