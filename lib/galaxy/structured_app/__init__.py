@@ -160,9 +160,7 @@ class MinimalManagerApp(MinimalApp):
 
     @property
     @abc.abstractmethod
-    def error_reports(self) -> "ErrorReports":
-        """Error reporting must also be available to manager-only applications."""
-        ...
+    def error_reports(self) -> "ErrorReports": ...
 
     def wait_for_toolbox_reload(self, old_toolbox: "ToolBox") -> None: ...
 
