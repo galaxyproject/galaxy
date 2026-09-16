@@ -127,7 +127,8 @@ nested_element_regression_payload = {
     "auto_decompress": True,
 }
 
-library_payload = yaml.safe_load("""
+library_payload = yaml.safe_load(
+    """
 destination:
   type: library
   name: "Cool Training Library"
@@ -150,7 +151,8 @@ items:
         src: url
         ext: xml
 
-""")
+"""
+)
 
 
 def test_fetch_data_schema():
