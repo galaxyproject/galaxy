@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from typing import (
+    cast,
     List,
     Optional,
 )
@@ -26,7 +27,7 @@ def do_eval(
     javascript_requirements: Optional[List[JavascriptRequirement]] = None,
     outdir: Optional[str] = None,
     tmpdir: Optional[str] = None,
-    context: Optional[CWLOutputType] = None,
+    context: CWLOutputType | None = None,
     sandbox_command: Sequence[str] | None = None,
 ):
     # Register the QuickJS worker for cwl_utils JavaScript evaluations.
@@ -39,9 +40,9 @@ def do_eval(
                 requirements.append(
                     {
                         "class": "InlineJavascriptRequirement",
-                        "expressionLib": expression_lib,
+                        "expressionLib": cast(CWLOutputType, expression_lib),
                     }
-                )  # type: ignore[dict-item] # very strange, a list[str] literal works
+                )
             else:
                 requirements.append({"class": "InlineJavascriptRequirement"})
     else:

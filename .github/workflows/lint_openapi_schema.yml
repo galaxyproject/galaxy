@@ -51,7 +51,12 @@ jobs:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-api
       - name: Install dependencies
-        run: ./scripts/common_startup.sh --dev-wheels --skip-client-build
+        run: |
+          # Older source distributions still need pkg_resources in their build environment.
+          echo 'setuptools<81' > "$RUNNER_TEMP/build-constraints.txt"
+          export PIP_CONSTRAINT="$RUNNER_TEMP/build-constraints.txt"
+          export PIP_BUILD_CONSTRAINT="$PIP_CONSTRAINT"
+          ./scripts/common_startup.sh --dev-wheels --skip-client-build
         working-directory: 'galaxy root'
       - name: Lint schema
         run: make lint-api-schema
