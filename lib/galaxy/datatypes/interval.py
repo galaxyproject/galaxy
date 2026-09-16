@@ -43,6 +43,7 @@ from galaxy.datatypes.util.gff_util import (
     parse_gff3_attributes,
     parse_gff_attributes,
 )
+from galaxy.exceptions import InvalidFileFormatError
 from galaxy.util import compression_utils
 from galaxy.util.compression_utils import FileObjType
 from . import (
@@ -274,27 +275,30 @@ class Interval(Tabular):
                 dataset.metadata.nameCol or 0,
             )
             c, s, e, t, n = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1, int(n) - 1
-            if t >= 0:  # strand column (should) exists
-                for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
-                    strand = "+"
-                    name = f"region_{i}"
-                    if n >= 0 and n < len(elems):
-                        name = elems[n]
-                    if t < len(elems):
-                        strand = elems[t]
-                    tmp = [elems[c], elems[s], elems[e], name, "0", strand]
-                    fh.write("{}\n".format("\t".join(tmp)))
-            elif n >= 0:  # name column (should) exists
-                for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
-                    name = f"region_{i}"
-                    if n >= 0 and n < len(elems):
-                        name = elems[n]
-                    tmp = [elems[c], elems[s], elems[e], name]
-                    fh.write("{}\n".format("\t".join(tmp)))
-            else:
-                for elems in compression_utils.file_iter(dataset.get_file_name()):
-                    tmp = [elems[c], elems[s], elems[e]]
-                    fh.write("{}\n".format("\t".join(tmp)))
+            try:
+                if t >= 0:  # strand column (should) exists
+                    for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
+                        strand = "+"
+                        name = f"region_{i}"
+                        if n >= 0 and n < len(elems):
+                            name = elems[n]
+                        if t < len(elems):
+                            strand = elems[t]
+                        tmp = [elems[c], elems[s], elems[e], name, "0", strand]
+                        fh.write("{}\n".format("\t".join(tmp)))
+                elif n >= 0:  # name column (should) exists
+                    for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
+                        name = f"region_{i}"
+                        if n >= 0 and n < len(elems):
+                            name = elems[n]
+                        tmp = [elems[c], elems[s], elems[e], name]
+                        fh.write("{}\n".format("\t".join(tmp)))
+                else:
+                    for elems in compression_utils.file_iter(dataset.get_file_name()):
+                        tmp = [elems[c], elems[s], elems[e]]
+                        fh.write("{}\n".format("\t".join(tmp)))
+            except IndexError:
+                raise InvalidFileFormatError("Dataset row has fewer columns than its metadata declares.")
             return compression_utils.get_fileobj(fh.name, mode="rb")
 
     def display_peek(self, dataset: DatasetProtocol) -> str:
