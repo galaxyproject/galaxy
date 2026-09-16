@@ -1,3 +1,4 @@
+import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import WorkflowIcons from "@/components/Workflow/icons";
 
 export interface UpgradeMessage {
@@ -43,25 +44,41 @@ export function getStateUpgradeMessages(data: {
     return messages;
 }
 
-export function getCompatibleRecommendations(predChild: any, outputDatatypes: any, datatypesMapper: any) {
-    const cTools = [];
-    const toolMap = new Map();
-    for (const nameObj of predChild.entries()) {
-        const inputDatatypes = nameObj[1].i_extensions;
-        for (const outT of outputDatatypes.entries()) {
-            for (const inTool of inputDatatypes.entries()) {
+export interface PredictedToolChild {
+    name: string;
+    tool_id: string;
+    tool_score: number;
+    i_extensions: string[];
+}
+
+export interface CompatibleRecommendation {
+    id: string;
+    name: string;
+}
+
+export function getCompatibleRecommendations(
+    predChild: PredictedToolChild[],
+    outputDatatypes: string[],
+    datatypesMapper: DatatypesMapperModel,
+): CompatibleRecommendation[] {
+    const cTools: CompatibleRecommendation[] = [];
+    const toolMap = new Map<string, boolean>();
+    for (const child of predChild) {
+        const inputDatatypes = child.i_extensions;
+        for (const outT of outputDatatypes) {
+            for (const inTool of inputDatatypes) {
                 if (
-                    datatypesMapper.isSubType(outT[1], inTool[1]) ||
-                    outT[1] === "input" ||
-                    outT[1] === "_sniff_" ||
-                    outT[1] === "input_collection"
+                    datatypesMapper.isSubType(outT, inTool) ||
+                    outT === "input" ||
+                    outT === "_sniff_" ||
+                    outT === "input_collection"
                 ) {
-                    const toolId = nameObj[1].tool_id;
+                    const toolId = child.tool_id;
                     if (!toolMap.has(toolId)) {
                         toolMap.set(toolId, true);
                         cTools.push({
                             id: toolId,
-                            name: nameObj[1].name,
+                            name: child.name,
                         });
                         break;
                     }

@@ -351,6 +351,8 @@ $ui-margin-horizontal-large: $margin-v * 2;
 
 /* Used for tree in tool recommendations */
 .ui-tool-recommendation {
+    min-height: 5rem;
+
     .node {
         cursor: pointer;
         circle {
