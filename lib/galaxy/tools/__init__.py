@@ -1461,7 +1461,8 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             self.tool_action = getattr(mod, cls)()
             if getattr(self.tool_action, "requires_js_runtime", False):
                 try:
-                    expressions.find_engine(self.app.config)
+                    # Register the QuickJS worker as the cwl_utils JS engine.
+                    expressions.register()
                 except Exception:
                     message = REQUIRES_JS_RUNTIME_MESSAGE % self.id or getattr(self, "uuid", "unknown tool id")
                     raise Exception(message)
