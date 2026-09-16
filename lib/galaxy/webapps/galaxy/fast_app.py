@@ -300,6 +300,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     root_path = "" if gx_app.config.galaxy_url_prefix == "/" else gx_app.config.galaxy_url_prefix
     mcp_app, mcp_lifespan = get_mcp_lifespan(gx_app)
 
+    lifespan = None
     if mcp_lifespan:
 
         @asynccontextmanager
@@ -307,9 +308,9 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
             async with mcp_lifespan(app):
                 yield
 
-        app = get_fastapi_instance(root_path=root_path, lifespan=combined_lifespan)
-    else:
-        app = get_fastapi_instance(root_path=root_path)
+        lifespan = combined_lifespan
+
+    app = get_fastapi_instance(root_path=root_path, lifespan=lifespan)
 
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
@@ -328,7 +329,11 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     include_mcp(app, gx_app, mcp_app)
     app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     if gx_app.config.galaxy_url_prefix != "/":
-        parent_app = FastAPI()
+        # The ASGI server only runs the lifespan of the app it is handed, and
+        # Starlette does not propagate lifespan events to mounted sub-apps, so
+        # the wrapper served here needs the lifespan that starts the MCP
+        # Streamable HTTP session manager.
+        parent_app = FastAPI(lifespan=lifespan)
         parent_app.mount(gx_app.config.galaxy_url_prefix, app=app)
         return parent_app
     return app
