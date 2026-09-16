@@ -1,6 +1,6 @@
-import json
-import os
-import subprocess
+from __future__ import annotations
+
+from collections.abc import Sequence
 from typing import (
     Optional,
     TYPE_CHECKING,
@@ -8,7 +8,11 @@ from typing import (
 
 from cwl_utils.expression import do_eval as _do_eval
 
-from .util import find_engine
+from .js_engine import (
+    build_evaluate_program,
+    evaluate_program,
+    register,
+)
 
 if TYPE_CHECKING:
     from cwl_utils.types import (
@@ -16,11 +20,14 @@ if TYPE_CHECKING:
         CWLOutputType,
     )
 
-FILE_DIRECTORY = os.path.normpath(os.path.dirname(os.path.join(__file__)))
-NODE_ENGINE = os.path.join(FILE_DIRECTORY, "cwlNodeEngine.js")
 
-
-def do_eval(expression: str, jobinput: "CWLObjectType", context: Optional["CWLOutputType"] = None):
+def do_eval(
+    expression: str,
+    jobinput: CWLObjectType,
+    context: Optional[CWLOutputType] = None,
+    sandbox_command: Sequence[str] | None = None,
+):
+    register()
     return _do_eval(
         expression,
         jobinput,
@@ -30,11 +37,13 @@ def do_eval(expression: str, jobinput: "CWLObjectType", context: Optional["CWLOu
         {},
         context=context,
         cwlVersion="v1.2.1",
+        sandbox_command=sandbox_command,
     )
 
 
 def evaluate(config, input):
-    application = find_engine(config)
+    # Keep config for backwards compatibility; evaluations use the QuickJS worker.
+    register()
 
     default_context = {
         "engineConfig": [],
@@ -47,15 +56,4 @@ def evaluate(config, input):
     new_input = default_context
     new_input.update(input)
 
-    sp = subprocess.Popen(
-        [application, NODE_ENGINE], shell=False, close_fds=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE
-    )
-    input_str = f"{json.dumps(new_input)}\n\n"
-    input_bytes = input_str.encode("utf-8")
-    (stdoutdata, stderrdata) = sp.communicate(input_bytes)
-    if sp.returncode != 0:
-        message = f"Expression engine returned non-zero exit code on evaluation of\n{json.dumps(new_input, indent=4)}{stdoutdata}{stderrdata}"
-        raise Exception(message)
-
-    rval_raw = stdoutdata.decode("utf-8")
-    return json.loads(rval_raw)
+    return evaluate_program(build_evaluate_program(new_input))

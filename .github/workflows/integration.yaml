@@ -59,7 +59,10 @@ jobs:
       - name: Install packages
         # conntrack: mandatory for later k8s versions
         # ffmpeg: ffprobe needed by media datatypes
-        run: sudo apt-get update && sudo apt-get -y install conntrack ffmpeg
+        # Exercise the expression-evaluation isolation sandbox tests.
+        run: |
+          sudo apt-get update && sudo apt-get -y install conntrack ffmpeg bubblewrap
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
       - name: Setup Minikube
         uses: medyagh/setup-minikube@latest
         with:
