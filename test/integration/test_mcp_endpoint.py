@@ -37,16 +37,24 @@ def mcp_server_info(url: str) -> dict:
 
 
 class TestMCPEndpoint(IntegrationTestCase):
+    mcp_server_path = "/api/mcp"
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
         super().handle_galaxy_config_kwds(config)
         config["enable_mcp_server"] = True
+        config["mcp_server_path"] = cls.mcp_server_path
 
     def test_endpoint_without_trailing_slash(self) -> None:
-        assert mcp_server_info(f"{self.url}api/mcp")["name"] == "Galaxy"
+        assert mcp_server_info(f"{self.url}{self.mcp_server_path.strip('/')}")["name"] == "Galaxy"
 
     def test_endpoint_with_trailing_slash(self) -> None:
-        assert mcp_server_info(f"{self.url}api/mcp/")["name"] == "Galaxy"
+        assert mcp_server_info(f"{self.url}{self.mcp_server_path.strip('/')}/")["name"] == "Galaxy"
+
+    def test_galaxy_api_still_accessible(self) -> None:
+        response = requests.get(f"{self.url}api/version", allow_redirects=False)
+        assert response.status_code == 200
+        assert "version_major" in response.json()
 
 
 class TestMCPEndpointWithUrlPrefix(TestMCPEndpoint):
@@ -56,3 +64,7 @@ class TestMCPEndpointWithUrlPrefix(TestMCPEndpoint):
     def handle_galaxy_config_kwds(cls, config) -> None:
         super().handle_galaxy_config_kwds(config)
         config["galaxy_url_prefix"] = "/galaxypf"
+
+
+class TestMCPEndpointWithCustomPath(TestMCPEndpointWithUrlPrefix):
+    mcp_server_path = "/custom/protocol/"
