@@ -5519,7 +5519,7 @@ class TensorBoardEvents(Binary):
         >>> fname = get_test_fname("tensorboard.tfevents")
         >>> TensorBoardEvents().sniff(fname)
         True
-        >>> fname = get_test_fname("interval.interval")
+        >>> fname = get_test_fname("cellpose_model_safetensors.safetensors")
         >>> TensorBoardEvents().sniff(fname)
         False
         """
