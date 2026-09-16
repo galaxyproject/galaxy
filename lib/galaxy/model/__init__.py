@@ -9785,7 +9785,7 @@ class WorkflowComment(Base, RepresentById):
             "position": self.position,
             "size": self.size,
             "type": self.type,
-            "color": self.color,
+            "color": self.color if self.color is not None else "none",
             "data": self.data,
         }
 
@@ -9808,6 +9808,8 @@ class WorkflowComment(Base, RepresentById):
         comment.position = dict.get("position", None)
         comment.size = dict.get("size", None)
         comment.color = dict.get("color", "none")
+        if comment.color is None:
+            comment.color = "none"
         comment.data = dict.get("data", None)
         return comment
 
