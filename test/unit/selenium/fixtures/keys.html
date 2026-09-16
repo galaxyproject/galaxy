@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Key Press Test Page</title>
+  </head>
+  <body>
+    <h1 id="header">Key Press Test Page</h1>
+
+    <!-- Records every keydown seen anywhere on the page. -->
+    <div id="key-log"></div>
+
+    <!-- Records only keydowns delivered to this input. -->
+    <input type="text" id="key-target" />
+    <div id="target-log"></div>
+
+    <script>
+      function describe(event) {
+        let described = "";
+        if (event.altKey) {
+          described += "alt+";
+        }
+        if (event.ctrlKey) {
+          described += "ctrl+";
+        }
+        if (event.metaKey) {
+          described += "meta+";
+        }
+        if (event.shiftKey) {
+          described += "shift+";
+        }
+        return described + event.key;
+      }
+
+      function append(logId, event) {
+        const log = document.getElementById(logId);
+        log.textContent = (log.textContent + " " + describe(event)).trim();
+      }
+
+      document.addEventListener("keydown", function (event) {
+        append("key-log", event);
+      });
+
+      document
+        .getElementById("key-target")
+        .addEventListener("keydown", function (event) {
+          append("target-log", event);
+        });
+    </script>
+  </body>
+</html>

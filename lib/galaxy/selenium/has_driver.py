@@ -6,6 +6,7 @@ attribute.
 
 import abc
 import threading
+from collections.abc import Sequence
 from contextlib import contextmanager
 from typing import (
     Any,
@@ -42,10 +43,33 @@ from .has_driver_protocol import (
     TimeoutCallback,
     WaitTypeT,
 )
+from .keys import Key
 from .wait_methods_mixin import WaitMethodsMixin
 from .web_element_protocol import WebElementProtocol
 
 UNSPECIFIED_TIMEOUT = object()
+
+KEY_TO_SELENIUM: dict[Key, str] = {
+    Key.ALT: Keys.ALT,
+    Key.COMMAND: Keys.COMMAND,
+    Key.CONTROL: Keys.CONTROL,
+    Key.META: Keys.META,
+    Key.SHIFT: Keys.SHIFT,
+    Key.BACKSPACE: Keys.BACKSPACE,
+    Key.DELETE: Keys.DELETE,
+    Key.ENTER: Keys.ENTER,
+    Key.ESCAPE: Keys.ESCAPE,
+    Key.SPACE: Keys.SPACE,
+    Key.TAB: Keys.TAB,
+    Key.ARROW_DOWN: Keys.ARROW_DOWN,
+    Key.ARROW_LEFT: Keys.ARROW_LEFT,
+    Key.ARROW_RIGHT: Keys.ARROW_RIGHT,
+    Key.ARROW_UP: Keys.ARROW_UP,
+    Key.END: Keys.END,
+    Key.HOME: Keys.HOME,
+    Key.PAGE_DOWN: Keys.PAGE_DOWN,
+    Key.PAGE_UP: Keys.PAGE_UP,
+}
 
 HasFindElement = WebDriver | WebElement
 DEFAULT_AXE_SCRIPT_URL = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.7.1/axe.min.js"
@@ -368,26 +392,43 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         self.action_chains().move_to_element(element).perform()
 
+    def press(
+        self,
+        *keys: Key,
+        modifiers: Sequence[Key] = (),
+        element: WebElement | None = None,
+    ) -> None:
+        selenium_keys = [KEY_TO_SELENIUM[key] for key in keys]
+        if element is not None and not modifiers:
+            element.send_keys(*selenium_keys)
+            return
+        chain = self.action_chains()
+        if element is not None:
+            # ActionChains has no focus primitive and key_down(element) clicks -
+            # focus directly so the press has no pointer side effects.
+            self.execute_script("arguments[0].focus();", element)
+        for modifier in modifiers:
+            chain = chain.key_down(KEY_TO_SELENIUM[modifier])
+        for selenium_key in selenium_keys:
+            chain = chain.send_keys(selenium_key)
+        for modifier in reversed(modifiers):
+            chain = chain.key_up(KEY_TO_SELENIUM[modifier])
+        chain.perform()
+
     def send_enter(self, element: WebElement | None = None):
-        self._send_key(Keys.ENTER, element)
+        self.press(Key.ENTER, element=element)
 
     def send_escape(self, element: WebElement | None = None):
-        self._send_key(Keys.ESCAPE, element)
+        self.press(Key.ESCAPE, element=element)
 
     def send_backspace(self, element: WebElement | None = None):
-        self._send_key(Keys.BACKSPACE, element)
+        self.press(Key.BACKSPACE, element=element)
 
     def aggressive_clear(self, element: WebElement) -> None:
         # for when a simple .clear() doesn't work
         self.driver.execute_script("arguments[0].value = '';", element)
         for _ in range(25):
             element.send_keys(Keys.BACKSPACE)
-
-    def _send_key(self, key: str, element: WebElement | None = None):
-        if element is None:
-            self.action_chains().send_keys(key)
-        else:
-            element.send_keys(key)
 
     @property
     @abc.abstractmethod

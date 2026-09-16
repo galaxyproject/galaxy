@@ -5,7 +5,10 @@ allowing NavigatesGalaxy to work with either backend via composition.
 """
 
 from abc import abstractmethod
-from collections.abc import Callable
+from collections.abc import (
+    Callable,
+    Sequence,
+)
 from contextlib import AbstractContextManager
 from typing import (
     Any,
@@ -18,6 +21,7 @@ from typing import (
 
 from galaxy.navigation.components import Target
 from .axe_results import AxeResults
+from .keys import Key
 from .web_element_protocol import WebElementProtocol
 
 # Type for element locators - can be either a Target or a Selenium-style (locator_type, value) tuple
@@ -367,6 +371,19 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         ...
 
     # Keyboard interactions
+    @abstractmethod
+    def press(
+        self,
+        *keys: Key,
+        modifiers: Sequence[Key] = (),
+        element: WebElementProtocol | None = None,
+    ) -> None:
+        """Press keys in order, with modifiers held down for each.
+
+        Sends to element if given, otherwise to whatever currently has focus.
+        """
+        ...
+
     @abstractmethod
     def send_enter(self, element: WebElementProtocol | None = None):
         """Send ENTER key to element or active element."""
