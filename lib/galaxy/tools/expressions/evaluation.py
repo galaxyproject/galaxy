@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from typing import (
+    cast,
     Optional,
 )
 
@@ -33,7 +34,9 @@ def do_eval(
     if javascript_requirements:
         for req in javascript_requirements:
             if expression_lib := req.expression_lib:
-                requirements.append({"class": "InlineJavascriptRequirement", "expressionLib": expression_lib})  # type: ignore[dict-item] # very strange, a list[str] literal works
+                requirements.append(
+                    {"class": "InlineJavascriptRequirement", "expressionLib": cast(CWLOutputType, expression_lib)}
+                )
             else:
                 requirements.append({"class": "InlineJavascriptRequirement"})
     else:

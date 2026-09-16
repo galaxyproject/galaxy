@@ -25,6 +25,7 @@ from galaxy.tools.expressions.js_engine import (
     resolve_isolation_command,
     SandboxedJSEngine,
 )
+from galaxy_ext.expressions.sandbox_worker import MAX_MESSAGE_BYTES
 
 # A benign stand-in for a real jail command (e.g. bwrap): `/usr/bin/env` just execs
 # the worker argv appended after it, exercising the out-of-process plumbing without
@@ -244,14 +245,14 @@ def test_javascript_errors_are_translated(program):
 
 @pytest.mark.parametrize("character", ["x", "é"])
 def test_request_limit_before_starting_worker(character):
-    length = js_engine.MAX_MESSAGE_BYTES + 1 if character == "x" else js_engine.MAX_MESSAGE_BYTES // 6 + 1
+    length = MAX_MESSAGE_BYTES + 1 if character == "x" else MAX_MESSAGE_BYTES // 6 + 1
     with pytest.raises(JavascriptException, match="request exceeds protocol limit"):
         evaluate_program(character * length, sandbox_command=["/nonexistent/jail/binary"])
 
 
 def test_worker_result_limit():
     with pytest.raises(JavascriptException, match="result exceeds protocol limit"):
-        evaluate_program(f"JSON.stringify('x'.repeat({js_engine.MAX_MESSAGE_BYTES}))", timeout=1)
+        evaluate_program(f"JSON.stringify('x'.repeat({MAX_MESSAGE_BYTES}))", timeout=1)
 
 
 def test_parent_response_limit():
@@ -259,7 +260,7 @@ def test_parent_response_limit():
     wrapper = [
         sys.executable,
         "-c",
-        f"import sys; sys.stdin.read(); sys.stdout.write('x' * {js_engine.MAX_MESSAGE_BYTES + 1})",
+        f"import sys; sys.stdin.read(); sys.stdout.write('x' * {MAX_MESSAGE_BYTES + 1})",
     ]
     with pytest.raises(JavascriptException, match="response exceeds protocol limit"):
         evaluate_program("JSON.stringify(42)", sandbox_command=wrapper)
@@ -279,8 +280,10 @@ def test_parent_timeout_covers_worker_teardown(short_timeout_grace):
     wrapper = [
         sys.executable,
         "-c",
-        "import atexit, subprocess, sys, time; "
-        "subprocess.run(sys.argv[1:], check=True); atexit.register(time.sleep, 60)",
+        (
+            "import atexit, subprocess, sys, time; "
+            "subprocess.run(sys.argv[1:], check=True); atexit.register(time.sleep, 60)"
+        ),
     ]
     with pytest.raises(JavascriptException, match="timed out in worker subprocess"):
         evaluate_program("JSON.stringify(42)", timeout=0.1, sandbox_command=wrapper)

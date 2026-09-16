@@ -1,4 +1,7 @@
+from typing import cast
+
 from galaxy.datatypes.registry import Registry
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.tools.parameters.grouping import UploadDataset
 from galaxy.util.bunch import Bunch
 
@@ -6,7 +9,7 @@ from galaxy.util.bunch import Bunch
 def test_force_composite_preserves_distinct_member_names(tmp_path):
     registry = Registry()
     registry.load_datatypes()
-    trans = Bunch(app=Bunch(datatypes_registry=registry))
+    trans = cast(ProvidesHistoryContext, Bunch(app=Bunch(datatypes_registry=registry)))
     upload = UploadDataset(name="files")
     names = ["sample-1.txt", "sample_1.txt", "sample 1.txt"]
     files = []
