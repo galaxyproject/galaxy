@@ -35,6 +35,10 @@ const props = withDefaults(
 );
 
 const collapseState = ref<"open" | "closed" | "none">(props.collapsible ? "open" : "none");
+
+/** Invocation ID for the run that the job might have come from. It is `null` if the job has no associated invocation,
+ * or `undefined` if it has not been fetched yet.
+ */
 const fetchedInvocationId = ref<string | null | undefined>(props.invocationId);
 const invocationLookupError = ref<string | null>(null);
 
@@ -119,10 +123,13 @@ async function fetchInvocationForJob(jobId: string) {
 watch(
     () => props.jobId,
     async (newId, oldId) => {
-        if (
-            newId &&
-            (fetchedInvocationId.value === undefined || (fetchedInvocationId.value === null && newId !== oldId))
-        ) {
+        // Reset the fetched invocation ID if the job ID has changed and no invocation ID is provided via props
+        if (!props.invocationId && newId !== oldId) {
+            fetchedInvocationId.value = undefined;
+        }
+
+        // Fetch the invocation for the new job ID if it hasn't been fetched yet
+        if (newId && fetchedInvocationId.value === undefined) {
             let invocation;
             try {
                 invocation = await fetchInvocationForJob(newId);
@@ -134,6 +141,7 @@ watch(
             if (invocation) {
                 fetchedInvocationId.value = invocation.id;
             } else {
+                // The job does not have an associated invocation
                 fetchedInvocationId.value = null;
             }
         }
