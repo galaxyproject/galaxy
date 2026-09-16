@@ -92,7 +92,7 @@ from .wait import (
 
 log = getLogger(__name__)
 
-UseLegacyApiT = Literal["always", "never", "if_needed"]
+UseLegacyApiT = Literal["always", "never"]
 DEFAULT_USE_LEGACY_API: UseLegacyApiT = "always"
 
 # Off by default because it can pound the database pretty heavily
@@ -835,7 +835,7 @@ class GalaxyInteractorApi:
         resource_parameters = resource_parameters or {}
         request = testdef.request
         request_schema = testdef.request_schema
-        submit_with_legacy_api = use_legacy_api == "always" or (use_legacy_api == "if_needed" and request is None)
+        submit_with_legacy_api = use_legacy_api == "always"
         if testdef.value_state_representation == "test_case_json":
             # Don't submit user / YAML tools to the old endpoint.
             submit_with_legacy_api = False
