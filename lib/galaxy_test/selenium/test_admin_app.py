@@ -85,7 +85,7 @@ class TestAdminApp(SeleniumTestCase):
         ok_button.click()
         self.sleep_for(self.wait_types.REPO_INSTALL)
         installed_only = self.find_element_by_xpath("//span[contains(. ,'Installed Only')]/../../input")
-        self.action_chains().move_to_element(installed_only).click().perform()
+        self.move_to_and_click(installed_only)
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # This serves as a check for the presence of the upgrade notification.
         admin_component.toolshed.upgrade_notification.wait_for_visible()
@@ -118,7 +118,7 @@ class TestAdminApp(SeleniumTestCase):
         # Ensure that #manage-resolver-type is visible.
         admin_component.manage_dependencies.resolver_type.wait_for_visible()
         self.screenshot("admin_dependencies_landing")
-        self.action_chains().move_to_element(unused_link).click().perform()
+        self.move_to_and_click(unused_link)
         self.sleep_for(self.wait_types.UX_RENDER)
         # Ensure that the unused paths table is visible.
         admin_component.manage_dependencies.unused_paths.wait_for_visible()

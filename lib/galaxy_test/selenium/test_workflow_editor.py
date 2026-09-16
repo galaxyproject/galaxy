@@ -1322,7 +1322,6 @@ steps:
         # TODO: hook up best practice panel, disable save when "when" not connected
         # assert save_button.has_class("g-disabled")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_conditional_subworkflow_step(self):
         child_workflow_name = self.setup_subworkflow()
@@ -1337,7 +1336,7 @@ steps:
         conditional_node = editor.node._(label=child_workflow_name)
         conditional_node.wait_for_and_click()
         conditional_toggle = editor.step_when.wait_for_present()
-        self.action_chains().move_to_element(conditional_toggle).click().perform()
+        self.move_to_and_click(conditional_toggle)
         conditional_node.input_terminal(name="when").wait_for_present()
         self.workflow_editor_connect("param_input#output", f"{child_workflow_name}#when")
         self.assert_connected("param_input#output", f"{child_workflow_name}#when")
