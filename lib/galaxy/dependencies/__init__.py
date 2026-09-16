@@ -397,7 +397,7 @@ class ConditionalDependencies(BaseConditionalDependencies):
         return "commoncrawl" in self.file_sources
 
     def check_arcfs_fsspec(self):
-        return "arc" in self.file_sources
+        return "gitlab" in self.file_sources or "arc" in self.file_sources
 
 
 def strip_comment(line):

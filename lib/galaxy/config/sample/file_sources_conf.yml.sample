@@ -334,6 +334,15 @@
 # private ARCs and exports need a personal access token with the "api" scope. Exports go to a branch
 # named after the token and reach the ARC through a merge request, not to the default branch, so a
 # token shared between users collects all of their exports on one branch.
+- type: gitlab
+  id: gitlab
+  label: GitLab
+  doc: Browse the projects of a GitLab instance and import files from them. Read only.
+  base_url: https://gitlab.com
+  # An access token with the "api" scope is needed for private projects, and removes the
+  # limit some servers place on how deep an anonymous listing can page.
+  # token: ${user.preferences['gitlab|token']}
+
 - type: arc
   id: arc-nfdi4plants
   label: DataPLANT DataHUB

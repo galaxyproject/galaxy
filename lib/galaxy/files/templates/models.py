@@ -58,6 +58,7 @@ FileSourceTemplateType = Literal[
     "openbis",
     "ckan",
     "commoncrawl",
+    "gitlab",
     "arc",
 ]
 
@@ -580,6 +581,20 @@ class CommonCrawlFileSourceTemplateConfiguration(StrictModel):
     template_end: str | None = None
 
 
+class GitLabFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["gitlab"]
+    base_url: str | TemplateExpansion
+    token: str | TemplateExpansion | None = None
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class GitLabFileSourceConfiguration(StrictModel):
+    type: Literal["gitlab"]
+    base_url: str
+    token: str | None = None
+
+
 class ARCFileSourceTemplateConfiguration(StrictModel):
     type: Literal["arc"]
     base_url: str | TemplateExpansion
@@ -628,6 +643,7 @@ FileSourceTemplateConfiguration = Annotated[
     | OpenBisFileSourceTemplateConfiguration
     | CKANFileSourceTemplateConfiguration
     | CommonCrawlFileSourceTemplateConfiguration
+    | GitLabFileSourceTemplateConfiguration
     | ARCFileSourceTemplateConfiguration,
     Field(discriminator="type"),
 ]
@@ -659,6 +675,7 @@ FileSourceConfiguration = Annotated[
     | OpenBisFileSourceConfiguration
     | CKANFileSourceConfiguration
     | CommonCrawlFileSourceConfiguration
+    | GitLabFileSourceConfiguration
     | ARCFileSourceConfiguration,
     Field(discriminator="type"),
 ]
@@ -750,6 +767,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "openbis": OpenBisFileSourceConfiguration,
     "ckan": CKANFileSourceConfiguration,
     "commoncrawl": CommonCrawlFileSourceConfiguration,
+    "gitlab": GitLabFileSourceConfiguration,
     "arc": ARCFileSourceConfiguration,
 }
 

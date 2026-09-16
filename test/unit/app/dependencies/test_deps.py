@@ -30,6 +30,7 @@ FILES_SOURCES_CONFIG = """
 - type: dropbox
 - type: googledrive
 - type: irods
+- type: gitlab
 - type: arc
 """
 JOB_CONF_YAML = """
