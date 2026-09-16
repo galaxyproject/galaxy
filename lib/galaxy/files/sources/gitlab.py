@@ -81,14 +81,15 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     #: What a listing of the top level holds, for messages that have to name it.
     entity_name = "project"
 
-    @property
-    def required_token_scope(self) -> str:
-        """Classic-token scope a user needs for what this source is configured to do.
+    @staticmethod
+    def _token_scope_for(description: str) -> str:
+        """Classic-token scope the refused operation needs, not the widest this source might.
 
-        Reading needs no more than ``read_api``; a source that also exports needs ``api``, and
-        asking a browse-only user for the wider one contradicts this source's own template help.
+        A writable source still serves users who only browse it, and a 403 on a listing that
+        told them to mint a token with push rights on every project they can reach would be
+        advice to over-privilege, contradicting this source's own template help.
         """
-        return "api" if self.get_writable() else "read_api"
+        return "api" if description.startswith("writing") else "read_api"
 
     def _open_fs(
         self,
@@ -149,13 +150,19 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
             # repo-internal path, or a whole sentence depending on the raise site, so none of it
             # reads correctly inside a sentence. ``description`` already names what was asked for.
             raise ObjectNotFound(
-                f"Problem {description}. Not found in {self.label}. The project may be empty, may have "
-                "been removed, or may not be visible with your credentials."
+                f"Problem {description}. Not found in {self.label}. The {self.entity_name} may be empty, may "
+                "have been removed, or may not be visible with your credentials."
             ) from e
         except Exception as e:
             # aiohttp reports HTTP failures as ClientResponseError, which is not an OSError, so they
             # arrive here. Matching on the status keeps this module importable without aiohttp, which
             # the standalone galaxy-files package does not depend on.
+            if isinstance(e, OSError) and getattr(e, "filename", None):
+                # A local failure that is neither of the two named above: a directory where a file
+                # was expected, a read error, a symlink loop. Those two branches exist to keep a
+                # server-side staging path away from the user, and this keeps the rest of OSError
+                # from going around them.
+                raise MessageException(f"Problem {description}. Reason: {e.strerror or type(e).__name__}") from e
             status = getattr(e, "status", None)
             # aiohttp leaves ``message`` empty when the server sends no reason phrase, and the
             # exception itself stringifies to the full internal API URL, so it cannot stand in.
@@ -172,10 +179,26 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 raise AuthenticationRequired(
                     self._credentials_message(
                         description,
-                        f"{detail}. A classic token may lack the '{self.required_token_scope}' "
+                        f"{detail}. A classic token may lack the '{self._token_scope_for(description)}' "
                         "scope; a fine-grained token may lack the permissions this operation needs",
                     )
                 )
+            if status == 400:
+                # GitLab answers 400 for a commit it would not make, and aiohttp keeps only the
+                # status, so the body saying which is gone by the time this runs. The likeliest
+                # cause on a write is the one this source deliberately provokes: it sends the
+                # commit id the file was read at, so a file changed since then is refused rather
+                # than silently overwritten, and the user has to be told to try again.
+                raise MessageException(
+                    f"Problem {description}. {self.label} refused the commit. The file may have "
+                    "changed since Galaxy read it, or the branch may not exist. Try again."
+                ) from e
+            if status == 413:
+                raise MessageException(
+                    f"Problem {description}. The file is larger than {self.label} accepts in a "
+                    "single request. A smaller file, or an ARC file source, which uploads through "
+                    "Git LFS instead, can carry it."
+                ) from e
             if status == 405 and description.startswith("listing"):
                 # GitLab limits how far an offset listing may page and answers 405 once past it,
                 # with no hint that paging is what it objected to. It enforces this only for
@@ -185,7 +208,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 raise MessageException(
                     f"Problem {description}. {self.label} would not list any further into the "
                     "catalogue. Some GitLab servers cap how deep an anonymous listing can page. "
-                    "Search for the project by name, or add an access token for this file source."
+                    f"Search for the {self.entity_name} by name, or add an access token for this file source."
                 ) from e
             if status == 429:
                 raise MessageException(
@@ -195,6 +218,14 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
             # Statuses outside the ladder above still must not render the exception itself: for an
             # aiohttp error that is the internal API URL and its query string. Errors with no text
             # at all would otherwise leave a bare "Reason: ".
+            if type(e).__name__ == "FSTimeoutError":
+                # fsspec rewrites asyncio.TimeoutError to this, and it stringifies to nothing.
+                # The session's own budget covers the whole transfer, so a large file on a slow
+                # link runs out of it having committed nothing.
+                raise MessageException(
+                    f"Problem {description}. {self.label} did not answer in time. A large file on "
+                    "a slow connection can exhaust the request budget; nothing was committed."
+                ) from e
             reason = detail if isinstance(status, int) else (str(e) or type(e).__name__)
             raise MessageException(f"Problem {description}. Reason: {reason}") from e
         finally:
@@ -315,7 +346,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         context: FilesSourceRuntimeContext[GitLabFileSourceConfiguration],
     ):
         project, marker, inside = target_path.partition(ROOT_MARKER)
-        if not marker or not project.strip("/") or not inside.strip("/"):
+        if not marker or not self._names_something(project) or not self._names_something(inside):
             # Each of the three ways a target can fail to name a file inside a project reaches
             # the backend as its own obscure failure. Without the marker the backend cannot tell
             # where the project path ends, so it probes prefixes and then builds the whole
@@ -335,6 +366,18 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
             )
         with self._filesystem(context, f"writing to file source path {target_path}") as (fs, config):
             fs.put_file(native_path, self._to_filesystem_path(target_path, config))
+
+    @staticmethod
+    def _names_something(part: str) -> bool:
+        """Whether one side of the marker names anything the backend will keep.
+
+        The backend strips whitespace and slashes and drops segments that navigate rather than
+        name, so a guard reading the raw text lets through targets it then fails on, reporting
+        the path as its own explanation. ``..`` is refused rather than normalized away: nothing
+        between the request and the API call bounds a target to inside the repository.
+        """
+        segments = [segment for segment in part.strip().strip("/").split("/") if segment not in ("", ".")]
+        return bool(segments) and ".." not in segments
 
     @property
     def _article(self) -> str:

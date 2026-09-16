@@ -37,7 +37,12 @@ GITLAB_MAX_COMMIT_REQUEST_BYTES = 314_572_800
 # three, so the file may be three quarters of what the request may be. GitLab also rate limits
 # requests over 20 MB, and both forms of the file are held in memory at once, so this is a
 # ceiling rather than a size to aim for.
-MAX_COMMIT_BYTES = GITLAB_MAX_COMMIT_REQUEST_BYTES * 3 // 4
+# The JSON around the content - branch, message, two actions, the path twice - is a few hundred
+# bytes, more for a deep path, and it counts against the same limit. A kilobyte of headroom costs
+# nothing at this scale and keeps a file just under the ceiling from being refused by the server
+# after it has already been read, encoded and sent.
+_ENVELOPE_HEADROOM = 4096
+MAX_COMMIT_BYTES = (GITLAB_MAX_COMMIT_REQUEST_BYTES - _ENVELOPE_HEADROOM) * 3 // 4
 
 
 def commit_actions(inside: str, content: str, existing: dict | None) -> list[dict]:
@@ -136,13 +141,24 @@ if GitLabARCFileSystem is not None:
             if message is None:
                 message = f"{'Update' if existing else 'Add'} {inside} (uploaded from Galaxy)"
 
-            await self.client.create_commit(
-                repo["id"],
-                branch,
-                message,
-                commit_actions(inside, base64.b64encode(raw).decode("ascii"), existing),
-            )
+            actions = commit_actions(inside, base64.b64encode(raw).decode("ascii"), existing)
+            del raw  # the encoded copy is what gets sent; two of a large file is enough
+            await self.client.create_commit(repo["id"], branch, message, actions)
             self.dircache.clear()
+
+        def _open(self, path, mode="rb", **kwargs):
+            """Refuse a write through ``open``, which the inherited one sends the ARC way.
+
+            ``AsyncLFSFile`` uploads to the Git LFS store and opens a merge request, which is
+            the one thing this class exists not to do. Refusing is not a limitation being added:
+            the inherited object commits only from ``__aexit__``, so the ordinary write-then-close
+            sequence discards the data either way. ``put_file`` is the supported route.
+            """
+            if "r" not in mode:
+                raise NotImplementedError(
+                    "This file source commits whole files. Use put_file rather than open(..., 'wb')."
+                )
+            return super()._open(path, mode=mode, **kwargs)
 
         async def _refuse_a_directory(self, repo_id: int, inside: str, branch: str) -> None:
             """Refuse a target naming a folder rather than a file inside one.
@@ -175,11 +191,18 @@ if GitLabARCFileSystem is not None:
             makes the replacement safe against a concurrent write, and the execute bit.
             """
             try:
-                return await self.client.get_file(repo_id, inside, branch)
+                answer = await self.client.get_file(repo_id, inside, branch)
             except FileNotFoundError:
                 # Either the path is not on the branch or the repository has no commits at all;
                 # both mean there is nothing to replace.
                 return None
+            # Keep the two fields that are used and let the rest go: the answer carries the whole
+            # existing file base64-encoded, and holding it through the upload would put several
+            # copies of a large file in memory at once.
+            return {
+                "last_commit_id": answer.get("last_commit_id"),
+                "execute_filemode": answer.get("execute_filemode"),
+            }
 
 else:
     WritableGitLabFileSystem = None  # type: ignore[assignment, misc, unused-ignore]
