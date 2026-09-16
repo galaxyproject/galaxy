@@ -1,14 +1,64 @@
+import csv
 import tempfile
 from typing import (
     Any,
     cast,
 )
 
+import pytest
+
 from galaxy.datatypes.tabular import (
+    CSV,
     MAX_DATA_LINES,
     Tabular,
+    TSV,
 )
 from .util import MockDataset
+
+
+@pytest.mark.parametrize("datatype", [CSV(), TSV()], ids=["csv", "tsv"])
+@pytest.mark.parametrize(
+    "header, rows",
+    [
+        (["name", "value"], []),
+        (["name", "value"], [["first", "1"]]),
+        (["name", "value"], [["first", "1"], ["second", "text"]]),
+        (["name", "value"], [["first\nnext\rline", "1"], ["second", "2"]]),
+        (["name\ncontinued", "value"], [["first", "1"]]),
+        (["name\ncontinued", "value"], [["first\nnext", "1"], ["second\nnext", "2"]]),
+    ],
+    ids=["header_only", "one_row", "two_rows", "multiline_cell", "multiline_header", "multiline_both"],
+)
+def test_delimited_metadata_counts_logical_records(tmp_path, datatype, header, rows):
+    source = tmp_path / f"input.{datatype.file_ext}"
+    with source.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, dialect=datatype.dialect)
+        writer.writerow(header)
+        writer.writerows(rows)
+    dataset = MockDataset(id=1)
+    dataset.set_file_name(str(source))
+    datatype.set_meta(dataset)  # type: ignore [arg-type]
+    assert dataset.metadata.data_lines == len(rows)
+    assert dataset.metadata.comment_lines == 1
+    assert dataset.metadata.columns == 2
+    assert dataset.metadata.column_names == header
+    assert dataset.metadata.delimiter == datatype.dialect.delimiter
+    # Type inference remains based on the first data record, not a later one.
+    assert dataset.metadata.column_types == (["str", "int"] if rows else [])
+
+
+@pytest.mark.parametrize("datatype", [CSV(), TSV()], ids=["csv", "tsv"])
+def test_delimited_metadata_empty_input(tmp_path, datatype):
+    source = tmp_path / f"empty.{datatype.file_ext}"
+    source.touch()
+    dataset = MockDataset(id=1)
+    dataset.set_file_name(str(source))
+    datatype.set_meta(dataset)  # type: ignore [arg-type]
+    assert dataset.metadata.data_lines == 0
+    assert dataset.metadata.comment_lines == 0
+    assert dataset.metadata.column_types == []
+    assert dataset.metadata.columns == 0
+    assert dataset.metadata.column_names == []
 
 
 def test_tabular_set_meta_large_file():
