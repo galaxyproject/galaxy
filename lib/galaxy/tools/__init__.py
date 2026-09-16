@@ -128,7 +128,6 @@ from galaxy.tool_util.toolbox.entry import (
 )
 from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
 from galaxy.tool_util.verify.interactor import ToolTestDescription
-from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
 from galaxy.tool_util.verify.test_data import TestDataNotFoundError
 from galaxy.tool_util.version import (
     parse_version,
@@ -1138,7 +1137,6 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
     tool_type_local = False
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
     job_search: "JobSearch"
-    version: str
     uses_tool_provided_metadata: bool
     allows_unnamed_outputs: bool
 
@@ -1223,8 +1221,8 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.shell_command: str | None = None
         self.javascript_requirements: list[JavascriptRequirement] | None = None
         self.credentials: list[CredentialsRequirement] | None = None
-        self.__tests: str | None = None
-        self.__tests_parsed: bool = False
+        self._tests: str | None = None
+        self._tests_parsed: bool = False
         self.parameters: list[ToolParameterT] | None = None
         self.template_macro_params: dict = {}
         self._macro_paths: list = []
@@ -1620,41 +1618,16 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
                 self.timelimit = rr.get_value()
                 break
 
-    def parse_tests(self) -> None:
-        self.__tests_parsed = True
-        source = self.tool_source
-        if source is None:
-            return
-        # ``Tool.__init__`` calls ``tool_source.mem_optimize()`` after parsing,
-        # which frees an ``XmlToolSource``'s element tree (``root`` becomes
-        # ``None``). A deferred test parse therefore rebuilds the source from
-        # its retained string — the same round-trip a stored tool source uses.
-        # Non-XML sources have no ``root`` and keep their data, so they parse
-        # directly.
-        if getattr(source, "root", False) is None:
-            try:
-                source = get_tool_source(raw_tool_source=source.to_string(), tool_source_class=type(source).__name__)
-            except Exception:
-                self.__tests = None
-                log.exception("Failed to rebuild tool source for deferred test parsing of '%s'", self.id)
-                return
-        test_descriptions = parse_tool_test_descriptions(source, self.id, self.parameters)
-        try:
-            self.__tests = json.dumps([t.to_dict() for t in test_descriptions], indent=None)
-        except Exception:
-            self.__tests = None
-            log.exception("Failed to parse tool tests for tool '%s'", self.id)
-
     @property
     def tests(self) -> list[ToolTestDescription] | None:
         # Deferred parse: the ``<tests>`` block is only needed by the
         # test-data and tarball endpoints, so pay the (potentially
         # seconds-long) validation cost on first access rather than at
         # construction.
-        if not self.__tests_parsed and self.app.is_webapp:
+        if not self._tests_parsed and self.app.is_webapp:
             self.parse_tests()
-        if self.__tests:
-            return [ToolTestDescription(d) for d in json.loads(self.__tests)]
+        if self._tests:
+            return [ToolTestDescription(d) for d in json.loads(self._tests)]
         return None
 
     def test_data_path(self, filename):
@@ -2617,13 +2590,6 @@ class Tool(AbstractTool, UsesDictVisibleKeys, MaybeToolParameterBundle):
         else:
             installed_tool_dependencies = None
         return installed_tool_dependencies
-
-    @property
-    def tool_requirements(self):
-        """
-        Return all requirements of type package
-        """
-        return self.requirements.packages
 
     @property
     def tool_requirements_status(self):
