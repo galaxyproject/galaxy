@@ -64,6 +64,7 @@ if TYPE_CHECKING:
     from galaxy.tools import ToolBox
     from galaxy.tools.cache import ToolCache
     from galaxy.tools.error_reports import ErrorReports
+    from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
     from galaxy.visualization.genomes import Genomes
 
 
@@ -122,6 +123,7 @@ class MinimalApp(BasicSharedApp):
     security_agent: GalaxyRBACAgent
     host_security_agent: HostAgent
     server_starttime: int
+    trace_logger: "FluentTraceLogger | None"
 
 
 class MinimalManagerApp(MinimalApp):
