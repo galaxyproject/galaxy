@@ -561,7 +561,6 @@ steps:
 
         assert_linting_input_metadata_okay()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rendering_rules_workflow_1(self):
         self.open_in_workflow_editor(WORKFLOW_WITH_RULES_1)
