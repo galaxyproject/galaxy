@@ -55,6 +55,7 @@ FileSourceTemplateType = Literal[
     "mavedb",
     "omero",
     "ssh",
+    "openbis",
     "ckan",
     "commoncrawl",
 ]
@@ -537,6 +538,16 @@ class OmeroFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
+class OpenBisFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["openbis"]
+    base_url: str | TemplateExpansion
+    token: str | TemplateExpansion
+    verify_certificates: bool | TemplateExpansion = True
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
 class CKANFileSourceTemplateConfiguration(StrictModel):
     type: Literal["ckan"]
     url: str | TemplateExpansion
@@ -544,6 +555,14 @@ class CKANFileSourceTemplateConfiguration(StrictModel):
     writable: bool | TemplateExpansion = True
     template_start: str | None = None
     template_end: str | None = None
+
+
+class OpenBisFileSourceConfiguration(StrictModel):
+    type: Literal["openbis"]
+    base_url: str
+    token: str
+    verify_certificates: bool = True
+    writable: bool = False
 
 
 class CKANFileSourceConfiguration(StrictModel):
@@ -589,6 +608,7 @@ FileSourceTemplateConfiguration = Annotated[
     | MaveDBFileSourceTemplateConfiguration
     | OmeroFileSourceTemplateConfiguration
     | SshFileSourceTemplateConfiguration
+    | OpenBisFileSourceTemplateConfiguration
     | CKANFileSourceTemplateConfiguration
     | CommonCrawlFileSourceTemplateConfiguration,
     Field(discriminator="type"),
@@ -618,6 +638,7 @@ FileSourceConfiguration = Annotated[
     | MaveDBFileSourceConfiguration
     | OmeroFileSourceConfiguration
     | SshFileSourceConfiguration
+    | OpenBisFileSourceConfiguration
     | CKANFileSourceConfiguration
     | CommonCrawlFileSourceConfiguration,
     Field(discriminator="type"),
@@ -707,6 +728,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "mavedb": MaveDBFileSourceConfiguration,
     "omero": OmeroFileSourceConfiguration,
     "ssh": SshFileSourceConfiguration,
+    "openbis": OpenBisFileSourceConfiguration,
     "ckan": CKANFileSourceConfiguration,
     "commoncrawl": CommonCrawlFileSourceConfiguration,
 }

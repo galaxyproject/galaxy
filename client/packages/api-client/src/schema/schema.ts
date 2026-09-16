@@ -13288,6 +13288,7 @@ export interface components {
                 | "mavedb"
                 | "omero"
                 | "ssh"
+                | "openbis"
                 | "ckan"
                 | "commoncrawl";
             /** Variables */
@@ -26250,6 +26251,7 @@ export interface components {
                 | "mavedb"
                 | "omero"
                 | "ssh"
+                | "openbis"
                 | "ckan"
                 | "commoncrawl";
             /** Uri Root */
