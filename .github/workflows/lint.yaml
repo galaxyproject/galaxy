@@ -6,12 +6,14 @@ on:
       - '.github/workflows/lint.yaml'
       - lib/galaxy/dependencies/**
       - mypy.ini
+      - tox.ini
   pull_request:
     paths:
       - '**.py'
       - '.github/workflows/lint.yaml'
       - lib/galaxy/dependencies/**
       - mypy.ini
+      - tox.ini
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
