@@ -46,6 +46,10 @@ Usage Tips
 - Literal NA is preserved, not treated as null.
 - Entirely numeric columns are inferred as integers or floating-point values when
   representable. Mixed columns and leading-zero identifiers retain their original text.
+- Float inference uses ordinary float64 approximation. If a column requires floats,
+  values with magnitude greater than 2^53, nonfinite values, and values that would
+  underflow to zero keep the entire column as text instead. Integer-only columns
+  can still use the full int64 range.
 - TSV quoting is decoded; generic tabular quotes are literal characters.
 - Generic tabular comments beginning with # and blank lines are ignored, as in Galaxy.
   With an explicit first-record header, the first nonblank record is preserved as
