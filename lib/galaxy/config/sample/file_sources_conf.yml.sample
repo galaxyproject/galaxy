@@ -336,7 +336,8 @@
 - type: gitlab
   id: gitlab
   label: GitLab
-  doc: Browse the projects of a GitLab instance, import files from them, and export to them.
+  doc: Browse the projects of a GitLab instance and import files from them. Set writable to
+    export to them as well.
   base_url: https://gitlab.com
   # A token is needed for private projects, and removes the limit some servers place on how deep
   # an anonymous listing can page.
