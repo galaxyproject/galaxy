@@ -103,6 +103,7 @@ python-dateutil = "*"
 python-magic = "*"
 python-multipart = "*"  # required to support form parsing in FastAPI/Starlette
 PyYAML = "*"
+quickjs-ng = {version = ">=0.16.2.1", python = ">=3.10"}
 refgenconf = ">=0.12.0"
 regex = "*"
 requests = "*"

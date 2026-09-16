@@ -881,6 +881,25 @@ class TestToolsUpload(ApiTestCase):
             assert extra_file["path"] == "composite"
             assert extra_file["class"] == "File"
 
+    @pytest.mark.parametrize("name", ["../escaped.txt", "/escaped.txt"])
+    def test_upload_force_composite_rejects_escaping_name(self, history_id, name):
+        payload = self.dataset_populator.upload_payload(
+            history_id,
+            "primary\n",
+            extra_inputs={
+                "files_1|url_paste": "extra file\n",
+                "files_1|NAME": name,
+                "file_count": "2",
+                "force_composite": "True",
+            },
+        )
+        response = self.dataset_populator.tools_post(payload)
+        self.dataset_populator.wait_for_tool_run(history_id, response, assert_ok=False)
+        job_id = response.json()["jobs"][0]["id"]
+        job = self.dataset_populator.get_job_details(job_id, full=True).json()
+        assert job["state"] == "error"
+        assert f"Invalid composite file name '{name}'" in job["stderr"]
+
     def test_upload_from_invalid_url(self):
         with pytest.raises(AssertionError):
             self._upload("https://foo.invalid", assert_ok=False)
