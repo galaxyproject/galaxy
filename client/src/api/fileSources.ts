@@ -121,7 +121,7 @@ export const templateTypes: FileSourceTypesDetail = {
     },
     gitlab: {
         icon: faNetworkWired,
-        message: "This is a read-only file source that connects with a GitLab instance.",
+        message: "This is a file source that connects with a GitLab instance.",
     },
     arc: {
         icon: faNetworkWired,

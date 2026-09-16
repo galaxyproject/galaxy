@@ -6,8 +6,8 @@
       to appear as folders, with their repository contents below. Public projects can be browsed
       without an access token.
 
-      This file source is read only. To export data to a GitLab instance that hosts ARCs, use the
-      ARC file source instead.
+      Exporting commits the file to the branch. A GitLab instance that hosts ARCs takes data
+      another way, so use the ARC file source for those.
 
       Requires the ``arcfs-fsspec`` package to be installed on the Galaxy server.
   variables:
@@ -16,15 +16,28 @@
           type: string
           help: |
               The URL of the GitLab instance you are connecting to, including the protocol.
+      writable:
+          label: Allow Galaxy to export data to this GitLab instance?
+          type: boolean
+          optional: true
+          default: false
+          help: |
+              Allow Galaxy to commit data to your projects. This requires an access token that
+              can push code, and the file lands on the branch as an ordinary commit. Leave this
+              off to browse and import only.
   secrets:
       token:
           label: GitLab Access Token
           optional: true
           help: |
-              A personal access token with the "api" scope. It is required to see private projects.
+              A personal access token. Browsing needs no more than the "read_api" scope on a
+              classic token, or read access to projects and repositories on a fine-grained one.
+              Exporting needs "api", or permission to push code and create commits. It is
+              required to see private projects.
               Public projects can be browsed without one. A token also removes the limit some
               servers place on how deep an anonymous listing can page.
   configuration:
       type: gitlab
       base_url: "{{ variables.base_url }}"
       token: "{{ secrets.token }}"
+      writable: "{{ variables.writable }}"
