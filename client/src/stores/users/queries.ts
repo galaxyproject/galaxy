@@ -175,3 +175,17 @@ export async function updateFavoriteOrderQuery(userId: string, order: FavoriteOr
 
     return data as FavoriteSummary;
 }
+
+export async function decodeIdById(id: string) {
+    const { data, error } = await GalaxyApi().GET("/api/configuration/decode/{encoded_id}", {
+        params: {
+            path: { encoded_id: id },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data.decoded_id as number;
+}
