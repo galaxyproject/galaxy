@@ -5,7 +5,6 @@ import shutil
 import subprocess
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor
 
 import psutil
 import pytest
@@ -109,21 +108,21 @@ def test_evaluate_undefined_and_fresh_context():
     assert evaluate(None, {"script": "({}).polluted"}) is None
 
 
-def test_default_evaluation_uses_worker(short_timeout_grace):
-    # Observe the actual child while JavaScript runs, without replacing Popen.
-    with ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(SandboxedJSEngine().eval, "{while (true) {}}", timeout=0.1)
-        deadline = time.monotonic() + 1
-        workers = []
-        while time.monotonic() < deadline:
-            workers = [child for child in psutil.Process().children() if js_engine.WORKER_SCRIPT in child.cmdline()]
-            if workers or future.done():
-                break
-            time.sleep(0.005)
-    with pytest.raises(JavascriptException):
-        future.result()
+def test_default_evaluation_uses_worker(monkeypatch):
+    workers = []
+    popen = subprocess.Popen
+
+    def record_worker(*args, **kwargs):
+        worker = popen(*args, **kwargs)
+        workers.append(worker)
+        return worker
+
+    monkeypatch.setattr(js_engine.subprocess, "Popen", record_worker)
+    assert SandboxedJSEngine().eval("1 + 1") == 2
     assert len(workers) == 1
+    assert workers[0].args == [sys.executable, js_engine.WORKER_SCRIPT]
     assert workers[0].pid != os.getpid()
+    assert workers[0].returncode == 0
 
 
 def test_do_eval_parameter_reference():
@@ -271,9 +270,15 @@ def test_malformed_result_is_translated():
         evaluate_program(json.dumps("invalid JSON"))
 
 
-def test_deep_result_is_translated():
-    with pytest.raises(JavascriptException, match="Malformed response"):
-        evaluate_program(json.dumps("[" * 20000 + "0" + "]" * 20000))
+def test_response_recursion_error_is_translated(monkeypatch):
+    # JSON decoder nesting limits differ between Python versions.
+    def fail_to_decode(response):
+        raise RecursionError("response nesting limit exceeded")
+
+    monkeypatch.setattr(js_engine.json, "loads", fail_to_decode)
+    with pytest.raises(JavascriptException, match="Malformed response") as exc:
+        evaluate_program("JSON.stringify(42)")
+    assert isinstance(exc.value.__cause__, RecursionError)
 
 
 def test_parent_timeout_covers_worker_teardown(short_timeout_grace):
