@@ -1,6 +1,5 @@
 import shlex
 import subprocess
-from inspect import signature
 
 import pytest
 
@@ -13,38 +12,20 @@ from galaxy.tool_util.deps.dependencies import (
 )
 
 
-def test_docker_run_command_can_set_user_from_host():
-    command = docker_util.build_docker_run_command(
-        "echo hello",
-        "busybox",
-        set_user="alice",
-        set_user_from_host=True,
+def test_container_emits_the_shared_host_identity_contract():
+    """The container layer and docker_util must not drift apart on how the account is resolved."""
+    container = _docker_container(
+        {
+            "docker_username_from_token": "alice",
+            "docker_username_from_oidc_token_claim": {"set_user": True},
+        }
     )
 
-    assert "$(id -u -- alice)" in command
-    assert '--user "$GALAXY_DOCKER_UID:$GALAXY_DOCKER_GID"' in command
+    command = container.containerize_command("echo hello")
 
-
-def test_docker_run_command_prefers_explicit_set_user():
-    command = docker_util.build_docker_run_command(
-        "echo hello",
-        "busybox",
-        set_user="1000:1000",
-        set_user_from_host=False,
-    )
-
-    assert "--user 1000:1000" in command
-    assert "id -u alice" not in command
-
-
-def test_docker_run_command_preserves_existing_positional_parameters():
-    parameters = list(signature(docker_util.build_docker_run_command).parameters)
-    assert parameters[parameters.index("set_user") + 1 : parameters.index("set_user_from_host")] == [
-        "host",
-        "guest_ports",
-        "host_port_cmd",
-        "container_name",
-    ]
+    assert docker_util.build_docker_user_setup_command("alice", include_groups=True) in command
+    assert f"--user {docker_util.HOST_RESOLVED_USER}" in command
+    assert docker_util.HOST_RESOLVED_GROUP_ARGUMENTS in command
 
 
 def test_docker_container_passes_docker_username_from_token_env_and_groups():
@@ -180,13 +161,6 @@ def test_host_identity_lookup_fails_closed(lookup, output):
     assert result.returncode != 0
     assert "DOCKER_CALL" not in result.stdout
     assert "Docker" in result.stderr
-
-
-def test_direct_docker_host_identity_lookup_fails_closed():
-    command = docker_util.build_docker_run_command("echo hello", "busybox", set_user="alice", set_user_from_host=True)
-    result = _execute(command, "return 1")
-    assert result.returncode != 0
-    assert "DOCKER_CALL" not in result.stdout
 
 
 def _docker_container(destination_info):

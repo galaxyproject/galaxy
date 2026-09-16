@@ -4,6 +4,7 @@ import jwt
 import pytest
 
 from galaxy.exceptions import ConfigurationError
+from galaxy.jobs.oidc_user import validate_destination
 from galaxy.jobs.runners import BaseJobRunner
 
 TOKEN_SECRET = "unit-test-signing-key-at-least-32-bytes"
@@ -15,6 +16,7 @@ def _token(claims):
 
 def _configure(tokens, providers=None, **destination_params):
     params = {
+        "docker_enabled": True,
         "docker_username_from_oidc_token_claim": {
             "set_user": True,
             "providers": providers or {"oidc": {"claim": "preferred_username"}},
@@ -148,3 +150,33 @@ def test_provider_lookup_failure_tries_next_configured_provider():
     )
     assert params["docker_username_from_token"] == "bob"
     assert requested == ["oidc", "keycloak"]
+
+
+def test_identity_requires_a_docker_destination():
+    """The container layer only honors this on Docker destinations - do not silently no-op."""
+    with pytest.raises(ConfigurationError, match="requires docker_enabled"):
+        _configure({"id": _token({"preferred_username": "alice"})}, docker_enabled=False)
+
+
+def test_startup_validation_reports_the_destination():
+    with pytest.raises(ConfigurationError, match=r"Invalid destination \[docker_oidc\]"):
+        validate_destination(
+            "docker_oidc",
+            {
+                "docker_enabled": True,
+                "docker_username_from_oidc_token_claim": {"set_user": True, "providers": {"nope": {"claim": "sub"}}},
+            },
+        )
+
+
+def test_startup_validation_accepts_a_valid_destination():
+    validate_destination(
+        "docker_oidc",
+        {
+            "docker_enabled": True,
+            "docker_username_from_oidc_token_claim": {
+                "set_user": True,
+                "providers": {"azure": {"claim": "unique_name", "template": "^[a-z_][a-z0-9_-]*"}},
+            },
+        },
+    )

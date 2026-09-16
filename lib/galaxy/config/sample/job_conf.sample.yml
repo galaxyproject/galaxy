@@ -548,7 +548,8 @@ execution:
       # the username (use an end anchor to require a full match).
       # With set_user false, only expose_as_env is applied and no account lookup
       # is needed. expose_as_env must be a valid environment variable name.
-      # Enabled configurations require at least one recognized OIDC provider.
+      # Enabled configurations require docker_enabled on the same destination and at
+      # least one recognized OIDC provider; Galaxy refuses to start otherwise.
       #
       #docker_username_from_oidc_token_claim:
       #  set_user: true

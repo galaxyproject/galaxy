@@ -4,7 +4,6 @@ Base classes for job runner plugins.
 
 import datetime
 import os
-import re
 import string
 import subprocess
 import sys
@@ -12,7 +11,6 @@ import threading
 import time
 import traceback
 import uuid
-from collections.abc import Mapping
 from queue import (
     Empty,
     Queue,
@@ -25,12 +23,10 @@ from typing import (
     Union,
 )
 
-import jwt
 from sqlalchemy import select
 from sqlalchemy.orm import object_session
 
 from galaxy import model
-from galaxy.authnz.util import provider_name_to_backend
 from galaxy.exceptions import ConfigurationError
 from galaxy.job_execution.output_collect import (
     default_exit_code_file,
@@ -38,6 +34,10 @@ from galaxy.job_execution.output_collect import (
 )
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.job_destination import JobDestination
+from galaxy.jobs.oidc_user import (
+    parse_config as parse_oidc_username_config,
+    RESOLVED_PARAM as OIDC_USERNAME_PARAM,
+)
 from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
@@ -545,82 +545,13 @@ class BaseJobRunner:
 
     def _configure_docker_username_from_oidc_token_claim(self, job_wrapper: "MinimalJobWrapper") -> None:
         destination_info = job_wrapper.job_destination.params
-        user_oidc_config = destination_info.get("docker_username_from_oidc_token_claim")
-        if not user_oidc_config:
+        oidc_username_config = parse_oidc_username_config(destination_info)
+        if oidc_username_config is None:
             return
-        if not isinstance(user_oidc_config, Mapping):
-            raise ConfigurationError("docker_username_from_oidc_token_claim must be a mapping")
-
-        try:
-            set_user = asbool(user_oidc_config.get("set_user", False))
-        except ValueError as exc:
-            raise ConfigurationError("docker_username_from_oidc_token_claim set_user must be a boolean") from exc
-        expose_as_env = user_oidc_config.get("expose_as_env")
-        if not set_user and not expose_as_env:
-            return
-        if expose_as_env and (
-            not isinstance(expose_as_env, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", expose_as_env)
-        ):
-            raise ConfigurationError("docker_username_from_oidc_token_claim expose_as_env must be an environment name")
-
-        if set_user and destination_info.get("docker_set_user"):
-            raise ConfigurationError(
-                "docker_set_user cannot be used together with docker_username_from_oidc_token_claim set_user"
-            )
-
-        providers = user_oidc_config.get("providers")
-        if not isinstance(providers, Mapping) or not providers:
-            raise ConfigurationError("docker_username_from_oidc_token_claim requires a non-empty providers mapping")
-
-        configured_providers = []
-        for token_provider, settings in providers.items():
-            provider_backend = provider_name_to_backend(token_provider)
-            if provider_backend is None:
-                raise ConfigurationError(f"Unknown OIDC provider [{token_provider}] for Docker username")
-            if not isinstance(settings, Mapping) or not isinstance(settings.get("claim"), str) or not settings["claim"]:
-                raise ConfigurationError(f"OIDC provider [{token_provider}] requires a non-empty username claim")
-            try:
-                template = re.compile(settings.get("template", ".*"))
-            except (re.error, TypeError) as exc:
-                raise ConfigurationError(
-                    f"Invalid Docker username template for OIDC provider [{token_provider}]"
-                ) from exc
-            configured_providers.append((token_provider, provider_backend, settings["claim"], template))
-
-        username = None
         user = job_wrapper.get_job().user
         if user is None:
             raise Exception("Failed to get a username for container from OIDC token, job has no user.")
-        for token_provider, provider_backend, claim, template in configured_providers:
-            try:
-                tokens = user.get_oidc_tokens(provider_backend)
-            except Exception:
-                log.debug("Failed to obtain Docker user tokens from OIDC provider [%s]", token_provider, exc_info=True)
-                continue
-            for token_kind in ("access", "id"):
-                oidc_token = tokens.get(token_kind)
-                if not oidc_token:
-                    continue
-                try:
-                    token_user = jwt.decode(oidc_token, options={"verify_signature": False})[claim]
-                    match = template.match(token_user) if isinstance(token_user, str) else None
-                    if match and match.group(0):
-                        username = match.group(0)
-                        break
-                except Exception:
-                    log.debug(
-                        "Failed to extract Docker user from OIDC provider [%s] %s token",
-                        token_provider,
-                        token_kind,
-                        exc_info=True,
-                    )
-            if username:
-                break
-
-        if not username:
-            raise Exception("Failed to get a username for container from OIDC token, contact Galaxy admin.")
-
-        destination_info["docker_username_from_token"] = username
+        destination_info[OIDC_USERNAME_PARAM] = oidc_username_config.username_for(user)
 
     def _find_container(
         self,
