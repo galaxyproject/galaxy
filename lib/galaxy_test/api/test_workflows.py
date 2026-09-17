@@ -1437,6 +1437,52 @@ steps:
             step_annotations = {step["annotation"] for step in imported_workflow["steps"].values()}
             assert "input1 description" in step_annotations
 
+    @pytest.mark.parametrize("multibyte", [False, True], ids=["ascii", "multibyte"])
+    def test_import_and_update_long_annotations(self, multibyte):
+        if multibyte:
+            annotation = "".join(
+                chr(0x4E00 + int(hashlib.sha256(str(i).encode()).hexdigest()[:8], 16) % 0x5000) for i in range(2000)
+            )
+        else:
+            annotation = "".join(hashlib.sha256(str(i).encode()).hexdigest() for i in range(64))
+        workflow = yaml.safe_load(WORKFLOW_NESTED_SIMPLE)
+        workflow["doc"] = annotation
+        workflow["steps"]["first_cat"]["doc"] = annotation
+        workflow["steps"]["nested_workflow"]["doc"] = annotation
+        workflow["steps"]["nested_workflow"]["run"]["steps"]["random_lines"]["doc"] = annotation
+        workflow_id = self._upload_yaml_workflow(yaml.safe_dump(workflow))
+
+        def annotated_steps(exported):
+            first_cat = next(step for step in exported["steps"].values() if step.get("label") == "first_cat")
+            nested = next(step for step in exported["steps"].values() if step["type"] == "subworkflow")
+            return first_cat, nested
+
+        def inner_annotation(exported):
+            nested = annotated_steps(exported)[1]
+            inner = next(
+                step for step in nested["subworkflow"]["steps"].values() if step.get("label") == "random_lines"
+            )
+            return inner["annotation"]
+
+        exported = self._download_workflow(workflow_id)
+        assert exported["annotation"] == annotation
+        for step in annotated_steps(exported):
+            assert step["annotation"] == annotation
+        assert inner_annotation(exported) == annotation
+
+        # Use editor content IDs to retain the existing subworkflow when saving.
+        editable = self._download_workflow(workflow_id, style="editor")
+        for step in annotated_steps(editable):
+            step["annotation"] = annotation[::-1]
+        editable["annotation"] = annotation[::-1]
+        response = self._update_workflow(workflow_id, editable)
+        self._assert_status_code_is(response, 200)
+        updated = self._download_workflow(workflow_id)
+        assert updated["annotation"] == annotation[::-1]
+        for step in annotated_steps(updated):
+            assert step["annotation"] == annotation[::-1]
+        assert inner_annotation(updated) == annotation
+
     def test_import_subworkflows(self):
         def get_subworkflow_content_id(workflow_id):
             workflow_contents = self._download_workflow(workflow_id, style="editor")

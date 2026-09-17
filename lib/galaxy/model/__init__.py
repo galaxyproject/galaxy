@@ -12285,7 +12285,6 @@ class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
 # Item annotation classes.
 class HistoryAnnotationAssociation(Base, RepresentById):
     __tablename__ = "history_annotation_association"
-    __table_args__ = (Index("ix_history_anno_assoc_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
@@ -12297,7 +12296,6 @@ class HistoryAnnotationAssociation(Base, RepresentById):
 
 class HistoryDatasetAssociationAnnotationAssociation(Base, RepresentById):
     __tablename__ = "history_dataset_association_annotation_association"
-    __table_args__ = (Index("ix_history_dataset_anno_assoc_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     history_dataset_association_id: Mapped[int] = mapped_column(
@@ -12311,7 +12309,6 @@ class HistoryDatasetAssociationAnnotationAssociation(Base, RepresentById):
 
 class StoredWorkflowAnnotationAssociation(Base, RepresentById):
     __tablename__ = "stored_workflow_annotation_association"
-    __table_args__ = (Index("ix_stored_workflow_ann_assoc_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     stored_workflow_id: Mapped[int] = mapped_column(ForeignKey("stored_workflow.id"), index=True, nullable=True)
@@ -12323,7 +12320,6 @@ class StoredWorkflowAnnotationAssociation(Base, RepresentById):
 
 class WorkflowStepAnnotationAssociation(Base, RepresentById):
     __tablename__ = "workflow_step_annotation_association"
-    __table_args__ = (Index("ix_workflow_step_ann_assoc_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True, nullable=True)
@@ -12335,7 +12331,6 @@ class WorkflowStepAnnotationAssociation(Base, RepresentById):
 
 class PageAnnotationAssociation(Base, RepresentById):
     __tablename__ = "page_annotation_association"
-    __table_args__ = (Index("ix_page_annotation_association_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
@@ -12347,7 +12342,6 @@ class PageAnnotationAssociation(Base, RepresentById):
 
 class VisualizationAnnotationAssociation(Base, RepresentById):
     __tablename__ = "visualization_annotation_association"
-    __table_args__ = (Index("ix_visualization_annotation_association_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=True)

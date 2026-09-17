@@ -1,14 +1,20 @@
 import os
+from hashlib import sha256
 
 import alembic
 import pytest
 from alembic.config import Config
 from sqlalchemy import (
+    inspect,
     MetaData,
+    select,
     text,
 )
+from sqlalchemy.exc import DBAPIError
+from sqlalchemy.orm import Session
 
 import galaxy.model.migrations.scripts
+from galaxy import model
 from galaxy.model import migrations
 from galaxy.model.database_utils import database_exists
 from galaxy.model.migrations import (
@@ -54,6 +60,61 @@ GXY_REVISION_2 = "e02cef55763c"  # current/head
 TSI_REVISION_0 = "1bceec30363a"  # oldest/base
 TSI_REVISION_1 = "8364ef1cab05"
 TSI_REVISION_2 = "0e28bf2fb7b5"  # current/head
+
+ANNOTATION_MODELS = (
+    model.HistoryAnnotationAssociation,
+    model.HistoryDatasetAssociationAnnotationAssociation,
+    model.StoredWorkflowAnnotationAssociation,
+    model.WorkflowStepAnnotationAssociation,
+    model.PageAnnotationAssociation,
+    model.VisualizationAnnotationAssociation,
+)
+LONG_ASCII_ANNOTATION = "".join(sha256(str(i).encode()).hexdigest() for i in range(64))
+LONG_MULTIBYTE_ANNOTATION = "".join(
+    chr(0x4E00 + int(sha256(str(i).encode()).hexdigest()[:8], 16) % 0x5000) for i in range(2000)
+)
+
+
+@pytest.mark.parametrize("annotation", [LONG_ASCII_ANNOTATION, LONG_MULTIBYTE_ANNOTATION], ids=["ascii", "multibyte"])
+@pytest.mark.parametrize("upgrade", [False, True], ids=["fresh", "upgraded"])
+def test_long_annotations(url_factory, annotation, upgrade):  # noqa: F811
+    db_url = url_factory()
+    with create_and_drop_database(db_url), disposing_engine(db_url) as engine:
+        model.Base.metadata.create_all(engine)
+        if upgrade:
+            manager = AlembicManager(engine)
+            manager.stamp_model_head(GXY)
+            alembic.command.downgrade(manager.alembic_cfg, "e96dd6fd5863")
+            for annotation_model in ANNOTATION_MODELS:
+                indexes = inspect(engine).get_indexes(annotation_model.__tablename__)
+                assert any(index["column_names"] == ["annotation"] for index in indexes)
+                if engine.dialect.name == "postgresql":
+                    with Session(engine) as session, pytest.raises(DBAPIError) as error:
+                        session.add(annotation_model(annotation=annotation))
+                        session.flush()
+                    assert getattr(error.value.orig, "sqlstate", None) == "54000"
+            with Session(engine) as session:
+                session.add_all(
+                    annotation_model(annotation="existing annotation") for annotation_model in ANNOTATION_MODELS
+                )
+                session.commit()
+            manager.upgrade(GXY)
+
+        with Session(engine) as session:
+            for annotation_model in ANNOTATION_MODELS:
+                if upgrade:
+                    assert session.scalars(select(annotation_model.annotation)).one() == "existing annotation"
+                association = annotation_model(annotation=annotation)
+                session.add(association)
+                session.commit()
+                session.refresh(association)
+                assert association.annotation == annotation
+                association.annotation = annotation[::-1]
+                session.commit()
+                session.refresh(association)
+                assert association.annotation == annotation[::-1]
+                indexes = inspect(engine).get_indexes(annotation_model.__tablename__)
+                assert not any(index["column_names"] == ["annotation"] for index in indexes)
 
 
 class TestAlembicManager:
