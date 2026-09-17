@@ -196,17 +196,34 @@ def test_offset_window_beyond_the_first_page_is_contiguous(large_fake_fs):
     assert len(entries) == 150
 
 
-def test_recursive_listing_inside_a_project_uses_walk(fake_fs):
+def test_recursive_listing_inside_a_project_descends_with_ls(fake_fs):
+    """It walks with its own stack, because fsspec drops on_error below the top level."""
     source = _gitlab_source()
     entries, _ = source.list("group/repo1:-:/", recursive=True, limit=10, offset=0, user_context=user_context_fixture())
     assert fake_fs.list_page_calls == []
-    assert fake_fs.walk_calls == ["group/repo1:-:", "group/repo1:-:assays"]
+    assert fake_fs.walk_calls == [], "fsspec's walk cannot carry on_error into its recursion"
+    assert sorted(fake_fs.ls_calls) == ["group/repo1:-:", "group/repo1:-:assays"]
     assert {e.path for e in entries} == {
         "group/repo1:-:/README.md",
         "group/repo1:-:/assays",
         "group/repo1:-:/assays/measurements.csv",
     }
     assert fake_fs.closed == 1, "a recursive listing must close the filesystem too"
+
+
+def test_a_failure_below_the_top_level_is_not_swallowed(fake_fs):
+    """fsspec's walk drops on_error when it recurses, so only the top level was ever guarded.
+
+    It swallows every OSError, and aiohttp's connection errors are OSError subclasses, so a
+    reset partway through a recursive listing returned the remaining folders empty with HTTP
+    200 and nothing to say anything was missing. A test that fails the top level proves
+    nothing, because that one level did raise.
+    """
+    fake_fs.ls_error_for = {"group/repo1:-:assays": ConnectionResetError("connection reset")}
+    source = _gitlab_source()
+
+    with pytest.raises(MessageException):
+        source.list("group/repo1:-:/", recursive=True, limit=10, offset=0, user_context=user_context_fixture())
 
 
 def test_recursive_listing_translates_errors(fake_fs, monkeypatch):

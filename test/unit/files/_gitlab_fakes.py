@@ -44,6 +44,7 @@ class FakeRecorder:
     def __init__(self):
         self.init_kwargs: list[dict] = []
         self.ls_calls: list[str] = []
+        self.ls_error_for: dict[str, Exception] = {}
         self.list_page_calls: list[dict] = []
         self.walk_calls: list[str] = []
         self.get_file_calls: list[tuple[str, str]] = []
@@ -68,6 +69,8 @@ def _make_fake_fs_class(recorder: FakeRecorder, tree: dict, files: dict):
         def ls(self, path, detail=True, **kwargs):
             key = self._key(path)
             recorder.ls_calls.append(key)
+            if key in recorder.ls_error_for:
+                raise recorder.ls_error_for[key]
             entries = tree.get(key, [])
             return entries if detail else [e["name"] for e in entries]
 
