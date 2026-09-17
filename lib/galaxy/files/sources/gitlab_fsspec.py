@@ -41,8 +41,14 @@ GITLAB_MAX_COMMIT_REQUEST_BYTES = 314_572_800
 # bytes, more for a deep path, and it counts against the same limit. A kilobyte of headroom costs
 # nothing at this scale and keeps a file just under the ceiling from being refused by the server
 # after it has already been read, encoded and sent.
-_ENVELOPE_HEADROOM = 4096
-MAX_COMMIT_BYTES = (GITLAB_MAX_COMMIT_REQUEST_BYTES - _ENVELOPE_HEADROOM) * 3 // 4
+#: What a commit may carry, and deliberately far below what GitLab would accept. The content is
+#: read, base64-encoded and then serialised into the request body, so several copies of the file
+#: are resident at once inside a Galaxy worker shared with every other file source; at GitLab's
+#: own ceiling that is over a gigabyte for one export. GitLab also rate limits requests above
+#: 20 MB to three every thirty seconds, so this is already the point where a commit stops being
+#: a sensible way to move the file. An ARC file source streams through Git LFS and has no such
+#: limit.
+MAX_COMMIT_BYTES = 20 * 1024 * 1024
 
 
 def commit_actions(inside: str, content: str, existing: dict | None) -> list[dict]:

@@ -23,8 +23,11 @@
           default: false
           help: |
               Allow Galaxy to commit data to your projects. This requires an access token that
-              can push code, and the file lands on the branch as an ordinary commit. Leave this
-              off to browse and import only.
+              can push code, and the file lands on the project's default branch as an ordinary
+              commit, so that branch must not be protected against the token's user. GitLab
+              protects the default branch by default. Exports are limited to 20 MB, because the
+              file travels inside the commit request; an ARC file source has no such limit.
+              Leave this off to browse and import only.
   secrets:
       token:
           label: GitLab Access Token

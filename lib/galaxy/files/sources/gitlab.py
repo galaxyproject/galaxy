@@ -204,7 +204,13 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                     self._credentials_message(
                         description,
                         f"{detail}. A classic token may lack the '{self._token_scope_for(operation)}' "
-                        "scope; a fine-grained token may lack the permissions this operation needs",
+                        "scope; a fine-grained token may lack the permissions this operation needs"
+                        + (
+                            ". A token with every scope is still refused by a protected branch, "
+                            "which GitLab applies to the default branch"
+                            if operation == "writing to"
+                            else ""
+                        ),
                     )
                 ) from e
             if status == 400 and operation == "writing to":
@@ -214,8 +220,10 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 # commit id the file was read at, so a file changed since then is refused rather
                 # than silently overwritten, and the user has to be told to try again.
                 raise MessageException(
-                    f"Problem {description}. {self.label} refused the commit. The file may have "
-                    "changed since Galaxy read it, or the branch may not exist. Try again."
+                    f"Problem {description}. {self.label} refused the commit. GitLab protects the "
+                    "default branch by default, so the token may not be allowed to push to it; "
+                    "otherwise the file may have changed since Galaxy read it, in which case "
+                    "exporting again will pick up the new version."
                 ) from e
             if status == 413:
                 raise MessageException(
