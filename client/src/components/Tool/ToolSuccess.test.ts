@@ -15,6 +15,7 @@ import ToolSuccess from "./ToolSuccess.vue";
 import ToolSuccessOutputs from "./ToolSuccessOutputs.vue";
 import JobHeader from "@/components/JobInformation/JobHeader.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";
+import JobState from "@/components/JobStates/JobState.vue";
 import ToolRecommendation from "@/components/ToolRecommendation.vue";
 
 vi.mock("@/composables/config", () => ({
@@ -64,8 +65,7 @@ const TEST_JOB_RESPONSE = {
 
 // Selectors
 const SELECTORS = {
-    JOB_COUNT_BADGE: ".tool-success-job-count",
-    JOB_DROPDOWN_ITEM: ".job-selection-dropdown .dropdown-item",
+    PAGINATION_ITEM: ".page-item .page-link",
 };
 
 async function mountToolSuccess(latestResponse: Record<string, unknown> | null, currentUser: unknown = null) {
@@ -90,6 +90,8 @@ async function mountToolSuccess(latestResponse: Record<string, unknown> | null, 
         stubs: {
             FontAwesomeIcon: true,
             JobHeader: true,
+            JobState: true,
+            RerunJobButton: true,
             Webhook: true,
             ToolRecommendation: true,
             ToolSuccessOutputs: true,
@@ -142,15 +144,14 @@ describe("ToolSuccess", () => {
             });
         });
 
-        it("renders a single, non-minimal JobHeader for the job", () => {
+        it("renders JobHeader for the job", () => {
             const jobHeader = wrapper.findComponent(JobHeader);
             expect(jobHeader.exists()).toBe(true);
             expect(jobHeader.props("jobId")).toEqual(jobInformationResponse.id);
-            expect(jobHeader.props("minimal")).toBe(false);
         });
 
-        it("does not show the multi-job header or job count badge", () => {
-            expect(wrapper.find(SELECTORS.JOB_COUNT_BADGE).exists()).toBe(false);
+        it("does not show the multi-job pagination header", () => {
+            expect(wrapper.findAll(SELECTORS.PAGINATION_ITEM).length).toBe(0);
         });
     });
 
@@ -191,31 +192,30 @@ describe("ToolSuccess", () => {
             });
         });
 
-        it("shows the tool name and job count", () => {
+        it("shows the tool name and a pagination control for each job", () => {
             expect(wrapper.text()).toContain(TEST_TOOL_NAME);
-            expect(wrapper.find(SELECTORS.JOB_COUNT_BADGE).text()).toContain("2 Jobs Submitted");
+            expect(wrapper.findAll(SELECTORS.PAGINATION_ITEM).length).toBeGreaterThan(0);
         });
 
-        it("has an entry in the job picker dropdown for each job", () => {
-            expect(wrapper.findAll(SELECTORS.JOB_DROPDOWN_ITEM).length).toBe(2);
+        it("does not render JobHeader (JobState/RerunJobButton are shown directly instead)", () => {
+            expect(wrapper.findComponent(JobHeader).exists()).toBe(false);
         });
 
-        it("renders a single, minimal JobHeader for the currently viewed job", () => {
-            const jobHeader = wrapper.findComponent(JobHeader);
-            expect(jobHeader.exists()).toBe(true);
-            expect(jobHeader.props("jobId")).toEqual(jobInformationResponse.id);
-            expect(jobHeader.props("minimal")).toBe(true);
+        it("shows JobState and RerunJobButton for the currently viewed job", () => {
+            const jobState = wrapper.findComponent(JobState);
+            expect(jobState.exists()).toBe(true);
+            expect(jobState.props("jobId")).toEqual(jobInformationResponse.id);
         });
 
-        it("switches the viewed job when navigating to the next job", async () => {
-            const nextButton = wrapper
-                .findAll("button")
-                .filter((btn) => btn.text().includes("Next"))
+        it("switches the viewed job when navigating to the next pagination page", async () => {
+            const pageTwo = wrapper
+                .findAll(SELECTORS.PAGINATION_ITEM)
+                .filter((link) => link.text() === "2")
                 .at(0);
-            await nextButton?.trigger("click");
+            await pageTwo?.trigger("click");
 
-            const jobHeader = wrapper.findComponent(JobHeader);
-            expect(jobHeader.props("jobId")).toEqual(SECOND_JOB.id);
+            const jobState = wrapper.findComponent(JobState);
+            expect(jobState.props("jobId")).toEqual(SECOND_JOB.id);
         });
     });
 });
