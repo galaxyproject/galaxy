@@ -21,7 +21,9 @@ from galaxy.selenium.selenium_keys import (
 
 
 def test_command_is_meta_alias():
-    assert Key.COMMAND is Key.META
+    # Look up by name: mypy narrows Key.COMMAND to its own literal type and
+    # cannot see that it is an alias.
+    assert Key["COMMAND"] is Key.META
     assert MODIFIER_KEYS == {Key.ALT, Key.CONTROL, Key.META, Key.SHIFT}
 
 
