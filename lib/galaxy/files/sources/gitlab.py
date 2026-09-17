@@ -451,6 +451,15 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         context: FilesSourceRuntimeContext[GitLabFileSourceConfiguration],
     ):
         self._require_a_file_inside(target_path, "Exports")
+        # A push is never anonymous, so a writable source with no token cannot export at all.
+        # Saying that here beats letting it travel to the server and come back as a 401 about
+        # credentials, which reads as "your token is wrong" when there is no token to be wrong.
+        if not (context.config.token or "").strip():
+            raise AuthenticationRequired(
+                f"{self.label} has no access token, and exporting to {self.entity_name} requires "
+                f"one: a push is never anonymous. Add a token with write access, or turn off "
+                f"writing to browse and import only."
+            )
         with self._filesystem(context, "writing to", target_path) as (fs, config):
             fs.put_file(native_path, self._to_filesystem_path(target_path, config))
 
