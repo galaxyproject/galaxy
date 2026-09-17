@@ -388,7 +388,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                     # match beyond it is still not found, exactly as on the non-recursive path.
                     entries = self._filter_by_name(entries, query)
                     total = len(entries)
-                return self._paginate(entries, limit, offset), total
+                return self._apply_pagination(entries, limit, offset), total
 
         with self._filesystem(context, "listing", path) as (fs, config):
             fs_path = self._to_filesystem_path(path, config)
@@ -400,7 +400,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 if total > len(entries):
                     self._on_listing_exceeded()
                 matched = self._filter_by_name(entries, query)
-                return self._paginate(matched, limit, offset), len(matched)
+                return self._apply_pagination(matched, limit, offset), len(matched)
 
             if limit is None:
                 # The window has to start where the caller asked. Reading from zero and slicing
@@ -498,16 +498,6 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
             f"the file browser produces (group/project{ROOT_MARKER}/folder/file). The top level "
             f"of this file source lists the {self.entity_name}s themselves and cannot hold files."
         )
-
-    def _paginate(self, entries: list[AnyRemoteEntry], limit: int | None, offset: int | None) -> list[AnyRemoteEntry]:
-        """Apply the caller's window, including an offset given without a limit.
-
-        The shared helper returns the list untouched unless a limit is set, so an offset on its
-        own is dropped and every page comes back as the first one while the total says otherwise.
-        """
-        if limit is None and offset:
-            return entries[offset:]
-        return self._apply_pagination(entries, limit, offset)
 
     def _list_recursive(
         self, fs: "GitLabARCFileSystem", path: str, config: GitLabFileSourceConfiguration
