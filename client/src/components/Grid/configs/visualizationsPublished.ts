@@ -1,42 +1,33 @@
 import { faEye } from "@fortawesome/free-solid-svg-icons";
+import { useEventBus } from "@vueuse/core";
 
-import { GalaxyApi } from "@/api";
+import { loadVisualizations, type VisualizationSortByLiteral } from "@/api/visualizations";
 import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
-import { withPrefix } from "@/utils/redirect";
-import { rethrowSimple } from "@/utils/simple-error";
 
-import { type FieldArray, type GridConfig } from "./types";
+import type { FieldArray, GridConfig } from "./types";
+
+const { emit } = useEventBus<string>("grid-router-push");
 
 /**
  * Local types
  */
-type SortKeyLiteral = "create_time" | "title" | "update_time" | "username" | undefined;
 type VisualizationEntry = Record<string, unknown>;
 
 /**
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { response, data, error } = await GalaxyApi().GET("/api/visualizations", {
-        params: {
-            query: {
-                limit,
-                offset,
-                search,
-                sort_by: sort_by as SortKeyLiteral,
-                sort_desc,
-                show_own: false,
-                show_published: true,
-                show_shared: true,
-            },
-        },
+    const { data, totalMatches } = await loadVisualizations({
+        limit,
+        offset,
+        search,
+        sortBy: sort_by as VisualizationSortByLiteral,
+        sortDesc: sort_desc,
+        showOwn: false,
+        showPublished: true,
+        showShared: true,
     });
 
-    if (error) {
-        rethrowSimple(error);
-    }
-
-    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0");
     return [data, totalMatches];
 }
 
@@ -54,11 +45,9 @@ const fields: FieldArray = [
                 title: "View",
                 icon: faEye,
                 handler: (data: VisualizationEntry) => {
-                    if (data.type === "trackster") {
-                        window.location.href = withPrefix(`/visualization/${data.type}?id=${data.id}`);
-                    } else {
-                        window.location.href = withPrefix(`/plugins/visualizations/${data.type}/saved?id=${data.id}`);
-                    }
+                    emit(`/visualizations/display?visualization=${data.type}&visualization_id=${data.id}`, {
+                        title: data.title,
+                    });
                 },
             },
         ],
@@ -71,7 +60,10 @@ const fields: FieldArray = [
     {
         key: "username",
         title: "Owner",
-        type: "text",
+        type: "link",
+        handler: (data: VisualizationEntry) => {
+            emit(`/visualizations/list_published?f-username=${data.username}`);
+        },
     },
     {
         key: "tags",
@@ -98,6 +90,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
         handler: contains("tag", "tag", expandNameTag),
         menuItem: true,
     },
+    user: { placeholder: "user", type: String, handler: contains("username"), menuItem: true },
 };
 
 /**

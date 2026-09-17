@@ -1,24 +1,16 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import type { PublishedItem } from "./models/PublishedItem";
+
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
-interface Item {
-    name: string;
-    model_class?: string;
-    owner?: string;
-    username?: string;
-    email_hash?: string;
-    author_deleted?: boolean;
-    tags?: string[];
-    title?: string;
-}
-
 interface Props {
-    item?: Item;
+    item?: PublishedItem;
+    overridePath?: string;
 }
 
 const props = defineProps<Props>();
@@ -46,7 +38,7 @@ const owner = computed(() => {
 });
 
 const gravatarSource = computed(() => `https://secure.gravatar.com/avatar/${props.item?.email_hash}?d=identicon`);
-const pluralPath = computed(() => plural.value.toLowerCase());
+const pluralPath = computed(() => props.overridePath ?? plural.value.toLowerCase());
 const publishedByUser = computed(() => `/${pluralPath.value}/list_published?f-username=${owner.value}`);
 const urlAll = computed(() => `/${pluralPath.value}/list_published`);
 </script>
@@ -55,7 +47,7 @@ const urlAll = computed(() => `/${pluralPath.value}/list_published`);
     <div id="columns" class="d-flex">
         <ActivityBar />
 
-        <div id="center" class="m-3 w-100 overflow-auto d-flex flex-column">
+        <div id="center" class="my-3 px-3 w-100 overflow-auto d-flex flex-column">
             <slot />
         </div>
 

@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import type { DirectiveMode } from "./directives";
+
+import ExternalLink from "../ExternalLink.vue";
 import DirectiveHelpSection from "./DirectiveHelpSection.vue";
 
 interface MarkdownHelpProps {
-    mode: "report" | "page";
+    mode: DirectiveMode;
 }
 
 const props = defineProps<MarkdownHelpProps>();
@@ -13,7 +16,7 @@ const page = computed(() => props.mode == "page");
 </script>
 
 <template>
-    <div>
+    <div class="p-2">
         <h3>Overview</h3>
         <p>
             <span v-if="page"> This Markdown document will be used to generate your Galaxy Page. </span>
@@ -24,7 +27,7 @@ const page = computed(() => props.mode == "page");
 
         <p>
             For an overview of standard Markdown visit the
-            <a href="https://commonmark.org/help/tutorial/">commonmark.org tutorial</a>.
+            <ExternalLink href="https://commonmark.org/help/tutorial/">commonmark.org tutorial</ExternalLink>.
         </p>
 
         <p>
@@ -98,7 +101,7 @@ history_dataset_as_image(output=normalized_result_plot)
 
         <p v-if="page">
             These commands reference a workflow by an object ID. The following example would display a representation of
-            the workflow in the resulting Galaxy Page:
+            the workflow in the resulting document:
         </p>
         <p v-else>These commands reference the current workflow and do not require an input for the most part.</p>
 

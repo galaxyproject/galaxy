@@ -1,22 +1,19 @@
 <script setup lang="ts">
-import {
-    BAlert,
-    BButton,
-    BForm,
-    BFormGroup,
-    BFormInput,
-    BFormInvalidFeedback,
-    BFormRadio,
-    BModal,
-    BSpinner,
-} from "bootstrap-vue";
+import { BAlert, BFormRadioGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { type HistorySummary, userOwnsHistory } from "@/api";
+import type { ComponentColor } from "@/components/BaseComponents/componentVariants";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
+
+import GForm from "@/components/BaseComponents/Form/GForm.vue";
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
+import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
     history: HistorySummary;
@@ -29,6 +26,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "update:show-modal", value: boolean): void;
+    (e: "ok"): void;
 }>();
 
 const userStore = useUserStore();
@@ -41,14 +39,19 @@ const copyAll = ref(false);
 const loading = ref(false);
 const localShowModal = ref(props.showModal);
 
+const datasetCopyOptions = [
+    { text: "Copy only the active, non-deleted datasets.", value: false },
+    { text: "Copy all datasets including deleted ones.", value: true },
+];
+
 const title = computed(() => {
     return `Copying History: ${props.history.name}`;
 });
 const saveTitle = computed(() => {
     return loading.value ? "Saving..." : "Copy History";
 });
-const saveVariant = computed(() => {
-    return loading.value ? "info" : formValid.value ? "primary" : "secondary";
+const saveColor = computed<ComponentColor>(() => {
+    return loading.value ? "grey" : formValid.value ? "blue" : "grey";
 });
 const isOwner = computed(() => {
     return userOwnsHistory(currentUser.value, props.history);
@@ -67,13 +70,13 @@ watch(
     () => props.showModal,
     (newVal) => {
         localShowModal.value = newVal;
-    }
+    },
 );
 watch(
     () => localShowModal.value,
     (newVal) => {
         emit("update:show-modal", newVal);
-    }
+    },
 );
 watch(
     () => props.history,
@@ -82,19 +85,32 @@ watch(
     },
     {
         immediate: true,
-    }
+    },
 );
 
-async function copy(close: () => void) {
+async function copy() {
+    if (loading.value || !formValid.value) {
+        return;
+    }
     loading.value = true;
     await historyStore.copyHistory(props.history, name.value, copyAll.value);
     loading.value = false;
-    close();
+    localShowModal.value = false;
+    emit("ok");
 }
 </script>
 
 <template>
-    <BModal v-model="localShowModal" v-bind="$attrs" :title="title" title-tag="h2" v-on="$listeners">
+    <GModal
+        :show.sync="localShowModal"
+        size="small"
+        :title="title"
+        confirm
+        :ok-text="localize(saveTitle)"
+        :ok-color="saveColor"
+        :ok-disabled="loading || !formValid"
+        :close-on-ok="false"
+        @ok="copy">
         <transition name="fade">
             <BAlert v-localize :show="isAnonymous" variant="warning">
                 As an anonymous user, unless you log in or register, you will lose your current history after copying
@@ -103,41 +119,32 @@ async function copy(close: () => void) {
         </transition>
 
         <transition name="fade">
-            <div v-if="loading" class="d-flex justify-content-center mb-3">
-                <BSpinner label="Copying History..." />
-            </div>
+            <BAlert v-if="loading" show>
+                <LoadingSpan message="Copying History" />
+            </BAlert>
         </transition>
 
         <transition>
-            <BForm v-if="!loading">
-                <BFormGroup label="Enter a title for the new history" label-for="copy-modal-title">
-                    <BFormInput id="copy-modal-title" v-model="name" :state="newNameValid" required />
+            <GForm v-if="!loading" @submit.native.prevent="copy">
+                <GFormLabel
+                    title="Enter a title for the new history"
+                    invalid-feedback="Please enter a valid history title."
+                    :state="newNameValid">
+                    <GFormInput v-model="name" :state="newNameValid" required />
+                </GFormLabel>
 
-                    <BFormInvalidFeedback :state="newNameValid">
-                        Please enter a valid history title.
-                    </BFormInvalidFeedback>
-                </BFormGroup>
-
-                <BFormGroup label="Choose which datasets from the original history to include.">
-                    <BFormRadio v-model="copyAll" :value="false">
-                        Copy only the active, non-deleted datasets.
-                    </BFormRadio>
-
-                    <BFormRadio v-model="copyAll" :value="true"> Copy all datasets including deleted ones. </BFormRadio>
-                </BFormGroup>
-            </BForm>
+                <GFormLabel title="Choose which datasets from the original history to include.">
+                    <BFormRadioGroup
+                        v-model="copyAll"
+                        :options="datasetCopyOptions"
+                        name="copy-datasets-options"
+                        stacked />
+                </GFormLabel>
+            </GForm>
         </transition>
-
-        <template v-slot:modal-footer="{ ok, cancel }">
-            <BButton class="mr-3" @click="cancel()"> Cancel </BButton>
-
-            <BButton :variant="saveVariant" :disabled="loading || !formValid" @click="copy(ok)">
-                {{ localize(saveTitle) }}
-            </BButton>
-        </template>
-    </BModal>
+    </GModal>
 </template>
 
 <style lang="scss">
-@import "scss/transitions.scss";
+@import "@/style/scss/transitions.scss";
 </style>

@@ -4,12 +4,7 @@ spaln Composite Dataset
 
 import logging
 import os.path
-from typing import (
-    Callable,
-    Dict,
-    List,
-    Optional,
-)
+from collections.abc import Callable
 
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.metadata import MetadataElement
@@ -18,6 +13,7 @@ from galaxy.datatypes.protocols import (
     DatasetProtocol,
     HasExtraFilesAndMetadata,
 )
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.util import smart_str
 
 log = logging.getLogger(__name__)
@@ -118,10 +114,10 @@ class _SpalnDb(Data):
         trans,
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
-        offset: Optional[int] = None,
-        ck_size: Optional[int] = None,
+        filename: str | None = None,
+        to_ext: str | None = None,
+        offset: int | None = None,
+        ck_size: int | None = None,
         **kwd,
     ):
         """
@@ -153,7 +149,7 @@ class _SpalnDb(Data):
         msg = ""
         try:
             # Try to use any text recorded in the dummy index file:
-            with open(dataset.get_file_name(), encoding="utf-8") as handle:
+            with open(dataset.get_file_name(auth=ObjectStoreAuth(user=trans.user)), encoding="utf-8") as handle:
                 msg = handle.read().strip()
         except Exception:
             pass
@@ -166,12 +162,12 @@ class _SpalnDb(Data):
         )
 
     @staticmethod
-    def merge(split_files: List[str], output_file: str) -> None:
+    def merge(split_files: list[str], output_file: str) -> None:
         """Merge spaln databases (not implemented)."""
         raise NotImplementedError("Merging spaln databases is not possible")
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """Split a spaln database (not implemented)."""
         if split_params is None:
             return None

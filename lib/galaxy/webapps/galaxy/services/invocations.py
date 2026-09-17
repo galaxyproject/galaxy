@@ -2,13 +2,9 @@ import json
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
-    Tuple,
 )
 
-from pydantic import Field
-
+from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import (
     prepare_invocation_download,
     write_invocation_to,
@@ -19,9 +15,11 @@ from galaxy.exceptions import (
     ObjectNotFound,
 )
 from galaxy.managers.context import (
+    ProvidesAppContext,
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.export_tracker import StoreExportTracker
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.jobs import (
     fetch_job_states,
@@ -43,6 +41,7 @@ from galaxy.schema.invocation import (
     InvocationSerializationParams,
     InvocationSerializationView,
     InvocationStep,
+    ReportInvocationErrorPayload,
     WorkflowInvocationRequestModel,
     WorkflowInvocationResponse,
 )
@@ -50,7 +49,8 @@ from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
     BcoGenerationParametersMixin,
-    InvocationIndexQueryPayload,
+    ExportObjectType,
+    InvocationIndexPayload,
     StoreExportPayload,
     WriteStoreToPayload,
 )
@@ -61,18 +61,14 @@ from galaxy.schema.tasks import (
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
     ConsumesModelStores,
     ensure_celery_tasks_enabled,
     model_store_storage_target,
     ServiceBase,
 )
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
-
-
-class InvocationIndexPayload(InvocationIndexQueryPayload):
-    instance: bool = Field(default=False, description="Is provided workflow id for Workflow instead of StoredWorkflow?")
 
 
 class PrepareStoreDownloadPayload(StoreExportPayload, BcoGenerationParametersMixin):
@@ -90,15 +86,20 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         histories_manager: HistoryManager,
         workflows_manager: WorkflowsManager,
         short_term_storage_allocator: ShortTermStorageAllocator,
+        export_tracker: StoreExportTracker,
     ):
         super().__init__(security=security)
         self._histories_manager = histories_manager
         self._workflows_manager = workflows_manager
         self.short_term_storage_allocator = short_term_storage_allocator
+        self._export_tracker = export_tracker
 
     def index(
-        self, trans, invocation_payload: InvocationIndexPayload, serialization_params: InvocationSerializationParams
-    ) -> Tuple[List[WorkflowInvocationResponse], int]:
+        self,
+        trans: ProvidesHistoryContext,
+        invocation_payload: InvocationIndexPayload,
+        serialization_params: InvocationSerializationParams,
+    ) -> tuple[list[WorkflowInvocationResponse], int]:
         workflow_id = invocation_payload.workflow_id
         if invocation_payload.instance:
             instance = invocation_payload.instance
@@ -138,27 +139,29 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         invocation_dict = self.serialize_workflow_invocations(invocations, serialization_params)
         return invocation_dict, total_matches
 
-    def show(self, trans, invocation_id, serialization_params, eager=False):
-        wfi = self._workflows_manager.get_invocation(
-            trans, invocation_id, eager, check_ownership=False, check_accessible=True
-        )
+    def show(self, trans: ProvidesUserContext, invocation_id, serialization_params):
+        wfi = self._workflows_manager.get_invocation(trans, invocation_id, check_ownership=False, check_accessible=True)
         return self.serialize_workflow_invocation(wfi, serialization_params)
 
-    def as_request(self, trans: ProvidesUserContext, invocation_id) -> WorkflowInvocationRequestModel:
-        wfi = self._workflows_manager.get_invocation(
-            trans, invocation_id, True, check_ownership=True, check_accessible=True
+    def get_invocation(self, trans: ProvidesUserContext, invocation_id) -> WorkflowInvocation:
+        """Get the raw WorkflowInvocation model object."""
+        return self._workflows_manager.get_invocation(
+            trans, invocation_id, check_ownership=False, check_accessible=True
         )
+
+    def as_request(self, trans: ProvidesUserContext, invocation_id) -> WorkflowInvocationRequestModel:
+        wfi = self._workflows_manager.get_invocation(trans, invocation_id, check_ownership=True, check_accessible=True)
         return self.serialize_workflow_invocation_to_request(trans, wfi)
 
-    def cancel(self, trans, invocation_id, serialization_params):
+    def cancel(self, trans: ProvidesUserContext, invocation_id, serialization_params):
         wfi = self._workflows_manager.request_invocation_cancellation(trans, invocation_id)
         return self.serialize_workflow_invocation(wfi, serialization_params)
 
-    def show_invocation_report(self, trans, invocation_id, format="json"):
+    def show_invocation_report(self, trans: ProvidesUserContext, invocation_id, format="json"):
         wfi_report = self._workflows_manager.get_invocation_report(trans, invocation_id, format=format)
         return wfi_report
 
-    def show_invocation_step(self, trans, step_id) -> InvocationStep:
+    def show_invocation_step(self, trans: ProvidesUserContext, step_id) -> InvocationStep:
         wfi_step = self._workflows_manager.get_invocation_step(
             trans, step_id, check_ownership=False, check_accessible=True
         )
@@ -187,11 +190,11 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             metrics_dict["step_label"] = step_label
         return metrics_dict_list
 
-    def update_invocation_step(self, trans, step_id, action):
+    def update_invocation_step(self, trans: ProvidesHistoryContext, step_id, action) -> InvocationStep:
         wfi_step = self._workflows_manager.update_invocation_step(trans, step_id, action)
         return self.serialize_workflow_invocation_step(wfi_step)
 
-    def show_invocation_step_jobs_summary(self, trans, invocation_id) -> List[Dict[str, Any]]:
+    def show_invocation_step_jobs_summary(self, trans: ProvidesAppContext, invocation_id) -> list[dict[str, Any]]:
         ids = []
         types = []
         for job_source_type, job_source_id, _ in invocation_job_source_iter(trans.sa_session, invocation_id):
@@ -199,18 +202,18 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             types.append(job_source_type)
         return fetch_job_states(trans.sa_session, ids, types)
 
-    def show_invocation_jobs_summary(self, trans, invocation_id) -> Dict[str, Any]:
+    def show_invocation_jobs_summary(self, trans: ProvidesAppContext, invocation_id) -> dict[str, Any]:
         ids = [invocation_id]
         types = ["WorkflowInvocation"]
         return fetch_job_states(trans.sa_session, ids, types)[0]
 
     def prepare_store_download(
-        self, trans, invocation_id: DecodedDatabaseIdField, payload: PrepareStoreDownloadPayload
+        self, trans: SessionRequestContext, invocation_id: DecodedDatabaseIdField, payload: PrepareStoreDownloadPayload
     ) -> AsyncFile:
         ensure_celery_tasks_enabled(trans.app.config)
         model_store_format = payload.model_store_format
         workflow_invocation = self._workflows_manager.get_invocation(
-            trans, invocation_id, eager=True, check_ownership=False, check_accessible=True
+            trans, invocation_id, check_ownership=False, check_accessible=True
         )
         if not workflow_invocation:
             raise ObjectNotFound()
@@ -223,22 +226,32 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             invocation_name,
             model_store_format,
         )
+        export_association = self._export_tracker.create_export_association(
+            object_id=workflow_invocation.id, object_type=ExportObjectType.INVOCATION
+        )
         request = GenerateInvocationDownload(
             short_term_storage_request_id=short_term_storage_target.request_id,
             user=trans.async_request_user,
             invocation_id=workflow_invocation.id,
             galaxy_url=trans.request.url_path,
+            export_association_id=export_association.id,
             **payload.model_dump(),
         )
         result = prepare_invocation_download.delay(request=request, task_user_id=getattr(trans.user, "id", None))
-        return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=async_task_summary(result))
+        task_summary = async_task_summary(result)
+        export_association.task_uuid = task_summary.id
+        trans.sa_session.commit()
+        return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=task_summary)
 
     def write_store(
-        self, trans, invocation_id: DecodedDatabaseIdField, payload: WriteInvocationStoreToPayload
+        self,
+        trans: SessionRequestContext,
+        invocation_id: DecodedDatabaseIdField,
+        payload: WriteInvocationStoreToPayload,
     ) -> AsyncTaskResultSummary:
         ensure_celery_tasks_enabled(trans.app.config)
         workflow_invocation = self._workflows_manager.get_invocation(
-            trans, invocation_id, eager=True, check_ownership=False, check_accessible=True
+            trans, invocation_id, check_ownership=False, check_accessible=True
         )
         if not workflow_invocation:
             raise ObjectNotFound()
@@ -251,6 +264,24 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         result = write_invocation_to.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         rval = async_task_summary(result)
         return rval
+
+    def report_error(
+        self, trans: ProvidesUserContext, invocation_id: DecodedDatabaseIdField, payload: ReportInvocationErrorPayload
+    ):
+        workflow_invocation = self._workflows_manager.get_invocation(
+            trans, invocation_id, check_ownership=False, check_accessible=True
+        )
+        email = payload.email
+        if not email and not trans.anonymous:
+            email = trans.user.email
+        trans.app.error_reports.default_error_plugin.submit_invocation_report(
+            invocation=workflow_invocation,
+            user_submission=True,
+            user=trans.user,
+            email=email,
+            message=payload.message,
+            trans=trans,
+        )
 
     def serialize_workflow_invocation(
         self,
@@ -317,7 +348,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         preferred_object_store_id = None
         preferred_intermediate_object_store_id = None
         preferred_outputs_object_store_id = None
-        step_param_map: Dict[str, Dict] = {}
+        step_param_map: dict[str, dict] = {}
         for parameter in invocation.input_parameters:
             parameter_type = parameter.type
 

@@ -2,7 +2,6 @@
 
 import collections
 import os
-import tempfile
 
 from galaxy_test.base.populators import (
     DatasetPopulator,
@@ -72,7 +71,7 @@ class TestDefaultJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        cls.jobs_directory = tempfile.mkdtemp()
+        cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = SIMPLE_JOB_CONFIG_FILE  # Ensure no Docker for these tests
 
@@ -125,7 +124,7 @@ class TestEmbeddedPulsarDefaultJobEnvironmentIntegration(BaseJobEnvironmentInteg
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        cls.jobs_directory = tempfile.mkdtemp()
+        cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = EMBEDDED_PULSAR_JOB_CONFIG_FILE
 
@@ -155,7 +154,7 @@ class TestTmpDirToTrueJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTes
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        cls.jobs_directory = tempfile.mkdtemp()
+        cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = SETS_TMP_DIR_TO_TRUE_JOB_CONFIG
 
@@ -173,7 +172,7 @@ class TestTmpDirAsShellCommandJobEnvironmentIntegration(BaseJobEnvironmentIntegr
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        cls.jobs_directory = tempfile.mkdtemp()
+        cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = SETS_TMP_DIR_AS_EXPRESSION_JOB_CONFIG
 
@@ -191,8 +190,8 @@ class TestSharedHomeJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestC
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        cls.jobs_directory = tempfile.mkdtemp()
-        cls.shared_home_directory = tempfile.mkdtemp()
+        cls.jobs_directory = cls._test_driver.mkdtemp()
+        cls.shared_home_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = SIMPLE_JOB_CONFIG_FILE  # Ensure no Docker for these tests
         config["shared_home_dir"] = cls.shared_home_directory
@@ -228,7 +227,7 @@ class TestJobIOEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        cls.jobs_directory = tempfile.mkdtemp()
+        cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = IO_INJECTION_JOB_CONFIG_FILE
 

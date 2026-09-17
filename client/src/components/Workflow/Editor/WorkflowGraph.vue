@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { useElementBounding, useScroll } from "@vueuse/core";
+import { useElementBounding, useEventListener, useScroll } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, type PropType, provide, reactive, type Ref, ref, watch, watchEffect } from "vue";
 
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useFocusedNodes } from "@/components/Graph/composables/useFocusedNodes";
+import { useD3Zoom } from "@/composables/d3Zoom";
+import { useViewportBoundingBox } from "@/composables/viewportBoundingBox";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
+import type { Vector } from "@/utils/geometry";
 
-import { useD3Zoom } from "./composables/d3Zoom";
-import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
 import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
-import type { Vector } from "./modules/geometry";
 import type { OutputTerminals } from "./modules/terminals";
 import { maxZoom, minZoom } from "./modules/zoomLevels";
 
@@ -21,47 +22,84 @@ import WorkflowComment from "./Comments/WorkflowComment.vue";
 import BoxSelectPreview from "./Tools/BoxSelectPreview.vue";
 import InputCatcher from "./Tools/InputCatcher.vue";
 import ToolBar from "./Tools/ToolBar.vue";
+import LoadingOverlay from "@/components/Common/LoadingOverlay.vue";
+import ZoomControl from "@/components/Graph/ZoomControl.vue";
+import AreaHighlight from "@/components/Workflow/Editor/AreaHighlight.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
-import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 
 const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo", "stepClicked"]);
 const props = defineProps({
     steps: { type: Object as PropType<{ [index: string]: Step }>, required: true },
     datatypesMapper: { type: DatatypesMapperModel, required: true },
-    highlightId: { type: Number as PropType<number | null>, default: null },
     scrollToId: { type: Number as PropType<number | null>, default: null },
     readonly: { type: Boolean, default: false },
     initialPosition: { type: Object as PropType<{ x: number; y: number }>, default: () => ({ x: 50, y: 20 }) },
     isInvocation: { type: Boolean, default: false },
     showMinimap: { type: Boolean, default: true },
     showZoomControls: { type: Boolean, default: true },
+    fixedHeight: { type: Number, default: undefined },
+    populatedInputs: { type: Boolean, default: false },
+    loading: { type: Boolean, default: false },
+    detailedView: { type: Boolean, default: false },
 });
 
-const { stateStore, stepStore } = useWorkflowStores();
-const { scale, activeNodeId, draggingPosition, draggingTerminal } = storeToRefs(stateStore);
+const { stateStore, stepStore, connectionStore } = useWorkflowStores();
+const { scale, activeNodeId, draggingPosition, draggingTerminal, pendingHighlight } = storeToRefs(stateStore);
+
+const { focusedNodeIds } = useFocusedNodes(activeNodeId, {
+    upstream(id) {
+        const result: number[] = [];
+        for (const conn of connectionStore.getConnectionsForStep(id)) {
+            if (conn.input.stepId === id) {
+                result.push(conn.output.stepId);
+            }
+        }
+        return result;
+    },
+    downstream(id) {
+        const result: number[] = [];
+        for (const conn of connectionStore.getConnectionsForStep(id)) {
+            if (conn.output.stepId === id) {
+                result.push(conn.input.stepId);
+            }
+        }
+        return result;
+    },
+});
 const canvas: Ref<HTMLElement | null> = ref(null);
 
 const elementBounding = useElementBounding(canvas, { windowResize: false, windowScroll: false });
 const scroll = useScroll(canvas);
-const { transform, panBy, setZoom, moveTo } = useD3Zoom(
-    scale.value,
-    minZoom,
-    maxZoom,
-    canvas,
-    scroll,
-    props.initialPosition
+const {
+    transform,
+    panBy,
+    setZoom,
+    moveTo,
+    setTransform: d3SetTransform,
+} = useD3Zoom(scale.value, minZoom, maxZoom, canvas, props.initialPosition);
+
+watch(
+    () => transform.value,
+    () => {
+        stateStore.position[0] = transform.value.x;
+        stateStore.position[1] = transform.value.y;
+    },
 );
 
 const { viewportBoundingBox, updateViewportBaseBoundingBox } = useViewportBoundingBox(
     elementBounding,
     scale,
-    transform
+    transform,
 );
 const { getWorkflowBoundingBox } = useWorkflowBoundingBox();
 
 function fitWorkflow(minimumFitZoom = 0.5, maximumFitZoom = 1.0, padding = 50.0) {
+    if (!Object.keys(props.steps).length) {
+        // If there are no steps, we cannot fit the workflow.
+        return;
+    }
     const aabb = getWorkflowBoundingBox();
     aabb.expand(padding);
 
@@ -102,7 +140,7 @@ watch(
             }
             emit("scrollTo");
         }
-    }
+    },
 );
 
 function zoomTo(zoomLevel: number, panTo: XYPosition | null = null, origin?: Vector) {
@@ -132,9 +170,49 @@ function onDeactivate() {
     stateStore.activeNodeId = null;
 }
 
+/**
+ * Max total pixel movement (|dx| + |dy|) between pointerdown and pointerup
+ * that still counts as a "click" rather than a pan/drag.
+ */
+const mouseMovementThreshold = 9;
+
+/** The position of the last pointerdown event, or null if there hasn't been one yet. */
+let canvasPointerDownPos: { x: number; y: number } | null = null;
+
+// capture: true makes these fire in the capture phase, before D3 zoom's bubble-phase
+// listeners on the same element — so D3 cannot stopImmediatePropagation us out.
+useEventListener(
+    canvas,
+    "pointerdown",
+    (e: PointerEvent) => {
+        canvasPointerDownPos = { x: e.clientX, y: e.clientY };
+    },
+    { capture: true },
+);
+
+useEventListener(
+    canvas,
+    "pointerup",
+    (e: PointerEvent) => {
+        if (!canvasPointerDownPos) {
+            return;
+        }
+        const dx = Math.abs(e.clientX - canvasPointerDownPos.x);
+        const dy = Math.abs(e.clientY - canvasPointerDownPos.y);
+        canvasPointerDownPos = null;
+        // walk up the DOM from the release target — if we hit a node, this was a node click
+        const clickedOnNode = !!(e.target as HTMLElement).closest(".workflow-node");
+        // only deactivate on a clean click (no pan) on the canvas background
+        if (dx + dy <= mouseMovementThreshold && !clickedOnNode) {
+            onDeactivate();
+        }
+    },
+    { capture: true },
+);
+
 watch(
     () => transform.value.k,
-    () => (stateStore.scale = transform.value.k)
+    () => (stateStore.scale = transform.value.k),
 );
 
 watch(transform, () => emit("transform", transform.value));
@@ -149,15 +227,33 @@ const canvasStyle = computed(() => {
 const { commentStore } = useWorkflowStores();
 const { comments } = storeToRefs(commentStore);
 
+const areaHighlight = ref<InstanceType<typeof AreaHighlight>>();
+
+watch(pendingHighlight, (pending) => {
+    if (pending) {
+        pendingHighlight.value = null;
+        const centerPosition = {
+            x: pending.bounds.x + pending.bounds.width / 2.0,
+            y: pending.bounds.y + pending.bounds.height / 2.0,
+        };
+        areaHighlight.value?.show(pending.bounds);
+        if (pending.moveTo !== false) {
+            moveTo(centerPosition);
+        }
+    }
+});
+
 defineExpose({
     fitWorkflow,
     setZoom,
     moveTo,
+    setTransform: d3SetTransform,
 });
 </script>
 
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
+        <LoadingOverlay v-if="props.loading" />
         <ZoomControl
             v-if="props.showZoomControls"
             :zoom-level="scale"
@@ -169,7 +265,7 @@ defineExpose({
             id="canvas-container"
             ref="canvas"
             class="canvas-content"
-            :class="props.isInvocation ? 'fixed-window-height' : 'h-100'"
+            :style="{ height: props.fixedHeight ? `${props.fixedHeight}vh` : '100%' }"
             @drop.prevent
             @dragover.prevent>
             <AdaptiveGrid
@@ -182,7 +278,8 @@ defineExpose({
                 <WorkflowEdges
                     :transform="transform"
                     :dragging-terminal="draggingTerminal"
-                    :dragging-connection="draggingPosition" />
+                    :dragging-connection="draggingPosition"
+                    :focused-node-ids="focusedNodeIds" />
                 <WorkflowNode
                     v-for="(step, key) in steps"
                     :id="step.id"
@@ -196,7 +293,9 @@ defineExpose({
                     :scroll="scroll"
                     :scale="scale"
                     :readonly="readonly"
-                    :is-invocation="props.isInvocation"
+                    :is-invocation="props.isInvocation && (!props.detailedView || activeNodeId !== step.id)"
+                    :populated-inputs="props.populatedInputs"
+                    :is-out-of-focus="focusedNodeIds !== null && !focusedNodeIds.has(step.id)"
                     @pan-by="panBy"
                     @stopDragging="onStopDragging"
                     @onDragConnector="onDragConnector"
@@ -212,6 +311,7 @@ defineExpose({
                     :readonly="readonly"
                     :root-offset="elementBounding"
                     @pan-by="panBy" />
+                <AreaHighlight ref="areaHighlight" />
             </div>
         </div>
         <WorkflowMinimap
@@ -226,7 +326,7 @@ defineExpose({
     </div>
 </template>
 
-<style scoped land="scss">
+<style scoped lang="scss">
 .workflow-canvas {
     position: relative;
 
@@ -236,11 +336,6 @@ defineExpose({
         left: 0px;
         top: 0px;
         overflow: hidden;
-
-        /* TODO: w/out this, canvas height = 0 when width goes beyond a point (invocation graph) */
-        &.fixed-window-height {
-            height: 60vh;
-        }
     }
 
     .node-area {

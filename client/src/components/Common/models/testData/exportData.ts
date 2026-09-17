@@ -1,8 +1,4 @@
-import {
-    type ExportObjectRequestMetadata,
-    type ExportObjectResultMetadata,
-    type ObjectExportTaskResponse,
-} from "@/api";
+import type { ExportObjectRequestMetadata, ExportObjectResultMetadata, ObjectExportTaskResponse } from "@/api";
 import { ExportRecordModel } from "@/components/Common/models/exportRecordModel";
 
 const PAST_EXPORT_DATE = new Date("11 November 2022 14:48 UTC").toISOString();

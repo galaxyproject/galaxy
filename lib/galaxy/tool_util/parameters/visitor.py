@@ -1,21 +1,15 @@
+from collections.abc import Iterable
 from typing import (
     Any,
     cast,
-    Dict,
-    Iterable,
-    List,
-    Optional,
     TypeVar,
-    Union,
 )
 
 from typing_extensions import Protocol
 
-from .models import (
+from galaxy.tool_util_models.parameters import (
     ConditionalParameterModel,
     ConditionalWhen,
-    RepeatParameterModel,
-    SectionParameterModel,
     simple_input_models,
     ToolParameterBundle,
     ToolParameterT,
@@ -45,7 +39,7 @@ def visit_input_values(
     tool_state: ToolState,
     callback: Callback,
     no_replacement_value=VISITOR_NO_REPLACEMENT,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return _visit_input_values(
         simple_input_models(input_models.parameters),
         tool_state.input_state,
@@ -56,32 +50,29 @@ def visit_input_values(
 
 def _visit_input_values(
     input_models: Iterable[ToolParameterT],
-    input_values: Dict[str, Any],
+    input_values: dict[str, Any],
     callback: Callback,
     no_replacement_value=VISITOR_NO_REPLACEMENT,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
 
-    def _callback(name: str, old_values: Dict[str, Any], new_values: Dict[str, Any]):
+    def _callback(name: str, old_values: dict[str, Any], new_values: dict[str, Any]):
         input_value = old_values.get(name, VISITOR_UNDEFINED)
         if input_value is VISITOR_UNDEFINED:
             return
-        replacement = callback(model, input_value)
-        if replacement != no_replacement_value:
+        if (replacement := callback(model, input_value)) != no_replacement_value:
             new_values[name] = replacement
         else:
             new_values[name] = input_value
 
-    new_input_values: Dict[str, Any] = {}
+    new_input_values: dict[str, Any] = {}
     for model in input_models:
         name = model.name
-        parameter_type = model.parameter_type
         input_value = input_values.get(name, VISITOR_UNDEFINED)
         if input_value is VISITOR_UNDEFINED:
             continue
 
-        if parameter_type == "gx_repeat":
-            repeat_parameter = cast(RepeatParameterModel, model)
-            repeat_parameters = repeat_parameter.parameters
+        if model.parameter_type == "gx_repeat":
+            repeat_parameters = model.parameters
             repeat_values = cast(list, input_value)
             new_repeat_values = []
             for repeat_instance_values in repeat_values:
@@ -91,21 +82,19 @@ def _visit_input_values(
                     )
                 )
             new_input_values[name] = new_repeat_values
-        elif parameter_type == "gx_section":
-            section_parameter = cast(SectionParameterModel, model)
-            section_parameters = section_parameter.parameters
+        elif model.parameter_type == "gx_section":
+            section_parameters = model.parameters
             section_values = cast(dict, input_value)
             new_section_values = _visit_input_values(
                 section_parameters, section_values, callback, no_replacement_value=no_replacement_value
             )
             new_input_values[name] = new_section_values
-        elif parameter_type == "gx_conditional":
-            conditional_parameter = cast(ConditionalParameterModel, model)
-            test_parameter = conditional_parameter.test_parameter
+        elif model.parameter_type == "gx_conditional":
+            test_parameter = model.test_parameter
             test_parameter_name = test_parameter.name
 
             conditional_values = cast(dict, input_value)
-            when: ConditionalWhen = _select_which_when(conditional_parameter, conditional_values)
+            when: ConditionalWhen = _select_which_when(model, conditional_values)
             new_conditional_values = _visit_input_values(
                 when.parameters, conditional_values, callback, no_replacement_value=no_replacement_value
             )
@@ -123,8 +112,6 @@ def _select_which_when(conditional: ConditionalParameterModel, state: dict) -> C
     explicit_test_value = state.get(test_parameter_name)
     test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
     for when in conditional.whens:
-        print(when.discriminator)
-        print(type(when.discriminator))
         if test_value is None and when.is_default_when:
             return when
         elif test_value == when.discriminator:
@@ -133,27 +120,27 @@ def _select_which_when(conditional: ConditionalParameterModel, state: dict) -> C
         raise Exception(f"Invalid conditional test value ({explicit_test_value}) for parameter ({test_parameter_name})")
 
 
-def flat_state_path(has_name: Union[str, ToolParameterT], prefix: Optional[str] = None) -> str:
+def flat_state_path(has_name: str | ToolParameterT, prefix: str | None = None) -> str:
     """Given a parameter name or model and an optional prefix, give 'flat' name for parameter in tree."""
     if hasattr(has_name, "name"):
         name = cast(ToolParameterT, has_name).name
     else:
-        name = cast(str, has_name)
+        name = has_name
     return name if prefix is None else f"{prefix}|{name}"
 
 
 KVT = TypeVar("KVT")
 
 
-def keys_starting_with(flat_tree: Dict[str, KVT], flat_state_path: str) -> Dict[str, KVT]:
-    subset: Dict[str, KVT] = {}
+def keys_starting_with(flat_tree: dict[str, KVT], flat_state_path: str) -> dict[str, KVT]:
+    subset: dict[str, KVT] = {}
     for key, value in flat_tree.items():
         if key.startswith(flat_state_path):
             subset[key] = value
     return subset
 
 
-def repeat_inputs_to_array(flat_state_path: str, inputs: Dict[str, KVT]) -> List[Dict[str, KVT]]:
+def repeat_inputs_to_array(flat_state_path: str, inputs: dict[str, KVT]) -> list[dict[str, KVT]]:
     repeat_inputs = keys_starting_with(inputs, flat_state_path + "_")
     highest_count = -1
     for key in repeat_inputs.keys():
@@ -165,9 +152,9 @@ def repeat_inputs_to_array(flat_state_path: str, inputs: Dict[str, KVT]) -> List
         except ValueError:
             continue
 
-    params: List[Dict[str, KVT]] = []
+    params: list[dict[str, KVT]] = []
     for _ in range(highest_count + 1):
-        instance_params: Dict[str, KVT] = {}
+        instance_params: dict[str, KVT] = {}
         params.append(instance_params)
     for key, value in repeat_inputs.items():
         repeat_num_str = key[len(flat_state_path) + 1 :].split("|")[0]
@@ -179,7 +166,7 @@ def repeat_inputs_to_array(flat_state_path: str, inputs: Dict[str, KVT]) -> List
     return params
 
 
-def validate_explicit_conditional_test_value(test_parameter_name: str, value: Any) -> Optional[Union[str, bool]]:
+def validate_explicit_conditional_test_value(test_parameter_name: str, value: Any) -> str | bool | None:
     if value is not None and not isinstance(value, (str, bool)):
         raise Exception(f"Invalid conditional test value ({value}) for parameter ({test_parameter_name})")
-    return cast(Optional[Union[str, bool]], value)
+    return value

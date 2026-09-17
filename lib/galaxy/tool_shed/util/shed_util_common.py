@@ -1,7 +1,9 @@
 import logging
 import re
+from urllib.parse import quote
 
 from galaxy import util
+from galaxy.managers.context import ProvidesAppContext
 from galaxy.tool_shed.util import repository_util
 from galaxy.util.tool_shed import common_util
 
@@ -28,7 +30,7 @@ def can_eliminate_repository_dependency(metadata_dict, tool_shed_url, name, owne
     return True
 
 
-def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, tool_shed_url):
+def clean_dependency_relationships(trans: ProvidesAppContext, metadata_dict, tool_shed_repository, tool_shed_url):
     """
     Repositories of type tool_dependency_definition allow for defining a
     package dependency at some point in the change log and then removing the
@@ -72,7 +74,9 @@ def get_ctx_rev(app, tool_shed_url, name, owner, changeset_revision):
     return ctx_rev
 
 
-def get_next_prior_import_or_install_required_dict_entry(prior_required_dict, processed_tsr_ids):
+def get_next_prior_import_or_install_required_dict_entry(
+    prior_required_dict: dict[str, list[str]], processed_tsr_ids: list[str]
+):
     """
     This method is used in the Tool Shed when exporting a repository and its dependencies, and in Galaxy
     when a repository and its dependencies are being installed.  The order in which the prior_required_dict
@@ -147,7 +151,10 @@ def set_image_paths(app, text, encoded_repository_id=None, tool_shed_repository=
             # We're in the tool shed.
             route_to_images = f"/repository/static/images/{encoded_repository_id}"
         elif tool_shed_repository and tool_id and tool_version:
-            route_to_images = f"shed_tool_static/{tool_shed_repository.tool_shed}/{tool_shed_repository.owner}/{tool_shed_repository.name}/{tool_id}/{tool_version}"
+            route_to_images = quote(
+                f"shed_tool_static/{tool_shed_repository.tool_shed}/{tool_shed_repository.owner}/{tool_shed_repository.name}/{tool_id}/{tool_version}",
+                safe="/",
+            )
         else:
             raise Exception(
                 "encoded_repository_id or tool_shed_repository and tool_id and tool_version must be provided"

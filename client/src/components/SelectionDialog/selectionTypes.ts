@@ -6,19 +6,14 @@ export const SELECTION_STATES = {
 
 export type SelectionState = (typeof SELECTION_STATES)[keyof typeof SELECTION_STATES];
 
-export interface FieldEntry {
-    key: string;
-    label?: string;
-    sortable?: boolean;
-}
-
 export interface SelectionItem {
     id: string;
     label: string;
     details: string;
     isLeaf: boolean;
     url: string;
-    _rowVariant?: SelectionState;
+    entry: Record<string, unknown>;
+    selectionState?: SelectionState;
 }
 
 export interface ItemsProviderContext {

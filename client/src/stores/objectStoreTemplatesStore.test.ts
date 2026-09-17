@@ -1,5 +1,7 @@
-import { type ObjectStoreTemplateType } from "@/api/objectStores";
-import { type ObjectStoreTemplateSummaries } from "@/api/objectStores.templates";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import type { ObjectStoreTemplateType } from "@/api/objectStores";
+import type { ObjectStoreTemplateSummaries } from "@/api/objectStores.templates";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 
 import { setupTestPinia } from "./testUtils";

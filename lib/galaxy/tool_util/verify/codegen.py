@@ -7,27 +7,24 @@ import argparse
 import inspect
 import os
 from shutil import move
+from types import UnionType
 from typing import (
+    Annotated,
     cast,
-    List,
-    Optional,
+    get_args,
+    get_origin,
+    Literal,
     Union,
 )
 
 import lxml.etree as ET
 from jinja2 import Environment
-from typing_extensions import (
-    Annotated,
-    get_args,
-    get_origin,
-    Literal,
-)
 
 from galaxy.tool_util.verify.asserts import assertion_module_and_functions
 from galaxy.tool_util.verify.asserts._types import AssertionParameter as AssertionParameterAnnotation
 from galaxy.util.commands import shell
 
-models_path = os.path.join(os.path.dirname(__file__), "assertion_models.py")
+models_path = os.path.join(os.path.dirname(__file__), "..", "..", "tool_util_models", "assertions.py")
 galaxy_xsd_path = os.path.join(os.path.dirname(__file__), "..", "xsd", "galaxy.xsd")
 
 Children = Literal["allowed", "required", "forbidden"]
@@ -86,7 +83,7 @@ def check_center_of_mass(v: typing.Any):
 def check_regex(v: typing.Any):
     assert isinstance(v, str)
     try:
-        re.compile(typing.cast(str, v))
+        re.compile(v)
     except re.error:
         raise AssertionError(f"Invalid regular expression {v}")
     return v
@@ -95,7 +92,7 @@ def check_regex(v: typing.Any):
 def check_non_negative_if_set(v: typing.Any):
     if v is not None:
         try:
-            assert v >= 0
+            assert float(v) >= 0
         except TypeError:
             raise AssertionError(f"Invalid type found {v}")
     return v
@@ -103,7 +100,7 @@ def check_non_negative_if_set(v: typing.Any):
 
 def check_non_negative_if_int(v: typing.Any):
     if v is not None and isinstance(v, int):
-        assert typing.cast(int, v) >= 0
+        assert v >= 0
     return v
 
 
@@ -114,17 +111,46 @@ def check_non_negative_if_int(v: typing.Any):
 
 class base_{{assertion.name}}_model(AssertionModel):
     '''base model for {{assertion.name}} describing attributes.'''
+    model_config = ConfigDict(extra="forbid", title="base_{{assertion.name}}_model")
 {% for parameter in assertion.parameters %}
 {% if not parameter.is_deprecated %}
     {{ parameter.name }}: {{ parameter.type_str }} = Field(
         {{ parameter.field_default_str }},
+        title="{{ parameter.title }}",
         description={{ assertion.name }}_{{ parameter.name }}_description,
     )
 {% endif %}
 {% endfor %}
 {% if assertion.children in ["required", "allowed"] %}
-    children: typing.Optional["assertion_list"] = None
-    asserts: typing.Optional["assertion_list"] = None
+    children: typing.Optional["assertion_list"] = Field(None, title="Children")
+    asserts: typing.Optional["assertion_list"] = Field(None, title="Asserts")
+
+{% if assertion.children == "required" %}
+    @model_validator(mode='before')
+    @classmethod
+    def validate_children(self, data: typing.Any):
+        if isinstance(data, dict) and 'children' not in data and 'asserts' not in data:
+            raise ValueError("At least one of 'children' or 'asserts' must be specified for this assertion type.")
+        return data
+{% endif %}
+{% endif %}
+
+
+class base_{{assertion.name}}_model_relaxed(AssertionModel):
+    '''base model for {{assertion.name}} describing attributes.'''
+    model_config = ConfigDict(extra="forbid", title="base_{{assertion.name}}_model_relaxed")
+{% for parameter in assertion.parameters %}
+{% if not parameter.is_deprecated %}
+    {{ parameter.name }}: {{ parameter.lax_type_str }} = Field(
+        {{ parameter.field_default_str }},
+        title="{{ parameter.title }}",
+        description={{ assertion.name }}_{{ parameter.name }}_description,
+    )
+{% endif %}
+{% endfor %}
+{% if assertion.children in ["required", "allowed"] %}
+    children: typing.Optional["assertion_list"] = Field(None, title="Children")
+    asserts: typing.Optional["assertion_list"] = Field(None, title="Asserts")
 
 {% if assertion.children == "required" %}
     @model_validator(mode='before')
@@ -139,11 +165,18 @@ class base_{{assertion.name}}_model(AssertionModel):
 
 class {{assertion.name}}_model(base_{{assertion.name}}_model):
     r\"\"\"{{ assertion.docstring }}\"\"\"
-    that: Literal["{{assertion.name}}"] = "{{assertion.name}}"
+    model_config = ConfigDict(extra="forbid", title="{{ assertion.title }}")
+    that: Literal["{{assertion.name}}"] = Field("{{assertion.name}}", title="That")
 
 class {{assertion.name}}_model_nested(AssertionModel):
     r\"\"\"Nested version of this assertion model.\"\"\"
-    {{assertion.name}}: base_{{assertion.name}}_model
+    model_config = ConfigDict(extra="forbid", title="{{ assertion.title }} (Nested)")
+    {{assertion.name}}: base_{{assertion.name}}_model = Field(..., title="{{ assertion.title }}")
+
+class {{assertion.name}}_model_relaxed(base_{{assertion.name}}_model_relaxed):
+    r\"\"\"{{ assertion.docstring }}\"\"\"
+    model_config = ConfigDict(extra="forbid", title="{{ assertion.title }} (Relaxed)")
+    that: Literal["{{assertion.name}}"] = Field("{{assertion.name}}", title="That")
 {% endfor %}
 
 any_assertion_model_flat = Annotated[typing.Union[
@@ -158,12 +191,25 @@ any_assertion_model_nested = typing.Union[
 {% endfor %}
 ]
 
-assertion_list = RootModel[typing.List[typing.Union[any_assertion_model_flat, any_assertion_model_nested]]]
+any_assertion_model_flat_relaxed = Annotated[typing.Union[
+{% for assertion in assertions %}
+    {{assertion.name}}_model_relaxed,
+{% endfor %}
+], Field(discriminator="that")]
 
+class assertion_list(RootModel[typing.List[typing.Union[any_assertion_model_flat, any_assertion_model_nested]]]):
+    model_config = ConfigDict(title="assertion_list")
+
+
+# used to model what the XML conversion should look like - not meant to be consumed outside of
+# of Galaxy internals / linting.
+class relaxed_assertion_list(RootModel[typing.List[any_assertion_model_flat_relaxed]]):
+    model_config = ConfigDict(title="relaxed_assertion_list")
 
 class assertion_dict(AssertionModel):
+    model_config = ConfigDict(extra="forbid", title="assertion_dict")
 {% for assertion in assertions %}
-    {{assertion.name}}: typing.Optional[base_{{assertion.name}}_model] = None
+    {{assertion.name}}: typing.Optional[base_{{assertion.name}}_model] = Field(None, title="{{ assertion.title }}")
 {% endfor %}
 
 
@@ -294,11 +340,14 @@ def rewrite_galaxy_xsd(assertions):
 
 
 class AssertionParameter:
-
     def __init__(self, name: str, type: str, default_value):
         self.name = name
         self.type = type
         self.default_value = default_value
+
+    @property
+    def title(self) -> str:
+        return " ".join(w.capitalize() for w in self.name.split("_"))
 
     @property
     def description(self) -> str:
@@ -310,7 +359,20 @@ class AssertionParameter:
 
     @property
     def type_str(self) -> str:
-        raw_type_str = as_type_str(self.type)
+        raw_type_str = as_type_str(self.type, strict=True)
+        validators = self.validators[:]
+        if self.xml_type_str == "Bytes":
+            validators.append("check_bytes")
+            validators.append("check_non_negative_if_int")
+        if len(validators) > 0:
+            validation_str = ",".join([f"BeforeValidator({v})" for v in validators])
+            return f"Annotated[{raw_type_str}, {validation_str}]"
+
+        return raw_type_str
+
+    @property
+    def lax_type_str(self) -> str:
+        raw_type_str = as_type_str(self.type, strict=False)
         validators = self.validators[:]
         if self.xml_type_str == "Bytes":
             validators.append("check_bytes")
@@ -340,21 +402,19 @@ class AssertionParameter:
 
     @property
     def is_deprecated(self) -> bool:
-        assertion_parameter = self._get_type_annotation()
-        if assertion_parameter is not None:
+        if (assertion_parameter := self._get_type_annotation()) is not None:
             return assertion_parameter.deprecated
 
         return False
 
     @property
-    def validators(self) -> List[str]:
-        assertion_parameter = self._get_type_annotation()
-        if assertion_parameter is not None:
+    def validators(self) -> list[str]:
+        if (assertion_parameter := self._get_type_annotation()) is not None:
             return assertion_parameter.validators
 
         return []
 
-    def _get_type_annotation(self) -> Optional[AssertionParameterAnnotation]:
+    def _get_type_annotation(self) -> AssertionParameterAnnotation | None:
         target_type = self.type
         if get_origin(target_type) is Annotated:
             args = get_args(target_type)
@@ -381,7 +441,7 @@ def as_xml_type(target_type) -> str:
                 return assertion_parameter.xml_type
 
         return as_xml_type(args[0])
-    elif get_origin(target_type) is Union:
+    elif get_origin(target_type) in (Union, UnionType):
         types = _non_optional_types(target_type)
         if len(types) == 2:
             non_str_types = [t for t in types if t is not str]
@@ -395,15 +455,15 @@ def as_xml_type(target_type) -> str:
     return "xs:string"
 
 
-def as_type_str(target_type):
+def as_type_str(target_type, strict=True):
     if get_origin(target_type) is Annotated:
         args = get_args(target_type)
         if len(args) > 1:
-            if args[1].json_type:
+            if args[1].json_type and strict:
                 return args[1].json_type
 
         return as_type_str(args[0])
-    elif get_origin(target_type) is Union:
+    elif get_origin(target_type) in (Union, UnionType):
         is_optional = any(_is_none_type(t) for t in get_args(target_type))
         types_as_str = ", ".join(map(as_type_str, _non_optional_types(target_type)))
         union_type = f"typing.Union[{types_as_str}]"
@@ -424,12 +484,11 @@ def as_type_str(target_type):
 
 
 class Assertion:
-
     def __init__(
         self,
         name: str,
         docstring: str,
-        parameters: List[AssertionParameter],
+        parameters: list[AssertionParameter],
         children: Children,
         module_and_function: str,
     ):
@@ -438,6 +497,10 @@ class Assertion:
         self.docstring = docstring
         self.children = children
         self.module_and_function = module_and_function
+
+    @property
+    def title(self) -> str:
+        return "Assert " + " ".join(w.capitalize() for w in self.name.split("_"))
 
 
 def arg_parser() -> argparse.ArgumentParser:

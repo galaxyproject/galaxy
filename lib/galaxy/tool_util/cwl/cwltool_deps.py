@@ -13,8 +13,15 @@ warnings.filterwarnings("ignore", message=r"[\n.]DEPRECATION: Python 2", module=
 from galaxy.util import requests
 
 try:
+    from cwl_utils.types import CWLObjectType
+except ImportError:
+    try:
+        from cwltool.utils import CWLObjectType  # type: ignore[assignment, attr-defined, unused-ignore]
+    except ImportError:
+        CWLObjectType = object  # type: ignore[assignment, misc]
+
+try:
     from cwltool import (
-        job,
         main,
         pathmapper,
         process,
@@ -23,7 +30,6 @@ try:
 except ImportError:
     main = None  # type: ignore[assignment]
     workflow = None  # type: ignore[assignment]
-    job = None  # type: ignore[assignment]
     process = None  # type: ignore[assignment]
     pathmapper = None  # type: ignore[assignment]
 
@@ -63,17 +69,22 @@ except ImportError:
     resolve_and_validate_document = None  # type: ignore[assignment]
 
 try:
+    from cwltool.process import Process
+except ImportError:
+    Process = None  # type: ignore[assignment, misc]
+
+try:
     from cwltool.utils import (
-        CWLObjectType,
         JobsType,
         normalizeFilesDirs,
+        OutputCallbackType,
         visit_class,
     )
 except ImportError:
-    CWLObjectType = object  # type: ignore[assignment, misc]
     JobsType = object  # type: ignore[misc, unused-ignore]
     visit_class = None  # type: ignore[assignment]
     normalizeFilesDirs = None  # type: ignore[assignment]
+    OutputCallbackType = None  # type: ignore[misc]
 
 try:
     import schema_salad
@@ -129,8 +140,10 @@ __all__ = (
     "main",
     "needs_shell_quoting",
     "normalizeFilesDirs",
+    "OutputCallbackType",
     "pathmapper",
     "process",
+    "Process",
     "ref_resolver",
     "relink_initialworkdir",
     "resolve_and_validate_document",

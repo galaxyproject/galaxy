@@ -44,7 +44,7 @@ of the static checking that can be done for the Galaxy backend.
 To further document your API and allow other developers to see how it functions,
 new API functionality should include functional tests. These functional
 tests should be implemented in Python and added to either the API test suite
-or the integration test suite. Checkout the :doc:`Writing Tests for Galaxy <writing_tests>`
+or the integration test suite. Check out the :doc:`Writing Tests for Galaxy <writing_tests>`
 documentation for more information on developing tests for Galaxy.
 
 .. note::
@@ -131,7 +131,7 @@ in :mod:`galaxy.webapps.galaxy.api` receive or produce Pydantic_
 models and pass them to manager components defined in
 :mod:`galaxy.managers`. The manager is then responsible for
 interacting with the whole backend or specific components to
-fullfil the desired request.
+fulfill the desired request.
 
 Galaxy work contexts provide a way for API requests (and other
 components) to describe what they require from the framework

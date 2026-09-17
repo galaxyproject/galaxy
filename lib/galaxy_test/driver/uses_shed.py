@@ -1,4 +1,5 @@
 import abc
+import logging
 import os
 import shutil
 import string
@@ -6,7 +7,10 @@ import tempfile
 from typing import ClassVar
 from unittest import SkipTest
 
+log = logging.getLogger(__name__)
+
 from galaxy.app import UniverseApplication
+from galaxy.tools.source_store.populator import reconcile_index
 from galaxy.util.tool_shed.tool_shed_registry import DEFAULT_TOOL_SHED_URL
 from galaxy.util.unittest_utils import is_site_up
 from galaxy_test.base.populators import DEFAULT_TIMEOUT
@@ -22,11 +26,9 @@ CONDA_AUTO_INSTALL_JOB_TIMEOUT = DEFAULT_TIMEOUT * 3
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 TOOL_SHEDS_CONF = os.path.join(SCRIPT_DIRECTORY, "tool_sheds_conf.xml")
 
-SHED_TOOL_CONF = string.Template(
-    """<?xml version="1.0"?>
+SHED_TOOL_CONF = string.Template("""<?xml version="1.0"?>
 <toolbox tool_path="$shed_tools_path">
-</toolbox>"""
-)
+</toolbox>""")
 
 SHED_DATA_MANAGER_CONF = """<?xml version="1.0"?>
 <data_managers>
@@ -71,8 +73,7 @@ class UsesShed(UsesShedApi):
     @classmethod
     def configure_shed_and_conda(cls, config):
         cls.configure_shed(config)
-        cls.conda_tmp_prefix = tempfile.mkdtemp()
-        cls._test_driver.temp_directories.append(cls.conda_tmp_prefix)
+        cls.conda_tmp_prefix = cls._test_driver.mkdtemp()
         config["conda_auto_init"] = True
         config["conda_auto_install"] = True
         config["conda_prefix"] = os.environ.get("GALAXY_TEST_CONDA_PREFIX") or os.path.join(
@@ -85,6 +86,14 @@ class UsesShed(UsesShedApi):
         self._app.config.shed_tools_dir = self.shed_tools_dir
         with open(self._app.config.shed_tool_config_file, "w") as tool_conf_file:
             tool_conf_file.write(SHED_TOOL_CONF.substitute(shed_tools_path=self._app.config.shed_tools_dir))
+        # Drop shed-tool index entries that no longer have a backing conf.
+        # The populator is the single writer of the index, so a stale entry
+        # would otherwise survive the ``reload_toolbox`` below: ``CachedToolBox``
+        # only re-runs the populator when discovery turns up a *new* path.
+        try:
+            reconcile_index(self._app.config, app=self._app)
+        except Exception as e:
+            log.warning("reset_shed_tools: reconcile_index raised (continuing): %s", e)
         # deleting the containing folder doesn't trigger a toolbox reload, so signal it now and wait until it's done
         self._app.queue_worker.send_control_task("reload_toolbox", get_response=True)
 

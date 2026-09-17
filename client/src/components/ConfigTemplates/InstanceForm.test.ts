@@ -1,7 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
-import { type FormEntry } from "./formUtil";
+import type { FormEntry } from "./formUtil";
 
 import InstanceForm from "./InstanceForm.vue";
 
@@ -12,7 +13,7 @@ const SUBMIT_TITLE = "Submit the form!";
 
 describe("InstanceForm", () => {
     it("should render a loading message and not submit button if inputs is null", async () => {
-        const wrapper = shallowMount(InstanceForm, {
+        const wrapper = shallowMount(InstanceForm as object, {
             propsData: {
                 title: "MY FORM",
                 inputs: null,
@@ -28,7 +29,7 @@ describe("InstanceForm", () => {
     });
 
     it("should hide a loading message after loading", async () => {
-        const wrapper = shallowMount(InstanceForm, {
+        const wrapper = shallowMount(InstanceForm as object, {
             propsData: {
                 title: "MY FORM",
                 inputs: inputs,

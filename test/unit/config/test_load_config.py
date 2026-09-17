@@ -165,16 +165,17 @@ def test_deprecated_postgres_urls_are_fixed(mock_init_dburl):
     error_message = '"postgres" prefix should become "postgresql"'
 
     config = BaseAppConfiguration(
-        database_connection="postgres://foo", install_database_connection="postgresql://foo"  # incorrect
-    )  # correct
+        database_connection="postgres://foo",  # incorrect
+        install_database_connection="postgresql://foo",  # correct
+    )
 
     assert config.database_connection == "postgresql://foo", error_message
     assert config.install_database_connection == "postgresql://foo"
 
     config = BaseAppConfiguration(
         database_connection="postgresql+psycopg2://foo",  # correct
-        install_database_connection="postgres+psycopg2://foo",
-    )  # incorrect
+        install_database_connection="postgres+psycopg2://foo",  # incorrect
+    )
 
     assert config.database_connection == "postgresql+psycopg2://foo", error_message
     assert config.install_database_connection == "postgresql+psycopg2://foo"

@@ -1,0 +1,15 @@
+- doc: |
+    Test that ChangeDatatypeAction on pick_value changes output datatype.
+  job:
+    input_data:
+      class: File
+      path: 1.bed
+      filetype: bed
+    when: true
+  outputs:
+    picked:
+      class: File
+      ftype: txt
+      asserts:
+        - that: has_text
+          text: chr1

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from yaml import safe_load
 
 from galaxy.files.templates.examples import get_example
@@ -6,9 +8,14 @@ from galaxy.files.templates.models import (
     FileSourceTemplate,
     FileSourceTemplateCatalog,
     FtpFileSourceConfiguration,
+    GithubFileSourceConfiguration,
     PosixFileSourceConfiguration,
     S3FSFileSourceConfiguration,
     template_to_configuration,
+)
+from galaxy.util.config_templates import (
+    read_oauth2_info_from_configuration,
+    TemplateVariableSelect,
 )
 
 # API example server - all data is public and anyone can create keys and buckets
@@ -217,6 +224,7 @@ LIBRARY_FTP_WITH_DEFAULT_SFTP_PORT = """
     port:
       type: integer
       help: Port used to connect to the SFTP server.
+      optional: true
       default: 22
   secrets:
     password:
@@ -289,20 +297,169 @@ def test_production_aws_public_bucket():
     assert configuration_obj.bucket == "encode-public"
 
 
+def test_production_github_oauth():
+    github_template = _get_example_template("production_github.yml")
+    assert github_template.variables is not None
+    owner, repository = github_template.variables[:2]
+    assert isinstance(owner, TemplateVariableSelect)
+    assert isinstance(repository, TemplateVariableSelect)
+    assert owner.options_provider is not None
+    assert owner.options_provider.kind == "github_authorized_repository_owners"
+    assert repository.options_provider is not None
+    assert repository.options_provider.depends_on == ["org"]
+    configuration_obj = template_to_configuration(
+        github_template,
+        {"org": "galaxyproject", "repo": "galaxy"},
+        {},
+        user_details={},
+        environment={"oauth2_client_id": "the-client-id", "oauth2_client_secret": "the-client-secret"},
+        implicit={"oauth2_access_token": "gho_token"},
+    )
+    assert isinstance(configuration_obj, GithubFileSourceConfiguration)
+    assert configuration_obj.org == "galaxyproject"
+    assert configuration_obj.repo == "galaxy"
+    # The injected access token replaces the client credentials in the resolved config.
+    assert configuration_obj.oauth2_access_token == "gho_token"
+    dumped = configuration_obj.model_dump()
+    assert "oauth2_client_id" not in dumped
+    assert "oauth2_client_secret" not in dumped
+    # Omitted optional branch expands to an empty string, not a template error.
+    assert configuration_obj.branch == ""
+
+
+def test_github_oauth_client_info_readable_before_variables():
+    # Reading the oauth2 client fields happens at authorize/status time, before the user
+    # provides variables. The github configuration references {{ variables.* }}, so this must
+    # not fail even though those variables are not yet available.
+    github_template = _get_example_template("production_github.yml")
+    client_pair, scope = read_oauth2_info_from_configuration(
+        github_template.configuration,
+        user_details={},
+        environment={"oauth2_client_id": "cid", "oauth2_client_secret": "csecret"},
+    )
+    assert client_pair.client_id == "cid"
+    assert client_pair.client_secret == "csecret"
+    assert scope is None
+
+
+def test_production_github_oauth_with_branch_and_writable():
+    github_template = _get_example_template("production_github.yml")
+    configuration_obj = template_to_configuration(
+        github_template,
+        {"org": "me", "repo": "data", "branch": "main", "writable": True},
+        {},
+        user_details={},
+        environment={"oauth2_client_id": "cid", "oauth2_client_secret": "csecret"},
+        implicit={"oauth2_access_token": "gho_token"},
+    )
+    assert isinstance(configuration_obj, GithubFileSourceConfiguration)
+    assert configuration_obj.branch == "main"
+    assert configuration_obj.writable is True
+    assert configuration_obj.oauth2_access_token == "gho_token"
+
+
+def _ftp_production_template_variables(host, root=None, **extra):
+    variables = {
+        "host": host,
+        "user": "anonymous",
+        "port": 21,
+        "writable": False,
+    }
+    if root is not None:
+        variables["root"] = root
+    variables.update(extra)
+    return variables
+
+
+def test_production_ftp_plain_host_no_root_v0():
+    template = _get_example_template_by_version("production_ftp.yml", 0)
+    configuration_obj = template_to_configuration(
+        template,
+        _ftp_production_template_variables("ftp.example.org"),
+        {"password": ""},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, FtpFileSourceConfiguration)
+    assert configuration_obj.host == "ftp.example.org"
+    assert configuration_obj.root is None
+
+
+def test_production_ftp_plain_host_no_root_v1():
+    template = _get_example_template_by_version("production_ftp.yml", 1)
+    configuration_obj = template_to_configuration(
+        template,
+        _ftp_production_template_variables("ftp.example.org", tls=False),
+        {"password": ""},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, FtpFileSourceConfiguration)
+    assert configuration_obj.host == "ftp.example.org"
+    assert configuration_obj.root is None
+
+
+def test_production_ftp_host_with_path_no_root_v0():
+    template = _get_example_template_by_version("production_ftp.yml", 0)
+    configuration_obj = template_to_configuration(
+        template,
+        _ftp_production_template_variables("ftp.example.org/pub/"),
+        {"password": ""},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, FtpFileSourceConfiguration)
+    assert configuration_obj.host == "ftp.example.org"
+    assert configuration_obj.root == "/pub/"
+
+
+def test_production_ftp_host_with_path_no_root_v1():
+    template = _get_example_template_by_version("production_ftp.yml", 1)
+    configuration_obj = template_to_configuration(
+        template,
+        _ftp_production_template_variables("ftp.example.org/pub/", tls=False),
+        {"password": ""},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, FtpFileSourceConfiguration)
+    assert configuration_obj.host == "ftp.example.org"
+    assert configuration_obj.root == "/pub/"
+
+
+def test_production_ftp_host_with_path_blank_root():
+    template = _get_example_template_by_version("production_ftp.yml", 0)
+    configuration_obj = template_to_configuration(
+        template,
+        _ftp_production_template_variables("ftp.example.org/pub/", root=""),
+        {"password": ""},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, FtpFileSourceConfiguration)
+    assert configuration_obj.host == "ftp.example.org"
+    assert configuration_obj.root == "/pub/"
+
+
+def test_production_ftp_plain_host_blank_root():
+    template = _get_example_template_by_version("production_ftp.yml", 0)
+    configuration_obj = template_to_configuration(
+        template,
+        _ftp_production_template_variables("ftp.example.org", root=""),
+        {"password": ""},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, FtpFileSourceConfiguration)
+    assert configuration_obj.host == "ftp.example.org"
+    assert configuration_obj.root is None
+
+
 def test_examples_parse():
-    _assert_example_parses("production_ftp.yml")
-    _assert_example_parses("production_azure.yml")
-    _assert_example_parses("production_aws_private_bucket.yml")
-    _assert_example_parses("production_aws_public_bucket.yml")
-    _assert_example_parses("production_s3fs.yml")
-    _assert_example_parses("production_dropbox.yml")
-    _assert_example_parses("s3fs_by_host_and_port.yml")
-    _assert_example_parses("templating_override.yml")
-    _assert_example_parses("admin_secrets.yml")
-    _assert_example_parses("admin_secrets_with_defaults.yml")
-    _assert_example_parses("testing_multi_version_with_secrets.yml")
-    _assert_example_parses("dropbox_client_secrets_in_vault.yml")
-    _assert_example_parses("dropbox_client_secrets_explicit.yml")
+    # Ensure every YAML example in `lib/galaxy/files/templates/examples/` parses without error
+    examples_dir = Path(__file__).resolve().parents[3] / "lib" / "galaxy" / "files" / "templates" / "examples"
+    for example_file in examples_dir.glob("*.yml"):
+        _assert_example_parses(example_file.name)
 
 
 def _assert_example_parses(filename: str):
@@ -313,6 +470,14 @@ def _assert_example_parses(filename: str):
 
 def _get_example_template(filename: str) -> FileSourceTemplate:
     return _assert_has_one_template(_get_example_library(filename))
+
+
+def _get_example_template_by_version(filename: str, version: int) -> FileSourceTemplate:
+    catalog = _get_example_library(filename)
+    for template in catalog.root:
+        if template.version == version:
+            return template
+    raise AssertionError(f"No template with version {version} in {filename}")
 
 
 def _get_example_library(filename: str) -> FileSourceTemplateCatalog:

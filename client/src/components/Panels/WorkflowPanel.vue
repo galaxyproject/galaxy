@@ -2,15 +2,15 @@
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMemoize, watchImmediate } from "@vueuse/core";
-import { BButton } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { loadWorkflows, type Workflow } from "@/components/Workflow/workflows.services";
+import { loadWorkflows, type WorkflowSummary } from "@/api/workflows";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { useToast } from "@/composables/toast";
 
 import ActivityPanel from "./ActivityPanel.vue";
 import FavoritesButton from "./Buttons/FavoritesButton.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
 import WorkflowCardList from "@/components/Workflow/List/WorkflowCardList.vue";
@@ -35,7 +35,7 @@ const allLoaded = computed(() => totalWorkflowsCount.value <= workflows.value.le
 
 const filterText = ref("");
 
-const workflows = ref<Workflow[]>([]);
+const workflows = ref<WorkflowSummary[]>([]);
 
 const showFavorites = computed({
     get() {
@@ -127,7 +127,7 @@ watchImmediate(
         resetWorkflows();
         fetchKey = filterText.value;
         load();
-    }
+    },
 );
 
 watch(
@@ -136,7 +136,7 @@ watch(
         if (arrived.bottom) {
             load();
         }
-    }
+    },
 );
 
 function scrollToTop() {
@@ -152,16 +152,17 @@ function createNew(event: Event) {
 <template>
     <ActivityPanel title="Workflows">
         <template v-slot:header-buttons>
-            <BButton
-                v-b-tooltip.hover.top.noninteractive
-                size="sm"
-                variant="link"
+            <GButton
+                v-g-tooltip.hover.top
+                size="small"
+                transparent
+                icon-only
                 class="create-button"
                 title="Create new workflow"
                 href="/workflows/edit"
                 @click="createNew">
                 <FontAwesomeIcon :icon="faPlus" />
-            </BButton>
+            </GButton>
             <FavoritesButton v-model="showFavorites" tooltip="Show bookmarked" />
         </template>
 
@@ -195,7 +196,7 @@ function createNew(event: Event) {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .workflow-scroll-list {
     overflow-y: auto;

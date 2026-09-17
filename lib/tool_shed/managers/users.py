@@ -1,5 +1,3 @@
-from typing import List
-
 from sqlalchemy import select
 
 from galaxy.exceptions import RequestParameterInvalidException
@@ -17,9 +15,9 @@ from tool_shed_client.schema import (
 )
 
 
-def index(app: ToolShedApp, deleted: bool) -> List[ApiUser]:
-    users: List[ApiUser] = []
-    for user in get_users_by_deleted(app.model.context, app.model.User, deleted):
+def index(app: ToolShedApp, deleted: bool) -> list[ApiUser]:
+    users: list[ApiUser] = []
+    for user in get_users_by_deleted(app.model.context, User, deleted):
         users.append(get_api_user(app, user))
     return users
 
@@ -67,6 +65,9 @@ def _validate(trans: ProvidesUserContext, email: str, password: str, confirm: st
         return f"The term '{username}' is a reserved word in the Tool Shed, so it cannot be used as a public user name."
     message = "\n".join(
         (
+            # tool_shed.context.ProvidesUserContext is a structurally analogous but
+            # nominally distinct hierarchy from galaxy.managers.context.ProvidesAppContext;
+            # trans satisfies everything these helpers actually use (.app, .sa_session).
             validate_email(trans, email),
             validate_password(trans, password, confirm),
             validate_publicname(trans, username),

@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faLongArrowAltLeft, faLongArrowAltRight, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
-import { BButton, BFormInput } from "bootstrap-vue";
-import { computed, nextTick, type PropType, reactive, ref, type UnwrapRef } from "vue";
+import { BFormInput } from "bootstrap-vue";
+import { computed, nextTick, type PropType, reactive, ref, type UnwrapRef, watch } from "vue";
 
 import { useUid } from "@/composables/utils/uid";
 
@@ -12,7 +11,7 @@ import { useHighlight } from "./useHighlight";
 import { filterOptions } from "./worker/filterOptions";
 import { useSelectMany } from "./worker/selectMany";
 
-library.add(faLongArrowAltLeft, faLongArrowAltRight, faTimes);
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 type SelectValue = Record<string, unknown> | string | number | null;
 
@@ -43,13 +42,31 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    /**
+     * When the parent paginates options server-side and only ``options`` is a
+     * partial slice, ``totalEstimate`` carries the backend's full count so the
+     * "Unselected (N)" header reflects what the user can actually load — not
+     * just what's currently in memory.
+     */
+    totalEstimate: {
+        type: Number as PropType<number | null>,
+        default: null,
+    },
 });
 
 const emit = defineEmits<{
     (e: "input", value: Array<SelectValue>): void;
+    (e: "search-change", query: string): void;
 }>();
 
 const searchValue = ref("");
+
+// BFormInput already debounces ``searchValue`` (see ``:debounce="300"`` below),
+// so a watch on it gives us the same debounced upward emit FormSelect does —
+// callers can refetch options against the backend without firing per-keystroke.
+watch(searchValue, (value) => {
+    emit("search-change", value);
+});
 const useRegex = ref(false);
 const caseSensitive = ref(false);
 const localSelectionOrder = computed(() => props.maintainSelectionOrder);
@@ -109,7 +126,7 @@ const workerRunning = refDebounced(running, 400);
 function handleHighlight(
     event: MouseEvent | KeyboardEvent,
     index: number,
-    highlightHandler: UnwrapRef<ReturnType<typeof useHighlight>>
+    highlightHandler: UnwrapRef<ReturnType<typeof useHighlight>>,
 ) {
     if (event.shiftKey && event.ctrlKey) {
         highlightHandler.rangeRemoveHighlight(index);
@@ -283,7 +300,15 @@ const deselectText = computed(() => {
 
 const unselectedCount = computed(() => {
     if (searchValue.value === "") {
-        return `${props.options.length - selected.value.length}`;
+        // Use ``totalEstimate`` when paginated server-side so the header counts
+        // backend-known items, not just locally-loaded ones. Fall back to the
+        // larger of the two to absorb any pinned-and-counted oddities.
+        const localTotal = props.options.length;
+        const total =
+            props.totalEstimate !== null && props.totalEstimate !== undefined
+                ? Math.max(props.totalEstimate, localTotal)
+                : localTotal;
+        return `${Math.max(0, total - selected.value.length)}`;
     } else {
         let countString = `${unselectedOptionsFiltered.value.length}`;
         if (moreUnselected.value) {
@@ -321,28 +346,28 @@ const selectedCount = computed(() => {
                     :class="{ hidden: searchValue === '' }"
                     title="Clear search"
                     @click="searchValue = ''">
-                    <FontAwesomeIcon icon="fa-times" />
+                    <FontAwesomeIcon :icon="faTimes" />
                 </button>
             </fieldset>
 
-            <BButton
+            <GButton
                 class="toggle-button case-sensitivity"
-                :variant="caseSensitive ? 'primary' : 'outline-primary'"
-                role="switch"
-                :aria-checked="`${caseSensitive}`"
-                title="case sensitive"
-                @click="caseSensitive = !caseSensitive">
+                outline
+                color="blue"
+                :pressed.sync="caseSensitive"
+                :aria-pressed="`${caseSensitive}`"
+                title="case sensitive">
                 Aa
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 class="toggle-button use-regex"
-                :variant="useRegex ? 'primary' : 'outline-primary'"
-                role="switch"
-                :aria-checked="`${useRegex}`"
-                title="use regex"
-                @click="useRegex = !useRegex">
+                outline
+                color="blue"
+                :pressed.sync="useRegex"
+                :aria-pressed="`${useRegex}`"
+                title="use regex">
                 .*
-            </BButton>
+            </GButton>
         </fieldset>
 
         <div class="options-box border rounded mt-2">
@@ -350,11 +375,17 @@ const selectedCount = computed(() => {
                 <span>
                     Unselected
                     <span class="font-weight-normal unselected-count"> ({{ unselectedCount }}) </span>
+                    <slot name="column-heading-end" />
                 </span>
-                <BButton class="selection-button select" :title="selectText" variant="primary" @click="selectAll">
+                <GButton
+                    class="selection-button select"
+                    data-description="select many select all"
+                    :title="selectText"
+                    color="blue"
+                    @click="selectAll">
                     {{ selectText }}
-                    <FontAwesomeIcon icon="fa-long-arrow-alt-right" />
-                </BButton>
+                    <FontAwesomeIcon :icon="faLongArrowAltRight" />
+                </GButton>
             </div>
 
             <div
@@ -370,7 +401,7 @@ const selectedCount = computed(() => {
                     :class="{ highlighted: highlightUnselected.highlightedIndexes.includes(i) }"
                     @click="(e) => selectOption(e, i)"
                     @keydown="(e) => optionOnKey('unselected', e, i)">
-                    <slot name="label-area" v-bind="option">
+                    <slot name="label-area" v-bind="{ option, selected: false }">
                         {{ option.label }}
                     </slot>
                 </button>
@@ -379,16 +410,18 @@ const selectedCount = computed(() => {
                     Limited to {{ unselectedDisplayCount }} options.
                     <button class="show-more-button" @click="unselectedDisplayCount += 500">Show more</button>
                 </span>
+                <slot name="after-list" />
             </div>
             <div class="selection-heading px-2">
                 <span>
                     Selected
                     <span class="font-weight-normal selected-count"> ({{ selectedCount }}) </span>
+                    <slot name="column-heading-end" />
                 </span>
-                <BButton class="selection-button deselect" :title="deselectText" variant="primary" @click="deselectAll">
-                    <FontAwesomeIcon icon="fa-long-arrow-alt-left" />
+                <GButton class="selection-button deselect" :title="deselectText" color="blue" @click="deselectAll">
+                    <FontAwesomeIcon :icon="faLongArrowAltLeft" />
                     {{ deselectText }}
-                </BButton>
+                </GButton>
             </div>
 
             <div
@@ -404,7 +437,7 @@ const selectedCount = computed(() => {
                     :class="{ highlighted: highlightSelected.highlightedIndexes.includes(i) }"
                     @click="(e) => deselectOption(e, i)"
                     @keydown="(e) => optionOnKey('selected', e, i)">
-                    <slot name="label-area" v-bind="option">
+                    <slot name="label-area" v-bind="{ option, selected: true }">
                         {{ option.label }}
                     </slot>
                 </button>
@@ -423,7 +456,7 @@ const selectedCount = computed(() => {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .form-select-many {
     .search-bar {
@@ -466,6 +499,7 @@ const selectedCount = computed(() => {
     }
 
     .toggle-button {
+        display: block;
         padding-left: 0;
         padding-right: 0;
     }

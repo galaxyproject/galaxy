@@ -1,13 +1,11 @@
 import datetime
 import uuid
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Optional,
 )
 
-ValueMapperT = Dict[str, Callable]
+ValueMapperT = dict[str, Callable]
 
 
 def dict_for(obj, **kwds):
@@ -24,9 +22,7 @@ class UsesDictVisibleKeys:
     to_dict with whatever signature makes sense for the class.
     """
 
-    def _dictify_view_keys(
-        self, view: str = "collection", value_mapper: Optional[ValueMapperT] = None
-    ) -> Dict[str, Any]:
+    def _dictify_view_keys(self, view: str = "collection", value_mapper: ValueMapperT | None = None) -> dict[str, Any]:
         """
         Return item dictionary.
         """
@@ -85,7 +81,7 @@ class Dictifiable(UsesDictVisibleKeys):
     when for sharing objects across boundaries, such as the API, tool scripts,
     and JavaScript code."""
 
-    def to_dict(self, view: str = "collection", value_mapper: Optional[ValueMapperT] = None) -> Dict[str, Any]:
+    def to_dict(self, view: str = "collection", value_mapper: ValueMapperT | None = None) -> dict[str, Any]:
         """
         Return item dictionary.
         """

@@ -6,16 +6,12 @@ import importlib.util
 import logging
 import os
 import pkgutil
+from collections.abc import Iterable
 from string import Template
 from typing import (
     Any,
     cast,
-    Dict,
-    Iterable,
-    List,
     Optional,
-    Tuple,
-    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -25,6 +21,10 @@ import yaml
 import galaxy.util
 from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.tool_util.edam_util import load_edam_tree
+from galaxy.tool_util.toolbox.base import (
+    AbstractToolBox,
+    ToolLike,
+)
 from galaxy.util import (
     Element,
     RW_R__R__,
@@ -48,45 +48,60 @@ from .display_applications.application import DisplayApplication
 
 if TYPE_CHECKING:
     from galaxy.datatypes.data import Data
-    from galaxy.tool_util.toolbox.base import AbstractToolBox
+    from galaxy.tool_util.abstract_tool import AbstractTool
+    from galaxy.tools import SetMetadataTool
 
 
 class ConfigurationError(Exception):
     pass
 
 
+# Ensure the module logger has at least one handler to avoid "no handlers could
+# be found" warnings when the registry is used outside of a configured Galaxy
+# app. This is done at import time (once) rather than per-instance to avoid
+# progressive accumulation of NullHandlers on long-lived test processes that
+# instantiate ``Registry`` repeatedly (see test/integration driver).
+_module_log = logging.getLogger(__name__)
+if not any(isinstance(h, logging.NullHandler) for h in _module_log.handlers):
+    _module_log.addHandler(logging.NullHandler())
+
+
 class Registry:
     def __init__(self, config=None):
+        self.log = _module_log
+
         edam_ontology_path = config.get("edam_toolbox_ontology_path", None) if config is not None else None
 
-        edam = load_edam_tree(
-            None if not edam_ontology_path or not os.path.exists(edam_ontology_path) else edam_ontology_path,
-            "format_",
-            "data_",
-            "operation_",
-            "topic_",
-        )
+        try:
+            edam = load_edam_tree(
+                None if not edam_ontology_path or not os.path.exists(edam_ontology_path) else edam_ontology_path,
+                "format_",
+                "data_",
+                "operation_",
+                "topic_",
+            )
+        except AssertionError as exc:
+            self.log.warning(exc)
+            edam = {}
 
-        self.log = logging.getLogger(__name__)
-        self.log.addHandler(logging.NullHandler())
         self.config = config
         self.edam = edam
-        self.datatypes_by_extension: Dict[str, Data] = {}
+        self.datatypes_by_extension: dict[str, Data] = {}
         self.datatypes_by_suffix_inferences = {}
         self.mimetypes_by_extension = {}
-        self.datatype_converters = {}
+        self.datatype_converters: dict[str, dict[str, AbstractTool]] = {}
         # Converters defined in local datatypes_conf.xml
         self.converters = []
-        self.converter_tools = set()
+        self.converter_tools: set[AbstractTool] = set()
         self.converter_deps = {}
         self.available_tracks = []
-        self.set_external_metadata_tool = None
-        self.sniff_order: List[Data] = []
+        self.set_external_metadata_tool: SetMetadataTool | None = None
+        self.sniff_order: list[Data] = []
         self.upload_file_formats = []
         # Datatype elements defined in local datatypes_conf.xml that contain display applications.
         self.display_app_containers = []
         # Map a display application id to a display application
-        self.display_applications: Dict[str, DisplayApplication] = {}
+        self.display_applications: dict[str, DisplayApplication] = {}
         # The following 2 attributes are used in the to_xml_file()
         # method to persist the current state into an xml file.
         self.display_path_attr = None
@@ -98,11 +113,13 @@ class Registry:
         self.inherit_display_application_by_class = []
         self.datatype_elems = []
         self.datatype_info_dicts = []
-        self.sniffer_elems: List[Element] = []
+        self.sniffer_elems: list[Element] = []
         self._registry_xml_string = None
         self._edam_formats_mapping = None
         self._edam_data_mapping = None
         self._converters_by_datatype = {}
+        # Datatype visualization mappings
+        self.visualization_mappings: dict[str, dict[str, Any]] = {}
         # Build sites
         self.build_sites = {}
         self.display_sites = {}
@@ -110,8 +127,8 @@ class Registry:
 
     def load_datatypes(
         self,
-        root_dir: Optional[StrPath] = None,
-        config: Optional[Union[Element, StrPath]] = None,
+        root_dir: StrPath | None = None,
+        config: Element | StrPath | None = None,
         override: bool = True,
         use_converters: bool = True,
         use_display_applications: bool = True,
@@ -133,7 +150,7 @@ class Registry:
             return module
 
         if root_dir and config:
-            compressed_sniffers: Dict[Type[Data], List[Data]] = {}
+            compressed_sniffers: dict[type[Data], list[Data]] = {}
             if isinstance(config, (str, os.PathLike)):
                 # Parse datatypes_conf.xml
                 tree = galaxy.util.parse_xml(config)
@@ -205,7 +222,7 @@ class Registry:
                         if override or extension not in self.datatypes_by_extension:
                             can_process_datatype = True
                 if can_process_datatype:
-                    datatype_class: Optional[Type[Data]] = None
+                    datatype_class: type[Data] | None = None
                     if dtype is not None:
                         ok = True
                         try:
@@ -314,6 +331,24 @@ class Registry:
                             self.datatypes_by_extension[extension].add_composite_file(
                                 name, optional=optional, mimetype=mimetype
                             )
+                        # Check for preferred visualization definitions
+                        for visualization_elem in elem.findall("visualization"):
+                            plugin = visualization_elem.get("plugin", None)
+
+                            # Skip incomplete visualization definitions
+                            if not plugin:
+                                self.log.warning(
+                                    "Incomplete visualization definition (missing plugin) for datatype %s", extension
+                                )
+                                continue
+
+                            # Store the mapping
+                            self.visualization_mappings[extension] = {
+                                "visualization": plugin,
+                            }
+
+                            self.log.debug("Loaded preferred visualization definition: %s -> %s", extension, plugin)
+
                         for _display_app in elem.findall("display"):
                             if elem not in self.display_app_containers:
                                 self.display_app_containers.append(elem)
@@ -323,6 +358,11 @@ class Registry:
                             "description": description,
                             "description_url": description_url,
                             "upload_warning": upload_warning(upload_warning_template),
+                            "display_behavior": (
+                                datatype_instance.get_display_behavior()
+                                if hasattr(datatype_instance, "get_display_behavior")
+                                else None
+                            ),
                         }
                         composite_files = datatype_instance.get_composite_files()
                         if composite_files:
@@ -338,9 +378,9 @@ class Registry:
                             compressed_extension = f"{extension}.{auto_compressed_type}"
                             upper_compressed_type = auto_compressed_type[0].upper() + auto_compressed_type[1:]
                             auto_compressed_type_name = datatype_class_name + upper_compressed_type
-                            attributes: Dict[str, Any] = {}
+                            attributes: dict[str, Any] = {}
                             if auto_compressed_type == "gz":
-                                dynamic_parent: Type[binary.DynamicCompressedArchive] = (
+                                dynamic_parent: type[binary.DynamicCompressedArchive] = (
                                     binary.GzDynamicCompressedArchive
                                 )
                             elif auto_compressed_type == "bz2":
@@ -349,7 +389,7 @@ class Registry:
                                 raise ConfigurationError(f"Unknown auto compression type [{auto_compressed_type}]")
                             attributes["file_ext"] = compressed_extension
                             attributes["uncompressed_datatype_instance"] = datatype_instance
-                            compressed_datatype_class: Type[Data] = type(
+                            compressed_datatype_class: type[Data] = type(
                                 auto_compressed_type_name,
                                 (
                                     datatype_class,
@@ -417,6 +457,7 @@ class Registry:
             # Load build sites
             if use_build_sites:
                 self._load_build_sites(root)
+
         self.set_default_values()
 
         def append_to_sniff_order() -> None:
@@ -490,11 +531,21 @@ class Registry:
     def get_display_sites(self, site_type):
         return self.display_sites.get(site_type, [])
 
+    def get_all_visualization_mappings(self):
+        """
+        Get all datatype to visualization mappings.
+        Returns a dictionary where keys are datatype extensions and values are mapping configurations.
+
+        Mappings are defined inline within each datatype definition in the datatypes_conf.xml
+        configuration file and are read-only.
+        """
+        return self.visualization_mappings
+
     def load_datatype_sniffers(
         self,
         root: Element,
         override: bool = False,
-        compressed_sniffers: Optional[Dict[Type["Data"], List["Data"]]] = None,
+        compressed_sniffers: dict[type["Data"], list["Data"]] | None = None,
     ) -> None:
         """
         Process the sniffers element from a parsed a datatypes XML file located at root_dir/config (if processing the Galaxy
@@ -613,6 +664,26 @@ class Registry:
         """Returns a datatype object based on an extension"""
         return self.datatypes_by_extension.get(ext, None)
 
+    def sniff_directory(self, path: str) -> str:
+        """Detect the datatype of the extra-files directory at ``path``.
+
+        Return the matching extension with the deepest inheritance hierarchy,
+        or ``directory`` if none match.
+        """
+        matches = []
+        for datatype in self.datatypes_by_extension.values():
+            if not isinstance(datatype, data.Directory):
+                continue
+            try:
+                if datatype.sniff_directory(path):
+                    matches.append(datatype)
+            except Exception:
+                self.log.exception("Directory sniffing failed for datatype %s", datatype.file_ext)
+        if not matches:
+            return data.Directory.file_ext
+        best = max(matches, key=lambda datatype: len(type(datatype).__mro__))
+        return best.file_ext
+
     def change_datatype(self, data, ext):
         if data.extension != ext:
             data.extension = ext
@@ -624,7 +695,7 @@ class Registry:
                 data.init_meta(copy_from=data)
         return data
 
-    def load_datatype_converters(self, toolbox: "AbstractToolBox", use_cached: bool = False):
+    def load_datatype_converters(self, toolbox: AbstractToolBox, use_cached: bool = False) -> None:
         """
         Add datatype converters from self.converters to the calling app's toolbox.
         """
@@ -637,16 +708,46 @@ class Registry:
             converter_path = self.converters_path
             try:
                 config_path = os.path.join(converter_path, tool_config)
-                converter = toolbox.load_tool(config_path, use_cached=use_cached)
-                self.converter_tools.add(converter)
+                converter_like: ToolLike = toolbox.load_tool(config_path, use_cached=use_cached)
+                converter = toolbox.materialize_tool(converter_like, reason="execution")
                 toolbox.register_tool(converter)
-                if source_datatype not in self.datatype_converters:
-                    self.datatype_converters[source_datatype] = {}
-                self.datatype_converters[source_datatype][target_datatype] = converter
+                self._register_converter_tool(converter, source_datatype, target_datatype)
                 if not hasattr(toolbox.app, "tool_cache") or converter.id in toolbox.app.tool_cache._new_tool_ids:
                     self.log.debug("Loaded converter: %s", converter.id)
             except Exception:
                 self.log.exception(f"Error loading converter ({converter_path})")
+
+    def load_datatype_converters_without_toolbox(self, app) -> None:
+        """Load datatype converters for an app that has no toolbox (e.g. the Celery worker).
+
+        Mirrors ``load_datatype_converters`` but builds each converter directly from its tool
+        source rather than through a toolbox, since the Celery worker's minimal
+        ``GalaxyManagerApplication`` has none. Async tool-request execution runs in the worker
+        and relies on ``datatype_converters`` being populated to apply implicit datatype
+        conversion (e.g. decompressing a ``fasta.gz`` input for a ``fasta`` parameter); without
+        this ``find_conversion_destination`` finds no converter and hands the raw dataset to the
+        tool.
+        """
+        # Imported here to avoid a circular import - galaxy.tools depends on galaxy.datatypes.
+        from galaxy.tool_util.parser import get_tool_source
+        from galaxy.tools import create_tool_from_source
+
+        if not self.converters_path:
+            return
+        for tool_config, source_datatype, target_datatype in self.converters:
+            config_path = os.path.join(self.converters_path, tool_config)
+            try:
+                tool_source = get_tool_source(config_file=config_path)
+                converter = create_tool_from_source(app, tool_source, config_file=config_path)
+                self._register_converter_tool(converter, source_datatype, target_datatype)
+            except Exception:
+                self.log.exception(f"Error loading converter ({config_path})")
+        # Drop any cached (empty) converter lookups computed before registration.
+        self._converters_by_datatype = {}
+
+    def _register_converter_tool(self, converter: "AbstractTool", source_datatype: str, target_datatype: str) -> None:
+        self.converter_tools.add(converter)
+        self.datatype_converters.setdefault(source_datatype, {})[target_datatype] = converter
 
     def load_display_applications(self, app):
         """
@@ -712,15 +813,16 @@ class Registry:
                 failed.append(display_application_id)
         return (reloaded, failed)
 
-    def load_external_metadata_tool(self, toolbox):
+    def load_external_metadata_tool(self, toolbox: AbstractToolBox) -> None:
         """Adds a tool which is used to set external metadata"""
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
         # Properly building a tool without relying on parsing an XML file is near difficult...so we bundle with Galaxy.
-        set_meta_tool = toolbox.load_hidden_lib_tool(
+        set_meta_tool_like: ToolLike = toolbox.load_hidden_lib_tool(
             os.path.abspath(os.path.join(os.path.dirname(__file__), "set_metadata_tool.xml"))
         )
-        self.set_external_metadata_tool = set_meta_tool
+        set_meta_tool = toolbox.materialize_tool(set_meta_tool_like, reason="execution")
+        self.set_external_metadata_tool = cast("SetMetadataTool", set_meta_tool)
         self.log.debug("Loaded external metadata tool: %s", self.set_external_metadata_tool.id)
 
     def set_default_values(self):
@@ -858,10 +960,10 @@ class Registry:
 
     def find_conversion_destination_for_dataset_by_extensions(
         self,
-        dataset_or_ext: Union[str, DatasetProtocol],
+        dataset_or_ext: str | DatasetProtocol,
         accepted_formats: Iterable[Union[str, "Data"]],
         converter_safe: bool = True,
-    ) -> Tuple[bool, Optional[str], Optional[DatasetProtocol]]:
+    ) -> tuple[bool, str | None, DatasetProtocol | None]:
         """
         returns (direct_match, converted_ext, converted_dataset)
         - direct match is True iff no the data set already has an accepted format
@@ -874,7 +976,7 @@ class Registry:
             ext = dataset_or_ext
             dataset = None
 
-        accepted_datatypes: List[Data] = []
+        accepted_datatypes: list[Data] = []
         for accepted_format in accepted_formats:
             if isinstance(accepted_format, str):
                 accepted_datatype = self.get_datatype_by_extension(accepted_format)
@@ -954,8 +1056,7 @@ class Registry:
 
     def to_xml_file(self, path):
         if not self._registry_xml_string:
-            registry_string_template = Template(
-                """<?xml version="1.0"?>
+            registry_string_template = Template("""<?xml version="1.0"?>
             <datatypes>
               <registration converters_path="$converters_path" display_path="$display_path">
                 $datatype_elems
@@ -964,8 +1065,7 @@ class Registry:
                 $sniffer_elems
               </sniffers>
             </datatypes>
-            """
-            )
+            """)
             converters_path = self.converters_path_attr or ""
             display_path = self.display_path_attr or ""
             datatype_elems = "".join(galaxy.util.xml_to_string(elem) for elem in self.datatype_elems)
@@ -1014,7 +1114,7 @@ class Registry:
         return state
 
 
-def upload_warning(template: Optional[Template], auto_compressed_type: Optional[str] = None) -> Optional[str]:
+def upload_warning(template: Template | None, auto_compressed_type: str | None = None) -> str | None:
     if template is None:
         return None
     template_args = {"auto_compressed_type": "" if auto_compressed_type is None else f".{auto_compressed_type}"}

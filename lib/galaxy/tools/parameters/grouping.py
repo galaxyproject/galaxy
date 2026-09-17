@@ -4,16 +4,16 @@ Constructs for grouping tool parameters
 
 import io
 import logging
+import math
 import os
 import unicodedata
+from collections.abc import (
+    Callable,
+    Mapping,
+)
 from math import inf
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
-    Mapping,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -34,9 +34,10 @@ from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.expressions import ExpressionContext
 
 if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesHistoryContext
     from galaxy.tools import Tool
-    from galaxy.tools.parameter.basic import ToolParameter
     from galaxy.tools.parameters import ToolInputsT
+    from galaxy.tools.parameters.basic import ToolParameter
 
 log = logging.getLogger(__name__)
 URI_PREFIXES = [
@@ -84,13 +85,13 @@ class Group(UsesDictVisibleKeys):
         """
         return value
 
-    def get_initial_value(self, trans, context):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", context):
         """
         Return the initial state/value for this group
         """
         raise TypeError("Not implemented")
 
-    def to_dict(self, trans):
+    def to_dict(self, trans: "ProvidesHistoryContext"):
         group_dict = self._dictify_view_keys()
         return group_dict
 
@@ -167,21 +168,24 @@ class Repeat(Group):
                 raise
         return rval
 
-    def get_initial_value(self, trans, context):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", context):
         if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         for i in range(self.default):
             rval_dict = {"__index__": i}
+            child_context = ExpressionContext(rval_dict, context)
             for input in self.inputs.values():
-                rval_dict[input.name] = input.get_initial_value(trans, context)
+                rval_dict[input.name] = input.get_initial_value(trans, child_context)
             rval.append(rval_dict)
         return rval
 
-    def to_dict(self, trans):
+    def to_dict(self, trans: "ProvidesHistoryContext"):
         if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         repeat_dict = super().to_dict(trans)
+        if math.isinf(repeat_dict.get("max", 0)):
+            repeat_dict["max"] = None
 
         def input_to_dict(input):
             return input.to_dict(trans)
@@ -232,16 +236,16 @@ class Section(Group):
                 raise
         return rval
 
-    def get_initial_value(self, trans, context):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", context):
         if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
-        rval: Dict[str, Any] = {}
+        rval: dict[str, Any] = {}
         child_context = ExpressionContext(rval, context)
         for child_input in self.inputs.values():
             rval[child_input.name] = child_input.get_initial_value(trans, child_context)
         return rval
 
-    def to_dict(self, trans):
+    def to_dict(self, trans: "ProvidesHistoryContext"):
         if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         section_dict = super().to_dict(trans)
@@ -258,12 +262,12 @@ class Dataset(Bunch):
     file_type: str
     dbkey: str
     datatype: data.Data
-    warnings: List[str]
-    metadata: Dict[str, str]
-    composite_files: Dict[str, Optional[str]]
-    uuid: Optional[str]
-    tag_using_filenames: Optional[str]
-    tags: Optional[str]
+    warnings: list[str]
+    metadata: dict[str, str]
+    composite_files: dict[str, str | None]
+    uuid: str | None
+    tag_using_filenames: str | None
+    tags: str | None
     name: str
     primary_file: str
     to_posix_lines: bool
@@ -325,7 +329,7 @@ class UploadDataset(Group):
                 dbkey = parent_context.get("dbkey", dbkey)
         return dbkey
 
-    def get_datatype_ext(self, trans, context, parent_context=None):
+    def get_datatype_ext(self, trans: "ProvidesHistoryContext", context, parent_context=None):
         ext = self.get_file_type(context, parent_context=parent_context)
         if ext in self.file_type_to_ext:
             ext = self.file_type_to_ext[
@@ -333,7 +337,7 @@ class UploadDataset(Group):
             ]  # when using autodetect, we will use composite info from 'text', i.e. only the main file
         return ext
 
-    def get_datatype(self, trans, context, parent_context=None):
+    def get_datatype(self, trans: "ProvidesHistoryContext", context, parent_context=None):
         ext = self.get_datatype_ext(trans, context, parent_context=parent_context)
         return trans.app.datatypes_registry.get_datatype_by_extension(ext)
 
@@ -344,7 +348,7 @@ class UploadDataset(Group):
     def group_title(self, context):
         return f"{self.title} ({context.get(self.file_type_name, self.default_file_type)})"
 
-    def title_by_index(self, trans, index, context):
+    def title_by_index(self, trans: "ProvidesHistoryContext", index, context):
         d_type = self.get_datatype(trans, context)
         for i, (composite_name, composite_file) in enumerate(d_type.writable_files.items()):
             if i == index:
@@ -395,7 +399,7 @@ class UploadDataset(Group):
                     raise
         return rval
 
-    def get_file_count(self, trans, context):
+    def get_file_count(self, trans: "ProvidesHistoryContext", context):
         file_count = context.get("file_count", "auto")
         if file_count == "auto":
             d_type = self.get_datatype(trans, context)
@@ -403,9 +407,10 @@ class UploadDataset(Group):
         else:
             return int(file_count)
 
-    def get_initial_value(self, trans, context):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", context):
         if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
+        assert trans is not None
         file_count = self.get_file_count(trans, context)
         rval = []
         for i in range(file_count):
@@ -416,7 +421,7 @@ class UploadDataset(Group):
             rval.append(rval_dict)
         return rval
 
-    def get_uploaded_datasets(self, trans, context, override_name=None, override_info=None):
+    def get_uploaded_datasets(self, trans: "ProvidesHistoryContext", context, override_name=None, override_info=None):
         def get_data_file_filename(data_file, override_name=None, override_info=None, purge=True):
             dataset_name = override_name
 
@@ -507,6 +512,7 @@ class UploadDataset(Group):
                     warnings.append("All FTP uploaded file selections were ignored.")
             elif ftp_files is not None and trans.user is not None:  # look for files uploaded via FTP
                 user_ftp_dir = trans.user_ftp_dir
+                assert user_ftp_dir is not None
                 assert not os.path.islink(user_ftp_dir), "User FTP directory cannot be a symbolic link"
                 for dirpath, _dirnames, filenames in os.walk(user_ftp_dir):
                     for filename in filenames:
@@ -595,16 +601,14 @@ class UploadDataset(Group):
                     # TODO: warning to the user (could happen if session has become invalid)
                 else:
                     user_ftp_dir = trans.user_ftp_dir
+                    assert user_ftp_dir is not None
                     assert not os.path.islink(user_ftp_dir), "User FTP directory cannot be a symbolic link"
                     for dirpath, _dirnames, filenames in os.walk(user_ftp_dir):
                         for filename in filenames:
                             path = relpath(os.path.join(dirpath, filename), user_ftp_dir)
                             if not os.path.islink(os.path.join(dirpath, filename)):
                                 # Normalize filesystem paths
-                                if isinstance(path, str):
-                                    valid_files.append(unicodedata.normalize("NFC", path))
-                                else:
-                                    valid_files.append(path)
+                                valid_files.append(unicodedata.normalize("NFC", path))
 
             else:
                 ftp_files = []
@@ -613,6 +617,7 @@ class UploadDataset(Group):
                     log.warning(f"User passed an invalid file path in ftp_files: {ftp_file}")
                     continue
                     # TODO: warning to the user (could happen if file is already imported)
+                assert user_ftp_dir is not None
                 ftp_data_file = {
                     "local_filename": os.path.abspath(os.path.join(user_ftp_dir, ftp_file)),
                     "filename": os.path.basename(ftp_file),
@@ -639,7 +644,7 @@ class UploadDataset(Group):
         force_composite = asbool(context.get("force_composite", "False"))
         writable_files = d_type.writable_files
         writable_files_offset = 0
-        groups_incoming = [None for _ in range(file_count)]
+        groups_incoming: list = [None for _ in range(file_count)]
         for i, group_incoming in enumerate(context.get(self.name, [])):
             i = int(group_incoming.get("__index__", i))
             groups_incoming[i] = group_incoming
@@ -717,7 +722,8 @@ class UploadDataset(Group):
                     dataset.warnings.extend(warnings)
                     if file_bunch.path:
                         if force_composite:
-                            key = group_incoming.get("NAME") or i
+                            assert group_incoming
+                            key = group_incoming.get("NAME") or str(i)
                         dataset.composite_files[key] = file_bunch.__dict__
                     elif not force_composite:
                         dataset.composite_files[key] = None
@@ -744,13 +750,13 @@ class UploadDataset(Group):
 class Conditional(Group):
     type = "conditional"
     value_from: Callable[[ExpressionContext, "Conditional", "Tool"], Mapping[str, str]]
-    cases: List["ConditionalWhen"]
+    cases: list["ConditionalWhen"]
 
     def __init__(self, name: str):
         Group.__init__(self, name)
-        self.test_param: Optional[ToolParameter] = None
+        self.test_param: ToolParameter | None = None
         self.cases = []
-        self.value_ref: Optional[str] = None
+        self.value_ref: str | None = None
         self.value_ref_in_group = True  # When our test_param is not part of the conditional Group, this is False
 
     @property
@@ -771,7 +777,7 @@ class Conditional(Group):
     def value_to_basic(self, value, app, use_security=False):
         if self.test_param is None:
             raise Exception("Must set 'test_param' attribute to use.")
-        rval: Dict[str, Any] = {}
+        rval: dict[str, Any] = {}
         rval[self.test_param.name] = self.test_param.value_to_basic(value[self.test_param.name], app)
         current_case = rval["__current_case__"] = self.get_current_case(value[self.test_param.name])
         for input in self.cases[current_case].inputs.values():
@@ -800,7 +806,7 @@ class Conditional(Group):
                 raise
         return rval
 
-    def get_initial_value(self, trans, context):
+    def get_initial_value(self, trans: "ProvidesHistoryContext | None", context):
         if self.test_param is None:
             raise Exception("Must set 'test_param' attribute to use.")
         # State for a conditional is a plain dictionary.
@@ -819,7 +825,7 @@ class Conditional(Group):
             rval[child_input.name] = child_input.get_initial_value(trans, child_context)
         return rval
 
-    def to_dict(self, trans):
+    def to_dict(self, trans: "ProvidesHistoryContext"):
         if self.test_param is None:
             raise Exception("Must set 'test_param' attribute to use.")
         cond_dict = super().to_dict(trans)
@@ -839,7 +845,7 @@ class ConditionalWhen(UsesDictVisibleKeys):
         self.value = None
         self.inputs = None
 
-    def to_dict(self, trans):
+    def to_dict(self, trans: "ProvidesHistoryContext"):
         if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         when_dict = self._dictify_view_keys()

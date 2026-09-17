@@ -1,3 +1,6 @@
+from typing import (
+    cast,
+)
 from uuid import uuid4
 
 from galaxy.config import GalaxyAppConfiguration
@@ -21,6 +24,11 @@ from galaxy.schema.schema import (
     ToolLandingRequest,
     WorkflowLandingRequest,
 )
+from galaxy.structured_app import MinimalManagerApp
+from galaxy.tool_util.parameters import (
+    DataParameterModel,
+    ToolParameterT,
+)
 from galaxy.workflow.trs_proxy import TrsProxy
 from .base import BaseTestCase
 
@@ -36,13 +44,38 @@ TEST_STATE = {
 CLIENT_SECRET = "mycoolsecret"
 
 
-class TestLanding(BaseTestCase):
+class MockApp:
+    @property
+    def toolbox(self):
+        return MockToolbox()
 
+
+class MockToolbox:
+    def get_tool(self, tool_id, tool_uuid, tool_version, user):
+        return MockTool()
+
+    def materialize_tool(self, tool, *, reason):
+        return tool
+
+
+class MockTool:
+    id = TEST_TOOL_ID
+
+    @property
+    def parameters(self) -> list[ToolParameterT]:
+        return [DataParameterModel(type="data", name="input1")]
+
+
+class TestLanding(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.workflow_contents_manager = WorkflowContentsManager(self.app, self.app.trs_proxy)
         self.landing_manager = LandingRequestManager(
-            self.trans.sa_session, self.app.security, self.workflow_contents_manager
+            self.trans.sa_session,
+            self.app.security,
+            self.workflow_contents_manager,
+            cast(MinimalManagerApp, MockApp()),
+            self.app.config,
         )
         self.trans.app.trs_proxy = TrsProxy(GalaxyAppConfiguration(override_tempdir=False))
 

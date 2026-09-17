@@ -3,7 +3,7 @@ import axios, { type AxiosResponse } from "axios";
 import type { AnyHistory, HistorySummaryExtended } from "@/api";
 import { GalaxyApi } from "@/api";
 import { prependPath } from "@/utils/redirect";
-import { rethrowSimple } from "@/utils/simple-error";
+import { ApiError, errorMessageAsString, type GalaxyApiResult, rethrowSimple } from "@/utils/simple-error";
 
 /**
  * Generic json getter
@@ -74,7 +74,12 @@ export async function setCurrentHistoryOnServer(historyId: string) {
 }
 
 /**
- * Get list of histories from server and return them.
+ * Get list of histories owned by the current user and return them.
+ *
+ * The backend defaults to `show_published=true`, so the `show_*` flags have to be
+ * sent explicitly to keep other users' published or shared histories out of the
+ * listing.
+ *
  * @param offset to start from (default = 0)
  * @param limit of histories to load (default = null; in which case no limit)
  * @param queryString to append to url in the form `q=filter&qv=val&q=...`
@@ -84,7 +89,7 @@ export async function getHistoryList(offset = 0, limit: number | null = null, qu
     // TODO: to convert this to openapi-fetch we need to fix the query string handling
     // in the caller code to use the query object instead of a string
 
-    const params = `view=summary&order=update_time&offset=${offset}`;
+    const params = `view=summary&order=update_time&offset=${offset}&show_own=true&show_published=false&show_shared=false`;
     let url = `api/histories?${params}`;
     if (limit !== null) {
         url += `&limit=${limit}`;
@@ -97,8 +102,8 @@ export async function getHistoryList(offset = 0, limit: number | null = null, qu
 }
 
 /** Load one history by id */
-export async function getHistoryByIdFromServer(id: string) {
-    const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
+export async function getHistoryByIdFromServer(id: string): Promise<GalaxyApiResult<HistorySummaryExtended>> {
+    const { data, error, response } = await GalaxyApi().GET("/api/histories/{history_id}", {
         params: {
             path: { history_id: id },
             query: extendedHistoryParams,
@@ -106,12 +111,12 @@ export async function getHistoryByIdFromServer(id: string) {
     });
 
     if (error) {
-        rethrowSimple(error);
+        return { data: undefined, error: new ApiError(errorMessageAsString(error), response.status) };
     }
 
     // We know that the data is a HistorySummaryExtended because we requested it
     // with the extendedHistoryParams
-    return data as HistorySummaryExtended;
+    return { data: data as HistorySummaryExtended, error: undefined };
 }
 
 /**
@@ -127,7 +132,16 @@ export async function secureHistoryOnServer(history: AnyHistory) {
     if (response.status !== 200) {
         throw new Error(response.statusText);
     }
-    return await getHistoryByIdFromServer(id);
+    const result = await getHistoryByIdFromServer(id);
+    if (result.error) {
+        throw result.error;
+    }
+    return {
+        securedHistory: result.data,
+        message: response.data.message as string,
+        sharingStatusChanged: response.data.sharing_status_changed as boolean,
+        skippedDatasets: response.data.skipped_datasets as number,
+    };
 }
 
 /**

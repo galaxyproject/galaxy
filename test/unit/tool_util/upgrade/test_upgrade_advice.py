@@ -2,7 +2,6 @@
 # - 21_09_fix_from_work_dir_whitespace
 # - 23_0_consider_optional_text
 import os
-from typing import List
 
 import pytest
 
@@ -160,7 +159,7 @@ def _tool_path(tool_name: str):
     return os.path.join(functional_test_tool_path(tool_name))
 
 
-def assert_has_advice(advice_list: List[Advice], advice_code: str):
+def assert_has_advice(advice_list: list[Advice], advice_code: str):
     for advice in advice_list:
         if advice.advice_code["name"] == advice_code:
             return
@@ -168,7 +167,7 @@ def assert_has_advice(advice_list: List[Advice], advice_code: str):
     raise AssertionError(f"Was expecting advice {advice_code} in list of upgrade advice {advice_list}")
 
 
-def assert_not_has_advice(advice_list: List[Advice], advice_code: str):
+def assert_not_has_advice(advice_list: list[Advice], advice_code: str):
     for advice in advice_list:
         if advice.advice_code["name"] == advice_code:
             raise AssertionError(f"Was not expecting advice {advice_code} in list of upgrade advice {advice_list}")

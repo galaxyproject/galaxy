@@ -1,9 +1,10 @@
 import { reactive, ref, watch } from "vue";
 
-import { type SelectOption, type useSelectMany as UseSelectMany } from "../selectMany";
+import type { SelectOption, useSelectMany as UseSelectMany } from "../selectMany";
 import { main } from "../selectManyMain";
 
-jest.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany", () => ({
+// @ts-ignore - vi is a Vitest global
+vi.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany", () => ({
     useSelectMany,
 }));
 
@@ -24,7 +25,7 @@ export const useSelectMany: typeof UseSelectMany = (options) => {
             moreSelected.value = result.moreSelected;
             moreUnselected.value = result.moreUnselected;
         },
-        { immediate: true }
+        { immediate: true },
     );
 
     return {

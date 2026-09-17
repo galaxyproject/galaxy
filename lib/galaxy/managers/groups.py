@@ -19,6 +19,7 @@ from galaxy.schema.groups import (
     GroupUpdatePayload,
 )
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.work.context import SessionRequestContext
 
 
 class GroupsManager:
@@ -27,7 +28,7 @@ class GroupsManager:
     def __init__(self, app: MinimalManagerApp) -> None:
         self._app = app
 
-    def index(self, trans: ProvidesAppContext):
+    def index(self, trans: SessionRequestContext):
         """
         Displays a collection (list) of groups.
         """
@@ -39,7 +40,7 @@ class GroupsManager:
             rval.append(item)
         return rval
 
-    def create(self, trans: ProvidesAppContext, payload: GroupCreatePayload):
+    def create(self, trans: SessionRequestContext, payload: GroupCreatePayload):
         """
         Creates a new group.
         """
@@ -52,8 +53,19 @@ class GroupsManager:
         group = model.Group(name=name)
         sa_session.add(group)
 
+        role_ids = list(payload.role_ids)
+        if payload.auto_create_role:
+            existing_role = sa_session.scalars(select(model.Role).where(model.Role.name == name).limit(1)).first()
+            if existing_role:
+                raise Conflict(f"A role with name '{name}' already exists")
+            role = model.Role(name=name, description=f"Role for group {name}")
+            sa_session.add(role)
+            sa_session.flush()
+            gra = model.GroupRoleAssociation(group, role)
+            sa_session.add(gra)
+
         trans.app.security_agent.set_group_user_and_role_associations(
-            group, user_ids=payload.user_ids, role_ids=payload.role_ids
+            group, user_ids=payload.user_ids, role_ids=role_ids
         )
         sa_session.commit()
 
@@ -62,7 +74,7 @@ class GroupsManager:
         item["url"] = self._url_for(trans, "group", id=encoded_id)
         return [item]
 
-    def show(self, trans: ProvidesAppContext, group_id: int):
+    def show(self, trans: SessionRequestContext, group_id: int):
         """
         Displays information about a group.
         """
@@ -74,7 +86,7 @@ class GroupsManager:
         item["roles_url"] = self._url_for(trans, "group_roles", group_id=encoded_id)
         return item
 
-    def update(self, trans: ProvidesAppContext, group_id: int, payload: GroupUpdatePayload):
+    def update(self, trans: SessionRequestContext, group_id: int, payload: GroupUpdatePayload):
         """
         Modifies a group.
         """
@@ -127,7 +139,7 @@ class GroupsManager:
         trans.sa_session.add(group)
         trans.sa_session.commit()
 
-    def _url_for(self, trans, name, **kwargs):
+    def _url_for(self, trans: SessionRequestContext, name, **kwargs):
         return trans.url_builder(name, **kwargs)
 
     def _check_duplicated_group_name(self, sa_session: galaxy_scoped_session, group_name: str) -> None:

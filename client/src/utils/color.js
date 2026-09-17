@@ -1,5 +1,6 @@
 import { Hsluv } from "hsluv";
-import { hashFnv32a } from "utils/utils";
+
+import { hashFnv32a } from "@/utils/utils";
 
 /**
  * Simple 3-color keyed color scheme generated
@@ -22,7 +23,7 @@ export function keyedColorScheme(strKey) {
     converter.hsluv_l = lightness;
     converter.hsluvToHex();
     const primary = `rgb(${parseInt(converter.rgb_r * 255)},${parseInt(converter.rgb_g * 255)},${parseInt(
-        converter.rgb_b * 255
+        converter.rgb_b * 255,
     )})`;
     converter.hsluv_l = lightness * 0.9;
     converter.hsluvToHex();

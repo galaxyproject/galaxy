@@ -1,20 +1,17 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
-import { type ConcreteObjectStoreModel } from "@/api";
+import type { UserConcreteObjectStoreModel } from "@/api";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
+import GModal from "../BaseComponents/GModal.vue";
 import ObjectStoreSelect from "./ObjectStoreSelect.vue";
-import SelectModal from "@/components/Dataset/DatasetStorage/SelectModal.vue";
-
-library.add(faTimes);
 
 interface FilterObjectStoreLinkProps {
     value?: string;
-    objectStores: ConcreteObjectStoreModel[];
+    objectStores: UserConcreteObjectStoreModel[];
 }
 
 const props = defineProps<FilterObjectStoreLinkProps>();
@@ -27,8 +24,12 @@ const emit = defineEmits<{
     (e: "change", objectStoreId?: string): void;
 }>();
 
-function onSelect(objectStoreId?: string) {
-    emit("change", objectStoreId);
+function onSelect(objectStoreId?: string | null) {
+    if (objectStoreId == null) {
+        emit("change", undefined);
+    } else {
+        emit("change", objectStoreId);
+    }
     showModal.value = false;
 }
 
@@ -43,12 +44,12 @@ const selectionText = computed(() => {
 
 <template>
     <span class="filter-objectstore-link">
-        <SelectModal v-model="showModal" title="Select Storage Source">
+        <GModal size="small" :show.sync="showModal" title="Select a storage source to filter by">
             <ObjectStoreSelect :object-stores="objectStores" @select="onSelect" />
-        </SelectModal>
+        </GModal>
         <b-link href="#" @click="showModal = true">{{ selectionText }}</b-link>
-        <span v-if="value" v-b-tooltip.hover title="Remove Filter">
-            <FontAwesomeIcon icon="times" @click="onSelect(undefined)" />
+        <span v-if="value" v-g-tooltip.hover title="Remove Filter">
+            <FontAwesomeIcon :icon="faTimes" @click="onSelect(undefined)" />
         </span>
     </span>
 </template>

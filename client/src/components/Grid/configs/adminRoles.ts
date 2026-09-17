@@ -8,7 +8,7 @@ import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { type ActionArray, type FieldArray, type GridConfig } from "./types";
+import type { ActionArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -199,7 +199,7 @@ const gridConfig: GridConfig = {
     getData: getData,
     plural: "Roles",
     sortBy: "name",
-    sortDesc: true,
+    sortDesc: false,
     sortKeys: ["description", "name", "update_time"],
     title: "Roles",
 };

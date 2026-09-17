@@ -1,8 +1,5 @@
 import tempfile
-from typing import (
-    Callable,
-    List,
-)
+from collections.abc import Callable
 from unittest import SkipTest
 from urllib.parse import (
     urljoin,
@@ -27,7 +24,7 @@ from ._framework import ApiTestCase
 CONTENT = "My Cool DRS Data\n"
 
 # DRS expects identical get/post for two main API entrypoints.
-HTTP_METHODS: List[Callable[[str], requests.Response]] = [requests.get, requests.post]
+HTTP_METHODS: list[Callable[[str], requests.Response]] = [requests.get, requests.post]
 
 CHECKSUM_TEST_SLEEP_TIME = 3.0
 

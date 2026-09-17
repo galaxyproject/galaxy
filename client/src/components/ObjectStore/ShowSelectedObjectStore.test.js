@@ -1,6 +1,8 @@
+import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -43,22 +45,26 @@ const USER_OBJECT_STORE_DATA = {
     variables: {},
 };
 
-describe("ShowSelectedObjectStore", () => {
-    let wrapper;
+function mountWithPreferredStoreId(preferredObjectStoreId) {
+    const wrapper = mount(ShowSelectedObjectStore, {
+        propsData: { preferredObjectStoreId, forWhat: "Data goes into..." },
+        localVue,
+        pinia: createTestingPinia({ createSpy: vi.fn }),
+    });
+    return wrapper;
+}
 
+describe("ShowSelectedObjectStore", () => {
     it("should show a loading message and then a DescribeObjectStore component", async () => {
         server.use(
             http.get("/api/object_stores/{object_store_id}", ({ response }) => {
                 return response(200).json(OBJECT_STORE_DATA);
-            })
+            }),
         );
-        wrapper = mount(ShowSelectedObjectStore, {
-            propsData: { preferredObjectStoreId: TEST_OBJECT_ID, forWhat: "Data goes into..." },
-            localVue,
-        });
+        const wrapper = mountWithPreferredStoreId(TEST_OBJECT_ID);
         let loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();
-        expect(loadingEl.find(".loading-message").text()).toContainLocalizationOf("Loading storage location details");
+        expect(loadingEl.find(".loading-message").text()).toContain("Loading Galaxy storage details");
         await flushPromises();
         loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeFalsy();
@@ -69,16 +75,13 @@ describe("ShowSelectedObjectStore", () => {
         server.use(
             http.get("/api/object_store_instances/{user_object_store_id}", ({ response }) => {
                 return response(200).json(USER_OBJECT_STORE_DATA);
-            })
+            }),
         );
 
-        wrapper = mount(ShowSelectedObjectStore, {
-            propsData: { preferredObjectStoreId: TEST_USER_OBJECT_STORE_ID, forWhat: "Data goes into..." },
-            localVue,
-        });
+        const wrapper = mountWithPreferredStoreId(TEST_USER_OBJECT_STORE_ID);
         let loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();
-        expect(loadingEl.find(".loading-message").text()).toContainLocalizationOf("Loading storage location details");
+        expect(loadingEl.find(".loading-message").text()).toContain("Loading Galaxy storage details");
         await flushPromises();
         loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeFalsy();

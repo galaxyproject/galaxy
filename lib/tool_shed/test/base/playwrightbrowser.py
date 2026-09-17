@@ -1,5 +1,4 @@
 import time
-from typing import List
 
 from playwright.sync_api import (
     expect,
@@ -26,7 +25,7 @@ class PlaywrightShedBrowser(ShedBrowser):
     def __init__(self, page: Page):
         self._page = page
 
-    def visit_url(self, url: str, allowed_codes: List[int]) -> str:
+    def visit_url(self, url: str, allowed_codes: list[int]) -> str:
         try:
             response = self._page.goto(url)
         except Exception as e:
@@ -77,7 +76,7 @@ class PlaywrightShedBrowser(ShedBrowser):
 
         from galaxy.util import smart_str
 
-        with tempfile.NamedTemporaryFile(suffix=suffix, prefix="twilltestcase-", delete=False) as fh:
+        with tempfile.NamedTemporaryFile(suffix=suffix, prefix="testcase-", delete=False) as fh:
             fh.write(smart_str(content))
         return fh.name
 
@@ -132,7 +131,7 @@ class PlaywrightShedBrowser(ShedBrowser):
         input_s = form.locator(f"select[name='{control_name}']")
         if input_i.count():
             if control_name in ["redirect"]:
-                input_i.input_value = value  # type:ignore[assignment, unused-ignore]
+                input_i.input_value = value  # type: ignore[assignment, unused-ignore]
             else:
                 if isinstance(value, bool):
                     if value and not input_i.is_checked():
@@ -142,11 +141,11 @@ class PlaywrightShedBrowser(ShedBrowser):
                 else:
                     input_i.fill(value)
         if input_t.count():
-            input_t.fill(value)  # type:ignore[arg-type, unused-ignore]
+            input_t.fill(value)  # type: ignore[arg-type, unused-ignore]
         if input_s.count():
-            input_s.select_option(value)  # type:ignore[arg-type, unused-ignore]
+            input_s.select_option(value)  # type: ignore[arg-type, unused-ignore]
 
-    def edit_repository_categories(self, categories_to_add: List[str], categories_to_remove: List[str]) -> None:
+    def edit_repository_categories(self, categories_to_add: list[str], categories_to_remove: list[str]) -> None:
         multi_select = "form[name='categories'] select[name='category_id']"
         select_locator = self._page.locator(multi_select)
         select_locator.evaluate("node => node.selectedOptions = []")
@@ -157,16 +156,12 @@ class PlaywrightShedBrowser(ShedBrowser):
         select_locator.select_option(label=categories_to_remove)
         self.submit_form_with_name("categories", "manage_categories_button")
 
-    def grant_users_access(self, usernames: List[str]):
+    def grant_users_access(self, usernames: list[str]):
         multi_select = "form[name='user_access'] select[name='allow_push']"
         select_locator = self._page.locator(multi_select)
         select_locator.evaluate("node => node.selectedOptions = []")
         select_locator.select_option(label=usernames)
         self.submit_form_with_name("user_access", "user_access_button")
-
-    @property
-    def is_twill(self) -> bool:
-        return False
 
     def logout_if_logged_in(self, assert_logged_out=True):
         self._page.wait_for_selector(f"{Locators.toolbar_login}, {Locators.toolbar_logout}")

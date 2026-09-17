@@ -4,27 +4,23 @@ import io
 import logging
 import lzma
 import os
-import shutil
 import tarfile
 import tempfile
 import zipfile
+from collections.abc import (
+    Iterable,
+    Iterator,
+)
 from types import TracebackType
 from typing import (
     Any,
     cast,
-    Generator,
     IO,
-    Iterable,
-    List,
-    Optional,
+    Literal,
     overload,
-    Tuple,
-    Type,
-    Union,
 )
 
 from typing_extensions import (
-    Literal,
     Self,
 )
 
@@ -46,20 +42,18 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
-FileObjTypeStr = Union[IO[str], io.TextIOWrapper]
-FileObjTypeBytes = Union[gzip.GzipFile, bz2.BZ2File, lzma.LZMAFile, IO[bytes]]
-FileObjType = Union[FileObjTypeStr, FileObjTypeBytes]
+FileObjTypeStr = IO[str] | io.TextIOWrapper
+FileObjTypeBytes = gzip.GzipFile | bz2.BZ2File | lzma.LZMAFile | IO[bytes]
+FileObjType = FileObjTypeStr | FileObjTypeBytes
+
+
+@overload
+def get_fileobj(filename: str, mode: Literal["r"], compressed_formats: list[str] | None = None) -> FileObjTypeStr: ...
 
 
 @overload
 def get_fileobj(
-    filename: str, mode: Literal["r"], compressed_formats: Optional[List[str]] = None
-) -> FileObjTypeStr: ...
-
-
-@overload
-def get_fileobj(
-    filename: str, mode: Literal["rb"], compressed_formats: Optional[List[str]] = None
+    filename: str, mode: Literal["rb"], compressed_formats: list[str] | None = None
 ) -> FileObjTypeBytes: ...
 
 
@@ -68,10 +62,10 @@ def get_fileobj(filename: str) -> FileObjTypeStr: ...
 
 
 @overload
-def get_fileobj(filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None) -> FileObjType: ...
+def get_fileobj(filename: str, mode: str = "r", compressed_formats: list[str] | None = None) -> FileObjType: ...
 
 
-def get_fileobj(filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None) -> FileObjType:
+def get_fileobj(filename: str, mode: str = "r", compressed_formats: list[str] | None = None) -> FileObjType:
     """
     Returns a fileobj. If the file is compressed, return an appropriate file
     reader. In text mode, always use 'utf-8' encoding.
@@ -86,29 +80,29 @@ def get_fileobj(filename: str, mode: str = "r", compressed_formats: Optional[Lis
 
 @overload
 def get_fileobj_raw(
-    filename: str, mode: Literal["r"], compressed_formats: Optional[List[str]] = None
-) -> Tuple[Optional[str], FileObjTypeStr]: ...
+    filename: str, mode: Literal["r"], compressed_formats: list[str] | None = None
+) -> tuple[str | None, FileObjTypeStr]: ...
 
 
 @overload
 def get_fileobj_raw(
-    filename: str, mode: Literal["rb"], compressed_formats: Optional[List[str]] = None
-) -> Tuple[Optional[str], FileObjTypeBytes]: ...
+    filename: str, mode: Literal["rb"], compressed_formats: list[str] | None = None
+) -> tuple[str | None, FileObjTypeBytes]: ...
 
 
 @overload
-def get_fileobj_raw(filename: str) -> Tuple[Optional[str], FileObjTypeStr]: ...
+def get_fileobj_raw(filename: str) -> tuple[str | None, FileObjTypeStr]: ...
 
 
 @overload
 def get_fileobj_raw(
-    filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None
-) -> Tuple[Optional[str], FileObjType]: ...
+    filename: str, mode: str = "r", compressed_formats: list[str] | None = None
+) -> tuple[str | None, FileObjType]: ...
 
 
 def get_fileobj_raw(
-    filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None
-) -> Tuple[Optional[str], FileObjType]:
+    filename: str, mode: str = "r", compressed_formats: list[str] | None = None
+) -> tuple[str | None, FileObjType]:
     if compressed_formats is None:
         compressed_formats = ["bz2", "gzip", "xz", "zip"]
     # Remove 't' from mode, which may cause an error for compressed files
@@ -118,7 +112,7 @@ def get_fileobj_raw(
         mode = "r"
     compressed_format = None
     if "gzip" in compressed_formats and is_gzip(filename):
-        fh: Union[gzip.GzipFile, bz2.BZ2File, lzma.LZMAFile, IO[bytes]] = gzip.GzipFile(filename, mode)
+        fh: gzip.GzipFile | bz2.BZ2File | lzma.LZMAFile | IO[bytes] = gzip.GzipFile(filename, mode)
         compressed_format = "gzip"
     elif "bz2" in compressed_formats and is_bz2(filename):
         mode = cast(Literal["a", "ab", "r", "rb", "w", "wb", "x", "xb"], mode)
@@ -148,7 +142,7 @@ def get_fileobj_raw(
         return compressed_format, fh
 
 
-def file_iter(fname: str, sep: Optional[Any] = None) -> Generator[Union[List[bytes], Any, List[str]], None, None]:
+def file_iter(fname: str, sep: Any | None = None) -> Iterator[list[str]]:
     """
     This generator iterates over a file and yields its lines
     splitted via the C{sep} parameter. Skips empty lines and lines starting with
@@ -164,7 +158,7 @@ def file_iter(fname: str, sep: Optional[Any] = None) -> Generator[Union[List[byt
                 yield line.split(sep)
 
 
-ArchiveMemberType = Union[tarfile.TarInfo, zipfile.ZipInfo]
+ArchiveMemberType = tarfile.TarInfo | zipfile.ZipInfo
 
 
 def decompress_bytes_to_directory(content: bytes) -> str:
@@ -185,7 +179,7 @@ def decompress_path_to_directory(path: str) -> str:
 
 
 class CompressedFile:
-    archive: Union[tarfile.TarFile, zipfile.ZipFile]
+    archive: tarfile.TarFile | zipfile.ZipFile
 
     @staticmethod
     def can_decompress(file_path: StrPath) -> bool:
@@ -193,10 +187,10 @@ class CompressedFile:
 
     def __init__(self, file_path: StrPath, mode: Literal["a", "r", "w", "x"] = "r") -> None:
         file_path_str = str(file_path)
-        if tarfile.is_tarfile(file_path):
-            self.file_type = "tar"
-        elif zipfile.is_zipfile(file_path) and not file_path_str.endswith(".jar"):
+        if zipfile.is_zipfile(file_path) and not file_path_str.endswith(".jar"):
             self.file_type = "zip"
+        elif tarfile.is_tarfile(file_path):
+            self.file_type = "tar"
         else:
             raise Exception("File must be valid zip or tar file.")
         self.file_name = os.path.splitext(os.path.basename(file_path))[0]
@@ -254,10 +248,6 @@ class CompressedFile:
                     members_z = cast(Iterable[str], self.safemembers())
                     self.archive.extractall(extraction_path, members=members_z)
         else:
-            if not common_prefix_dir:
-                extraction_path = os.path.join(path, self.file_name)
-                if not os.path.exists(extraction_path):
-                    os.makedirs(extraction_path)
             if isinstance(self.archive, tarfile.TarFile):
                 members_t = cast(Iterable[tarfile.TarInfo], self.safemembers())
                 self.archive.extractall(extraction_path, members=members_t)
@@ -272,8 +262,11 @@ class CompressedFile:
                 filename = self.getname(zipped_file)
                 absolute_filepath = os.path.join(extraction_path, filename)
                 external_attributes = self.archive.getinfo(filename).external_attr
-                # The 2 least significant bytes are irrelevant, the next two contain unix permissions.
-                unix_permissions = external_attributes >> 16
+                # Mask to 0o0777: strip SUID/SGID/sticky from untrusted archive
+                # no control over who can trigger can be:
+                # galaxy user or runner with privileged account through quay.io/biocontainers/galaxy-util
+                # any authenticated user can reach this via CONVERTER_archive_to_directory.
+                unix_permissions = (external_attributes >> 16) & 0o0777
                 if unix_permissions != 0:
                     if os.path.exists(absolute_filepath):
                         os.chmod(absolute_filepath, unix_permissions)
@@ -283,7 +276,7 @@ class CompressedFile:
                         )
         return os.path.abspath(os.path.join(extraction_path, common_prefix_dir))
 
-    def safemembers(self) -> Union[Iterable[tarfile.TarInfo], Iterable[str]]:
+    def safemembers(self) -> Iterable[tarfile.TarInfo] | Iterable[str]:
         members = self.archive
         common_prefix_dir = self.common_prefix_dir
         if self.file_type == "tar":
@@ -303,11 +296,11 @@ class CompressedFile:
                     raise Exception(f"{name} is blocked (illegal path).")
                 yield name
 
-    def getmembers_tar(self) -> List[tarfile.TarInfo]:
+    def getmembers_tar(self) -> list[tarfile.TarInfo]:
         assert isinstance(self.archive, tarfile.TarFile)
         return self.archive.getmembers()
 
-    def getmembers_zip(self) -> List[zipfile.ZipInfo]:
+    def getmembers_zip(self) -> list[zipfile.ZipInfo]:
         assert isinstance(self.archive, zipfile.ZipFile)
         return self.archive.infolist()
 
@@ -317,14 +310,14 @@ class CompressedFile:
     def getname_zip(self, item: zipfile.ZipInfo) -> str:
         return item.filename
 
-    def getmember(self, name: str) -> Optional[ArchiveMemberType]:
+    def getmember(self, name: str) -> ArchiveMemberType | None:
         for member in self.getmembers():
             if self.getname(member) == name:
                 return member
         return None
 
-    def getmembers(self) -> List[ArchiveMemberType]:
-        return cast(List[ArchiveMemberType], getattr(self, f"getmembers_{self.type}")())
+    def getmembers(self) -> list[ArchiveMemberType]:
+        return cast(list[ArchiveMemberType], getattr(self, f"getmembers_{self.type}")())
 
     def getname(self, member: ArchiveMemberType) -> str:
         return cast(str, getattr(self, f"getname_{self.type}")(member))
@@ -346,7 +339,7 @@ class CompressedFile:
         return False
 
     @staticmethod
-    def open_tar(file: Union[StrPath, IO[bytes]], mode: Literal["a", "r", "w", "x"] = "r") -> tarfile.TarFile:
+    def open_tar(file: StrPath | IO[bytes], mode: Literal["a", "r", "w", "x"] = "r") -> tarfile.TarFile:
         if isinstance(file, (str, os.PathLike)):
             tf = tarfile.open(file, mode=mode, errorlevel=0)
         else:
@@ -358,7 +351,7 @@ class CompressedFile:
         return tf
 
     @staticmethod
-    def open_zip(file: Union[StrPath, IO[bytes]], mode: Literal["a", "r", "w", "x"] = "r") -> zipfile.ZipFile:
+    def open_zip(file: StrPath | IO[bytes], mode: Literal["a", "r", "w", "x"] = "r") -> zipfile.ZipFile:
         return zipfile.ZipFile(file, mode)
 
     @staticmethod
@@ -381,9 +374,9 @@ class CompressedFile:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> bool:
         try:
             self.archive.close()
@@ -409,13 +402,13 @@ class FastZipFile(zipfile.ZipFile):
 # modified from shutil._make_zipfile
 def make_fast_zipfile(
     base_name: str,
-    base_dir: str,
+    base_dir: StrPath,
     verbose: int = 0,
     dry_run: int = 0,
-    logger: Optional[logging.Logger] = None,
-    owner: Optional[str] = None,
-    group: Optional[str] = None,
-    root_dir: Optional[str] = None,
+    logger: logging.Logger | None = None,
+    owner: str | None = None,
+    group: str | None = None,
+    root_dir: StrPath | None = None,
 ) -> str:
     """Create a zip file from all the files under 'base_dir'.
 
@@ -441,10 +434,6 @@ def make_fast_zipfile(
             if root_dir is not None:
                 base_dir = os.path.join(root_dir, base_dir)
             base_dir = os.path.normpath(base_dir)
-            if arcname != os.curdir:
-                zf.write(base_dir, arcname)
-                if logger is not None:
-                    logger.info("adding '%s'", base_dir)
             for dirpath, dirnames, filenames in os.walk(base_dir):
                 arcdirpath = dirpath
                 if root_dir is not None:
@@ -468,6 +457,3 @@ def make_fast_zipfile(
     if root_dir is not None:
         zip_filename = os.path.abspath(zip_filename)
     return zip_filename
-
-
-shutil.register_archive_format("fastzip", make_fast_zipfile)

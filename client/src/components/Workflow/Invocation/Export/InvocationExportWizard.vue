@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { BAlert, BCard, BCardGroup, BCardImg, BCardTitle, BFormCheckbox, BFormGroup, BFormInput } from "bootstrap-vue";
-import { computed, reactive, ref, watch } from "vue";
+import { BAlert, BCard, BCardGroup, BFormGroup, BFormInput } from "bootstrap-vue";
+import { computed, onUnmounted, reactive, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
+import type { ExportParams } from "@/components/Common/models/exportRecordModel";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
+import { borderVariant } from "@/components/Common/Wizard/utils";
 import {
     AVAILABLE_INVOCATION_EXPORT_PLUGINS,
     getInvocationExportPluginByType,
@@ -19,11 +21,13 @@ import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonito
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import ExportFormatSelector from "@/components/Common/ExportFormatSelector.vue";
+import ExportIncludeOptions from "@/components/Common/ExportIncludeOptions.vue";
+import ExportRemoteSourceSelector from "@/components/Common/ExportRemoteSourceSelector.vue";
 import RDMCredentialsInfo from "@/components/Common/RDMCredentialsInfo.vue";
 import RDMDestinationSelector from "@/components/Common/RDMDestinationSelector.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
-import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
 import ExistingInvocationExportProgressCard from "@/components/Workflow/Invocation/Export/ExistingInvocationExportProgressCard.vue";
 
@@ -50,7 +54,9 @@ interface InvocationExportData {
     destination: InvocationExportDestination;
     remoteUri: string;
     outputFileName: string;
-    includeData: boolean;
+    includeFiles: boolean;
+    includeDeleted: boolean;
+    includeHidden: boolean;
     bcoDatabase: BcoDatabaseExportData;
 }
 
@@ -84,14 +90,14 @@ const exportButtonLabel = computed(() => {
 });
 
 const needsFileName = computed(
-    () => exportData.destination === "remote-source" || exportData.destination === "rdm-repository"
+    () => exportData.destination === "remote-source" || exportData.destination === "rdm-repository",
 );
 
 const canIncludeData = computed(() => exportData.exportPluginFormat !== "bco");
 
 const exportDestinationSummary = computed(() => {
     const exportDestination = exportDestinationTargets.value.find(
-        (target) => target.destination === exportData.destination
+        (target) => target.destination === exportData.destination,
     );
     return exportDestination?.label ?? "Unknown Destination";
 });
@@ -153,7 +159,7 @@ const wizard = useWizard({
                 exportData.bcoDatabase.serverBaseUrl &&
                     exportData.bcoDatabase.authorization &&
                     exportData.bcoDatabase.table &&
-                    exportData.bcoDatabase.ownerGroup
+                    exportData.bcoDatabase.ownerGroup,
             ),
         isSkippable: () => exportData.destination !== "bco-database" || exportData.exportPluginFormat !== "bco",
     },
@@ -175,7 +181,7 @@ watch(
         if (exportData.destination === "bco-database" && exportData.exportPluginFormat !== "bco") {
             exportData.destination = "download";
         }
-    }
+    },
 );
 
 watch(
@@ -184,7 +190,7 @@ watch(
         if (oldValue && !newValue) {
             resetWizard();
         }
-    }
+    },
 );
 
 function onRecordSelected(recordUri: string) {
@@ -211,13 +217,14 @@ async function exportInvocation() {
 }
 
 async function exportToSts() {
+    const exportParams = getExportParams();
     const { data, error } = await GalaxyApi().POST("/api/invocations/{invocation_id}/prepare_store_download", {
         params: { path: { invocation_id: props.invocationId } },
         body: {
-            model_store_format: selectedExportPlugin.value.exportParams.modelStoreFormat,
-            include_deleted: selectedExportPlugin.value.exportParams.includeDeleted,
-            include_hidden: selectedExportPlugin.value.exportParams.includeHidden,
-            include_files: exportData.includeData,
+            model_store_format: exportParams.modelStoreFormat,
+            include_deleted: exportParams.includeDeleted,
+            include_hidden: exportParams.includeHidden,
+            include_files: exportParams.includeFiles,
             bco_merge_history_metadata: false,
         },
     });
@@ -231,16 +238,17 @@ async function exportToSts() {
 }
 
 async function exportToFileSource() {
+    const exportParams = getExportParams();
     const { data, error } = await GalaxyApi().POST("/api/invocations/{invocation_id}/write_store", {
         params: {
             path: { invocation_id: props.invocationId },
         },
         body: {
             target_uri: exportDestinationUri.value,
-            model_store_format: selectedExportPlugin.value.exportParams.modelStoreFormat,
-            include_deleted: selectedExportPlugin.value.exportParams.includeDeleted,
-            include_hidden: selectedExportPlugin.value.exportParams.includeHidden,
-            include_files: exportData.includeData,
+            model_store_format: exportParams.modelStoreFormat,
+            include_deleted: exportParams.includeDeleted,
+            include_hidden: exportParams.includeHidden,
+            include_files: exportParams.includeFiles,
             bco_merge_history_metadata: false,
         },
     });
@@ -278,8 +286,8 @@ More information about how to set up an account and submit data to a BCODB serve
     if (hasWritableFileSources.value) {
         destinations.push({
             destination: "remote-source",
-            label: "Remote File Source",
-            markdownDescription: `If you need a **more permanent** way of storing your ${resource} you can export it directly to one of the available remote file sources here. You will be able to re-import it later as long as it remains available on the remote server.
+            label: "Repository",
+            markdownDescription: `If you need a **more permanent** way of storing your ${resource} you can export it directly to one of the available repositories. You will be able to re-import it later as long as it remains available on the remote server.
 
 Examples of remote sources include Amazon S3, Azure Storage, Google Drive... and other public or personal file sources that you have setup access to.`,
         });
@@ -305,7 +313,9 @@ function initializeExportData(): InvocationExportData {
         destination: "download",
         remoteUri: "",
         outputFileName: "",
-        includeData: true,
+        includeFiles: true,
+        includeDeleted: false,
+        includeHidden: false,
         bcoDatabase: {
             serverBaseUrl: "https://biocomputeobject.org",
             table: "GALXY",
@@ -315,11 +325,43 @@ function initializeExportData(): InvocationExportData {
     };
 }
 
+function onFormatSelected(formatId: string) {
+    // Find the plugin that uses this format
+    const plugin = exportPlugins.value.find((p) => p.exportParams.modelStoreFormat === formatId);
+    if (plugin) {
+        exportData.exportPluginFormat = plugin.id;
+    }
+}
+
 function resetWizard() {
     const initialExportData = initializeExportData();
     Object.assign(exportData, initialExportData);
     wizard.goTo("select-format");
 }
+
+function getExportParams(): ExportParams {
+    const modelStoreFormat = selectedExportPlugin.value.exportParams.modelStoreFormat;
+    if (modelStoreFormat === "bco.json") {
+        // BCO export never includes files
+        return {
+            modelStoreFormat,
+            includeDeleted: false,
+            includeHidden: false,
+            includeFiles: false,
+        };
+    }
+    return {
+        modelStoreFormat,
+        includeDeleted: exportData.includeDeleted,
+        includeHidden: exportData.includeHidden,
+        includeFiles: exportData.includeFiles,
+    };
+}
+
+onUnmounted(() => {
+    taskMonitor.stopWaitingForTask();
+    stsMonitor.stopWaitingForTask();
+});
 </script>
 
 <template>
@@ -342,27 +384,10 @@ function resetWizard() {
             :is-busy="isWizardBusy"
             @submit="exportInvocation">
             <div v-if="wizard.isCurrent('select-format')">
-                <BCardGroup deck>
-                    <BCard
-                        v-for="plugin in exportPlugins"
-                        :key="plugin.id"
-                        :data-invocation-export-type="plugin.id"
-                        class="wizard-selection-card"
-                        :border-variant="exportData.exportPluginFormat === plugin.id ? 'primary' : 'default'"
-                        @click="exportData.exportPluginFormat = plugin.id">
-                        <BCardTitle>
-                            <b>{{ plugin.title }}</b>
-                        </BCardTitle>
-                        <div v-if="plugin.img">
-                            <BCardImg :src="plugin.img" :alt="plugin.title" />
-                            <br />
-                            <ExternalLink v-if="plugin.url" :href="plugin.url">
-                                <b>Learn more</b>
-                            </ExternalLink>
-                        </div>
-                        <div v-else v-html="renderMarkdown(plugin.markdownDescription)" />
-                    </BCard>
-                </BCardGroup>
+                <ExportFormatSelector
+                    :plugins="exportPlugins"
+                    :model-value="selectedExportPlugin.exportParams.modelStoreFormat"
+                    @update:model-value="onFormatSelected" />
             </div>
 
             <div v-if="wizard.isCurrent('select-destination')">
@@ -371,7 +396,7 @@ function resetWizard() {
                         v-for="target in exportDestinationTargets"
                         :key="target.destination"
                         :data-invocation-export-destination="target.destination"
-                        :border-variant="exportData.destination === target.destination ? 'primary' : 'default'"
+                        :border-variant="borderVariant(exportData.destination === target.destination)"
                         :header-bg-variant="exportData.destination === target.destination ? 'primary' : 'default'"
                         :header-text-variant="exportData.destination === target.destination ? 'white' : 'default'"
                         :header="target.label"
@@ -383,18 +408,11 @@ function resetWizard() {
             </div>
 
             <div v-if="wizard.isCurrent('setup-remote')">
-                <BFormGroup
-                    id="fieldset-directory"
-                    label-for="directory"
-                    :description="`Select a 'remote files' directory to export ${resource} to.`"
-                    class="mt-3">
-                    <FilesInput
-                        id="directory"
-                        v-model="exportData.remoteUri"
-                        mode="directory"
-                        :require-writable="true"
-                        :filter-options="{ exclude: ['rdm'] }" />
-                </BFormGroup>
+                <ExportRemoteSourceSelector
+                    :directory="exportData.remoteUri"
+                    :resource-name="resource"
+                    :filter-options="{ exclude: ['rdm'] }"
+                    @update:directory="exportData.remoteUri = $event" />
             </div>
 
             <div v-if="wizard.isCurrent('setup-rdm')">
@@ -463,9 +481,14 @@ function resetWizard() {
                         required />
                 </BFormGroup>
 
-                <BFormCheckbox v-if="canIncludeData" id="include-data" v-model="exportData.includeData" switch>
-                    Include data files in the export package.
-                </BFormCheckbox>
+                <ExportIncludeOptions
+                    v-if="canIncludeData"
+                    :include-files="exportData.includeFiles"
+                    :include-deleted="exportData.includeDeleted"
+                    :include-hidden="exportData.includeHidden"
+                    @update:include-files="exportData.includeFiles = $event"
+                    @update:include-deleted="exportData.includeDeleted = $event"
+                    @update:include-hidden="exportData.includeHidden = $event" />
 
                 <br />
 
@@ -493,12 +516,3 @@ function resetWizard() {
         </BAlert>
     </div>
 </template>
-
-<style scoped lang="scss">
-.card-img {
-    height: auto;
-    width: auto;
-    max-height: 100px;
-    max-inline-size: -webkit-fill-available;
-}
-</style>

@@ -46,7 +46,7 @@ export async function exportHistoryToFileSource(
     historyId: string,
     exportDirectory: string,
     fileName: string,
-    exportParams = DEFAULT_EXPORT_PARAMS
+    exportParams = DEFAULT_EXPORT_PARAMS,
 ) {
     const exportDirectoryUri = `${exportDirectory}/${fileName}.${exportParams.modelStoreFormat}`;
 
@@ -80,6 +80,7 @@ export async function reimportHistoryFromRecord(record: ExportRecord) {
         body: {
             store_content_uri: record.importUri,
             model_store_format: record.modelStoreFormat,
+            discarded_data: "forbid",
         },
     });
 

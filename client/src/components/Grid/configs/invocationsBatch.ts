@@ -1,9 +1,9 @@
 import { faEye } from "@fortawesome/free-solid-svg-icons";
 
-import { type WorkflowInvocation } from "@/api/invocations";
+import type { WorkflowInvocation } from "@/api/invocations";
 import { getAppRoot } from "@/onload";
 
-import { type FieldArray, type GridConfig } from "./types";
+import type { FieldArray, GridConfig } from "./types";
 
 /**
  * Request and return invocations for the given workflow (and current user) from server
@@ -14,7 +14,7 @@ async function getData(
     search: string,
     sort_by: string,
     sort_desc: boolean,
-    extraProps?: Record<string, unknown>
+    extraProps?: Record<string, unknown>,
 ) {
     // extra props will be Record<string, Invocation>; get array of invocations
     const data = Object.values(extraProps ?? {}) as WorkflowInvocation[];

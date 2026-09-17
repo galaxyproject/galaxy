@@ -1,10 +1,6 @@
-import sys
+import json
+from collections.abc import Callable
 from functools import partial
-from typing import (
-    Callable,
-    List,
-    Optional,
-)
 
 import pytest
 import yaml
@@ -17,13 +13,17 @@ from galaxy.tool_util.parameters import (
     RequestInternalToolState,
     RequestToolState,
     ToolParameterBundleModel,
+    UnmodelableToolInputs,
     validate_internal_job,
     validate_internal_landing_request,
     validate_internal_request,
     validate_internal_request_dereferenced,
+    validate_job_runtime,
     validate_landing_request,
+    validate_relaxed_request,
     validate_request,
     validate_test_case,
+    validate_test_case_json,
     validate_workflow_step,
     validate_workflow_step_linked,
     ValidationFunctionT,
@@ -35,11 +35,15 @@ from galaxy.tool_util.parameters.json import (
 from galaxy.tool_util.unittest_utils.parameters import (
     parameter_bundle_for_file,
     parameter_bundle_for_framework_tool,
+    parameter_bundle_for_internal_tool,
 )
+from galaxy.tool_util_models.parameters import (
+    _INFINITY_SENTINEL,
+    _NEG_INFINITY_SENTINEL,
+    FloatParameterModel,
+)
+from galaxy.util.json import safe_dumps
 from galaxy.util.resources import resource_string
-
-if sys.version_info < (3, 8):  # noqa: UP036
-    pytest.skip(reason="Pydantic tool parameter models require python3.8 or higher", allow_module_level=True)
 
 
 def specification_object():
@@ -77,6 +81,19 @@ def test_framework_tool_checks():
         _test_file(file, parameter_spec, parameter_bundle_for_framework_tool(f"{file}.xml"))
 
 
+@pytest.mark.parametrize(
+    "relpath",
+    ["lib/galaxy/tools/data_fetch.xml", "tools/data_source/upload.xml"],
+)
+def test_upload_tools_have_no_parameter_model(relpath: str):
+    # These declare upload_dataset, which has no parameter model. The factory has to decline
+    # outright: a bundle built from the inputs it *can* model rejects the tool's real requests,
+    # since state models forbid extras: an input the bundle leaves out is refused, not ignored.
+    with pytest.raises(UnmodelableToolInputs) as exc_info:
+        parameter_bundle_for_internal_tool(relpath)
+    assert "upload_dataset" in str(exc_info.value)
+
+
 def test_single():
     # _test_file("gx_int")
     # _test_file("gx_float")
@@ -88,7 +105,7 @@ def test_single():
     _test_file("gx_conditional_boolean_checked")
 
 
-def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolParameterBundleModel] = None):
+def _test_file(file: str, specification=None, parameter_bundle: ToolParameterBundleModel | None = None):
     spec = specification or specification_object()
     combos = spec[file]
     if parameter_bundle is None:
@@ -96,6 +113,8 @@ def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolPar
     assert parameter_bundle
 
     assertion_functions = {
+        "relaxed_request_valid": _assert_relaxed_requests_validate,
+        "relaxed_request_invalid": _assert_relaxed_requests_invalid,
         "request_valid": _assert_requests_validate,
         "request_invalid": _assert_requests_invalid,
         "request_internal_valid": _assert_internal_requests_validate,
@@ -108,8 +127,12 @@ def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolPar
         "landing_request_internal_invalid": _assert_internal_landing_requests_invalid,
         "job_internal_valid": _assert_internal_jobs_validate,
         "job_internal_invalid": _assert_internal_jobs_invalid,
+        "job_runtime_valid": _assert_job_runtimes_validate,
+        "job_runtime_invalid": _assert_job_runtimes_invalid,
         "test_case_xml_valid": _assert_test_cases_validate,
         "test_case_xml_invalid": _assert_test_cases_invalid,
+        "test_case_json_valid": _assert_test_case_jsons_validate,
+        "test_case_json_invalid": _assert_test_case_jsons_invalid,
         "workflow_step_valid": _assert_workflow_steps_validate,
         "workflow_step_invalid": _assert_workflow_steps_invalid,
         "workflow_step_linked_valid": _assert_workflow_steps_linked_validate,
@@ -117,6 +140,8 @@ def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolPar
     }
 
     for valid_or_invalid, tests in combos.items():
+        if valid_or_invalid not in assertion_functions:
+            continue
         assertion_function = assertion_functions[valid_or_invalid]
         assertion_function(parameter_bundle, tests)
 
@@ -127,7 +152,7 @@ def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolPar
         _assert_internal_requests_invalid(parameter_bundle, combos["request_invalid"])
 
 
-def _for_each(test: Callable, parameters: ToolParameterBundleModel, requests: List[RawStateDict]) -> None:
+def _for_each(test: Callable, parameters: ToolParameterBundleModel, requests: list[RawStateDict]) -> None:
     for request in requests:
         test(parameters, request)
 
@@ -155,6 +180,9 @@ def model_assertion_function_factory(validate_function: ValidationFunctionT, wha
     return _assert_validates, _assert_invalid
 
 
+_assert_relaxed_request_validates, _assert_relaxed_request_invalid = model_assertion_function_factory(
+    validate_relaxed_request, "relaxed request"
+)
 _assert_request_validates, _assert_request_invalid = model_assertion_function_factory(validate_request, "request")
 _assert_internal_request_validates, _assert_internal_request_invalid = model_assertion_function_factory(
     validate_internal_request, "internal request"
@@ -165,8 +193,14 @@ _assert_internal_request_dereferenced_validates, _assert_internal_request_derefe
 _assert_internal_job_validates, _assert_internal_job_invalid = model_assertion_function_factory(
     validate_internal_job, "internal job description"
 )
+_assert_job_runtime_validates, _assert_job_runtime_invalid = model_assertion_function_factory(
+    validate_job_runtime, "job runtime"
+)
 _assert_test_case_validates, _assert_test_case_invalid = model_assertion_function_factory(
     validate_test_case, "XML derived test case"
+)
+_assert_test_case_json_validates, _assert_test_case_json_invalid = model_assertion_function_factory(
+    validate_test_case_json, "raw JSON test case"
 )
 _assert_workflow_step_validates, _assert_workflow_step_invalid = model_assertion_function_factory(
     validate_workflow_step, "workflow step tool state (unlinked)"
@@ -181,6 +215,8 @@ _assert_internal_landing_request_validates, _assert_internal_landing_request_inv
     validate_internal_landing_request, " internallanding request"
 )
 
+_assert_relaxed_requests_validate = partial(_for_each, _assert_relaxed_request_validates)
+_assert_relaxed_requests_invalid = partial(_for_each, _assert_relaxed_request_invalid)
 _assert_requests_validate = partial(_for_each, _assert_request_validates)
 _assert_requests_invalid = partial(_for_each, _assert_request_invalid)
 _assert_internal_requests_validate = partial(_for_each, _assert_internal_request_validates)
@@ -189,8 +225,12 @@ _assert_internal_requests_dereferenced_validate = partial(_for_each, _assert_int
 _assert_internal_requests_dereferenced_invalid = partial(_for_each, _assert_internal_request_dereferenced_invalid)
 _assert_internal_jobs_validate = partial(_for_each, _assert_internal_job_validates)
 _assert_internal_jobs_invalid = partial(_for_each, _assert_internal_job_invalid)
+_assert_job_runtimes_validate = partial(_for_each, _assert_job_runtime_validates)
+_assert_job_runtimes_invalid = partial(_for_each, _assert_job_runtime_invalid)
 _assert_test_cases_validate = partial(_for_each, _assert_test_case_validates)
 _assert_test_cases_invalid = partial(_for_each, _assert_test_case_invalid)
+_assert_test_case_jsons_validate = partial(_for_each, _assert_test_case_json_validates)
+_assert_test_case_jsons_invalid = partial(_for_each, _assert_test_case_json_invalid)
 _assert_workflow_steps_validate = partial(_for_each, _assert_workflow_step_validates)
 _assert_workflow_steps_invalid = partial(_for_each, _assert_workflow_step_invalid)
 _assert_workflow_steps_linked_validate = partial(_for_each, _assert_workflow_step_linked_validates)
@@ -244,6 +284,45 @@ def test_encode_gx_data():
     request_tool_state = encode(request_internal_tool_state, input_bundle, encode_val)
     assert request_tool_state.input_state["parameter"]["id"] == "abcdabcd"
     assert request_tool_state.input_state["parameter"]["src"] == "hda"
+
+
+def test_float_parameter_model_infinity_sentinel_roundtrip():
+    """Regression test: FloatParameterModel must survive a safe_dumps/json.loads roundtrip.
+
+    Galaxy's safe_dumps() serialises float('inf') as '__Infinity__' and
+    float('-inf') as '__-Infinity__' to produce valid JSON.  When the tool
+    test API (GET /api/tools/{id}/test_data) returns request_schema.parameters
+    and any float parameter carries a default of inf (e.g. meme -evt), the
+    resulting JSON contains that sentinel.  Planemo then calls
+    ToolParameterBundleModel(parameters=<deserialized dicts>) which must not
+    fail even though Pydantic sees a string rather than a float.
+    """
+    for value, expected in [
+        (float("inf"), float("inf")),
+        (float("-inf"), float("-inf")),
+    ]:
+        # 1. Build the model definition
+        m = FloatParameterModel(type="float", name="test", value=value)
+        # 2. Dump to a plain dict (contains Python float inf/-inf)
+        d = m.model_dump()
+        assert d["value"] == value
+
+        # 3. Serialize through Galaxy's JSON encoder — inf becomes a sentinel string
+        galaxy_json = safe_dumps([d])
+        sentinel = _INFINITY_SENTINEL if value == float("inf") else _NEG_INFINITY_SENTINEL
+        assert sentinel in galaxy_json
+
+        # 4. Deserialize: sentinel is now a plain string in the dict
+        dicts = json.loads(galaxy_json)
+        assert dicts[0]["value"] == sentinel
+
+        # 5. Re-parse via ToolParameterBundleModel — this must not raise
+        bundle = ToolParameterBundleModel(parameters=dicts)
+
+        # 6. The parsed model should carry the correct Python float
+        parsed_param = bundle.parameters[0]
+        assert isinstance(parsed_param, FloatParameterModel)
+        assert parsed_param.value == expected
 
 
 if __name__ == "__main__":

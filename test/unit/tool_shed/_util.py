@@ -9,11 +9,8 @@ from tempfile import (
 )
 from typing import (
     Any,
-    Dict,
-    Optional,
 )
 
-import tool_shed.repository_registry
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import safe_makedirs
 from tool_shed.context import ProvidesRepositoriesContext
@@ -47,7 +44,8 @@ class TestToolShedConfig:
     user_activation_on = False
     file_path: str
     id_secret: str = "thisistheshedunittestsecret"
-    smtp_server: Optional[str] = None
+    smtp_server: str | None = None
+    tool_shed_url: str | None = "shed_unit_test://localhost"
     hgweb_repo_prefix = "repos/"
     config_hg_for_dev = False
 
@@ -65,7 +63,6 @@ class TestToolShedApp(ToolShedApp):
     repository_types_registry = RepositoryTypesRegistry()
     config: TestToolShedConfig
     hgweb_config_manager = hgweb_config_manager
-    repository_registry: tool_shed.repository_registry.Registry
     security: IdEncodingHelper
     name: str = "ToolShed"
 
@@ -81,15 +78,11 @@ class TestToolShedApp(ToolShedApp):
         self.hgweb_config_manager.hgweb_repo_prefix = "repos/"
         self.config = TestToolShedConfig(temp_directory)
         self.security = IdEncodingHelper(id_secret=self.config.id_secret)
-        self.repository_registry = tool_shed.repository_registry.Registry(self)
         self.model_cache = ModelCache(os.path.join(temp_directory, "model_cache"))
-
-    @property
-    def security_agent(self):
-        return self.model.security_agent
+        self.security_agent = self.model.security_agent
 
 
-def user_fixture(app: ToolShedApp, username: str, password: str = "testpassword", email: Optional[str] = None) -> User:
+def user_fixture(app: ToolShedApp, username: str, password: str = "testpassword", email: str | None = None) -> User:
     email = email or f"{username}@galaxyproject.org"
     return create_user(
         app,
@@ -124,7 +117,7 @@ def provides_repositories_fixture(
     return ProvidesRepositoriesImpl(app, user)
 
 
-def repository_fixture(app: ToolShedApp, user: User, name: str, category: Optional[Category] = None) -> Repository:
+def repository_fixture(app: ToolShedApp, user: User, name: str, category: Category | None = None) -> Repository:
     type = rt_util.UNRESTRICTED
     description = f"test repo named {name}"
     long_description = f"test repo named {name} a longer description"
@@ -159,7 +152,7 @@ def upload(
     provides_repositories: ProvidesRepositoriesContext,
     repository: Repository,
     path: Path,
-    arcname: Optional[str] = None,
+    arcname: str | None = None,
 ):
     if path.is_dir():
         tf = NamedTemporaryFile(delete=False)
@@ -191,7 +184,7 @@ def random_name(len: int = 10) -> str:
     return "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(len))
 
 
-def create_category(provides_repositories: ProvidesRepositoriesContext, create: Dict[str, Any]) -> Category:
+def create_category(provides_repositories: ProvidesRepositoriesContext, create: dict[str, Any]) -> Category:
     from tool_shed.managers.categories import CategoryManager
 
     request = CreateCategoryRequest(**create)

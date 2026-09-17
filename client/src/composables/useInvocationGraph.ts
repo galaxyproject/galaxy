@@ -1,77 +1,105 @@
-import { type IconDefinition, library } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
     faCheckCircle,
     faClock,
+    faCloud,
     faExclamationTriangle,
     faForward,
     faPause,
+    faQuestionCircle,
     faSpinner,
+    faStopCircle,
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
-import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, set } from "vue";
 
-import { GalaxyApi } from "@/api";
-import { fetchCollectionDetails } from "@/api/datasetCollections";
+import { fetchCollectionSummary } from "@/api/datasetCollections";
 import { fetchDatasetDetails } from "@/api/datasets";
-import { type InvocationStep, type StepJobSummary, type WorkflowInvocationElementView } from "@/api/invocations";
+import type { InvocationStep, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
+import type { components } from "@/api/schema";
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { getContentItemState } from "@/components/History/Content/model/states";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
-import { getWorkflowFull } from "@/components/Workflow/workflows.services";
-import { useInvocationStore } from "@/stores/invocationStore";
-import { type Step } from "@/stores/workflowStepStore";
-import { type Workflow } from "@/stores/workflowStore";
+import type { Step } from "@/stores/workflowStepStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { provideScopedWorkflowStores } from "./workflowStores";
 
+/** All possible states for an Invocation Graph step.
+ * - `JobState`: for tool/collection steps (derived from job states and `populated_state`)
+ * - `DatasetState`: for data input steps (derived from the dataset/collection state)
+ * - `InvocationStepState`: for subworkflow steps (derived from the invocation step state)
+ * - `"uninitialized"`: initial state before the step's actual state has been determined */
+export type GraphStepState =
+    | components["schemas"]["JobState"]
+    | components["schemas"]["DatasetState"]
+    | components["schemas"]["InvocationStepState"]
+    | "uninitialized";
+
 export interface GraphStep extends Step {
-    state?:
-        | "new"
-        | "upload"
-        | "waiting"
-        | "queued"
-        | "running"
-        | "ok"
-        | "error"
-        | "deleted"
-        | "hidden"
-        | "setting_metadata"
-        | "paused"
-        | "skipped";
+    state: GraphStepState;
     jobs: StepJobSummary["states"];
     headerClass?: Record<string, boolean>;
     headerIcon?: IconDefinition;
     headerIconSpin?: boolean;
     nodeText?: string | boolean;
 }
-interface InvocationGraph extends Workflow {
+interface InvocationGraph extends Omit<StoredWorkflowDetailed, "steps"> {
     steps: { [index: number]: GraphStep };
 }
 
 /** Classes for states' icons */
-export const iconClasses: Record<string, { icon: IconDefinition; spin?: boolean; class?: string }> = {
+export const iconClasses: Record<GraphStepState, { icon: IconDefinition; spin?: boolean; class?: string }> = {
+    // terminal success
     ok: { icon: faCheckCircle, class: "text-success" },
-    error: { icon: faExclamationTriangle, class: "text-danger" },
-    paused: { icon: faPause, class: "text-primary" },
-    running: { icon: faSpinner, spin: true },
+    empty: { icon: faCheckCircle, class: "text-success" },
+    // transitional / waiting
     new: { icon: faClock },
     waiting: { icon: faClock },
     queued: { icon: faClock },
-    deleted: { icon: faTrash, class: "text-danger" },
+    resubmitted: { icon: faClock },
+    ready: { icon: faClock },
+    scheduled: { icon: faClock },
+    // active
+    running: { icon: faSpinner, spin: true },
+    upload: { icon: faSpinner, spin: true },
+    setting_metadata: { icon: faSpinner, spin: true },
+    // finishing brackets the metadata step, so it mirrors setting_metadata
+    finishing: { icon: faSpinner, spin: true },
+    // paused / info
+    paused: { icon: faPause, class: "text-primary" },
+    deferred: { icon: faCloud, class: "text-info" },
+    // skipped
     skipped: { icon: faForward, class: "text-warning" },
+    // errors / failures
+    error: { icon: faExclamationTriangle, class: "text-danger" },
+    failed: { icon: faExclamationTriangle, class: "text-danger" },
+    failed_metadata: { icon: faExclamationTriangle, class: "text-danger" },
+    discarded: { icon: faExclamationTriangle, class: "text-danger" },
+    // deleted / stopped
+    deleted: { icon: faTrash, class: "text-danger" },
+    deleting: { icon: faTrash, class: "text-danger" },
+    stop: { icon: faStopCircle, class: "text-danger" },
+    stopped: { icon: faStopCircle, class: "text-danger" },
+    // not yet determined
+    uninitialized: { icon: faQuestionCircle },
 };
 
 export const statePlaceholders: Record<string, string> = {
     ok: "successful",
     error: "failed",
+    upload: "uploading",
+    setting_metadata: "setting metadata",
+    failed_metadata: "have metadata errors",
+    stop: "stopping",
 };
 
 /** Only one job needs to be in one of these states for the graph step to be in that state */
-const SINGLE_INSTANCE_STATES = ["error", "running", "paused", "deleting"];
+const SINGLE_INSTANCE_STATES: GraphStepState[] = ["error", "running", "paused", "deleting"];
 /** All jobs need to be in one of these states for the graph step to be in that state */
-const ALL_INSTANCES_STATES = ["deleted", "skipped", "new", "queued"];
+const ALL_INSTANCES_STATES: GraphStepState[] = ["deleted", "skipped", "new", "queued"];
 
 /** Composable that creates a readonly invocation graph and loads it onto a workflow editor canvas for display.
  * @param invocation - The invocation to display in graph view
@@ -79,43 +107,50 @@ const ALL_INSTANCES_STATES = ["deleted", "skipped", "new", "queued"];
  */
 export function useInvocationGraph(
     invocation: Ref<WorkflowInvocationElementView>,
-    workflowId: string | undefined,
-    workflowVersion: number | undefined
+    stepsJobsSummary: Ref<StepJobSummary[]>,
+    workflowId: Ref<string | undefined>,
+    workflowVersion: Ref<number | undefined>,
 ) {
-    library.add(faCheckCircle, faClock, faExclamationTriangle, faForward, faPause, faSpinner, faTrash);
-
     const steps = ref<{ [index: string]: GraphStep }>({});
     const stepsPopulated = ref(false);
     const storeId = computed(() => `invocation-${invocation.value.id}`);
 
     const lastStepsJobsSummary = ref<StepJobSummary[]>([]);
-    const invocationStore = useInvocationStore();
-    const { graphStepsByStoreId } = storeToRefs(invocationStore);
 
-    /** The full invocation mapped onto the original workflow */
+    /** The full invocation mapped onto the original workflow.
+     * _(Needed to map the invocation onto the workflow editor graph.)_
+     */
     const invocationGraph = ref<InvocationGraph | null>(null);
 
     /** The workflow that was invoked */
     const loadedWorkflow = ref<any>(null);
 
+    const workflowStore = useWorkflowStore();
+
     const loading = ref(true);
 
     provideScopedWorkflowStores(storeId);
 
-    async function loadInvocationGraph() {
+    /** Load the invocation graph and steps onto the editor canvas.
+     * @param loadOntoEditor - If set to false, initializes graph steps but does not load them onto the editor.
+     */
+    async function loadInvocationGraph(loadOntoEditor = true) {
         loading.value = true;
 
         try {
-            if (!workflowId) {
+            if (!workflowId.value) {
                 throw new Error("Workflow Id is not defined");
             }
-            if (workflowVersion === undefined) {
+            if (workflowVersion.value === undefined) {
                 throw new Error("Workflow Version is not defined");
             }
 
             // initialize the original full workflow and invocation graph refs (only on the first load)
             if (!loadedWorkflow.value) {
-                loadedWorkflow.value = await getWorkflowFull(workflowId, workflowVersion);
+                loadedWorkflow.value = await workflowStore.getFullWorkflowCached(
+                    workflowId.value,
+                    workflowVersion.value,
+                );
             }
             if (!invocationGraph.value) {
                 invocationGraph.value = {
@@ -125,22 +160,12 @@ export function useInvocationGraph(
                 };
             }
 
-            // get the job summary for each step in the invocation
-            const { data: stepsJobsSummary, error } = await GalaxyApi().GET(
-                "/api/invocations/{invocation_id}/step_jobs_summary",
-                {
-                    params: { path: { invocation_id: invocation.value.id } },
-                }
-            );
-
-            if (error) {
-                rethrowSimple(error);
+            if (stepsJobsSummary.value) {
+                await updateSteps(stepsJobsSummary.value);
             }
 
-            await updateSteps(stepsJobsSummary);
-
             // Load the invocation graph into the editor the first time
-            if (!stepsPopulated.value) {
+            if (!stepsPopulated.value && loadOntoEditor) {
                 invocationGraph.value!.steps = { ...steps.value };
                 await fromSimple(storeId.value, invocationGraph.value as any);
                 stepsPopulated.value = true;
@@ -167,7 +192,8 @@ export function useInvocationGraph(
             /** An invocation graph step (initialized with the original workflow step) */
             let graphStepFromWfStep;
             if (!steps.value[i]) {
-                graphStepFromWfStep = { ...fullSteps[i] } as GraphStep;
+                graphStepFromWfStep = { ...fullSteps[i], state: "uninitialized" } as GraphStep;
+                setHeaderClass(graphStepFromWfStep);
             } else {
                 graphStepFromWfStep = steps.value[i] as GraphStep;
             }
@@ -201,10 +227,6 @@ export function useInvocationGraph(
             if (!steps.value[i]) {
                 set(steps.value, i, graphStepFromWfStep);
             }
-
-            // update the invocation store's graph steps object
-            // TODO: Find a better way of doing this, instead of using two separate objects...?
-            set(graphStepsByStoreId.value, storeId.value, steps.value);
         }
 
         lastStepsJobsSummary.value = stepsJobsSummary;
@@ -219,10 +241,10 @@ export function useInvocationGraph(
     function updateStep(
         graphStep: GraphStep,
         invocationStep: InvocationStep | undefined,
-        invocationStepSummary: StepJobSummary | undefined
+        invocationStepSummary: StepJobSummary | undefined,
     ) {
-        /** The new state for the graph step */
-        let newState = graphStep.state;
+        /** The resolved state for the graph step (undefined = not yet determined) */
+        let newState: GraphStepState | undefined = undefined;
 
         // there is an invocation step for this workflow step
         if (invocationStep) {
@@ -273,7 +295,7 @@ export function useInvocationGraph(
                 } else if (populatedState === "deleting") {
                     newState = "deleted";
                 } else if (populatedState && !["stop", "stopped"].includes(populatedState)) {
-                    newState = populatedState as GraphStep["state"];
+                    newState = populatedState;
                 }
             }
         }
@@ -283,9 +305,10 @@ export function useInvocationGraph(
             newState = "queued";
         }
 
-        // if the state has changed, update the graph step
-        if (graphStep.state !== newState) {
-            graphStep.state = newState;
+        // preserve previous state if a new one couldn't be determined
+        const resolvedState = newState ?? graphStep.state;
+        if (graphStep.state !== resolvedState) {
+            graphStep.state = resolvedState;
             setHeaderClass(graphStep);
         }
     }
@@ -296,18 +319,18 @@ export function useInvocationGraph(
      * @returns The state for the graph step or `undefined` if the states don't match any
      *          single instance state or all instances state
      * */
-    function getStepStateFromJobStates(jobStates: string[]): GraphStep["state"] | undefined {
+    function getStepStateFromJobStates(jobStates: string[]): GraphStepState | undefined {
         for (const state of SINGLE_INSTANCE_STATES) {
             if (jobStates.includes(state)) {
                 if (state === "deleting") {
                     return "deleted";
                 }
-                return state as GraphStep["state"];
+                return state;
             }
         }
         for (const state of ALL_INSTANCES_STATES) {
             if (jobStates.every((jobState) => jobState === state)) {
-                return state as GraphStep["state"];
+                return state;
             }
         }
         return undefined;
@@ -315,7 +338,7 @@ export function useInvocationGraph(
 
     function setHeaderClass(graphStep: GraphStep) {
         /** Setting the header class for the graph step */
-        graphStep.headerClass = getHeaderClass(graphStep.state as string);
+        graphStep.headerClass = getHeaderClass(graphStep.state);
 
         /** Setting the header icon for the graph step */
         if (graphStep.state) {
@@ -334,7 +357,7 @@ export function useInvocationGraph(
                 set(graphStep, "state", getContentItemState(hda));
                 set(graphStep, "nodeText", `${hda.hid}: <b>${hda.name}</b>`);
             } else {
-                const hdca = await fetchCollectionDetails({ id: inputItem.id });
+                const hdca = await fetchCollectionSummary({ hdca_id: inputItem.id });
                 // TODO: Same type mismatch as above
                 set(graphStep, "state", getContentItemState(hdca));
                 set(graphStep, "nodeText", `${hdca.hid}: <b>${hdca.name}</b>`);
@@ -351,7 +374,7 @@ export function useInvocationGraph(
 
     function getWorkflowInputParam(invocation: WorkflowInvocationElementView, invocationStep: InvocationStep) {
         return Object.values(invocation.input_step_parameters).find(
-            (param) => param.workflow_step_id === invocationStep.workflow_step_id
+            (param) => param.workflow_step_id === invocationStep.workflow_step_id,
         );
     }
 
@@ -368,7 +391,7 @@ export function useInvocationGraph(
     };
 }
 
-export function getHeaderClass(state: string) {
+export function getHeaderClass(state: GraphStepState | undefined) {
     return {
         "node-header-invocation": true,
         [`header-${state}`]: !!state,

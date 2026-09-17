@@ -1,7 +1,7 @@
 import logging
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ emboss_repository_long_description = "Galaxy wrappers for Emboss version 5.0.0 t
 """
 
 
-class TestEnvironmentInheritance(ShedTwillTestCase):
+class TestEnvironmentInheritance(ShedTestCase):
     """Test referencing environment variables that were defined in a separate tool dependency."""
 
     def test_0000_initiate_users_and_category(self):

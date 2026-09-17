@@ -1,11 +1,12 @@
-import sys
 from string import Template
 
+import lxml.etree as ET
 import pytest
 from pydantic import ValidationError
 
-from galaxy.tool_util.verify.assertion_models import assertion_list
 from galaxy.tool_util.verify.codegen import galaxy_xsd_path
+from galaxy.tool_util.verify.parse import assertion_xml_els_to_models
+from galaxy.tool_util_models.assertions import assertion_list
 from galaxy.util.commands import shell
 from galaxy.util.unittest_utils import skip_unless_executable
 
@@ -92,6 +93,8 @@ valid_xml_assertions = [
     """<has_n_columns n="30" />""",
     """<has_n_columns n="30" delta="4" />""",
     """<has_n_columns n="30" delta="4" sep=" " comment="###" />""",
+    """<has_image_width min="500" />""",
+    """<has_image_height min="500" />""",
 ]
 
 invalid_assertions = [
@@ -176,8 +179,7 @@ invalid_xml_assertions = [
 ]
 
 
-TOOL_TEMPLATE = Template(
-    """
+TOOL_TEMPLATE = Template("""
 <tool id="gx_test" name="gx_test" version="1.0.0">
     <command><![CDATA[
 echo '$parameter' >> '$output'
@@ -199,19 +201,14 @@ echo '$parameter' >> '$output'
         </test>
     </tests>
 </tool>
-"""
-)
+""")
 
 
-if sys.version_info < (3, 8):  # noqa: UP036
-    pytest.skip(reason="Pydantic assertion models require python3.8 or higher", allow_module_level=True)
-
-
-def test_valid_models_validate():
+def test_valid_json_models_validate():
     assertion_list.model_validate(valid_assertions)
 
 
-def test_invalid_models_do_not_validate():
+def test_invalid_json_models_do_not_validate():
     for invalid_assertion in invalid_assertions:
         with pytest.raises(ValidationError):
             assertion_list.model_validate([invalid_assertion])
@@ -235,3 +232,8 @@ def test_invalid_xsd(tmp_path):
         tool_path.write_text(tool_xml)
         ret = shell(["xmllint", "--nowarning", "--noout", "--schema", galaxy_xsd_path, str(tool_path)])
         assert ret != 0, f"{assertion_xml} validated when error expected"
+
+
+def test_valid_xml_models_validate_after_json_transform():
+    for assertion_xml in valid_xml_assertions:
+        assertion_xml_els_to_models([ET.fromstring(assertion_xml)])

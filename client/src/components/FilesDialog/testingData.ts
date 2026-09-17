@@ -1,4 +1,4 @@
-import { type BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
+import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 
 export const ftpId = "_ftp";
 export const rootId = "pdb-gzip";

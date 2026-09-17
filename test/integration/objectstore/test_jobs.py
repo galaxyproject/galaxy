@@ -13,8 +13,7 @@ from ._base import (
 )
 from .test_selection_with_resource_parameters import DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE
 
-HIERARCHICAL_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
-    """<?xml version="1.0"?>
+HIERARCHICAL_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0"?>
 <object_store type="hierarchical">
     <backends>
         <object_store type="distributed" id="primary" order="0">
@@ -38,8 +37,7 @@ HIERARCHICAL_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
         </object_store>
     </backends>
 </object_store>
-"""
-)
+""")
 
 TEST_INPUT_FILES_CONTENT = "1 2 3"
 

@@ -1,7 +1,7 @@
-import { type PluginStatus } from "@/api/configTemplates";
-import { type FileSourceTemplateSummary } from "@/api/fileSources";
-import { type UserConcreteObjectStore } from "@/components/ObjectStore/Instances/types";
-import { type ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
+import type { PluginStatus } from "@/api/configTemplates";
+import type { FileSourceTemplateSummary } from "@/api/fileSources";
+import type { UserConcreteObjectStore } from "@/components/ObjectStore/Instances/types";
+import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 
 export const STANDARD_OBJECT_STORE_TEMPLATE: ObjectStoreTemplateSummary = {
     type: "aws_s3",
@@ -68,6 +68,7 @@ export const STANDARD_FILE_SOURCE_TEMPLATE: FileSourceTemplateSummary = {
     id: "moo",
     version: 2,
     hidden: false,
+    requires_oauth2_authorization: false,
 };
 
 export const GENERIC_FTP_FILE_SOURCE_TEMPLATE: FileSourceTemplateSummary = {
@@ -114,6 +115,7 @@ export const GENERIC_FTP_FILE_SOURCE_TEMPLATE: FileSourceTemplateSummary = {
     ],
     hidden: false,
     version: 1,
+    requires_oauth2_authorization: false,
 };
 
 export const OBJECT_STORE_INSTANCE: UserConcreteObjectStore = {

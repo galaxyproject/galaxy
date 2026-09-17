@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faGlobe, faLink, faShareAlt, faUsers } from "@fortawesome/free-solid-svg-icons";
+import { faGlobe, faLink, faShareAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 
-library.add(faGlobe, faShareAlt, faLink, faUsers);
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface SharingIndicatorsProps {
     object: {
@@ -22,35 +20,38 @@ const props = defineProps<SharingIndicatorsProps>();
     <span v-if="props.object.purged" v-localize> Purged </span>
     <span v-else-if="props.object.deleted" v-localize> Deleted </span>
     <span v-else>
-        <BButton
+        <GButton
             v-if="props.object.published"
-            v-b-tooltip.hover.noninteractive
+            v-g-tooltip.hover
             class="sharing-indicator-published"
-            size="sm"
-            variant="link"
+            size="small"
+            transparent
+            icon-only
             title="Find all published items"
             @click.prevent="$emit('filter', 'published')">
-            <FontAwesomeIcon icon="globe" />
-        </BButton>
-        <BButton
+            <FontAwesomeIcon :icon="faGlobe" />
+        </GButton>
+        <GButton
             v-if="props.object.importable"
-            v-b-tooltip.hover.noninteractive
+            v-g-tooltip.hover
             class="sharing-indicator-importable"
-            size="sm"
-            variant="link"
+            size="small"
+            transparent
+            icon-only
             title="Find all importable items"
             @click.prevent="$emit('filter', 'importable')">
-            <FontAwesomeIcon icon="link" />
-        </BButton>
-        <BButton
+            <FontAwesomeIcon :icon="faLink" />
+        </GButton>
+        <GButton
             v-if="props.object.shared"
-            v-b-tooltip.hover.noninteractive
+            v-g-tooltip.hover
             class="sharing-indicator-shared"
-            size="sm"
-            variant="link"
+            size="small"
+            transparent
+            icon-only
             title="Find all items shared with me"
             @click.prevent="$emit('filter', 'shared_with_me')">
-            <FontAwesomeIcon icon="share-alt" />
-        </BButton>
+            <FontAwesomeIcon :icon="faShareAlt" />
+        </GButton>
     </span>
 </template>

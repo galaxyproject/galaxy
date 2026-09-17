@@ -2,14 +2,17 @@ import datetime
 import logging
 import os
 import tempfile
-from typing import Optional
+from collections.abc import Iterable
 
-from galaxy.job_execution.setup import create_working_directory_for_job
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.model import (
     History,
     Job,
+    JobExportHistoryArchive,
+    JobImportHistoryArchive,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.schema.credentials import CredentialsContext
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import (
     ToolAction,
@@ -38,21 +41,29 @@ class ImportHistoryToolAction(ToolAction):
     """Tool action used for importing a history to an archive."""
 
     produces_real_jobs: bool = True
+    file_source_uri_discovery_complete = True
+
+    def iter_referenced_file_source_uris(self, param_dict: ToolStateJobInstancePopulatedT) -> Iterable[str]:
+        if param_dict.get("__ARCHIVE_TYPE__") == "url":
+            archive_source = param_dict.get("__ARCHIVE_SOURCE__")
+            if isinstance(archive_source, str) and archive_source:
+                yield archive_source
 
     def execute(
         self,
         tool,
         trans,
-        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
-        history: Optional[History] = None,
+        incoming: ToolStateJobInstancePopulatedT | None = None,
+        history: History | None = None,
         job_params=None,
-        rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
-        execution_cache: Optional[ToolExecutionCache] = None,
-        dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = DEFAULT_DATASET_COLLECTION_ELEMENTS,
-        completed_job: Optional[Job] = None,
-        collection_info: Optional[MatchingCollections] = None,
-        job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
-        preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        rerun_remap_job_id: int | None = DEFAULT_RERUN_REMAP_JOB_ID,
+        execution_cache: ToolExecutionCache | None = None,
+        dataset_collection_elements: DatasetCollectionElementsSliceT | None = DEFAULT_DATASET_COLLECTION_ELEMENTS,
+        completed_job: Job | None = None,
+        collection_info: MatchingCollections | None = None,
+        job_callback: JobCallbackT | None = DEFAULT_JOB_CALLBACK,
+        preferred_object_store_id: str | None = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        credentials_context: CredentialsContext | None = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,
@@ -62,7 +73,7 @@ class ImportHistoryToolAction(ToolAction):
         #
         incoming = incoming or {}
         trans.check_user_activation()
-        job = trans.app.model.Job()
+        job = Job()
         job.galaxy_version = trans.app.config.version_major
         session = trans.get_galaxy_session()
         job.session_id = session and session.id
@@ -91,7 +102,7 @@ class ImportHistoryToolAction(ToolAction):
         # Use abspath because mkdtemp() does not, contrary to the documentation,
         # always return an absolute path.
         archive_dir = os.path.abspath(tempfile.mkdtemp())
-        jiha = trans.app.model.JobImportHistoryArchive(job=job, archive_dir=archive_dir)
+        jiha = JobImportHistoryArchive(job=job, archive_dir=archive_dir)
         trans.sa_session.add(jiha)
 
         job_wrapper = JobImportHistoryArchiveWrapper(trans.app, job)
@@ -114,21 +125,23 @@ class ExportHistoryToolAction(ToolAction):
     """Tool action used for exporting a history to an archive."""
 
     produces_real_jobs: bool = True
+    file_source_uri_discovery_complete = True
 
     def execute(
         self,
         tool,
         trans,
-        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
-        history: Optional[History] = None,
+        incoming: ToolStateJobInstancePopulatedT | None = None,
+        history: History | None = None,
         job_params=None,
-        rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
-        execution_cache: Optional[ToolExecutionCache] = None,
-        dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = DEFAULT_DATASET_COLLECTION_ELEMENTS,
-        completed_job: Optional[Job] = None,
-        collection_info: Optional[MatchingCollections] = None,
-        job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
-        preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        rerun_remap_job_id: int | None = DEFAULT_RERUN_REMAP_JOB_ID,
+        execution_cache: ToolExecutionCache | None = None,
+        dataset_collection_elements: DatasetCollectionElementsSliceT | None = DEFAULT_DATASET_COLLECTION_ELEMENTS,
+        completed_job: Job | None = None,
+        collection_info: MatchingCollections | None = None,
+        job_callback: JobCallbackT | None = DEFAULT_JOB_CALLBACK,
+        preferred_object_store_id: str | None = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        credentials_context: CredentialsContext | None = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,
@@ -140,7 +153,7 @@ class ExportHistoryToolAction(ToolAction):
         incoming = incoming or {}
         history = None
         for name, value in incoming.items():
-            if isinstance(value, trans.app.model.History):
+            if isinstance(value, History):
                 history_param_name = name
                 history = value
                 del incoming[history_param_name]
@@ -152,7 +165,7 @@ class ExportHistoryToolAction(ToolAction):
         #
         # Create the job and output dataset objects
         #
-        job = trans.app.model.Job()
+        job = Job()
         job.galaxy_version = trans.app.config.version_major
         session = trans.get_galaxy_session()
         job.session_id = session and session.id
@@ -172,7 +185,7 @@ class ExportHistoryToolAction(ToolAction):
         if not exporting_to_uri:
             # see comment below about how this should be transitioned to occuring in a
             # job handler or detached MQ-driven thread
-            jeha = trans.app.model.JobExportHistoryArchive.create_for_history(
+            jeha = JobExportHistoryArchive.create_for_history(
                 history, job, trans.sa_session, trans.app.object_store, compressed
             )
             store_directory = jeha.temp_directory
@@ -182,7 +195,7 @@ class ExportHistoryToolAction(ToolAction):
             # creating a dataset (like above for dataset export case).
             # ensure job.id is available
             trans.sa_session.commit()
-            job_directory = create_working_directory_for_job(trans.app.object_store, job)
+            job_directory = JobWorkingDirectory(job, trans.app.object_store).create()
             store_directory = os.path.join(job_directory, "working", "_object_export")
             os.makedirs(store_directory)
 
@@ -205,6 +218,7 @@ class ExportHistoryToolAction(ToolAction):
             directory_uri = incoming["directory_uri"]
             file_name = incoming.get("file_name")
             if file_name is None:
+                assert history.name
                 hname = ready_name_for_url(history.name)
                 human_timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
                 if compressed:

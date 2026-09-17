@@ -12,19 +12,20 @@ histories, libraries, etc... should be annotated ideally.
 import os
 import unittest
 from functools import wraps
-from typing import Union
+from typing import (
+    Literal,
+)
 
 import pytest
-from typing_extensions import Literal
 
-KnownRequirementT = Union[
-    Literal["admin"],
-    Literal["celery"],
-    Literal["new_history"],
-    Literal["new_library"],
-    Literal["new_published_objects"],
-    Literal["new_user"],
-]
+KnownRequirementT = (
+    Literal["admin"]
+    | Literal["celery"]
+    | Literal["new_history"]
+    | Literal["new_library"]
+    | Literal["new_published_objects"]
+    | Literal["new_user"]
+)
 
 
 def has_requirement(method, tag: KnownRequirementT):

@@ -2,7 +2,6 @@ import getpass
 import logging
 import os
 import shutil
-from typing import Optional
 
 from sqlalchemy import select
 
@@ -107,7 +106,7 @@ class JobExportHistoryArchiveWrapper:
         include_hidden=False,
         include_deleted=False,
         compressed=True,
-        user: Optional[model.User] = None,
+        user: model.User | None = None,
     ):
         """
         Perform setup for job to export a history into an archive.

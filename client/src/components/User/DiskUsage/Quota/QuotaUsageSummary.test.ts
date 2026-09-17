@@ -1,11 +1,12 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
 import { type QuotaUsage, toQuotaUsage } from "./model";
 
 import QuotaUsageSummary from "./QuotaUsageSummary.vue";
 
-const localVue = getLocalVue();
+const localVue = getLocalVue(true);
 
 const QUOTA_1_BYTES = 654846535;
 const QUOTA_2_BYTES = 68468436;

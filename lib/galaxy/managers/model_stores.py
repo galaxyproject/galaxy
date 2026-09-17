@@ -1,8 +1,3 @@
-from typing import (
-    Optional,
-    Union,
-)
-
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.jobs.manager import JobManager
@@ -25,6 +20,7 @@ from galaxy.schema.schema import (
     ExportObjectType,
     HistoryContentType,
     ShortTermStoreExportPayload,
+    StoreContentSource,
     WriteStoreToPayload,
 )
 from galaxy.schema.tasks import (
@@ -113,7 +109,7 @@ class ModelStoreManager:
         include_deleted = request.include_deleted
         export_metadata = self.set_history_export_request_metadata(request)
 
-        exception_exporting_history: Optional[Exception] = None
+        exception_exporting_history: Exception | None = None
         try:
             with storage_context(
                 request.short_term_storage_request_id, self._short_term_storage_monitor
@@ -156,39 +152,72 @@ class ModelStoreManager:
     def prepare_invocation_download(self, request: GenerateInvocationDownload):
         model_store_format = request.model_store_format
         export_files = "symlink" if request.include_files else None
-        with storage_context(
-            request.short_term_storage_request_id, self._short_term_storage_monitor
-        ) as short_term_storage_target:
-            with model.store.get_export_store_factory(
+        export_metadata = self.set_invocation_export_request_metadata(request)
+
+        exception_exporting_invocation: Exception | None = None
+        try:
+            with storage_context(
+                request.short_term_storage_request_id, self._short_term_storage_monitor
+            ) as short_term_storage_target:
+                with model.store.get_export_store_factory(
+                    self._app,
+                    model_store_format,
+                    export_files=export_files,
+                    bco_export_options=self._bco_export_options(request),
+                )(short_term_storage_target.path) as export_store:
+                    invocation = self._sa_session.get(model.WorkflowInvocation, request.invocation_id)
+                    export_store.export_workflow_invocation(
+                        invocation,  # type: ignore[arg-type]
+                        include_hidden=request.include_hidden,
+                        include_deleted=request.include_deleted,
+                    )
+        except Exception as exception:
+            exception_exporting_invocation = exception
+            raise
+        finally:
+            self.set_invocation_export_result_metadata(
+                request.export_association_id,
+                export_metadata,
+                success=not bool(exception_exporting_invocation),
+                error=str(exception_exporting_invocation) if exception_exporting_invocation else None,
+            )
+
+    def write_invocation_to(self, request: WriteInvocationTo):
+        model_store_format = request.model_store_format
+        export_files = "symlink" if request.include_files else None
+        target_uri = request.target_uri
+        assert request.user.user_id
+        user_context = self._build_user_context(request.user.user_id)
+        export_metadata = self.set_invocation_export_request_metadata(request)
+
+        exception_exporting_invocation: Exception | None = None
+        uri: str | None = None
+        try:
+            export_store = model.store.get_export_store_factory(
                 self._app,
                 model_store_format,
                 export_files=export_files,
                 bco_export_options=self._bco_export_options(request),
-            )(short_term_storage_target.path) as export_store:
+                user_context=user_context,
+            )(target_uri)
+            with export_store:
                 invocation = self._sa_session.get(model.WorkflowInvocation, request.invocation_id)
                 export_store.export_workflow_invocation(
                     invocation,  # type: ignore[arg-type]
                     include_hidden=request.include_hidden,
                     include_deleted=request.include_deleted,
                 )
-
-    def write_invocation_to(self, request: WriteInvocationTo):
-        model_store_format = request.model_store_format
-        export_files = "symlink" if request.include_files else None
-        target_uri = request.target_uri
-        user_context = self._build_user_context(request.user.user_id)
-        with model.store.get_export_store_factory(
-            self._app,
-            model_store_format,
-            export_files=export_files,
-            bco_export_options=self._bco_export_options(request),
-            user_context=user_context,
-        )(target_uri) as export_store:
-            invocation = self._sa_session.get(model.WorkflowInvocation, request.invocation_id)
-            export_store.export_workflow_invocation(
-                invocation,  # type: ignore[arg-type]
-                include_hidden=request.include_hidden,
-                include_deleted=request.include_deleted,
+            uri = str(export_store.file_source_uri) if export_store.file_source_uri else request.target_uri
+        except Exception as exception:
+            exception_exporting_invocation = exception
+            raise
+        finally:
+            self.set_invocation_export_result_metadata(
+                request.export_association_id,
+                export_metadata,
+                success=not bool(exception_exporting_invocation),
+                uri=uri,
+                error=str(exception_exporting_invocation) if exception_exporting_invocation else None,
             )
 
     def _bco_export_options(self, request: BcoGenerationTaskParametersMixin):
@@ -206,6 +235,7 @@ class ModelStoreManager:
         model_store_format = request.model_store_format
         export_files = "symlink" if request.include_files else None
         target_uri = request.target_uri
+        assert request.user.user_id
         user_context = self._build_user_context(request.user.user_id)
         with model.store.get_export_store_factory(
             self._app, model_store_format, export_files=export_files, user_context=user_context
@@ -224,14 +254,19 @@ class ModelStoreManager:
     def write_history_to(self, request: WriteHistoryTo):
         model_store_format = request.model_store_format
         export_files = "symlink" if request.include_files else None
+        assert request.user.user_id
         user_context = self._build_user_context(request.user.user_id)
         export_metadata = self.set_history_export_request_metadata(request)
 
-        exception_exporting_history: Optional[Exception] = None
-        uri: Optional[str] = None
+        exception_exporting_history: Exception | None = None
+        uri: str | None = None
         try:
             export_store = model.store.get_export_store_factory(
-                self._app, model_store_format, export_files=export_files, user_context=user_context
+                self._app,
+                model_store_format,
+                export_files=export_files,
+                user_context=user_context,
+                ignore_errors=request.ignore_errors,
             )(request.target_uri)
             with export_store:
                 history = self._history_manager.by_id(request.history_id)
@@ -252,8 +287,8 @@ class ModelStoreManager:
             )
 
     def set_history_export_request_metadata(
-        self, request: Union[WriteHistoryTo, GenerateHistoryDownload]
-    ) -> Optional[ExportObjectMetadata]:
+        self, request: WriteHistoryTo | GenerateHistoryDownload
+    ) -> ExportObjectMetadata | None:
         if request.export_association_id is None:
             return None
         request_dict = request.model_dump()
@@ -275,11 +310,45 @@ class ModelStoreManager:
 
     def set_history_export_result_metadata(
         self,
-        export_association_id: Optional[int],
-        export_metadata: Optional[ExportObjectMetadata],
+        export_association_id: int | None,
+        export_metadata: ExportObjectMetadata | None,
         success: bool,
-        uri: Optional[str] = None,
-        error: Optional[str] = None,
+        uri: str | None = None,
+        error: str | None = None,
+    ):
+        if export_association_id is not None and export_metadata is not None:
+            export_metadata.result_data = ExportObjectResultMetadata(success=success, uri=uri, error=error)
+            self._export_tracker.set_export_association_metadata(export_association_id, export_metadata)
+
+    def set_invocation_export_request_metadata(
+        self, request: WriteInvocationTo | GenerateInvocationDownload
+    ) -> ExportObjectMetadata | None:
+        if request.export_association_id is None:
+            return None
+        request_dict = request.model_dump()
+        request_payload = (
+            WriteStoreToPayload(**request_dict)
+            if isinstance(request, WriteInvocationTo)
+            else ShortTermStoreExportPayload(**request_dict)
+        )
+        export_metadata = ExportObjectMetadata(
+            request_data=ExportObjectRequestMetadata(
+                object_id=request.invocation_id,
+                object_type=ExportObjectType.INVOCATION,
+                user_id=request.user.user_id,
+                payload=request_payload,
+            ),
+        )
+        self._export_tracker.set_export_association_metadata(request.export_association_id, export_metadata)
+        return export_metadata
+
+    def set_invocation_export_result_metadata(
+        self,
+        export_association_id: int | None,
+        export_metadata: ExportObjectMetadata | None,
+        success: bool,
+        uri: str | None = None,
+        error: str | None = None,
     ):
         if export_association_id is not None and export_metadata is not None:
             export_metadata.result_data = ExportObjectResultMetadata(success=success, uri=uri, error=error)
@@ -293,6 +362,7 @@ class ModelStoreManager:
             history = self._sa_session.get(model.History, history_id)
         else:
             history = None
+        assert request.user.user_id
         user_context = self._build_user_context(request.user.user_id)
         model_import_store = source_to_import_store(
             request.source_uri,
@@ -317,24 +387,30 @@ class ModelStoreManager:
 
     def _build_user_context(self, user_id: int):
         user = self._user_manager.by_id(user_id)
+        assert user is not None
         user_context = ModelStoreUserContext(self._app, user)
         return user_context
 
 
 def create_objects_from_store(
     app: MinimalManagerApp,
-    galaxy_user: Optional[model.User],
-    payload,
-    history: Optional[model.History] = None,
+    galaxy_user: model.User | None,
+    payload: StoreContentSource,
+    history: model.History | None = None,
     for_library: bool = False,
 ) -> ObjectImportTracker:
+    # Note: Galaxy's base Model uses use_enum_values=True, so enum fields
+    # are stored as their string values after pydantic validation.
     import_options = ImportOptions(
-        discarded_data=ImportDiscardedDataType.FORCE,
+        discarded_data=ImportDiscardedDataType(payload.discarded_data),
         allow_library_creation=for_library,
     )
     user_context = ModelStoreUserContext(app, galaxy_user) if galaxy_user is not None else None
+    source = payload.store_content_uri or payload.store_dict
+    if source is None:
+        raise RequestParameterInvalidException("Must provide store_content_uri or store_dict")
     model_import_store = source_to_import_store(
-        payload.store_content_uri or payload.store_dict,
+        source,
         app=app,
         import_options=import_options,
         model_store_format=payload.model_store_format,

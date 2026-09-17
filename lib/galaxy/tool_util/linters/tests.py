@@ -1,16 +1,26 @@
 """This module contains a linting functions for tool tests."""
 
+from collections.abc import Iterator
 from io import StringIO
 from typing import (
-    Iterator,
-    List,
-    Tuple,
     TYPE_CHECKING,
 )
 
+from packaging.version import Version
+
 from galaxy.tool_util.lint import Linter
 from galaxy.tool_util.parameters import validate_test_cases_for_tool_source
-from galaxy.tool_util.verify.assertion_models import assertion_list
+from galaxy.tool_util.parameters.factory import input_models_for_tool_source
+from galaxy.tool_util.verify.parse import tag_structure_to_that_structure
+from galaxy.tool_util_models.assertions import (
+    assertion_list,
+    relaxed_assertion_list,
+)
+from galaxy.tool_util_models.parameters import (
+    iter_parameter_models,
+    SelectParameterModel,
+    ToolParameterT,
+)
 from galaxy.util import asbool
 from ._util import is_datasource
 
@@ -146,29 +156,35 @@ class TestsAssertionValidation(Linter):
             lint_ctx.warn("Failed to parse test dictionaries from tool - cannot lint assertions")
             return
         assert "tests" in raw_tests_dict
+        # This really only allows coercion from strings, the values themselves will still be validated
+        assert_list_model = relaxed_assertion_list if tool_source.language == "xml" else assertion_list
         for test_idx, test in enumerate(raw_tests_dict["tests"], start=1):
             # TODO: validate command, command_version, element tests. What about children?
             for output in test["outputs"]:
                 asserts_raw = output.get("attributes", {}).get("assert_list") or []
-                to_yaml_assertions = []
+                processed_assertions = []
                 for raw_assert in asserts_raw:
-                    to_yaml_assertions.append({"that": raw_assert["tag"], **raw_assert.get("attributes", {})})
+                    processed_assertions.append(tag_structure_to_that_structure(raw_assert))
                 try:
-                    assertion_list.model_validate(to_yaml_assertions)
+                    assert_list_model.model_validate(processed_assertions)
                 except Exception as e:
                     error_str = _cleanup_pydantic_error(e)
                     lint_ctx.warn(
-                        f"Test {test_idx}: failed to validate assertions. Validation errors are [{error_str}]"
+                        f"Test {test_idx}: failed to validate assertions. Validation errors are [{error_str}]",
+                        linter=cls.name(),
                     )
 
 
 class TestsCaseValidation(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        profile = tool_source.parse_profile()
+        lint_log = lint_ctx.warn if Version(profile) < Version("24.2") else lint_ctx.error
+
         try:
             validation_results = validate_test_cases_for_tool_source(tool_source, use_latest_profile=True)
         except Exception as e:
-            lint_ctx.warn(
+            lint_log(
                 f"Serious problem parsing tool source or tests - cannot validate test cases. The exception is [{e}]",
                 linter=cls.name(),
             )
@@ -177,7 +193,7 @@ class TestsCaseValidation(Linter):
             error = validation_result.validation_error
             if error:
                 error_str = _cleanup_pydantic_error(error)
-                lint_ctx.warn(
+                lint_log(
                     f"Test {test_idx}: failed to validate test parameters against inputs - tests won't run on a modern Galaxy tool profile version. Validation errors are [{error_str}]",
                     linter=cls.name(),
                 )
@@ -194,6 +210,41 @@ def _cleanup_pydantic_error(error) -> str:
         else:
             new_error.write(f"{line}\n")
     return new_error.getvalue().strip()
+
+
+def _collect_multiple_select_names(parameters: list["ToolParameterT"]) -> set[str]:
+    return {
+        param.name
+        for param in iter_parameter_models(parameters)
+        if isinstance(param, SelectParameterModel) and param.multiple
+    }
+
+
+class TestsMultipleSelectEmptyValue(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        profile = tool_source.parse_profile()
+        lint_log = lint_ctx.warn if Version(profile) < Version("26.1") else lint_ctx.error
+        try:
+            bundle = input_models_for_tool_source(tool_source)
+        except Exception:
+            return
+        multiple_select_names = _collect_multiple_select_names(bundle.parameters)
+        if not multiple_select_names:
+            return
+        tests = tool_xml.findall("./tests/test")
+        for test_idx, test in enumerate(tests, start=1):
+            for param in test.iter("param"):
+                name = param.attrib.get("name", "")
+                if name in multiple_select_names and param.attrib.get("value", None) == "":
+                    lint_log(
+                        f'Test {test_idx}: param \'{name}\' uses value="" for a multiple select — use value_json="[]" to express an empty selection explicitly.',
+                        linter=cls.name(),
+                        node=param,
+                    )
 
 
 class TestsExpectNumOutputs(Linter):
@@ -238,7 +289,11 @@ class TestsParamInInputs(Linter):
                 name = name.split("|")[-1]
                 xpaths = [f"@name='{name}'", f"@argument='{name}'", f"@argument='-{name}'", f"@argument='--{name}'"]
                 if "_" in name:
-                    xpaths += [f"@argument='-{name.replace('_', '-')}'", f"@argument='--{name.replace('_', '-')}'"]
+                    xpaths += [
+                        f"@argument='{name.replace('_', '-')}'",
+                        f"@argument='-{name.replace('_', '-')}'",
+                        f"@argument='--{name.replace('_', '-')}'",
+                    ]
                 found = False
                 for xp in xpaths:
                     inxpath = f".//inputs//param[{xp}]"
@@ -410,9 +465,14 @@ class TestsOutputCheckDiscovered(Linter):
                 discover_datasets = corresponding_output.find(".//discover_datasets")
                 if discover_datasets is None:
                     continue
-                if "count" not in output.attrib and output.find("./discovered_dataset") is None:
+                if (
+                    "count" not in output.attrib
+                    and "min" not in output.attrib
+                    and "max" not in output.attrib
+                    and output.find("./discovered_dataset") is None
+                ):
                     lint_ctx.error(
-                        f"Test {test_idx}: test output '{name}' must have a 'count' attribute and/or 'discovered_dataset' children",
+                        f"Test {test_idx}: test output '{name}' must have a 'count/min/max' attribute and/or 'discovered_dataset' children",
                         linter=cls.name(),
                         node=output,
                     )
@@ -440,12 +500,16 @@ class TestsOutputCollectionCheckDiscovered(Linter):
                     continue
                 # - test/collection to outputs/output_collection
                 corresponding_output = output_data_or_collection[name]
-                discover_datasets = corresponding_output.find(".//discover_datasets")
-                if discover_datasets is None:
+                if corresponding_output.find(".//discover_datasets") is None:
                     continue
-                if "count" not in output.attrib and output.find("./element") is None:
+                if (
+                    "count" not in output.attrib
+                    and "min" not in output.attrib
+                    and "max" not in output.attrib
+                    and output.find("./element") is None
+                ):
                     lint_ctx.error(
-                        f"Test {test_idx}: test collection '{name}' must have a 'count' attribute or 'element' children",
+                        f"Test {test_idx}: test collection '{name}' must have a 'count/min/max' attribute or 'element' children",
                         linter=cls.name(),
                         node=output,
                     )
@@ -475,10 +539,10 @@ class TestsOutputCollectionCheckDiscoveredNested(Linter):
                     continue
                 if corresponding_output.get("type", "") in ["list:list", "list:paired"]:
                     nested_elements = output.find("./element/element")
-                    element_with_count = output.find("./element[@count]")
-                    if nested_elements is None and element_with_count is None:
+                    elements_with_count = output.xpath("./element[@count or @min or @max]")
+                    if nested_elements is None and not elements_with_count:
                         lint_ctx.error(
-                            f"Test {test_idx}: test collection '{name}' must contain nested 'element' tags and/or element children with a 'count' attribute",
+                            f"Test {test_idx}: test collection '{name}' must contain nested 'element' tags and/or element children with a 'count/min/max' attribute",
                             linter=cls.name(),
                             node=output,
                         )
@@ -581,7 +645,7 @@ class TestsValid(Linter):
             lint_ctx.warn("No valid test(s) found.", linter=cls.name(), node=general_node)
 
 
-def _iter_tests(tests: List["Element"], valid: bool) -> Iterator[Tuple[int, "Element"]]:
+def _iter_tests(tests: list["Element"], valid: bool) -> Iterator[tuple[int, "Element"]]:
     for test_idx, test in enumerate(tests, start=1):
         is_valid = False
         is_valid |= bool(set(test.attrib) & {"expect_failure", "expect_exit_code", "expect_num_outputs"})

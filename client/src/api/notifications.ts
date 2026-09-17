@@ -1,4 +1,4 @@
-import { type components } from "@/api/schema";
+import type { components } from "@/api/schema";
 
 export type BaseUserNotification = components["schemas"]["UserNotificationResponse"];
 export type UserNotificationPreferences = components["schemas"]["UserNotificationPreferences"]["preferences"];
@@ -15,6 +15,11 @@ export interface SharedItemNotification extends BaseUserNotification {
     content: components["schemas"]["NewSharedItemNotificationContent"];
 }
 
+export interface StorageOperationNotification extends BaseUserNotification {
+    category: "storage_operation";
+    content: components["schemas"]["StorageOperationNotificationContent"];
+}
+
 type NotificationCreateData = components["schemas"]["NotificationCreateData"];
 
 export interface MessageNotificationCreateData extends NotificationCreateData {
@@ -28,7 +33,7 @@ export interface MessageNotificationCreateRequest extends NotificationCreateRequ
     notification: MessageNotificationCreateData;
 }
 
-export type UserNotification = MessageNotification | SharedItemNotification;
+export type UserNotification = MessageNotification | SharedItemNotification | StorageOperationNotification;
 
 export type NotificationChanges = components["schemas"]["UserNotificationUpdateRequest"];
 

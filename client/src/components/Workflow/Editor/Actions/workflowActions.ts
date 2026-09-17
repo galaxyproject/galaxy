@@ -9,7 +9,7 @@ import { useWorkflowStateStore, type WorkflowStateStore } from "@/stores/workflo
 import { type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
 import { ensureDefined } from "@/utils/assertions";
 
-import { type defaultPosition } from "../composables/useDefaultStepPosition";
+import type { defaultPosition } from "../composables/useDefaultStepPosition";
 import { fromSimple, type Workflow } from "../modules/model";
 import { cloneStepWithUniqueLabel, getLabelSet } from "./cloneStep";
 
@@ -18,13 +18,21 @@ export class LazySetValueAction<T> extends LazyUndoRedoAction {
     showAttributesCallback;
     fromValue;
     toValue;
+    what: string | null;
 
-    constructor(fromValue: T, toValue: T, setValueHandler: (value: T) => void, showCanvasCallback: () => void) {
+    constructor(
+        fromValue: T,
+        toValue: T,
+        setValueHandler: (value: T) => void,
+        showCanvasCallback: () => void,
+        what: string | null = null,
+    ) {
         super();
         this.fromValue = structuredClone(fromValue);
         this.toValue = structuredClone(toValue);
         this.setValueHandler = setValueHandler;
         this.showAttributesCallback = showCanvasCallback;
+        this.what = what;
     }
 
     queued() {
@@ -46,6 +54,16 @@ export class LazySetValueAction<T> extends LazyUndoRedoAction {
         this.setValueHandler(this.toValue);
     }
 
+    get dataAttributes(): Record<string, string> {
+        if (this.what) {
+            return {
+                type: `set-${this.what}`,
+            };
+        } else {
+            return {};
+        }
+    }
+
     get name() {
         return this.internalName ?? "modify workflow";
     }
@@ -61,24 +79,33 @@ export class SetValueActionHandler<T> {
     showAttributesCallback;
     lazyAction: LazySetValueAction<T> | null = null;
     name?: string;
+    what: string | null;
 
     constructor(
         undoRedoStore: UndoRedoStore,
         setValueHandler: (value: T) => void,
         showCanvasCallback: () => void,
-        name?: string
+        name?: string,
+        what: string | null = null,
     ) {
         this.undoRedoStore = undoRedoStore;
         this.setValueHandler = setValueHandler;
         this.showAttributesCallback = showCanvasCallback;
         this.name = name;
+        this.what = what;
     }
 
     set(from: T, to: T) {
         if (this.lazyAction && this.undoRedoStore.isQueued(this.lazyAction)) {
             this.lazyAction.changeValue(to);
         } else {
-            this.lazyAction = new LazySetValueAction<T>(from, to, this.setValueHandler, this.showAttributesCallback);
+            this.lazyAction = new LazySetValueAction<T>(
+                from,
+                to,
+                this.setValueHandler,
+                this.showAttributesCallback,
+                this.what,
+            );
             this.lazyAction.name = this.name;
             this.undoRedoStore.applyLazyAction(this.lazyAction);
         }
@@ -99,7 +126,7 @@ export class CopyIntoWorkflowAction extends UndoRedoAction {
     constructor(
         workflowId: string,
         data: Pick<Workflow, "steps" | "comments" | "name">,
-        position: ReturnType<typeof defaultPosition>
+        position: ReturnType<typeof defaultPosition>,
     ) {
         super();
 
@@ -176,7 +203,7 @@ export class LazyMoveMultipleAction extends LazyUndoRedoAction {
         comments: WorkflowComment[],
         steps: StepWithPosition[],
         position: { x: number; y: number },
-        positionTo?: { x: number; y: number }
+        positionTo?: { x: number; y: number },
     ) {
         super();
         this.commentStore = commentStore;
@@ -342,12 +369,12 @@ export class DuplicateSelectionAction extends CopyIntoWorkflowAction {
         const stepIds = [...stateStore.multiSelectedStepIds];
 
         const comments = commentIds.map((id) =>
-            structuredClone(ensureDefined(commentStore.commentsRecord[id]))
+            structuredClone(ensureDefined(commentStore.commentsRecord[id])),
         ) as WorkflowComment[];
 
         const labelSet = getLabelSet(stepStore);
         const steps = Object.fromEntries(
-            stepIds.map((id) => [id, cloneStepWithUniqueLabel(ensureDefined(stepStore.steps[id]), labelSet)])
+            stepIds.map((id) => [id, cloneStepWithUniqueLabel(ensureDefined(stepStore.steps[id]), labelSet)]),
         );
 
         const partialWorkflow = { comments, steps, name: "" };

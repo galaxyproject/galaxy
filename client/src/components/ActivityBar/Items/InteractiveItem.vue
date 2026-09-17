@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
@@ -29,13 +29,12 @@ const emit = defineEmits<{
 const tooltip = computed(() =>
     totalCount.value === 1
         ? "You currently have 1 active interactive tool"
-        : `You currently have ${totalCount.value} active interactive tools`
+        : `You currently have ${totalCount.value} active interactive tools`,
 );
 </script>
 
 <template>
     <ActivityItem
-        v-if="totalCount > 0"
         :id="id"
         :activity-bar-id="props.activityBarId"
         :icon="icon"

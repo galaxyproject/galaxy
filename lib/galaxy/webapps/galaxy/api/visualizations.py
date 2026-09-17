@@ -6,7 +6,9 @@ may change often.
 """
 
 import logging
-from typing import Optional
+from typing import (
+    Annotated,
+)
 
 from fastapi import (
     Body,
@@ -15,9 +17,9 @@ from fastapi import (
     Response,
     status,
 )
-from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.model import User
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     SetSlugPayload,
@@ -38,6 +40,7 @@ from galaxy.schema.visualization import (
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
+    DependsOnUser,
     IndexQueryTag,
     Router,
     search_query_param,
@@ -56,7 +59,7 @@ DeletedQueryParam: bool = Query(
     default=False, title="Display deleted", description="Whether to include deleted visualizations in the result."
 )
 
-UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+UserIdQueryParam: DecodedDatabaseIdField | None = Query(
     default=None,
     title="Encoded user ID to restrict query to, must be own id if not an admin user",
 )
@@ -68,7 +71,7 @@ query_tags = [
     IndexQueryTag("user", "The visualization's owner's username.", "u"),
 ]
 
-SearchQueryParam: Optional[str] = search_query_param(
+SearchQueryParam: str | None = search_query_param(
     model_name="Visualization",
     tags=query_tags,
     free_text_fields=["title", "slug", "tag", "type"],
@@ -117,15 +120,15 @@ class FastAPIVisualizations:
         response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = DeletedQueryParam,
-        limit: Optional[int] = LimitQueryParam,
-        offset: Optional[int] = OffsetQueryParam,
-        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
+        limit: int | None = LimitQueryParam,
+        offset: int | None = OffsetQueryParam,
+        user_id: DecodedDatabaseIdField | None = UserIdQueryParam,
         show_own: bool = ShowOwnQueryParam,
         show_published: bool = ShowPublishedQueryParam,
         show_shared: bool = ShowSharedQueryParam,
         sort_by: VisualizationSortByEnum = SortByQueryParam,
         sort_desc: bool = SortDescQueryParam,
-        search: Optional[str] = SearchQueryParam,
+        search: str | None = SearchQueryParam,
     ) -> VisualizationSummaryList:
         payload = VisualizationIndexQueryPayload.model_construct(
             deleted=deleted,
@@ -250,10 +253,11 @@ class FastAPIVisualizations:
     def create(
         self,
         payload: VisualizationCreatePayload = Body(...),
-        import_id: Optional[DecodedDatabaseIdField] = Query(
+        import_id: DecodedDatabaseIdField | None = Query(
             None, title="Import ID", description="The encoded database identifier of the Visualization to import."
         ),
         trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
     ) -> VisualizationCreateResponse:
         """
         Creates a new visualization using the given payload and does not require the import_id field.
@@ -270,5 +274,5 @@ class FastAPIVisualizations:
         id: VisualizationIdPathParam,
         payload: VisualizationUpdatePayload = Body(...),
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> Optional[VisualizationUpdateResponse]:
+    ) -> VisualizationUpdateResponse | None:
         return self.service.update(trans, id, payload)

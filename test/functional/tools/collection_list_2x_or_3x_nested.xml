@@ -1,0 +1,17 @@
+<tool id="collection_list_2x_or_3x_nested" name="collection_list_2x_or_3x_nested" version="0.1.0">
+  <command><![CDATA[
+    #for $key in $f1.keys()#
+      echo "identifier is $key" >> "$out1";
+      #set $element = $f1[$key]
+      echo 'collection_type<${element.collection.collection_type}>' >> "$out1";
+    #end for#
+  ]]></command>
+  <inputs>
+    <param name="f1" type="data_collection" collection_type="list:list,list:list:list" label="Input nested list" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+  </outputs>
+  <tests>
+  </tests>
+</tool>

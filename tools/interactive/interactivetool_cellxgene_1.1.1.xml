@@ -1,4 +1,5 @@
 <tool id="interactive_tool_cellxgene" tool_type="interactive" name="Interactive CellXgene Environment" version="1.1.1">
+    <icon src="cellxgene.png" />
     <requirements>
 	<container type="docker">quay.io/biocontainers/cellxgene:1.1.1--pyhdfd78af_0</container>
     </requirements>
@@ -20,13 +21,13 @@
 
     #if ($var_name and $make_unique) or $layer:
     python '${anndata_unique_var_gene_symbols}' '${infile}' '${fancy_name}' '${var_name}' '${make_unique}' '${layer}'
-    #else  
+    #else
     cp '${infile}' '${fancy_name}'
     #end if
     &&
     mkdir annotation_files
     &&
-    cellxgene launch --host 0.0.0.0 --port 80 
+    cellxgene launch --host 0.0.0.0 --port 80
         --user-generated-data-dir annotation_files
     #if $var_name and not $make_unique:
         --var-names $var_name
@@ -53,7 +54,7 @@ layer = sys.argv[5]
 if gene_symbol_field and make_unique:
     if gene_symbol_field not in adata.var.keys():
         sys.exit(f"Field {gene_symbol_field} set as var_name does not exist in the var object. AnnData object will be used as it was given")
-    
+
     adata.var = rn(adata.var, gene_symbol_field, suffix = "_d")
     adata.var["extra_gene_id"] = adata.var.index
     adata.var = adata.var.set_index(f"{gene_symbol_field}_u")
@@ -86,16 +87,16 @@ cellxgene - "Cell by gene" interactive viewer for single cell data in AnnData
 =============================================================================
 Purpose
 -------
-Enables interactive visualisation of Single Cell RNA-Seq datasets stored as 
+Enables interactive visualisation of Single Cell RNA-Seq datasets stored as
 AnnData files (the format used by Scanpy).
 
 Selecting the Var name
 ----------------------
-It can happen that the main index for the var element of AnnData is not the 
+It can happen that the main index for the var element of AnnData is not the
 gene symbol field, in which case search by genes will probably be by identifier.
-You can choose a different field and celxgene will use this. If in addition you choose "Make unique", 
+You can choose a different field and celxgene will use this. If in addition you choose "Make unique",
 the AnnData is modified (in a new copy) so that that field is made unique and
-it is indexed by it. Making it unique entails though loading the object into memory, 
+it is indexed by it. Making it unique entails though loading the object into memory,
 modifying and writing it back, which can delay the execution of cellxgene.
 
 Then cellxgene will allow searches by genes in that field.

@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import mountTarget from "./ActivityItem.vue";
 
@@ -22,7 +23,7 @@ describe("ActivityItem", () => {
                 to: null,
                 tooltip: "activity-test-tooltip",
             },
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
             localVue,
             stubs: {
                 FontAwesomeIcon: true,

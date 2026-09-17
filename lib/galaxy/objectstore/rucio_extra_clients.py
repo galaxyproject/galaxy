@@ -1,9 +1,14 @@
 import copy
 import logging
+import os
 import time
 
 try:
     from rucio.client.uploadclient import UploadClient
+    from rucio.common.checksum import (
+        adler32,
+        md5,
+    )
     from rucio.common.exception import (
         InputValidationError,
         NoFilesUploaded,
@@ -57,6 +62,10 @@ class DeleteClient(UploadClient):
 
 
 class InPlaceIngestClient(UploadClient):
+    def __init__(self, client, register_with_checksum):
+        super().__init__(client)
+        self.register_with_checksum = register_with_checksum
+
     def ingest(self, items, summary_file_path=None, traces_copy_out=None, ignore_availability=False, activity=None):
         """
         :param items: List of dictionaries. Each dictionary describing a file to upload. Keys:
@@ -131,6 +140,7 @@ class InPlaceIngestClient(UploadClient):
             basename = file["basename"]
             logger(logging.INFO, "Preparing upload for file %s", basename)
 
+            no_register = False
             pfn = file.get("pfn")
 
             trace = copy.deepcopy(self.trace)
@@ -195,3 +205,36 @@ class InPlaceIngestClient(UploadClient):
         elif num_succeeded != len(files):
             raise NotAllFilesUploaded()
         return 0
+
+    def _collect_file_info(self, filepath, item):
+        """
+        Collects infos (e.g. size, checksums, etc.) about the file and
+        returns them as a dictionary
+        (This function is meant to be used as class internal only)
+
+        :param filepath: path where the file is stored
+        :param item: input options for the given file
+
+        :returns: a dictionary containing all collected info and the input options
+        """
+        new_item = copy.deepcopy(item)
+        new_item["path"] = filepath
+        new_item["dirname"] = os.path.dirname(filepath)
+        new_item["basename"] = os.path.basename(filepath)
+
+        new_item["bytes"] = os.stat(filepath).st_size
+        if self.register_with_checksum:
+            new_item["adler32"] = adler32(filepath)
+            new_item["md5"] = md5(filepath)
+        else:
+            new_item["adler32"] = "00000001"  # empty file
+            new_item["md5"] = "d41d8cd98f00b204e9800998ecf8427e"  # empty file
+
+        new_item["meta"] = {"guid": self._get_file_guid(new_item)}
+        new_item["state"] = "C"
+        if not new_item.get("did_scope"):
+            new_item["did_scope"] = self.default_file_scope
+        if not new_item.get("did_name"):
+            new_item["did_name"] = new_item["basename"]
+
+        return new_item

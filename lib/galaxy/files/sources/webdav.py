@@ -1,56 +1,87 @@
-try:
-    from webdavfs.webdavfs import WebDAVFS
-except ImportError:
-    WebDAVFS = None
-
-import tempfile
 from typing import (
-    cast,
-    Optional,
-    Union,
+    Annotated,
 )
 
-from typing_extensions import NotRequired
-
-from . import (
-    FilesSourceOptions,
-    FilesSourceProperties,
+from pydantic import (
+    Field,
 )
-from ._pyfilesystem2 import PyFilesystem2FilesSource
+
+from galaxy.files.models import FilesSourceRuntimeContext
+from galaxy.util.config_templates import TemplateExpansion
+from ._fsspec import (
+    CacheOptionsDictType,
+    FsspecBaseFileSourceConfiguration,
+    FsspecBaseFileSourceTemplateConfiguration,
+    FsspecFilesSource,
+)
+
+try:
+    from webdav4.fsspec import WebdavFileSystem
+except ImportError:
+    WebdavFileSystem = None
 
 
-class WebDavFilesSourceProperties(FilesSourceProperties, total=False):
-    use_temp_files: NotRequired[Optional[bool]]
-    temp_path: NotRequired[Optional[str]]
+class WebDavFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
+    root: str | TemplateExpansion | None = None
+    base_url: str | TemplateExpansion
+    login: str | TemplateExpansion | None = None
+    password: str | TemplateExpansion | None = None
 
 
-class WebDavFilesSource(PyFilesystem2FilesSource):
+class WebDavFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
+    root: str | None = None
+    base_url: Annotated[
+        str,
+        Field(
+            title="WebDAV base URL",
+            description="The fully-qualified WebDAV endpoint URL used to access this file source.",
+        ),
+    ]
+    login: str | None = None
+    password: str | None = None
+
+
+class WebDavFilesSource(FsspecFilesSource[WebDavFileSourceTemplateConfiguration, WebDavFileSourceConfiguration]):
     plugin_type = "webdav"
-    required_module = WebDAVFS
-    required_package = "fs.webdavfs"
-    allow_key_error_on_empty_directories = True
+    required_module = WebdavFileSystem
+    required_package = "webdav4"
 
-    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        props = cast(WebDavFilesSourceProperties, self._serialization_props(user_context))
-        file_sources_config = self._file_sources_config
-        use_temp_files = props.pop("use_temp_files", None)
-        if use_temp_files is None and file_sources_config and file_sources_config.webdav_use_temp_files is not None:
-            use_temp_files = file_sources_config.webdav_use_temp_files
-        if use_temp_files is None:
-            # Default to True to avoid memory issues with large files.
-            use_temp_files = True
+    template_config_class = WebDavFileSourceTemplateConfiguration
+    resolved_config_class = WebDavFileSourceConfiguration
 
-        if use_temp_files:
-            temp_path = props.get("temp_path")
-            if temp_path is None and file_sources_config and file_sources_config.tmp_dir:
-                temp_path = file_sources_config.tmp_dir
-            if temp_path is None:
-                temp_path = tempfile.mkdtemp(prefix="webdav_")
-            props["temp_path"] = temp_path
-        props["use_temp_files"] = use_temp_files
-        extra_props: Union[FilesSourceProperties, dict] = opts.extra_props or {} if opts else {}
-        handle = WebDAVFS(**{**props, **extra_props})
-        return handle
+    @staticmethod
+    def _webdav_endpoint(base_url: str, root: str | None) -> str:
+        # WebDAV "root" is the service endpoint path (for example Nextcloud's
+        # /remote.php/dav/files/user), not a directory prefix inside the file source.
+        base_url = base_url.strip().rstrip("/")
+        if not base_url:
+            raise ValueError("base_url is required for WebDAV file source")
+        root = root.strip().strip("/") if root else ""
+        if root:
+            return f"{base_url}/{root}"
+        return base_url
+
+    def _open_fs(
+        self,
+        context: FilesSourceRuntimeContext[WebDavFileSourceConfiguration],
+        cache_options: CacheOptionsDictType,
+    ):
+        if WebdavFileSystem is None:
+            raise self.required_package_exception
+
+        config = context.config
+        auth = (config.login, config.password) if config.login or config.password else None
+        return WebdavFileSystem(self._webdav_endpoint(config.base_url, config.root), auth=auth)
+
+    def _to_filesystem_path(self, path: str, config: WebDavFileSourceConfiguration) -> str:
+        if path in ("", "/"):
+            return ""
+        return path.lstrip("/")
+
+    def _adapt_entry_path(self, filesystem_path: str, config: WebDavFileSourceConfiguration) -> str:
+        if not filesystem_path or filesystem_path == "/":
+            return "/"
+        return filesystem_path if filesystem_path.startswith("/") else f"/{filesystem_path}"
 
 
 __all__ = ("WebDavFilesSource",)

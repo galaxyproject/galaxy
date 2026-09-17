@@ -117,8 +117,11 @@ def get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwar
             user = sa_session.get(model.User, repo.user_id)
             repo_owner_username = user.username.lower()
 
-        last_updated = pretty_print_time_interval(repo.update_time)
-        full_last_updated = repo.update_time.strftime("%Y-%m-%d %I:%M %p")
+        laste_updated_time = repo.last_updated_time
+        # If committed must have last_updated_time
+        assert laste_updated_time is not None
+        last_updated = pretty_print_time_interval(laste_updated_time)
+        full_last_updated = laste_updated_time.strftime("%Y-%m-%d %I:%M %p")
 
         # Load all changesets of the repo for lineage.
         try:
@@ -198,13 +201,16 @@ def load_one_dir(path):
 
 def get_repositories_for_indexing(session):
     # Do not index deleted, deprecated, or "tool_dependency_definition" type repositories.
+    # Order by last_updated_time so the build_index incremental fast path can
+    # break out as soon as it encounters an already-indexed repo with a
+    # matching full_last_updated stamp.
     Repository = model.Repository
     stmt = (
         select(Repository)
         .where(Repository.deleted == false())
         .where(Repository.deprecated == false())
         .where(Repository.type != "tool_dependency_definition")
-        .order_by(Repository.update_time.desc())
+        .order_by(Repository.last_updated_time.desc())
     )
     return session.scalars(stmt)
 

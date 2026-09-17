@@ -3,13 +3,19 @@ import ELK, { type ElkExtendedEdge, type ElkNode } from "elkjs/lib/elk.bundled";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import type { FreehandWorkflowComment, WorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { type Step } from "@/stores/workflowStepStore";
+import {
+    getCombinedStepInputs,
+    type Step,
+    useWorkflowStepStore,
+    type WorkflowStepStore,
+} from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
+import { AxisAlignedBoundingBox, type Rectangle, rectDistance } from "@/utils/geometry";
 import { match } from "@/utils/utils";
 
-import { AxisAlignedBoundingBox, type Rectangle, rectDistance } from "./geometry";
-
 const elk = new ELK();
+
+export const AUTO_LAYOUT_ORPHAN_EDGE_WARNING_PREFIX = "Auto Layout: skipping edge";
 
 interface OptionObject {
     [key: string]: OptionValue | OptionObject;
@@ -46,6 +52,7 @@ export function elkSpacing(left = 0, top = 0, right = 0, bottom = 0) {
 export async function autoLayout(id: string, steps: { [index: string]: Step }, comments: WorkflowComment[]) {
     const connectionStore = useConnectionStore(id);
     const stateStore = useWorkflowStateStore(id);
+    const stepStore = useWorkflowStepStore(id);
 
     // making this follow the user set snapping distance get's messy fast, so it's hardcoded for simplicity
     const snappingDistance = 10;
@@ -111,8 +118,9 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }, c
         steps,
         otherComments,
         stateStore,
+        stepStore,
         roundUpToSnappingDistance,
-        childLayoutOptions
+        childLayoutOptions,
     );
 
     const dataEdges = connectionStore.connections.map((connection) => {
@@ -126,7 +134,33 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }, c
 
     const commentEdges = getCommentEdges(otherComments, stepsWithRect);
 
-    newGraph.edges = [...dataEdges, ...commentEdges];
+    // Defensive: filter edges targeting non-existent ports
+    // This handles orphaned connections that may exist in imported workflows
+    const allPortIds = new Set<string>();
+    newGraph.children?.forEach((node) => {
+        node.ports?.forEach((port) => allPortIds.add(port.id));
+    });
+
+    const validDataEdges = dataEdges.filter((edge) => {
+        const sourcePortId = edge.sources[0];
+        const targetPortId = edge.targets[0];
+        if (!sourcePortId || !targetPortId) {
+            return false;
+        }
+
+        const sourceExists = allPortIds.has(sourcePortId);
+        const targetExists = allPortIds.has(targetPortId);
+
+        if (!sourceExists || !targetExists) {
+            console.warn(
+                `${AUTO_LAYOUT_ORPHAN_EDGE_WARNING_PREFIX} with non-existent port(s): source=${sourcePortId} (${sourceExists}), target=${targetPortId} (${targetExists})`,
+            );
+            return false;
+        }
+        return true;
+    });
+
+    newGraph.edges = [...validDataEdges, ...commentEdges];
 
     const roundToSnappingDistance = (value: number) => Math.round(value / snappingDistance) * snappingDistance;
 
@@ -153,11 +187,12 @@ function graphToElkGraph(
     steps: Record<number, Step>,
     comments: WorkflowComment[],
     stateStore: ReturnType<typeof useWorkflowStateStore>,
+    stepStore: WorkflowStepStore,
     roundingFunction: (value: number) => number,
-    layoutOptions: Record<string, string>
+    layoutOptions: Record<string, string>,
 ): ElkNode[] {
     const flatHierarchicalComments: Map<number, HierarchicalComment> = new Map(
-        comments.map((comment) => [comment.id, { comment, root: true, children: [] }])
+        comments.map((comment) => [comment.id, { comment, root: true, children: [] }]),
     );
 
     const rootSteps = new Map(Object.entries(steps));
@@ -185,15 +220,15 @@ function graphToElkGraph(
     });
 
     const rootHierarchicalComments: HierarchicalComment[] = [...flatHierarchicalComments.values()].filter(
-        (c) => c.root
+        (c) => c.root,
     );
 
     const elkRootSteps = [...rootSteps.values()].map((step) => {
-        return stepToElkStep(step, stateStore, roundingFunction);
+        return stepToElkStep(step, stateStore, stepStore, roundingFunction);
     });
 
     const elkRootComments = rootHierarchicalComments.map((c) =>
-        commentToElkStep(c, stateStore, roundingFunction, layoutOptions)
+        commentToElkStep(c, stateStore, stepStore, roundingFunction, layoutOptions),
     );
 
     return [...elkRootSteps, ...elkRootComments];
@@ -202,9 +237,12 @@ function graphToElkGraph(
 function stepToElkStep(
     step: Step,
     stateStore: ReturnType<typeof useWorkflowStateStore>,
-    roundingFunction: (value: number) => number
+    stepStore: WorkflowStepStore,
+    roundingFunction: (value: number) => number,
 ): ElkNode {
-    const inputs = Object.values(step.inputs).map((input, index) => {
+    // Use combined inputs to include extra inputs (e.g., "when" conditionals)
+    const allInputs = getCombinedStepInputs(step, stepStore);
+    const inputs = allInputs.map((input, index) => {
         return {
             id: `${step.id}/in/${input.name}`,
             properties: {
@@ -247,8 +285,9 @@ function stepToElkStep(
 function commentToElkStep(
     hierarchicalComment: HierarchicalComment,
     stateStore: ReturnType<typeof useWorkflowStateStore>,
+    stepStore: WorkflowStepStore,
     roundingFunction: (value: number) => number,
-    layoutOptions: Record<string, string>
+    layoutOptions: Record<string, string>,
 ): ElkNode {
     const base: ElkNode = {
         id: `comment_${hierarchicalComment.comment.id}`,
@@ -265,9 +304,9 @@ function commentToElkStep(
 
     const children: ElkNode[] = hierarchicalComment.children?.map((c) => {
         if ("comment" in c) {
-            return commentToElkStep(c, stateStore, roundingFunction, layoutOptions);
+            return commentToElkStep(c, stateStore, stepStore, roundingFunction, layoutOptions);
         } else {
-            return stepToElkStep(c, stateStore, roundingFunction);
+            return stepToElkStep(c, stateStore, stepStore, roundingFunction);
         }
     });
 
@@ -282,7 +321,7 @@ interface Positions {
 function graphToPositions(
     graph: ElkNode[] | undefined,
     roundingFunction: (value: number) => number,
-    parentPosition?: { x: number; y: number }
+    parentPosition?: { x: number; y: number },
 ): Positions {
     const positions: Positions = {
         steps: [],
@@ -460,7 +499,7 @@ function populateClosestSteps(collapsedFreehandComments: CollapsedFreehandCommen
 /** resolve by how much to move the freehand comments */
 function resolveDeltaPositions(
     collapsedFreehandComments: CollapsedFreehandComment[],
-    stepPositions: Positions["steps"]
+    stepPositions: Positions["steps"],
 ): Positions["comments"] {
     const positions: Positions["comments"] = [];
     const stepPositionMap = new Map(stepPositions.map((p) => [p.id, p]));

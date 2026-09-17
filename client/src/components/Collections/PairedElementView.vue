@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { faArrowLeft, faArrowRight, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import type { HDASummary } from "@/api";
 import localize from "@/utils/localization";
 
+import GButton from "../BaseComponents/GButton.vue";
 import ClickToEdit from "@/components/Collections/common/ClickToEdit.vue";
 
 interface Props {
@@ -51,8 +51,8 @@ watch(elementName, () => {
             </span>
         </div>
 
-        <BButton class="unpair-btn" variant="link" @click="emit('onUnpair')">
+        <GButton class="unpair-btn" color="blue" transparent @click="emit('onUnpair')">
             <FontAwesomeIcon :icon="faUnlink" :title="localize('Unpair')" />
-        </BButton>
+        </GButton>
     </li>
 </template>

@@ -8,9 +8,6 @@ import os
 from typing import (
     Any,
     cast,
-    List,
-    Optional,
-    Union,
 )
 
 from galaxy import (
@@ -18,13 +15,15 @@ from galaxy import (
     util,
 )
 from galaxy.tool_util.parser.parameter_validators import (
+    parse_xml_validators as parse_xml_validators_models,
+)
+from galaxy.tool_util_models.parameter_validators import (
     AnyValidatorModel,
     EmptyFieldParameterValidatorModel,
     ExpressionParameterValidatorModel,
     InRangeParameterValidatorModel,
     MetadataParameterValidatorModel,
-    parse_xml_validators as parse_xml_validators_models,
-    raise_error_if_valiation_fails,
+    raise_error_if_validation_fails,
     RegexParameterValidatorModel,
 )
 
@@ -62,7 +61,7 @@ class Validator(abc.ABC):
 
         return None if positive validation, otherwise a ValueError is raised
         """
-        raise_error_if_valiation_fails(value, self, message=message, value_to_show=value_to_show)
+        raise_error_if_validation_fails(value, self, message=message, value_to_show=value_to_show)
 
 
 class RegexValidator(Validator):
@@ -105,8 +104,8 @@ class InRangeValidator(ExpressionValidator):
     def __init__(
         self,
         message: str,
-        min: Optional[float] = None,
-        max: Optional[float] = None,
+        min: float | None = None,
+        max: float | None = None,
         exclude_min: bool = False,
         exclude_max: bool = False,
         negate: bool = False,
@@ -134,7 +133,7 @@ class InRangeValidator(ExpressionValidator):
         super().__init__(message, expression, negate)
 
     @staticmethod
-    def simple_range_validator(min: Optional[float], max: Optional[float]):
+    def simple_range_validator(min: float | None, max: float | None):
         return cast(
             InRangeParameterValidatorModel,
             _to_validator(None, InRangeParameterValidatorModel(min=min, max=max, implicit=True)),
@@ -204,8 +203,8 @@ class MetadataValidator(Validator):
     def __init__(
         self,
         message: str,
-        check: Optional[List[str]] = None,
-        skip: Optional[List[str]] = None,
+        check: list[str] | None = None,
+        skip: list[str] | None = None,
         negate: bool = False,
     ):
         super().__init__(message, negate)
@@ -305,7 +304,7 @@ class MetadataInFileColumnValidator(Validator):
         metadata_name: str,
         metadata_column: int,
         message: str,
-        line_startswith: Optional[str] = None,
+        line_startswith: str | None = None,
         split: str = "\t",
         negate: bool = False,
     ):
@@ -340,12 +339,12 @@ class ValueInDataTableColumnValidator(Validator):
     def __init__(
         self,
         tool_data_table,
-        metadata_column: Union[str, int],
+        metadata_column: str | int,
         message: str,
         negate: bool = False,
     ):
         super().__init__(message, negate)
-        self.valid_values: List[Any] = []
+        self.valid_values: list[Any] = []
         self._data_table_content_version = None
         self._tool_data_table = tool_data_table
         if isinstance(metadata_column, str):
@@ -381,7 +380,7 @@ class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
     """
 
     def __init__(
-        self, tool_data_table, metadata_column: Union[str, int], message="Value already present.", negate: bool = False
+        self, tool_data_table, metadata_column: str | int, message="Value already present.", negate: bool = False
     ):
         super().__init__(tool_data_table, metadata_column, message, negate)
 
@@ -407,7 +406,7 @@ class MetadataInDataTableColumnValidator(ValueInDataTableColumnValidator):
         self,
         tool_data_table,
         metadata_name: str,
-        metadata_column: Union[str, int],
+        metadata_column: str | int,
         message: str,
         negate: bool = False,
     ):
@@ -434,7 +433,7 @@ class MetadataNotInDataTableColumnValidator(MetadataInDataTableColumnValidator):
         self,
         tool_data_table,
         metadata_name: str,
-        metadata_column: Union[str, int],
+        metadata_column: str | int,
         message: str,
         negate: bool = False,
     ):
@@ -462,8 +461,8 @@ class MetadataInRangeValidator(InRangeValidator):
         self,
         metadata_name: str,
         message: str,
-        min: Optional[float] = None,
-        max: Optional[float] = None,
+        min: float | None = None,
+        max: float | None = None,
         exclude_min: bool = False,
         exclude_max: bool = False,
         negate: bool = False,
@@ -510,11 +509,11 @@ deprecated_validator_types = dict(dataset_metadata_in_file=MetadataInFileColumnV
 validator_types.update(deprecated_validator_types)
 
 
-def parse_xml_validators(app, xml_el: util.Element) -> List[Validator]:
+def parse_xml_validators(app, xml_el: util.Element) -> list[Validator]:
     return to_validators(app, parse_xml_validators_models(xml_el))
 
 
-def to_validators(app, validator_models: List[AnyValidatorModel]) -> List[Validator]:
+def to_validators(app, validator_models: list[AnyValidatorModel]) -> list[Validator]:
     validators = []
     for validator_model in validator_models:
         validators.append(_to_validator(app, validator_model))
@@ -531,6 +530,6 @@ def _to_validator(app, validator_model: AnyValidatorModel) -> Validator:
         as_dict["tool_data_table"] = tool_data_table
     if "filename" in as_dict and app is not None:
         filename = as_dict.pop("filename")
-        as_dict["filename"] = f"{app.config.tool_data_path}/{filename}"
+        as_dict["filename"] = os.path.join(app.config.tool_data_path, filename)
 
     return validator_types[validator_type](**as_dict)

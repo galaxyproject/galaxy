@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type UseElementBoundingReturn } from "@vueuse/core";
+import type { UseElementBoundingReturn } from "@vueuse/core";
 import { computed } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";

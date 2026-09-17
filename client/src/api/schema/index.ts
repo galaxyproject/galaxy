@@ -1,3 +1,1 @@
-import { type components, type paths as GalaxyApiPaths } from "./schema";
-
-export { type components, type GalaxyApiPaths };
+export { type components, type GalaxyApiPaths } from "@galaxyproject/galaxy-api-client";

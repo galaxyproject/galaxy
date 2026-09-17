@@ -3,7 +3,7 @@ import { computed } from "vue";
 
 import { bytesToString } from "@/utils/utils";
 
-import { type QuotaUsage } from "./model";
+import type { QuotaUsage } from "./model";
 
 import QuotaUsageBar from "./QuotaUsageBar.vue";
 
@@ -41,7 +41,9 @@ defineExpose({
             </div>
             <div v-else>
                 <h2>
-                    You've got <b> {{ niceTotalQuota }} </b> of total disk quota
+                    <span v-localize>You've got</span>
+                    <b>{{ niceTotalQuota }}</b>
+                    <span v-localize>of total disk quota</span>
                 </h2>
                 <h3 v-localize class="h-sm">
                     This is the maximum disk space that you can use across all your storage sources. Unlimited storage

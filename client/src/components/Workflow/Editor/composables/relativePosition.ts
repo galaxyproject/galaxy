@@ -1,4 +1,4 @@
-import { type ZoomTransform } from "d3-zoom";
+import type { ZoomTransform } from "d3-zoom";
 import { inject, onScopeDispose, type Ref, ref, watch } from "vue";
 
 /**
@@ -62,7 +62,7 @@ export function useRelativePosition(child: Ref<HTMLElement | null>, root: Ref<HT
         },
         {
             immediate: true,
-        }
+        },
     );
 
     onScopeDispose(() => {

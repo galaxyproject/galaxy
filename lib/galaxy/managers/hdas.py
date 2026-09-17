@@ -10,11 +10,9 @@ import logging
 import os
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Set,
+    TYPE_CHECKING,
 )
+from urllib.parse import quote_plus
 
 from sqlalchemy import (
     and_,
@@ -28,6 +26,7 @@ from sqlalchemy import (
     select,
     true,
 )
+from sqlalchemy.orm import Session
 from sqlalchemy.orm.session import object_session
 
 from galaxy import (
@@ -35,6 +34,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.managers import (
     annotatable,
     base,
@@ -44,15 +44,23 @@ from galaxy.managers import (
     taggable,
     users,
 )
-from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.model import (
     HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
     Job,
     JobStateHistory,
     JobToOutputDatasetAssociation,
 )
 from galaxy.model.deferred import materializer_factory
-from galaxy.model.dereference import dereference_to_model
+from galaxy.model.dereference import (
+    derefence_collection_to_model,
+    dereference_to_model,
+)
 from galaxy.schema.schema import DatasetSourceType
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
@@ -64,14 +72,24 @@ from galaxy.schema.storage_cleaner import (
 from galaxy.schema.tasks import (
     MaterializeDatasetInstanceTaskRequest,
     PurgeDatasetsTaskRequest,
-    RequestUser,
 )
 from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
 )
-from galaxy.tool_util.parameters import DataRequestUri
+from galaxy.tool_util_models.parameters import (
+    DataRequestCollectionUri,
+    DataRequestUri,
+    FileRequestUri,
+)
 from galaxy.util.compression_utils import get_fileobj
+from galaxy.work.context import (
+    SessionRequestContext,
+    WorkRequestContext,
+)
+
+if TYPE_CHECKING:
+    from galaxy.model import LibraryDatasetDatasetAssociation
 
 log = logging.getLogger(__name__)
 
@@ -82,7 +100,7 @@ class HistoryDatasetAssociationNoHistoryException(Exception):
 
 class HDAManager(
     datasets.DatasetAssociationManager[HistoryDatasetAssociation],
-    secured.OwnableManagerMixin,
+    secured.OwnableManagerMixin[HistoryDatasetAssociation],
     annotatable.AnnotatableManagerMixin,
 ):
     """
@@ -118,7 +136,7 @@ class HDAManager(
         return self.list(filters=filters)
 
     # .... security and permissions
-    def is_owner(self, item, user: Optional[model.User], current_history=None, **kwargs: Any) -> bool:
+    def is_owner(self, item, user: model.User | None, current_history=None, **kwargs: Any) -> bool:
         """
         Use history to see if current user owns HDA.
         """
@@ -160,17 +178,25 @@ class HDAManager(
             session.commit()
         return hda
 
-    def materialize(self, request: MaterializeDatasetInstanceTaskRequest, in_place: bool = False) -> bool:
-        request_user: RequestUser = request.user
+    def materialize(
+        self, request: MaterializeDatasetInstanceTaskRequest, session: Session, in_place: bool = False
+    ) -> bool:
+        request_user = request.user
+        assert request_user.user_id
+        user = self.user_manager.by_id(request_user.user_id)
+        user_context = ProvidesFileSourcesUserContext(WorkRequestContext(app=self.app, user=user))
         materializer = materializer_factory(
             True,  # attached...
             object_store=self.app.object_store,
             file_sources=self.app.file_sources,
-            sa_session=self.app.model.session(),
+            sa_session=session,
+            user_context=user_context,
+            datatypes_registry=self.app.datatypes_registry,
         )
-        user = self.user_manager.by_id(request_user.user_id)
         if request.source == DatasetSourceType.hda:
-            dataset_instance = self.get_accessible(request.content, user)
+            dataset_instance: HistoryDatasetAssociation | LibraryDatasetDatasetAssociation = self.get_accessible(
+                request.content, user
+            )
         else:
             dataset_instance = self.ldda_manager.get_accessible(request.content, user)
         history = self.app.history_manager.by_id(request.history_id)
@@ -179,7 +205,6 @@ class HDAManager(
             history.add_dataset(new_hda, set_hid=True)
         else:
             new_hda.set_total_size()
-        session = self.session()
         session.commit()
         return new_hda.is_ok
 
@@ -195,7 +220,7 @@ class HDAManager(
         copy = hda.copy(
             parent_id=kwargs.get("parent_id"),
             copy_hid=False,
-            copy_tags=hda.tags,  # type:ignore[attr-defined]
+            copy_tags=hda.tags,
             flush=False,
         )
         if hide_copy:
@@ -218,28 +243,36 @@ class HDAManager(
 
     # .... deletion and purging
     def purge(self, item, flush=True, **kwargs):
+        preserve_owner_update_time = kwargs.get("preserve_owner_update_time", False)
         if self.app.config.enable_celery_tasks:
             from galaxy.celery.tasks import purge_hda
 
             user = kwargs.get("user")
-            return purge_hda.delay(hda_id=item.id, task_user_id=getattr(user, "id", None))
+            return purge_hda.delay(
+                hda_id=item.id,
+                task_user_id=getattr(user, "id", None),
+                preserve_owner_update_time=preserve_owner_update_time,
+            )
         else:
-            self._purge(item, flush=flush)
+            self._purge(item, flush=flush, preserve_owner_update_time=preserve_owner_update_time)
 
-    def _purge(self, hda: HistoryDatasetAssociation, flush: bool = True):
+    def _purge(self, hda: HistoryDatasetAssociation, flush: bool = True, preserve_owner_update_time: bool = False):
         """
         Purge this HDA and the dataset underlying it.
         """
-        user = hda.history.user or None
+        user = hda.history.user if hda.history is not None else None
         if user:
             # Need to calculate this before purging
             quota_amount_reduction = hda.quota_amount(user)
         super().purge(hda, flush=flush)
         # decrease the user's space used
         if user:
+            assert hda.dataset is not None
             quota_source_info = hda.dataset.quota_source_info
             if quota_amount_reduction and quota_source_info.use:
-                user.adjust_total_disk_usage(-quota_amount_reduction, quota_source_info.label)
+                user.adjust_total_disk_usage(
+                    -quota_amount_reduction, quota_source_info.label, preserve_update_time=preserve_owner_update_time
+                )
                 # TODO: don't flush above if we're going to re-flush here
                 session = object_session(user)
                 assert session
@@ -286,9 +319,6 @@ class HDAManager(
         """
         Get data from text file, truncating if necessary.
         """
-        # 1 MB
-        MAX_PEEK_SIZE = 1000000
-
         truncated = False
         hda_data = None
         # For now, cannot get data from non-text datasets.
@@ -298,6 +328,11 @@ class HDAManager(
         if not os.path.exists(file_path):
             return truncated, hda_data
 
+        return self.text_data_truncated(file_path, preview=preview)
+
+    def text_data_truncated(self, file_path, preview=True):
+        # 1 MB
+        MAX_PEEK_SIZE = 1000000
         truncated = preview and os.stat(file_path).st_size > MAX_PEEK_SIZE
         with get_fileobj(file_path) as fh:
             try:
@@ -311,7 +346,7 @@ class HDAManager(
         # override to scope to history owner
         return self._user_annotation(hda, hda.user)
 
-    def _set_permissions(self, trans, hda, role_ids_dict):
+    def _set_permissions(self, trans: ProvidesUserContext, hda, role_ids_dict):
         # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
         # need to ensure that they did not associate roles that would cause accessibility problems.
         security_agent = trans.app.security_agent
@@ -331,15 +366,29 @@ class HDAManager(
                 raise exceptions.RequestParameterInvalidException(error)
 
 
-def dereference_input(
-    trans: ProvidesHistoryContext, data_request: DataRequestUri, history: Optional[model.History] = None
+def dereference_input_to_hda(
+    trans: ProvidesHistoryContext,
+    data_request: DataRequestUri | FileRequestUri,
+    history: model.History,
 ) -> HistoryDatasetAssociation:
-    target_history = history or trans.history
-    hda = dereference_to_model(trans.sa_session, trans.user, target_history, data_request)
-    permissions = trans.app.security_agent.history_get_default_permissions(target_history)
+    permissions = trans.app.security_agent.history_get_default_permissions(history)
+    hda = dereference_to_model(trans.sa_session, trans.user, history, data_request)
+    assert hda.dataset is not None
     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
     trans.sa_session.commit()
     return hda
+
+
+def dereference_input_to_hdca(
+    trans: ProvidesHistoryContext,
+    data_request: DataRequestCollectionUri,
+    history: model.History,
+) -> HistoryDatasetCollectionAssociation:
+    permissions = trans.app.security_agent.history_get_default_permissions(history)
+    hdca = derefence_collection_to_model(trans.sa_session, trans.user, history, data_request)
+    for hda in hdca.dataset_instances:
+        trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
+    return hdca
 
 
 class HDAStorageCleanerManager(base.StorageCleanerManager):
@@ -364,7 +413,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             .where(
                 and_(
                     HistoryDatasetAssociation.deleted == true(),
-                    HistoryDatasetAssociation.purged == false(),  # type:ignore[arg-type]
+                    HistoryDatasetAssociation.purged == false(),
                     model.History.user_id == user.id,
                 )
             )
@@ -377,10 +426,10 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
     def get_discarded(
         self,
         user: model.User,
-        offset: Optional[int],
-        limit: Optional[int],
-        order: Optional[StoredItemOrderBy],
-    ) -> List[StoredItem]:
+        offset: int | None,
+        limit: int | None,
+        order: StoredItemOrderBy | None,
+    ) -> list[StoredItem]:
         stmt = (
             select(
                 HistoryDatasetAssociation.id,
@@ -394,7 +443,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             .where(
                 and_(
                     HistoryDatasetAssociation.deleted == true(),
-                    HistoryDatasetAssociation.purged == false(),  # type:ignore[arg-type]
+                    HistoryDatasetAssociation.purged == false(),
                     model.History.user_id == user.id,
                 )
             )
@@ -412,17 +461,18 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         ]
         return discarded
 
-    def cleanup_items(self, user: model.User, item_ids: Set[int]) -> StorageItemsCleanupResult:
+    def cleanup_items(self, user: model.User, item_ids: set[int]) -> StorageItemsCleanupResult:
         success_item_count = 0
         total_free_bytes = 0
-        errors: List[StorageItemCleanupError] = []
-        dataset_ids_to_remove: Set[int] = set()
+        errors: list[StorageItemCleanupError] = []
+        dataset_ids_to_remove: set[int] = set()
 
         for hda_id in item_ids:
             try:
                 hda: HistoryDatasetAssociation = self.hda_manager.get_owned(hda_id, user)
                 hda.deleted = True
                 quota_amount = int(hda.quota_amount(user))
+                assert hda.dataset is not None
                 hda.purge_usage_from_quota(user, hda.dataset.quota_source_info)
                 hda.purged = True
                 dataset_ids_to_remove.add(hda.dataset.id)
@@ -444,7 +494,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             errors=errors,
         )
 
-    def _request_full_delete_all(self, dataset_ids_to_remove: Set[int], user: Optional[model.User]):
+    def _request_full_delete_all(self, dataset_ids_to_remove: set[int], user: model.User | None):
         use_tasks = self.dataset_manager.app.config.enable_celery_tasks
         request = PurgeDatasetsTaskRequest(dataset_ids=list(dataset_ids_to_remove))
         if use_tasks:
@@ -452,7 +502,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
 
             purge_datasets.delay(request=request, task_user_id=getattr(user, "id", None))
         else:
-            self.dataset_manager.purge_datasets(request)
+            self.dataset_manager.purge_datasets(request, user=user)
 
 
 class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerializer,
@@ -551,26 +601,20 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             ["accessible", "id", "name", "history_id", "hid", "history_content_type", "state", "deleted", "visible"],
         )
 
-    def serialize_copied_from_ldda_id(self, item, key, **context):
-        """
-        Serialize an id attribute of `item`.
-        """
-        if item.copied_from_library_dataset_dataset_association is not None:
-            return self.app.security.encode_id(item.copied_from_library_dataset_dataset_association.id)
-        return None
-
     def add_serializers(self):
         super().add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
 
-        serializers: Dict[str, base.Serializer] = {
+        serializers: dict[str, base.Serializer] = {
             "hid": lambda item, key, **context: item.hid if item.hid is not None else -1,
             "model_class": lambda item, key, **context: "HistoryDatasetAssociation",
             "history_content_type": lambda item, key, **context: "dataset",
             "hda_ldda": lambda item, key, **context: "hda",
             "type_id": self.serialize_type_id,
-            "copied_from_ldda_id": self.serialize_copied_from_ldda_id,
+            "copied_from_ldda_id": lambda item, key, **context: self.serialize_id(
+                item, "copied_from_library_dataset_dataset_association_id", **context
+            ),
             "history_id": self.serialize_id,
             # remapped
             "misc_info": self._remap_from("info"),
@@ -590,10 +634,9 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 id=self.app.security.encode_id(item.id),
                 context=context,
             ),
-            "urls": self.serialize_urls,
             # TODO: backwards compat: need to go away
             "download_url": lambda item, key, **context: self.url_for(
-                "history_contents_display",
+                "history_contents_download",
                 history_id=self.app.security.encode_id(item.history.id),
                 history_content_id=self.app.security.encode_id(item.id),
                 context=context,
@@ -621,12 +664,12 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             keys = self._view_to_keys("inaccessible")
         return super().serialize(item, keys, user=user, **context)
 
-    def serialize_display_apps(self, item, key, trans=None, **context):
+    def serialize_display_apps(self, item, key, trans: ProvidesAppContext | None = None, **context):
         """
         Return dictionary containing new-style display app urls.
         """
         hda = item
-        display_apps: List[Dict[str, Any]] = []
+        display_apps: list[dict[str, Any]] = []
         if hda.state == HistoryDatasetAssociation.states.OK and not hda.deleted:
             for display_app in hda.get_display_applications(trans).values():
                 app_links = []
@@ -636,6 +679,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                             "target": link_app.url.get("target_frame", "_blank"),
                             "href": link_app.get_display_url(hda, trans),
                             "text": gettext.gettext(link_app.name),
+                            "app_name": quote_plus(link_app.display_application.id),
+                            "link_name": quote_plus(link_app.id),
                         }
                     )
                 if app_links:
@@ -643,17 +688,20 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
         return display_apps
 
-    def serialize_old_display_applications(self, item, key, trans=None, **context):
+    # trans arrives through the serializer dispatch's **context, so it has to be optional here;
+    # a request context is required in practice, for trans.request.base.
+    def serialize_old_display_applications(self, item, key, trans: "SessionRequestContext | None" = None, **context):
         """
         Return dictionary containing old-style display app urls.
         """
         hda = item
-        display_apps: List[Dict[str, Any]] = []
+        display_apps: list[dict[str, Any]] = []
         if (
             self.app.config.enable_old_display_applications
             and hda.state == HistoryDatasetAssociation.states.OK
             and not hda.deleted
         ):
+            assert trans is not None
             display_link_fn = hda.datatype.get_display_links
             for display_app in hda.datatype.get_display_types():
                 target_frame, display_links = display_link_fn(
@@ -675,30 +723,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                         display_apps.append(dict(label=display_label, links=app_links))
 
         return display_apps
-
-    def serialize_urls(self, item, key, **context):
-        """
-        Return web controller urls useful for this HDA.
-        """
-        hda = item
-        url_for = self.url_for
-        encoded_id = self.app.security.encode_id(hda.id)
-        urls = {
-            "purge": url_for(controller="dataset", action="purge_async", dataset_id=encoded_id),
-            "display": url_for(controller="dataset", action="display", dataset_id=encoded_id, preview=True),
-            "edit": url_for(controller="dataset", action="edit", dataset_id=encoded_id),
-            "download": url_for(controller="dataset", action="display", dataset_id=encoded_id, to_ext=hda.extension),
-            "report_error": url_for(controller="dataset", action="errors", id=encoded_id),
-            "rerun": url_for(controller="tool_runner", action="rerun", id=encoded_id),
-            "show_params": url_for(controller="dataset", action="details", dataset_id=encoded_id),
-            "visualization": url_for(
-                controller="visualization", action="index", id=encoded_id, model="HistoryDatasetAssociation"
-            ),
-            "meta_download": url_for(
-                controller="dataset", action="get_metadata_file", hda_id=encoded_id, metadata_name=""
-            ),
-        }
-        return urls
 
 
 class HDADeserializer(

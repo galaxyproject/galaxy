@@ -39,7 +39,7 @@ def main(argv=None):
         "--galaxy-version", dest="galaxy_version", help="Galaxy version that initiated the command.", default=None
     )
     parser.add_option("--file-sources", type=str, help="file sources json")
-    (options, args) = parser.parse_args(argv)
+    options, args = parser.parse_args(argv)
 
     gzip = bool(options.gzip)
     assert len(args) >= 2

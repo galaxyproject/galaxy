@@ -1,94 +1,112 @@
 <script setup lang="ts">
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BTab, BTabs } from "bootstrap-vue";
-import Vue, { computed, ref, watch } from "vue";
+import { BAlert, BPagination } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
 
-import { GalaxyApi } from "@/api";
-import { type JobBaseModel, type JobDetails } from "@/api/jobs";
-import { getHeaderClass, iconClasses } from "@/composables/useInvocationGraph";
-import { rethrowSimple } from "@/utils/simple-error";
+import type { JobBaseModel, JobState } from "@/api/jobs";
+import { statePlaceholders } from "@/composables/useInvocationGraph";
 
+import GButton from "../BaseComponents/GButton.vue";
 import JobDetailsDisplayed from "../JobInformation/JobDetails.vue";
-import LoadingSpan from "../LoadingSpan.vue";
+import InvocationStepStateDisplay from "./InvocationStepStateDisplay.vue";
+import JobStepJobs from "./JobStepJobs.vue";
 
-interface Props {
+const PER_PAGE = 10;
+
+const props = defineProps<{
     jobs: JobBaseModel[];
-}
+    invocationId: string;
+}>();
 
-const props = withDefaults(defineProps<Props>(), {
-    jobs: () => [],
+const firstJob = computed(() => props.jobs[0]);
+const jobCount = computed(() => props.jobs.length);
+
+/** Jobs grouped by their state */
+const jobsByState = computed(() => {
+    const jobsMap: { [key: string]: JobBaseModel[] } = {};
+    props.jobs.forEach((job) => {
+        if (!jobsMap[job.state]) {
+            jobsMap[job.state] = [];
+        }
+        jobsMap[job.state]?.push(job);
+    });
+    return jobsMap as Record<JobState, JobBaseModel[]>;
 });
 
-const loading = ref(true);
-const initialLoading = ref(true);
-const jobsDetails = ref<{ [key: string]: JobDetails }>({});
+/** Jobs in the currently selected state */
+const currentStateJobs = computed(() => {
+    if (!currentState.value || !jobsByState.value[currentState.value]) {
+        return [];
+    }
+    return jobsByState.value[currentState.value].slice().sort((a, b) => {
+        let compare = 0;
+        compare = new Date(a.update_time).getTime() - new Date(b.update_time).getTime();
+
+        return sortDesc.value ? -compare : compare;
+    });
+});
+
+/** Currently selected/filtered job state */
+const currentState = ref<JobState | null>(firstJob.value?.state || null);
+
+const currentPage = ref(1);
+const sortDesc = ref(true);
 
 watch(
-    () => props.jobs,
-    async (propJobs: JobBaseModel[]) => {
-        loading.value = true;
-        for (const job of propJobs) {
-            const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}", {
-                params: {
-                    path: { job_id: job.id },
-                    query: { full: true },
-                },
-            });
-            Vue.set(jobsDetails.value, job.id, data);
-            if (error) {
-                rethrowSimple(error);
-            }
-        }
-        if (initialLoading.value) {
-            initialLoading.value = false;
-        }
-        loading.value = false;
+    () => currentState.value,
+    () => {
+        currentPage.value = 1;
     },
-    { immediate: true }
 );
 
-const firstJob = computed(() => Object.values(jobsDetails.value)[0]);
-const jobCount = computed(() => Object.keys(jobsDetails.value).length);
-
-function getIcon(job: JobDetails) {
-    return iconClasses[job.state];
-}
-
-function getTabClass(job: JobDetails) {
-    return {
-        ...getHeaderClass(job.state),
-        "d-flex": true,
-        "text-center": true,
-    };
-}
+// For a running workflow, if the available states change, ensure the current state is still valid
+watch(
+    () => Object.keys(jobsByState.value),
+    (newStates) => {
+        if (currentState.value && !newStates.includes(currentState.value)) {
+            currentState.value = (newStates[0] as JobState) || null;
+        }
+    },
+);
 </script>
 
 <template>
-    <BAlert v-if="initialLoading" variant="info" show>
-        <LoadingSpan message="Loading Jobs" />
-    </BAlert>
-    <BAlert v-else-if="!jobsDetails || !jobCount" variant="info" show> No jobs found for this step. </BAlert>
+    <BAlert v-if="!jobCount" variant="info" show> No jobs found for this step. </BAlert>
     <div v-else-if="jobCount === 1 && firstJob">
-        <JobDetailsDisplayed :job="firstJob" />
+        <JobDetailsDisplayed :job-id="firstJob.id" :invocation-id="props.invocationId" />
     </div>
-    <BTabs v-else vertical pills card nav-class="p-0" active-tab-class="p-0">
-        <BTab
-            v-for="job in jobsDetails"
-            :key="job.id"
-            data-description="workflow invocation job"
-            :title-item-class="getTabClass(job)"
-            title-link-class="w-100">
-            <template v-slot:title>
-                {{ job.state }}
-                <FontAwesomeIcon
-                    v-if="getIcon(job)"
-                    :class="getIcon(job)?.class"
-                    :icon="getIcon(job)?.icon"
-                    :spin="getIcon(job)?.spin" />
-            </template>
+    <div v-else>
+        <div class="mb-2 p-2 d-flex justify-content-between align-items-center flex-wrap">
+            <nav class="d-flex flex-gapx-1">
+                <GButton
+                    v-for="(stateJobs, state) in jobsByState"
+                    :key="state"
+                    outline
+                    color="blue"
+                    :title="`Click to view ${statePlaceholders[state] || state} jobs`"
+                    :pressed="currentState === state"
+                    @click="currentState = state">
+                    <InvocationStepStateDisplay :state="state" :job-count="stateJobs.length" />
+                </GButton>
+            </nav>
+
             <div>
-                <JobDetailsDisplayed :job="job" />
+                <BPagination
+                    v-if="currentState && jobsByState[currentState].length > PER_PAGE"
+                    v-model="currentPage"
+                    class="justify-content-md-center m-0"
+                    size="sm"
+                    :per-page="PER_PAGE"
+                    :total-rows="jobsByState[currentState].length" />
             </div>
-        </BTab>
-    </BTabs>
+        </div>
+
+        <BAlert v-if="!currentState" variant="info" show> Please select a job state to view jobs. </BAlert>
+        <JobStepJobs
+            v-else
+            :jobs="currentStateJobs"
+            :invocation-id="props.invocationId"
+            :current-page.sync="currentPage"
+            :sort-desc.sync="sortDesc"
+            :per-page="PER_PAGE" />
+    </div>
 </template>

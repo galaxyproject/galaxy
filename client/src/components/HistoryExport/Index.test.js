@@ -1,13 +1,14 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
 import { useFileSources } from "@/composables/fileSources";
 
 import Index from "./Index.vue";
 
-jest.mock("@/composables/fileSources");
+vi.mock("@/composables/fileSources");
 
 const localVue = getLocalVue();
 
@@ -16,7 +17,7 @@ useFileSources.mockReturnValue({ isLoading: false, hasWritable: true });
 describe("Index.vue", () => {
     it("should render tabs", async () => {
         // just make sure the component renders to catch obvious big errors
-        const pinia = createTestingPinia();
+        const pinia = createTestingPinia({ createSpy: vi.fn });
         const wrapper = shallowMount(Index, {
             propsData: {
                 historyId: "test_id",

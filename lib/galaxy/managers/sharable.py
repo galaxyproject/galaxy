@@ -13,10 +13,7 @@ A sharable Galaxy object:
 import logging
 from typing import (
     Any,
-    List,
-    Optional,
-    Set,
-    Type,
+    TypeVar,
 )
 
 from slugify import slugify
@@ -40,6 +37,7 @@ from galaxy.managers import (
     users,
 )
 from galaxy.managers.base import combine_lists
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     User,
     UserShareAssociation,
@@ -54,12 +52,14 @@ from galaxy.util import ready_name_for_url
 from galaxy.util.hash_util import md5_hash_str
 
 log = logging.getLogger(__name__)
+# Only model classes that have `users_shared_with` field
+U = TypeVar("U", model.History, model.Page, model.StoredWorkflow, model.Visualization)
 
 
 class SharableModelManager(
-    base.ModelManager,
-    secured.OwnableManagerMixin,
-    secured.AccessibleManagerMixin,
+    base.ModelManager[U],
+    secured.OwnableManagerMixin[U],
+    secured.AccessibleManagerMixin[U],
     annotatable.AnnotatableManagerMixin,
     ratable.RatableManagerMixin,
 ):
@@ -67,10 +67,10 @@ class SharableModelManager(
     # base.DeleteableModelMixin? (all four are deletable)
 
     #: the model used for UserShareAssociations with this model
-    user_share_model: Type[UserShareAssociation]
+    user_share_model: type[UserShareAssociation]
 
     #: the single character abbreviation used in username_and_slug: e.g. 'h' for histories: u/user/h/slug
-    SINGLE_CHAR_ABBR: Optional[str] = None
+    SINGLE_CHAR_ABBR: str | None = None
 
     def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
@@ -79,7 +79,7 @@ class SharableModelManager(
         self.tag_handler = app[GalaxyTagHandler]
 
     # .... has a user
-    def by_user(self, user: User, **kwargs: Any) -> List[Any]:
+    def by_user(self, user: User, **kwargs: Any) -> list[Any]:
         """
         Return list for all items (of model_class type) associated with the given
         `user`.
@@ -89,16 +89,16 @@ class SharableModelManager(
         return self.list(filters=filters, **kwargs)
 
     # .... owned/accessible interfaces
-    def is_owner(self, item: model.Base, user: Optional[User], **kwargs: Any) -> bool:
+    def is_owner(self, item: model.Base, user: User | None, **kwargs: Any) -> bool:
         """
         Return true if this sharable belongs to `user` (or `user` is an admin).
         """
         # ... effectively a good fit to have this here, but not semantically
         if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
-        return item.user == user  # type:ignore[attr-defined]
+        return item.user == user  # type: ignore[attr-defined]
 
-    def is_accessible(self, item, user: Optional[User], **kwargs: Any) -> bool:
+    def is_accessible(self, item, user: User | None, **kwargs: Any) -> bool:
         """
         If the item is importable, is owned by `user`, or (the valid) `user`
         is in 'users shared with' list for the item: return True.
@@ -245,22 +245,22 @@ class SharableModelManager(
         return list(self._apply_fn_limit_offset_gen(items, limit, offset))
 
     def get_sharing_extra_information(
-        self, trans, item, users: Set[User], errors: Set[str], option: Optional[SharingOptions] = None
-    ) -> Optional[ShareWithExtra]:
+        self, trans: ProvidesUserContext, item, users: set[User], errors: set[str], option: SharingOptions | None = None
+    ) -> ShareWithExtra | None:
         """Returns optional extra information about the shareability of the given item.
 
         This function should be overridden in the particular manager class that wants
         to provide the extra information, otherwise, it will be None by default."""
         return None
 
-    def make_members_public(self, trans, item):
+    def make_members_public(self, trans: ProvidesUserContext, item):
         """Make potential elements of this item public.
 
         This method must be overridden in managers that need to change permissions of internal elements
         contained associated with the given item.
         """
 
-    def update_current_sharing_with_users(self, item, new_users_shared_with: Set[User], flush=True):
+    def update_current_sharing_with_users(self, item, new_users_shared_with: set[User], flush=True):
         """Updates the currently list of users this item is shared with by adding new
         users and removing missing ones."""
         current_shares = self.get_share_assocs(item)
@@ -356,7 +356,7 @@ class SharableModelSerializer(
     ratable.RatableSerializerMixin,
 ):
     # TODO: stub
-    SINGLE_CHAR_ABBR: Optional[str] = None
+    SINGLE_CHAR_ABBR: str | None = None
 
     def __init__(self, app, **kwargs):
         super().__init__(app, **kwargs)

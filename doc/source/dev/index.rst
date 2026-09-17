@@ -15,10 +15,13 @@ A multi-hour long video playlist covering these slides can be found at
   api_guidelines
   database_session_management
   build_a_job_runner
+  collection_semantics
   finding_and_improving_slow_code
   data_managers
   data_source
   data_types
+  tool_source_storage
+  ga4gh_wes
   faq
   writing_tests
   debugging_tests

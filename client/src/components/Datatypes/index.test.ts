@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import { useServerMock } from "@/api/client/__mocks__";
 
 import { getDatatypesMapper } from "./index";
@@ -8,7 +10,7 @@ const { server, http } = useServerMock();
 server.use(
     http.get("/api/datatypes/types_and_mapping", ({ response }) => {
         return response(200).json(typesAndMappingResponse);
-    })
+    }),
 );
 
 describe("Datatypes/index.js", () => {

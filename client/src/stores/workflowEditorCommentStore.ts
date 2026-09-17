@@ -1,6 +1,7 @@
 import { computed, del, ref, set } from "vue";
 
-import { type Color } from "@/components/Workflow/Editor/Comments/colors";
+import type { Color } from "@/components/Workflow/Editor/Comments/colors";
+import { assertDefined } from "@/utils/assertions";
 import {
     AxisAlignedBoundingBox,
     type Rectangle,
@@ -10,8 +11,7 @@ import {
     vecReduceFigures,
     vecSubtract,
     type Vector,
-} from "@/components/Workflow/Editor/modules/geometry";
-import { assertDefined } from "@/utils/assertions";
+} from "@/utils/geometry";
 import { hasKeys, match } from "@/utils/utils";
 
 import { defineScopedStore } from "./scopedStore";
@@ -78,7 +78,7 @@ interface CommentsMetadata {
 
 function assertCommentDataValid(
     commentType: WorkflowComment["type"],
-    commentData: unknown
+    commentData: unknown,
 ): asserts commentData is WorkflowComment["data"] {
     const valid = match(commentType, {
         text: () => hasKeys(commentData, ["text", "size"]),
@@ -108,7 +108,7 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
     const addComments = (
         commentsArray: WorkflowComment[],
         defaultPosition: [number, number] = [0, 0],
-        select = false
+        select = false,
     ) => {
         commentsArray.forEach((comment) => {
             const newComment = structuredClone(comment);
@@ -136,7 +136,7 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
     const multiSelectedCommentIds = computed(() =>
         Object.entries(localCommentsMetadata.value)
             .filter(([_id, meta]) => meta.multiSelected)
-            .map(([id]) => parseInt(id))
+            .map(([id]) => parseInt(id)),
     );
 
     const getCommentMultiSelected = computed(() => (id: number) => {

@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
-import { type CollectionEntry, type DCESummary, type HDCASummary, type HistoryContentItemBase, isHDCA } from "@/api";
-import { fetchCollectionDetails, fetchElementsFromCollection } from "@/api/datasetCollections";
+import { type CollectionEntry, type DCESummary, isHDCA } from "@/api";
+import { fetchElementsFromCollection } from "@/api/datasetCollections";
 import { ensureDefined } from "@/utils/assertions";
 import { ActionSkippedError, LastQueue } from "@/utils/lastQueue";
 
@@ -33,8 +33,12 @@ export type DCEEntry = ContentPlaceholder | DCESummary | InvalidDCEEntry;
 
 const FETCH_LIMIT = 50;
 
+/**
+ * Element pagination for a single collection — placeholder-backed and
+ * paginated via `LastQueue`. Detail / summary caching for the collection
+ * itself lives in `datasetCollectionStore`.
+ */
 export const useCollectionElementsStore = defineStore("collectionElementsStore", () => {
-    const storedCollections = ref<{ [key: string]: HDCASummary }>({});
     const loadingCollectionElements = ref<{ [key: string]: boolean }>({});
     const loadingCollectionElementsErrors = ref<{ [key: string]: Error }>({});
     const storedCollectionElements = ref<{ [key: string]: DCEEntry[] }>({});
@@ -63,7 +67,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         };
     });
 
-    const hasLoadingCollectionElementsError = computed(() => {
+    const getLoadingCollectionElementsError = computed(() => {
         return (collection: CollectionEntry) => {
             return loadingCollectionElementsErrors.value[getCollectionKey(collection)] ?? false;
         };
@@ -158,39 +162,6 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         });
     }
 
-    function saveCollections(historyContentsPayload: HistoryContentItemBase[]) {
-        const collectionsInHistory = historyContentsPayload.filter(
-            (entry) => entry.history_content_type === "dataset_collection"
-        ) as HDCASummary[];
-        for (const collection of collectionsInHistory) {
-            set<HDCASummary>(storedCollections.value, collection.id, collection);
-        }
-    }
-
-    /** Returns collection from storedCollections, will load collection if not in store */
-    const getCollectionById = computed(() => {
-        return (collectionId: string) => {
-            if (!storedCollections.value[collectionId] && !loadingCollectionElementsErrors.value[collectionId]) {
-                // TODO: Try to remove this as it can cause computed side effects (use keyedCache in this store instead?)
-                fetchCollection({ id: collectionId });
-            }
-            return storedCollections.value[collectionId] ?? null;
-        };
-    });
-
-    async function fetchCollection(params: { id: string }) {
-        set(loadingCollectionElements.value, params.id, true);
-        try {
-            const collection = await fetchCollectionDetails({ id: params.id });
-            set(storedCollections.value, collection.id, collection);
-            return collection;
-        } catch (error) {
-            set(loadingCollectionElementsErrors.value, params.id, error);
-        } finally {
-            del(loadingCollectionElements.value, params.id);
-        }
-    }
-
     function isPlaceholder(element: DCEEntry): element is ContentPlaceholder {
         return "id" in element === false;
     }
@@ -209,16 +180,12 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     }
 
     return {
-        storedCollections,
         storedCollectionElements,
         getCollectionElements,
         isLoadingCollectionElements,
-        hasLoadingCollectionElementsError,
+        getLoadingCollectionElementsError,
         loadingCollectionElementsErrors,
-        getCollectionById,
-        fetchCollection,
         invalidateCollectionElements,
-        saveCollections,
         getCollectionKey,
         fetchMissingElements,
     };

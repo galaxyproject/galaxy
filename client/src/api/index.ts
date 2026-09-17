@@ -1,9 +1,14 @@
 /** Contains type alias and definitions related to Galaxy API models. */
 
 import { GalaxyApi } from "@/api/client";
-import { type components, type GalaxyApiPaths } from "@/api/schema";
+import type { components, GalaxyApiPaths } from "@/api/schema";
 
 export { type components, GalaxyApi, type GalaxyApiPaths };
+
+/**
+ * Contains a dataset's text content and details
+ */
+export type DatasetTextContentDetails = components["schemas"]["DatasetTextContentDetails"];
 
 /**
  * Contains minimal information about a History.
@@ -171,6 +176,11 @@ export type HDAObject = components["schemas"]["HDAObject"];
 export type DatasetCollectionAttributes = components["schemas"]["DatasetCollectionAttributesResult"];
 
 export type ConcreteObjectStoreModel = components["schemas"]["ConcreteObjectStoreModel"];
+export type UserConcreteObjectStoreModel = components["schemas"]["UserConcreteObjectStoreModel"];
+
+export interface SelectableObjectStore extends ConcreteObjectStoreModel {
+    object_store_id: string;
+}
 
 /**
  * A SubCollection is a DatasetCollectionElement of type `dataset_collection`
@@ -191,13 +201,26 @@ export interface SubCollection extends DCObject {
  */
 export type CollectionEntry = HDCASummary | SubCollection;
 
+export function isHDA(entry?: HistoryItemSummary): entry is HDASummary {
+    return entry !== undefined && "history_content_type" in entry && entry.history_content_type === "dataset";
+}
+
 /**
  * Returns true if the given entry is a top level HDCA and false for sub-collections.
  */
-export function isHDCA(entry?: CollectionEntry): entry is HDCASummary {
+export function isHDCA(entry?: HistoryItemSummary | CollectionEntry): entry is HDCASummary {
     return (
         entry !== undefined && "history_content_type" in entry && entry.history_content_type === "dataset_collection"
     );
+}
+
+/**
+ * Returns true if the given collection entry carries the detailed payload
+ * (i.e. has `elements`). The element list is a snapshot at fetch time —
+ * use `collectionElementsStore` for fresh element pagination, not this.
+ */
+export function isDetailedCollection(entry?: HDCASummary | HDCADetailed | null): entry is HDCADetailed {
+    return !!entry && "elements" in entry;
 }
 
 export function isDCE(item: object): item is DCESummary {
@@ -261,6 +284,13 @@ export interface AnonymousUser extends AnonymousUserModel {
 /** Represents any user, including anonymous users or session-less (null) users.**/
 export type AnyUser = RegisteredUser | AnonymousUser | null;
 
+export function toAnyUser(user: UserModel): AnyUser {
+    if ("email" in user) {
+        return { ...user, isAnonymous: false } as RegisteredUser;
+    }
+    return { ...user, isAnonymous: true } as AnonymousUser;
+}
+
 export function isRegisteredUser(user: AnyUser | UserModel): user is RegisteredUser {
     return user !== null && "email" in user;
 }
@@ -296,15 +326,16 @@ export function canMutateHistory(history: AnyHistory): boolean {
 
 export type DatasetHash = components["schemas"]["DatasetHash"];
 
-export type DatasetTransform = {
-    action: "to_posix_lines" | "spaces_to_tabs" | "datatype_groom";
-    datatype_ext: "bam" | "qname_sorted.bam" | "qname_input_sorted.bam" | "isa-tab" | "isa-json";
-};
+export type DatasetSource = components["schemas"]["DatasetSource"];
+export type DatasetTransform = components["schemas"]["DatasetSourceTransform"];
 
 /**
  * Base type for all exceptions returned by the API.
  */
 export type MessageException = components["schemas"]["MessageExceptionModel"];
+
+export type FieldDict = components["schemas"]["FieldDict"];
+export type FieldType = FieldDict["type"];
 
 export type StoreExportPayload = components["schemas"]["StoreExportPayload"];
 export type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
@@ -312,4 +343,23 @@ export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskRe
 export type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
 export type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
 
+export type SampleSheetColumnDefinition = components["schemas"]["SampleSheetColumnDefinitionModel"];
+export type SampleSheetColumnDefinitionType = SampleSheetColumnDefinition["type"];
+export type SampleSheetColumnDefinitions = SampleSheetColumnDefinition[] | null;
+
 export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];
+
+export type CollectionElementIdentifiers = components["schemas"]["CollectionElementIdentifier"][];
+export type CreateNewCollectionPayload = components["schemas"]["CreateNewCollectionPayload"];
+export type UnprivilegedToolResponse = components["schemas"]["UnprivilegedToolResponse"];
+export type UserToolSource = components["schemas"]["UserToolSource-Input"];
+export type DynamicUnprivilegedToolCreatePayload = components["schemas"]["DynamicUnprivilegedToolCreatePayload"];
+
+export type ShareableItemWithStatus = components["schemas"]["ShareWithStatus"];
+export type ShareableHistoryWithStatus = components["schemas"]["ShareHistoryWithStatus"];
+export type AnyShareableItemWithStatus = ShareableItemWithStatus | ShareableHistoryWithStatus;
+export type ShareOption = components["schemas"]["SharingOptions"];
+
+export function isShareableHistoryWithStatus(item: AnyShareableItemWithStatus): item is ShareableHistoryWithStatus {
+    return item.extra != null && "accessible_count" in item.extra;
+}

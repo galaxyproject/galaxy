@@ -1,13 +1,17 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
+import type { AnyHistory } from "@/api";
 import sampleInvocation from "@/components/Workflow/test/json/invocation.json";
+import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import WorkflowNavigationTitle from "./WorkflowNavigationTitle.vue";
+import NavigationTitle from "@/components/Common/NavigationTitle.vue";
 
 // Constants
 const WORKFLOW_OWNER = "test-user";
@@ -22,19 +26,29 @@ const SAMPLE_WORKFLOW = {
 };
 const IMPORT_ERROR_MESSAGE = "Failed to import workflow";
 
+// `getFakeRegisteredUser` always defaults to this id
+const CURRENT_USER_ID = "fake_user_id";
+const OTHER_USER_ID = "other-user-id";
+const UNOWNED_HISTORY_ID = "unowned-history-id";
+// Matches `sampleInvocation.history_id` so the component resolves it as the invocation's history
+const SAMPLE_HISTORY = {
+    id: sampleInvocation.history_id,
+    name: "history-name",
+    user_id: CURRENT_USER_ID,
+} as AnyHistory;
+
 const SELECTORS = {
-    WORKFLOW_HEADING: "[data-description='workflow heading']",
-    ACTIONS_BUTTON_GROUP: "bbuttongroup-stub",
-    EDIT_WORKFLOW_BUTTON: `bbutton-stub[title='<b>Edit</b><br>${SAMPLE_WORKFLOW.name}']`,
+    ACTIONS_BUTTON_GROUP: "[data-button-group]",
+    EDIT_WORKFLOW_BUTTON: `[data-button-edit][title='Edit Workflow']`,
     IMPORT_WORKFLOW_BUTTON: "[data-description='import workflow button']",
     EXECUTE_WORKFLOW_BUTTON: "[data-description='execute workflow button']",
-    ROUTE_TO_RUN_BUTTON: "[data-description='route to workflow run button']",
+    ROUTE_TO_RERUN_BUTTON: "[data-button-rerun][title='Rerun Workflow with same inputs']",
     ALERT_MESSAGE: "balert-stub",
 };
 
 // Mock the copyWorkflow function for importing a workflow
-jest.mock("components/Workflow/workflows.services", () => ({
-    copyWorkflow: jest.fn().mockImplementation((workflowId: string) => {
+vi.mock("./workflows.services", () => ({
+    copyWorkflow: vi.fn().mockImplementation(async (workflowId: string) => {
         if (workflowId === UNIMPORTABLE_WORKFLOW_ID) {
             throw new Error(IMPORT_ERROR_MESSAGE);
         }
@@ -43,13 +57,13 @@ jest.mock("components/Workflow/workflows.services", () => ({
 }));
 
 // Mock the workflow store to return the sample workflow
-jest.mock("@/stores/workflowStore", () => {
-    const originalModule = jest.requireActual("@/stores/workflowStore");
+vi.mock("@/stores/workflowStore", async () => {
+    const originalModule = (await vi.importActual("@/stores/workflowStore")) as any;
     return {
         ...originalModule,
         useWorkflowStore: () => ({
             ...originalModule.useWorkflowStore(),
-            getStoredWorkflowByInstanceId: jest.fn().mockImplementation((instanceId: string) => {
+            getStoredWorkflowByInstanceId: vi.fn().mockImplementation((instanceId: string) => {
                 if (instanceId === UNIMPORTABLE_WORKFLOW_INSTANCE_ID) {
                     return { ...SAMPLE_WORKFLOW, id: UNIMPORTABLE_WORKFLOW_ID };
                 }
@@ -66,12 +80,14 @@ const localVue = getLocalVue();
  * @param version The version of the component to mount (`run_form` or `invocation` view)
  * @param ownsWorkflow Whether the user owns the workflow associated with the invocation
  * @param unimportableWorkflow Whether the workflow import should fail
+ * @param ownsHistory Whether the current user owns the history associated with the invocation
  * @returns The wrapper object
  */
 async function mountWorkflowNavigationTitle(
     version: "run_form" | "invocation",
     ownsWorkflow = true,
-    unimportableWorkflow = false
+    unimportableWorkflow = false,
+    ownsHistory = true,
 ) {
     let workflowId: string;
     let invocation;
@@ -86,17 +102,28 @@ async function mountWorkflowNavigationTitle(
         invocation = undefined;
     }
 
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+
+    const historyStore = useHistoryStore(pinia);
+    historyStore.setHistory(
+        ownsHistory ? SAMPLE_HISTORY : { ...SAMPLE_HISTORY, id: UNOWNED_HISTORY_ID, user_id: OTHER_USER_ID },
+    );
+    if (!ownsHistory && invocation) {
+        invocation = { ...invocation, history_id: UNOWNED_HISTORY_ID };
+    }
+
     const wrapper = shallowMount(WorkflowNavigationTitle as object, {
         propsData: {
             invocation,
             workflowId,
         },
         localVue,
-        pinia: createTestingPinia(),
+        pinia,
     });
 
     const userStore = useUserStore();
     userStore.currentUser = getFakeRegisteredUser({
+        id: CURRENT_USER_ID,
         username: ownsWorkflow ? WORKFLOW_OWNER : OTHER_USER,
     });
 
@@ -107,19 +134,25 @@ describe("WorkflowNavigationTitle renders", () => {
     it("the workflow name in header and run button in actions; invocation version", async () => {
         const { wrapper } = await mountWorkflowNavigationTitle("invocation");
 
-        const heading = wrapper.find(SELECTORS.WORKFLOW_HEADING);
+        const heading = wrapper.findComponent(NavigationTitle);
         expect(heading.text()).toContain(`Invoked Workflow: ${SAMPLE_WORKFLOW.name}`);
         expect(heading.text()).toContain(`(Version: ${SAMPLE_WORKFLOW.version + 1})`);
 
-        const runButton = wrapper.find(SELECTORS.ROUTE_TO_RUN_BUTTON);
-        expect(runButton.attributes("title")).toContain("Rerun");
-        expect(runButton.attributes("title")).toContain(SAMPLE_WORKFLOW.name);
+        const rerunButton = wrapper.find(SELECTORS.ROUTE_TO_RERUN_BUTTON);
+        expect(rerunButton.attributes("title")).toContain("Rerun");
+    });
+
+    it("hides the rerun button if the user does not own the invocation's history", async () => {
+        const { wrapper } = await mountWorkflowNavigationTitle("invocation", true, false, false);
+
+        const rerunButton = wrapper.find(SELECTORS.ROUTE_TO_RERUN_BUTTON);
+        expect(rerunButton.exists()).toBe(false);
     });
 
     it("the workflow name in header and run button in actions; run form version", async () => {
         const { wrapper } = await mountWorkflowNavigationTitle("run_form");
 
-        const heading = wrapper.find(SELECTORS.WORKFLOW_HEADING);
+        const heading = wrapper.findComponent(NavigationTitle);
         expect(heading.text()).toContain(`Workflow: ${SAMPLE_WORKFLOW.name}`);
         expect(heading.text()).toContain(`(Version: ${SAMPLE_WORKFLOW.version + 1})`);
 
@@ -128,17 +161,17 @@ describe("WorkflowNavigationTitle renders", () => {
     });
 
     it("edit button if user owns the workflow", async () => {
-        async function findAndClickEditButton(version: "invocation" | "run_form") {
+        async function findEditButton(version: "invocation" | "run_form") {
             const { wrapper } = await mountWorkflowNavigationTitle(version);
             const actionsGroup = wrapper.find(SELECTORS.ACTIONS_BUTTON_GROUP);
 
             const editButton = actionsGroup.find(SELECTORS.EDIT_WORKFLOW_BUTTON);
             expect(editButton.attributes("to")).toBe(
-                `/workflows/edit?id=${SAMPLE_WORKFLOW.id}&version=${SAMPLE_WORKFLOW.version}`
+                `/workflows/edit?id=${SAMPLE_WORKFLOW.id}&version=${SAMPLE_WORKFLOW.version}`,
             );
         }
-        await findAndClickEditButton("invocation");
-        await findAndClickEditButton("run_form");
+        await findEditButton("invocation");
+        await findEditButton("run_form");
     });
 
     it("import button instead if user does not own the workflow", async () => {

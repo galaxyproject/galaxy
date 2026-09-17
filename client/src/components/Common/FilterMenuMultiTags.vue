@@ -2,11 +2,11 @@
 import { BInputGroup } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { type ValidFilter } from "@/utils/filtering";
+import type { ValidFilter } from "@/utils/filtering";
 
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
-type FilterType = string | boolean | undefined;
+type FilterType = string[] | undefined;
 
 interface Props {
     name: string;
@@ -31,14 +31,14 @@ watch(
     () => localValue.value,
     (newFilter) => {
         emit("change", props.name, newFilter);
-    }
+    },
 );
 
 watch(
     () => propValue.value,
     (newFilter) => {
         localValue.value = newFilter;
-    }
+    },
 );
 </script>
 

@@ -1,16 +1,14 @@
 import os
 import re
+from collections.abc import Callable
 from functools import wraps
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Optional,
+    Literal,
 )
 from urllib.parse import urljoin
 
 import requests
-from typing_extensions import Literal
 
 from galaxy_test.base.api_asserts import (
     assert_has_keys,
@@ -36,7 +34,7 @@ def get_admin_api_key() -> str:
     return DEFAULT_TOOL_SHED_BOOTSTRAP_ADMIN_API_KEY
 
 
-def get_user_api_key() -> Optional[str]:
+def get_user_api_key() -> str | None:
     """Test user API key to use for functional tests.
 
     If set, this should drive API based testing - if not set an admin API key will
@@ -94,7 +92,7 @@ class ShedApiInteractor:
         api_version = config.get("api_version", "v1")
         return api_version
 
-    def version(self) -> Dict[str, Any]:
+    def version(self) -> dict[str, Any]:
         response = self.get("version")
         response.raise_for_status()
         return response.json()
@@ -104,7 +102,7 @@ class ShedApiInteractor:
         return self.url
 
 
-def create_user(admin_interactor: ShedApiInteractor, user_dict: Dict[str, Any], assert_ok=True) -> Dict[str, Any]:
+def create_user(admin_interactor: ShedApiInteractor, user_dict: dict[str, Any], assert_ok=True) -> dict[str, Any]:
     email = user_dict["email"]
     if "password" not in user_dict:
         user_dict["password"] = "testpass"
@@ -116,9 +114,7 @@ def create_user(admin_interactor: ShedApiInteractor, user_dict: Dict[str, Any], 
     return response.json()
 
 
-def ensure_user_with_email(
-    admin_api_interactor: ShedApiInteractor, email: str, password: Optional[str]
-) -> Dict[str, Any]:
+def ensure_user_with_email(admin_api_interactor: ShedApiInteractor, email: str, password: str | None) -> dict[str, Any]:
     all_users_response = admin_api_interactor.get("users")
     try:
         all_users_response.raise_for_status()

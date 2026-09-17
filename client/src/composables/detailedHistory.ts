@@ -4,7 +4,7 @@
  */
 import { computed, onMounted } from "vue";
 
-import { type HistorySummaryExtended } from "@/api";
+import type { HistorySummaryExtended } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 
 /**
@@ -23,7 +23,7 @@ export function useExtendedHistory(historyId: string) {
     });
 
     const history = computed<HistorySummaryExtended>(
-        () => historyStore.getHistoryById(historyId) as HistorySummaryExtended
+        () => historyStore.getHistoryById(historyId) as HistorySummaryExtended,
     );
 
     return {

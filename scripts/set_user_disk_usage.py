@@ -7,6 +7,7 @@ import sys
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 import galaxy.config
+from galaxy import model
 from galaxy.model.mapping import init_models_from_config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import nice_size
@@ -41,7 +42,7 @@ def init():
     config = galaxy.config.Configuration(**app_properties)
     object_store = build_object_store_from_config(config)
     engine = config.database_connection.split(":")[0]
-    return init_models_from_config(config, object_store=object_store), object_store, engine
+    return init_models_from_config(config, object_store=object_store).context, object_store, engine
 
 
 def quotacheck(sa_session, users, engine, object_store):
@@ -69,8 +70,7 @@ def quotacheck(sa_session, users, engine, object_store):
 
 if __name__ == "__main__":
     print("Loading Galaxy model...")
-    model, object_store, engine = init()
-    sa_session = model.context.current
+    sa_session, object_store, engine = init()
 
     if not args.username and not args.email:
         user_count = sa_session.query(model.User).count()

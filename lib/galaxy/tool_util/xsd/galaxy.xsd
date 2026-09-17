@@ -72,6 +72,19 @@ List of behavior changes associated with profile versions:
 
 - require a valid `data_ref` attribute for `data_column` parameters
 
+### 25.1
+
+- Do not use user preferences to store credentials for tools anymore. Use the new `<credentials>` tag in the `<requirements>` section of the tool XML instead.
+
+### 26.2
+
+- Do not implicitly load the default `galaxy.json` tool-provided metadata file. Tools must opt in by explicitly setting
+  `provided_metadata_file` or `provided_metadata_style`, using `format="auto"`, or declaring a
+  `discover_datasets` collector with `from_provided_metadata="true"` (represented as
+  `discover_via="tool_provided_metadata"` in YAML tool definitions).
+- An `optional` `boolean` parameter with no `checked` attribute defaults to `None` instead of `False`, so an unset
+  value stays distinct from an explicit false. Older profiles keep reporting `False`.
+
 ### Examples
 
 A normal tool:
@@ -105,7 +118,13 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
         <xs:element name="xrefs" type="xrefs" minOccurs="0"/>
         <xs:element name="creator" type="Creator" minOccurs="0"/>
-        <xs:element name="requirements" type="Requirements" minOccurs="0"/>
+        <xs:element name="requirements" type="Requirements" minOccurs="0">
+          <!-- Ensure unique credentials names across all credentials elements -->
+          <xs:unique name="uniqueCredentialsNames">
+            <xs:selector xpath="credentials"/>
+            <xs:field xpath="@name"/>
+          </xs:unique>
+        </xs:element>
         <xs:element name="required_files" type="RequiredFiles" minOccurs="0"/>
         <xs:element name="entry_points" type="EntryPoints" minOccurs="0" maxOccurs="1"/>
         <xs:element name="description" type="xs:string" minOccurs="0">
@@ -122,6 +141,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
 ]]></xs:documentation>
           </xs:annotation>
         </xs:element>
+        <xs:element name="icon" type="Icon" minOccurs="0"/>
         <xs:element name="parallelism" type="Parallelism" minOccurs="0"/>
         <xs:element name="version_command" type="VersionCommand" minOccurs="0"/>
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1"/>
@@ -138,7 +158,6 @@ the tool menu immediately following the hyperlink for the tool (based on the
         <xs:element name="code" type="Code" minOccurs="0"/>
         <xs:element name="uihints" type="UIhints" minOccurs="0"/>
         <xs:element name="options" type="Options" minOccurs="0"/>
-        <xs:element name="trackster_conf" type="TracksterConf" minOccurs="0"/>
         <xs:element name="citations" type="Citations" minOccurs="0"/>
       </xs:all>
       <xs:attribute name="id" type="xs:string" use="required">
@@ -202,11 +221,11 @@ for the list of behavior changes associated with profile versions.
       <xs:attribute name="license" type="xs:string">
         <xs:annotation>
           <xs:documentation xml:lang="en">This string specifies any full URI or a
-a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool
-wrapper. The tool wrapper version can be indepedent of the underlying tool. This
-license covers the tool XML and associated scripts shipped with the tool.
+            a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool
+            wrapper. The tool wrapper version can be independent of the underlying tool. This
+            license covers the tool XML and associated scripts shipped with the tool.
 
-This is interpreted as [schema.org/license](https://schema.org/license) property.
+            This is interpreted as [schema.org/license](https://schema.org/license) property.
 </xs:documentation>
         </xs:annotation>
       </xs:attribute>
@@ -242,6 +261,16 @@ this attribute defined the HTTP request method to use when communicating with an
       </xs:attribute>
     </xs:complexType>
   </xs:element>
+  <xs:complexType name="Icon">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Icon image associated with the tool. Ideally, this should be a square PNG image with maximum dimensions of 512x512 pixels.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="src" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Relative path to the icon image. It must be contained within the tool directory.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="Macros">
     <xs:annotation>
       <xs:documentation xml:lang="en">Frequently, tools may require the same XML
@@ -600,10 +629,10 @@ practice.
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
-This is a container tag set for the ``requirement``, ``resource`` and ``container`` tags
-described in greater detail below. ``requirement``s describe software packages
-and other individual computing requirements required to execute a tool, while
-``container``s describe Docker or Singularity containers that should be able to
+This is a container tag set for the ``requirement``, ``resource``, ``container`` and
+``credentials`` tags described in greater detail below. ``requirement``s describe
+software packages and other individual computing requirements required to execute a tool,
+while ``container``s describe Docker or Singularity containers that should be able to
 serve as complete descriptions of the runtime of a tool.
 
 ]]></xs:documentation>
@@ -612,6 +641,18 @@ serve as complete descriptions of the runtime of a tool.
       <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="container" type="Container" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="resource" type="Resource" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="credentials" type="Credentials" minOccurs="0" maxOccurs="unbounded">
+        <!-- Ensure unique credential names across variables and secrets -->
+        <xs:unique name="uniqueCredentialNames">
+          <xs:selector xpath="variable|secret"/>
+          <xs:field xpath="@name"/>
+        </xs:unique>
+        <!-- Ensure unique inject_as_env values across variables and secrets -->
+        <xs:unique name="uniqueInjectAsEnv">
+          <xs:selector xpath="variable|secret"/>
+          <xs:field xpath="@inject_as_env"/>
+        </xs:unique>
+      </xs:element>
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="Requirement">
@@ -725,6 +766,197 @@ Read more about configuring Galaxy to run Docker jobs
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
+  <xs:complexType name="Credentials">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+The ``credentials`` element allows tools to securely access external services by defining
+a set of authentication credentials. These credentials are managed separately from the tool
+configuration and are injected into the tool's execution environment as environment variables.
+
+Credentials consist of:
+- **Variables**: Non-sensitive configuration values (e.g., server URLs, usernames)
+- **Secrets**: Sensitive authentication data (e.g., passwords, API keys, tokens)
+
+The credentials system provides secure credential management while keeping sensitive
+information separate from tool definitions. Multiple credentials sets can be defined
+within a single ``requirements`` block, each with a unique name. Before executing a tool
+that requires credentials, users must provide the necessary credentials through the Galaxy UI.
+
+Security considerations:
+
+- Credentials are stored in the jobs "job script" (the script that sets up the job's environment
+  and starts the tool script which contains the generated command line). The job script may be
+  accessible to Galaxy admins during execution of the job (and depending on the configuration
+  of Galaxy, after execution too).
+- Credentials are not available as Cheetah variables, because they could be used in the ``command``
+  block which would expose their content in the generated command line which is stored in the
+ job's metadata (which is stored plain text in Galaxy's DB and can be shared with other users).
+- Also, credentials should not be passed to the command line through environment variables:
+  - They will be expanded by the executing shell before execution, i.e. they will be visible on the
+    process list which can be a problem when jobs are executed on shared systems.
+  - Values of credentials are not sanitized, i.e. users could abuse them for code injection.
+- If values/secrets can be supplied via a file, then a helper script that takes the variables from the
+  environment and writes them to a file can be used.
+- For transparency,  it is good to document the extent to which credentials are exposed in the tool help / credential help.
+
+### Example
+
+```xml
+<requirements>
+    <credentials name="aws_s3" version="1.0" label="AWS S3 Access" description="Credentials for accessing AWS S3 buckets">
+        <variable name="region" inject_as_env="AWS_REGION" optional="false" label="AWS Region" description="The AWS region where your S3 bucket is located" />
+        <secret name="access_key" inject_as_env="AWS_ACCESS_KEY_ID" optional="false" label="Access Key ID" description="Your AWS access key ID" />
+        <secret name="secret_key" inject_as_env="AWS_SECRET_ACCESS_KEY" optional="false" label="Secret Access Key" description="Your AWS secret access key" />
+    </credentials>
+    <credentials name="database" version="2.1" label="Database Connection" description="Database connection credentials">
+        <variable name="host" inject_as_env="PGHOST" optional="false" label="Database Host" description="The hostname or IP address of the database server" />
+        <variable name="port" inject_as_env="PGPORT" optional="true" label="Database Port" description="The port number (default: 5432)" />
+        <secret name="password" inject_as_env="PGPASSWORD" optional="false" label="Database Password" description="The password for database authentication" />
+    </credentials>
+</requirements>
+```
+
+### Tool Access
+
+Within your tool, access the injected credentials using the specified environment variable names:
+
+```bash
+# Access AWS credentials (insecure)
+aws s3 ls s3://my-bucket --region "\$AWS_REGION" --access-key "\$AWS_ACCESS_KEY_ID" --secret-key "\$AWS_SECRET_ACCESS_KEY"
+
+# Access database credentials (the secure way, i.e. not use environment variables on the CLI)
+psql -U myuser -d mydb
+```
+
+In the ``aws`` example, the content of the environment variables would be exposed in the process list of the
+machine that is executing the job. Additionally, users could supply characters that are harmful on the CLI (see security considerations).
+In modern versions of the ``aws`` interface credentials can only be supplied via a file.
+
+In the postgres example we deliberately used environment variables that are picked up automatically by ``psql``,
+i.e. we do not need to set it on the command line (which would expose them on the process list).
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="variable" type="CredentialsVariable" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="secret" type="CredentialsSecret" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The name of the credential set.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="version" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The version of the credential set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The label of the credential set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The description of the credential set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="optional" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If true, tools can run without credentials; if false, credentials must be provided before execution.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="CredentialsVariable">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This element defines a variable for credentials. The variable is injected into the
+environment of the tool process as an environment variable.
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The name of the variable.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="inject_as_env" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The environment variable name to inject the value as.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="optional" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Whether the variable is optional for the tool to run.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The label for the variable.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The description for the variable.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="CredentialsSecret">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This element defines a secret for credentials. The secret is injected into the
+environment of the tool process as an environment variable.
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The name of the secret.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="inject_as_env" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The environment variable name to inject the value as.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="optional" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Whether the secret is optional for the tool to run.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The label for the secret.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The description for the secret.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:simpleType name="HelpFormatType">
     <xs:annotation>
       <xs:documentation xml:lang="en">Document type of tool help</xs:documentation>
@@ -736,7 +968,7 @@ Read more about configuring Galaxy to run Docker jobs
   </xs:simpleType>
   <xs:complexType name="Help">
     <xs:annotation gxdocs:best_practices="help-tag">
-      <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the next to the last tag set, before citations, in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see [here](https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html).
+      <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. Tool help is written in reStructuredText or Markdown. Included here is only an overview of a subset of features. For more information see [the RST site](https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html) or the [Markdown site](https://www.markdownguide.org/basic-syntax/).
 
 tag | details
 --- | -------
@@ -1036,29 +1268,6 @@ The content of ``stdout`` and ``stderr`` are strings containing the output of th
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  <xs:complexType name="TracksterConf">
-    <xs:annotation>
-      <xs:documentation xml:lang="en">This directive is used to specify some rarely modified trackster options.</xs:documentation>
-    </xs:annotation>
-    <xs:sequence>
-      <xs:element name="action" type="TracksterAction" minOccurs="0" maxOccurs="unbounded"/>
-    </xs:sequence>
-  </xs:complexType>
-  <xs:complexType name="TracksterAction">
-    <xs:annotation>
-      <xs:documentation xml:lang="en"/>
-    </xs:annotation>
-    <xs:attribute name="name" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en"/>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="output_name" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en"/>
-      </xs:annotation>
-    </xs:attribute>
-  </xs:complexType>
   <xs:complexType name="Tests">
     <xs:annotation gxdocs:best_practices="tests">
       <xs:documentation xml:lang="en"><![CDATA[
@@ -1199,6 +1408,7 @@ that at least one of the assumptions of the test is not met. This is most useful
       <xs:element name="repeat" type="TestRepeat"/>
       <xs:element name="conditional" type="TestConditional"/>
       <xs:element name="section" type="TestSection"/>
+      <xs:element name="credentials" type="TestCredentials"/>
       <xs:element name="output" type="TestOutput" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="output_collection" type="TestOutputCollection"/>
       <xs:element name="assert_command" type="TestAssertions">
@@ -1239,6 +1449,72 @@ $assertions
       </xs:element>
     </xs:choice>
   </xs:group>
+  <xs:complexType name="TestCredentials">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+Specify test credentials for a service that requires authentication.
+This allows tool tests to provide credential values (variables and secrets)
+that will be injected as environment variables during test execution.
+
+This is intended for use with public test accounts/credentials only.
+
+### Example
+
+```xml
+<test>
+    <credentials name="ega_credentials">
+        <variable name="ega_username" value="test_user" />
+        <secret name="ega_password" value="test_password" />
+    </credentials>
+    <param name="input" value="test.txt" />
+    <output name="output" file="expected.txt" />
+</test>
+```
+
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="variable" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en">Name of the credential variable (must match a variable defined in the tool's requirements/credentials)</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="value" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en">Test value for this variable</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="secret" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en">Name of the credential secret (must match a secret defined in the tool's requirements/credentials)</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="value" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation xml:lang="en">Test value for this secret (use public test credentials only)</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Name of the credentials group (must match the name defined in tool's requirements/credentials)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="version" type="xs:string" default="1.0">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Version of the credentials definition (must match the version defined in tool's requirements/credentials). Defaults to "1.0".</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="TestSection">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -1580,6 +1856,13 @@ attribute name is not included, the functional test framework will attempt to
 determine the data type for the input dataset using the data type sniffers.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="class" type="Class">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This attribute name should be included
+only with parameter of ``type`` ``data`` for the tool. If this attribute name is not included the test framework will
+assume that the dataset is a file. Set this to ``Directory`` to interpret and upload the value as a directory.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="dbkey" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Specifies a ``dbkey`` value for the
@@ -1619,14 +1902,25 @@ non-optional composite inputs must be specified as part of the ``param``.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+  <xs:complexType name="TestCollectionField" mixed="true">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+JSON that describes the fields of a collection. Only use if ``collection_type`` is ``record`` or
+some extension of that.
+
+]]></xs:documentation>
+    </xs:annotation>
+  </xs:complexType>
   <xs:complexType name="TestCollection">
     <xs:annotation>
       <xs:documentation xml:lang="en">Definition of a collection for test input.</xs:documentation>
     </xs:annotation>
     <xs:sequence>
+      <xs:element name="fields" type="TestCollectionField" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="element" type="TestParam" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="type" type="xs:string" use="required">
+    <xs:attribute name="type" type="CollectionType" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">Type of collection to create.</xs:documentation>
       </xs:annotation>
@@ -1800,6 +2094,16 @@ This is available in Galaxy since release 17.05 and was introduced in [pull requ
     <xs:attribute name="count" type="xs:integer">
       <xs:annotation>
         <xs:documentation xml:lang="en">Number or datasets for this output. Should be used for outputs with ``discover_datasets``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="min" type="xs:integer" gxdocs:added="26.0">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Minimum number or datasets for this output. Should be used for outputs with ``discover_datasets``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="max" type="xs:integer" gxdocs:added="26.0">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum number or datasets for this output. Should be used for outputs with ``discover_datasets``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="location" type="xs:anyURI" gxdocs:added="23.1">
@@ -2154,6 +2458,16 @@ This value is the same as the value of the ``name`` attribute of the
         <xs:documentation xml:lang="en">Number of elements in output collection.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="min" type="xs:integer" gxdocs:added="26.0">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Minimum number of elements in output collection.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="max" type="xs:integer" gxdocs:added="26.0">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum number of elements in output collection.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="TestAssertions">
     <xs:annotation>
@@ -2227,7 +2541,7 @@ $attribute_list::5]]></xs:documentation>
         <xs:annotation>
           <xs:documentation xml:lang="en"><![CDATA[Asserts the specified output contains a line matching the
 regular expression specified by the argument expression. If n is given
-the assertion checks for exactly n occurences.
+the assertion checks for exactly n occurrences.
 
 $attribute_list::5]]></xs:documentation>
         </xs:annotation>
@@ -2348,8 +2662,8 @@ $attribute_list::5]]></xs:documentation>
         <xs:annotation>
           <xs:documentation xml:lang="en"><![CDATA[Asserts the specified output contains text matching the
 regular expression specified by the argument expression.
-If n is given the assertion checks for exacly n (nonoverlapping)
-occurences.
+If n is given the assertion checks for exactly n (nonoverlapping)
+occurrences.
 
 $attribute_list::5]]></xs:documentation>
         </xs:annotation>
@@ -2410,7 +2724,7 @@ number (``n``) of columns.
 
 For instance, ``<has_n_columns n="3"/>``. The assertion tests only the first line.
 Number of columns can optionally also be specified with ``delta``. Alternatively the
-range of expected occurences can be specified by ``min`` and/or ``max``.
+range of expected occurrences can be specified by ``min`` and/or ``max``.
 
 Optionally a column separator (``sep``, default is ``       ``) `and comment character(s)
 can be specified (``comment``, default is empty string). The first non-comment
@@ -2686,7 +3000,7 @@ For example:
 ```
 
 Alternatively to ``n`` and ``delta`` also the ``min`` and ``max`` attributes
-can be used to specify the range of the expected number of occurences.
+can be used to specify the range of the expected number of occurrences.
 With ``negate`` the result of the assertion can be inverted.
 
 $attribute_list::5]]></xs:documentation>
@@ -2738,7 +3052,7 @@ $attribute_list::5]]></xs:documentation>
         <xs:annotation>
           <xs:documentation xml:lang="en"><![CDATA[Assert if the XML file contains element(s) or tag(s) with the specified
 [XPath-like ``path``](https://lxml.de/xpathxslt.html).  If ``n`` and ``delta``
-or ``min`` and ``max`` are given also the number of occurences is checked.
+or ``min`` and ``max`` are given also the number of occurrences is checked.
 
 ```xml
 <assert_contents>
@@ -2748,7 +3062,7 @@ or ``min`` and ``max`` are given also the number of occurences is checked.
 </assert_contents>
 ```
 
-With ``negate="true"`` the outcome of the assertions wrt the precence and number
+With ``negate="true"`` the outcome of the assertions wrt the presence and number
 of ``path`` can be negated. If there are any sub assertions then check them against
 
 - the content of the attribute ``attribute``
@@ -2763,7 +3077,7 @@ of ``path`` can be negated. If there are any sub assertions then check them agai
 ```
 
 Sub-assertions are not subject to the ``negate`` attribute of ``xml_element``.
-If ``all`` is ``true`` then the sub assertions are checked for all occurences.
+If ``all`` is ``true`` then the sub assertions are checked for all occurrences.
 
 Note that all other XML assertions can be expressed by this assertion (Galaxy
 also implements the other assertions by calling this one).
@@ -4315,14 +4629,14 @@ parameter should be checked (or ``true``) by default. Used only when the
         <xs:attribute name="truevalue" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">The parameter value in the Cheetah
-template if the parameter is ``true`` or checked by the user. Used only when the
+template if the parameter is ``true`` or checked by the user (defaults to "true"). Used only when the
 ``type`` attribute value is ``boolean``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="falsevalue" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">The parameter value in the Cheetah
-template if the parameter is ``false`` or not checked by the user. Used only
+template if the parameter is ``false`` or not checked by the user (defaults to "false"). Used only
 when the ``type`` attribute value is ``boolean``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -4359,7 +4673,7 @@ Here is an example command section that handles the above sample input:
       ## Here, the input is a deferred dataset which source URI has the protocol 'https', 'http' or 's3'.
       echo '$input' > '$output' ## The ouput will be the source URI of the input.
   #else:
-      ## Here, the input is a regular dataset or a materialized dataset in case of a 
+      ## Here, the input is a regular dataset or a materialized dataset in case of a
       ## deferred dataset which source URI has a protocol different than 'https', 'http' or 's3'.
       cp '$input' '$output' ## The output will be a copy of the input content.
 </command>
@@ -4600,6 +4914,8 @@ Name | Description
 ``\${GALAXY_SLOTS:-4}`` | Number of cores/threads allocated by the job runner or resource manager to the tool for the given job (here 4 is the default number of threads to use if running via custom runner that does not configure GALAXY_SLOTS or in an older Galaxy runtime).
 ``\$GALAXY_MEMORY_MB`` | Total amount of memory in megabytes (1024^2 bytes) allocated by the administrator (via the resource manager) to the tool for the given job. If unset, tools should not attempt to limit memory usage.
 ``\$GALAXY_MEMORY_MB_PER_SLOT`` | Amount of memory per slot in megabytes (1024^2 bytes) allocated by the administrator (via the resource manager) to the tool for the given job. If unset, tools should not attempt to limit memory usage.
+``\$GALAXY_MEMORY_GB`` | Total amount of memory in whole gigabytes (1024^3 bytes) derived from ``\$GALAXY_MEMORY_MB``. If the derived value is less than one, this variable is unset.
+``\$GALAXY_MEMORY_GB_PER_SLOT`` | Amount of memory per slot in whole gigabytes (1024^3 bytes) derived from ``\$GALAXY_MEMORY_MB_PER_SLOT``. If the derived value is less than one, this variable is unset.
 ``\$_GALAXY_JOB_TMP_DIR`` | Path to an empty directory in the job's working directory that can be used as a temporary directory.
 
 See the [Planemo docs](https://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage)
@@ -4664,7 +4980,7 @@ of "type" specified for this expression block.
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="ExpressionType">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Type of expression defined by this expression block. The only current valid option is ecma5.1 - which will evaluate the expression in a sandbox using node. The option still must be specified to allow a different default in the future.</xs:documentation>
+            <xs:documentation xml:lang="en">Type of expression defined by this expression block. The only current valid option is ecma5.1 - which will evaluate the expression in a QuickJS worker subprocess. The option still must be specified to allow a different default in the future.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -5469,7 +5785,7 @@ For use with validator ``dataset_metadata_in_file``</xs:documentation>
       <xs:documentation xml:lang="en"><![CDATA[
 
 See
-[/tools/filters/grep.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/filters/grep.xml)
+[/tools/stats/filtering.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/stats/filtering.xml)
 for a typical example of how to use this tag set. This tag set is used to
 replace the basic parameter sanitization with custom directives. This tag set is
 contained within the ``<param>`` tag set - it contains a set of ``<valid>`` and
@@ -5904,6 +6220,14 @@ named by Galaxy. You specify the number and type of your output files using the
 contained ``<data>`` and ``<collection>`` tags. These may be passed to your tool
 executable through using line variables just like the parameters described in
 the ``<inputs>`` documentation.
+
+For compatibility, ordinary non-interactive XML tools with profiles up to and
+including 26.1 implicitly load the default ``galaxy.json`` file. Ordinary XML
+tools with profiles 26.2 and newer and interactive tools load tool-provided
+metadata only when the outputs explicitly request it through ``provided_metadata_file``,
+``provided_metadata_style``, ``format="auto"``, or a
+``from_provided_metadata="true"`` collector (represented as
+``discover_via="tool_provided_metadata"`` in YAML tool definitions).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -6012,9 +6336,14 @@ One prominent use case is interval data with a non-standard column order that ca
     </xs:attribute>
     <xs:attribute name="from_work_dir" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Relative path to a file produced by the
-tool in its working directory. Output's contents are set to this file's
-contents. The behaviour when this file does not exist in the working directory is undefined; the resulting dataset could be empty or the tool execution could fail.</xs:documentation>
+        <xs:documentation xml:lang="en">Relative path to a file or directory produced by the
+tool in its working directory. Output's contents are set to this paths'
+contents. The behaviour when this path does not exist in the working directory is undefined; the resulting dataset could be empty or the tool execution could fail. To collect directory contents set ``precreate`` to true</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="precreate_directory" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Boolean indicating whether to precreate output directory. (Default is ``false``.)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="hidden" type="xs:boolean" default="false">
@@ -6124,6 +6453,78 @@ on Human (hg18)``.
     <data format="input" name="output" label="Blat on ${database.value_label}" />
 </outputs>
 ```
+
+### Markdown Outputs
+
+Tools can produce Markdown reports enhanced with the Galaxy Markdown syntax. This
+allows using Markdown directives to provide rich displays of tool inputs and outputs.
+
+```
+<outputs>
+    <data format="tool_markdown" name="output_report" label="Report for Analysis" />
+</outputs>
+```
+
+For an overview of standard Markdown visit the [commonmark.org tutorial](https://commonmark.org/help/tutorial/).
+
+The Galaxy extensions to Markdown are represented as code blocks, these blocks start with the line
+
+
+    ```galaxy
+
+and end with the line
+
+    ```
+
+and have a command (or directive) with arguments between these lines. These arguments reference parts of your tool's job such as
+inputs and outputs by label.
+
+#### History Contents Commands
+
+These commands reference a dataset or dataset collection. For instance, the following examples would display
+the dataset collection metadata and would embed a dataset into the document as an image.
+
+These elements are referenced by input or output labels for the tool.
+
+Example:
+
+    ```galaxy
+    history_dataset_collection_display(output=mapped_bams)
+    ```
+
+Example:
+
+    ```galaxy
+    history_dataset_as_image(output=normalized_result_plot)
+    ```
+
+$directive_list:history_dataset_display,history_dataset_collection_display,history_dataset_as_image,history_dataset_as_table,history_dataset_peek,history_dataset_info
+
+#### Job Commands
+
+These commands implicitly reference the Galaxy job associated with the tool execution.
+
+Example:
+
+    ```galaxy
+    tool_stdout()
+    ```
+
+$directive_list:tool_stderr,tool_stdout,job_metrics,job_parameters
+
+#### Example Tools
+
+A few potential paradigms for build reports for tools have examples included.
+[markdown_report_simple.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/markdown_report_simple.xml)
+demonstrates simply linking to the other outputs of a tool and builds the document
+itself with a Galaxy ``configfile``. [markdown_report_extra_files.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/markdown_report_extra_files.xml)
+builds the report with a configfile just like that first example but demonstrates
+copying data and images into the ``extra_files`` directory of the report. This variant
+is useful if the number or types of files being produced is variable or if it is important
+the outputs linked in the reports are not stand-alone outputs of the tool. Finally,
+[markdown_report_from_script.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/markdown_report_from_script.xml)
+demonstrates you don't need to build the file in Galaxy's XML - you can build it with
+a wrapper script or standalone application.
 
 ]]></xs:documentation>
     </xs:annotation>
@@ -6242,11 +6643,12 @@ derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
   <xs:complexType name="OutputFilter">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-The ``<data>`` tag can contain a ``<filter>`` tag which includes a Python code
+``<data>`` and ``<collection>`` tags can contain one or more ``<filter>`` tags. Each ``<filter>`` tag contains a Python code
 block to be executed to test whether to include this output in the outputs the
-tool ultimately creates. If the code, when executed, returns ``True``,
-the output dataset is retained. In these code blocks the tool parameters appear
-as Python variables and are thus referred to without the $ used for the Cheetah
+tool ultimately creates. If the code of each of these filters, when executed, returns ``True``,
+the output dataset is retained, i.e. the output is excluded if at least one evaluates to ``False``.
+In these code blocks the tool parameters appear
+as Python variables and are thus referred to without the ``$`` used for the Cheetah
 template (used in the ``<command>`` tag). Variables that are part of
 conditionals are accessed using a dictionary named after the conditional. Boolean
 parameters appear as booleans, not the value of their ``truevalue`` and
@@ -7108,8 +7510,10 @@ paths for data or collection inputs set the ``data_style`` attribute to ``paths`
 To include a dictionary with element identifiers, datatypes, staging paths, paths and metadata files set the ``data_style`` attribute to ``staging_path_and_source_path`` (element identifiers and datatypes are available since 24.0).
 An example tool that uses ``staging_path_and_source_path`` is [inputs_as_json_with_staging_path_and_source_path.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_staging_path_and_source_path.xml)
 
-Note that the element identifiers are stored as lists, where the last element is the actual element identifier of the dataset
-and the other elements the identifiers of the collections containing the dataset.
+Note that the ``element_identifier`` field matches the type of input, which means for simple data inputs ``element_identifier`` is a string,
+for multiple="true" data inputs ``element_identifier`` is a list of strings corresponding to the element identifiers of each dataset passed to the input.
+For dataset collections the element identifier is a list of strings with as many items in the list as the nesting level of the collection (i.e. 1 for list, 2 for list:list, 3 for list:list:list etc),
+where the first item represents the outermost element identifier and the innermost item represents the innermost element identifier of the collection.
 
 For tools with profile >= 20.05 a select with ``multiple="true"`` is rendered as an array which is empty if nothing is selected. For older profile versions select lists are rendered as comma separated strings or a literal ``null`` in case nothing is selected.
 ]]></xs:documentation>
@@ -7690,23 +8094,23 @@ for a list of supported formats.</xs:documentation>
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Tool files may declare one
 citations element. Each citations element can contain one or more citation tag
-elements - each of which specifies tool citation information using either a DOI
+elements - each of which specifies tool reference information using either a DOI
 or a BibTeX entry.
 
-These citations will appear at the bottom of the tool form in a formatted way
+These references will appear at the bottom of the tool form in a formatted way,
 but the user will have to option to select RAW BibTeX for copying and pasting as
 well. Likewise, the history menu includes an option allowing users to aggregate
-all such citations across an analysis in a list of citations.
+all such references across an analysis in a list of references.
 
 BibTeX entries for citations annotated with DOIs will be fetched by Galaxy from
 https://doi.org/ and cached.
 
 ```xml
 <citations>
-   <!-- Example of annotating a citation using a DOI. -->
+   <!-- Example of annotating a reference using a DOI. -->
    <citation type="doi">10.1093/bioinformatics/btq281</citation>
 
-   <!-- Example of annotating a citation using a BibTex entry. -->
+   <!-- Example of annotating a reference using a BibTex entry. -->
    <citation type="bibtex">@ARTICLE{Kim07aninterior-point,
    author = {Seung-jean Kim and Kwangmoo Koh and Michael Lustig and Stephen Boyd and Dimitry Gorinevsky},
    title = {An interior-point method for large-scale l1-regularized logistic regression},
@@ -7726,10 +8130,6 @@ following commits adding this to the
 [phenotype association tools](https://bitbucket.org/galaxy/galaxy-central/commits/39c983151fe328ff5d415f6da81ce5b21a7e18a4),
 [MAF suite](https://bitbucket.org/galaxy/galaxy-central/commits/60f63d6d4cb7b73286f3c747e8acaa475e4b6fa8),
 and [MACS2 suite](https://github.com/jmchilton/galaxytools/commit/184971dea73e236f11e82b77adb5cab615b8391b).
-
-This feature was added to the August 2014 release of Galaxy, tools annotated
-with citations will work in older releases of Galaxy but no citation information
-will be available to the end user.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -7739,14 +8139,14 @@ will be available to the end user.
   <xs:complexType name="Citation">
     <xs:annotation>
       <xs:documentation xml:lang="en">Each citations element can contain one or
-more ``citation`` tag elements - each of which specifies tool citation
+more ``citation`` tag elements - each of which specifies tool reference
 information using either a DOI or a BibTeX entry.</xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="CitationType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Type of citation - currently ``doi``
+            <xs:documentation xml:lang="en">Type of reference - currently ``doi``
 and ``bibtex`` are the only supported options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -7755,7 +8155,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
   </xs:complexType>
   <xs:simpleType name="CitationType">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Type of citation represented.</xs:documentation>
+      <xs:documentation xml:lang="en">Type of reference represented.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="bibtex"/>
@@ -7836,6 +8236,11 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="shm_size">
         <xs:annotation>
           <xs:documentation xml:lang="en"><![CDATA[Size of /dev/shm. The format is `<number><unit>`. <number> must be greater than 0. Unit is optional and can be `b` (bytes), `k` (kilobytes), `m` (megabytes), or `g` (gigabytes). If you omit the unit, the default is bytes. If you omit the size entirely, the value is `64m`.]]></xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="timelimit">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Maximum time in seconds the tool is allowed to run. Job will be terminated if exceeded.</xs:documentation>
         </xs:annotation>
       </xs:enumeration>
     </xs:restriction>
@@ -8090,10 +8495,9 @@ favour of a ``has_size`` assertion.</xs:documentation>
       </xs:simpleType>
     </xs:union>
   </xs:simpleType>
-  
   <xs:simpleType name="Format">
     <xs:restriction base="xs:string">
-      <xs:pattern value="[0-9a-z.-_]+"/>
+      <xs:pattern value="[0-9a-z._-]+"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="FormatList">
@@ -8101,7 +8505,12 @@ favour of a ``has_size`` assertion.</xs:documentation>
       <xs:pattern value="([a-z0-9._-]+)(,([a-z0-9._-]+))*"/>
     </xs:restriction>
   </xs:simpleType>
-  
+  <xs:simpleType name="Class">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="File"/>
+      <xs:enumeration value="Directory"/>
+    </xs:restriction>
+  </xs:simpleType>
   <xs:complexType name="EdamTopics">
     <xs:annotation gxdocs:best_practices="tool-annotations-edam">
       <xs:documentation xml:lang="en"><![CDATA[
@@ -8155,15 +8564,14 @@ A tool can have any number of EDAM operation references.
     <xs:annotation gxdocs:best_practices="tool-cross-references-bio-tools">
       <xs:documentation xml:lang="en"><![CDATA[
 Container tag set for the ``<xref>`` tags.
-A tool can refer multiple reference IDs.
+A tool can link to multiple external catalog IDs.
 
 ```xml
    <!-- Example: this tool is dada2 -->
    <xrefs>
-       <xref type="bio.tools">dada2</xref>
-       <xref type="bioconductor">dada2</xref>
+       <xref type="bio.tools">dada2</xref> <!-- https://bio.tools/dada2 -->
+       <xref type="bioconductor">dada2</xref> <!-- https://bioconductor.org/packages/dada2 -->
    </xrefs>
-   <!-- https://bio.tools/dada2 -->
 ```
 
 ]]></xs:documentation>
@@ -8175,14 +8583,14 @@ A tool can refer multiple reference IDs.
   </xs:complexType>
   <xs:complexType name="xref">
     <xs:annotation>
-      <xs:documentation xml:lang="en">The ``xref`` element specifies reference
-information according to a catalog.</xs:documentation>
+      <xs:documentation xml:lang="en">The ``xref`` element specifies a link to
+an external catalog.</xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="singleLineString">
         <xs:attribute name="type" type="xrefType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools``, ``bioconductor``, and ``biii`` are
+            <xs:documentation xml:lang="en">Type of catalog - currently ``bio.tools``, ``bioconductor``, and ``biii`` are
 the only supported options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -8191,7 +8599,7 @@ the only supported options.</xs:documentation>
   </xs:complexType>
   <xs:simpleType name="xrefType">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Type of Reference.</xs:documentation>
+      <xs:documentation xml:lang="en">Type of catalog.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="bio.tools"/>
@@ -8225,7 +8633,7 @@ the only supported options.</xs:documentation>
       <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:pattern value="(list|paired)([:](list|paired))*"/>
+      <xs:pattern value="(list|paired|paired_or_unpaired|record)([:](list|paired|paired_or_unpaired|record))*"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="CollectionTypeList">
@@ -8233,7 +8641,7 @@ the only supported options.</xs:documentation>
       <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:pattern value="(list|paired)([:,](list|paired))*"/>
+      <xs:pattern value="(list|paired|paired_or_unpaired|record)([:,](list|paired|paired_or_unpaired|record))*"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="InputsConfigfileDatastyleType">

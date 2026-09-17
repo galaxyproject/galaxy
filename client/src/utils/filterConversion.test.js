@@ -1,9 +1,28 @@
+import { describe, expect, it } from "vitest";
+
 import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { quoteToolTagValue } from "@/components/Panels/utilities";
 import { getWorkflowFilters } from "@/components/Workflow/List/workflowFilters";
+import Filtering, { contains } from "@/utils/filtering";
 
 describe("test filtering helpers to convert filters to filter text", () => {
     const MyWorkflowFilters = getWorkflowFilters("my");
     const PublishedWorkflowFilters = getWorkflowFilters("published");
+    // Mirror ToolsList.vue's real wiring — same `quoteToolTagValue` import —
+    // so a regression in the production helper trips this test instead of the
+    // test silently agreeing with itself via an inline reimplementation.
+    const ToolTagFilters = new Filtering(
+        {
+            tag: {
+                type: "MultiTags",
+                handler: contains("tag", undefined, quoteToolTagValue),
+                menuItem: true,
+            },
+        },
+        undefined,
+        false,
+        false,
+    );
     it("conversion from filters to new filter text", async () => {
         const normalized = HistoryFilters.defaultFilters;
         expect(Object.keys(normalized).length).toBe(2);
@@ -24,6 +43,14 @@ describe("test filtering helpers to convert filters to filter text", () => {
         expect(HistoryFilters.containsDefaults(filters)).toBe(false);
         filters["visible"] = String(HistoryFilters.defaultFilters.visible).toUpperCase();
         expect(HistoryFilters.containsDefaults(filters)).toBe(true);
+    });
+
+    it("published filters exclude shared_with_me for anonymous users", async () => {
+        const loggedInFilters = getWorkflowFilters("published", false);
+        const anonFilters = getWorkflowFilters("published", true);
+        const filters = { shared_with_me: true };
+        expect(Object.keys(loggedInFilters.getValidFilters(filters).validFilters)).toContain("shared_with_me");
+        expect(Object.keys(anonFilters.getValidFilters(filters).validFilters)).not.toContain("shared_with_me");
     });
 
     it("verify correct conversion of filters", async () => {
@@ -54,14 +81,20 @@ describe("test filtering helpers to convert filters to filter text", () => {
 
         // backend filter text adjusts name tag by replacing `#` with `name:`
         expect(MyWorkflowFilters.getFilterText(filters, true)).toBe(
-            "name:name tag:tag1 tag:'tag2' tag:'name:tag3' is:published"
+            "name:name tag:tag1 tag:'tag2' tag:'name:tag3' is:published",
         );
 
         expect(PublishedWorkflowFilters.getFilterText(filters, true)).toBe(
-            "name:name tag:tag1 tag:'tag2' tag:'name:tag3'"
+            "name:name tag:tag1 tag:'tag2' tag:'name:tag3'",
         );
         delete filters["published"];
         expect(MyWorkflowFilters.getFilterText(filters, true)).toBe("name:name tag:tag1 tag:'tag2' tag:'name:tag3'");
+    });
+
+    it("quotes multi-word MultiTags values when a converter requires it", async () => {
+        expect(ToolTagFilters.getFilterText({ tag: ["data cleanup", "collection_ops"] })).toBe(
+            'tag:"data cleanup" tag:collection_ops',
+        );
     });
 });
 

@@ -1,46 +1,16 @@
 /**
  * Stores the Activity Bar state
  */
-import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { useDebounceFn, watchImmediate } from "@vueuse/core";
 import { computed, type Ref, ref, set } from "vue";
 
-import { useHashedUserId } from "@/composables/hashedUserId";
+import { useHashedUserId } from "@/composables/hashedUserIdFromUserStore";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { ensureDefined } from "@/utils/assertions";
 
 import { defaultActivities } from "./activitySetup";
+import type { Activity } from "./activityStoreTypes";
 import { defineScopedStore } from "./scopedStore";
-
-export type ActivityVariant = "primary" | "danger" | "disabled";
-
-export interface Activity {
-    // determine wether an anonymous user can access this activity
-    anonymous?: boolean;
-    // description of the activity
-    description: string;
-    // unique identifier
-    id: string;
-    // icon to be displayed in activity bar
-    icon: IconDefinition;
-    // indicate if this activity can be modified and/or deleted
-    mutable?: boolean;
-    // indicate wether this activity can be disabled by the user
-    optional?: boolean;
-    // specifiy wether this activity utilizes the side panel
-    panel?: boolean;
-    // title to be displayed in the activity bar
-    title: string;
-    // route to be executed upon selecting the activity
-    to?: string | null;
-    // tooltip to be displayed when hovering above the icon
-    tooltip: string;
-    // indicate wether the activity should be visible by default
-    visible?: boolean;
-    // if activity should cause a click event
-    click?: true;
-    variant?: ActivityVariant;
-}
 
 export interface ActivityMeta {
     disabled: boolean;
@@ -60,11 +30,23 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
 
     const customDefaultActivities = ref<Activity[] | null>(null);
     const currentDefaultActivities = computed(() => customDefaultActivities.value ?? defaultActivities);
+    const isSideBarOpen = computed(() => toggledSideBar.value !== "" && toggledSideBar.value !== "closed");
+
+    const specialPanelActivityIds = ref<Set<string>>(new Set());
+
+    function setSpecialPanelActivityIds(ids: string[]) {
+        specialPanelActivityIds.value = new Set(ids);
+    }
 
     const toggledSideBar = useUserLocalStorage(`activity-store-current-side-bar-${scope}`, "tools");
+    const sidePanelWidth = useUserLocalStorage(`activity-store-side-panel-width-${scope}`, 300);
 
     function toggleSideBar(currentOpen = "") {
         toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
+    }
+
+    function closeSideBar() {
+        toggledSideBar.value = "closed";
     }
 
     function overrideDefaultActivities(activities: Activity[]) {
@@ -130,7 +112,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         activities.value = newActivities;
 
         // if toggled side-bar does not exist, choose the first option
-        if (toggledSideBar.value !== "") {
+        if (isSideBarOpen.value) {
             const allSideBars = activities.value.flatMap((activity) => {
                 if (activity.panel) {
                     return [activity.id];
@@ -139,7 +121,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
                 }
             });
 
-            const allSideBarsSet = new Set(allSideBars);
+            const allSideBarsSet = new Set([...allSideBars, ...specialPanelActivityIds.value]);
             const firstSideBar = allSideBars[0];
 
             if (firstSideBar && !allSideBarsSet.has(toggledSideBar.value)) {
@@ -153,7 +135,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
     }
 
     function setAll(newActivities: Array<Activity>) {
-        activities.value = newActivities;
+        activities.value = [...newActivities];
     }
 
     function remove(activityId: string) {
@@ -186,22 +168,66 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         set(meta, metaKey, value);
     }
 
+    function findById(activityId: string): Activity | undefined {
+        return activities.value.find((a: Activity) => a.id === activityId);
+    }
+
+    function setPosition(activityId: string, position: number) {
+        const currentIndex = activities.value.findIndex((a: Activity) => a.id === activityId);
+        if (currentIndex === -1) {
+            return;
+        }
+        const boundedPosition = Math.max(0, Math.min(position, activities.value.length - 1));
+        const spliced = activities.value.splice(currentIndex, 1);
+        const activity = spliced[0];
+        if (!activity) {
+            return;
+        }
+        activities.value.splice(boundedPosition, 0, activity);
+        activities.value = [...activities.value];
+    }
+
+    function ensureSideBarOpen(activityId: string) {
+        const activity = findById(activityId);
+        if (!activity || !activity.panel) {
+            return;
+        }
+        if (toggledSideBar.value !== activityId) {
+            toggledSideBar.value = activityId;
+        }
+    }
+
+    function ensureVisible(activityId: string) {
+        const activity = findById(activityId);
+        if (!activity) {
+            return;
+        }
+        activity.visible = true;
+    }
+
     watchImmediate(
         () => hashedUserId.value,
         () => {
             sync();
-        }
+        },
     );
 
     return {
         toggledSideBar,
+        sidePanelWidth,
         toggleSideBar,
+        closeSideBar,
+        ensureSideBarOpen,
+        ensureVisible,
+        isSideBarOpen,
         activities,
         activityMeta,
         metaForId,
         setMeta,
         getAll,
+        findById,
         remove,
+        setPosition,
         setAll,
         restore,
         sync,
@@ -209,5 +235,6 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         currentDefaultActivities,
         overrideDefaultActivities,
         resetDefaultActivities,
+        setSpecialPanelActivityIds,
     };
 });

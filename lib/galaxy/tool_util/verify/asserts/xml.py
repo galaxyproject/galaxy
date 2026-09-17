@@ -1,5 +1,4 @@
 import re
-from typing import Optional
 
 from lxml.etree import XMLSyntaxError
 
@@ -24,6 +23,7 @@ from ._types import (
     XmlBool,
     XmlRegex,
 )
+from ._util import _assert_presence_number
 
 Path = Annotated[str, AssertionParameter("The Python xpath-like expression to find the target element.")]
 ElementExpression = Annotated[
@@ -39,7 +39,7 @@ AttributeExpression = Annotated[
 ]
 Attribute = Annotated[str, AssertionParameter("The XML attribute name to test against from the target XML element.")]
 OptionalAttribute = Annotated[
-    Optional[str], AssertionParameter("The XML attribute name to test against from the target XML element.")
+    str | None, AssertionParameter("The XML attribute name to test against from the target XML element.")
 ]
 ElementText = Annotated[
     str, AssertionParameter("The expected element text (body of the XML tag) to test against on the target XML element")
@@ -95,7 +95,7 @@ def assert_has_n_elements_with_path(
     ```
 
     Alternatively to ``n`` and ``delta`` also the ``min`` and ``max`` attributes
-    can be used to specify the range of the expected number of occurences.
+    can be used to specify the range of the expected number of occurrences.
     With ``negate`` the result of the assertion can be inverted.
     """
     assert_xml_element(output, path, n=n, delta=delta, min=min, max=max, negate=negate)
@@ -209,7 +209,7 @@ def assert_element_text(
 def assert_xml_element(
     output: Output,
     path: Path,
-    verify_assertions_function: Optional[VerifyAssertionsFunction] = None,
+    verify_assertions_function: VerifyAssertionsFunction | None = None,
     children: ChildAssertions = None,
     attribute: OptionalAttribute = None,
     all: All = False,
@@ -221,7 +221,7 @@ def assert_xml_element(
 ) -> None:
     """Assert if the XML file contains element(s) or tag(s) with the specified
     [XPath-like ``path``](https://lxml.de/xpathxslt.html).  If ``n`` and ``delta``
-    or ``min`` and ``max`` are given also the number of occurences is checked.
+    or ``min`` and ``max`` are given also the number of occurrences is checked.
 
     ```xml
     <assert_contents>
@@ -231,7 +231,7 @@ def assert_xml_element(
     </assert_contents>
     ```
 
-    With ``negate="true"`` the outcome of the assertions wrt the precence and number
+    With ``negate="true"`` the outcome of the assertions wrt the presence and number
     of ``path`` can be negated. If there are any sub assertions then check them against
 
     - the content of the attribute ``attribute``
@@ -246,7 +246,7 @@ def assert_xml_element(
     ```
 
     Sub-assertions are not subject to the ``negate`` attribute of ``xml_element``.
-    If ``all`` is ``true`` then the sub assertions are checked for all occurences.
+    If ``all`` is ``true`` then the sub assertions are checked for all occurrences.
 
     Note that all other XML assertions can be expressed by this assertion (Galaxy
     also implements the other assertions by calling this one).
@@ -256,7 +256,7 @@ def assert_xml_element(
     # assert that path is in output (the specified number of times)
 
     xml = parse_xml_string(output)
-    asserts._util._assert_presence_number(
+    _assert_presence_number(
         xml,
         path,
         n,
@@ -268,7 +268,7 @@ def assert_xml_element(
         lambda x, p: len(x.findall(p)),
         "{expected} path '{text}' in xml",
         "{expected} {n}+-{delta} occurrences of path '{text}' in xml",
-        "{expected} that the number of occurences of path '{text}' in xml is in [{min}:{max}]",
+        "{expected} that the number of occurrences of path '{text}' in xml is in [{min}:{max}]",
     )
 
     # check sub-assertions

@@ -2,7 +2,7 @@ import logging
 import os
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ category_description = "Test 0310 for verifying the tool shed http interface to 
 """
 
 
-class TestHgWebFeatures(ShedTwillTestCase):
+class TestHgWebFeatures(ShedTestCase):
     """Test http mercurial interface."""
 
     def test_0000_initiate_users(self):

@@ -41,7 +41,7 @@ export async function fetchAllHistoriesSizeSummary(): Promise<ItemSizeSummary[]>
                     qv: ["false"],
                 },
             },
-        }
+        },
     );
 
     if (nonPurgedArchivedHistoriesError) {
@@ -58,7 +58,7 @@ export async function fetchAllHistoriesSizeSummary(): Promise<ItemSizeSummary[]>
 export async function fetchHistoryContentsSizeSummary(
     historyId: string,
     limit = 5000,
-    objectStoreId: string | null = null
+    objectStoreId: string | null = null,
 ) {
     const q = ["purged", "history_content_type"];
     const qv = ["false", "dataset"];
@@ -139,7 +139,6 @@ export async function undeleteDatasetById(datasetId: string): Promise<ItemSizeSu
     return data as unknown as ItemSizeSummary;
 }
 
-export async function purgeDatasetById(datasetId: string): Promise<PurgeableItemSizeSummary> {
-    const data = await purgeDataset(datasetId);
-    return data as unknown as PurgeableItemSizeSummary;
+export async function purgeDatasetById(datasetId: string): Promise<void> {
+    await purgeDataset(datasetId);
 }

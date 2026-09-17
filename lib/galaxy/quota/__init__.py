@@ -1,12 +1,12 @@
 """Galaxy Quotas"""
 
 import logging
-from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.sql import text
 
 import galaxy.util
+from galaxy.objectstore import is_user_object_store
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class QuotaAgent:  # metaclass=abc.ABCMeta
     the quota in other apps (LDAP maybe?) or via configuration files.
     """
 
-    def relabel_quota_for_dataset(self, dataset, from_label: Optional[str], to_label: Optional[str]):
+    def relabel_quota_for_dataset(self, dataset, from_label: str | None, to_label: str | None):
         """Update the quota source label for dataset and adjust relevant quotas.
 
         Subtract quota for labels from users using old label and quota for new label
@@ -33,10 +33,10 @@ class QuotaAgent:  # metaclass=abc.ABCMeta
         """
 
     # TODO: make abstractmethod after they work better with mypy
-    def get_quota(self, user, quota_source_label=None) -> Optional[int]:
+    def get_quota(self, user, quota_source_label=None) -> int | None:
         """Return quota in bytes or None if no quota is set."""
 
-    def get_quota_nice_size(self, user, quota_source_label=None) -> Optional[str]:
+    def get_quota_nice_size(self, user, quota_source_label=None) -> str | None:
         """Return quota as a human-readable string or 'unlimited' if no quota is set."""
         quota_bytes = self.get_quota(user, quota_source_label=quota_source_label)
         if quota_bytes is not None:
@@ -48,10 +48,10 @@ class QuotaAgent:  # metaclass=abc.ABCMeta
     # TODO: make abstractmethod after they work better with mypy
     def get_percent(
         self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None
-    ) -> Optional[int]:
+    ) -> int | None:
         """Return the percentage of any storage quota applicable to the user/transaction."""
 
-    def get_usage(self, trans=None, user=False, history=False, quota_source_label=None) -> Optional[float]:
+    def get_usage(self, trans=None, user=False, history=False, quota_source_label=None) -> float | None:
         if trans:
             user = trans.user
             history = trans.history
@@ -70,13 +70,8 @@ class QuotaAgent:  # metaclass=abc.ABCMeta
                     usage = quota_source_usage.disk_usage
         return usage
 
-    def is_over_quota(self, app, job, job_destination):
-        """Return True if the user or history is over quota for specified job.
-
-        job_destination unused currently but an important future application will
-        be admins and/or users dynamically specifying which object stores to use
-        and that will likely come in through the job destination.
-        """
+    def is_over_quota(self, quota_source_map, job):
+        """Return True if the user or history is over quota for specified job."""
 
 
 class NoQuotaAgent(QuotaAgent):
@@ -85,10 +80,10 @@ class NoQuotaAgent(QuotaAgent):
     def __init__(self):
         pass
 
-    def get_quota(self, user, quota_source_label=None) -> Optional[int]:
+    def get_quota(self, user, quota_source_label=None) -> int | None:
         return None
 
-    def relabel_quota_for_dataset(self, dataset, from_label: Optional[str], to_label: Optional[str]):
+    def relabel_quota_for_dataset(self, dataset, from_label: str | None, to_label: str | None):
         return None
 
     @property
@@ -97,10 +92,10 @@ class NoQuotaAgent(QuotaAgent):
 
     def get_percent(
         self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None
-    ) -> Optional[int]:
+    ) -> int | None:
         return None
 
-    def is_over_quota(self, app, job, job_destination):
+    def is_over_quota(self, quota_source_map, job):
         return False
 
 
@@ -111,7 +106,7 @@ class DatabaseQuotaAgent(QuotaAgent):
         self.model = model
         self.sa_session = model.context
 
-    def get_quota(self, user, quota_source_label=None) -> Optional[int]:
+    def get_quota(self, user, quota_source_label=None) -> int | None:
         """
         Calculated like so:
 
@@ -125,8 +120,7 @@ class DatabaseQuotaAgent(QuotaAgent):
         """
         if not user:
             return self._default_unregistered_quota(quota_source_label)
-        query = text(
-            """
+        query = text("""
 SELECT (
         COALESCE(MAX(CASE WHEN union_quota.operation = '='
                           THEN union_quota.bytes
@@ -171,10 +165,7 @@ FROM (
         AND group_quota.quota_source_label {label_cond}
         AND guser.id = :user_id
 ) as union_quota
-""".format(
-                label_cond="IS NULL" if quota_source_label is None else " = :label"
-            )
-        )
+""".format(label_cond="IS NULL" if quota_source_label is None else " = :label"))
         engine = self.sa_session.get_bind()
         with engine.connect() as conn:
             res = conn.execute(query, {"is_true": True, "user_id": user.id, "label": quota_source_label}).fetchone()
@@ -183,7 +174,7 @@ FROM (
             else:
                 return None
 
-    def relabel_quota_for_dataset(self, dataset, from_label: Optional[str], to_label: Optional[str]):
+    def relabel_quota_for_dataset(self, dataset, from_label: str | None, to_label: str | None):
         adjust = dataset.get_total_size()
         with_quota_affected_users = """WITH quota_affected_users AS
 (
@@ -279,16 +270,14 @@ ON CONFLICT
 
     def _default_quota(self, default_type, quota_source_label):
         label_condition = "IS NULL" if quota_source_label is None else "= :label"
-        query = text(
-            f"""
+        query = text(f"""
 SELECT bytes
 FROM quota as default_quota
 LEFT JOIN default_quota_association on default_quota.id = default_quota_association.quota_id
 WHERE default_quota_association.type = :default_type
     AND default_quota.deleted != :is_true
     AND default_quota.quota_source_label {label_condition}
-"""
-        )
+""")
         engine = self.sa_session.get_bind()
         with engine.connect() as conn:
             res = conn.execute(
@@ -328,7 +317,7 @@ WHERE default_quota_association.type = :default_type
 
     def get_percent(
         self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None
-    ) -> Optional[int]:
+    ) -> int | None:
         """
         Return the percentage of any storage quota applicable to the user/transaction.
         """
@@ -373,16 +362,12 @@ WHERE default_quota_association.type = :default_type
                 self.sa_session.add(gqa)
             self.sa_session.commit()
 
-    def is_over_quota(self, app, job, job_destination):
-        # Doesn't work because job.object_store_id until inside handler :_(
-        # quota_source_label = job.quota_source_label
-        if job_destination is not None:
-            object_store_id = job_destination.params.get("object_store_id", None)
-            object_store = app.object_store
-            quota_source_map = object_store.get_quota_source_map()
-            quota_source_label = quota_source_map.get_quota_source_info(object_store_id).label
-        else:
-            quota_source_label = None
+    def is_over_quota(self, quota_source_map, job):
+        if is_user_object_store(job.object_store_id):
+            return False  # User object stores are not subject to quotas
+
+        quota_source_label = quota_source_map.get_quota_source_info(job.object_store_id).label
+
         quota = self.get_quota(job.user, quota_source_label=quota_source_label)
         if quota is not None:
             try:

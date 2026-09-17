@@ -1,10 +1,10 @@
 import os
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 
-class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
+class TestUninstallingAndReinstallingRepositories(ShedTestCase):
     """Test uninstalling and reinstalling a repository with tool dependencies."""
 
     requires_galaxy = True
@@ -35,7 +35,7 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
                 "tool_data_table_conf",
             ]
             self.add_file_to_repository(repository, "freebayes/freebayes.xml", strings_displayed=strings_displayed)
-            strings_displayed = ["Upload a file named <b>sam_fa_indices.loc.sample"]
+            strings_displayed = ["Upload a file named sam_fa_indices.loc.sample"]
             self.add_file_to_repository(
                 repository, "freebayes/tool_data_table_conf.xml.sample", strings_displayed=strings_displayed
             )

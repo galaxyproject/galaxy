@@ -59,6 +59,9 @@ class MockToolbox:
         # Real tool box returns None of missing tool also
         return self.tools.get(tool_id, None)
 
+    def materialize_tool(self, tool, *, reason):
+        return tool
+
 
 def yaml_to_model(has_dict, id_offset=100):
     if isinstance(has_dict, str):

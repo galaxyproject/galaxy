@@ -3,10 +3,6 @@ API operations on Galaxy's object store.
 """
 
 import logging
-from typing import (
-    List,
-    Union,
-)
 
 from fastapi import (
     Body,
@@ -48,7 +44,7 @@ log = logging.getLogger(__name__)
 router = Router(tags=["object_stores"])
 
 ConcreteObjectStoreIdPathParam: str = Path(
-    ..., title="Concrete Object Store ID", description="The concrete object store ID."
+    ..., title="Concrete Object Store ID", description="The concrete object store ID.", pattern=r"^[\w-]+$"
 )
 
 UserObjectStoreIdPathParam: UUID4 = Path(
@@ -78,7 +74,7 @@ class FastAPIObjectStore:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         selectable: bool = SelectableQueryParam,
-    ) -> List[Union[ConcreteObjectStoreModel, UserConcreteObjectStoreModel]]:
+    ) -> list[ConcreteObjectStoreModel | UserConcreteObjectStoreModel]:
         if not selectable:
             raise RequestParameterInvalidException(
                 "The object store index query currently needs to be called with selectable=true"
@@ -126,7 +122,7 @@ class FastAPIObjectStore:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> List[UserConcreteObjectStoreModel]:
+    ) -> list[UserConcreteObjectStoreModel]:
         return self.object_store_instance_manager.index(trans)
 
     @router.get(

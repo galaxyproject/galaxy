@@ -1,14 +1,17 @@
 from abc import abstractmethod
 from enum import Enum
 from typing import (
-    Dict,
-    Optional,
-    Tuple,
+    Any,
+    TYPE_CHECKING,
 )
 
 from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.odict import odict
 from .parser import ensure_tool_conf_item
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesHistoryContext
+    from galaxy.tool_util.abstract_tool import AbstractTool
 
 
 class panel_item_types(str, Enum):
@@ -22,7 +25,7 @@ class HasPanelItems:
     """ """
 
     @abstractmethod
-    def panel_items(self):
+    def panel_items(self) -> "ToolPanelElements":
         """Return an ordered dictionary-like object describing tool panel
         items (such as workflows, tools, labels, and sections).
         """
@@ -97,7 +100,9 @@ class ToolSection(UsesDictVisibleKeys, HasPanelItems):
 
         return copy
 
-    def to_dict(self, trans, link_details=False, tool_help=False, toolbox=None, only_ids=False):
+    def to_dict(
+        self, trans: "ProvidesHistoryContext", link_details=False, tool_help=False, toolbox=None, only_ids=False
+    ):
         """Return a dict that includes section's attributes.
 
         if `only_ids` is `True`, we store only the ids of the section's tools in `section.tools`
@@ -127,7 +132,7 @@ class ToolSection(UsesDictVisibleKeys, HasPanelItems):
 
         return section_dict
 
-    def panel_items(self):
+    def panel_items(self) -> "ToolPanelElements":
         return self.elems
 
 
@@ -154,22 +159,25 @@ class ToolSectionLabel(UsesDictVisibleKeys):
         return super()._dictify_view_keys()
 
 
-class ToolPanelElements(odict, HasPanelItems):
+# TODO: replace Any with a Union of panel element types
+class ToolPanelElements(odict[str, Any], HasPanelItems):
     """Represents an ordered dictionary of tool entries - abstraction
     used both by tool panel itself (normal and integrated) and its sections.
     """
 
-    _section_by_tool: Dict[str, Tuple[str, str]] = {}
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._section_by_tool: dict[str, tuple[str, str]] = {}
 
     def record_section_for_tool_id(self, tool_id: str, key: str, val: str):
         self._section_by_tool[tool_id] = (key, val)
 
-    def get_section_for_tool_id(self, tool_id: str) -> Tuple[Optional[str], Optional[str]]:
+    def get_section_for_tool_id(self, tool_id: str) -> tuple[str, str] | tuple[None, None]:
         if tool_id in self._section_by_tool:
             return self._section_by_tool[tool_id]
         return (None, None)
 
-    def replace_tool_for_id(self, tool_id: str, new_tool) -> None:
+    def replace_tool_for_id(self, tool_id: str, new_tool: "AbstractTool") -> None:
         tool_key = f"tool_{tool_id}"
         for key, val in self.items():
             if key == tool_key:
@@ -181,15 +189,14 @@ class ToolPanelElements(odict, HasPanelItems):
                     break
 
     def get_or_create_section(
-        self, sec_id: str, sec_nm: str, description: Optional[str] = None, links: Optional[Dict[str, str]] = None
+        self, sec_id: str, sec_nm: str, description: str | None = None, links: dict[str, str] | None = None
     ) -> ToolSection:
-        if sec_id not in self:
+        section = self.get(sec_id)
+        if not isinstance(section, ToolSection):
             section = ToolSection(
                 {"id": sec_id, "name": sec_nm, "description": description, "version": "", "links": links}
             )
             self[sec_id] = section
-        else:
-            section = self[sec_id]
         return section
 
     def remove_tool(self, tool_id: str) -> None:
@@ -203,13 +210,21 @@ class ToolPanelElements(odict, HasPanelItems):
                     del self[key].elems[tool_key]
                     break
 
+    def remove_unresolved_tools(self) -> None:
+        """Discard tool placeholders that no configuration walk resolved."""
+        for key, item in list(self.items()):
+            if isinstance(item, ToolSection):
+                item.elems.remove_unresolved_tools()
+            elif key.startswith("tool_") and item is None:
+                del self[key]
+
     def update_or_append(self, index: int, key: str, value) -> None:
         if key in self or index is None:
             self[key] = value
         else:
             self.insert(index, key, value)
 
-    def get_label(self, label: str) -> Optional[ToolSection]:
+    def get_label(self, label: str) -> ToolSection | None:
         for element in self.values():
             if isinstance(element, ToolSection) and element.name == label:
                 return element
@@ -226,7 +241,7 @@ class ToolPanelElements(odict, HasPanelItems):
         del self[previous_key]
         self.insert(index, new_key, tool)
 
-    def index_of_tool_id(self, tool_id: str) -> Optional[int]:
+    def index_of_tool_id(self, tool_id: str) -> int | None:
         query_key = f"tool_{tool_id}"
         for index, target_key in enumerate(self.keys()):
             if query_key == target_key:
@@ -260,7 +275,7 @@ class ToolPanelElements(odict, HasPanelItems):
     def append_section(self, key: str, section: ToolSection) -> None:
         self[key] = section
 
-    def panel_items(self):
+    def panel_items(self) -> "ToolPanelElements":
         return self
 
     def walk_sections(self):
@@ -268,7 +283,7 @@ class ToolPanelElements(odict, HasPanelItems):
             if isinstance(item, ToolSection):
                 yield (key, item)
 
-    def closest_section(self, target_section_id: Optional[str], target_section_name: Optional[str]):
+    def closest_section(self, target_section_id: str | None, target_section_name: str | None):
         for section_id, section in self.walk_sections():
             if section_id == target_section_id:
                 return section
@@ -294,7 +309,7 @@ class ToolPanelElements(odict, HasPanelItems):
         the_copy.update(self)
         return the_copy
 
-    def has_item_recursive(self, item):
+    def has_item_recursive(self, item) -> bool:
         """Check panel and section elements for supplied item."""
         for value in self.values():
             if value == item:

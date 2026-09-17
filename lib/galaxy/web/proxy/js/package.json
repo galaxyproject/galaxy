@@ -4,7 +4,7 @@
   "description": "A dynamic reverse proxy for use within Galaxy",
   "main": "index.js",
   "author": "John Chilton",
-  "license": "AFL-3.0",
+  "license": "MIT",
   "readmeFilename": "README.md",
   "repository": {
     "type": "mercurial",

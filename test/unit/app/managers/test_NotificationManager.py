@@ -4,12 +4,12 @@ from datetime import (
 )
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Set,
+    cast,
 )
-from unittest.mock import patch
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
 import pytest
 
@@ -20,6 +20,7 @@ from galaxy.managers.notification import (
     NotificationRecipientResolver,
 )
 from galaxy.model import (
+    DatasetStorageOperationRun,
     Group,
     Role,
     User,
@@ -39,6 +40,11 @@ from galaxy.schema.notifications import (
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
 )
+from galaxy.schema.storage_operations import (
+    StorageOperationExecutionResult,
+    StorageOperationRunState,
+)
+from galaxy.util import now
 from .base import BaseTestCase
 
 
@@ -48,7 +54,7 @@ class NotificationsBaseTestCase(BaseTestCase):
         user = self.user_manager.create(**user_data)
         return user
 
-    def _create_test_users(self, num_users: int = 1) -> List[User]:
+    def _create_test_users(self, num_users: int = 1) -> list[User]:
         users = [self._create_test_user(f"username{num:02}") for num in range(num_users)]
         return users
 
@@ -71,7 +77,7 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
             },
         }
 
-    def _send_message_notification_to_users(self, users: List[User], notification: Optional[Dict[str, Any]] = None):
+    def _send_message_notification_to_users(self, users: list[User], notification: dict[str, Any] | None = None):
         data = self._default_test_notification_data()
         if notification:
             data.update(notification)
@@ -87,10 +93,10 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
         created_notification, notifications_sent = self.notification_manager.send_notification_to_recipients(request)
         return created_notification, notifications_sent
 
-    def _has_expired(self, expiration_time: Optional[datetime]) -> bool:
-        return expiration_time < datetime.utcnow() if expiration_time else False
+    def _has_expired(self, expiration_time: datetime | None) -> bool:
+        return expiration_time < now() if expiration_time else False
 
-    def _assert_notification_expected(self, actual_notification: Any, expected_notification: Dict[str, Any]):
+    def _assert_notification_expected(self, actual_notification: Any, expected_notification: dict[str, Any]):
         assert actual_notification
         assert actual_notification.id
         assert actual_notification.source == expected_notification["source"]
@@ -146,13 +152,13 @@ class TestBroadcastNotifications(NotificationManagerBaseTestCase):
         assert actual_notification.id == created_notification.id
 
     def test_get_all_broadcasted_notifications(self):
-        now = datetime.utcnow()
-        next_week = now + timedelta(days=7)
-        next_month = now + timedelta(days=30)
+        current_time = now()
+        next_week = current_time + timedelta(days=7)
+        next_month = current_time + timedelta(days=30)
 
         notification_data = self._default_broadcast_notification_data()
         notification_data["content"]["subject"] = "Recent Notification"
-        notification_data["publication_time"] = now
+        notification_data["publication_time"] = current_time
         self._send_broadcast_notification(notification_data)
 
         notification_data = self._default_broadcast_notification_data()
@@ -179,18 +185,18 @@ class TestBroadcastNotifications(NotificationManagerBaseTestCase):
         assert notifications[0].content["subject"] == "Scheduled Next Month Notification"
 
     def test_update_broadcasted_notification(self):
-        next_month = datetime.utcnow() + timedelta(days=30)
+        next_month = now() + timedelta(days=30)
         notification_data = self._default_broadcast_notification_data()
         notification_data["content"]["subject"] = "Old Scheduled Notification"
         notification_data["publication_time"] = next_month
         actual_notification = self._send_broadcast_notification(notification_data)
 
-        now = datetime.utcnow()
+        current_time = now()
         expected_content = BroadcastNotificationContent(subject="Updated Notification", message="Updated Message")
         update_request = NotificationBroadcastUpdateRequest(
             source="updated_source",
             variant=NotificationVariant.warning,
-            publication_time=now,
+            publication_time=current_time,
             content=expected_content,
         )
         updated_count = self.notification_manager.update_broadcasted_notification(
@@ -206,7 +212,7 @@ class TestBroadcastNotifications(NotificationManagerBaseTestCase):
         assert content["message"] == expected_content.message
 
     def test_cleanup_expired_broadcast_notifications(self):
-        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+        one_hour_ago = now() - timedelta(hours=1)
         notification_data = self._default_broadcast_notification_data()
         notification_data["expiration_time"] = one_hour_ago
         actual_notification = self._send_broadcast_notification(notification_data)
@@ -236,7 +242,7 @@ class TestBroadcastNotifications(NotificationManagerBaseTestCase):
             },
         }
 
-    def _send_broadcast_notification(self, broadcast_notification_data: Dict[str, Any]):
+    def _send_broadcast_notification(self, broadcast_notification_data: dict[str, Any]):
         request = BroadcastNotificationCreateRequest(**broadcast_notification_data)
         created_notification = self.notification_manager.create_broadcast_notification(request)
         return created_notification
@@ -254,6 +260,37 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
 
         assert actual_notifications_sent == num_target_users
         self._assert_notification_expected(actual_notification, expected_notification)
+
+    def test_send_storage_operation_notification(self):
+        user = self._create_test_user()
+
+        run = DatasetStorageOperationRun(
+            id=7,
+            history_id=11,
+            mode="move",
+            total_count=3,
+            succeeded_count=3,
+            failed_count=0,
+            skipped_count=0,
+        )
+
+        notification, sent_count = self.notification_manager.send_storage_operation_notification(
+            user_id=user.id,
+            run=run,
+            execution_result=StorageOperationExecutionResult(
+                state=StorageOperationRunState.completed,
+                message="Bulk move completed.",
+            ),
+            encode_id=lambda value: f"encoded-{value}",
+        )
+
+        assert sent_count == 1
+        assert notification is not None
+        assert notification.category == PersonalNotificationCategory.storage_operation
+        content = cast(dict[str, Any], notification.content)
+        assert content["state"] == StorageOperationRunState.completed.value
+        assert content["history_id"] == "encoded-11"
+        assert content["run_id"] == "encoded-7"
 
     def test_get_user_notifications(self):
         user = self._create_test_user()
@@ -290,7 +327,7 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
 
     def test_scheduled_notifications(self):
         user = self._create_test_user()
-        tomorrow = datetime.utcnow() + timedelta(hours=24)
+        tomorrow = now() + timedelta(hours=24)
         expected_notification = self._default_test_notification_data()
         expected_notification["source"] = "test_scheduled"
         expected_notification["publication_time"] = tomorrow
@@ -347,8 +384,10 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
 
     def test_cleanup_expired_notifications(self):
         user = self._create_test_user()
-        now = datetime.utcnow()
-        notification, _ = self._send_message_notification_to_users([user], notification={"expiration_time": now})
+        current_time = now()
+        notification, _ = self._send_message_notification_to_users(
+            [user], notification={"expiration_time": current_time}
+        )
         user_notification = self.notification_manager.get_user_notification(user, notification.id, active_only=False)
         assert user_notification
         assert self._has_expired(user_notification.expiration_time) is True
@@ -398,9 +437,27 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         user_notifications = self.notification_manager.get_user_notifications(user)
         assert len(user_notifications) == 1
 
+    def test_send_via_channels_uses_all_channel_fields(self):
+        user = self._create_test_user()
+        notification_data = NotificationCreateData(**self._default_test_notification_data())
+        notification = self.notification_manager._create_notification_model(notification_data)
+
+        push_plugin = MagicMock()
+        email_plugin = MagicMock()
+        self.notification_manager.channel_plugins = {
+            "push": push_plugin,
+            "email": email_plugin,
+        }
+
+        # `email` remains at its default value (True) and should still be considered.
+        channel_settings = NotificationChannelSettings(push=False)
+        self.notification_manager._send_via_channels(notification, user, channel_settings)
+
+        push_plugin.send.assert_not_called()
+        email_plugin.send.assert_called_once_with(notification, user)
+
 
 class TestUserNotificationsWithTasks(NotificationManagerBaseTestCaseWithTasks):
-
     def test_urgent_notifications_via_email_channel(self):
         user = self._create_test_user()
         # Disable email channel only
@@ -500,7 +557,7 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
             role_ids=[role3.id],
         )
 
-        expected_user_ids: Set[int] = {
+        expected_user_ids: set[int] = {
             users[9].id,  # From direct recipients.user_ids
             users[5].id,  # From group3.user_ids
             users[4].id,  # -From role2.user_ids
@@ -515,12 +572,12 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
 
         return recipients, expected_user_ids
 
-    def _assert_resolved_match_expected_users(self, resolved_users: List[User], expected_user_ids: Set[int]):
+    def _assert_resolved_match_expected_users(self, resolved_users: list[User], expected_user_ids: set[int]):
         assert len(resolved_users) == len(expected_user_ids)
         for user in resolved_users:
             assert user.id in expected_user_ids
 
-    def _create_test_group(self, name: str, users: List[User], roles: List[Role]):
+    def _create_test_group(self, name: str, users: list[User], roles: list[Role]):
         sa_session = self.trans.sa_session
         group = Group(name=name)
         sa_session.add(group)
@@ -529,7 +586,7 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
         self.trans.app.security_agent.set_group_user_and_role_associations(group, user_ids=user_ids, role_ids=role_ids)
         return group
 
-    def _create_test_role(self, name: str, users: List[User], groups: List[Group]):
+    def _create_test_role(self, name: str, users: list[User], groups: list[Group]):
         sa_session = self.trans.sa_session
         role = Role(name=name)
         sa_session.add(role)

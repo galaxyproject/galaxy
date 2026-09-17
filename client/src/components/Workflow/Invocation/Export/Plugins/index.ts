@@ -1,6 +1,6 @@
-import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
-import { type ExportParams } from "@/components/Common/models/exportRecordModel";
+import type { ExportParams } from "@/components/Common/models/exportRecordModel";
 
 import { BIO_COMPUTE_OBJ_EXPORT_PLUGIN } from "./BioComputeObject/BioComputeObjectExportPlugin";
 import { DEFAULT_FILE_EXPORT_PLUGIN } from "./DefaultFileExportPlugin";
@@ -23,11 +23,11 @@ export function getInvocationExportPluginByType(pluginType: InvocationExportPlug
 }
 
 /**
- * Defines a UI plugin that can export a workflow invocation to a particular format.
+ * Generic base interface for export plugins that can be used across different export wizards.
  */
-export interface InvocationExportPlugin {
+export interface ExportPlugin {
     /** The unique identifier for the plugin. */
-    id: InvocationExportPluginType;
+    id: string;
     /** The title of the plugin. */
     title: string;
     /** The image URL to display for the plugin. Usually a logo. */
@@ -36,8 +36,16 @@ export interface InvocationExportPlugin {
     url?: string;
     /** A markdown description of the plugin. */
     markdownDescription: string;
-    /** The parameters to use when exporting the invocation. */
+    /** The parameters to use when exporting. */
     exportParams: ExportParams;
+}
+
+/**
+ * Defines a UI plugin that can export a workflow invocation to a particular format.
+ */
+export interface InvocationExportPlugin extends ExportPlugin {
+    /** The unique identifier for the plugin. */
+    id: InvocationExportPluginType;
 }
 
 /**

@@ -1,9 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
+import type { AnyHistory } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -27,6 +29,7 @@ const SAMPLE_RUN_COUNT = 100;
 const TEST_HISTORY_ID = "test-history-id";
 const TEST_HISTORY = {
     id: TEST_HISTORY_ID,
+    genome_build: "?",
     name: "fake-history-name",
 };
 
@@ -39,13 +42,13 @@ const SELECTORS = {
 };
 
 // Mock the workflow store to return the sample workflow
-jest.mock("@/stores/workflowStore", () => {
-    const originalModule = jest.requireActual("@/stores/workflowStore");
+vi.mock("@/stores/workflowStore", async () => {
+    const originalModule = (await vi.importActual("@/stores/workflowStore")) as any;
     return {
         ...originalModule,
         useWorkflowStore: () => ({
             ...originalModule.useWorkflowStore(),
-            getStoredWorkflowByInstanceId: jest.fn().mockImplementation((id: string) => {
+            getStoredWorkflowByInstanceId: vi.fn().mockImplementation((id: string) => {
                 if (id === OTHER_USER_WORKFLOW_ID) {
                     return { ...SAMPLE_WORKFLOW, id: OTHER_USER_WORKFLOW_ID, published: true };
                 }
@@ -54,18 +57,6 @@ jest.mock("@/stores/workflowStore", () => {
         }),
     };
 });
-
-jest.mock("@/stores/historyStore"),
-    () => {
-        const originalModule = jest.requireActual("@/stores/historyStore");
-        return {
-            ...originalModule,
-            useHistoryStore: () => ({
-                ...originalModule.useHistoryStore(),
-                getHistoryById: jest.fn().mockImplementation(() => TEST_HISTORY),
-            }),
-        };
-    };
 
 const localVue = getLocalVue();
 const { server, http } = useServerMock();
@@ -80,29 +71,30 @@ async function mountWorkflowAnnotation(version: "run_form" | "invocation", ownsW
     server.use(
         http.get("/api/histories/{history_id}", ({ response }) => {
             return response(200).json(TEST_HISTORY);
-        })
+        }),
     );
     server.use(
         http.get("/api/workflows/{workflow_id}/counts", ({ response }) => {
             return response(200).json({ scheduled: SAMPLE_RUN_COUNT });
-        })
+        }),
     );
 
     const wrapper = mount(WorkflowAnnotation as object, {
         propsData: {
             workflowId: ownsWorkflow ? SAMPLE_WORKFLOW.id : OTHER_USER_WORKFLOW_ID,
             historyId: TEST_HISTORY_ID,
-            invocationUpdateTime: version === "invocation" ? INVOCATION_TIME : undefined,
+            invocationCreateTime: version === "invocation" ? INVOCATION_TIME : undefined,
             showDetails: version === "run_form",
         },
         localVue,
-        pinia: createTestingPinia(),
+        pinia: createTestingPinia({ createSpy: vi.fn }),
         stubs: {
             FontAwesomeIcon: true,
         },
     });
 
     const historyStore = useHistoryStore();
+    historyStore.storedHistories = { [TEST_HISTORY_ID]: TEST_HISTORY as AnyHistory };
     historyStore.setCurrentHistoryId(TEST_HISTORY_ID);
 
     const userStore = useUserStore();
@@ -127,7 +119,7 @@ describe("WorkflowAnnotation renders", () => {
             if (version === "run_form") {
                 expect(wrapper.find(SELECTORS.SWITCH_TO_HISTORY_LINK).exists()).toBe(false);
             } else {
-                expect(wrapper.find(SELECTORS.SWITCH_TO_HISTORY_LINK).text()).toBe(TEST_HISTORY.name);
+                expect(wrapper.find(SELECTORS.SWITCH_TO_HISTORY_LINK).text()).toContain(TEST_HISTORY.name);
             }
 
             // Since this is the user's own workflow, the indicators link

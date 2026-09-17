@@ -8,9 +8,10 @@ import { reverse } from "lodash";
 import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
-import { type HistoryItemSummary } from "@/api";
+import type { HistoryItemSummary } from "@/api";
+import { getContentItemState, type State } from "@/components/History/Content/model/states";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
-import { mergeArray } from "@/store/historyStore/model/utilities";
+import { mergeArray } from "@/stores/utilities/history.utilities";
 import { ActionSkippedError, LastQueue } from "@/utils/lastQueue";
 import { urlData } from "@/utils/url";
 
@@ -34,7 +35,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
         return (historyId: string, filterText: string) => {
             const itemArray = items.value[historyId] || [];
             const filters = HistoryFilters.getFiltersForText(filterText).filter(
-                (filter: [string, string]) => !filter[0].includes("related")
+                (filter: [string, string]) => !filter[0].includes("related"),
             );
             const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
             const filtered = itemArray.filter((item: ExtendedHistoryItem) => {
@@ -57,6 +58,19 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
                 return true;
             });
             return reverse(filtered);
+        };
+    });
+
+    const getStatesForHids = computed(() => {
+        return (historyId: string, hids: number[]): Record<string, State> => {
+            const itemArray = items.value[historyId] || [];
+            const states: Record<string, State> = {};
+            itemArray.forEach((item: ExtendedHistoryItem) => {
+                if (hids.includes(item.hid)) {
+                    states[item.hid] = getContentItemState(item);
+                }
+            });
+            return states;
         };
     });
 
@@ -103,6 +117,11 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
         lastUpdateTime,
         isWatching,
         getHistoryItems,
+        /**
+         * Returns history item states for the provided `historyId` and a list of `hids`.
+         * Is reactive to updates to the items in this store.
+         */
+        getStatesForHids,
         fetchHistoryItems,
         saveHistoryItems,
         setLastUpdateTime,

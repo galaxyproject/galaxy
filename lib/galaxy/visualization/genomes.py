@@ -3,16 +3,16 @@ import os
 import re
 import sys
 from json import loads
-from typing import (
-    Dict,
-    Optional,
-)
 
 from bx.seq.twobit import TwoBitFile
 
 from galaxy.exceptions import (
     ObjectNotFound,
     ReferenceDataError,
+)
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
 )
 from galaxy.model import (
     HistoryDatasetAssociation,
@@ -204,7 +204,7 @@ class Genomes:
     def __init__(self, app: StructuredApp):
         self.app = app
         # Create list of genomes from app.genome_builds
-        self.genomes: Dict[str, Genome] = {}
+        self.genomes: dict[str, Genome] = {}
         # Store internal versions of data tables for twobit and __dbkey__
         self._table_versions = {"twobit": None, "__dbkeys__": None}
         self.reload_genomes()
@@ -262,7 +262,7 @@ class Genomes:
             rval = self.genomes[dbkey]
         return rval
 
-    def get_dbkeys(self, user: Optional[User], chrom_info=False):
+    def get_dbkeys(self, user: User | None, chrom_info=False):
         """Returns all known dbkeys. If chrom_info is True, only dbkeys with
         chromosome lengths are returned."""
         self.check_and_reload()
@@ -290,7 +290,7 @@ class Genomes:
 
         return dbkeys
 
-    def chroms(self, trans, dbkey=None, num=None, chrom=None, low=None):
+    def chroms(self, trans: ProvidesHistoryContext, dbkey=None, num=None, chrom=None, low=None):
         """
         Returns a naturally sorted list of chroms/contigs for a given dbkey.
         Use either chrom or low to specify the starting chrom in the return list.
@@ -368,7 +368,7 @@ class Genomes:
 
         return False
 
-    def reference(self, trans, dbkey, chrom, low, high):
+    def reference(self, trans: ProvidesUserContext, dbkey, chrom, low, high):
         """
         Return reference data for a build.
         """
@@ -377,6 +377,7 @@ class Genomes:
         dbkey_owner, dbkey = decode_dbkey(dbkey)
         if dbkey_owner:
             dbkey_user = get_user_by_username(trans.sa_session, dbkey_owner)
+            assert dbkey_user is not None
         else:
             dbkey_user = trans.user
 

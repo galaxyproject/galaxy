@@ -1,11 +1,16 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
-import GenericElement from "./GenericElement";
+import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 
-jest.mock("components/History/model/queries");
+import GenericElement from "./GenericElement.vue";
+
+vi.mock("components/History/model/queries");
+
+setupSelectableMock();
 
 const localVue = getLocalVue();
 localVue.use(VueRouter);
@@ -15,6 +20,8 @@ describe("GenericElement", () => {
     let wrapper;
 
     beforeEach(() => {
+        suppressLucideVue2Deprecation();
+
         wrapper = mount(GenericElement, {
             propsData: {
                 dsc: {
@@ -61,7 +68,7 @@ describe("GenericElement", () => {
             },
             localVue,
             router,
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
         });
     });
 

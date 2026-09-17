@@ -1,15 +1,11 @@
 <script setup lang="ts">
-import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BTab, BTabs } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import type { HDASummary } from "@/api";
-import type { CompositeFileInfo } from "@/api/datatypes";
-import { AUTO_EXTENSION, getUploadDatatypes } from "@/components/Upload/utils";
-import { useConfig } from "@/composables/config";
-import { useUserStore } from "@/stores/userStore";
+import { COLLECTION_TYPE_TO_LABEL } from "@/components/Collections/common/buildCollectionModal";
+import type { UploadModalConfig } from "@/components/Panels/Upload/uploadModalTypes";
 import localize from "@/utils/localization";
 
 import CollectionCreatorFooterButtons from "./CollectionCreatorFooterButtons.vue";
@@ -18,20 +14,13 @@ import CollectionCreatorNoItemsMessage from "./CollectionCreatorNoItemsMessage.v
 import CollectionCreatorShowExtensions from "./CollectionCreatorShowExtensions.vue";
 import CollectionCreatorSourceOptions from "./CollectionCreatorSourceOptions.vue";
 import CollectionNameInput from "./CollectionNameInput.vue";
-import DefaultBox from "@/components/Upload/DefaultBox.vue";
+import GTab from "@/components/BaseComponents/GTab.vue";
+import GTabs from "@/components/BaseComponents/GTabs.vue";
+import UploadMethodViewInline from "@/components/Panels/Upload/UploadMethodViewInline.vue";
 
 const Tabs = {
     create: 0,
     upload: 1,
-};
-
-type ExtensionDetails = {
-    id: string;
-    text: string;
-    description: string | null;
-    description_url: string | null;
-    composite_files?: CompositeFileInfo[] | null;
-    upload_warning?: string | null;
 };
 
 interface Props {
@@ -45,6 +34,9 @@ interface Props {
     noItems?: boolean;
     collectionType?: string;
     showUpload: boolean;
+    showButtons?: boolean;
+    collectionName: string;
+    mode: "wizard" | "modal";
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -53,9 +45,12 @@ const props = withDefaults(defineProps<Props>(), {
     extensionsToggle: false,
     showUpload: true,
     collectionType: undefined,
+    showButtons: true,
+    mode: "modal",
 });
 
 const emit = defineEmits<{
+    (e: "on-update-collection-name", name: string): void;
     (e: "remove-extensions-toggle"): void;
     (e: "clicked-create", value: string): void;
     (e: "onUpdateHideSourceItems", value: boolean): void;
@@ -64,61 +59,29 @@ const emit = defineEmits<{
 }>();
 
 const currentTab = ref(Tabs.create);
-const collectionName = ref(props.suggestedName);
 const localHideSourceItems = ref(props.hideSourceItems);
-const listExtensions = ref<ExtensionDetails[]>([]);
-const extensionsSet = ref(false);
+const name = ref(props.collectionName);
+
+const uploadConfig = computed<UploadModalConfig>(() => ({
+    allowCollections: false,
+    formats: props.extensions,
+    hideTips: true,
+    targetHistoryId: props.historyId,
+}));
 
 const validInput = computed(() => {
-    return collectionName.value.length > 0;
+    return props.collectionName.length > 0;
 });
 
-// If there are props.extensions, filter the list of extensions to only include those
-const validExtensions = computed(() => {
-    return listExtensions.value.filter((ext) => props.extensions?.includes(ext.id));
-});
+const defaultWhatIsBeingCreated = "collection";
 
-// Upload properties
-const { config, isConfigLoaded } = useConfig();
-
-const { currentUser } = storeToRefs(useUserStore());
-
-const configOptions = computed(() =>
-    isConfigLoaded.value
-        ? {
-              chunkUploadSize: config.value.chunk_upload_size,
-              fileSourcesConfigured: config.value.file_sources_configured,
-              ftpUploadSite: config.value.ftp_upload_site,
-              defaultDbKey: config.value.default_genome || "",
-              defaultExtension: config.value.default_extension || "",
-          }
-        : {}
-);
-
-const ftpUploadSite = computed(() =>
-    currentUser.value && "id" in currentUser.value ? configOptions.value.ftpUploadSite : null
-);
-
-const defaultExtension = computed(() => {
-    if (!configOptions.value || !extensionsSet.value) {
-        return "auto";
-    } else if (!props.extensions?.length) {
-        return configOptions.value.defaultExtension || "auto";
-    } else {
-        return props.extensions[0];
-    }
-});
-
+/** Plain language for what is being created */
 const shortWhatIsBeingCreated = computed<string>(() => {
-    // plain language for what is being created
-    if (props.collectionType === "list") {
-        return "list";
-    } else if (props.collectionType === "list:paired") {
-        return "list of pairs";
-    } else if (props.collectionType == "paired") {
-        return "dataset pair";
+    const collectionType: string | undefined = props.collectionType;
+    if (collectionType && collectionType in COLLECTION_TYPE_TO_LABEL) {
+        return COLLECTION_TYPE_TO_LABEL[collectionType] as string;
     } else {
-        return "collection";
+        return defaultWhatIsBeingCreated;
     }
 });
 
@@ -126,6 +89,13 @@ function addUploadedFiles(value: HDASummary[]) {
     // TODO: We really need to wait for each of these items to get `state = 'ok'`
     //       before we can add them to the collection.
     emit("add-uploaded-files", value);
+}
+
+function onUploaded(datasets: any[]) {
+    if (datasets.length > 0) {
+        addUploadedFiles(datasets as unknown as HDASummary[]);
+        currentTab.value = Tabs.create;
+    }
 }
 
 function cancelCreate() {
@@ -136,18 +106,23 @@ function removeExtensionsToggle() {
     emit("remove-extensions-toggle");
 }
 
-async function loadExtensions() {
-    listExtensions.value = await getUploadDatatypes(false, AUTO_EXTENSION);
-    extensionsSet.value = true;
+function updateName(newName: string) {
+    name.value = newName;
+    emit("on-update-collection-name", newName);
 }
-
-loadExtensions();
 
 watch(
     () => localHideSourceItems.value,
     () => {
         emit("onUpdateHideSourceItems", localHideSourceItems.value);
-    }
+    },
+);
+
+watch(
+    () => props.collectionName,
+    () => {
+        name.value = props.collectionName;
+    },
 );
 </script>
 
@@ -158,7 +133,7 @@ watch(
                 <CollectionCreatorNoItemsMessage @click-upload="currentTab = Tabs.upload" />
             </div>
             <div v-else>
-                <CollectionCreatorHelpHeader>
+                <CollectionCreatorHelpHeader :mode="mode">
                     <slot name="help-content"></slot>
                 </CollectionCreatorHelpHeader>
 
@@ -177,12 +152,14 @@ watch(
                                 :extensions-toggle="extensionsToggle"
                                 @remove-extensions-toggle="removeExtensionsToggle" />
                             <CollectionNameInput
-                                v-model="collectionName"
-                                :short-what-is-being-created="shortWhatIsBeingCreated" />
+                                :value="name"
+                                :short-what-is-being-created="shortWhatIsBeingCreated"
+                                @input="updateName" />
                         </div>
                     </div>
 
                     <CollectionCreatorFooterButtons
+                        v-if="showButtons"
                         :short-what-is-being-created="shortWhatIsBeingCreated"
                         :valid-input="validInput"
                         @clicked-cancel="cancelCreate"
@@ -190,13 +167,16 @@ watch(
                 </div>
             </div>
         </span>
-        <BTabs v-else v-model="currentTab" fill justified>
-            <BTab class="collection-creator" :title="localize('Create Collection')">
+        <GTabs v-else v-model="currentTab" fill justified>
+            <GTab
+                class="collection-creator"
+                :title="localize('Create Collection')"
+                :title-link-attributes="{ 'data-description': 'collection create tab build' }">
                 <div v-if="props.noItems">
                     <CollectionCreatorNoItemsMessage @click-upload="currentTab = Tabs.upload" />
                 </div>
                 <div v-else>
-                    <CollectionCreatorHelpHeader>
+                    <CollectionCreatorHelpHeader :mode="mode">
                         <slot name="help-content"></slot>
                     </CollectionCreatorHelpHeader>
 
@@ -214,58 +194,54 @@ watch(
                                     :render-extensions-toggle="renderExtensionsToggle"
                                     :extensions-toggle="extensionsToggle" />
                                 <CollectionNameInput
-                                    v-model="collectionName"
-                                    :short-what-is-being-created="shortWhatIsBeingCreated" />
+                                    :value="collectionName"
+                                    :short-what-is-being-created="shortWhatIsBeingCreated"
+                                    @input="updateName" />
                             </div>
                         </div>
 
                         <CollectionCreatorFooterButtons
+                            v-if="showButtons"
                             :short-what-is-being-created="shortWhatIsBeingCreated"
                             :valid-input="validInput"
                             @clicked-cancel="cancelCreate"
                             @clicked-create="emit('clicked-create', collectionName)" />
                     </div>
                 </div>
-            </BTab>
-            <BTab>
+            </GTab>
+            <GTab :title-link-attributes="{ 'data-description': 'collection create tab upload' }">
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faUpload" fixed-width />
                     <span>{{ localize("Upload Files to Add to Collection") }}</span>
                 </template>
-                <DefaultBox
-                    v-if="configOptions && extensionsSet"
-                    :chunk-upload-size="configOptions.chunkUploadSize"
-                    :default-db-key="configOptions.defaultDbKey"
-                    :default-extension="defaultExtension"
-                    :effective-extensions="props.extensions?.length ? validExtensions : listExtensions"
-                    :file-sources-configured="configOptions.fileSourcesConfigured"
-                    :ftp-upload-site="ftpUploadSite"
-                    :has-callback="false"
-                    :history-id="historyId"
-                    :list-db-keys="[]"
-                    disable-footer
-                    emit-uploaded
-                    @uploaded="addUploadedFiles"
-                    @dismiss="currentTab = Tabs.create">
-                    <template v-slot:footer>
+                <div class="p-3">
+                    <UploadMethodViewInline :config="uploadConfig" @uploaded="onUploaded" />
+                    <div class="mt-2">
                         <CollectionCreatorShowExtensions :extensions="extensions" upload />
-                    </template>
-                    <template v-slot:emit-btn-txt>
-                        <FontAwesomeIcon :icon="faPlus" fixed-width />
-                        {{ localize("Add Uploaded") }}
-                    </template>
-                </DefaultBox>
-            </BTab>
-        </BTabs>
+                    </div>
+                </div>
+            </GTab>
+        </GTabs>
     </span>
 </template>
 
 <style lang="scss">
 $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
-@import "~@fortawesome/fontawesome-free/scss/_variables";
-@import "~@fortawesome/fontawesome-free/scss/solid";
-@import "~@fortawesome/fontawesome-free/scss/fontawesome";
-@import "~@fortawesome/fontawesome-free/scss/brands";
+@import "@fortawesome/fontawesome-free/scss/_variables";
+@import "@fortawesome/fontawesome-free/scss/solid";
+@import "@fortawesome/fontawesome-free/scss/fontawesome";
+@import "@fortawesome/fontawesome-free/scss/brands";
+
+// Outside the modal - we need to set a max width on the help so ellipses display
+// doesn't cause it to grow without bound. Would greater appreciate a better workaround.
+.collection-creator-bounded-help {
+    .header {
+        .main-help {
+            max-width: 600px;
+        }
+    }
+}
+
 .collection-creator {
     height: 100%;
     overflow: hidden;
@@ -404,11 +380,15 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
                 .help-content {
                     p:first-child {
                         overflow: hidden;
-                        white-space: nowrap;
                         text-overflow: ellipsis;
                     }
                     > *:not(:first-child) {
                         display: none;
+                    }
+                }
+                .help-content-nowrap {
+                    p:first-child {
+                        white-space: nowrap;
                     }
                 }
             }
@@ -429,11 +409,13 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
                     list-style: circle;
                     margin-left: 16px;
                 }
+                /* This is not referenced anywhere I think.
                 .scss-help {
                     display: inline-block;
                     width: 100%;
                     text-align: right;
                 }
+                */
             }
             .more-help {
                 //display: inline-block;

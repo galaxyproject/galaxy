@@ -3,8 +3,6 @@
 This datatype was created for use with the iSEE interactive tool.
 """
 
-from typing import Optional
-
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.protocols import (
@@ -52,7 +50,7 @@ class HDF5SummarizedExperiment(Data):
             description="Summarized experiment data array",
         )
 
-    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: HasMetadata | None = None) -> None:
         """Override parent init metadata."""
         Data.init_meta(self, dataset, copy_from=copy_from)
 

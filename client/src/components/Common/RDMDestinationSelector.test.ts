@@ -1,9 +1,10 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import { type BrowsableFilesSourcePlugin, type CreatedEntry } from "@/api/remoteFiles";
+import type { BrowsableFilesSourcePlugin, CreatedEntry } from "@/api/remoteFiles";
 
 import RDMDestinationSelector from "./RDMDestinationSelector.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
@@ -27,7 +28,7 @@ async function initWrapper(fileSource?: BrowsableFilesSourcePlugin) {
     server.use(
         http.post("/api/remote_files", ({ response }) => {
             return response(200).json(FAKE_ENTRY);
-        })
+        }),
     );
 
     const wrapper = mount(RDMDestinationSelector as object, {
@@ -53,12 +54,12 @@ describe("RDMDestinationSelector", () => {
         });
 
         it("enables the create new record button when the required fields are filled in", async () => {
-            expect(wrapper.find(CREATE_RECORD_BTN).attributes("disabled")).toBeTruthy();
+            expect(wrapper.find(CREATE_RECORD_BTN).attributes("aria-disabled")).toBeTruthy();
 
             await setRecordNameInput(FAKE_RECORD_NAME);
             await setRDMSourceInput(FAKE_RDM_SOURCE_URI);
 
-            expect(wrapper.find(CREATE_RECORD_BTN).attributes("disabled")).toBeFalsy();
+            expect(wrapper.find(CREATE_RECORD_BTN).attributes("aria-disabled")).toBeFalsy();
         });
 
         it("emits onRecordSelected when the create new record button is clicked", async () => {
@@ -119,11 +120,11 @@ describe("RDMDestinationSelector", () => {
             });
 
             it("enables the create new record button only by setting the record name", async () => {
-                expect(wrapper.find(CREATE_RECORD_BTN).attributes("disabled")).toBeTruthy();
+                expect(wrapper.find(CREATE_RECORD_BTN).attributes("aria-disabled")).toBeTruthy();
 
                 await setRecordNameInput(FAKE_RECORD_NAME);
 
-                expect(wrapper.find(CREATE_RECORD_BTN).attributes("disabled")).toBeFalsy();
+                expect(wrapper.find(CREATE_RECORD_BTN).attributes("aria-disabled")).toBeFalsy();
             });
 
             it("emits onRecordSelected event when the create new record button is clicked", async () => {
@@ -183,7 +184,7 @@ describe("RDMDestinationSelector", () => {
 
     async function clickCreateNewRecordButton() {
         const createRecordButton = wrapper.find(CREATE_RECORD_BTN);
-        expect(createRecordButton.attributes("disabled")).toBeFalsy();
+        expect(createRecordButton.attributes("aria-disabled")).toBeFalsy();
         await createRecordButton.trigger("click");
         await flushPromises();
     }

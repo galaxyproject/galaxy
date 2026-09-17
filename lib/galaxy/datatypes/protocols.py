@@ -2,15 +2,14 @@
 Location of protocols used in datatypes
 """
 
-from typing import (
-    Any,
-    TYPE_CHECKING,
+from typing import Any
+
+from typing_extensions import (
+    Protocol,
+    runtime_checkable,
 )
 
-from typing_extensions import Protocol
-
-if TYPE_CHECKING:
-    from sqlalchemy.orm import Mapped
+from galaxy.objectstore import ObjectStoreAuth
 
 
 class HasClearAssociatedFiles(Protocol):
@@ -37,15 +36,16 @@ class HasExtraFilesPath(Protocol):
 
 
 class HasFileName(Protocol):
-    def get_file_name(self, sync_cache=True) -> str: ...
+    def get_file_name(self, sync_cache=True, auth: ObjectStoreAuth | None = None) -> str: ...
 
 
+@runtime_checkable
 class HasHid(Protocol):
     hid: str
 
 
 class HasId(Protocol):
-    id: "Mapped[int]"
+    id: int
 
 
 class HasInfo(Protocol):
@@ -57,7 +57,7 @@ class HasMetadata(Protocol):
 
 
 class HasName(Protocol):
-    name: str
+    name: str | None
 
 
 class HasExtraFilesAndMetadata(HasExtraFilesPath, HasMetadata, Protocol): ...

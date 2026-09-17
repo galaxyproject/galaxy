@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
-import {
-    type NotificationCategory,
-    type NotificationChannel,
-    type UserNotificationPreferences,
-} from "@/api/notifications";
+import type { NotificationCategory, NotificationChannel, UserNotificationPreferences } from "@/api/notifications";
 import { snakeCaseToTitleCase } from "@/utils/strings";
 
 import NotificationsChannelSettings from "./NotificationsChannelSettings.vue";
@@ -17,6 +13,8 @@ const categoryDescriptionMap: Record<NotificationCategory, string> = {
     `,
     new_shared_item:
         "You will receive these notifications when someone shares an item with you i.e. a history, workflow, visualization, etc.",
+    storage_operation:
+        "You will receive these notifications when a bulk storage operation completes (including failed outcomes).",
 };
 
 interface NotificationsCategorySettingsProps {
@@ -40,7 +38,7 @@ watch(
     () => isCategoryEnabled.value,
     (newValue) => {
         emit("onCategoryEnabledChange", props.category, newValue);
-    }
+    },
 );
 
 function onChannelChange(category: NotificationCategory, channel: NotificationChannel, value: boolean) {
@@ -51,7 +49,7 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
 <template>
     <div>
         <div class="category-header">
-            <BFormCheckbox v-model="isCategoryEnabled" v-b-tooltip.hover :title="checkBoxTitle" switch>
+            <BFormCheckbox v-model="isCategoryEnabled" v-g-tooltip.hover :title="checkBoxTitle" switch>
                 <span v-localize class="category-title">{{ snakeCaseToTitleCase(category) }}</span>
             </BFormCheckbox>
         </div>

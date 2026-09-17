@@ -2,7 +2,7 @@
 
 Galaxy has countless ways for users to connect with things that might be considered their "data" - file sources (aka "remote files"), object stores (aka "storage locations"), data libraries, the upload API, visualizations, display applications, custom tools, etc...
 
-This document is going to discuss two of these (file sources and object stores) that are most important Galaxy administrators and how to build Galaxy configurations that allow administrators to let users tie into various pieces of infrastructure (local and publicly available).
+This document is going to discuss two of these (file sources and object stores) that are most important to Galaxy administrators and how to build Galaxy configurations that allow administrators to let users tie into various pieces of infrastructure (local and publicly available).
 
 ```{contents} Table of Contents
 :depth: 4
@@ -17,7 +17,7 @@ Galaxy object stores (called "storage locations" in the UI) store datasets and g
 
 Some of Galaxy's most updated and complete administrator documentation can be found in configuration sample files - this is definitely the case for object stores and file sources. The relevant sample configuration files include [file_sources_conf.yml.sample](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/file_sources_conf.yml.sample) and [object_store_conf.sample.yml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/object_store_conf.sample.yml).
 
-File sources and object stores configured with the above files essentially are available to all users of your Galaxy instance - hence this document describes them as "global" file sources and object stores. File source configurations do allow some templating that does allow the a global file source to be materialized differently for different users. For instance, you as an admin may setup a Dropbox file source and may explicitly add custom user properties that allow that single Dropbox file source to read from a user's preferences. Since there is just one Dropbox service and most people only have a single Dropbox account, this use case can be somewhat adequately addressed by the global file source and the global user preferences file. For a use case like Amazon S3 buckets though for instance, a single bucket file source that is parameterized one way is probably more clearly inadequate. For instance, users would very likely want to attach different buckets for different projects. Additionally, the Galaxy user interface doesn't tie the user preferences to the particular file source and so this method introduces a huge education burden on your Galaxy instance. Finally, the templating available to file sources are not available for object stores - and allowing users to describe how they would like datasets stored and to pay for their own dataset storage are important use cases.
+File sources and object stores configured with the above files essentially are available to all users of your Galaxy instance - hence this document describes them as "global" file sources and object stores. File source configurations do allow some templating that does allow a global file source to be materialized differently for different users. For instance, you as an admin may setup a Dropbox file source and may explicitly add custom user properties that allow that single Dropbox file source to read from a user's preferences. Since there is just one Dropbox service and most people only have a single Dropbox account, this use case can be somewhat adequately addressed by the global file source and the global user preferences file. For a use case like Amazon S3 buckets though for instance, a single bucket file source that is parameterized one way is probably more clearly inadequate. For instance, users would very likely want to attach different buckets for different projects. Additionally, the Galaxy user interface doesn't tie the user preferences to the particular file source and so this method introduces a huge education burden on your Galaxy instance. Finally, the templating available to file sources are not available for object stores - and allowing users to describe how they would like datasets stored and to pay for their own dataset storage are important use cases.
 
 This document is going to describe Galaxy configuration template libraries that allow the
 administrator to setup templates for file sources and object stores that your users may instantiate
@@ -230,6 +230,8 @@ store configuration).
 
 ![galaxy.objectstore.templates.models](object_store_templates.png)
 
+For information on adding validation constraints to template variables, see the [Template Variable Validators](#template-variable-validators) section.
+
 ### Ready To Use Production Object Store Templates
 
 The templates are sufficiently generic that they may make sense for a variety of
@@ -278,6 +280,12 @@ can be placed `file_source_templates.yml` in Galaxy configuration directory (or 
 pointed to by the configuration option `file_source_templates_config_file` in `galaxy.yml`).
 Alternatively, the configuration can be placed directly into `galaxy.yml` using the
 `file_source_templates` configuration option.
+
+A template can define `form_alerts` to show administrator-authored Markdown alerts while a
+user creates an instance. Each alert has a Bootstrap `variant` and optional `condition`; alerts
+without a condition are always shown. Template capabilities can expose condition names for
+source-specific states, allowing the template to control the message without hard-coding it in
+the form component.
 
 ### File Source Types
 
@@ -373,9 +381,104 @@ configuration).
 
 ![](file_source_dropbox_configuration.png)
 
+#### `elabftw`
+
+The syntax for the `configuration` section of `elabftw` templates looks like this.
+
+![](file_source_elabftw_configuration_template.png)
+
+At runtime, after the `configuration` template is expanded, the resulting dictionary
+passed to Galaxy's file source plugin infrastructure looks like this and should match a subset
+of what you'd be able to add directly to `file_sources_conf.yml` (Galaxy's global file source
+configuration).
+
+![](file_source_elabftw_configuration.png)
+
+#### `inveniordm`
+
+The syntax for the `configuration` section of `inveniordm` templates looks like this.
+
+![](file_source_invenio_configuration_template.png)
+
+At runtime, after the `configuration` template is expanded, the resulting dictionary
+passed to Galaxy's file source plugin infrastructure looks like this and should match a subset
+of what you'd be able to add directly to `file_sources_conf.yml` (Galaxy's global file source
+configuration).
+
+![](file_source_invenio_configuration.png)
+
+#### `zenodo`
+
+The syntax for the `configuration` section of `zenodo` templates looks like this.
+
+![](file_source_zenodo_configuration_template.png)
+
+At runtime, after the `configuration` template is expanded, the resulting dictionary
+passed to Galaxy's file source plugin infrastructure looks like this and should match a subset
+of what you'd be able to add directly to `file_sources_conf.yml` (Galaxy's global file source
+configuration).
+
+![](file_source_zenodo_configuration.png)
+
+#### `rspace`
+
+The syntax for the `configuration` section of `rspace` templates looks like this.
+
+![](file_source_rspace_configuration_template.png)
+
+At runtime, after the `configuration` template is expanded, the resulting dictionary
+passed to Galaxy's file source plugin infrastructure looks like this and should match a subset
+of what you'd be able to add directly to `file_sources_conf.yml` (Galaxy's global file source
+configuration).
+
+![](file_source_rspace_configuration.png)
+
+#### `ascp`
+
+The `ascp` file source plugin provides high-speed file downloads using the Aspera FASP protocol.
+It requires the `ascp` binary to be installed and accessible on the Galaxy server.
+
+Example configuration for EBI SRA downloads:
+
+```yaml
+- type: ascp
+  id: ebi_aspera
+  label: "EBI Aspera Downloads"
+  doc: "High-speed downloads from EBI SRA using Aspera FASP protocol"
+  ascp_path: "ascp" # Path to ascp binary
+  user: "era-fasp"
+  host: "fasp.sra.ebi.ac.uk"
+  port: 33001
+  rate_limit: "300m" # Transfer rate limit (e.g., "300m" for 300 Mbps)
+  disable_encryption: true # Disable encryption for maximum speed
+  # Retry and resume configuration (optional)
+  max_retries: 3
+  retry_base_delay: 2.0
+  retry_max_delay: 60.0
+  enable_resume: true
+  # SSH key content (required) - embed the key directly in the configuration
+  ssh_key_content: |
+    -----BEGIN RSA PRIVATE KEY-----
+    <YOUR ACTUAL SSH PRIVATE KEY CONTENT>
+    -----END RSA PRIVATE KEY-----
+  # SSH key passphrase. https://embl.service-now.com/kb?id=kb_article_view&sys_kb_id=4cc60cf8c398a610bf313dfc0501314c#mcetoc_1idpn4k0to
+  ssh_key_passphrase: sample_passphrase
+```
+
+The plugin is **download-only** and supports automatic retry with exponential backoff for transient
+network errors and can resume interrupted transfers. Both `ascp://` and `fasp://` URL schemes are supported.
+
+**SSH Key Configuration Note:** The plugin requires SSH key content (not file paths) because Galaxy jobs often
+run on clusters that don't mount Galaxy's root or configuration directories. The configuration block is copied
+to the job's directory, but referenced key paths wouldn't be accessible.
+
+**Note:** The plugin does not support browsing directories or uploading files (`writable: false`, `browsable: false`).
+
 ### YAML Syntax
 
 ![galaxy.files.templates.models](file_source_templates.png)
+
+For information on adding validation constraints to template variables, see the [Template Variable Validators](#template-variable-validators) section.
 
 ### Ready To Use Production File Source Templates
 
@@ -428,6 +531,38 @@ and you are comfortable with it storing your user's secrets.
 ```
 
 ![Screenshot](user_file_source_form_full_webdav.png)
+
+#### Allow Users to Define eLabFTW Instances as File Sources
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_elabftw.yml
+:language: yaml
+```
+
+![Screenshot](user_file_source_form_full_elabftw.png)
+
+#### Allow Users to Define InvenioRDM Servers as File Sources
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_invenio.yml
+:language: yaml
+```
+
+![Screenshot](user_file_source_form_full_invenio.png)
+
+#### Allow Users to Define Zenodo as File Source
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_zenodo.yml
+:language: yaml
+```
+
+![Screenshot](user_file_source_form_full_zenodo.png)
+
+#### Allow Users to Define RSpace Instances as File Sources
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_rspace.yml
+:language: yaml
+```
+
+![Screenshot](user_file_source_form_full_rspace.png)
 
 ### Production OAuth 2.0 File Source Templates
 
@@ -497,6 +632,141 @@ a production Galaxy instance but Dropbox operates on a different scale.
 For more information on what Dropbox considers a "development" app versus a "production"
 app - checkout the [Dropbox documentation](https://www.dropbox.com/developers/reference/developer-guide#production-approval).
 
+#### OneDrive
+
+Once you have OAuth 2.0 client credentials from Microsoft Entra (called `oauth2_client_id`
+and `oauth2_client_secret` here), the following configurations can be used to enable
+OneDrive for your Galaxy instance.
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_onedrive.yml
+:language: yaml
+```
+or
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_onedrive_full.yml
+:language: yaml
+```
+
+To use one of these templates, make the credentials available to Galaxy's web and job handler
+processes using the environment variables `GALAXY_ONEDRIVE_CLIENT_ID` and
+`GALAXY_ONEDRIVE_CLIENT_SECRET`. Jobs themselves do not need these values and should
+not receive them.
+If your Galaxy instance has Vault configured, you can use this Vault-backed variant instead:
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/onedrive_client_secrets_in_vault.yml
+:language: yaml
+```
+
+The current OneDrive implementation supports two drive modes:
+
+- `drive_mode: appfolder`
+  This is the default and targets Microsoft Graph `special/approot`. Galaxy can
+  browse, download, upload, and create folders inside the application's dedicated
+  OneDrive app folder (`Apps/<Application Name>`). This mode should be paired
+  with delegated permission `Files.ReadWrite.AppFolder`.
+- `drive_mode: full`
+  This targets the user's full OneDrive root (`/me/drive/root`) instead of the
+  application folder. This mode requires broader delegated Microsoft Graph
+  permissions such as `Files.ReadWrite`.
+
+To configure Microsoft Entra app for this file source:
+
+1. Sign in to [Microsoft Azure](https://portal.azure.com/). Go to `Microsoft Entra ID` and open
+   `App Registrations`.
+2. Select `New registration`.
+3. Enter a recognizable application name for Galaxy, for example `Galaxy OneDrive`.
+4. Under `Supported account types`, choose the audience that matches your deployment.
+   If Galaxy users may connect both organizational Microsoft accounts and personal
+   Microsoft accounts, select `Any Entra ID tenant + Personal Microsoft accounts`.
+5. Under `Redirect URI`, choose platform type `Web` and enter your Galaxy callback URL:
+   `<your galaxy root>/oauth2_callback`.
+   For example, if Galaxy is available at `https://usegalaxy.eu`, use
+   `https://usegalaxy.eu/oauth2_callback`.
+   For local development this is often `http://localhost:8080/oauth2_callback`.
+6. Create the registration and open the app's `Overview` page.
+   Copy the `Application (client) ID` and expose it to Galaxy as
+   `GALAXY_ONEDRIVE_CLIENT_ID`.
+7. Open `Certificates & secrets > Client secrets`, create a new client secret,
+   and copy the generated secret value immediately.
+   Expose that value to Galaxy as `GALAXY_ONEDRIVE_CLIENT_SECRET`.
+   Microsoft only shows the full secret value once.
+8. Open `API permissions` and add Microsoft Graph delegated permissions.
+   For the default app-folder configuration, add `Files.ReadWrite.AppFolder`.
+   Also add `offline_access` so Galaxy can obtain refresh tokens for long-lived access.
+9. If your deployment uses `drive_mode: full` instead of the default `appfolder`,
+   add delegated permission `Files.ReadWrite` instead of `Files.ReadWrite.AppFolder`.
+   This must match the scope requested in the Galaxy template.
+
+After this setup, users connect their own OneDrive accounts through Galaxy's OAuth2
+flow. The client ID and client secret identify your Galaxy application to Microsoft,
+but file access is performed with per-user delegated access and refresh tokens.
+
+To configure full-drive access instead of the default app-folder mode, you need to
+change both the Galaxy yml config template and the Microsoft Entra app registration. 
+In Galaxy yml config, set `drive_mode: full` and request a broader OAuth scope such as
+`oauth2_scope: "offline_access Files.ReadWrite"`. In Microsoft Entra, grant the
+matching delegated Microsoft Graph permission (`Files.ReadWrite` instead of
+`Files.ReadWrite.AppFolder`). If only the Microsoft permission is widened and
+`drive_mode` remains `appfolder`, Galaxy will continue to operate only inside the
+application folder.
+
+This implementation currently uses Microsoft Graph's simple upload endpoint and
+does not yet implement resumable uploads for very large files, server-side pagination,
+or server-side search/sorting.
+
+#### GitHub
+
+Once you have OAuth 2.0 client credentials from GitHub (called `oauth2_client_id`
+and `oauth2_client_secret` here), the following configuration can be used to enable
+GitHub repositories for your Galaxy instance.
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_github.yml
+:language: yaml
+```
+
+To use this template, make the credentials available to Galaxy's web and job handler
+processes using the environment variables `GALAXY_GITHUB_APP_CLIENT_ID` and
+`GALAXY_GITHUB_APP_CLIENT_SECRET`. Jobs themselves do not need these values and should
+not receive them.
+
+GitHub is a per-repository file source: each instance connects a single repository, and
+the user supplies the repository owner, name, and (optionally) branch when creating the
+instance. To connect several repositories, a user creates several instances of the template.
+
+To configure a GitHub App for this file source:
+
+1. Sign in to GitHub and open
+   [Settings > Developer settings > GitHub Apps](https://github.com/settings/apps),
+   then select `New GitHub App` (for an organization, use its developer settings instead).
+2. Enter a recognizable application name for Galaxy, for example `Galaxy GitHub`, and a
+   homepage URL (your Galaxy instance URL is fine).
+3. Under `Callback URL`, enter your Galaxy callback URL: `<your galaxy root>/oauth2_callback`.
+   For example, if Galaxy is available at `https://usegalaxy.eu`, use
+   `https://usegalaxy.eu/oauth2_callback`.
+   This must match exactly the URL Galaxy redirects to, which Galaxy derives from the
+   address users browse to. GitHub treats `localhost` and `127.0.0.1` as different hosts,
+   so for local development register the exact host you use (often
+   `http://localhost:8080/oauth2_callback`). GitHub Apps allow multiple callback URLs, so
+   you may add both `localhost` and `127.0.0.1` variants if needed.
+4. Enable `Request user authorization (OAuth) during installation`, and under
+   `Optional features` (or `Identifying and authorizing users`) enable
+   `Expiring user authorization tokens`. This is required: it makes GitHub issue a
+   `refresh_token`, which Galaxy stores to mint short-lived access tokens on the user's
+   behalf. Without it, GitHub returns a non-expiring token with no refresh token and Galaxy
+   cannot complete the flow.
+5. Under `Webhook`, uncheck `Active`. Galaxy does not use GitHub webhooks, and GitHub
+   otherwise requires a webhook URL to create the app.
+6. Under `Permissions > Repository permissions`, set `Contents` to `Read-only` for
+   browse and download, or `Read and write` if users should be able to upload files.
+7. Create the app. On its settings page copy the `Client ID` and expose it to Galaxy as
+   `GALAXY_GITHUB_APP_CLIENT_ID`, then `Generate a new client secret` and expose that value
+   as `GALAXY_GITHUB_APP_CLIENT_SECRET` (GitHub shows the secret only once).
+
+After this setup, users connect their own GitHub accounts through Galaxy's OAuth2 flow.
+The client ID and client secret identify your Galaxy application to GitHub, but file access
+is performed with per-user access and refresh tokens - Galaxy stores only the refresh token
+in its Vault and mints short-lived access tokens on use.
+
 ## Playing Nicer with Ansible
 
 Many large instances of Galaxy are configured with Ansible and much of the existing administrator
@@ -530,8 +800,8 @@ plugin templates.
 :language: yaml
 ```
 
--   https://github.com/ansible/ansible/pull/75306
--   https://stackoverflow.com/questions/12083319/add-custom-tokens-in-jinja2-e-g-somevar
+- https://github.com/ansible/ansible/pull/75306
+- https://stackoverflow.com/questions/12083319/add-custom-tokens-in-jinja2-e-g-somevar
 
 ## Jinja Template Reference
 
@@ -552,6 +822,8 @@ and the [list of builtin filters](https://jinja.palletsprojects.com/en/3.0.x/tem
 
 This is a typed dictionary object is populated with user supplied values defined via the the `variables` section of the configuration template and filled in by the user when they
 created a new object store or file source.
+
+For information on adding validation constraints to template variables, see the [Template Variable Validators](#template-variable-validators) section.
 
 ### `secrets`
 
@@ -627,6 +899,132 @@ on the simple minio example.
 ```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/minio_example.yml
 :language: yaml
 ```
+
+## Template Variable Validators
+
+Template variables can include optional validators to enforce constraints on user input. Validators ensure that users provide valid values when configuring file sources or object stores, providing clear error messages when validation fails.
+
+### Required vs optional template variables and secrets
+
+When defining `variables` and `secrets` in file source (and object store) templates, Galaxy follows **explicit rules**:
+
+- Variables and secrets are **required by default**.
+- A variable or secret is optional **only if** `optional: true` is explicitly set.
+- Defining a `default` value **does not** make a field optional.
+- Default values are applied **only** for variables or secrets marked as `optional: true`.
+- Validators are evaluated **only when a value is provided**; omitted optional fields are not validated.
+- Default values **are validated** when they are applied (i.e. for `optional: true` fields with a default).
+
+This explicit model avoids implicit behavior and makes template intent clear and predictable.
+
+### Validator Types
+
+Galaxy supports three types of validators that can be applied to template variables:
+
+#### `regex` - Pattern Matching
+
+Validates that a value matches (or doesn't match) a regular expression pattern.
+
+**Parameters:**
+
+- `type`: Must be `regex`
+- `expression`: The regular expression pattern to match
+- `message`: Error message shown when validation fails
+- `negate` (optional): If `true`, validation succeeds when the pattern does NOT match (default: `false`)
+
+**Example:**
+
+```yaml
+variables:
+  bucket:
+    label: Bucket Name
+    type: string
+    validators:
+      - type: regex
+        expression: '^(?!\s)(?!.*\s$).*$'
+        message: "Bucket name cannot have leading or trailing whitespace"
+      - type: regex
+        expression: "^.*[^/]$"
+        message: "Bucket name cannot end with a slash"
+```
+
+#### `length` - String Length Constraints
+
+Validates that a string value's length falls within specified bounds.
+
+**Parameters:**
+
+- `type`: Must be `length`
+- `min` (optional): Minimum allowed length (inclusive)
+- `max` (optional): Maximum allowed length (inclusive)
+- `message`: Error message shown when validation fails
+
+**Example:**
+
+```yaml
+variables:
+  username:
+    label: Username
+    type: string
+    validators:
+      - type: length
+        min: 3
+        max: 20
+        message: "Username must be between 3 and 20 characters"
+```
+
+#### `in_range` - Numeric Range Constraints
+
+Validates that a numeric value falls within specified bounds.
+
+**Parameters:**
+
+- `type`: Must be `in_range`
+- `min` (optional): Minimum allowed value (inclusive)
+- `max` (optional): Maximum allowed value (inclusive)
+- `message`: Error message shown when validation fails
+
+**Example:**
+
+```yaml
+variables:
+  port:
+    label: Port Number
+    type: integer
+    validators:
+      - type: range
+        min: 1
+        max: 65535
+        message: "Port must be between 1 and 65535"
+```
+
+### Multiple Validators
+
+You can apply multiple validators to a single variable. They are evaluated in order, and the first failing validator will stop validation and return its error message.
+
+**Example:**
+
+```yaml
+variables:
+  project_name:
+    label: Project Name
+    type: string
+    validators:
+      - type: length
+        min: 3
+        max: 50
+        message: "Project name must be between 3 and 50 characters"
+      - type: regex
+        expression: "^[a-zA-Z0-9_-]+$"
+        message: "Project name can only contain letters, numbers, hyphens, and underscores"
+```
+
+### Validator Behavior
+
+- Validators are **optional** - variables without validators accept any value (subject to type constraints)
+- Validators **skip empty values** - if a variable is optional and the user provides no value, validators are not run
+- Validators apply to **both frontend and backend** - validation happens in the UI for immediate feedback and on the server for security
+- **Clear error messages** help users understand what went wrong and how to fix it
 
 ## Connecting Configuration Templates to Secrets
 
@@ -713,8 +1111,8 @@ user defined data access templates can support OAuth 2.0.
 
 Galaxy keeps track of which plugin `type`s (currently only file source types) require
 OAuth2 to work properly and will take care of authorization redirection, saving refresh tokens,
-etc.. implicitly. One such `type` is `dropbox`. Here is the production Dropbox
-template distributed with Galaxy.
+etc.. implicitly. Such `type`s include `dropbox`, `googledrive`, `onedrive`, and `github`.
+Here is the production Dropbox template distributed with Galaxy.
 
 ```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_dropbox.yml
 :language: yaml

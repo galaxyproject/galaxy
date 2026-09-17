@@ -1,0 +1,11 @@
+class: GalaxyWorkflow
+label: Test boolean case normalization roundtrip artifact
+steps:
+  bool_true:
+    tool_id: gx_boolean
+    state:
+      parameter: true
+  bool_false:
+    tool_id: gx_boolean
+    state:
+      parameter: false

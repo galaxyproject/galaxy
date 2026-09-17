@@ -10,7 +10,7 @@
  */
 
 import { isEqual, omit } from "lodash";
-import { type DefineComponent } from "vue";
+import type { DefineComponent } from "vue";
 
 export type Converter<T> = (value: T) => T;
 type Handler<T> = (v: T, q: T) => boolean;
@@ -272,7 +272,7 @@ export default class Filtering<T> {
         validFilters: Record<string, ValidFilter<T>>,
         validAliases?: Array<[string, string]>,
         quoteStrings = true,
-        nameMatching = true
+        nameMatching = true,
     ) {
         this.validFilters = validFilters;
         this.validAliases = validAliases || defaultValidAliases;
@@ -382,7 +382,10 @@ export default class Filtering<T> {
                         newFilterText += `is:${key}`;
                     }
                 } else if (this.validFilters[key]?.type == "MultiTags" && Array.isArray(value) && value.length > 0) {
-                    newFilterText += `${value.map((v) => `${this.toAliasKey(key)}${v}`).join(" ")}`;
+                    const convertedValues = value
+                        .map((v) => this.getConvertedValue(key, v, backendFormatted))
+                        .filter((v) => v !== undefined) as T[];
+                    newFilterText += `${convertedValues.map((v) => `${this.toAliasKey(key)}${v}`).join(" ")}`;
                 } else if (this.quoteStrings && String(value).includes(" ")) {
                     newFilterText += `${this.toAliasKey(key)}'${value}'`;
                 } else {
@@ -532,7 +535,7 @@ export default class Filtering<T> {
                 }
 
                 const invalidValues = value.filter(
-                    (v) => !validValues.includes(this.getConvertedValue(key, v, backendFormatted) as T)
+                    (v) => !validValues.includes(this.getConvertedValue(key, v, backendFormatted) as T),
                 );
 
                 if (invalidValues.length > 0) {

@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 datatypes_repository_name = "blast_datatypes_0120"
 datatypes_repository_description = "Galaxy applicable datatypes for BLAST"
@@ -21,7 +21,7 @@ Tool shed side:
 """
 
 
-class TestRepositoryMultipleOwners(ShedTwillTestCase):
+class TestRepositoryMultipleOwners(ShedTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts and login as an admin user.
 
@@ -99,8 +99,6 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(tool_repository_name, common.test_user_1_name)
         strings_displayed = ["blastxml_to_top_descr_0120", "BLAST top hit descriptions", "Make a table from BLAST XML"]
         strings_displayed.append("0.0.1")
-        if not self.is_v2:
-            strings_displayed.append("Valid tools")
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0025_create_repository_dependency(self):

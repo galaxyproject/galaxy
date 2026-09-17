@@ -26,7 +26,7 @@ watch(
     () => props.value,
     (newValue) => {
         localHideSourceItems.value = newValue;
-    }
+    },
 );
 
 watch(localHideSourceItems, (newValue) => {

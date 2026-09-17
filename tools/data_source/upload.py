@@ -3,7 +3,6 @@
 
 # WARNING: Changes in this tool (particularly as related to parsing) may need
 # to be reflected in galaxy.web.controllers.tool_runner and galaxy.tools
-from __future__ import print_function
 
 import errno
 import os
@@ -14,7 +13,6 @@ from json import (
     load,
     loads,
 )
-from typing import Dict
 
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
@@ -82,7 +80,7 @@ def parse_outputs(args):
     return rval
 
 
-def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
+def add_file(dataset, registry, output_path: str) -> dict[str, str]:
     ext = None
     line_count = None
     link_data_only_str = dataset.get("link_data_only", "copy_files")
@@ -128,7 +126,7 @@ def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
         try:
             dataset.path = sniff.stream_url_to_file(dataset.path, file_sources=get_file_sources())
         except Exception as e:
-            raise UploadProblemException("Unable to fetch %s\n%s" % (dataset.path, unicodify(e)))
+            raise UploadProblemException(f"Unable to fetch {dataset.path}\n{unicodify(e)}")
 
     # See if we have an empty file
     if not os.path.exists(dataset.path):
@@ -203,7 +201,7 @@ def add_composite_file(dataset, registry, output_path, files_path):
             try:
                 temp_name = sniff.stream_url_to_file(path_or_url, file_sources=file_sources)
             except Exception as e:
-                raise UploadProblemException("Unable to fetch %s\n%s" % (path_or_url, unicodify(e)))
+                raise UploadProblemException(f"Unable to fetch {path_or_url}\n{unicodify(e)}")
 
             return temp_name, isa_url
 
@@ -248,9 +246,7 @@ def add_composite_file(dataset, registry, output_path, files_path):
         for name, value in dataset.composite_files.items():
             value = bunch.Bunch(**value)
             if value.name not in dataset.composite_file_paths:
-                raise UploadProblemException(
-                    "Failed to find file_path %s in %s" % (value.name, dataset.composite_file_paths)
-                )
+                raise UploadProblemException(f"Failed to find file_path {value.name} in {dataset.composite_file_paths}")
             if dataset.composite_file_paths[value.name] is None and not value.optional:
                 raise UploadProblemException("A required composite data file was not provided (%s)" % name)
             elif dataset.composite_file_paths[value.name] is not None:

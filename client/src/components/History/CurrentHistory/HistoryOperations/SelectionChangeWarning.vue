@@ -32,7 +32,7 @@ watch(
     () => props.querySelectionBreak,
     () => {
         dismissCountDown.value = showSelectionQueryBreakWarning.value ? dismissSecs.value : 0;
-    }
+    },
 );
 </script>
 

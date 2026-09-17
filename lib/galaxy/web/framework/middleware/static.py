@@ -1,8 +1,4 @@
 import os
-from typing import (
-    List,
-    Tuple,
-)
 
 from paste import request
 from paste.fileapp import FileApp
@@ -55,10 +51,10 @@ class CacheableStaticURLParser(StaticURLParser):
         if if_none_match := environ.get("HTTP_IF_NONE_MATCH"):
             mytime = os.stat(full).st_mtime
             if str(mytime) == if_none_match:
-                headers: List[Tuple[str, str]] = []
+                headers: list[tuple[str, str]] = []
                 ETAG.update(headers, mytime)
                 start_response("304 Not Modified", headers)
-                return [""]  # empty body
+                return [b""]  # empty body
         app = FileApp(full)
         if self.cache_seconds:
             app.cache_control(max_age=int(self.cache_seconds))

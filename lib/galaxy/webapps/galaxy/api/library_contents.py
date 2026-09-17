@@ -5,8 +5,6 @@ API operations on the contents of a data library.
 import logging
 from typing import (
     cast,
-    List,
-    Optional,
 )
 
 from fastapi import (
@@ -21,7 +19,6 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.library_contents import (
     AnyLibraryContentsCreatePayload,
     AnyLibraryContentsCreateResponse,
@@ -35,6 +32,10 @@ from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     Router,
+)
+from galaxy.webapps.galaxy.api.common import (
+    LibraryDatasetIdPathParam,
+    LibraryIdPathParam,
 )
 from galaxy.webapps.galaxy.services.library_contents import (
     LibraryContentsService,
@@ -61,9 +62,9 @@ class JsonApiRoute(APIContentTypeRoute):
 LibraryContentsCreateForm = as_form(LibraryContentsFileCreatePayload)
 
 
-async def get_files(request: Request, files: Optional[List[UploadFile]] = None):
+async def get_files(request: Request, files: list[UploadFile] | None = None):
     # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
-    files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
+    files2: list[StarletteUploadFile] = cast(list[StarletteUploadFile], files or [])
     if not files2:
         data = await request.form()
         for value in data.values():
@@ -83,7 +84,7 @@ class FastAPILibraryContents:
     )
     def index(
         self,
-        library_id: DecodedDatabaseIdField,
+        library_id: LibraryIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> LibraryContentsIndexListResponse:
         """This endpoint is deprecated. Please use GET /api/folders/{folder_id}/contents instead."""
@@ -97,11 +98,11 @@ class FastAPILibraryContents:
     )
     def show(
         self,
-        library_id: DecodedDatabaseIdField,
+        library_id: LibraryIdPathParam,
         id: MaybeLibraryFolderOrDatasetID,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> AnyLibraryContentsShowResponse:
-        """This endpoint is deprecated. Please use GET /api/libraries/datasets/{library_id} instead."""
+        """This endpoint is deprecated. Please use GET /api/libraries/datasets/{id} instead."""
         return self.service.show(trans, id)
 
     @router.post(
@@ -112,7 +113,7 @@ class FastAPILibraryContents:
     )
     def create_json(
         self,
-        library_id: DecodedDatabaseIdField,
+        library_id: LibraryIdPathParam,
         payload: AnyLibraryContentsCreatePayload,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> AnyLibraryContentsCreateResponse:
@@ -127,9 +128,9 @@ class FastAPILibraryContents:
     )
     def create_form(
         self,
-        library_id: DecodedDatabaseIdField,
+        library_id: LibraryIdPathParam,
         payload: LibraryContentsFileCreatePayload = Depends(LibraryContentsCreateForm.as_form),
-        files: List[StarletteUploadFile] = Depends(get_files),
+        files: list[StarletteUploadFile] = Depends(get_files),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> AnyLibraryContentsCreateResponse:
         """This endpoint is deprecated. Please use POST /api/folders/{folder_id} or POST /api/folders/{folder_id}/contents instead."""
@@ -142,12 +143,12 @@ class FastAPILibraryContents:
     )
     def update(
         self,
-        library_id: DecodedDatabaseIdField,
-        id: DecodedDatabaseIdField,
+        library_id: LibraryIdPathParam,
+        id: LibraryDatasetIdPathParam,
         payload,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> None:
-        """This endpoint is deprecated. Please use PATCH /api/libraries/datasets/{library_id} instead."""
+        """This endpoint is deprecated. Please use PATCH /api/libraries/datasets/{id} instead."""
         return self.service.update(trans, id, payload)
 
     @router.delete(
@@ -157,10 +158,10 @@ class FastAPILibraryContents:
     )
     def delete(
         self,
-        library_id: DecodedDatabaseIdField,
-        id: DecodedDatabaseIdField,
-        payload: Optional[LibraryContentsDeletePayload] = Body(None),
+        library_id: LibraryIdPathParam,
+        id: LibraryDatasetIdPathParam,
+        payload: LibraryContentsDeletePayload | None = Body(None),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> LibraryContentsDeleteResponse:
-        """This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{library_id} instead."""
+        """This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{id} instead."""
         return self.service.delete(trans, id, payload or LibraryContentsDeletePayload())

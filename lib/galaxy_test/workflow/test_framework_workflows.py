@@ -1,4 +1,3 @@
-import glob
 import os
 import tempfile
 from pathlib import Path
@@ -8,18 +7,18 @@ import requests
 import yaml
 from gxformat2.yaml import ordered_load
 
-from galaxy.tool_util.models import (
-    OutputChecks,
-    OutputsDict,
-    TestDicts,
-    TestJobDict,
-)
 from galaxy.tool_util.parser.interface import TestCollectionOutputDef
 from galaxy.tool_util.verify import verify_file_contents_against_dict
 from galaxy.tool_util.verify.interactor import (
     compare_expected_metadata_to_api_response,
     get_metadata_to_test,
     verify_collection,
+)
+from galaxy.tool_util_models import (
+    JobTestDict,
+    OutputChecks,
+    OutputsDict,
+    TestDicts,
 )
 from galaxy.util import asbool
 from galaxy_test.api._framework import ApiTestCase
@@ -35,7 +34,7 @@ TEST_WORKFLOW_AFTER_RERUN = asbool(os.environ.get("GALAXY_TEST_WORKFLOW_AFTER_RE
 
 
 def find_workflows():
-    return [Path(p) for p in glob.glob(f"{SCRIPT_DIRECTORY}/*.gxwf.yml")]
+    return list(Path(SCRIPT_DIRECTORY).glob("*.gxwf.yml"))
 
 
 def pytest_generate_tests(metafunc):
@@ -58,9 +57,10 @@ class TestWorkflow(ApiTestCase):
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+        self.dataset_populator.create_role([self.dataset_populator.user_id()], role_type="user_tool_execute")
 
     @pytest.mark.workflow
-    def test_workflow(self, workflow_path: Path, test_job: TestJobDict):
+    def test_workflow(self, workflow_path: Path, test_job: JobTestDict):
         with workflow_path.open() as f:
             yaml_content = ordered_load(f)
         with self.dataset_populator.test_history() as history_id:
@@ -70,6 +70,8 @@ class TestWorkflow(ApiTestCase):
                     yaml_content,
                     test_data=test_job["job"],
                     history_id=history_id,
+                    job_dir=str(workflow_path.parent),
+                    test_data_format="cwl_style",
                 )
                 if TEST_WORKFLOW_AFTER_RERUN:
                     run_summary = self.workflow_populator.rerun(run_summary)
@@ -92,8 +94,8 @@ class TestWorkflow(ApiTestCase):
         )
         item_label = f"Output named {output_name}"
 
-        def get_filename(name):
-            return tempfile.NamedTemporaryFile(prefix=f"gx_workflow_framework_test_file_{output_name}", delete=False)
+        def get_filename(name: str) -> str:
+            return self.test_data_resolver.get_filename(name)
 
         def verify_dataset(dataset: dict, test_properties: OutputChecks):
             output_content = self.dataset_populator.get_history_dataset_content(

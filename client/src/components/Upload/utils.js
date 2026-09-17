@@ -1,10 +1,9 @@
 /*
  * Utilities for working with upload data structures.
  */
-import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
-
 import { GalaxyApi } from "@/api";
 import { getDbKeys } from "@/api/dbKeys";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 export const AUTO_EXTENSION = {
     id: "auto",
@@ -14,7 +13,6 @@ export const AUTO_EXTENSION = {
 };
 export const COLLECTION_TYPES = [
     { id: "list", text: "List" },
-    { id: "paired", text: "Pair" },
     { id: "list:paired", text: "List of Pairs" },
 ];
 export const DEFAULT_DBKEY = "?";

@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrashAlt } from "@fortawesome/free-regular-svg-icons";
 import { faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
-import { BButton, BButtonGroup } from "bootstrap-vue";
-import { sanitize } from "dompurify";
+import purify from "dompurify";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
+import { textLarger, textSmaller } from "@/components/icons/galaxyIcons";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TextWorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 
@@ -16,9 +15,9 @@ import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
 
 import ColorSelector from "./ColorSelector.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import DraggablePan from "@/components/Workflow/Editor/DraggablePan.vue";
-
-library.add(faTrashAlt, faPalette);
 
 const props = defineProps<{
     comment: TextWorkflowComment;
@@ -44,11 +43,11 @@ useResizable(
     ([width, height]) => {
         emit("resize", [width, height]);
         saveText();
-    }
+    },
 );
 
 function escapeAndSanitize(text: string) {
-    return sanitize(text, { ALLOWED_TAGS: ["br"] }).replace(/(?:^(\s|&nbsp;)+)|(?:(\s|&nbsp;)+$)/g, "");
+    return purify.sanitize(text, { ALLOWED_TAGS: ["br"] }).replace(/(?:^(\s|&nbsp;)+)|(?:(\s|&nbsp;)+$)/g, "");
 }
 
 const editableElement = ref<HTMLSpanElement>();
@@ -101,7 +100,7 @@ function increaseFontSize() {
 }
 
 const increaseFontSizeTitle = computed(() =>
-    canIncreaseFontSize.value ? `Increase font size to ${fontSize.value + 1}` : "Maximum font size"
+    canIncreaseFontSize.value ? `Increase font size to ${fontSize.value + 1}` : "Maximum font size",
 );
 
 function decreaseFontSize() {
@@ -111,7 +110,7 @@ function decreaseFontSize() {
 }
 
 const decreaseFontSizeTitle = computed(() =>
-    canDecreaseFontSize.value ? `Decrease font size to ${fontSize.value - 1}` : "Minimum font size"
+    canDecreaseFontSize.value ? `Decrease font size to ${fontSize.value - 1}` : "Minimum font size",
 );
 
 function onRootClick() {
@@ -141,7 +140,7 @@ watch(
                 saveText();
             }
         }
-    }
+    },
 );
 
 function onSetColor(color: WorkflowCommentColor) {
@@ -216,49 +215,44 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 v-html="escapeAndSanitize(props.comment.data.text)" />
         </div>
 
-        <BButtonGroup v-if="!props.readonly" class="style-buttons">
-            <BButton
+        <GButtonGroup v-if="!props.readonly" class="style-buttons">
+            <GButton
                 class="button font-weight-bold prevent-zoom"
-                variant="outline-primary"
+                color="blue"
+                outline
                 :title="props.comment.data.bold ? 'Reset bold' : 'Make bold'"
                 :pressed="props.comment.data.bold"
                 @click="toggleBold">
                 B
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 class="button font-italic prevent-zoom"
-                variant="outline-primary"
+                color="blue"
+                outline
                 :title="props.comment.data.italic ? 'Reset italic' : 'Make italic'"
                 :pressed="props.comment.data.italic"
                 @click="toggleItalic">
                 I
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 class="button prevent-zoom"
-                variant="outline-primary"
+                color="blue"
+                outline
                 title="Color"
                 :pressed="showColorSelector"
                 @click="() => (showColorSelector = !showColorSelector)">
-                <FontAwesomeIcon icon="fa-palette" class="prevent-zoom" />
-            </BButton>
-            <BButton
-                class="button prevent-zoom"
-                variant="primary"
-                :title="decreaseFontSizeTitle"
-                @click="decreaseFontSize">
-                <FontAwesomeIcon :icon="['gxd', 'textSmaller']" class="prevent-zoom" />
-            </BButton>
-            <BButton
-                class="button prevent-zoom"
-                variant="primary"
-                :title="increaseFontSizeTitle"
-                @click="increaseFontSize">
-                <FontAwesomeIcon :icon="['gxd', 'textLarger']" class="prevent-zoom" />
-            </BButton>
-            <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
-                <FontAwesomeIcon icon="far fa-trash-alt" class="prevent-zoom" />
-            </BButton>
-        </BButtonGroup>
+                <FontAwesomeIcon :icon="faPalette" class="prevent-zoom" />
+            </GButton>
+            <GButton class="button prevent-zoom" color="blue" :title="decreaseFontSizeTitle" @click="decreaseFontSize">
+                <FontAwesomeIcon :icon="textSmaller" class="prevent-zoom" />
+            </GButton>
+            <GButton class="button prevent-zoom" color="blue" :title="increaseFontSizeTitle" @click="increaseFontSize">
+                <FontAwesomeIcon :icon="textLarger" class="prevent-zoom" />
+            </GButton>
+            <GButton class="button prevent-zoom" transparent title="Delete comment" @click="() => emit('remove')">
+                <FontAwesomeIcon :icon="faTrashAlt" class="prevent-zoom" />
+            </GButton>
+        </GButtonGroup>
 
         <ColorSelector
             v-if="showColorSelector"
@@ -269,7 +263,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 @import "buttonGroup.scss";
 
 .text-workflow-comment {
@@ -359,7 +353,9 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
     }
 
     &.multi-selected {
-        box-shadow: 0 0 0 2px $white, 0 0 0 4px lighten($brand-info, 20%);
+        box-shadow:
+            0 0 0 2px $white,
+            0 0 0 4px lighten($brand-info, 20%);
     }
 }
 

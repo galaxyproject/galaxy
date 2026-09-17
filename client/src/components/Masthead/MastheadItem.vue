@@ -1,45 +1,29 @@
-<script setup>
-import { BNavItem, VBTooltipPlugin } from "bootstrap-vue";
-import { withPrefix } from "utils/redirect";
-import Vue from "vue";
+<script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BNavItem } from "bootstrap-vue";
+import type { PropType } from "vue";
 
-Vue.use(VBTooltipPlugin);
+import type { IconLike } from "@/components/icons/galaxyIcons";
+import { withPrefix } from "@/utils/redirect";
 
 /* props */
 defineProps({
-    disabled: {
-        type: Boolean,
-    },
-    id: {
-        type: String,
-    },
-    icon: {
-        type: String,
-    },
-    target: {
-        type: String,
-    },
-    title: {
-        type: String,
-    },
-    tooltip: {
-        type: String,
-    },
-    toggle: {
-        type: Boolean,
-        default: false,
-    },
-    url: {
-        type: String,
-    },
+    disabled: Boolean,
+    id: String,
+    icon: [Object, String] as PropType<IconLike | string>,
+    target: String,
+    title: String,
+    tooltip: String,
+    toggle: Boolean,
+    url: String,
 });
 </script>
 
 <template>
     <BNavItem
         :id="id"
-        v-b-tooltip.noninteractive.hover.bottom
-        :href="withPrefix(url)"
+        v-g-tooltip.hover.bottom
+        :href="url ? withPrefix(url) : undefined"
         :target="target || '_parent'"
         :link-classes="{ 'nav-icon': !!icon, toggle: toggle }"
         :title="tooltip"
@@ -47,7 +31,9 @@ defineProps({
         <template v-if="icon">
             <!-- If this is an icon-based tab, inject tooltip directly for screen readers -->
             <span class="sr-only">{{ tooltip || id }}</span>
-            <span :class="`fa fa-fw ${icon}`" />
+            <!-- Support both FontAwesome icon objects and legacy string icon names -->
+            <FontAwesomeIcon v-if="typeof icon === 'object'" fixed-width :icon="icon" />
+            <span v-else class="fa" :class="icon" />
             <span v-if="toggle" class="nav-note fa fa-check" />
         </template>
         <template v-else>

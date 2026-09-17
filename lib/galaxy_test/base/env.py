@@ -1,21 +1,16 @@
-"""Base utilities for working Galaxy test environments.
-"""
+"""Base utilities for working Galaxy test environments."""
 
 import fcntl
 import os
 import socket
 import struct
-from typing import (
-    Optional,
-    Tuple,
-)
 
 from galaxy.util import asbool
 
 DEFAULT_WEB_HOST = socket.gethostbyname("localhost")
 REQUIRE_ALL_NEEDED_TOOLS = asbool(os.environ.get("GALAXY_TEST_REQUIRE_ALL_NEEDED_TOOLS", "0"))
 
-GalaxyTarget = Tuple[str, Optional[str], str]
+GalaxyTarget = tuple[str, str | None, str]
 
 
 def setup_keep_outdir() -> str:

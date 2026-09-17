@@ -1,23 +1,45 @@
 [
     {
         "model_class": "Job",
-        "id": "1",
+        "id": "sample-job-0",
         "state": "new",
         "exit_code": 0,
         "update_time": "2021-01-15T10:38:36.015269",
         "create_time": "2021-01-15T10:38:21.462106",
-        "galaxy_version": "21.01",
+        "galaxy_version": "25.1",
         "tool_id": "cat_data_and_sleep",
         "history_id": "b6aaf20167e56df2"
     },
     {
         "model_class": "Job",
-        "id": "2",
+        "id": "sample-job-1",
         "state": "running",
         "exit_code": 0,
         "update_time": "2021-01-15T10:38:36.015269",
         "create_time": "2021-01-15T10:38:21.462106",
-        "galaxy_version": "21.01",
+        "galaxy_version": "25.1",
+        "tool_id": "cat_data_and_sleep",
+        "history_id": "b6aaf20167e56df2"
+    },
+    {
+        "model_class": "Job",
+        "id": "sample-job-2",
+        "state": "ok",
+        "exit_code": 0,
+        "update_time": "2021-01-15T10:38:20.015269",
+        "create_time": "2021-01-15T10:38:10.462106",
+        "galaxy_version": "25.1",
+        "tool_id": "cat_data_and_sleep",
+        "history_id": "b6aaf20167e56df2"
+    },
+    {
+        "model_class": "Job",
+        "id": "sample-job-3",
+        "state": "ok",
+        "exit_code": 0,
+        "update_time": "2021-01-15T10:38:20.015269",
+        "create_time": "2021-01-15T10:38:10.462106",
+        "galaxy_version": "25.1",
         "tool_id": "cat_data_and_sleep",
         "history_id": "b6aaf20167e56df2"
     }

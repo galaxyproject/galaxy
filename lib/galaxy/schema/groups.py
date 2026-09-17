@@ -1,15 +1,12 @@
 from typing import (
-    List,
-    Optional,
+    Literal,
 )
 
 from pydantic import (
     Field,
     RootModel,
 )
-from typing_extensions import Literal
 
-from galaxy.schema import partial_model
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
@@ -19,6 +16,7 @@ from galaxy.schema.schema import (
     Model,
     WithModelClass,
 )
+from galaxy.util.config_templates import partial_model
 
 GROUP_MODEL_CLASS = Literal["Group"]
 
@@ -39,11 +37,11 @@ class GroupResponse(Model, WithModelClass):
         ...,
         title="URL for the group",
     )
-    roles_url: Optional[str] = Field(
+    roles_url: str | None = Field(
         None,
         title="URL for the roles of the group",
     )
-    users_url: Optional[str] = Field(
+    users_url: str | None = Field(
         None,
         title="URL for the users of the group",
     )
@@ -52,7 +50,7 @@ class GroupResponse(Model, WithModelClass):
 class GroupListResponse(RootModel):
     """Response schema for listing groups."""
 
-    root: List[GroupResponse]
+    root: list[GroupResponse]
 
 
 class GroupCreatePayload(Model):
@@ -62,13 +60,18 @@ class GroupCreatePayload(Model):
         ...,
         title="name of the group",
     )
-    user_ids: List[DecodedDatabaseIdField] = Field(
+    user_ids: list[DecodedDatabaseIdField] = Field(
         [],
         title="user IDs",
     )
-    role_ids: List[DecodedDatabaseIdField] = Field(
+    role_ids: list[DecodedDatabaseIdField] = Field(
         [],
         title="role IDs",
+    )
+    auto_create_role: bool = Field(
+        False,
+        title="auto-create role",
+        description="If true, create a new role with the same name as the group and associate it.",
     )
 
 
@@ -80,11 +83,11 @@ class GroupUpdatePayload(Model):
         ...,
         title="name of the group",
     )
-    user_ids: Optional[List[DecodedDatabaseIdField]] = Field(
+    user_ids: list[DecodedDatabaseIdField] | None = Field(
         None,
         title="user IDs",
     )
-    role_ids: Optional[List[DecodedDatabaseIdField]] = Field(
+    role_ids: list[DecodedDatabaseIdField] | None = Field(
         None,
         title="role IDs",
     )

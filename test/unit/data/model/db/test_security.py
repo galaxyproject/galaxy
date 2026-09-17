@@ -13,7 +13,6 @@ from . import have_same_elements
 def test_private_user_role_assoc_not_affected_by_setting_user_roles(session, make_user_and_role):
     # Create user with a private role
     user, private_role = make_user_and_role()
-    assert user.email == private_role.name
     verify_user_associations(user, [], [private_role])  # the only existing association is with the private role
 
     # Delete user roles
@@ -25,7 +24,6 @@ def test_private_user_role_assoc_not_affected_by_setting_user_roles(session, mak
 def test_private_user_role_assoc_not_affected_by_setting_role_users(session, make_user_and_role):
     # Create user with a private role
     user, private_role = make_user_and_role()
-    assert user.email == private_role.name
     verify_user_associations(user, [], [private_role])  # the only existing association is with the private role
 
     # Update role users
@@ -74,7 +72,6 @@ def test_get_sharing_roles(session, make_user):
 
 
 class TestSetGroupUserAndRoleAssociations:
-
     def test_add_associations_to_existing_group(self, session, make_user_and_role, make_role, make_group):
         """
         State: group exists in database, has no user and role associations.

@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 from pydantic import Field
 
@@ -33,7 +32,7 @@ class ItemTagsPayload(Model):
         title="Item class",
         description="The name of the class of the item that will be tagged.",
     )
-    item_tags: Optional[TagCollection] = Field(
+    item_tags: TagCollection | None = Field(
         default=None,
         title="Item tags",
         description="The list of tags that will replace the current tags associated with the item.",
@@ -46,9 +45,9 @@ class TagsManager:
     def update(self, trans: ProvidesUserContext, payload: ItemTagsPayload) -> None:
         """Apply a new set of tags to an item; previous tags are deleted."""
         user = trans.user
-        new_tags: Optional[str] = None
-        if payload.item_tags and len(payload.item_tags.root) > 0:
-            new_tags = ",".join(payload.item_tags.root)
+        new_tags: str | None = None
+        if payload.item_tags:
+            new_tags = ",".join(payload.item_tags)
         item = self._get_item(trans.tag_handler, payload)
         trans.tag_handler.delete_item_tags(user, item)
         trans.tag_handler.apply_item_tags(user, item, new_tags)

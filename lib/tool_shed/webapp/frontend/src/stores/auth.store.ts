@@ -23,20 +23,16 @@ export const useAuthStore = defineStore({
         },
         async login(username: string, password: string) {
             const token = ensureCookie("session_csrf_token")
-            ToolShedApi()
-                .PUT("/api_internal/login", {
-                    body: {
-                        login: username,
-                        password: password,
-                        session_csrf_token: token,
-                    },
-                })
-                .then(async () => {
-                    // We need to do this outside the router to get updated
-                    // cookies and hence csrf token.
-                    window.location.href = "/login_success"
-                })
-                .catch(notifyOnCatch)
+            await ToolShedApi().PUT("/api_internal/login", {
+                body: {
+                    login: username,
+                    password: password,
+                    session_csrf_token: token,
+                },
+            })
+            // We need to do this outside the router to get updated
+            // cookies and hence csrf token.
+            window.location.href = "/login_success"
         },
         async logout() {
             const token = ensureCookie("session_csrf_token")

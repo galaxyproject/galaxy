@@ -5,9 +5,7 @@
 
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
-import { getGalaxyInstance } from "@/app";
-import { NON_TERMINAL_STATES } from "@/components/WorkflowInvocationState/util";
-import { getAppRoot } from "@/onload/loadConfig";
+import { NON_TERMINAL_STATES } from "@/api/jobs";
 import _l from "@/utils/localization";
 
 export function stateIsTerminal(result: Record<string, any>) {
@@ -21,16 +19,19 @@ export type AnyObject = Record<string | number | symbol, any>;
  * Call callback on every object in an object recursively
  *
  * @param object object to traverse
- * @param callback ran on every nested child object
+ * @param callback ran on every nested child object; return `false` to skip
+ *                 recursion into that child's own children
  */
 export function deepEach<O extends AnyObject, V extends O[keyof O] extends AnyObject ? O[keyof O] : never>(
     object: Readonly<O>,
-    callback: (object: V | AnyObject) => void
+    callback: (object: V | AnyObject) => void | boolean,
 ): void {
     Object.values(object).forEach((value) => {
         if (Boolean(value) && typeof value === "object") {
-            callback(value);
-            deepEach(value, callback);
+            const descend = callback(value);
+            if (descend !== false) {
+                deepEach(value, callback);
+            }
         }
     });
 }
@@ -78,7 +79,7 @@ export function isJSON(text: string): boolean {
         text
             .replace(/\\["\\/bfnrtu]/g, "@")
             .replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?/g, "]")
-            .replace(/(?:^|:|,)(?:\s*\[)+/g, "")
+            .replace(/(?:^|:|,)(?:\s*\[)+/g, ""),
     );
 }
 
@@ -122,12 +123,12 @@ export function isEmpty(value: any | Readonly<any[]>) {
  *
  * @param list List of strings to be converted in human readable list sentence
  */
-export function textify(list: Readonly<string[]>): string {
+export function textify(list: Readonly<string[]>, connectorWord = "or"): string {
     let string = list.toString().replace(/,/g, ", ");
     const pos = string.lastIndexOf(", ");
 
     if (pos !== -1) {
-        string = `${string.substring(0, pos)} or ${string.substring(pos + 2)}`;
+        string = `${string.substring(0, pos)} ${connectorWord} ${string.substring(pos + 2)}`;
     }
 
     return string;
@@ -170,26 +171,6 @@ export function get(options: getOptions): void {
 }
 
 /**
- * Load a CSS file
- *
- * @param url Url of CSS file
- */
-export function cssLoadFile(url: string): void {
-    const fullUrl = getAppRoot() + url;
-    const links = document.head.getElementsByTagName("link");
-
-    if (Array.from(links).find((link) => link.href === fullUrl)) {
-        return;
-    }
-
-    const link = document.createElement("link");
-    link.type = "text/css";
-    link.rel = "stylesheet";
-    link.href = fullUrl;
-    document.head.appendChild(link);
-}
-
-/**
  * Safely merge two dictionaries
  *
  * @param options        Target dictionary
@@ -219,7 +200,7 @@ export function roundToDecimalPlaces(number: number, numPlaces: number) {
     return parseFloat(number.toFixed(numPlaces));
 }
 
-const kb = 1024;
+const kb = 1000;
 const mb = kb * kb;
 const gb = mb * kb;
 const tb = gb * kb;
@@ -291,11 +272,13 @@ export function time(): string {
  * @param data object containing script and style strings
  */
 export function appendScriptStyle(data: Readonly<{ script?: string; styles?: string }>) {
-    // create a script tag inside head tag
+    // create a script tag inside head tag, wrapped in an IIFE to avoid
+    // "redeclaration of let" errors when the same webhook script is injected
+    // more than once (Firefox enforces this strictly in the global scope)
     if (data.script && data.script !== "") {
         const tag = document.createElement("script");
         tag.type = "text/javascript";
-        tag.textContent = data.script;
+        tag.textContent = `(function(){\n${data.script}\n})();`;
         document.head.appendChild(tag);
     }
     // create a style tag inside head tag
@@ -303,15 +286,6 @@ export function appendScriptStyle(data: Readonly<{ script?: string; styles?: str
         const tag = document.createElement("style");
         tag.textContent = data.styles;
         document.head.appendChild(tag);
-    }
-}
-
-export function setWindowTitle(title: string): void {
-    const Galaxy = getGalaxyInstance();
-    if (title) {
-        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""} | ${_l(title)}`;
-    } else {
-        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""}`;
     }
 }
 
@@ -375,7 +349,7 @@ export function mergeObjectListsById<T extends { id: string; [key: string]: any 
     oldList: T[],
     newList: T[],
     sortKey: string | null = null,
-    sortDirection: "asc" | "desc" = "desc"
+    sortDirection: "asc" | "desc" = "desc",
 ): T[] {
     const idToObjMap: { [key: string]: T } = oldList.reduce((acc, obj) => ({ ...acc, [obj.id]: obj }), {});
 
@@ -392,9 +366,7 @@ export function mergeObjectListsById<T extends { id: string; [key: string]: any 
     return mergedList;
 }
 
-export function parseBool(value: string): boolean {
-    return value.toLowerCase() === "true";
-}
+export { parseBool } from "./parseBool";
 
 type MatchObject<T extends string | number | symbol, R> = {
     [_Case in T]: () => R;
@@ -442,23 +414,7 @@ export function hasKeys(object: unknown, keys: string[]) {
     }
 }
 
-/**
- * Get the full URL path of the app
- *
- * @param path Path to append to the URL path
- * @returns Full URL path of the app
- */
-export function getFullAppUrl(path: string = ""): string {
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    const port = window.location.port ? `:${window.location.port}` : "";
-    const appRoot = getAppRoot();
-
-    return `${protocol}//${hostname}${port}${appRoot}${path}`;
-}
-
 export default {
-    cssLoadFile,
     get,
     merge,
     bytesToString,
@@ -471,9 +427,7 @@ export default {
     clone,
     linkify,
     appendScriptStyle,
-    setWindowTitle,
     waitForElementToBePresent,
     wait,
     mergeObjectListsById,
-    getFullAppUrl,
 };

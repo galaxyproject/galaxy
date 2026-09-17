@@ -87,7 +87,7 @@ def test_parse_edam_mapping_operations_legacy():
 def test_parse_biotools_default_mapping():
     test_source = get_test_tool_source(source_file_name="testtool.yml", source_contents=TOOL_YAML_NO_EXPLICIT_XREFS)
     ontology_data = expand_ontology_data(test_source, ["cheetah_problem_unbound_var_input"], None)
-    assert ontology_data.xrefs[0]["reftype"] == "bio.tools"
+    assert ontology_data.xrefs[0]["type"] == "bio.tools"
     assert ontology_data.xrefs[0]["value"] == "bwa"
 
     test_source = get_test_tool_source(source_file_name="testtool.yml", source_contents=TOOL_YAML_NO_EXPLICIT_XREFS)

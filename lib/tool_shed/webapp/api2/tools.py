@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from fastapi import (
     Path,
@@ -7,15 +6,17 @@ from fastapi import (
     Response,
 )
 
-from galaxy.tool_util.models import ParsedTool
 from galaxy.tool_util.parameters import (
+    LandingRequestToolState,
     RequestToolState,
-    to_json_schema_string,
+    TestCaseToolState,
 )
+from galaxy.webapps.galaxy.api import json_schema_response_for_tool_state_model
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.tools import (
     parsed_tool_model_cached_for,
     search,
+    tool_source_for,
 )
 from tool_shed.managers.trs import (
     get_tool,
@@ -24,7 +25,10 @@ from tool_shed.managers.trs import (
 )
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util.shed_index import build_index
-from tool_shed_client.schema import BuildSearchIndexResponse
+from tool_shed_client.schema import (
+    BuildSearchIndexResponse,
+    ShedParsedTool,
+)
 from tool_shed_client.schema.trs import (
     Tool,
     ToolClass,
@@ -34,9 +38,9 @@ from tool_shed_client.schema.trs_service_info import Service
 from . import (
     depends,
     DependsOnTrans,
-    RepositorySearchPageQueryParam,
     RepositorySearchPageSizeQueryParam,
     Router,
+    ToolSearchPageQueryParam,
     ToolsIndexQueryParam,
 )
 
@@ -57,11 +61,6 @@ TOOL_VERSION_PATH_PARAM: str = Path(
 )
 
 
-def json_schema_response(pydantic_model) -> Response:
-    json_str = to_json_schema_string(pydantic_model)
-    return Response(content=json_str, media_type="application/json")
-
-
 @router.cbv
 class FastAPITools:
     app: ToolShedApp = depends(ToolShedApp)
@@ -69,11 +68,12 @@ class FastAPITools:
     @router.get(
         "/api/tools",
         operation_id="tools__index",
+        allow_cors=True,
     )
     def index(
         self,
         q: str = ToolsIndexQueryParam,
-        page: int = RepositorySearchPageQueryParam,
+        page: int = ToolSearchPageQueryParam,
         page_size: int = RepositorySearchPageSizeQueryParam,
         trans: SessionRequestContext = DependsOnTrans,
     ):
@@ -107,7 +107,7 @@ class FastAPITools:
         return service_info(self.app, request.url)
 
     @router.get("/api/ga4gh/trs/v2/toolClasses", operation_id="tools__trs_tool_classes")
-    def tool_classes(self) -> List[ToolClass]:
+    def tool_classes(self) -> list[ToolClass]:
         return tool_classes()
 
     @router.get(
@@ -140,33 +140,92 @@ class FastAPITools:
         self,
         trans: SessionRequestContext = DependsOnTrans,
         tool_id: str = TOOL_ID_PATH_PARAM,
-    ) -> List[ToolVersion]:
+    ) -> list[ToolVersion]:
         return get_tool(trans, tool_id).versions
 
     @router.get(
         "/api/tools/{tool_id}/versions/{tool_version}",
         operation_id="tools__parameter_model",
         summary="Return Galaxy's meta model description of the tool's inputs",
+        allow_cors=True,
     )
     def show_tool(
         self,
         trans: SessionRequestContext = DependsOnTrans,
         tool_id: str = TOOL_ID_PATH_PARAM,
         tool_version: str = TOOL_VERSION_PATH_PARAM,
-    ) -> ParsedTool:
+    ) -> ShedParsedTool:
+        return parsed_tool_model_cached_for(trans, tool_id, tool_version)
+
+    @router.get(
+        "/api/tools/{tool_id}/versions/{tool_version}/interop",
+        operation_id="tools__interop",
+        summary="Return Galaxy's meta model description of the tool's metadata, inputs, and outputs.",
+    )
+    def interop(
+        self,
+        trans: SessionRequestContext = DependsOnTrans,
+        tool_id: str = TOOL_ID_PATH_PARAM,
+        tool_version: str = TOOL_VERSION_PATH_PARAM,
+    ) -> ShedParsedTool:
         return parsed_tool_model_cached_for(trans, tool_id, tool_version)
 
     @router.get(
         "/api/tools/{tool_id}/versions/{tool_version}/parameter_request_schema",
-        operation_id="tools__parameter_request_model",
+        operation_id="tools__parameter_request_schema",
         summary="Return a JSON schema description of the tool's inputs for the tool request API that will be added to Galaxy at some point",
         description="The tool request schema includes validation of map/reduce concepts that can be consumed by the tool execution API and not just the request for a single execution.",
     )
-    def tool_state(
+    def tool_state_request(
         self,
         trans: SessionRequestContext = DependsOnTrans,
         tool_id: str = TOOL_ID_PATH_PARAM,
         tool_version: str = TOOL_VERSION_PATH_PARAM,
     ) -> Response:
         parsed_tool = parsed_tool_model_cached_for(trans, tool_id, tool_version)
-        return json_schema_response(RequestToolState.parameter_model_for(parsed_tool.inputs))
+        return json_schema_response_for_tool_state_model(RequestToolState, parsed_tool.inputs)
+
+    @router.get(
+        "/api/tools/{tool_id}/versions/{tool_version}/parameter_landing_request_schema",
+        operation_id="tools__parameter_landing_request_schema",
+        summary="Return a JSON schema description of the tool's inputs for the tool landing request API.",
+    )
+    def tool_state_landing_request(
+        self,
+        trans: SessionRequestContext = DependsOnTrans,
+        tool_id: str = TOOL_ID_PATH_PARAM,
+        tool_version: str = TOOL_VERSION_PATH_PARAM,
+    ) -> Response:
+        parsed_tool = parsed_tool_model_cached_for(trans, tool_id, tool_version)
+        return json_schema_response_for_tool_state_model(LandingRequestToolState, parsed_tool.inputs)
+
+    @router.get(
+        "/api/tools/{tool_id}/versions/{tool_version}/parameter_test_case_xml_schema",
+        operation_id="tools__parameter_test_case_xml_schema",
+        summary="Return a JSON schema description of the tool's inputs for test case construction.",
+    )
+    def tool_state_test_case_xml(
+        self,
+        trans: SessionRequestContext = DependsOnTrans,
+        tool_id: str = TOOL_ID_PATH_PARAM,
+        tool_version: str = TOOL_VERSION_PATH_PARAM,
+    ) -> Response:
+        parsed_tool = parsed_tool_model_cached_for(trans, tool_id, tool_version)
+        return json_schema_response_for_tool_state_model(TestCaseToolState, parsed_tool.inputs)
+
+    @router.get(
+        "/api/tools/{tool_id}/versions/{tool_version}/tool_source",
+        operation_id="tools__tool_source",
+        summary="Return the expanded tool document as a string.",
+    )
+    def tool_source(
+        self,
+        trans: SessionRequestContext = DependsOnTrans,
+        tool_id: str = TOOL_ID_PATH_PARAM,
+        tool_version: str = TOOL_VERSION_PATH_PARAM,
+    ) -> Response:
+        source, _ = tool_source_for(trans, tool_id, tool_version)
+        return Response(
+            content=source.to_string(),
+            headers={"language": source.language},
+        )

@@ -1,9 +1,6 @@
 from datetime import datetime
 from typing import (
-    Dict,
-    List,
-    Optional,
-    Union,
+    Literal,
 )
 
 from pydantic import (
@@ -11,7 +8,6 @@ from pydantic import (
     Field,
     RootModel,
 )
-from typing_extensions import Literal
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -35,17 +31,17 @@ VISUALIZATION_REVISION_MODEL_CLASS = Literal["VisualizationRevision"]
 
 class VisualizationIndexQueryPayload(Model):
     deleted: bool = False
-    show_own: Optional[bool] = None
-    show_published: Optional[bool] = None
-    show_shared: Optional[bool] = None
-    user_id: Optional[DecodedDatabaseIdField] = None
+    show_own: bool | None = None
+    show_published: bool | None = None
+    show_shared: bool | None = None
+    user_id: DecodedDatabaseIdField | None = None
     sort_by: VisualizationSortByEnum = Field(
         "update_time", title="Sort By", description="Sort pages by this attribute."
     )
-    sort_desc: Optional[bool] = Field(default=True, title="Sort descending", description="Sort in descending order.")
-    search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")
-    limit: Optional[int] = Field(default=100, lt=1000, title="Limit", description="Maximum number of pages to return.")
-    offset: Optional[int] = Field(default=0, title="Offset", description="Number of pages to skip.")
+    sort_desc: bool | None = Field(default=True, title="Sort descending", description="Sort in descending order.")
+    search: str | None = Field(default=None, title="Filter text", description="Freetext to search.")
+    limit: int | None = Field(default=100, lt=1000, title="Limit", description="Maximum number of pages to return.")
+    offset: int | None = Field(default=0, title="Offset", description="Number of pages to skip.")
 
 
 class VisualizationSummary(Model):
@@ -54,12 +50,12 @@ class VisualizationSummary(Model):
         title="ID",
         description="Encoded ID of the Visualization.",
     )
-    annotation: Optional[str] = Field(
+    annotation: str | None = Field(
         default=None,
         title="Annotation",
         description="The annotation of this Visualization.",
     )
-    dbkey: Optional[str] = Field(
+    dbkey: str | None = Field(
         default=None,
         title="DbKey",
         description="The database key of the visualization.",
@@ -79,7 +75,7 @@ class VisualizationSummary(Model):
         title="Published",
         description="Whether this Visualization has been published.",
     )
-    tags: Optional[TagCollection] = Field(
+    tags: TagCollection | None = Field(
         ...,
         title="Tags",
         description="A list of tags to add to this item.",
@@ -98,13 +94,13 @@ class VisualizationSummary(Model):
         title="Username",
         description="The name of the user owning this Visualization.",
     )
-    create_time: Optional[datetime] = CreateTimeField
-    update_time: Optional[datetime] = UpdateTimeField
+    create_time: datetime | None = CreateTimeField
+    update_time: datetime | None = UpdateTimeField
     model_config = ConfigDict(extra="allow")
 
 
 class VisualizationSummaryList(RootModel):
-    root: List[VisualizationSummary] = Field(
+    root: list[VisualizationSummary] = Field(
         default=[],
         title="List with detailed information of Visualizations.",
     )
@@ -127,12 +123,12 @@ class VisualizationRevisionResponse(Model, WithModelClass):
         title="Title",
         description="The name of the visualization revision.",
     )
-    dbkey: Optional[str] = Field(
+    dbkey: str | None = Field(
         None,
         title="DbKey",
         description="The database key of the visualization.",
     )
-    config: Dict = Field(
+    config: dict = Field(
         ...,
         title="Config",
         description="The config of the visualization revision.",
@@ -155,45 +151,65 @@ class VisualizationPluginResponse(Model):
         title="Description",
         description="The description of the plugin.",
     )
-    logo: Optional[str] = Field(
+    logo: str | None = Field(
         None,
         title="Logo",
         description="The logo of the plugin.",
     )
-    title: Optional[str] = Field(
+    title: str | None = Field(
         None,
         title="Title",
         description="The title of the plugin.",
-    )
-    target: str = Field(
-        ...,
-        title="Target",
-        description="The target of the plugin.",
     )
     embeddable: bool = Field(
         ...,
         title="Embeddable",
         description="Whether the plugin is embeddable.",
     )
-    entry_point: Dict = Field(
+    entry_point: dict = Field(
         ...,
         title="Entry Point",
         description="The entry point of the plugin.",
     )
-    settings: List[Dict] = Field(
-        ...,
+    settings: list[dict] | None = Field(
+        None,
         title="Settings",
         description="The settings of the plugin.",
     )
-    groups: Optional[List[Dict]] = Field(
+    tracks: list[dict] | None = Field(
         None,
-        title="Groups",
-        description="The groups of the plugin.",
+        title="Tracks",
+        description="The tracks of the plugin.",
     )
-    specs: Optional[Dict] = Field(
+    specs: dict | None = Field(
         None,
         title="Specs",
         description="The specs of the plugin.",
+    )
+    params: dict | None = Field(
+        None,
+        title="Params",
+        description="The parameters of the plugin.",
+    )
+    data_sources: list[dict] | None = Field(
+        None,
+        title="Data Sources",
+        description="The data sources of the plugin.",
+    )
+    help: str | None = Field(
+        None,
+        title="Help",
+        description="The help text of the plugin.",
+    )
+    tags: list[str] | None = Field(
+        None,
+        title="Tags",
+        description="The tags of the plugin.",
+    )
+    tests: list[dict] | None = Field(
+        None,
+        title="Tests",
+        description="The tests of the plugin.",
     )
     href: str = Field(
         ...,
@@ -224,12 +240,12 @@ class VisualizationShowResponse(Model, WithModelClass):
         title="User ID",
         description="The ID of the user owning this Visualization.",
     )
-    dbkey: Optional[str] = Field(
+    dbkey: str | None = Field(
         None,
         title="DbKey",
         description="The database key of the visualization.",
     )
-    slug: Optional[str] = Field(
+    slug: str | None = Field(
         None,
         title="Slug",
         description="The slug of the visualization.",
@@ -239,7 +255,7 @@ class VisualizationShowResponse(Model, WithModelClass):
         title="Latest Revision",
         description="The latest revision of this Visualization.",
     )
-    revisions: List[EncodedDatabaseIdField] = Field(
+    revisions: list[EncodedDatabaseIdField] = Field(
         ...,
         title="Revisions",
         description="A list of encoded IDs of the revisions of this Visualization.",
@@ -259,17 +275,17 @@ class VisualizationShowResponse(Model, WithModelClass):
         title="Email Hash",
         description="The hash of the email of the user owning this Visualization.",
     )
-    tags: Optional[TagCollection] = Field(
+    tags: TagCollection | None = Field(
         None,
         title="Tags",
         description="A list of tags to add to this item.",
     )
-    annotation: Optional[str] = Field(
+    annotation: str | None = Field(
         None,
         title="Annotation",
         description="The annotation of this Visualization.",
     )
-    plugin: Optional[VisualizationPluginResponse] = Field(
+    plugin: VisualizationPluginResponse | None = Field(
         None,
         title="Plugin",
         description="The plugin of this Visualization.",
@@ -303,28 +319,28 @@ class VisualizationCreatePayload(Model):
         title="Type",
         description="The type of the visualization.",
     )
-    title: Optional[SanitizedString] = Field(
+    title: SanitizedString | None = Field(
         SanitizedString("Untitled Visualization"),
         title="Title",
         description="The name of the visualization.",
         min_length=3,
     )
-    dbkey: Optional[SanitizedString] = Field(
+    dbkey: SanitizedString | None = Field(
         None,
         title="DbKey",
         description="The database key of the visualization.",
     )
-    slug: Optional[SanitizedString] = Field(
+    slug: SanitizedString | None = Field(
         None,
         title="Slug",
         description="The slug of the visualization.",
     )
-    annotation: Optional[SanitizedString] = Field(
+    annotation: SanitizedString | None = Field(
         None,
         title="Annotation",
         description="The annotation of the visualization.",
     )
-    config: Optional[dict] = Field(
+    config: dict | None = Field(
         {},
         title="Config",
         description="The config of the visualization.",
@@ -332,22 +348,22 @@ class VisualizationCreatePayload(Model):
 
 
 class VisualizationUpdatePayload(Model):
-    title: Optional[SanitizedString] = Field(
+    title: SanitizedString | None = Field(
         None,
         title="Title",
         description="The name of the visualization.",
     )
-    dbkey: Optional[SanitizedString] = Field(
+    dbkey: SanitizedString | None = Field(
         None,
         title="DbKey",
         description="The database key of the visualization.",
     )
-    deleted: Optional[bool] = Field(
+    deleted: bool | None = Field(
         False,
         title="Deleted",
         description="Whether this Visualization has been deleted.",
     )
-    config: Optional[Union[dict, bytes]] = Field(
+    config: dict | bytes | None = Field(
         {},
         title="Config",
         description="The config of the visualization.",

@@ -158,7 +158,7 @@ const onMove = (position: Position, event: DragEvent) => {
                             multiSelectedComments.value,
                             multiSelectedSteps.value,
                             props.position ?? newPosition,
-                            snapped
+                            snapped,
                         );
                         undoRedoStore.applyLazyAction(currentLazyAction.value);
                     }

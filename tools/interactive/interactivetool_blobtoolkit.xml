@@ -1,4 +1,5 @@
 <tool id="interactive_tool_blobtoolkit" tool_type="interactive" name="Interactive BlobToolKit" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="21.05">
+    <icon src="blobtoolkit.png" />
     <description>genome assembly QC viewer</description>
     <macros>
         <token name="@TOOL_VERSION@">4.1.0</token>
@@ -44,7 +45,7 @@
     <tests>
     </tests>
     <help><![CDATA[
-    BlobToolKit is a software suite to aid researchers in identifying and isolating non-target data in draft and publicly available genome assemblies. It can be used to process assembly, 
+    BlobToolKit is a software suite to aid researchers in identifying and isolating non-target data in draft and publicly available genome assemblies. It can be used to process assembly,
     read and analysis files for fully reproducible interactive exploration in the browser-based Viewer. BlobToolKit can be used during assembly to filter non-target DNA, helping researchers produce assemblies with high biological credibility.
     ]]></help>
     <citations>

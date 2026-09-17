@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from fastapi import (
     Body,
@@ -15,6 +14,8 @@ from galaxy.managers.file_source_instances import (
     CreateInstancePayload,
     FileSourceInstancesManager,
     ModifyInstancePayload,
+    TemplateFormDataRequest,
+    TemplateFormDataResponse,
     TestModifyInstancePayload,
     UserFileSourceModel,
 )
@@ -80,6 +81,20 @@ class FastAPIFileSources:
         return self.file_source_instances_manager.template_oauth2(trans, template_id, template_version)
 
     @router.post(
+        "/api/file_source_templates/{template_id}/{template_version}/form-data",
+        summary="Get dynamic data for a file source template form.",
+        operation_id="file_sources__template_form_data",
+    )
+    def template_form_data(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        template_id: str = TemplateIdPathParam,
+        template_version: int = TemplateVersionPathParam,
+        payload: TemplateFormDataRequest = Body(...),
+    ) -> TemplateFormDataResponse:
+        return self.file_source_instances_manager.template_form_data(trans, template_id, template_version, payload)
+
+    @router.post(
         "/api/file_source_instances",
         summary="Create a user-bound file source.",
         operation_id="file_sources__create_instance",
@@ -111,7 +126,7 @@ class FastAPIFileSources:
     def instance_index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[UserFileSourceModel]:
+    ) -> list[UserFileSourceModel]:
         return self.file_source_instances_manager.index(trans)
 
     @router.get(

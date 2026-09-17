@@ -21,7 +21,7 @@ async function onChange() {
             },
         })
         .then(() => {
-            router.push("/")
+            router.push("/user/password_change_success")
         })
         .catch((e) => {
             error.value = errorMessageAsString(e)

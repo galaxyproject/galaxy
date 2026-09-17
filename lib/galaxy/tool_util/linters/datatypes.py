@@ -1,9 +1,11 @@
 import os.path
+from os import getenv
 from typing import (
-    Set,
     TYPE_CHECKING,
     Union,
 )
+
+from packaging.version import Version
 
 # from galaxy import config
 from galaxy.tool_util.lint import Linter
@@ -18,10 +20,10 @@ if TYPE_CHECKING:
     from galaxy.tool_util.parser import ToolSource
     from galaxy.util.resources import Traversable
 
-DATATYPES_CONF = resource_path(__name__, "datatypes_conf.xml.sample")
+DATATYPES_CONF = getenv("DATATYPES_CONF", resource_path(__name__, "datatypes_conf.xml.sample"))
 
 
-def _parse_datatypes(datatype_conf_path: Union[str, "Traversable"]) -> Set[str]:
+def _parse_datatypes(datatype_conf_path: Union[str, "Traversable"]) -> set[str]:
     datatypes = set()
     tree = parse_xml(datatype_conf_path)
     root = tree.getroot()
@@ -67,6 +69,7 @@ class ValidDatatypes(Linter):
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
+        profile = tool_source.parse_profile()
         # get Galaxy built-in dataypes
         datatypes = _parse_datatypes(DATATYPES_CONF)
         # add custom tool data types
@@ -77,8 +80,25 @@ class ValidDatatypes(Linter):
                 datatypes |= _parse_datatypes(datatypes_conf_path)
         for attrib in ["format", "ftype", "ext"]:
             for elem in tool_xml.findall(f".//*[@{attrib}]"):
+                # skip help section, "format" in help has a different meaning
+                if elem.tag == "help":
+                    continue
                 formats = elem.get(attrib, "").split(",")
+                # Certain elements (e.g. `data`) can only have one format. This
+                # is checked separately by linting against the XSD.
+                if elem.tag == "param":
+                    if any(format in ["auto", "input"] for format in formats):
+                        lint_ctx.error(
+                            "Invalid format (auto or input) in tool or tool test inputs",
+                            linter=cls.name(),
+                            node=elem,
+                        )
+                        continue
                 for format in formats:
+                    if Version(str(profile)) <= Version("16.04") and format == "input":
+                        continue
+                    if format == "auto":
+                        continue
                     if format not in datatypes:
                         lint_ctx.error(
                             f"Unknown datatype [{format}] used in {elem.tag} element",

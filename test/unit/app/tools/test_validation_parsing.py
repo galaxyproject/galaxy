@@ -1,5 +1,3 @@
-from typing import Optional
-
 from galaxy.tool_util.unittest_utils.sample_data import (
     INVALID_XML_VALIDATORS,
     VALID_XML_VALIDATORS,
@@ -9,14 +7,12 @@ from galaxy.util import XML
 
 
 class MockApp:
-
     @property
     def tool_data_tables(self):
         return {"mycooltable": MockTable()}
 
 
 class MockTable:
-
     def get_version_fields(self):
         return (1, [])
 
@@ -28,7 +24,7 @@ def test_xml_validation_valid():
 
 def test_xml_validation_invalid():
     for xml_validator in INVALID_XML_VALIDATORS:
-        exc: Optional[Exception] = None
+        exc: Exception | None = None
         try:
             _validate_xml_str(xml_validator)
         except ValueError as e:

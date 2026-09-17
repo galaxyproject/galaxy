@@ -4,9 +4,9 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
+from collections.abc import Container
 from typing import (
     Any,
-    Container,
     Optional,
     TYPE_CHECKING,
 )

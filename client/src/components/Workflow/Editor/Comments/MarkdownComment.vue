@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrashAlt } from "@fortawesome/free-regular-svg-icons";
 import { faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
-import { BButton, BButtonGroup } from "bootstrap-vue";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";
@@ -17,9 +15,9 @@ import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
 
 import ColorSelector from "./ColorSelector.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import DraggablePan from "@/components/Workflow/Editor/DraggablePan.vue";
-
-library.add(faTrashAlt, faPalette);
 
 const props = defineProps<{
     comment: MarkdownWorkflowComment;
@@ -44,7 +42,7 @@ useResizable(
     computed(() => props.comment.size),
     ([width, height]) => {
         emit("resize", [width, height]);
-    }
+    },
 );
 
 const textAreaId = useUid("textarea-");
@@ -97,7 +95,7 @@ watch(
         if (!focused.value) {
             showColorSelector.value = false;
         }
-    }
+    },
 );
 
 function onSetColor(color: WorkflowCommentColor) {
@@ -168,19 +166,20 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
             <div class="rendered-markdown" @click="onClick" v-html="content"></div>
         </div>
 
-        <BButtonGroup v-if="!props.readonly" class="style-buttons">
-            <BButton
+        <GButtonGroup v-if="!props.readonly" class="style-buttons">
+            <GButton
                 class="button prevent-zoom"
-                variant="outline-primary"
+                color="blue"
+                outline
                 title="Color"
                 :pressed="showColorSelector"
                 @click="() => (showColorSelector = !showColorSelector)">
-                <FontAwesomeIcon icon="fa-palette" class="prevent-zoom" />
-            </BButton>
-            <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
-                <FontAwesomeIcon icon="far fa-trash-alt" class="prevent-zoom" />
-            </BButton>
-        </BButtonGroup>
+                <FontAwesomeIcon :icon="faPalette" class="prevent-zoom" />
+            </GButton>
+            <GButton class="button prevent-zoom" transparent title="Delete comment" @click="() => emit('remove')">
+                <FontAwesomeIcon :icon="faTrashAlt" class="prevent-zoom" />
+            </GButton>
+        </GButtonGroup>
 
         <ColorSelector
             v-if="showColorSelector"
@@ -191,7 +190,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 @import "buttonGroup.scss";
 
 $gap-x: 0.8rem;
@@ -366,7 +365,9 @@ $min-height: 1.5em;
     }
 
     &.multi-selected {
-        box-shadow: 0 0 0 2px $white, 0 0 0 4px lighten($brand-info, 20%);
+        box-shadow:
+            0 0 0 2px $white,
+            0 0 0 4px lighten($brand-info, 20%);
     }
 }
 

@@ -5,7 +5,7 @@ import sys
 
 import yaml
 
-from galaxy.tool_util.models import Tests
+from galaxy.tool_util_models import Tests
 
 DESCRIPTION = """
 A small utility to verify the Planemo test format.

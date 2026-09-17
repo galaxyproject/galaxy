@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import (
-    List,
-    Optional,
+    Literal,
 )
 from uuid import UUID
 
@@ -43,15 +42,14 @@ class GeneratePdfDownload(Model):
 
 # serialize user info for tasks
 class RequestUser(Model):
-    user_id: int
-    # TODO: allow make the above optional and allow a session_id for anonymous users...
-    # session_id: Optional[str]
+    user_id: int | None = None
+    galaxy_session_id: int | None = None
 
 
 class GenerateHistoryDownload(ShortTermStoreExportPayload):
     history_id: int
     user: RequestUser
-    export_association_id: Optional[int] = None
+    export_association_id: int | None = None
 
 
 class GenerateHistoryContentDownload(ShortTermStoreExportPayload):
@@ -67,11 +65,13 @@ class BcoGenerationTaskParametersMixin(BcoGenerationParametersMixin):
 class GenerateInvocationDownload(ShortTermStoreExportPayload, BcoGenerationTaskParametersMixin):
     invocation_id: int
     user: RequestUser
+    export_association_id: int | None = None
 
 
 class WriteInvocationTo(WriteStoreToPayload, BcoGenerationTaskParametersMixin):
     invocation_id: int
     user: RequestUser
+    export_association_id: int | None = None
 
 
 class WriteHistoryContentTo(WriteStoreToPayload):
@@ -83,15 +83,15 @@ class WriteHistoryContentTo(WriteStoreToPayload):
 class WriteHistoryTo(WriteStoreToPayload):
     history_id: int
     user: RequestUser
-    export_association_id: Optional[int] = None
+    export_association_id: int | None = None
 
 
 class ImportModelStoreTaskRequest(Model):
     user: RequestUser
-    history_id: Optional[int] = None
+    history_id: int | None = None
     source_uri: str
     for_library: bool
-    model_store_format: Optional[ModelStoreFormat] = None
+    model_store_format: ModelStoreFormat | None = None
 
 
 class MaterializeDatasetInstanceTaskRequest(Model):
@@ -113,13 +113,33 @@ class MaterializeDatasetInstanceTaskRequest(Model):
 
 class ComputeDatasetHashTaskRequest(Model):
     dataset_id: int
-    extra_files_path: Optional[str] = None
+    extra_files_path: str | None = None
     hash_function: HashFunctionNameEnum
-    user: Optional[RequestUser] = None  # access checks should be done pre-celery so this is optional
+    user: RequestUser | None = None  # access checks should be done pre-celery so this is optional
+
+
+class CopyDatasetsPayloadSourceEntry(Model):
+    id: str
+    type: str
+
+
+class CopyDatasetsPayload(Model):
+    source_content: list[CopyDatasetsPayloadSourceEntry]
+    target_history_ids: list[str] | None = None
+    target_history_name: str | None = None
+
+
+class CopyDatasetsResponse(Model):
+    history_ids: list[str]
 
 
 class PurgeDatasetsTaskRequest(Model):
-    dataset_ids: List[int]
+    dataset_ids: list[int]
+
+
+class PurgeHistoryDatasetsTaskRequest(Model):
+    history_id: int
+    preserve_owner_update_time: bool = False
 
 
 class TaskState(str, Enum):
@@ -152,3 +172,27 @@ class TaskResult(Model):
         title="Result",
         description="The result message of the task. Empty if the task is still running. If the task failed, this will contain the exception message.",
     )
+
+
+TOOL_SOURCE_CLASS = Literal["XmlToolSource", "YamlToolSource", "CwlToolSource"]
+
+
+class ToolSource(Model):
+    raw_tool_source: str
+    tool_dir: str | None = None
+    tool_source_class: TOOL_SOURCE_CLASS = "XmlToolSource"
+    tool_id: str | None = None
+
+
+class QueueJobs(Model):
+    tool_source: ToolSource
+    tool_request_id: int  # links to request ("incoming") and history
+    user: RequestUser  # TODO: test anonymous users through this submission path
+    use_cached_jobs: bool
+    rerun_remap_job_id: int | None  # link to a job to rerun & remap
+    preferred_object_store_id: str | None = None
+    tags: list[str] | None = None
+    data_manager_mode: str | None = None
+    send_email_notification: bool = False
+    credentials_context: list[dict] | None = None
+    dynamic_tool_id: int | None = None  # link to DynamicTool for custom/user tools

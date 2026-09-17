@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 
 import { GalaxyApi } from "@/api";
-import { type ObjectStoreTemplateSummaries, type ObjectStoreTemplateSummary } from "@/api/objectStores.templates";
+import type { ObjectStoreTemplateSummaries, ObjectStoreTemplateSummary } from "@/api/objectStores.templates";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { canUpgrade, findTemplate, getLatestVersion, getLatestVersionMap } from "./configTemplatesUtil";

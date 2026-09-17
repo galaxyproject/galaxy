@@ -21,6 +21,7 @@ function getContentId(step: Step) {
         data_input: () => "input",
         parameter_input: () => "input",
         pause: () => "pause",
+        pick_value: () => "pick_value",
     });
 }
 

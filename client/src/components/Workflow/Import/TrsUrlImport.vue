@@ -1,26 +1,34 @@
 <script setup lang="ts">
-import { BButton, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { BForm, BFormGroup, BFormInput } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
 
 interface Props {
     queryTrsUrl?: string;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    queryTrsUrl: "",
+});
 
 const emit = defineEmits<{
     (e: "onImport", url: string): void;
+    (e: "input-valid", valid: boolean): void;
 }>();
 
 const trsUrl = ref(props.queryTrsUrl);
 
-const isImportDisabled = computed(() => {
-    return !trsUrl.value;
+// Validation state for wizard mode
+const isValid = computed(() => {
+    return trsUrl.value !== null && trsUrl.value !== undefined && trsUrl.value.length > 0;
 });
 
-const importTooltip = computed(() => {
-    return isImportDisabled.value ? "You must provide a TRS URL." : "Import workflow from TRS URL";
-});
+watch(
+    isValid,
+    (newValue) => {
+        emit("input-valid", newValue);
+    },
+    { immediate: true },
+);
 
 function submit(ev: SubmitEvent) {
     ev.preventDefault();
@@ -30,28 +38,21 @@ function submit(ev: SubmitEvent) {
     }
 }
 
-// Automatically trigger the import if the TRS URL was provided as a query param
-if (trsUrl.value) {
-    emit("onImport", trsUrl.value);
+// Expose method for wizard submit
+function triggerImport() {
+    if (trsUrl.value) {
+        emit("onImport", trsUrl.value);
+    }
 }
+
+defineExpose({ triggerImport });
 </script>
 
 <template>
     <BForm class="mt-4" @submit="submit">
-        <h2 class="h-sm">alternatively, provide a TRS URL directly</h2>
-
         <BFormGroup label="TRS URL:" label-class="font-weight-bold">
             <BFormInput id="trs-import-url-input" v-model="trsUrl" aria-label="TRS URL" type="url" />
             If the workflow is accessible via a TRS URL, enter the URL above and click Import.
         </BFormGroup>
-
-        <BButton
-            id="trs-url-import-button"
-            type="submit"
-            :disabled="isImportDisabled"
-            :title="importTooltip"
-            variant="primary">
-            Import workflow
-        </BButton>
     </BForm>
 </template>

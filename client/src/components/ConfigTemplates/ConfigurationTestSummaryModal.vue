@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { BAlert, BModal } from "bootstrap-vue";
-import { ref, watch } from "vue";
+import { BAlert } from "bootstrap-vue";
 
 import type { PluginStatus } from "@/api/configTemplates";
 
+import GModal from "../BaseComponents/GModal.vue";
 import ConfigurationTestSummary from "./ConfigurationTestSummary.vue";
 
 interface Props {
@@ -14,26 +14,16 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const show = ref(props.value);
-
-watch(props, () => {
-    show.value = props.value;
-});
-
 const emit = defineEmits<{
     (e: "input", value: boolean): void;
 }>();
-
-watch(show, () => {
-    emit("input", show.value);
-});
 </script>
 
 <template>
-    <BModal v-model="show" title="Configuration Test Summary" hide-footer>
+    <GModal :show="props.value" title="Configuration Test Summary" size="medium" @close="emit('input', false)">
         <BAlert v-if="error" variant="danger" show dismissible>
             {{ error || "" }}
         </BAlert>
         <ConfigurationTestSummary :test-results="testResults" />
-    </BModal>
+    </GModal>
 </template>

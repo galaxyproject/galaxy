@@ -1,5 +1,6 @@
+import { suppressDebugConsole } from "@tests/vitest/helpers";
 import flushPromises from "flush-promises";
-import { suppressDebugConsole } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonitor";
@@ -29,7 +30,7 @@ describe("useShortTermStorageMonitor", () => {
                     default:
                         return response("4XX").json({ err_msg: "Not found", err_code: 404 }, { status: 404 });
                 }
-            })
+            }),
         );
     });
 

@@ -2,10 +2,6 @@ import datetime
 import os
 import shutil
 import tempfile
-from typing import (
-    Dict,
-    Optional,
-)
 from unittest import mock
 
 from pykwalify.core import Core
@@ -99,7 +95,7 @@ class BaseJobConfXmlParserTestCase(TestCase):
         self._job_configuration_base_pools = base_pools
         self._write_config_from(HANDLER_TEMPLATE_JOB_CONF, template=template)
 
-    def _write_config_from(self, path: StrPath, template: Optional[Dict[str, str]] = None) -> None:
+    def _write_config_from(self, path: StrPath, template: dict[str, str] | None = None) -> None:
         template = template or {}
         try:
             contents = open(path).read()
@@ -121,7 +117,7 @@ class BaseJobConfXmlParserTestCase(TestCase):
         self._write_config(contents)
 
     def _write_config(self, contents):
-        with open(os.path.join(self.temp_directory, f"job_conf.{self.extension}"), "w") as f:
+        with open(self.config.job_config_file, "w") as f:
             f.write(contents)
 
     def _with_advanced_config(self):
@@ -282,11 +278,6 @@ class TestAdvancedJobConfXmlParser(BaseJobConfXmlParserTestCase):
         assert baz_tool.handler == "special_handlers"
         assert baz_tool.destination == "bigmem"
 
-    def test_load_tool_params(self):
-        self._with_advanced_config()
-        foo_tool = self.job_config.tools["foo"][0]
-        assert foo_tool.params["source"] == "trackster"
-
     def test_limit_overrides(self):
         self._with_advanced_config()
         limits = self.job_config.limits
@@ -299,7 +290,7 @@ class TestAdvancedJobConfXmlParser(BaseJobConfXmlParserTestCase):
         assert limits.total_walltime["delta"] == datetime.timedelta(0, 0, 0, 0, 0, 24)
         assert limits.total_walltime["window"] == 30
 
-    def test_env_parsing(self):
+    def test_env_parsing(self) -> None:
         self._with_advanced_config()
         env_dest = self.job_config.destinations["java_cluster"][0]
         assert len(env_dest.env) == 4, len(env_dest.env)
@@ -344,7 +335,6 @@ class TestAdvancedJobConfXmlParser(BaseJobConfXmlParserTestCase):
 
     def test_tool_mapping_parameters(self):
         self._with_advanced_config()
-        assert self.job_config.tools["foo"][-1].params["source"] == "trackster"
         assert self.job_config.tools["longbar"][-1].destination == "dynamic"
         assert self.job_config.tools["longbar"][-1].resources == "all"
         assert "resources" not in self.job_config.tools["longbar"][-1].params

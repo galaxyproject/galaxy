@@ -1,10 +1,25 @@
-<tool id="Paste1" name="Paste" version="1.0.0">
+<tool id="Paste1" name="Paste" version="1.0.0" profile="24.2">
   <description>two files side by side</description>
   <requirements>
-    <requirement type="package" version="5.26">perl</requirement>
     <requirement type="package" version="8.31">coreutils</requirement>
   </requirements>
-  <command>perl '$__tool_directory__/pasteWrapper.pl' '$input1' '$input2' $delimiter '$out_file1'</command>
+  <command>
+    paste
+      #if $delimiter == "Dt":
+        -d '.'
+      #else if $delimiter == "C":
+        -d ','
+      #else if $delimiter == "D":
+        -d '-'
+      #else if $delimiter == "U":
+        -d '_'
+      #else if $delimiter == "P":
+        -d '|'
+      #else if $delimiter == "Sp":
+        -d ' '
+      #end if
+      '$input1' '$input2' > '$out_file1'
+  </command>
   <inputs>
 <!--    <display>paste $input1 and $input2 using $delimiter as delimiter</display> -->
     <param format="txt" name="input1" type="data" label="Paste"/>
@@ -32,6 +47,12 @@
       <param name="input2" value="2.bed"/>
       <param name="delimiter" value="T"/>
       <output name="out_file1" file="eq-paste.dat"/>
+    </test>
+    <test>
+      <param name="input1" value="1.bed"/>
+      <param name="input2" value="2.bed"/>
+      <param name="delimiter" value="D"/>
+      <output name="out_file1" file="eq-paste2.dat"/>
     </test>
   </tests>
   <help>

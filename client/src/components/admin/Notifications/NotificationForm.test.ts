@@ -1,16 +1,19 @@
+import "@/composables/__mocks__/filter";
+
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 import type Vue from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
 import NotificationForm from "./NotificationForm.vue";
 
-// Even though we don't use the API endpoints, this seems to prevent failure fetching
-// openapi during jest testing.
+// Calls roles, groups, and users APIs so we need to use a server mock
+// to prevent attempts at making real API calls.
 useServerMock();
 
 const SUBMIT_BUTTON_SELECTOR = "#notification-submit";
@@ -18,7 +21,7 @@ const SUBMIT_BUTTON_SELECTOR = "#notification-submit";
 const localVue = getLocalVue(true);
 
 async function mountNotificationForm(props?: object) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const wrapper = mount(NotificationForm as object, {
@@ -40,9 +43,9 @@ async function mountNotificationForm(props?: object) {
 describe("NotificationForm.vue", () => {
     function expectSubmitButton(wrapper: Wrapper<Vue>, enabled: boolean) {
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).exists()).toBeTruthy();
-        expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("disabled")).toBe(enabled ? undefined : "disabled");
-        expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("title")).toBe(
-            enabled ? "" : "Please fill all required fields"
+        expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("aria-disabled")).toBe(enabled ? undefined : "true");
+        expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("data-title")).toBe(
+            enabled ? "" : "Please fill all required fields",
         );
     }
 

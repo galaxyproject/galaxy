@@ -7,7 +7,6 @@ from textwrap import (
     indent,
     wrap,
 )
-from typing import List
 
 from galaxy.tool_util.upgrade import (
     Advice,
@@ -68,7 +67,7 @@ def _print_advice(advice: Advice):
         print(f"    More information at {url}")
 
 
-def _print_advice_list(advice_list: List[Advice]):
+def _print_advice_list(advice_list: list[Advice]):
     for advice in advice_list:
         _print_advice(advice)
 

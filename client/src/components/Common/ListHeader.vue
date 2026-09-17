@@ -1,59 +1,109 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faAngleDown, faAngleUp, faBars, faGripVertical } from "@fortawesome/free-solid-svg-icons";
+import { faAngleDown, faAngleUp, faBars, faCog, faGripVertical, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
+import { BDropdown, BDropdownGroup, BDropdownHeader, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { useUserStore } from "@/stores/userStore";
+import { type ListViewMode, useUserStore } from "@/stores/userStore";
 
-library.add(faAngleDown, faAngleUp, faBars, faGripVertical);
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 
-type ListView = "grid" | "list";
-type SortBy = "create_time" | "update_time" | "name";
+type SortBy = string;
+
+interface ColumnOption {
+    key: string;
+    label: string;
+}
+
+interface SortOption {
+    value: string;
+    label: string;
+}
 
 interface Props {
+    listId: string;
     allSelected?: boolean;
     showSelectAll?: boolean;
     showViewToggle?: boolean;
+    showSortOptions?: boolean;
     selectAllDisabled?: boolean;
     indeterminateSelected?: boolean;
+    columnOptions?: ColumnOption[];
+    visibleColumns?: string[];
+    sortOptions?: SortOption[];
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     allSelected: false,
     showSelectAll: false,
     showViewToggle: false,
+    showSortOptions: false,
     selectAllDisabled: false,
     indeterminateSelected: false,
+    columnOptions: () => [],
+    visibleColumns: () => [],
+    sortOptions: () => [],
 });
 
 const emit = defineEmits<{
     (e: "select-all"): void;
+    (e: "toggle-column", key: string): void;
+    (e: "sort-changed", sortBy: string, sortDesc: boolean): void;
+    (e: "reset-columns"): void;
 }>();
 
 const userStore = useUserStore();
 
 const sortDesc = ref(true);
-const sortBy = ref<SortBy>("update_time");
-const listViewMode = computed<ListView>(() => (userStore.preferredListViewMode as ListView) || "grid");
+
+// Default sort options for backward compatibility
+const defaultSortOptions: SortOption[] = [
+    { value: "name", label: "Name" },
+    { value: "update_time", label: "Update time" },
+];
+
+// Use provided sortOptions or fall back to defaults
+const effectiveSortOptions = computed(() => (props.sortOptions.length > 0 ? props.sortOptions : defaultSortOptions));
+
+const sortBy = ref<SortBy>(
+    props.sortOptions.length > 0 ? (effectiveSortOptions.value[0]?.value ?? "update_time") : "update_time",
+);
+const currentListViewMode = computed(() => userStore.currentListViewPreferences[props.listId] || "grid");
+
+const isAColumnNotVisible = computed(() => {
+    return props.columnOptions.some((column) => !props.visibleColumns.includes(column.key));
+});
 
 function onSort(newSortBy: SortBy) {
     if (sortBy.value === newSortBy) {
         sortDesc.value = !sortDesc.value;
     } else {
         sortBy.value = newSortBy;
+        sortDesc.value = true; // Reset to descending when changing sort field
     }
+    emit("sort-changed", sortBy.value, sortDesc.value);
 }
 
-function onToggleView(newView: ListView) {
-    userStore.setPreferredListViewMode(newView);
+function onResetColumns() {
+    emit("reset-columns");
+}
+
+function isColumnVisible(key: string) {
+    return props.visibleColumns.includes(key);
+}
+
+function onToggleColumn(key: string) {
+    emit("toggle-column", key);
+}
+
+function onToggleView(newView: ListViewMode) {
+    userStore.setListViewPreference(props.listId, newView);
 }
 
 defineExpose({
     sortBy,
     sortDesc,
-    listViewMode,
 });
 </script>
 
@@ -64,6 +114,7 @@ defineExpose({
                 <BFormCheckbox
                     v-if="showSelectAll"
                     id="list-header-select-all"
+                    class="unselectable"
                     :disabled="selectAllDisabled"
                     :checked="allSelected"
                     :indeterminate="indeterminateSelected"
@@ -74,63 +125,95 @@ defineExpose({
         </div>
 
         <div class="list-header-filters">
-            <div>
+            <div v-if="showSortOptions">
                 Sort by:
-                <BButtonGroup>
-                    <BButton
-                        id="sortby-name"
-                        v-b-tooltip.hover
-                        size="sm"
-                        :title="sortDesc ? 'Sort by name ascending' : 'Sort by name descending'"
-                        :pressed="sortBy === 'name'"
-                        variant="outline-primary"
-                        @click="onSort('name')">
-                        <FontAwesomeIcon v-show="sortBy === 'name'" :icon="sortDesc ? faAngleDown : faAngleUp" />
-                        Name
-                    </BButton>
-
-                    <BButton
-                        id="sortby-update-time"
-                        v-b-tooltip.hover
-                        size="sm"
-                        :title="sortDesc ? 'Sort by update time ascending' : 'Sort by update time descending'"
-                        :pressed="sortBy === 'update_time'"
-                        variant="outline-primary"
-                        @click="onSort('update_time')">
-                        <FontAwesomeIcon v-show="sortBy === 'update_time'" :icon="sortDesc ? faAngleDown : faAngleUp" />
-                        Update time
-                    </BButton>
-                </BButtonGroup>
+                <GButtonGroup>
+                    <GButton
+                        v-for="option in effectiveSortOptions"
+                        :id="`sortby-${option.value}`"
+                        :key="option.value"
+                        tooltip
+                        size="small"
+                        :title="sortDesc ? `Sort by ${option.label} ascending` : `Sort by ${option.label} descending`"
+                        :pressed="sortBy === option.value"
+                        color="blue"
+                        outline
+                        @click="onSort(option.value)">
+                        <FontAwesomeIcon v-show="sortBy === option.value" :icon="sortDesc ? faAngleDown : faAngleUp" />
+                        {{ option.label }}
+                    </GButton>
+                </GButtonGroup>
             </div>
+
+            <BDropdown
+                v-if="columnOptions.length > 0"
+                text="Columns"
+                size="sm"
+                variant="outline-primary"
+                right
+                no-caret>
+                <template v-slot:button-content>
+                    <FontAwesomeIcon :icon="faCog" fixed-width />
+                </template>
+
+                <BDropdownGroup>
+                    <BDropdownHeader>
+                        Show/Hide Columns
+                        <GButton
+                            v-if="isAColumnNotVisible"
+                            transparent
+                            tooltip
+                            title="Reset columns to default"
+                            @click="onResetColumns">
+                            <FontAwesomeIcon :icon="faUndo" fixed-width />
+                        </GButton>
+                    </BDropdownHeader>
+
+                    <BDropdownItem
+                        v-for="column in columnOptions"
+                        :key="column.key"
+                        :disabled="column.key === 'name'"
+                        @click="column.key !== 'name' && onToggleColumn(column.key)">
+                        <BFormCheckbox
+                            :checked="isColumnVisible(column.key)"
+                            :disabled="column.key === 'name'"
+                            @click.prevent>
+                            {{ column.label }}
+                        </BFormCheckbox>
+                    </BDropdownItem>
+                </BDropdownGroup>
+            </BDropdown>
 
             <slot name="extra-filter" />
         </div>
 
         <div v-if="showViewToggle">
             Display:
-            <BButtonGroup>
-                <BButton
+            <GButtonGroup>
+                <GButton
                     id="view-grid"
-                    v-b-tooltip
+                    tooltip
                     title="Grid view"
-                    size="sm"
-                    :pressed="listViewMode === 'grid'"
-                    variant="outline-primary"
+                    size="small"
+                    :pressed="currentListViewMode === 'grid'"
+                    outline
+                    color="blue"
                     @click="onToggleView('grid')">
                     <FontAwesomeIcon :icon="faGripVertical" />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     id="view-list"
-                    v-b-tooltip
+                    tooltip
                     title="List view"
-                    size="sm"
-                    :pressed="listViewMode === 'list'"
-                    variant="outline-primary"
+                    size="small"
+                    :pressed="currentListViewMode === 'list'"
+                    outline
+                    color="blue"
                     @click="onToggleView('list')">
                     <FontAwesomeIcon :icon="faBars" />
-                </BButton>
-            </BButtonGroup>
+                </GButton>
+            </GButtonGroup>
         </div>
     </div>
 </template>
@@ -140,6 +223,7 @@ defineExpose({
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin: 0.5rem 0;
 
     .list-header-filters {
         display: flex;

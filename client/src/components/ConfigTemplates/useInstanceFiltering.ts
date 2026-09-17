@@ -1,6 +1,6 @@
 import { computed, type Ref } from "vue";
 
-import { type Instance } from "@/api/configTemplates";
+import type { Instance } from "@/api/configTemplates";
 
 export function useFiltering<T extends Instance>(allInstances: Ref<T[]>) {
     const activeInstances = computed(() => {

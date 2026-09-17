@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
 import { fetchAllBroadcasts } from "@/api/notifications.broadcast";
-import { type components } from "@/api/schema";
+import type { components } from "@/api/schema";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { mergeObjectListsById } from "@/utils/utils";
 
@@ -32,7 +32,7 @@ export const useBroadcastsStore = defineStore("broadcastsStore", () => {
 
     function updateBroadcasts(broadcastList: BroadcastNotification[]) {
         broadcasts.value = mergeObjectListsById(broadcasts.value, broadcastList, "create_time", "desc").filter(
-            (b) => !hasExpired(b.expiration_time)
+            (b) => !hasExpired(b.expiration_time),
         );
     }
 

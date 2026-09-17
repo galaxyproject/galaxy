@@ -10,7 +10,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: "insertModule", id: string, name: string, state: WorkflowInput["stateOverwrites"]): void;
+    (e: "insertModule", id: WorkflowInput["moduleId"], name: string, state: WorkflowInput["stateOverwrites"]): void;
 }>();
 </script>
 
@@ -32,7 +32,7 @@ const emit = defineEmits<{
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .input-list {
     overflow-y: auto;

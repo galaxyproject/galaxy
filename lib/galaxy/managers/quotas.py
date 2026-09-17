@@ -7,9 +7,6 @@ For more information about quotas: https://galaxyproject.org/admin/disk-quotas/
 import logging
 from typing import (
     cast,
-    Optional,
-    Tuple,
-    Union,
 )
 
 from sqlalchemy import (
@@ -23,6 +20,7 @@ from galaxy import (
 )
 from galaxy.exceptions import ActionInputError
 from galaxy.managers import base
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     Group,
     Quota,
@@ -53,8 +51,8 @@ class QuotaManager:
     def quota_agent(self) -> DatabaseQuotaAgent:
         return cast(DatabaseQuotaAgent, self.app.quota_agent)
 
-    def create_quota(self, payload: dict, decode_id=None) -> Tuple[model.Quota, str]:
-        params = CreateQuotaParams.parse_obj(payload)
+    def create_quota(self, payload: dict, decode_id=None) -> tuple[model.Quota, str]:
+        params = CreateQuotaParams.model_validate(payload)
         create_amount = self._parse_amount(params.amount)
         stmt = select(Quota).where(Quota.name == params.name).limit(1)
         if self.sa_session.scalars(stmt).first():
@@ -107,7 +105,7 @@ class QuotaManager:
 
         return quota, message
 
-    def _parse_amount(self, amount: str) -> Optional[Union[int, bool]]:
+    def _parse_amount(self, amount: str) -> int | bool | None:
         if amount.lower() in ("unlimited", "none", "no limit"):
             return None
         try:
@@ -115,7 +113,7 @@ class QuotaManager:
         except ValueError:
             return False
 
-    def rename_quota(self, quota, params) -> Optional[str]:
+    def rename_quota(self, quota: Quota, params) -> str | None:
         stmt = select(Quota).where(and_(Quota.name == params.name, Quota.id != quota.id)).limit(1)
         if not params.name:
             raise ActionInputError("Enter a valid name.")
@@ -133,7 +131,7 @@ class QuotaManager:
             else:
                 return None
 
-    def manage_users_and_groups_for_quota(self, quota, params, decode_id=None) -> Optional[str]:
+    def manage_users_and_groups_for_quota(self, quota: Quota, params, decode_id=None) -> str | None:
         if quota.default:
             raise ActionInputError("Default quotas cannot be associated with specific users and groups.")
         else:
@@ -159,7 +157,7 @@ class QuotaManager:
             else:
                 return None
 
-    def edit_quota(self, quota, params) -> Optional[str]:
+    def edit_quota(self, quota: Quota, params) -> str | None:
         if params.amount.lower() in ("unlimited", "none", "no limit"):
             new_amount = None
         else:
@@ -185,7 +183,7 @@ class QuotaManager:
             else:
                 return None
 
-    def set_quota_default(self, quota, params) -> Optional[str]:
+    def set_quota_default(self, quota: Quota, params) -> str | None:
         if params.default != "no" and params.default not in model.DefaultQuotaAssociation.types.__members__.values():
             raise ActionInputError("Enter a valid default type.")
         else:
@@ -200,7 +198,7 @@ class QuotaManager:
                 self.sa_session.commit()
             return message
 
-    def unset_quota_default(self, quota, params=None) -> Optional[str]:
+    def unset_quota_default(self, quota: Quota, params=None) -> str | None:
         message = None
         if quota.default:
             message = f"Quota '{quota.name}' is no longer the default for {quota.default[0].type} users."
@@ -278,5 +276,5 @@ class QuotaManager:
         message += ", ".join(names)
         return message
 
-    def get_quota(self, trans, id: int, deleted: Optional[bool] = None) -> model.Quota:
+    def get_quota(self, trans: ProvidesUserContext, id: int, deleted: bool | None = None) -> model.Quota:
         return base.get_object(trans, id, "Quota", check_ownership=False, check_accessible=False, deleted=deleted)

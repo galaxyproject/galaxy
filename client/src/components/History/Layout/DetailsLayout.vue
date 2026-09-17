@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPen, faSave, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BFormInput, BFormTextarea } from "bootstrap-vue";
+import { BFormInput, BFormTextarea } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -11,15 +10,17 @@ import l from "@/utils/localization";
 
 import type { DetailsLayoutSummarized } from "./types";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import ClickToEdit from "@/components/Collections/common/ClickToEdit.vue";
+import Heading from "@/components/Common/Heading.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-
-library.add(faPen, faSave, faUndo);
 
 interface Props {
     name?: string;
     tags?: string[];
     writeable?: boolean;
+    renameable?: boolean;
     annotation?: string;
     showAnnotation?: boolean;
     summarized?: DetailsLayoutSummarized;
@@ -29,6 +30,7 @@ const props = withDefaults(defineProps<Props>(), {
     name: undefined,
     tags: undefined,
     writeable: true,
+    renameable: true,
     annotation: undefined,
     showAnnotation: true,
     summarized: undefined,
@@ -45,14 +47,24 @@ const editing = ref(false);
 const textSelected = ref(false);
 const localProps = ref<{ name: string; annotation: string | null; tags: string[] }>({
     name: "",
-    annotation: "",
+    annotation: null,
     tags: [],
+});
+
+const clickToEditName = computed({
+    get: () => props.name ?? "",
+    set: (newName) => {
+        if (newName && newName !== props.name) {
+            emit("save", { name: newName.trim() });
+            localProps.value.name = newName;
+        }
+    },
 });
 
 const detailsClass = computed(() => {
     const classes: Record<string, boolean> = {
         details: true,
-        "summarized-details": props.summarized && !editing.value,
+        "summarized-details": !!props.summarized,
         "m-3": !props.summarized || editing.value,
     };
 
@@ -84,9 +96,9 @@ function onToggle() {
     editing.value = !editing.value;
 
     localProps.value = {
-        name: props.name,
-        annotation: props.annotation,
-        tags: props.tags,
+        name: props.name ?? "",
+        annotation: props.annotation ?? null,
+        tags: props.tags ?? [],
     };
 
     if (nameRef.value) {
@@ -107,19 +119,43 @@ function selectText() {
 
 <template>
     <section :class="detailsClass" data-description="edit details">
-        <BButton
-            :disabled="isAnonymous || !writeable"
-            class="edit-button ml-1 float-right"
-            data-description="editor toggle"
-            size="sm"
-            variant="link"
-            :title="editButtonTitle"
-            :pressed="editing"
-            @click="onToggle">
-            <FontAwesomeIcon :icon="faPen" fixed-width />
-        </BButton>
+        <div class="d-flex justify-content-between w-100">
+            <template v-if="!summarized && !editing">
+                <ClickToEdit
+                    v-if="renameable"
+                    v-model="clickToEditName"
+                    component="h3"
+                    data-description="name display"
+                    no-save-on-blur
+                    class="name-display my-2 w-100" />
+                <Heading v-else h3 :clamp="2" class="my-2 w-100">
+                    {{ props.name || "..." }}
+                </Heading>
+            </template>
+            <div v-else class="overflow-hidden" style="max-width: 80%">
+                <TextSummary
+                    :description="name"
+                    data-description="name display"
+                    class="my-2"
+                    component="h3"
+                    one-line-summary
+                    no-expand />
+            </div>
 
-        <slot name="name" />
+            <GButton
+                :disabled="isAnonymous || !writeable"
+                class="edit-button ml-1 float-right"
+                data-description="editor toggle"
+                size="small"
+                transparent
+                :title="editButtonTitle"
+                :pressed="editing"
+                @click="onToggle">
+                <FontAwesomeIcon :icon="faPen" fixed-width />
+            </GButton>
+        </div>
+
+        <slot name="description" />
 
         <div v-if="!editing">
             <div
@@ -141,7 +177,7 @@ function selectText() {
                 v-if="tags"
                 :class="{
                     'mt-2': !summarized,
-                    tags: ['both', 'tags'].includes(summarized),
+                    tags: ['both', 'tags'].includes(summarized || ''),
                     hidden: summarized === 'hidden',
                 }"
                 :value="tags"
@@ -176,31 +212,36 @@ function selectText() {
 
             <StatelessTags v-if="localProps.tags" v-model="localProps.tags" class="mb-3 tags" />
 
-            <BButton
+            <GButton
                 class="save-button mb-1"
                 data-description="editor save button"
-                size="sm"
-                variant="primary"
+                size="small"
+                color="blue"
                 :disabled="!localProps.name"
                 @click="onSave">
                 <FontAwesomeIcon :icon="faSave" fixed-width />
                 <span v-localize>Save</span>
-            </BButton>
+            </GButton>
 
-            <BButton
-                class="cancel-button mb-1"
-                data-description="editor cancel button"
-                size="sm"
-                icon="undo"
-                @click="onToggle">
+            <GButton class="cancel-button mb-1" data-description="editor cancel button" size="small" @click="onToggle">
                 <FontAwesomeIcon :icon="faUndo" fixed-width />
                 <span v-localize>Cancel</span>
-            </BButton>
+            </GButton>
         </div>
+
+        <slot></slot>
     </section>
 </template>
 
 <style lang="scss" scoped>
+.name-display :deep(h3),
+h3.name-display {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
 .summarized-details {
     margin-left: 0.5rem;
     max-width: 15rem;

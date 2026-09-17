@@ -13,7 +13,8 @@ interface RepositoryLinkProps {
 // why are the v-if's below not preventing needing undefined here typescript?
 function copyLink(link: string | undefined) {
     if (link) {
-        copyAndNotify(link, "Link copied to your clipboard")
+        const absoluteLink = link.startsWith("http") ? link : `${window.location.origin}${link}`
+        copyAndNotify(absoluteLink, "Link copied to your clipboard")
     }
 }
 

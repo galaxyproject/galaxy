@@ -3,19 +3,21 @@ Image classes
 """
 
 import base64
+import io
 import json
 import logging
+import math
 import struct
+from collections.abc import Iterator
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
+    Literal,
 )
 
 import mrcfile
 import numpy as np
+import png
+import pydicom
 import tifffile
 
 try:
@@ -62,6 +64,7 @@ class Image(data.Data):
     edam_data = "data_2968"
     edam_format = "format_3547"
     file_ext = ""
+    display_behavior: Literal["inline", "download"] = "inline"  # Most image formats can be displayed inline in browsers
 
     MetadataElement(
         name="axes",
@@ -151,35 +154,35 @@ class Image(data.Data):
         return f"![{name}](data:image/{self.file_ext};base64,{base64_image_data})"
 
     def set_meta(
-        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: str | None = None, **kwd
     ) -> None:
         """
-        Try to populate the metadata of the image using a generic image loading library (pillow), if available.
+        Try to populate the metadata of the image using a generic image loading library (Pillow), if available.
 
         If an image has two axes, they are assumed to be ``YX``. If an image has three axes, they are assumed to be ``YXC``.
+
+        The metadata element `num_unique_values` remains unset.
         """
         if PIL is not None:
             try:
                 with PIL.Image.open(dataset.get_file_name()) as im:
+                    im_shape, im_typestr = PIL.Image._conv_type_shape(im)
+                    im_ndim = len(im_shape)
 
                     # Determine the metadata values that are available without loading the image data
-                    dataset.metadata.width = im.size[1]
-                    dataset.metadata.height = im.size[0]
+                    dataset.metadata.width = im.size[0]
+                    dataset.metadata.height = im.size[1]
                     dataset.metadata.depth = 0
                     dataset.metadata.frames = getattr(im, "n_frames", 0)
-                    dataset.metadata.num_unique_values = sum(val > 0 for val in im.histogram())
+                    dataset.metadata.dtype = str(np.array((0,), im_typestr).dtype)
 
-                    # Peek into a small 2x2 section of the image data
-                    im_peek_arr = np.array(im.crop((0, 0, min((2, im.size[1])), min((2, im.size[0])))))
-
-                    # Determine the remaining metadata values
-                    dataset.metadata.dtype = str(im_peek_arr.dtype)
-                    if im_peek_arr.ndim == 2:
+                    # Determine the remaining values, by assuming the order of axes
+                    if im_ndim == 2:
                         dataset.metadata.axes = "YX"
                         dataset.metadata.channels = 0
-                    elif im_peek_arr.ndim == 3:
+                    elif im_ndim == 3:
                         dataset.metadata.axes = "YXC"
-                        dataset.metadata.channels = im_peek_arr.shape[2]
+                        dataset.metadata.channels = im_shape[2]
 
             except PIL.UnidentifiedImageError:
                 pass
@@ -198,10 +201,36 @@ class Png(Image):
     edam_format = "format_3603"
     file_ext = "png"
 
+    def set_meta(
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: str | None = None, **kwd
+    ) -> None:
+        """
+        Try to populate the metadata of the image using PyPNG.
 
+        The base implementation is used to determine metadata elements that cannot be determined with PyPNG, but with Pillow.
+
+        Only 8bit PNG without animations is supported.
+        """
+        super().set_meta(dataset, overwrite, metadata_tmp_files_dir, **kwd)
+
+        # Read the image data row by row, to avoid allocating memory for the entire image
+        if dataset.metadata.dtype == "uint8" and dataset.metadata.frames in (0, 1):
+            reader = png.Reader(filename=dataset.get_file_name())
+            width, height, pixels, metadata = reader.asDirect()
+
+            unique_values: list[Any] = []
+            for row in pixels:
+                values = np.array(row, dtype="uint8")
+                unique_values = list(np.unique(unique_values + list(values)))
+            dataset.metadata.num_unique_values = len(unique_values)
+
+
+@build_sniff_from_prefix
 class Tiff(Image):
     edam_format = "format_3591"
     file_ext = "tiff"
+    display_behavior = "download"  # TIFF files trigger browser downloads
+
     MetadataElement(
         name="offsets",
         desc="Offsets File",
@@ -212,8 +241,29 @@ class Tiff(Image):
         optional=True,
     )
 
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determine if the file is in TIFF format by checking the file header.
+
+        For a successful check, the first 4 bytes must be the TIFF magic number. See [1] for a list of magic numbers.
+
+        Manual checking of the file header, as opposed to trying to read the file with tifffile, is required due to an
+        ambiguity with DICOM files. This is because the DICOM standard allows *any content* for the first 128 bytes of
+        the file, followed by the DICOM prefix (see §7.1 in [2] for details).
+
+        [1] https://gist.github.com/leommoore/f9e57ba2aa4bf197ebc5
+        [2] https://dicom.nema.org/medical/dicom/current/output/html/part10.html
+        """
+        return file_prefix.contents_header_bytes[:4] in (
+            b"\x4d\x4d\x00\x2a",  # TIFF format (Motorola - big endian)
+            b"\x49\x49\x2a\x00",  # TIFF format (Intel - little endian)
+        ) and (
+            len(file_prefix.contents_header_bytes) < 132  # file is too short to be a DICOM
+            or file_prefix.contents_header_bytes[128:132] != b"DICM"  # file does not contain the DICOM prefix
+        )
+
     def set_meta(
-        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: str | None = None, **kwd
     ) -> None:
         """
         Populate the metadata of the TIFF image using the tifffile library.
@@ -232,7 +282,7 @@ class Tiff(Image):
                 offsets = [page.offset for page in tif.pages]
 
                 # Aggregate a list of values for each metadata field (one value for each page of the TIFF file)
-                metadata: Dict[str, List[Any]] = {
+                metadata: dict[str, list[Any]] = {
                     key: []
                     for key in [
                         "axes",
@@ -245,30 +295,26 @@ class Tiff(Image):
                         "num_unique_values",
                     ]
                 }
-                for page in tif.series:
 
+                # TIFF files can contain multiple images, each represented by a series of pages
+                for series in tif.series:
                     # Determine the metadata values that should be generally available
-                    metadata["axes"].append(page.axes.upper())
-                    metadata["dtype"].append(str(page.dtype))
+                    metadata["axes"].append(series.axes.upper())
+                    metadata["dtype"].append(str(series.dtype))
 
                     axes = metadata["axes"][-1].replace("S", "C")
-                    metadata["width"].append(Tiff._get_axis_size(page.shape, axes, "X"))
-                    metadata["height"].append(Tiff._get_axis_size(page.shape, axes, "Y"))
-                    metadata["channels"].append(Tiff._get_axis_size(page.shape, axes, "C"))
-                    metadata["depth"].append(Tiff._get_axis_size(page.shape, axes, "Z"))
-                    metadata["frames"].append(Tiff._get_axis_size(page.shape, axes, "T"))
+                    metadata["width"].append(Tiff._get_axis_size(series.shape, axes, "X"))
+                    metadata["height"].append(Tiff._get_axis_size(series.shape, axes, "Y"))
+                    metadata["channels"].append(Tiff._get_axis_size(series.shape, axes, "C"))
+                    metadata["depth"].append(Tiff._get_axis_size(series.shape, axes, "Z"))
+                    metadata["frames"].append(Tiff._get_axis_size(series.shape, axes, "T"))
 
                     # Determine the metadata values that require reading the image data
-                    try:
-                        im_arr = page.asarray()
-                        metadata["num_unique_values"].append(len(np.unique(im_arr)))
-                    except ValueError:  # Occurs if the compression of the TIFF file is unsupported
-                        pass
+                    metadata["num_unique_values"].append(Tiff._get_num_unique_values(series))
 
                 # Populate the metadata fields based on the values determined above
                 for key, values in metadata.items():
                     if len(values) > 0:
-
                         # Populate as plain value, if there is just one value, and as a list otherwise
                         if len(values) == 1:
                             setattr(dataset.metadata, key, values[0])
@@ -297,23 +343,74 @@ class Tiff(Image):
             pass
 
     @staticmethod
-    def _get_axis_size(shape: Tuple[int, ...], axes: str, axis: str) -> int:
+    def _get_axis_size(shape: tuple[int, ...], axes: str, axis: str) -> int:
         idx = axes.find(axis)
         return shape[idx] if idx >= 0 else 0
 
-    def sniff(self, filename: str) -> bool:
-        with tifffile.TiffFile(filename):
-            return True
+    @staticmethod
+    def _get_num_unique_values(series: tifffile.TiffPageSeries) -> int | None:
+        """
+        Determines the number of unique values in a TIFF series of pages.
+        """
+        unique_values: list[Any] = []
+        try:
+            for page in series.pages:
+                if page is None:
+                    continue  # No idea how this might occur, but mypy demands that we check it, just to be sure
+
+                for chunk in Tiff._read_chunks(page):
+                    unique_values = list(np.unique(unique_values + list(chunk)))
+
+            return len(unique_values)
+        except ValueError:
+            return None  # Occurs if the compression of the TIFF file is unsupported
+
+    @staticmethod
+    def _read_chunks(
+        page: tifffile.TiffPage | tifffile.TiffFrame, mmap_chunk_size: int = 2**14
+    ) -> Iterator["np.typing.NDArray"]:
+        """
+        Generator that reads all chunks of values from a TIFF page.
+        """
+        if len(page.dataoffsets) > 1:
+            # There are multiple segments that can be processed consecutively
+            for segment in Tiff._read_segments(page):
+                yield segment.reshape(-1)
+
+        else:
+            # The page can be memory-mapped and processed chunk-wise
+            arr = page.asarray(out="memmap")  # No considerable amounts of memory should be allocated here
+            arr_flat = arr.reshape(-1)  # This should only produce a view without any new allocations
+            if mmap_chunk_size > len(arr_flat):
+                yield arr_flat
+            else:
+                chunks_count = math.ceil(len(arr_flat) / mmap_chunk_size)
+                yield from np.array_split(arr_flat, chunks_count)
+
+    @staticmethod
+    def _read_segments(page: tifffile.TiffPage | tifffile.TiffFrame) -> Iterator["np.typing.NDArray"]:
+        """
+        Generator that reads all segments of a TIFF page.
+        """
+        reader = page.parent.filehandle
+        for segment_idx, (segment_offset, segment_size) in enumerate(zip(page.dataoffsets, page.databytecounts)):
+            reader.seek(segment_offset)
+            segment_data = reader.read(segment_size)
+            segment = page.decode(segment_data, segment_idx)[0]
+
+            if segment is None:
+                continue  # No idea how this might occur, but mypy demands that we check it, just to be sure
+
+            yield segment
 
 
 class OMETiff(Tiff):
     file_ext = "ome.tiff"
 
-    def sniff(self, filename: str) -> bool:
-        with tifffile.TiffFile(filename) as tif:
-            if tif.is_ome:
-                return True
-        return False
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        buf = io.BytesIO(file_prefix.contents_header_bytes)
+        with tifffile.TiffFile(buf) as tif:
+            return tif.is_ome
 
 
 class OMEZarr(data.ZarrDirectory):
@@ -324,6 +421,10 @@ class OMEZarr(data.ZarrDirectory):
     """
 
     file_ext = "ome_zarr"
+
+    def sniff_directory(self, path: str) -> bool:
+        """Require an explicit ``ome_zarr`` extension for OME-Zarr uploads."""
+        return False
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
@@ -336,18 +437,22 @@ class OMEZarr(data.ZarrDirectory):
 
 class Hamamatsu(Image):
     file_ext = "vms"
+    display_behavior = "download"  # Proprietary microscopy format, not browser-displayable
 
 
 class Mirax(Image):
     file_ext = "mrxs"
+    display_behavior = "download"  # Proprietary microscopy format, not browser-displayable
 
 
 class Sakura(Image):
     file_ext = "svslide"
+    display_behavior = "download"  # Proprietary microscopy format, not browser-displayable
 
 
 class Nrrd(Image):
     file_ext = "nrrd"
+    display_behavior = "download"  # Medical imaging format, not browser-displayable
 
 
 class Bmp(Image):
@@ -423,11 +528,120 @@ class Rast(Image):
 class Pdf(Image):
     edam_format = "format_3508"
     file_ext = "pdf"
+    display_behavior = "download"  # PDFs often trigger downloads depending on browser settings
 
     def sniff(self, filename: str) -> bool:
         """Determine if the file is in pdf format."""
         with open(filename, "rb") as fh:
             return fh.read(4) == b"%PDF"
+
+
+@build_sniff_from_prefix
+class Dicom(Image):
+    """
+    DICOM medical imaging format (.dcm)
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('ct_image.dcm')
+    >>> Dicom().sniff(fname)
+    True
+    """
+
+    MetadataElement(
+        name="is_tiled",
+        desc="Is this a WSI DICOM?",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
+    edam_format = "format_3548"
+    file_ext = "dcm"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determine if the file is in DICOM format according to §7.1 in [1].
+
+        [1] https://dicom.nema.org/medical/dicom/current/output/html/part10.html
+        """
+        return len(file_prefix.contents_header_bytes) >= 132 and file_prefix.contents_header_bytes[128:132] == b"DICM"
+
+    def get_mime(self) -> str:
+        """
+        Returns the mime type of the datatype.
+        """
+        return "application/dicom"
+
+    def set_meta(
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: str | None = None, **kwd
+    ) -> None:
+        """
+        Populate the metadata of the DICOM file using the pydicom library.
+
+        The following metadata fields are populated, if possible:
+        - `width`
+        - `height`
+        - `channels`
+        - `dtype`
+        - `num_unique_values` in some cases
+        - `is_tiled`
+
+        Currently, `frames` and `depth` are not populated. This is because "frames" in DICOM are a generic entity,
+        that can be used for different purposes, including slices in 3-D images, frames in temporal sequences, and
+        tiles of a mosaic or pyramid (WSI DICOM). Distinguishing these cases is not straight-forward (and, as a
+        consequence, neither is determining the `axes` of the image). This can be implemented in the future.
+        """
+        try:
+            dcm = pydicom.dcmread(dataset.get_file_name(), stop_before_pixels=True)
+        except pydicom.errors.InvalidDicomError:
+            return  # Ignore errors if metadata cannot be read
+
+        # Determine the number of channels (0 if no channel info is present)
+        dataset.metadata.channels = dcm.get("SamplesPerPixel", 0)
+
+        # Determine if the DICOM file is tiled (likely WSI DICOM)
+        dataset.metadata.is_tiled = hasattr(dcm, "TotalPixelMatrixColumns") and hasattr(dcm, "TotalPixelMatrixRows")
+
+        # Determine the width and height of the dataset. If the DICOM file is not tiled, the width and height
+        # directly. For tiled DICOM, these values correspond to the size of the tiles.
+        if dataset.metadata.is_tiled:
+            dataset.metadata.width = dcm.TotalPixelMatrixColumns
+            dataset.metadata.height = dcm.TotalPixelMatrixRows
+        else:
+            dataset.metadata.width = dcm.get("Columns")
+            dataset.metadata.height = dcm.get("Rows")
+
+        # Try to infer the `dtype` from metadata
+        if dcm.BitsAllocated == 1:
+            dataset.metadata.dtype = "bool"  # 1bit
+        else:
+            dtype_lut = [
+                ["uint8", "int8"],
+                ["uint16", "int16"],
+                ["uint32", "int32"],
+            ]
+            dtype_lut_pos = (
+                round(math.log2(dcm.BitsAllocated) - 3),  # 8bit -> 0, 16bit -> 1, 32bit -> 2
+                dcm.PixelRepresentation,
+            )
+            if 0 <= dtype_lut_pos[0] < len(dtype_lut):
+                dataset.metadata.dtype = dtype_lut[dtype_lut_pos[0]][dtype_lut_pos[1]]
+            else:
+                dataset.metadata.dtype = None  # unknown `dtype`
+
+        # Try to infer `num_unique_values` from metadata
+        try:
+            if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.66.4":  # https://www.dicomlibrary.com/dicom/sop
+                # The DICOM file contains segmentation, count +1 for the image background
+                dataset.metadata.num_unique_values = 1 + len(dcm.SegmentSequence)
+
+            else:
+                # Otherwise, `num_unique_values` is not available from metadata
+                dataset.metadata.num_unique_values = None
+
+        except AttributeError:
+            # Ignore errors if metadata cannot be read
+            dataset.metadata.num_unique_values = None
 
 
 @build_sniff_from_prefix
@@ -598,7 +812,7 @@ class Analyze75(Binary):
                 opt_text = " (optional)"
             if composite_file.get("description"):
                 rval.append(
-                    f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>"
+                    f'<li><a href="{fn}" type="text/plain">{fn} ({composite_file.get("description")})</a>{opt_text}</li>'
                 )
             else:
                 rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')

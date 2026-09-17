@@ -12,14 +12,14 @@ import shutil
 import struct
 import tempfile
 import zipfile
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from functools import partial
 from typing import (
-    Callable,
-    Dict,
     IO,
-    Iterable,
     NamedTuple,
-    Optional,
     TYPE_CHECKING,
     Union,
 )
@@ -37,7 +37,11 @@ from galaxy.util.checkers import (
     COMPRESSION_CHECK_FUNCTIONS,
     is_tar,
 )
-from galaxy.util.path import StrPath
+from galaxy.util.path import (
+    safe_contains,
+    safe_relpath,
+    StrPath,
+)
 
 try:
     import pylibmagic  # noqa: F401  # isort:skip
@@ -52,7 +56,24 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 SNIFF_PREFIX_BYTES = int(os.environ.get("GALAXY_SNIFF_PREFIX_BYTES", None) or 2**20)
-BINARY_MIMETYPES = {"application/pdf", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
+BINARY_MIMETYPES = {
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+}
+
+# A libmagic cookie builds its description in a buffer it owns and returns a pointer
+# to it, so it cannot be used from more than one thread at a time or the description
+# comes back torn. Datasets are sniffed concurrently (celery runs a thread pool), so
+# go through `magic.Magic`, which locks around every libmagic call.
+_MAGIC = magic.Magic(mime=True, mime_encoding=True)
+
+
+def _split_magic_description(description: str) -> tuple[str, str]:
+    """Split a libmagic ``<mime type>; charset=<encoding>`` description in two."""
+    mime_type, _, encoding = description.partition("; ")
+    return mime_type, encoding.removeprefix("charset=")
 
 
 def get_test_fname(fname):
@@ -75,13 +96,21 @@ stream_url_to_file = partial(files_stream_url_to_file, prefix="gx_url_paste")
 
 
 def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts):
+    # ``name`` can be user-controlled (e.g. the ``files_N|NAME`` of an ad-hoc
+    # ``force_composite`` upload), so it must never resolve outside of the
+    # dataset's extra files directory.
+    file_output_path = os.path.join(extra_files, name)
+    if not name or not safe_relpath(name) or not safe_contains(os.path.realpath(extra_files), file_output_path):
+        raise ValueError(
+            f"Invalid composite file name '{name}'; must be a relative path inside the dataset's extra files directory"
+        )
+
     if not is_binary:
         if upload_opts.get("space_to_tab"):
             convert_newlines_sep2tabs(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
         else:
             convert_newlines(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
 
-    file_output_path = os.path.join(extra_files, name)
     shutil.move(src_path, file_output_path)
 
     # groom the dataset file content if required by the corresponding datatype definition
@@ -91,22 +120,22 @@ def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_
 
 class ConvertResult(NamedTuple):
     line_count: int
-    converted_path: Optional[str]
+    converted_path: str | None
     converted_newlines: bool
     converted_regex: bool
 
 
 class ConvertFunction(Protocol):
     def __call__(
-        self, fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"
+        self, fname: str, in_place: bool = True, tmp_dir: str | None = None, tmp_prefix: str | None = "gxupload"
     ) -> ConvertResult: ...
 
 
 def convert_newlines(
     fname: str,
     in_place: bool = True,
-    tmp_dir: Optional[str] = None,
-    tmp_prefix: Optional[str] = "gxupload",
+    tmp_dir: str | None = None,
+    tmp_prefix: str | None = "gxupload",
     block_size: int = 128 * 1024,
     regexp=None,
 ) -> ConvertResult:
@@ -119,9 +148,10 @@ def convert_newlines(
     converted_regex = False
     NEWLINE_BYTE = 10
     CR_BYTE = 13
-    with tempfile.NamedTemporaryFile(mode="wb", prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp, open(
-        fname, mode="rb"
-    ) as fi:
+    with (
+        tempfile.NamedTemporaryFile(mode="wb", prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp,
+        open(fname, mode="rb") as fi,
+    ):
         last_char = None
         block = fi.read(block_size)
         last_block = b""
@@ -159,8 +189,8 @@ def convert_newlines(
 def convert_sep2tabs(
     fname: str,
     in_place: bool = True,
-    tmp_dir: Optional[str] = None,
-    tmp_prefix: Optional[str] = "gxupload",
+    tmp_dir: str | None = None,
+    tmp_prefix: str | None = "gxupload",
     block_size: int = 128 * 1024,
 ):
     """
@@ -171,9 +201,10 @@ def convert_sep2tabs(
     i = 0
     converted_newlines = False
     converted_regex = False
-    with tempfile.NamedTemporaryFile(mode="wb", prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp, open(
-        fname, mode="rb"
-    ) as fi:
+    with (
+        tempfile.NamedTemporaryFile(mode="wb", prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp,
+        open(fname, mode="rb") as fi,
+    ):
         block = fi.read(block_size)
         while block:
             if block:
@@ -193,7 +224,7 @@ def convert_sep2tabs(
 
 
 def convert_newlines_sep2tabs(
-    fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"
+    fname: str, in_place: bool = True, tmp_dir: str | None = None, tmp_prefix: str | None = "gxupload"
 ) -> ConvertResult:
     """
     Converts newlines in a file to posix newlines and replaces spaces with tabs.
@@ -604,15 +635,11 @@ class FilePrefix:
         self.truncated = truncated
         self.filename = filename
         self.non_utf8_error = non_utf8_error
-        file_magic = magic.detect_from_content(contents_header_bytes)
-        self.encoding = file_magic.encoding
-        self.mime_type = file_magic.mime_type
+        self.mime_type, self.encoding = _split_magic_description(_MAGIC.from_buffer(contents_header_bytes))
         self.compressed_mime_type = None
         self.compressed_encoding = None
         if compressed_format:
-            compressed_magic = magic.detect_from_filename(filename)
-            self.compressed_mime_type = compressed_magic.mime_type
-            self.compressed_encoding = compressed_magic.encoding
+            self.compressed_mime_type, self.compressed_encoding = _split_magic_description(_MAGIC.from_file(filename))
         self.compressed_format = compressed_format
         self.contents_header = contents_header
         self.contents_header_bytes = contents_header_bytes
@@ -687,7 +714,7 @@ class FilePrefix:
         return self.contents_header_bytes.startswith(test_bytes)
 
 
-def _get_file_prefix(filename_or_file_prefix: Union[str, FilePrefix], auto_decompress: bool = True) -> FilePrefix:
+def _get_file_prefix(filename_or_file_prefix: str | FilePrefix, auto_decompress: bool = True) -> FilePrefix:
     if not isinstance(filename_or_file_prefix, FilePrefix):
         return FilePrefix(filename_or_file_prefix, auto_decompress=auto_decompress)
     return filename_or_file_prefix
@@ -781,16 +808,16 @@ class HandleCompressedFileResponse(NamedTuple):
     is_valid: bool
     ext: str
     uncompressed_path: str
-    compressed_type: Optional[str]
-    is_compressed: Optional[bool]
+    compressed_type: str | None
+    is_compressed: bool | None
 
 
 def handle_compressed_file(
     file_prefix: FilePrefix,
     datatypes_registry,
     ext: str = "auto",
-    tmp_prefix: Optional[str] = "sniff_uncompress_",
-    tmp_dir: Optional[str] = None,
+    tmp_prefix: str | None = "sniff_uncompress_",
+    tmp_dir: str | None = None,
     in_place: bool = False,
     check_content: bool = True,
 ) -> HandleCompressedFileResponse:
@@ -869,7 +896,7 @@ def handle_uploaded_dataset_file(filename, *args, **kwds) -> str:
 class HandleUploadedDatasetFileInternalResponse(NamedTuple):
     ext: str
     converted_path: str
-    compressed_type: Optional[str]
+    compressed_type: str | None
     converted_newlines: bool
     converted_spaces: bool
 
@@ -889,14 +916,14 @@ def handle_uploaded_dataset_file_internal(
     file_prefix: FilePrefix,
     datatypes_registry,
     ext: str = "auto",
-    tmp_prefix: Optional[str] = "sniff_upload_",
-    tmp_dir: Optional[str] = None,
+    tmp_prefix: str | None = "sniff_upload_",
+    tmp_dir: str | None = None,
     in_place: bool = False,
     check_content: bool = True,
-    is_binary: Optional[bool] = None,
-    uploaded_file_ext: Optional[str] = None,
-    convert_to_posix_lines: Optional[bool] = None,
-    convert_spaces_to_tabs: Optional[bool] = None,
+    is_binary: bool | None = None,
+    uploaded_file_ext: str | None = None,
+    convert_to_posix_lines: bool | None = None,
+    convert_spaces_to_tabs: bool | None = None,
 ) -> HandleUploadedDatasetFileInternalResponse:
     is_valid, ext, converted_path, compressed_type, is_compressed = handle_compressed_file(
         file_prefix,
@@ -955,7 +982,7 @@ def handle_uploaded_dataset_file_internal(
 AUTO_DETECT_EXTENSIONS = ["auto"]  # should 'data' also cause auto detect?
 
 
-DECOMPRESSION_FUNCTIONS: Dict[str, Callable] = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
+DECOMPRESSION_FUNCTIONS: dict[str, Callable] = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
 
 
 class InappropriateDatasetContentError(Exception):

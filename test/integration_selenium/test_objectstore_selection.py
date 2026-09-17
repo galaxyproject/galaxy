@@ -12,8 +12,7 @@ if TYPE_CHECKING:
     from galaxy_test.selenium.framework import SeleniumSessionDatasetPopulator
 
 
-MSI_EXAMPLE_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
-    """
+MSI_EXAMPLE_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""
 <object_store type="distributed">
     <backends>
         <backend id="high_performance" allow_selection="true" type="disk" weight="1" name="High Performance Storage">
@@ -78,8 +77,7 @@ More information about MSI Storage can be found [here](https://www.msi.umn.edu/c
         </backend>
     </backends>
 </object_store>
-"""
-)
+""")
 
 
 class TestObjectStoreSelectionSeleniumIntegration(SeleniumIntegrationTestCase, ConfiguresObjectStores):

@@ -1,14 +1,14 @@
 <template>
     <span>
-        <span v-if="!referenceEl" ref="reference">
+        <span v-if="!referenceEl" ref="reference" class="popper-reference-container">
             <slot name="reference" />
         </span>
-        <div v-show="visible" ref="popper" class="popper-element mt-1" :class="`popper-element-${mode}`">
+        <div v-show="!disabled && visible" ref="popper" class="popper-element" :class="`popper-element-${mode}`">
             <div v-if="arrow" class="popper-arrow" data-popper-arrow />
             <div v-if="title" class="popper-header px-2 py-1 rounded-top d-flex justify-content-between">
                 <span class="px-1">{{ title }}</span>
                 <span class="popper-close align-items-center cursor-pointer" @click="visible = false">
-                    <FontAwesomeIcon icon="fa-times-circle" />
+                    <FontAwesomeIcon :icon="faTimesCircle" />
                 </span>
             </div>
             <slot />
@@ -17,44 +17,49 @@
 </template>
 
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { type Placement } from "@popperjs/core";
-import type { PropType } from "vue";
-import { ref, watch } from "vue";
+import type { Placement } from "@popperjs/core";
+import { ref } from "vue";
+
+import { DEFAULT_TOOLTIP_HOVER_DELAY_MS } from "@/utils/tooltipTiming";
 
 import { type Trigger, usePopper } from "./usePopper";
 
-library.add(faTimesCircle);
+interface Props {
+    arrow?: boolean;
+    disabled?: boolean;
+    hoverDelay?: number;
+    interactive?: boolean;
+    mode?: string;
+    placement?: Placement;
+    referenceEl?: HTMLElement;
+    title?: string;
+    trigger?: Trigger;
+}
 
-const props = defineProps({
-    arrow: { type: Boolean, default: true },
-    disabled: { type: Boolean, default: false },
-    mode: { type: String, default: "dark" },
-    placement: String as PropType<Placement>,
-    referenceEl: HTMLElement,
-    title: String,
-    trigger: String as PropType<Trigger>,
+const props = withDefaults(defineProps<Props>(), {
+    arrow: true,
+    disabled: false,
+    hoverDelay: DEFAULT_TOOLTIP_HOVER_DELAY_MS,
+    interactive: false,
+    mode: "dark",
+    placement: "bottom",
+    referenceEl: undefined,
+    title: undefined,
+    trigger: "hover",
 });
 
 const reference = props.referenceEl ? ref(props.referenceEl) : ref();
+
 const popper = ref();
 
 const { visible } = usePopper(reference, popper, {
+    hoverDelay: props.hoverDelay,
+    interactive: props.interactive,
     placement: props.placement,
     trigger: props.trigger,
 });
-
-watch(
-    () => [visible.value, props.disabled],
-    () => {
-        if (props.disabled && visible.value) {
-            visible.value = false;
-        }
-    },
-    { flush: "sync" }
-);
 
 defineExpose({
     visible,
@@ -64,7 +69,7 @@ defineExpose({
 </script>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 @function popper-border($border-color) {
     @return 1px solid $border-color;
@@ -73,6 +78,7 @@ defineExpose({
 .popper-element {
     z-index: 9999;
     border-radius: $border-radius-large;
+    pointer-events: auto;
 }
 
 /** Available variants */
@@ -82,20 +88,12 @@ defineExpose({
     color: $brand-light;
     max-width: 12rem;
     opacity: 0.95;
-    .popper-arrow:before {
-        background: $brand-dark;
-        border: popper-border($brand-dark);
-    }
 }
 
 .popper-element-light {
     background: $white;
     border: popper-border($border-color);
     color: $brand-dark;
-    .popper-arrow:before {
-        background: $white;
-        border: popper-border($border-color);
-    }
 }
 
 .popper-element-primary-title {
@@ -106,63 +104,46 @@ defineExpose({
         background: $brand-primary;
         color: $white;
     }
-    .popper-arrow:before {
-        background: $brand-primary;
-        border: popper-border($border-color);
-    }
 }
 
-/** Arrow positioning and border handling */
-.popper-arrow,
-.popper-arrow:before {
-    height: 9px;
-    width: 9px;
+/** Triangle Arrow */
+.popper-arrow {
     position: absolute;
-    content: "";
-    transform: rotate(45deg);
+    width: 0;
+    height: 0;
+    border-style: solid;
 }
 
-.popper-element[data-popper-placement^="top"] {
-    > .popper-arrow {
-        bottom: 0px;
-    }
-    > .popper-arrow:before {
-        bottom: -5px;
-        border-top: none;
-        border-left: none;
-    }
+/** Arrow positioning based on placement */
+.popper-element[data-popper-placement^="top"] > .popper-arrow {
+    bottom: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 7px;
+    border-color: $brand-dark transparent transparent transparent;
 }
 
-.popper-element[data-popper-placement^="right"] {
-    > .popper-arrow {
-        left: 0px;
-    }
-    > .popper-arrow:before {
-        left: -5px;
-        border-top: none;
-        border-right: none;
-    }
+.popper-element[data-popper-placement^="bottom"] > .popper-arrow {
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 7px;
+    border-color: transparent transparent $brand-dark transparent;
 }
 
-.popper-element[data-popper-placement^="bottom"] {
-    > .popper-arrow {
-        top: 0px;
-    }
-    > .popper-arrow:before {
-        top: -5px;
-        border-bottom: none;
-        border-right: none;
-    }
+.popper-element[data-popper-placement^="left"] > .popper-arrow {
+    right: -14px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 7px;
+    border-color: transparent transparent transparent $brand-dark;
 }
 
-.popper-element[data-popper-placement^="left"] {
-    > .popper-arrow {
-        right: 0px;
-    }
-    > .popper-arrow:before {
-        right: -5px;
-        border-bottom: none;
-        border-left: none;
-    }
+.popper-element[data-popper-placement^="right"] > .popper-arrow {
+    left: -14px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 7px;
+    border-color: transparent $brand-dark transparent transparent;
 }
 </style>

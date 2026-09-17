@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -9,7 +10,7 @@ import { updateContentFields } from "@/components/History/model/queries";
 
 import ContentItem from "./ContentItem.vue";
 
-jest.mock("components/History/model/queries");
+vi.mock("@/components/History/model/queries");
 
 const { server, http } = useServerMock();
 
@@ -18,9 +19,9 @@ localVue.use(VueRouter);
 localVue.use(PiniaVuePlugin);
 const router = new VueRouter();
 
-jest.mock("vue-router/composables", () => ({
-    useRoute: jest.fn(() => ({})),
-    useRouter: jest.fn(() => ({})),
+vi.mock("vue-router/composables", () => ({
+    useRoute: vi.fn(() => ({})),
+    useRouter: vi.fn(() => ({})),
 }));
 
 // mock queries
@@ -38,12 +39,18 @@ describe("ContentItem", () => {
     let wrapper;
 
     beforeEach(() => {
+        suppressLucideVue2Deprecation();
+
         server.use(
+            http.get("/api/object_stores", ({ response }) => {
+                return response(200).json([]);
+            }),
+
             http.get("/api/datasets/{dataset_id}", ({ response }) => {
                 // We need to use untyped here because this endpoint is not
                 // described in the OpenAPI spec due to its complexity for now.
                 return response.untyped(HttpResponse.json(item));
-            })
+            }),
         );
 
         wrapper = mount(ContentItem, {
@@ -65,11 +72,11 @@ describe("ContentItem", () => {
             },
             provide: {
                 store: {
-                    dispatch: jest.fn,
+                    dispatch: vi.fn,
                     getters: {},
                 },
             },
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
             router,
         });
     });

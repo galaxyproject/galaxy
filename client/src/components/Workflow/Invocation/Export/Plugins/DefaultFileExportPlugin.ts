@@ -1,4 +1,4 @@
-import { type InvocationExportPlugin } from "@/components/Workflow/Invocation/Export/Plugins";
+import type { InvocationExportPlugin } from "@/components/Workflow/Invocation/Export/Plugins";
 
 export const DEFAULT_FILE_EXPORT_PLUGIN: InvocationExportPlugin = {
     id: "default-file",

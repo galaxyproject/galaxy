@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 
@@ -10,14 +9,11 @@ from galaxy.tool_shed.util.hg_util import (
     get_changectx_for_changeset,
     get_file_context_from_ctx,
 )
-from galaxy.tool_shed.util.repository_util import get_repo_info_tuple_contents
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
 from galaxy.util import (
     rst_to_html,
     unicodify,
-    url_get,
 )
-from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
 from tool_shed.util.metadata_util import get_latest_downloadable_changeset_revision
 
 log = logging.getLogger(__name__)
@@ -96,31 +92,4 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                                     "Error reading README file '%s' from repository manifest",
                                     relative_path_to_readme_file,
                                 )
-    return readme_files_dict
-
-
-def get_readme_files_dict_for_display(app, tool_shed_url, repo_info_dict):
-    """
-    Return a dictionary of README files contained in the single repository being installed so they can be displayed on the tool panel section
-    selection page.
-    """
-    name = next(iter(repo_info_dict))
-    repo_info_tuple = repo_info_dict[name]
-    (
-        description,
-        repository_clone_url,
-        changeset_revision,
-        ctx_rev,
-        repository_owner,
-        repository_dependencies,
-        installed_td,
-    ) = get_repo_info_tuple_contents(repo_info_tuple)
-    # Handle changing HTTP protocols over time.
-    tool_shed_url = get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
-    params = dict(name=name, owner=repository_owner, changeset_revision=changeset_revision)
-    pathspec = ["repository", "get_readme_files"]
-    raw_text = url_get(
-        tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
-    )
-    readme_files_dict = json.loads(raw_text)
     return readme_files_dict

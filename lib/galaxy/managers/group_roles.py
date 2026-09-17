@@ -1,8 +1,4 @@
 import logging
-from typing import (
-    List,
-    Optional,
-)
 
 from sqlalchemy import select
 
@@ -22,7 +18,7 @@ class GroupRolesManager:
     def __init__(self, app: MinimalManagerApp) -> None:
         self._app = app
 
-    def index(self, trans: ProvidesAppContext, group_id: int) -> List[model.GroupRoleAssociation]:
+    def index(self, trans: ProvidesAppContext, group_id: int) -> list[model.GroupRoleAssociation]:
         """
         Returns a collection roles associated with the given group.
         """
@@ -77,7 +73,7 @@ class GroupRolesManager:
 
     def _get_group_role(
         self, trans: ProvidesAppContext, group: model.Group, role: model.Role
-    ) -> Optional[model.GroupRoleAssociation]:
+    ) -> model.GroupRoleAssociation | None:
         return get_group_role(trans.sa_session, group, role)
 
     def _add_role_to_group(self, trans: ProvidesAppContext, group: model.Group, role: model.Role):
@@ -90,7 +86,7 @@ class GroupRolesManager:
         trans.sa_session.commit()
 
 
-def get_group_role(session: galaxy_scoped_session, group, role) -> Optional[GroupRoleAssociation]:
+def get_group_role(session: galaxy_scoped_session, group, role) -> GroupRoleAssociation | None:
     stmt = (
         select(GroupRoleAssociation).where(GroupRoleAssociation.group == group).where(GroupRoleAssociation.role == role)
     )

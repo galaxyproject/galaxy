@@ -1,6 +1,6 @@
 [project]
 name = "galaxy"
-version = "0.1.0"  # Not the real version, which is instead defined in lib/galaxy/version.py
+version = "0.1.0"  # Not the real version, which is instead defined in lib/galaxy/version/__init__.py
 description = "Galaxy is an open, web-based platform for accessible, reproducible, and transparent computational research."
 authors = [
     {name = "Galaxy Contributors"},
@@ -10,7 +10,7 @@ maintainers = [
 ]
 license = {file = "LICENSE.txt"}
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     "a2wsgi",
     "aiofiles",
@@ -24,9 +24,8 @@ dependencies = [
     "boltons",
     "boto",
     "bx-python",
-    "celery",
+    "celery>=5.4.0",  # prefer not downgrading this to upgrading typing-extensions
     "cloudauthz==0.6.0",
-    "cloudbridge",
     "circus",
     "conda-package-streaming",
     "CT3>=3.3.3",  # Python 3.13 support
@@ -37,79 +36,87 @@ dependencies = [
     "docutils!=0.17,!=0.17.1",
     "dparse",
     "edam-ontology",
-    "fastapi-slim>=0.111.0",
-    "fissix ; python_version>='3.13'",
+    "fastapi>=0.137.2",  # https://github.com/fastapi/fastapi/pull/15785
+    "fastmcp>=2.13.0",
+    "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
-    "graphene",
-    "graphene-sqlalchemy>=3.0.0rc1",  # need a beta release to be compat. with starlette plugin
-    "graphql-core",
-    "gravity>=1.0.4",
-    "gunicorn",
-    "gxformat2",
+    "gravity>=1.2.3",  # Graceful restart on galaxy >= 26.1
+    "gunicorn!=25.1.0",  # https://github.com/benoitc/gunicorn/discussions/3509
+    "gxformat2>=0.27.0",
     "h5grove>=1.2.1",
-    "h5py",  # Python 3.8 support
-    "h5py>=3.12 ; python_version>='3.9'",  # Python 3.13 support
+    "h5py>=3.12",  # Python 3.13 support
+    "httpx",
+    "ijson",
     "importlib-resources ; python_version<'3.12'",  # for importlib.{abc.Traversable,resources.{files, Package}}
-    "isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@master",  # https://github.com/ISA-tools/isa-rwval/pull/17
+    "isa-rwval>=0.10.11",  # https://github.com/ISA-tools/isa-rwval/pull/17
     "isal>=1.7.0",  # Python 3.13 support
     "jinja2",
-    "kombu>=5.3",  # for importlib-metadata fix
+    "kombu>=5.5.0",  # prefer not downgrading this to upgrading typing-extensions
     "lagom",
     "Mako",
     "Markdown",
     "MarkupSafe",
-    "mercurial>=6.8.2",  # Python 3.13 support
+    "mercurial>=7.2",  # Python 3.14 support
     "mrcfile",
+    "more-itertools",
     "msal",
-    "nodeenv",
-    "numpy",
-    "numpy>=1.26.0 ; python_version=='3.9'",  # Python 3.12 support
+    "nodejs-wheel>=22,<23",
+    "numpy>=1.26.0",  # Python 3.12 support
     "numpy>=2.1.0 ; python_version>='3.10'",  # Python 3.13 support
+    "openpyxl>=3.1.5",  # Minimum version ever tested with
     "packaging",
     "paramiko!=2.9.0,!=2.9.1",  # https://github.com/paramiko/paramiko/issues/1961
     "Parsley",
     "Paste",
-    "pebble",
+    # https://github.com/noxdafox/pebble/issues/164
+    # https://github.com/noxdafox/pebble/pull/168
+    "pebble!=5.2.1,!=5.2.2",
     "pillow",
+    "pkg-resources-backport",  # needed by fs https://github.com/PyFilesystem/pyfilesystem2/issues/577
     "psutil",
-    "pulsar-galaxy-lib>=0.15.0.dev0",
+    "pulsar-galaxy-lib>=0.15.15",
     "pycryptodome",
     "pydantic[email]>=2.7.4",  # https://github.com/pydantic/pydantic/pull/9639
+    "pydantic-ai>=1.56.0",  # https://github.com/pydantic/pydantic-ai/security/advisories/GHSA-2jrp-274c-jhv3
+    "pydantic-extra-types",
+    "pydicom; python_version >= '3.10'",
     "PyJWT",
     "pykwalify",
     "pylibmagic",
-    "pyparsing",
+    "pyparsing>=3.0.0",
+    "pypng",
     "pysam>=0.21",  # for Python 3.11 support on macOS
     "python-dateutil",
     "python-magic",
     "python-multipart",  # required to support form parsing in FastAPI/Starlette
     "python-slugify",
     "PyYAML",
-    "refgenconf>=0.12.0",
+    "quickjs-ng>=0.16.2.1; python_version >= '3.10'",  # QuickJS worker for CWL/ECMAScript expression evaluation
+    "refgenconf>=0.13.0",  # https://github.com/refgenie/refgenconf/pull/149
     "regex",
     "requests",
-    "rocrate",
+    "rocrate<0.15.0",  # https://github.com/crs4/rocrate-validator/issues/107
     "Routes",
     "s3fs>=2023.1.0",
     "schema-salad>=8.7.20240905150001",  # Python 3.13 support
+    "slowapi",
     "social-auth-core>=4.5.0",  # to drop dependency on abandoned python-jose
     "sortedcontainers",
-    "SQLAlchemy>=2.0,<2.1,!=2.0.36",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019,
-    "sqlitedict",
+    "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019 , https://github.com/sqlalchemy/sqlalchemy/issues/12600
     "sqlparse",
-    "starlette",
+    "starlette>=1.0.1",  # CVE-2026-48710 BadHost
     "starlette-context",
-    "starlette-graphene3",
     "svgwrite",
     "tifffile",
-    "tuswsgi",
     "typing-extensions",
+    "tuspyserver",
     "uvicorn!=0.28.0",  # https://github.com/galaxyproject/galaxy/issues/17669
     "uvloop>=0.21.0",  # Python 3.13 support
     "WebOb>=1.8.9",  # Python 3.13 support
     "Whoosh",
     "zipstream-new",
+    "fsspec>=2025.7.0",
 ]
 
 [project.urls]
@@ -119,25 +126,21 @@ Repository = "https://github.com/galaxyproject/galaxy"
 "Bug Tracker" = "https://github.com/galaxyproject/galaxy/issues"
 
 [dependency-groups]
-dev = [
+test = [
+    "aiocop",
     "ase>=3.18.1",
     "axe-selenium-python",
-    "black",
     "boto3",
-    "codespell",
+    "cloudbridge>=4.4.0",
     "cwltest>=2.5.20240906231108",  # Python 3.13 support
-    "darker",
     "fluent-logger",
-    "galaxy-release-util",
-    "httpx",
-    "isort",
+    "gcsfs",
+    "hvac",
     "lxml!=4.2.2",
-    "markdown-it-reporter",
-    "myst-parser",
     "onedatafilerestclient==21.2.5.2",
     "pkce",
     "playwright>=1.48.0",  # Python 3.13 support
-    "pytest<8",  # https://github.com/galaxyproject/galaxy/issues/17561
+    "pytest",
     "pytest-asyncio",
     "pytest-cov",
     "pytest-html",
@@ -149,25 +152,37 @@ dev = [
     "pytest-postgresql!=3.0.0",  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
     "pytest-shard",
     "responses",
-    "rucio-clients>=33.6.0 ; python_version>='3.9'",  # https://github.com/galaxyproject/galaxy/pull/17156
+    "roc-validator!=0.7.2",  # https://github.com/crs4/rocrate-validator/pull/97
+    "rucio-clients>=40.2.0",  # https://github.com/rucio/rucio/pull/7665
     "selenium",
     "seletools",
-    "Sphinx>=4.0",  # support docutils 0.17
-    "sphinx-rtd-theme",
     "statsd",
     "testfixtures",
+    "total-perspective-vortex>=3.1.1,<4",  # https://github.com/galaxyproject/total-perspective-vortex/pull/173
     "tuspy",
-    "twill>=3.2.5",  # Python 3.13 support
     "watchdog",
     "Werkzeug",
+]
+dev = [
+    {include-group = "test"},
+    "black",
+    "codespell",
+    "darker",
+    "galaxy-release-util",
+    "isort",
+    "markdown-it-reporter",
+    "myst-parser",
+    "Sphinx>=4.0",  # support docutils 0.17
+    "sphinx-rtd-theme",
 ]
 typecheck = [
     "boto3-stubs[s3]",
     "lxml-stubs",
-    "mypy",
+    "mypy>=2.2.0",  # support for closed TypedDicts
     "pydantic>=2.7.4",  # for pydantic.mypy plugin
     "types-bleach",
     "types-boto",
+    "types-cachetools",
     "types-contextvars",
     "types-dataclasses",
     "types-docutils",
@@ -183,7 +198,6 @@ typecheck = [
 
 [tool.black]
 line-length = 120
-target-version = ['py38']
 include = '\.pyi?$'
 extend-exclude = '''
 ^/(
@@ -196,10 +210,12 @@ extend-exclude = '''
 isort = true
 
 [tool.ruff]
-target-version = "py38"
 exclude = [
     "lib/tool_shed/test/test_data/repos"
 ]
+line-length = 120
+src = ["lib"]
+namespace-packages = ["lib/galaxy"]
 
 [tool.ruff.lint]
 # Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),
@@ -218,9 +234,13 @@ ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004"]
 allow-dict-calls-with-keyword-arguments = true
 
 [tool.ruff.lint.isort]
-# We are not selecting "I" rules in ruff yet because support for all the isort
-# options we need is not complete, but these are the one currently implemented.
+# We are not selecting "I" rules in ruff yet because the isort option
+# force_grid_wrap=2 is not currently supported:
+# https://github.com/astral-sh/ruff/issues/2601
+case-sensitive = false
 combine-as-imports = true
+no-lines-before = ["local-folder"]
+order-by-type = false
 relative-imports-order = "closest-to-furthest"
 
 [tool.ruff.lint.pyupgrade]
@@ -231,14 +251,16 @@ keep-runtime-typing = true
 # Don't check pyupgrade rules on tool scripts, which may use different Python versions
 "test/functional/tools/*" = ["UP"]
 "tools/*" = ["UP"]
-# Don't check some pyupgrade rules on generated files
-"lib/galaxy/schema/bco/*" = ["UP006", "UP007"]
-"lib/galaxy/schema/drs/*" = ["UP006", "UP007"]
-"lib/tool_shed_client/schema/trs.py" = ["UP006", "UP007"]
-"lib/tool_shed_client/schema/trs_service_info.py" = ["UP006", "UP007"]
+# Don't check pyupgrade rules on generated files
+"lib/galaxy/schema/bco/*" = ["UP"]
+"lib/galaxy/schema/drs/*" = ["UP"]
+"lib/tool_shed_client/schema/trs.py" = ["UP"]
+"lib/tool_shed_client/schema/trs_service_info.py" = ["UP"]
 
 [tool.uv]
 constraint-dependencies = [
+    "limits>=2.5.0",  # prefer not downgrading this to upgrading packaging
+    "mirakuru!=3.0.0",  # https://github.com/dbfixtures/mirakuru/pull/949
     "scipy>=1.14.1; python_version>='3.10'",  # Python 3.13 support
 ]
 default-groups = []

@@ -9,12 +9,12 @@ import { type Ref, watch } from "vue";
 export function useEmit<Name extends string, T, F extends { (name: Name, arg: T): void }>(
     ref: Ref<T>,
     emit: F,
-    name: Name
+    name: Name,
 ) {
     watch(
         () => ref.value,
         () => {
             emit(name, ref.value);
-        }
+        },
     );
 }

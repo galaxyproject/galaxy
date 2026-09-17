@@ -2,7 +2,7 @@
     Test to verify exact output parameter verification works propery.
   job:
     text_int:
-      type: File
-      content: "43"
+      class: File
+      contents: "43"
   outputs:
     out_int: 43

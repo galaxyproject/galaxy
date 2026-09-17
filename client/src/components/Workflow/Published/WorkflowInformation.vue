@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBuilding, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { RouterLink } from "vue-router";
 
-import { type WorkflowSummary } from "@/api/workflows";
+import type { StoredWorkflowDetailed } from "@/api/workflows";
+import { getFullAppUrl } from "@/app/utils";
 import { useUserStore } from "@/stores/userStore";
-import { getFullAppUrl } from "@/utils/utils";
 
 import Heading from "@/components/Common/Heading.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
@@ -15,10 +14,8 @@ import License from "@/components/License/License.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
-library.add(faBuilding, faUser);
-
 interface Props {
-    workflowInfo: WorkflowSummary;
+    workflowInfo: StoredWorkflowDetailed;
     embedded?: boolean;
 }
 
@@ -27,7 +24,7 @@ const props = defineProps<Props>();
 const userStore = useUserStore();
 
 const gravatarSource = computed(
-    () => `https://secure.gravatar.com/avatar/${props.workflowInfo?.email_hash}?d=identicon`
+    () => `https://secure.gravatar.com/avatar/${props.workflowInfo?.email_hash}?d=identicon`,
 );
 
 const publishedByUser = computed(() => `/workflows/list_published?owner=${props.workflowInfo?.owner}`);
@@ -50,12 +47,20 @@ const owner = computed(() => {
     }
     return props.workflowInfo.owner;
 });
+
+function hasDoi() {
+    if (props.workflowInfo.doi && props.workflowInfo.doi.length > 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
 </script>
 
 <template>
     <aside class="workflow-information">
         <hgroup>
-            <Heading h2 size="xl" class="mb-0">About This Workflow</Heading>
+            <Heading v-localize h2 size="lg" class="mb-0">About This Workflow</Heading>
             <span class="ml-2">
                 <span data-description="workflow name"> {{ workflowInfo.name }} </span> - Version
                 {{ workflowInfo.version }}
@@ -64,7 +69,7 @@ const owner = computed(() => {
 
         <div class="workflow-info-box">
             <hgroup class="mb-2">
-                <Heading h3 size="md" class="mb-0">Author</Heading>
+                <Heading v-localize h3 size="md" class="mb-0">Author</Heading>
                 <span class="ml-2">{{ owner }}</span>
             </hgroup>
 
@@ -79,19 +84,19 @@ const owner = computed(() => {
         </div>
 
         <div v-if="workflowInfo?.creator" class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">Creators</Heading>
+            <Heading v-localize h3 size="md" class="mb-0">Creators</Heading>
 
             <ul class="list-unstyled mb-0">
                 <li v-for="(creator, index) in workflowInfo.creator" :key="index">
-                    <FontAwesomeIcon v-if="creator.class === 'Person'" icon="fa-user" />
-                    <FontAwesomeIcon v-if="creator.class === 'Organization'" icon="fa-building" />
+                    <FontAwesomeIcon v-if="creator.class === 'Person'" :icon="faUser" />
+                    <FontAwesomeIcon v-if="creator.class === 'Organization'" :icon="faBuilding" />
                     {{ creator.name }}
                 </li>
             </ul>
         </div>
 
         <div class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">Description</Heading>
+            <Heading v-localize h3 size="md" class="mb-0">Description</Heading>
 
             <p v-if="workflowInfo.annotation" class="mb-0">
                 {{ workflowInfo.annotation }}
@@ -100,26 +105,31 @@ const owner = computed(() => {
         </div>
 
         <div v-if="workflowInfo?.tags" class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">Tags</Heading>
+            <Heading v-localize h3 size="md" class="mb-0">Tags</Heading>
 
             <StatelessTags class="tags mt-2" :value="workflowInfo.tags" disabled />
         </div>
 
+        <div v-if="hasDoi()" class="workflow-info-box">
+            <Heading h3 size="md" class="mb-0">DOI</Heading>
+            <span v-for="doi in workflowInfo?.doi" :key="doi"> {{ doi }}<br /> </span>
+        </div>
+
         <div class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">License</Heading>
+            <Heading v-localize h3 size="md" class="mb-0">License</Heading>
 
             <License v-if="workflowInfo.license" :license-id="workflowInfo.license" />
             <span v-else>No License specified</span>
         </div>
 
         <div class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">Last Updated</Heading>
+            <Heading v-localize h3 size="md" class="mb-0">Last Updated</Heading>
 
             <UtcDate :date="workflowInfo.update_time" mode="pretty" />
         </div>
 
         <div v-if="!props.embedded && (workflowInfo.published || userOwned)" class="workflow-info-box">
-            <Heading h3 size="md" class="mb-0">Sharing</Heading>
+            <Heading v-localize h3 size="md" class="mb-0">Sharing</Heading>
 
             <span v-if="workflowInfo.published">
                 Use the following link to share preview of this workflow:

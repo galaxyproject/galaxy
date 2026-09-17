@@ -1,11 +1,11 @@
 from typing import (
     Any,
-    Dict,
-    Optional,
 )
 
 from galaxy.tool_util.parameters import (
+    DataRequestCollectionUri,
     DataRequestInternalHda,
+    DataRequestInternalHdca,
     DataRequestUri,
     decode,
     dereference,
@@ -15,11 +15,21 @@ from galaxy.tool_util.parameters import (
     landing_decode,
     landing_encode,
     LandingRequestToolState,
+    RelaxedRequestToolState,
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
     RequestToolState,
+    strictify,
 )
 from galaxy.tool_util.parser.util import parse_profile_version
+from galaxy.tool_util_models.parameters import (
+    BooleanParameterModel,
+    ConditionalParameterModel,
+    ConditionalWhen,
+    DataParameterModel,
+    SectionParameterModel,
+    ToolParameterBundleModel,
+)
 from .test_parameter_test_cases import tool_source_for
 
 EXAMPLE_ID_1_ENCODED = "123456789abcde"
@@ -27,13 +37,13 @@ EXAMPLE_ID_1 = 13
 EXAMPLE_ID_2_ENCODED = "123456789abcd2"
 EXAMPLE_ID_2 = 14
 
-ID_MAP: Dict[int, str] = {
+ID_MAP: dict[int, str] = {
     EXAMPLE_ID_1: EXAMPLE_ID_1_ENCODED,
     EXAMPLE_ID_2: EXAMPLE_ID_2_ENCODED,
 }
 
 
-def test_encode_data():
+def test_decode_data():
     tool_source = tool_source_for("parameters/gx_data")
     bundle = input_models_for_tool_source(tool_source)
     request_state = RequestToolState({"parameter": {"src": "hda", "id": EXAMPLE_ID_1_ENCODED}})
@@ -43,7 +53,19 @@ def test_encode_data():
     assert decoded_state.input_state["parameter"]["id"] == EXAMPLE_ID_1
 
 
-def test_encode_collection():
+def test_decode_data_batch():
+    tool_source = tool_source_for("parameters/gx_data")
+    bundle = input_models_for_tool_source(tool_source)
+    request_state = RequestToolState(
+        {"parameter": {"__class__": "Batch", "values": [{"src": "hda", "id": EXAMPLE_ID_1_ENCODED}]}}
+    )
+    request_state.validate(bundle)
+    decoded_state = decode(request_state, bundle, _fake_decode)
+    assert decoded_state.input_state["parameter"]["values"][0]["src"] == "hda"
+    assert decoded_state.input_state["parameter"]["values"][0]["id"] == EXAMPLE_ID_1
+
+
+def test_decode_collection():
     tool_source = tool_source_for("parameters/gx_data_collection")
     bundle = input_models_for_tool_source(tool_source)
     request_state = RequestToolState({"parameter": {"src": "hdca", "id": EXAMPLE_ID_1_ENCODED}})
@@ -53,7 +75,7 @@ def test_encode_collection():
     assert decoded_state.input_state["parameter"]["id"] == EXAMPLE_ID_1
 
 
-def test_encode_repeat():
+def test_decode_repeat():
     tool_source = tool_source_for("parameters/gx_repeat_data")
     bundle = input_models_for_tool_source(tool_source)
     request_state = RequestToolState({"parameter": [{"data_parameter": {"src": "hda", "id": EXAMPLE_ID_1_ENCODED}}]})
@@ -63,7 +85,7 @@ def test_encode_repeat():
     assert decoded_state.input_state["parameter"][0]["data_parameter"]["id"] == EXAMPLE_ID_1
 
 
-def test_encode_section():
+def test_decode_section():
     tool_source = tool_source_for("parameters/gx_section_data")
     bundle = input_models_for_tool_source(tool_source)
     request_state = RequestToolState({"parameter": {"data_parameter": {"src": "hda", "id": EXAMPLE_ID_1_ENCODED}}})
@@ -73,7 +95,7 @@ def test_encode_section():
     assert decoded_state.input_state["parameter"]["data_parameter"]["id"] == EXAMPLE_ID_1
 
 
-def test_encode_conditional():
+def test_decode_conditional():
     tool_source = tool_source_for("identifier_in_conditional")
     bundle = input_models_for_tool_source(tool_source)
     request_state = RequestToolState(
@@ -105,6 +127,14 @@ def test_multi_data():
     assert encoded_state.input_state["parameter"][1]["id"] == EXAMPLE_ID_2_ENCODED
 
 
+def test_encode_optional_data_collection_none():
+    tool_source = tool_source_for("parameters/gx_data_collection_optional")
+    bundle = input_models_for_tool_source(tool_source)
+    internal_state = RequestInternalToolState({"parameter": None})
+    encoded_state = encode(internal_state, bundle, _fake_encode)
+    assert encoded_state.input_state["parameter"] is None
+
+
 def test_landing_encode_data():
     tool_source = tool_source_for("parameters/gx_data")
     bundle = input_models_for_tool_source(tool_source)
@@ -119,6 +149,22 @@ def test_landing_encode_data():
     assert encoded_state.input_state["parameter"]["id"] == EXAMPLE_ID_1_ENCODED
 
 
+def test_landing_encode_data_batch():
+    tool_source = tool_source_for("parameters/gx_data")
+    bundle = input_models_for_tool_source(tool_source)
+    request_state = LandingRequestToolState(
+        {"parameter": {"__class__": "Batch", "values": [{"src": "hda", "id": EXAMPLE_ID_1_ENCODED}]}}
+    )
+    request_state.validate(bundle)
+    decoded_state = landing_decode(request_state, bundle, _fake_decode)
+    assert decoded_state.input_state["parameter"]["values"][0]["src"] == "hda"
+    assert decoded_state.input_state["parameter"]["values"][0]["id"] == EXAMPLE_ID_1
+
+    encoded_state = landing_encode(decoded_state, bundle, _fake_encode)
+    assert encoded_state.input_state["parameter"]["values"][0]["src"] == "hda"
+    assert encoded_state.input_state["parameter"]["values"][0]["id"] == EXAMPLE_ID_1_ENCODED
+
+
 def test_dereference():
     tool_source = tool_source_for("parameters/gx_data")
     bundle = input_models_for_tool_source(tool_source)
@@ -126,7 +172,7 @@ def test_dereference():
     request_state = RequestInternalToolState(raw_request_state)
     request_state.validate(bundle)
 
-    exception: Optional[Exception] = None
+    exception: Exception | None = None
     try:
         # quickly verify this request needs to be dereferenced
         bad_state = RequestInternalDereferencedToolState(raw_request_state)
@@ -135,9 +181,106 @@ def test_dereference():
         exception = e
     assert exception is not None
 
-    dereferenced_state = dereference(request_state, bundle, _fake_dereference)
+    dereferenced_state = dereference(request_state, bundle, _fake_dereference, _fake_collection_deference)
     assert isinstance(dereferenced_state, RequestInternalDereferencedToolState)
     dereferenced_state.validate(bundle)
+
+
+def test_dereference_resolves_url_default():
+    bundle = ToolParameterBundleModel(
+        parameters=[
+            DataParameterModel(
+                type="data",
+                name="parameter",
+                url_default="https://example.com/1.bed",
+            )
+        ]
+    )
+
+    # The data input is absent from the request - dereference materializes the url_default.
+    dereferenced_state = _strict_async_decode_and_dereference({}, bundle)
+
+    assert dereferenced_state.input_state == {"parameter": {"src": "hda", "id": EXAMPLE_ID_1}}
+
+
+def test_request_internal_records_absent_url_default():
+    bundle = ToolParameterBundleModel(
+        parameters=[
+            DataParameterModel(
+                type="data",
+                name="parameter",
+                url_default="https://example.com/1.bed",
+            )
+        ]
+    )
+
+    # The persisted request_internal state must record the absent input as absent - the
+    # url_default is only resolved later, at dereference time (above), never baked in here.
+    request_state = RequestToolState({})
+    request_state.validate(bundle)
+    request_internal_state = decode(request_state, bundle, _fake_decode)
+    request_internal_state.validate(bundle)
+    assert "parameter" not in request_internal_state.input_state
+
+
+def test_dereference_section_url_default():
+    bundle = ToolParameterBundleModel(
+        parameters=[
+            SectionParameterModel(
+                type="section",
+                name="section_parameter",
+                parameters=[
+                    DataParameterModel(
+                        type="data",
+                        name="data_parameter",
+                        url_default="https://example.com/1.bed",
+                    )
+                ],
+            )
+        ]
+    )
+
+    dereferenced_state = _strict_async_decode_and_dereference({}, bundle)
+
+    assert dereferenced_state.input_state == {
+        "section_parameter": {"data_parameter": {"src": "hda", "id": EXAMPLE_ID_1}}
+    }
+
+
+def test_dereference_conditional_url_default():
+    bundle = ToolParameterBundleModel(
+        parameters=[
+            ConditionalParameterModel(
+                type="conditional",
+                name="conditional_parameter",
+                test_parameter=BooleanParameterModel(type="boolean", name="test_parameter"),
+                whens=[
+                    ConditionalWhen(
+                        discriminator=False,
+                        is_default_when=True,
+                        parameters=[
+                            DataParameterModel(
+                                type="data",
+                                name="data_parameter",
+                                url_default="https://example.com/1.bed",
+                            )
+                        ],
+                    ),
+                    ConditionalWhen(discriminator=True, is_default_when=False, parameters=[]),
+                ],
+            )
+        ]
+    )
+
+    dereferenced_state = _strict_async_decode_and_dereference({}, bundle)
+
+    # The conditional's default (absent) when is selected and its url_default data input is
+    # materialized; the boolean discriminator is not a url default so it stays unfilled here.
+    assert dereferenced_state.input_state == {
+        "conditional_parameter": {
+            "data_parameter": {"src": "hda", "id": EXAMPLE_ID_1},
+        }
+    }
 
 
 def test_fill_defaults():
@@ -145,11 +288,15 @@ def test_fill_defaults():
     assert with_defaults["parameter"] == 1
     with_defaults = fill_state_for({}, "parameters/gx_float")
     assert with_defaults["parameter"] == 1.0
+    with_defaults = fill_state_for({}, "parameters/gx_numeric_zero_user_y")
+    assert with_defaults == {"integer": 0, "float": 0.0, "optional_integer": 0, "optional_float": 0.0}
     with_defaults = fill_state_for({}, "parameters/gx_boolean")
     assert with_defaults["parameter"] is False
     with_defaults = fill_state_for({}, "parameters/gx_boolean_optional")
-    # This is False unfortunately - see comments in gx_boolean_optional XML.
+    # Profiles before 26.2 keep reporting false for an unset optional boolean.
     assert with_defaults["parameter"] is False
+    with_defaults = fill_state_for({}, "parameters/gx_boolean_optional_26_2")
+    assert with_defaults["parameter"] is None
     with_defaults = fill_state_for({}, "parameters/gx_boolean_checked")
     assert with_defaults["parameter"] is True
     with_defaults = fill_state_for({}, "parameters/gx_boolean_optional_checked")
@@ -194,18 +341,27 @@ def test_fill_defaults():
     with_defaults = fill_state_for({}, "parameters/gx_genomebuild_optional")
     assert with_defaults["parameter"] is None
 
+    # ``<param type="color" value="" optional="true">`` is the legacy "no default color"
+    # convention (see tools-iuc arriba color1). The empty string default would trip the
+    # color validator on the job-internal model, so ``_fill_default_for`` must emit None
+    # instead. Regression for the async CI ``Invalid color value ''`` failures.
+    with_defaults = fill_state_for({}, "parameters/gx_color_optional_no_default")
+    assert with_defaults["parameter"] is None
+
     with_defaults = fill_state_for({}, "parameters/gx_select")
     assert with_defaults["parameter"] == "--ex1"
 
     with_defaults = fill_state_for({}, "parameters/gx_select_optional")
     assert with_defaults["parameter"] is None
 
-    # Not ideal but matching current behavior
     with_defaults = fill_state_for({}, "parameters/gx_select_multiple")
     assert with_defaults["parameter"] is None
 
     with_defaults = fill_state_for({}, "parameters/gx_select_multiple_optional")
     assert with_defaults["parameter"] is None
+
+    with_defaults = fill_state_for({}, "parameters/gx_select_multiple_one_default")
+    assert with_defaults["parameter"] == ["--ex3"]
 
     # Do not fill in dynamic defaults... these require a Galaxy runtime.
     with_defaults = fill_state_for({}, "remove_value", partial=True)
@@ -231,8 +387,41 @@ def test_fill_defaults():
     assert with_defaults["conditional_parameter"]["boolean_parameter"] is False
 
 
+def test_strictify():
+    strict_state = strictify_for({"parameter": 1}, "parameters/gx_int")
+    assert strict_state["parameter"] == 1
+
+    strict_state = strictify_for({}, "parameters/gx_text_optional_false")
+    assert strict_state["parameter"] == ""
+
+    strict_state = strictify_for({"parameter": None}, "parameters/gx_text_optional_false")
+    assert strict_state["parameter"] == ""
+
+
+def strictify_for(tool_state: dict[str, Any], tool_path: str) -> dict[str, Any]:
+    tool_source = tool_source_for(tool_path)
+    bundle = input_models_for_tool_source(tool_source)
+    relaxed_state = RelaxedRequestToolState(tool_state)
+    relaxed_state.validate(bundle)
+    return strictify(relaxed_state, bundle).input_state
+
+
+# Maps each url-src / url_default fixture URL to the HDA id a real dereference would mint.
+# Keying on the URL (rather than returning a constant) makes the dereference tests assert the
+# *configured* URL actually reached the dereference boundary - an unexpected/empty URL raises
+# KeyError instead of silently passing.
+URL_ID_MAP: dict[str, int] = {
+    "https://example.com/1.bed": EXAMPLE_ID_1,
+    "gxfiles://mystorage/1.bed": EXAMPLE_ID_2,
+}
+
+
 def _fake_dereference(input: DataRequestUri) -> DataRequestInternalHda:
-    return DataRequestInternalHda(id=EXAMPLE_ID_1)
+    return DataRequestInternalHda(id=URL_ID_MAP[input.url], src="hda")
+
+
+def _fake_collection_deference(input: DataRequestCollectionUri) -> DataRequestInternalHdca:
+    return DataRequestInternalHdca(id=EXAMPLE_ID_1, src="hdca")
 
 
 def _fake_decode(input: str) -> int:
@@ -243,7 +432,16 @@ def _fake_encode(input: int) -> str:
     return ID_MAP[input]
 
 
-def fill_state_for(tool_state: Dict[str, Any], tool_path: str, partial: bool = False) -> Dict[str, Any]:
+def _strict_async_decode_and_dereference(
+    tool_state: dict[str, Any], bundle: ToolParameterBundleModel
+) -> RequestInternalDereferencedToolState:
+    request_state = RequestToolState(tool_state)
+    request_state.validate(bundle)
+    request_internal_state = decode(request_state, bundle, _fake_decode)
+    return dereference(request_internal_state, bundle, _fake_dereference, _fake_collection_deference)
+
+
+def fill_state_for(tool_state: dict[str, Any], tool_path: str, partial: bool = False) -> dict[str, Any]:
     tool_source = tool_source_for(tool_path)
     bundle = input_models_for_tool_source(tool_source)
     profile = parse_profile_version(tool_source)

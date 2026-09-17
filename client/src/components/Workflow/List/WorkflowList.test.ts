@@ -1,23 +1,31 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/jest/helpers";
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
-import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
+import { loadWorkflows } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
 
 import { generateRandomWorkflowList } from "../testUtils";
 
 import WorkflowList from "./WorkflowList.vue";
 
+const { server, http } = useServerMock();
+
+vi.mock("@/api/workflows", () => ({
+    loadWorkflows: vi.fn(),
+}));
+
+const mockedLoadWorkflows = loadWorkflows as ReturnType<typeof vi.fn>;
+
 const localVue = getLocalVue();
 localVue.use(VueRouter);
 const router = new VueRouter();
-
-const { server, http } = useServerMock();
 
 const FAKE_USER_ID = "fake_user_id";
 const FAKE_USERNAME = "fake_username";
@@ -29,7 +37,7 @@ const FAKE_USER = getFakeRegisteredUser({
 });
 
 async function mountWorkflowList() {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const wrapper = mount(WorkflowList as object, {
@@ -46,25 +54,20 @@ async function mountWorkflowList() {
     return wrapper;
 }
 
-// The use of the tool tip in statelesstag without a real dom is causing issues
-suppressBootstrapVueWarnings();
-
 describe("WorkflowList", () => {
     beforeEach(() => {
+        suppressBootstrapVueWarnings();
+        vi.clearAllMocks();
+        // Mock the workflow counts endpoint used by workflow card badges
         server.use(
             http.get("/api/workflows/{workflow_id}/counts", ({ response }) => {
                 return response(200).json({});
-            })
+            }),
         );
     });
 
     it("render empty workflow list", async () => {
-        server.use(
-            http.get("/api/workflows", ({ response }) => {
-                return response(200).json([]);
-            })
-        );
-
+        mockedLoadWorkflows.mockResolvedValue({ data: [], totalMatches: 0 });
         const wrapper = await mountWorkflowList();
 
         expect(wrapper.findAll(".workflow-card")).toHaveLength(0);
@@ -73,14 +76,7 @@ describe("WorkflowList", () => {
 
     it("render workflow list", async () => {
         const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 10);
-
-        server.use(
-            http.get("/api/workflows", ({ response }) => {
-                // TODO: We use untyped here because the response is not yet defined in the schema
-                return response.untyped(HttpResponse.json(FAKE_WORKFLOWS));
-            })
-        );
-
+        mockedLoadWorkflows.mockResolvedValue({ data: FAKE_WORKFLOWS, totalMatches: 10 });
         const wrapper = await mountWorkflowList();
 
         expect(wrapper.findAll(".workflow-card")).toHaveLength(10);
@@ -93,14 +89,7 @@ describe("WorkflowList", () => {
     it("toggle show deleted workflows", async () => {
         const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 10);
         FAKE_WORKFLOWS.forEach((w) => (w.deleted = true));
-
-        server.use(
-            http.get("/api/workflows", ({ response }) => {
-                // TODO: We use untyped here because the response is not yet defined in the schema
-                return response.untyped(HttpResponse.json(FAKE_WORKFLOWS));
-            })
-        );
-
+        mockedLoadWorkflows.mockResolvedValue({ data: FAKE_WORKFLOWS, totalMatches: 10 });
         const wrapper = await mountWorkflowList();
 
         expect((wrapper.find("#workflow-list-filter input").element as HTMLInputElement).value).toBe("");

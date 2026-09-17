@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
@@ -26,7 +26,7 @@ const emit = defineEmits<{
 const tooltip = computed(() =>
     totalUnreadCount.value > 0
         ? `You have ${totalUnreadCount.value} unread notifications`
-        : "You have no unread notifications"
+        : "You have no unread notifications",
 );
 </script>
 

@@ -2,12 +2,10 @@ import logging
 from threading import local
 from typing import (
     Optional,
-    Type,
     TYPE_CHECKING,
 )
 
 from galaxy import model
-from galaxy.config import GalaxyAppConfiguration
 from galaxy.model import (
     mapper_registry,
     setup_global_object_store_for_models,
@@ -18,6 +16,8 @@ from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.triggers.update_audit_table import install as install_timestamp_triggers
 
 if TYPE_CHECKING:
+    from galaxy.config import GalaxyAppConfiguration
+    from galaxy.model import User as GalaxyUser
     from galaxy.objectstore import BaseObjectStore
 
 log = logging.getLogger(__name__)
@@ -26,10 +26,9 @@ metadata = mapper_registry.metadata
 
 
 class GalaxyModelMapping(SharedModelMapping):
+    User: type["GalaxyUser"]
     security_agent: GalaxyRBACAgent
-    thread_local_log: Optional[local]
-    User: Type
-    GalaxySession: Type
+    thread_local_log: local | None
 
 
 def init(
@@ -42,7 +41,7 @@ def init(
     trace_logger=None,
     use_pbkdf2=True,
     slow_query_log_threshold=0,
-    thread_local_log: Optional[local] = None,
+    thread_local_log: local | None = None,
     log_query_counts=False,
 ) -> GalaxyModelMapping:
     # Build engine
@@ -103,7 +102,7 @@ def _build_model_mapping(engine, map_install_models, thread_local_log) -> Galaxy
 
 
 def init_models_from_config(
-    config: GalaxyAppConfiguration,
+    config: "GalaxyAppConfiguration",
     map_install_models: bool = False,
     object_store: Optional["BaseObjectStore"] = None,
     trace_logger=None,

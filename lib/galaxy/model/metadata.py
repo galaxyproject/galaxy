@@ -10,12 +10,13 @@ import sys
 import tempfile
 import weakref
 from collections import OrderedDict
-from collections.abc import Mapping
+from collections.abc import (
+    Iterator,
+    Mapping,
+)
 from os.path import abspath
 from typing import (
     Any,
-    Iterator,
-    Optional,
     TYPE_CHECKING,
     Union,
 )
@@ -25,7 +26,6 @@ from sqlalchemy.orm import object_session
 from sqlalchemy.orm.attributes import flag_modified
 
 import galaxy.model
-from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.object_wrapper import sanitize_lists_to_string
 from galaxy.util import (
     form_builder,
@@ -37,6 +37,8 @@ from galaxy.util import (
 from galaxy.util.json import safe_dumps
 
 if TYPE_CHECKING:
+    from sqlalchemy.orm import scoped_session
+
     from galaxy.model import DatasetInstance
     from galaxy.model.none_like import NoneDataset
     from galaxy.model.store import SessionlessContext
@@ -84,26 +86,27 @@ class MetadataCollection(Mapping):
     def __init__(
         self,
         parent: Union["DatasetInstance", "NoneDataset"],
-        session: Optional[Union[galaxy_scoped_session, "SessionlessContext"]] = None,
+        session: Union["scoped_session", "SessionlessContext"] | None = None,
     ) -> None:
         self.parent = parent
         self._session = session
         # initialize dict if needed
+        assert self.parent is not None
         if self.parent._metadata is None:
             self.parent._metadata = {}
 
-    def get_parent(self):
+    @property
+    def parent(self) -> Union["DatasetInstance", "NoneDataset", None]:
         if "_parent" in self.__dict__:
             return self.__dict__["_parent"]()
         return None
 
-    def set_parent(self, parent):
+    @parent.setter
+    def parent(self, parent: Union["DatasetInstance", "NoneDataset"]) -> None:
         # use weakref to prevent a circular reference interfering with garbage
         # collection: hda/lda (parent) <--> MetadataCollection (self) ; needs to be
         # hashable, so cannot use proxy.
         self.__dict__["_parent"] = weakref.ref(parent)
-
-    parent = property(get_parent, set_parent)
 
     @property
     def spec(self):
@@ -152,8 +155,12 @@ class MetadataCollection(Mapping):
         return None
 
     def __setattr__(self, name, value):
-        if name == "parent":
-            return self.set_parent(value)
+        # Workaround for properties like "parent"
+        class_attr = getattr(self.__class__, name, None)
+        if isinstance(class_attr, property):
+            if class_attr.fset is None:
+                raise AttributeError(f"Property {name} does not have a setter")
+            class_attr.fset(self, value)
         elif name == "_session":
             super().__setattr__(name, value)
         else:
@@ -181,12 +188,27 @@ class MetadataCollection(Mapping):
                   False if its equal of if no metadata with the name is specified
         """
         meta_val = self[name]
+        if self.parent is None:
+            return False
         try:
             meta_spec = self.parent.metadata.spec[name]
         except KeyError:
             log.debug(f"No metadata element with name '{name}' found")
             return False
         return meta_val != meta_spec.no_value
+
+    def get_if_set(self, name: str, default=None):
+        """Return the metadata value for *name* if it is set, otherwise *default*.
+
+        Unlike plain attribute access, this checks ``element_is_set``
+        **and** that the wrapped value is truthy, preventing the common
+        ``TypeError`` from subscripting ``None``.
+        """
+        if self.element_is_set(name):
+            value = getattr(self, name)
+            if value:
+                return value
+        return default
 
     def get_metadata_parameter(self, name, **kwd):
         if name in self.spec:
@@ -610,20 +632,30 @@ class FileParameter(MetadataParameter):
             if wrapped_value:
                 return wrapped_value
             else:
-                # If we've simultaneously copied the  dataset and we've changed the datatype on the
-                # copy we may not have committed the MetadataFile yet, so we need to commit the session.
-                # TODO: It would be great if we can avoid the commit in the future.
-                session.commit()
+                # If we've simultaneously copied the dataset and we've changed the datatype on the
+                # copy we may not have flushed the pending MetadataFile to the DB yet, so the
+                # select above may have missed it. Flush (NOT commit) so the pending INSERT is
+                # visible to the retry SELECT within this session without leaking every other
+                # pending change in the session to concurrent readers. Committing here caused
+                # https://github.com/galaxyproject/galaxy/issues/22194: a mid-loop wrap() inside
+                # JobWrapper.finish() flushed an intermedia expression.json's dataset's
+                # Dataset.state = OK to the DB before exec_after_process had replaced the file,
+                # exposing a globall inconsistent state to the workflow scheduler.
+                session.flush()
             return session.execute(select(galaxy.model.MetadataFile).filter_by(uuid=value)).scalar_one_or_none()
 
     def make_copy(self, value, target_context: MetadataCollection, source_context):
         session = target_context._object_session(target_context.parent)
         value = self.wrap(value, session=session)
-        target_dataset = target_context.parent.dataset
         if value and not value.id:
             # This is a new MetadataFile object, we're not copying to another dataset.
             # Just use it.
             return self.unwrap(value)
+        if target_context.parent is None:
+            return None
+        target_dataset = target_context.parent.dataset
+        assert target_dataset is not None
+        assert target_dataset.object_store is not None
         if value and target_dataset.object_store.exists(target_dataset):
             # Only copy MetadataFile if the target dataset has been created in an object store.
             # All current datatypes re-generate MetadataFile objects when setting metadata,

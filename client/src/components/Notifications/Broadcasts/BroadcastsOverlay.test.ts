@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 
@@ -47,18 +48,18 @@ const FAKE_BROADCASTS: BroadcastNotification[] = [
 ];
 
 async function mountBroadcastsOverlayWith(broadcasts: BroadcastNotification[] = []) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const broadcastsStore = useBroadcastsStore();
     broadcastsStore.broadcasts = broadcasts;
 
-    const spyOnDismissBroadcast = jest.spyOn(broadcastsStore, "dismissBroadcast");
+    const spyOnDismissBroadcast = vi.spyOn(broadcastsStore, "dismissBroadcast");
     spyOnDismissBroadcast.mockImplementation(async (broadcast) => {
         broadcastsStore.broadcasts = broadcastsStore.broadcasts.filter((b) => b.id !== broadcast.id);
     });
 
-    const wrapper = mount(BroadcastsOverlay, {
+    const wrapper = mount(BroadcastsOverlay as object, {
         localVue,
         pinia,
         stubs: {

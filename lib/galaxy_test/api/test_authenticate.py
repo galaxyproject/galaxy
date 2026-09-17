@@ -42,8 +42,12 @@ class TestAuthenticateApi(ApiTestCase):
         tool_runner_response = get(
             urljoin(self.url, "tool_runner?tool_id=test_data_source"),
             cookies={"galaxytoolrunnersession": tool_runner_session_cookie},
+            allow_redirects=False,
         )
-        tool_runner_response.raise_for_status()
+        # On success, the controller redirects back to the SPA so the
+        # frontend can surface a "tool-submitted" toast.
+        assert tool_runner_response.status_code == 302
+        assert "notification=tool-submitted" in tool_runner_response.headers["Location"]
         # Verify that we're not returning the sessioncookie
         assert "galaxysession" not in tool_runner_response.cookies
         # Make sure history for original session received job

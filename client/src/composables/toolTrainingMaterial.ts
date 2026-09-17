@@ -8,7 +8,7 @@ type TrainingDetails = {
     tool_id: Array<
         [
             string, // toolshed tool ID
-            string // Version
+            string, // Version
         ]
     >;
     tutorials: Array<
@@ -16,7 +16,7 @@ type TrainingDetails = {
             string, // tutorial ID (unused)
             string, // Title
             string, // Category
-            string // URL
+            string, // URL
         ]
     >;
 };
@@ -60,7 +60,7 @@ export function useToolTrainingMaterial(id: string, name: string, version: strin
         return Boolean(
             isConfigLoaded.value &&
                 config.value.tool_training_recommendations &&
-                config.value.tool_training_recommendations_api_url
+                config.value.tool_training_recommendations_api_url,
         );
     });
 
@@ -84,7 +84,7 @@ export function useToolTrainingMaterial(id: string, name: string, version: strin
 
             cacheLoaded.value = true;
         },
-        { immediate: true }
+        { immediate: true },
     );
 
     const identifier = computed(() => {

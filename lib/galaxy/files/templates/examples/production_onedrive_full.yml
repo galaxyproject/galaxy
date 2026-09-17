@@ -1,0 +1,19 @@
+- id: onedrive_full
+  name: OneDrive
+  description: |
+    Connect to your full Microsoft OneDrive. 
+    You will be asked to grant Galaxy permission to access files across your OneDrive, not just the Galaxy app folder.
+  configuration:
+    type: onedrive
+    oauth2_client_id: "{{ environment.oauth2_client_id }}"
+    oauth2_client_secret: "{{ environment.oauth2_client_secret }}"
+    oauth2_scope: "offline_access Files.ReadWrite"
+    drive_mode: full
+    writable: true
+  environment:
+    oauth2_client_id:
+      type: variable
+      variable: GALAXY_ONEDRIVE_CLIENT_ID
+    oauth2_client_secret:
+      type: variable
+      variable: GALAXY_ONEDRIVE_CLIENT_SECRET

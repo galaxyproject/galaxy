@@ -2,8 +2,9 @@
 import { computed } from "vue";
 
 import { GalaxyApi } from "@/api";
+import { Toast } from "@/composables/toast";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
-import { rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { UserConcreteObjectStore } from "./types";
 
@@ -19,7 +20,7 @@ const props = defineProps<Props>();
 const routeEdit = computed(() => `/object_store_instances/${props.objectStore.uuid}/edit`);
 const routeUpgrade = computed(() => `/object_store_instances/${props.objectStore.uuid}/upgrade`);
 const isUpgradable = computed(() =>
-    objectStoreTemplatesStore.canUpgrade(props.objectStore.template_id, props.objectStore.template_version)
+    objectStoreTemplatesStore.canUpgrade(props.objectStore.template_id, props.objectStore.template_version),
 );
 
 async function onRemove() {
@@ -29,7 +30,8 @@ async function onRemove() {
     });
 
     if (error) {
-        rethrowSimple(error);
+        Toast.error(errorMessageAsString(error, "Failed to remove instance."), "Failed to remove instance");
+        return;
     }
 
     emit("entryRemoved");

@@ -1,7 +1,6 @@
 import logging
 from typing import (
     Any,
-    Optional,
 )
 
 import pytest
@@ -17,7 +16,7 @@ from galaxy_test.base.env import (
 log = logging.getLogger(__name__)
 
 
-def host_port_and_url(test_driver: Optional[Any]) -> GalaxyTarget:
+def host_port_and_url(test_driver: Any | None) -> GalaxyTarget:
     host, port, url = target_url_parts()
     server_wrapper = test_driver and test_driver.server_wrappers and test_driver.server_wrappers[0]
     if server_wrapper:
@@ -36,13 +35,13 @@ class FunctionalTestCase(TestCase):
     server is already running.
     """
 
-    galaxy_driver_class: Optional[type] = None
+    galaxy_driver_class: type | None = None
     host: str
-    port: Optional[str]
+    port: str | None
     url: str
     keepOutdir: str
     test_data_resolver: TestDataResolver
-    _test_driver: Optional[Any]
+    _test_driver: Any | None
 
     def setUp(self) -> None:
         self.host, self.port, self.url = host_port_and_url(self._test_driver)

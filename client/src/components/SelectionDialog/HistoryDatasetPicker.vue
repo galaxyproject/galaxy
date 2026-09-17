@@ -3,6 +3,7 @@ import { faHdd } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref, set } from "vue";
 
 import { GalaxyApi, type HDASummary, type HistorySortByLiteral, type HistorySummary } from "@/api";
+import type { TableField } from "@/components/Common/GTable.types";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
 import {
     type ItemsProvider,
@@ -16,10 +17,14 @@ import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 interface HistoryRecord extends SelectionItem {
     size: number;
+    update_time: string;
+}
+
+interface DatasetRecord extends SelectionItem {
+    update_time: string | null;
 }
 
 interface Props {
-    folderId: string;
     title?: string;
     actionButtonText?: string;
 }
@@ -43,7 +48,6 @@ const hasValue = ref(false);
 const modalShow = ref(true);
 const errorMessage = ref("");
 const submitting = ref(false);
-const allSelected = ref(false);
 const datasetsVisible = ref(false);
 
 const items = ref<SelectionItem[]>([]);
@@ -65,7 +69,8 @@ const okButtonText = computed(() => {
         return `${props.actionButtonText} ${selected.value.length} dataset${selected.value.length > 1 ? "s" : ""}`;
     }
 });
-const fields = computed(() => {
+
+const fields = computed<TableField[]>(() => {
     if (datasetsVisible.value) {
         return [
             { key: "label", label: "Name", sortable: true },
@@ -79,18 +84,9 @@ const fields = computed(() => {
         ];
     }
 });
-const selectAllIcon = computed(() => {
-    if (allSelected.value) {
-        return SELECTION_STATES.SELECTED;
-    } else if (selected.value.length > 0) {
-        return SELECTION_STATES.MIXED;
-    } else {
-        return SELECTION_STATES.UNSELECTED;
-    }
-});
 
 function historyEntryToRecord(entry: HistorySummary): HistoryRecord {
-    const result = {
+    const result: HistoryRecord = {
         id: entry.id,
         label: entry.name,
         details: entry.annotation || "",
@@ -98,19 +94,21 @@ function historyEntryToRecord(entry: HistorySummary): HistoryRecord {
         url: entry.url,
         size: entry.count,
         update_time: entry.update_time,
+        entry: entry,
     };
 
     return result;
 }
 
-function datasetEntryToRecord(entry: HDASummary): SelectionItem {
-    const result = {
+function datasetEntryToRecord(entry: HDASummary): DatasetRecord {
+    const result: DatasetRecord = {
         id: entry.id,
         label: entry.name || "",
         details: "",
         isLeaf: true,
         url: entry.url,
         update_time: entry.update_time,
+        entry: entry,
     };
 
     return result;
@@ -121,25 +119,14 @@ function formatRows() {
 
     for (const item of items.value) {
         if (item.isLeaf) {
-            const _rowVariant =
+            const selectionState =
                 selected.value.findIndex((i) => i.id === item.id) !== -1
                     ? SELECTION_STATES.SELECTED
                     : SELECTION_STATES.UNSELECTED;
 
-            set(item, "_rowVariant", _rowVariant);
+            set(item, "selectionState", selectionState);
         }
     }
-
-    allSelected.value = checkIfAllSelected();
-}
-
-function checkIfAllSelected(): boolean {
-    return Boolean(
-        items.value.length &&
-            items.value.every((item) => {
-                return selected.value.findIndex((i) => i.id === item.id) !== -1;
-            })
-    );
 }
 
 async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promise<SelectionItem[]> {
@@ -157,7 +144,7 @@ async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promi
         const sortDesc = ctx.sortDesc;
         const sortBy: HistorySortByLiteral =
             ctx.sortBy === "label" ? "name" : (ctx.sortBy as HistorySortByLiteral) || "update_time";
-        const queryDict = HistoriesFilters.getQueryDict(ctx.filter);
+        const queryDict = HistoriesFilters.getQueryDict(ctx.filter ?? "");
 
         const { response, data, error } = await GalaxyApi().GET("/api/histories", {
             params: {
@@ -261,8 +248,8 @@ async function onDatasetClick(item: SelectionItem) {
     }
 }
 
-function selectAll() {
-    if (allSelected.value) {
+function selectAll(checked: boolean) {
+    if (!checked) {
         selected.value = [];
     } else {
         for (const item of items.value) {
@@ -305,12 +292,11 @@ function onCancel() {
         :modal-show="modalShow"
         :file-mode="false"
         :multiple="true"
-        :select-all-variant="selectAllIcon"
+        :selectable="datasetsVisible"
         :items="items"
         :undo-show="datasetsVisible"
         :total-items="totalItems"
         :items-provider="itemsProvider"
-        :show-select-icon="datasetsVisible"
         :folder-icon="faHdd"
         :is-busy="loading"
         :search-title="searchTitle"

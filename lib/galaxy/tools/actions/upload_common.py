@@ -7,11 +7,6 @@ from json import (
     dump,
     dumps,
 )
-from typing import (
-    Dict,
-    List,
-    Optional,
-)
 
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -23,10 +18,21 @@ from galaxy.files.uris import (
     stream_to_file,
     validate_non_local,
 )
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.model import (
+    DatasetPermissions,
     FormDefinition,
+    FormValues,
+    GalaxySession,
+    HistoryDatasetAssociation,
+    Job,
     LibraryDataset,
+    LibraryDatasetDatasetAssociation,
+    LibraryDatasetDatasetInfoAssociation,
     LibraryFolder,
     Role,
 )
@@ -41,7 +47,7 @@ def validate_datatype_extension(datatypes_registry, ext):
         raise RequestParameterInvalidException(f"Requested extension '{ext}' unknown, cannot upload dataset.")
 
 
-def persist_uploads(params, trans):
+def persist_uploads(params, trans: ProvidesAppContext):
     """
     Turn any uploads in the submitted form to persisted files.
     """
@@ -75,17 +81,17 @@ def persist_uploads(params, trans):
 
 @dataclass
 class LibraryParams:
-    roles: List[Role]
-    tags: Optional[List[str]]
-    template: Optional[FormDefinition]
-    template_field_contents: Dict[str, str]
+    roles: list[Role]
+    tags: list[str] | None
+    template: FormDefinition | None
+    template_field_contents: dict[str, str]
     folder: LibraryFolder
     message: str
-    replace_dataset: Optional[LibraryDataset]
+    replace_dataset: LibraryDataset | None
 
 
 def handle_library_params(
-    trans, params, folder_id: int, replace_dataset: Optional[LibraryDataset] = None
+    trans: ProvidesAppContext, params, folder_id: int, replace_dataset: LibraryDataset | None = None
 ) -> LibraryParams:
     session = trans.sa_session
     # FIXME: the received params has already been parsed by util.Params() by the time it reaches here,
@@ -98,16 +104,16 @@ def handle_library_params(
     folder = session.get(LibraryFolder, folder_id)
     # We are inheriting the folder's info_association, so we may have received inherited contents or we may have redirected
     # here after the user entered template contents ( due to errors ).
-    template: Optional[FormDefinition] = None
+    template: FormDefinition | None = None
     if template_id not in [None, "None"]:
         template = session.get(FormDefinition, template_id)
         if template and template.fields:
             for field in template.fields:
-                field_name = field["name"]  # type:ignore[index]
+                field_name = field["name"]  # type: ignore[index]
                 if params.get(field_name, False):
                     field_value = util.restore_text(params.get(field_name, ""))
                     template_field_contents[field_name] = field_value
-    roles: List[Role] = []
+    roles: list[Role] = []
     for role_id in util.listify(params.get("roles", [])):
         role = session.get(Role, role_id)
         roles.append(role)
@@ -123,10 +129,10 @@ def handle_library_params(
     )
 
 
-def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
+def __new_history_upload(trans: ProvidesHistoryContext, uploaded_dataset, history=None, state=None):
     if not history:
         history = trans.history
-    hda = trans.app.model.HistoryDatasetAssociation(
+    hda = HistoryDatasetAssociation(
         name=uploaded_dataset.name,
         extension=uploaded_dataset.file_type,
         dbkey=uploaded_dataset.dbkey,
@@ -141,12 +147,15 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
         hda.state = hda.states.QUEUED
     history.add_dataset(hda, genome_build=uploaded_dataset.dbkey, quota=False)
     permissions = trans.app.security_agent.history_get_default_permissions(history)
+    assert hda.dataset is not None
     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
     trans.sa_session.commit()
     return hda
 
 
-def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_handler, state=None):
+def __new_library_upload(
+    trans: ProvidesUserContext, cntrller, uploaded_dataset, library_bunch, tag_handler, state=None
+):
     current_user_roles = trans.get_current_user_roles()
     if not (
         (trans.user_is_admin and cntrller in ["library_admin", "api"])
@@ -173,11 +182,11 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
     if library_bunch.replace_dataset:
         ld = library_bunch.replace_dataset
     else:
-        ld = trans.app.model.LibraryDataset(folder=folder, name=uploaded_dataset.name)
+        ld = LibraryDataset(folder=folder, name=uploaded_dataset.name)
         trans.sa_session.add(ld)
         trans.sa_session.commit()
         trans.app.security_agent.copy_library_permissions(trans, folder, ld)
-    ldda = trans.app.model.LibraryDatasetDatasetAssociation(
+    ldda = LibraryDatasetDatasetAssociation(
         name=uploaded_dataset.name,
         extension=uploaded_dataset.file_type,
         dbkey=uploaded_dataset.dbkey,
@@ -211,6 +220,7 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
         )
     else:
         # Copy the current user's DefaultUserPermissions to the new LibraryDatasetDatasetAssociation.dataset
+        assert ldda.dataset is not None
         trans.app.security_agent.set_all_dataset_permissions(
             ldda.dataset, trans.app.security_agent.user_get_default_permissions(trans.user), new=True
         )
@@ -229,21 +239,19 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
         # If the user has added field contents, we'll need to create a new form_values and info_association
         # for the new library_dataset_dataset_association object.
         # Create a new FormValues object, using the template we previously retrieved
-        form_values = trans.app.model.FormValues(library_bunch.template, library_bunch.template_field_contents)
+        form_values = FormValues(library_bunch.template, library_bunch.template_field_contents)
         trans.sa_session.add(form_values)
         trans.sa_session.commit()
         # Create a new info_association between the current ldda and form_values
         # TODO: Currently info_associations at the ldda level are not inheritable to the associated LibraryDataset,
         # we need to figure out if this is optimal
-        info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation(
-            ldda, library_bunch.template, form_values
-        )
+        info_association = LibraryDatasetDatasetInfoAssociation(ldda, library_bunch.template, form_values)
         trans.sa_session.add(info_association)
         trans.sa_session.commit()
     # If roles were selected upon upload, restrict access to the Dataset to those roles
     if library_bunch.roles:
         for role in library_bunch.roles:
-            dp = trans.app.model.DatasetPermissions(
+            dp = DatasetPermissions(
                 trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, ldda.dataset, role
             )
             trans.sa_session.add(dp)
@@ -252,7 +260,13 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
 
 
 def new_upload(
-    trans: ProvidesUserContext, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None, tag_list=None
+    trans: ProvidesHistoryContext,
+    cntrller,
+    uploaded_dataset,
+    library_bunch=None,
+    history=None,
+    state=None,
+    tag_list=None,
 ):
     tag_handler = trans.tag_handler
     if library_bunch:
@@ -280,7 +294,9 @@ def new_upload(
     return upload_target_dataset_instance
 
 
-def get_uploaded_datasets(trans, cntrller, params, dataset_upload_inputs, library_bunch=None, history=None):
+def get_uploaded_datasets(
+    trans: ProvidesHistoryContext, cntrller, params, dataset_upload_inputs, library_bunch=None, history=None
+):
     uploaded_datasets = []
     for dataset_upload_input in dataset_upload_inputs:
         uploaded_datasets.extend(dataset_upload_input.get_uploaded_datasets(trans, params))
@@ -290,7 +306,7 @@ def get_uploaded_datasets(trans, cntrller, params, dataset_upload_inputs, librar
     return uploaded_datasets
 
 
-def create_paramfile(trans, uploaded_datasets):
+def create_paramfile(trans: ProvidesUserContext, uploaded_datasets):
     """
     Create the upload tool's JSON "param" file.
     """
@@ -333,7 +349,7 @@ def create_paramfile(trans, uploaded_datasets):
             except Exception:
                 purge_source = True
             try:
-                user_ftp_dir = os.path.abspath(trans.user_ftp_dir)
+                user_ftp_dir = os.path.abspath(trans.user_ftp_dir) if trans.user_ftp_dir is not None else None
             except Exception:
                 user_ftp_dir = None
             if user_ftp_dir and uploaded_dataset.path.startswith(user_ftp_dir):
@@ -378,18 +394,29 @@ def create_paramfile(trans, uploaded_datasets):
     return json_file_path
 
 
-def create_job(trans, params, tool, json_file_path, outputs, folder=None, history=None, job_params=None):
+def create_job(
+    trans: ProvidesHistoryContext,
+    params,
+    tool,
+    json_file_path,
+    outputs,
+    folder=None,
+    history=None,
+    job_params=None,
+    preferred_object_store_id=None,
+):
     """
     Create the upload job.
     """
-    job = trans.app.model.Job()
+    job = Job()
     trans.sa_session.add(job)
     job.galaxy_version = trans.app.config.version_major
-    galaxy_session = trans.get_galaxy_session()
-    if isinstance(galaxy_session, trans.model.GalaxySession):
+    galaxy_session = trans.galaxy_session
+    if isinstance(galaxy_session, GalaxySession):
         job.session_id = galaxy_session.id
     if trans.user is not None:
         job.user_id = trans.user.id
+    job.preferred_object_store_id = preferred_object_store_id
     if folder:
         job.library_folder_id = folder.id
     else:
@@ -427,7 +454,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     return job, output
 
 
-def active_folders(trans, folder):
+def active_folders(trans: ProvidesAppContext, folder):
     # Stolen from galaxy.web.controllers.library_common (importing from which causes a circular issues).
     # Much faster way of retrieving all active sub-folders within a given folder than the
     # performance of the mapper.  This query also eagerloads the permissions on each folder.

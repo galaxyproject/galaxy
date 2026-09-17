@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { BModal } from "bootstrap-vue";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
+import GModal from "@/components/BaseComponents/GModal.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 interface Props {
+    show?: boolean;
     title?: string;
     initialTags?: string[];
 }
@@ -16,6 +17,10 @@ const props = withDefaults(defineProps<Props>(), {
 
 const tags = ref(props.initialTags);
 
+const emptyTagList = computed(() => {
+    return tags.value.length === 0;
+});
+
 const emit = defineEmits<{
     (e: "cancel"): void;
     (e: "ok", tags: string[]): void;
@@ -24,10 +29,33 @@ const emit = defineEmits<{
 function onTagsChange(newTags: string[]) {
     tags.value = newTags;
 }
+
+function onOk() {
+    emit("ok", tags.value);
+    resetTags();
+}
+
+function onCancel() {
+    emit("cancel");
+    resetTags();
+}
+
+function resetTags() {
+    tags.value = props.initialTags;
+}
 </script>
 
 <template>
-    <BModal visible centered size="lg" :title="title" @ok="emit('ok', tags)" @hide="emit('cancel')">
+    <GModal
+        :show="show"
+        ok-text="Add"
+        :confirm="true"
+        size="small"
+        :title="title"
+        :ok-disabled="emptyTagList"
+        ok-disabled-title="Please select at least one tag"
+        @ok="onOk"
+        @cancel="onCancel">
         <StatelessTags :value="tags" @input="onTagsChange($event)" />
-    </BModal>
+    </GModal>
 </template>

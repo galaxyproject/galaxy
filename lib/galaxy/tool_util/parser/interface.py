@@ -5,143 +5,140 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
-from enum import Enum
+from collections.abc import Sequence
 from os.path import join
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
+    Literal,
     Optional,
-    Tuple,
     TYPE_CHECKING,
     Union,
 )
 
 import packaging.version
-from pydantic import BaseModel
 from typing_extensions import (
-    Literal,
     NotRequired,
     TypedDict,
 )
 
+from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
+from galaxy.tool_util_models.testing_types import (
+    AssertionList,
+    DirectCredential,
+)
+from galaxy.tool_util_models.tool_source import (
+    BaseJsonTestCollectionDefCollectionElementDict,
+    Citation,
+    DrillDownOptionsDict,
+    FieldDict,
+    FileSourceConfigFile,
+    HelpContent,
+    InputConfigFile,
+    JavascriptRequirement,
+    JsonTestCollectionDefCollectionElementDict,
+    JsonTestCollectionDefDatasetElementDict,
+    JsonTestCollectionDefDict,
+    JsonTestCollectionDefElementDict,
+    JsonTestDatasetDefDict,
+    OutputCompareType,
+    TemplateConfigFile,
+    XrefDict,
+)
 from galaxy.util import Element
 from galaxy.util.path import safe_walk
-from .parameter_validators import AnyValidatorModel
 from .util import _parse_name
 
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.requirements import (
         ContainerDescription,
-        ResourceRequirement,
+        CredentialsRequirement,
+        ResourceRequirement as ToolResourceRequirement,
         ToolRequirements,
     )
+    from galaxy.tool_util.parser.output_actions import ToolOutputActionApp
     from galaxy.tool_util.parser.output_objects import (
-        ToolOutput,
+        ToolOutputBase,
         ToolOutputCollection,
     )
-    from galaxy.tools import Tool
+    from .stdio import (
+        ToolStdioExitCode,
+        ToolStdioRegex,
+    )
 
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
+INPUT_CLASS_T = Literal["galaxy", "cwl"]
 
 
-class AssertionDict(TypedDict):
-    tag: str
-    attributes: Dict[str, Any]
-    children: "AssertionList"
-
-
-AssertionList = Optional[List[AssertionDict]]
-XmlInt = Union[str, int]
-
-
-class OutputCompareType(str, Enum):
-    diff = "diff"
-    re_match = "re_match"
-    sim_size = "sim_size"
-    re_match_multiline = "re_match_multiline"
-    contains = "contains"
-    image_diff = "image_diff"
+XmlInt = str | int
 
 
 class ToolSourceTestOutputAttributes(TypedDict):
-    object: NotRequired[Optional[Any]]
+    object: NotRequired[Any | None]
     compare: OutputCompareType
     lines_diff: int
     delta: int
-    delta_frac: Optional[float]
+    delta_frac: float | None
     sort: bool
     decompress: bool
-    location: NotRequired[Optional[str]]
-    ftype: NotRequired[Optional[str]]
+    location: NotRequired[str | None]
+    ftype: NotRequired[str | None]
     eps: float
     metric: str
-    pin_labels: Optional[Any]
-    count: Optional[int]
-    metadata: Dict[str, Any]
-    md5: Optional[str]
-    checksum: Optional[str]
-    primary_datasets: Dict[str, Any]
-    elements: Dict[str, Any]
+    pin_labels: Any | None
+    count: int | None
+    min: int | None
+    max: int | None
+    metadata: dict[str, Any]
+    md5: str | None
+    checksum: str | None
+    primary_datasets: dict[str, Any]
+    elements: dict[str, Any]
     assert_list: AssertionList
-    extra_files: List[Dict[str, Any]]
+    extra_files: list[dict[str, Any]]
 
 
 class ToolSourceTestOutput(TypedDict):
     name: str
-    value: Optional[str]
+    value: str | None
     attributes: ToolSourceTestOutputAttributes
 
 
 # The unfortunate 'attrib = dict(param_elem.attrib)' makes this difficult to type.
-ToolSourceTestInputAttributes = Dict[str, Any]
+ToolSourceTestInputAttributes = dict[str, Any]
 
 
 class ToolSourceTestInput(TypedDict):
     name: str
-    value: Optional[Any]
+    value: Any | None
     attributes: ToolSourceTestInputAttributes
 
 
-ToolSourceTestInputs = List[ToolSourceTestInput]
-ToolSourceTestOutputs = List[ToolSourceTestOutput]
+ToolSourceTestInputs = list[ToolSourceTestInput]
+ToolSourceTestOutputs = list[ToolSourceTestOutput]
 TestSourceTestOutputColllection = Any
 
 
 class ToolSourceTest(TypedDict):
     inputs: ToolSourceTestInputs
     outputs: ToolSourceTestOutputs
-    output_collections: List[TestSourceTestOutputColllection]
+    output_collections: list[TestSourceTestOutputColllection]
     stdout: AssertionList
     stderr: AssertionList
-    expect_exit_code: Optional[XmlInt]
+    expect_exit_code: XmlInt | None
     expect_failure: bool
     expect_test_failure: bool
-    maxseconds: Optional[XmlInt]
-    expect_num_outputs: Optional[XmlInt]
+    maxseconds: XmlInt | None
+    expect_num_outputs: XmlInt | None
     command: AssertionList
     command_version: AssertionList
+    value_state_representation: Literal["test_case_xml", "test_case_json"]
+    credentials: list[DirectCredential] | None
 
 
 class ToolSourceTests(TypedDict):
-    tests: List[ToolSourceTest]
-
-
-class XrefDict(TypedDict):
-    value: str
-    reftype: str
-
-
-class Citation(BaseModel):
-    type: str
-    content: str
-
-
-class HelpContent(BaseModel):
-    format: Literal["restructuredtext", "plain_text", "markdown"]
-    content: str
+    tests: list[ToolSourceTest]
 
 
 class ToolSource(metaclass=ABCMeta):
@@ -152,17 +149,25 @@ class ToolSource(metaclass=ABCMeta):
     language: str
 
     @abstractmethod
-    def parse_id(self) -> Optional[str]:
+    def parse_id(self) -> str | None:
         """Parse an ID describing the abstract tool. This is not the
         GUID tracked by the tool shed but the simple id (there may be
         multiple tools loaded in Galaxy with this same simple id).
         """
 
     @abstractmethod
-    def parse_version(self) -> Optional[str]:
+    def parse_version(self) -> str | None:
         """Parse a version describing the abstract tool."""
 
-    def parse_tool_module(self) -> Optional[Tuple[str, str]]:
+    def parse_class(self) -> str | None:
+        """Parse the class of the tool."""
+        return None
+
+    def allows_tool_provided_metadata(self) -> bool:
+        """Return whether this source may enable tool-provided metadata."""
+        return False
+
+    def parse_tool_module(self) -> tuple[str, str] | None:
         """Load Tool class from a custom module. (Optional).
 
         If not None, return pair containing module and class (as strings).
@@ -176,7 +181,7 @@ class ToolSource(metaclass=ABCMeta):
         """
         return None
 
-    def parse_tool_type(self) -> Optional[str]:
+    def parse_tool_type(self) -> str | None:
         """Load simple tool type string (e.g. 'data_source', 'default')."""
         return None
 
@@ -191,16 +196,20 @@ class ToolSource(metaclass=ABCMeta):
         We parse this out as "" if it isn't explicitly declared.
         """
 
-    def parse_edam_operations(self) -> List[str]:
+    @abstractmethod
+    def parse_icon(self) -> str | None:
+        """Return icon path for tool."""
+
+    def parse_edam_operations(self) -> list[str]:
         """Parse list of edam operation codes."""
         return []
 
-    def parse_edam_topics(self) -> List[str]:
+    def parse_edam_topics(self) -> list[str]:
         """Parse list of edam topic codes."""
         return []
 
     @abstractmethod
-    def parse_xrefs(self) -> List[XrefDict]:
+    def parse_xrefs(self) -> list[XrefDict]:
         """Parse list of external resource URIs and types."""
 
     def parse_display_interface(self, default):
@@ -223,15 +232,27 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_command(self):
+    def parse_command(self) -> str | None:
         """Return string contianing command to run."""
+
+    def parse_shell_command(self) -> str | None:
+        """Return string that after input binding can be executed."""
+        return None
+
+    def parse_base_command(self) -> list[str] | None:
+        """Return string containing script entrypoint."""
+        return None
+
+    def parse_arguments(self) -> list[str] | None:
+        """Return list of strings to append to base_command."""
+        return None
 
     def parse_expression(self):
         """Return string contianing command to run."""
         return None
 
     @abstractmethod
-    def parse_environment_variables(self):
+    def parse_environment_variables(self) -> list[dict[str, Any]]:
         """Return environment variable templates to expose."""
 
     def parse_home_target(self):
@@ -251,13 +272,15 @@ class ToolSource(metaclass=ABCMeta):
             "GALAXY_SLOTS",
             "GALAXY_MEMORY_MB",
             "GALAXY_MEMORY_MB_PER_SLOT",
+            "GALAXY_MEMORY_GB",
+            "GALAXY_MEMORY_GB_PER_SLOT",
             "HOME",
             "_GALAXY_JOB_HOME_DIR",
             "_GALAXY_JOB_TMP_DIR",
         ] + self.parse_tmp_directory_vars()
 
     @abstractmethod
-    def parse_interpreter(self):
+    def parse_interpreter(self) -> str | None:
         """Return string containing the interpreter to prepend to the command
         (for instance this might be 'python' to run a Python wrapper located
         adjacent to the tool).
@@ -311,10 +334,16 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_requirements_and_containers(
+    def parse_requirements(
         self,
-    ) -> Tuple["ToolRequirements", List["ContainerDescription"], List["ResourceRequirement"]]:
-        """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
+    ) -> tuple[
+        "ToolRequirements",
+        list["ContainerDescription"],
+        list["ToolResourceRequirement"],
+        list["JavascriptRequirement"],
+        list["CredentialsRequirement"],
+    ]:
+        """Return triple of ToolRequirement, ContainerDescription, ResourceRequirement, JavascriptRequirement, and CredentialsRequirement objects."""
 
     @abstractmethod
     def parse_input_pages(self) -> "PagesSource":
@@ -336,10 +365,14 @@ class ToolSource(metaclass=ABCMeta):
         """Return location of provided metadata file (e.g. galaxy.json)."""
         return "galaxy.json"
 
+    def parse_provided_metadata_is_explicit(self) -> bool:
+        """Return whether tool-provided metadata was explicitly configured."""
+        return False
+
     @abstractmethod
     def parse_outputs(
-        self, tool: Optional["Tool"]
-    ) -> Tuple[Dict[str, "ToolOutput"], Dict[str, "ToolOutputCollection"]]:
+        self, app: Optional["ToolOutputActionApp"]
+    ) -> tuple[dict[str, "ToolOutputBase"], dict[str, "ToolOutputCollection"]]:
         """Return a pair of output and output collections ordered
         dictionaries for use by Tool.
         """
@@ -351,14 +384,14 @@ class ToolSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def parse_stdio(self):
+    def parse_stdio(self) -> tuple[list["ToolStdioExitCode"], list["ToolStdioRegex"]]:
         """Builds lists of ToolStdioExitCode and ToolStdioRegex objects
         to describe tool execution error conditions.
         """
         return [], []
 
     @abstractmethod
-    def parse_help(self) -> Optional[HelpContent]:
+    def parse_help(self) -> HelpContent | None:
         """Return help text for tool or None if the tool doesn't define help text.
 
         The returned object contains the help text and an indication if it is reStructuredText
@@ -370,15 +403,15 @@ class ToolSource(metaclass=ABCMeta):
         """Return tool profile version as Galaxy major e.g. 16.01 or 16.04."""
 
     @abstractmethod
-    def parse_license(self) -> Optional[str]:
+    def parse_license(self) -> str | None:
         """Return license corresponding to tool wrapper."""
 
-    def parse_citations(self) -> List[Citation]:
+    def parse_citations(self) -> list[Citation]:
         """Return a list of citations."""
         return []
 
     @abstractmethod
-    def parse_python_template_version(self) -> Optional[packaging.version.Version]:
+    def parse_python_template_version(self) -> packaging.version.Version | None:
         """
         Return minimum python version that the tool template has been developed against.
         """
@@ -390,8 +423,17 @@ class ToolSource(metaclass=ABCMeta):
         """
         return []
 
+    def parse_template_configfiles(self) -> Sequence[TemplateConfigFile]:
+        return []
+
+    def parse_input_configfiles(self) -> Sequence[InputConfigFile]:
+        return []
+
+    def parse_file_sources(self) -> Sequence[FileSourceConfigFile]:
+        return []
+
     @property
-    def macro_paths(self):
+    def macro_paths(self) -> list[str]:
         return []
 
     @property
@@ -408,8 +450,7 @@ class ToolSource(metaclass=ABCMeta):
         return {"tests": []}
 
     def __str__(self):
-        source_path = self.source_path
-        if source_path:
+        if source_path := self.source_path:
             as_str = f"{self.__class__.__name__}[{source_path}]"
         else:
             as_str = f"{self.__class__.__name__}[In-memory]"
@@ -420,6 +461,9 @@ class ToolSource(metaclass=ABCMeta):
         """Return the tool source as a string"""
 
 
+InputsStyleT = Literal["cheetah", "cwl", "none"]
+
+
 class PagesSource:
     """Contains a list of Pages - each a list of InputSources -
     each item in the outer list representing a page of inputs.
@@ -427,16 +471,20 @@ class PagesSource:
     be exactly a singleton.
     """
 
-    def __init__(self, page_sources):
+    def __init__(self, page_sources, inputs_style: InputsStyleT = "cheetah"):
         self.page_sources = page_sources
+        self._inputs_style = inputs_style
 
     @property
-    def inputs_defined(self):
-        return True
+    def inputs_defined(self) -> bool:
+        return self._inputs_style != "none"
+
+    @property
+    def inputs_style(self) -> InputsStyleT:
+        return self._inputs_style
 
 
 class DynamicOptions(metaclass=ABCMeta):
-
     def elem(self) -> Element:
         # For things in transition that still depend on XML - provide a way
         # to grab it and just throw an error if feature is attempted to be
@@ -444,27 +492,30 @@ class DynamicOptions(metaclass=ABCMeta):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abstractmethod
-    def get_dynamic_options_code(self) -> Optional[str]:
+    def get_dynamic_options_code(self) -> str | None:
         """If dynamic options are a piece of code to eval, return it."""
 
     @abstractmethod
-    def get_data_table_name(self) -> Optional[str]:
+    def get_data_table_name(self) -> str | None:
         """If dynamic options are loaded from a data table, return the name."""
 
     @abstractmethod
-    def get_index_file_name(self) -> Optional[str]:
+    def get_index_file_name(self) -> str | None:
         """If dynamic options are loaded from an index file, return the name."""
 
 
 class DrillDownDynamicOptions(metaclass=ABCMeta):
-
     @abstractmethod
-    def from_code_block(self) -> Optional[str]:
+    def from_code_block(self) -> str | None:
         """Get a code block to do an eval on."""
 
 
 class InputSource(metaclass=ABCMeta):
     default_optional = False
+
+    @property
+    def input_class(self) -> INPUT_CLASS_T:
+        return "galaxy"
 
     def elem(self):
         # For things in transition that still depend on XML - provide a way
@@ -505,6 +556,10 @@ class InputSource(metaclass=ABCMeta):
     def parse_input_type(self) -> str:
         """Return the type of this input."""
 
+    @abstractmethod
+    def parse_extensions(self) -> list[str]:
+        """Return list of extensions"""
+
     def parse_help(self):
         return self.get("help")
 
@@ -515,7 +570,7 @@ class InputSource(metaclass=ABCMeta):
         """
         return None
 
-    def parse_validators(self) -> List[AnyValidatorModel]:
+    def parse_validators(self) -> list[AnyValidatorModel]:
         """Return an XML description of sanitizers. This is a stop gap
         until we can rework galaxy.tools.parameters.validation to not
         explicitly depend on XML.
@@ -528,7 +583,7 @@ class InputSource(metaclass=ABCMeta):
             default = self.default_optional
         return self.get_bool("optional", default)
 
-    def parse_dynamic_options(self) -> Optional[DynamicOptions]:
+    def parse_dynamic_options(self) -> DynamicOptions | None:
         """Return an optional element describing dynamic options.
 
         These options are still very XML based but as they are adapted to the infrastructure, the return
@@ -537,19 +592,17 @@ class InputSource(metaclass=ABCMeta):
         return None
 
     def parse_drill_down_dynamic_options(
-        self, tool_data_path: Optional[str] = None
+        self, tool_data_path: str | None = None
     ) -> Optional["DrillDownDynamicOptions"]:
         return None
 
-    def parse_static_options(self) -> List[Tuple[str, str, bool]]:
+    def parse_static_options(self) -> list[tuple[str, str, bool]]:
         """Return list of static options if this is a select type without
         defining a dynamic options.
         """
         return []
 
-    def parse_drill_down_static_options(
-        self, tool_data_path: Optional[str] = None
-    ) -> Optional[List["DrillDownOptionsDict"]]:
+    def parse_drill_down_static_options(self, tool_data_path: str | None = None) -> list["DrillDownOptionsDict"] | None:
         return None
 
     def parse_conversion_tuples(self):
@@ -567,7 +620,7 @@ class InputSource(metaclass=ABCMeta):
     def parse_when_input_sources(self):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
-    def parse_default(self) -> Optional[Dict[str, Any]]:
+    def parse_default(self) -> dict[str, Any] | None:
         return None
 
 
@@ -576,13 +629,13 @@ class PageSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_input_sources(self) -> List[InputSource]:
+    def parse_input_sources(self) -> list[InputSource]:
         """Return a list of InputSource objects."""
 
 
 AnyTestCollectionDefDict = Union["JsonTestCollectionDefDict", "XmlTestCollectionDefDict"]
 TestCollectionDefElementObject = Union[AnyTestCollectionDefDict, "ToolSourceTestInput"]
-TestCollectionAttributeDict = Dict[str, Any]
+TestCollectionAttributeDict = dict[str, Any]
 CollectionType = str
 
 
@@ -603,68 +656,10 @@ class TestCollectionDefElementInternal(TypedDict):
 class XmlTestCollectionDefDict(TypedDict):
     model_class: Literal["TestCollectionDef"]
     attributes: TestCollectionAttributeDict
-    collection_type: CollectionType
-    elements: List[TestCollectionDefElementDict]
+    collection_type: CollectionType | None
+    fields: list[FieldDict] | None
+    elements: list[TestCollectionDefElementDict]
     name: str
-
-
-JsonTestDatasetDefDict = TypedDict(
-    "JsonTestDatasetDefDict",
-    {
-        "class": Literal["File"],
-        "path": NotRequired[Optional[str]],
-        "location": NotRequired[Optional[str]],
-        "name": NotRequired[Optional[str]],
-        "dbkey": NotRequired[Optional[str]],
-        "filetype": NotRequired[Optional[str]],
-        "composite_data": NotRequired[Optional[List[str]]],
-        "tags": NotRequired[Optional[List[str]]],
-    },
-)
-
-JsonTestCollectionDefElementDict = Union[
-    "JsonTestCollectionDefDatasetElementDict", "JsonTestCollectionDefCollectionElementDict"
-]
-JsonTestCollectionDefDatasetElementDict = TypedDict(
-    "JsonTestCollectionDefDatasetElementDict",
-    {
-        "identifier": str,
-        "class": Literal["File"],
-        "path": NotRequired[Optional[str]],
-        "location": NotRequired[Optional[str]],
-        "name": NotRequired[Optional[str]],
-        "dbkey": NotRequired[Optional[str]],
-        "filetype": NotRequired[Optional[str]],
-        "composite_data": NotRequired[Optional[List[str]]],
-        "tags": NotRequired[Optional[List[str]]],
-    },
-)
-BaseJsonTestCollectionDefCollectionElementDict = TypedDict(
-    "BaseJsonTestCollectionDefCollectionElementDict",
-    {
-        "class": Literal["Collection"],
-        "collection_type": str,
-        "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
-    },
-)
-JsonTestCollectionDefCollectionElementDict = TypedDict(
-    "JsonTestCollectionDefCollectionElementDict",
-    {
-        "identifier": str,
-        "class": Literal["Collection"],
-        "collection_type": str,
-        "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
-    },
-)
-JsonTestCollectionDefDict = TypedDict(
-    "JsonTestCollectionDefDict",
-    {
-        "class": Literal["Collection"],
-        "collection_type": str,
-        "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
-        "name": NotRequired[Optional[str]],
-    },
-)
 
 
 def xml_data_input_to_json(xml_input: ToolSourceTestInput) -> Optional["JsonTestDatasetDefDict"]:
@@ -681,13 +676,12 @@ def xml_data_input_to_json(xml_input: ToolSourceTestInput) -> Optional["JsonTest
     _copy_if_exists(attributes, as_dict, "dbkey")
     _copy_if_exists(attributes, as_dict, "ftype", "filetype")
     _copy_if_exists(attributes, as_dict, "composite_data", only_if_value=True)
-    tags = attributes.get("tags")
-    if tags:
+    if tags := attributes.get("tags"):
         as_dict["tags"] = [t.strip() for t in tags.split(",")]
     return as_dict
 
 
-def _copy_if_exists(attributes, as_dict, name: str, as_name: Optional[str] = None, only_if_value: bool = False):
+def _copy_if_exists(attributes, as_dict, name: str, as_name: str | None = None, only_if_value: bool = False):
     if name in attributes:
         value = attributes[name]
         if not value and only_if_value:
@@ -699,13 +693,16 @@ def _copy_if_exists(attributes, as_dict, name: str, as_name: Optional[str] = Non
 
 class TestCollectionDef:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
-    elements: List[TestCollectionDefElementInternal]
+    elements: list[TestCollectionDefElementInternal]
+    collection_type: str | None
+    fields: list[FieldDict] | None
 
-    def __init__(self, attrib, name, collection_type, elements):
+    def __init__(self, attrib, name, collection_type: str | None, elements, fields: list[FieldDict] | None = None):
         self.attrib = attrib
         self.collection_type = collection_type
         self.elements = elements
         self.name = name
+        self.fields = fields
 
     def _test_format_to_dict(self) -> "BaseJsonTestCollectionDefCollectionElementDict":
 
@@ -719,9 +716,7 @@ class TestCollectionDef:
                     identifier=identifier, **element_object._test_format_to_dict()
                 )
             else:
-                input_as_dict: Optional[JsonTestDatasetDefDict] = xml_data_input_to_json(
-                    cast(ToolSourceTestInput, element_object)
-                )
+                input_as_dict: JsonTestDatasetDefDict | None = xml_data_input_to_json(element_object)
                 if input_as_dict is not None:
                     as_dict = JsonTestCollectionDefDatasetElementDict(
                         identifier=identifier,
@@ -744,6 +739,8 @@ class TestCollectionDef:
         test_format_dict = JsonTestCollectionDefDict(**self._test_format_to_dict())
         if self.name:
             test_format_dict["name"] = self.name
+        if self.fields is not None:
+            test_format_dict["fields"] = self.fields
         return test_format_dict
 
     def to_dict(self) -> XmlTestCollectionDefDict:
@@ -762,11 +759,12 @@ class TestCollectionDef:
             "collection_type": self.collection_type,
             "elements": list(map(element_to_dict, self.elements or [])),
             "name": self.name,
+            "fields": self.fields,
         }
 
     @staticmethod
     def from_dict(
-        as_dict: Union[AnyTestCollectionDefDict, JsonTestCollectionDefCollectionElementDict]
+        as_dict: AnyTestCollectionDefDict | JsonTestCollectionDefCollectionElementDict,
     ) -> "TestCollectionDef":
         if "model_class" in as_dict:
             xml_as_dict = cast(XmlTestCollectionDefDict, as_dict)
@@ -785,6 +783,7 @@ class TestCollectionDef:
                 name=xml_as_dict.get("name", "Unnamed Collection"),
                 elements=list(map(element_from_dict, xml_as_dict["elements"] or [])),
                 collection_type=xml_as_dict["collection_type"],
+                fields=xml_as_dict.get("fields", None),
             )
         else:
             json_as_dict = cast(JsonTestCollectionDefDict, as_dict)
@@ -794,7 +793,7 @@ class TestCollectionDef:
             ) -> TestCollectionDefElementInternal:
                 element_class = element_dict.get("class")
                 identifier = element_dict["identifier"]
-                element_def: Union[TestCollectionDef, ToolSourceTestInput]
+                element_def: TestCollectionDef | ToolSourceTestInput
                 if element_class == "Collection":
                     collection_element_dict = cast(JsonTestCollectionDefCollectionElementDict, element_dict)
                     element_def = TestCollectionDef.from_dict(collection_element_dict)
@@ -811,6 +810,7 @@ class TestCollectionDef:
                 name=json_as_dict.get("name") or "Unnamed Collection",
                 elements=elements,
                 collection_type=json_as_dict["collection_type"],
+                fields=json_as_dict.get("fields", None),
             )
 
     def collect_inputs(self):
@@ -825,7 +825,7 @@ class TestCollectionDef:
 
 
 class RequiredFiles:
-    def __init__(self, includes: List[Dict], excludes: List[Dict], extend_default_excludes: bool):
+    def __init__(self, includes: list[dict], excludes: list[dict], extend_default_excludes: bool):
         self.includes = includes
         self.excludes = excludes
         self.extend_default_excludes = extend_default_excludes
@@ -833,12 +833,12 @@ class RequiredFiles:
     @staticmethod
     def from_dict(as_dict):
         extend_default_excludes: bool = as_dict.get("extend_default_excludes", True)
-        includes: List = as_dict.get("includes", [])
-        excludes: List = as_dict.get("excludes", [])
+        includes: list = as_dict.get("includes", [])
+        excludes: list = as_dict.get("excludes", [])
         return RequiredFiles(includes, excludes, extend_default_excludes)
 
-    def find_required_files(self, tool_directory: str) -> List[str]:
-        def matches(ie_list: List, rel_path: str):
+    def find_required_files(self, tool_directory: str) -> list[str]:
+        def matches(ie_list: list, rel_path: str):
             for ie_item in ie_list:
                 ie_item_path = ie_item["path"]
                 ie_item_type = ie_item.get("path_type", "literal")
@@ -862,7 +862,7 @@ class RequiredFiles:
             excludes.append({"path": "test-data", "path_type": "prefix"})
             excludes.append({"path": ".hg", "path_type": "prefix"})
 
-        files: List[str] = []
+        files: list[str] = []
         for dirpath, _, filenames in safe_walk(tool_directory):
             for filename in filenames:
                 rel_path = join(dirpath, filename).replace(tool_directory + os.path.sep, "")
@@ -871,10 +871,22 @@ class RequiredFiles:
         return files
 
 
+def resolve_element_tests(as_dict):
+    """Return the nested element tests, preferring the "element_tests" key over its "elements" alias.
+
+    "element_tests" is the preferred key; "elements" is the accepted alias (see
+    https://github.com/galaxyproject/planemo/pull/1417). Both the top-level test definition and each
+    nested collection element may use either, so resolution goes through this single function.
+    """
+    if as_dict.get("element_tests") is not None:
+        return as_dict["element_tests"]
+    return as_dict.get("elements", {})
+
+
 class TestCollectionOutputDef:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
-    def __init__(self, name, attrib, element_tests, element_count: Optional[int] = None):
+    def __init__(self, name, attrib, element_tests, element_count: int | None = None):
         self.name = name
         self.collection_type = attrib.get("type", None)
         if element_count is not None:
@@ -882,6 +894,10 @@ class TestCollectionOutputDef:
         else:
             count = attrib.get("count")
         self.count = int(count) if count is not None else None
+        min = attrib.get("min")
+        self.min = int(min) if min is not None else None
+        max = attrib.get("max")
+        self.max = int(max) if max is not None else None
         self.attrib = attrib
         self.element_tests = element_tests
 
@@ -899,20 +915,12 @@ class TestCollectionOutputDef:
         if "attributes" not in as_dict:
             as_dict["attributes"] = {}
         attributes = as_dict["attributes"]
-        # setup preferred name "elements" in accordance with work in https://github.com/galaxyproject/planemo/pull/1417
-        # TODO: test this works recursively...
-        if "elements" in as_dict and "element_tests" not in as_dict:
-            as_dict["element_tests"] = as_dict["elements"]
+        # setup preferred name "element_tests" in accordance with work in https://github.com/galaxyproject/planemo/pull/1417
+        if "elements" in as_dict or "element_tests" in as_dict:
+            as_dict["element_tests"] = resolve_element_tests(as_dict)
         if "collection_type" in as_dict:
             attributes["type"] = as_dict["collection_type"]
         return TestCollectionOutputDef.from_dict(as_dict)
 
     def to_dict(self):
         return dict(name=self.name, attributes=self.attrib, element_tests=self.element_tests, element_count=self.count)
-
-
-class DrillDownOptionsDict(TypedDict):
-    name: Optional[str]
-    value: str
-    options: List["DrillDownOptionsDict"]
-    selected: bool

@@ -1,0 +1,25 @@
+<tool id="html_output" name="html_output" version="1.0.0">
+    <command><![CDATA[
+cp '$html_file' '$output'
+    ]]></command>
+    <configfiles>
+        <configfile name="html_file"><![CDATA[
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-description="hello-world">Hello World</title>
+</head>
+<body>
+    <main>
+       <h1>Hello, World!</h1>
+    </main>
+</body>
+</html>
+        ]]></configfile>
+    </configfiles>
+    <outputs>
+        <data name="output" format="html" />
+    </outputs>
+</tool>

@@ -1,12 +1,13 @@
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { OK_PLUGIN_STATUS } from "@/components/ConfigTemplates/test_fixtures";
-import { type ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
+import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 
-import { type UserConcreteObjectStore } from "./types";
+import type { UserConcreteObjectStore } from "./types";
 
 import UpgradeForm from "./UpgradeForm.vue";
 
@@ -25,12 +26,14 @@ const STANDARD_TEMPLATE: ObjectStoreTemplateSummary = {
             type: "string",
             help: "old var help",
             default: "old default",
+            optional: true,
         },
         {
             name: "newvar",
             type: "string",
             help: "new var help",
             default: "",
+            optional: true,
         },
     ],
     secrets: [
@@ -41,6 +44,7 @@ const STANDARD_TEMPLATE: ObjectStoreTemplateSummary = {
         {
             name: "newsecret",
             help: "new secret help",
+            optional: true, // New secret is optional
         },
     ],
     id: "moo",
@@ -71,7 +75,7 @@ const INSTANCE: UserConcreteObjectStore = {
 
 describe("UpgradeForm", () => {
     it("should render with old variable values re-filled in", async () => {
-        const wrapper = mount(UpgradeForm, {
+        const wrapper = mount(UpgradeForm as object, {
             propsData: {
                 latestTemplate: STANDARD_TEMPLATE,
                 instance: INSTANCE,
@@ -88,7 +92,7 @@ describe("UpgradeForm", () => {
     });
 
     it("should render with new variable values with empty values", async () => {
-        const wrapper = mount(UpgradeForm, {
+        const wrapper = mount(UpgradeForm as object, {
             propsData: {
                 latestTemplate: STANDARD_TEMPLATE,
                 instance: INSTANCE,
@@ -105,7 +109,7 @@ describe("UpgradeForm", () => {
     });
 
     it("should put to update on submit and return to index", async () => {
-        const wrapper = mount(UpgradeForm, {
+        const wrapper = mount(UpgradeForm as object, {
             propsData: {
                 latestTemplate: STANDARD_TEMPLATE,
                 instance: INSTANCE,
@@ -119,7 +123,7 @@ describe("UpgradeForm", () => {
             }),
             http.put("/api/object_store_instances/{uuid}", ({ response }) => {
                 return response(200).json(INSTANCE);
-            })
+            }),
         );
 
         await flushPromises();
@@ -132,7 +136,7 @@ describe("UpgradeForm", () => {
     });
 
     it("should indicate an error on failure", async () => {
-        const wrapper = mount(UpgradeForm, {
+        const wrapper = mount(UpgradeForm as object, {
             propsData: {
                 latestTemplate: STANDARD_TEMPLATE,
                 instance: INSTANCE,
@@ -146,7 +150,7 @@ describe("UpgradeForm", () => {
             }),
             http.put("/api/object_store_instances/{uuid}", ({ response }) => {
                 return response("4XX").json({ err_msg: "problem upgrading", err_code: 400 }, { status: 400 });
-            })
+            }),
         );
         await flushPromises();
         const submitElement = wrapper.find("#submit");
