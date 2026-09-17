@@ -3,7 +3,6 @@ import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { useCreatingJob } from "@/composables/useCreatingJob";
-import { useJobBasic } from "@/composables/useJobBasic";
 
 import type { HistoryGraphNode } from "./historyGraphMapper";
 
@@ -32,7 +31,6 @@ const infoIcon = computed(() => props.node?.icon);
 // For dataset/collection nodes, resolve the creating job and fetch its basic
 // details for the JobState badge / RerunJobButton in the GTabs nav-end.
 const { jobId: creatingJobId, loading: lookupLoading, error: lookupError } = useCreatingJob(itemId, nodeSrc);
-const { job } = useJobBasic(creatingJobId);
 </script>
 
 <template>
@@ -46,8 +44,8 @@ const { job } = useJobBasic(creatingJobId);
         <BAlert v-else-if="isDatasetLike && lookupError" variant="info" show class="mb-0">{{ lookupError }}</BAlert>
         <GTabs v-else-if="isDatasetLike && creatingJobId">
             <template v-slot:nav-end>
-                <JobState v-if="job" :job="job" class="mr-2" />
-                <RerunJobButton v-if="job" :job-id="creatingJobId" outline />
+                <JobState v-if="creatingJobId" :job-id="creatingJobId" class="mr-2" />
+                <RerunJobButton v-if="creatingJobId" :job-id="creatingJobId" outline />
             </template>
             <JobDetailsTabs
                 :key="creatingJobId"

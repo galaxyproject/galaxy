@@ -11,7 +11,6 @@ import JobState from "@/components/JobStates/JobState.vue";
 
 const props = defineProps<{
     jobId: string;
-    minimal?: boolean;
 }>();
 
 const toolStore = useToolStore();
@@ -24,8 +23,8 @@ const { job } = useJobDetails(toRef(props, "jobId"));
         <div class="d-flex justify-content-between">
             <div class="job-header">
                 <div class="job-header-title">
-                    <JobState v-if="job" class="job-information-state-badge" :job="job" />
-                    <Heading v-if="!props.minimal && job" :icon="faWrench" inline size="md">
+                    <JobState class="job-information-state-badge" :job-id="props.jobId" />
+                    <Heading v-if="job" :icon="faWrench" inline size="md">
                         {{ toolStore.getToolNameById(job.tool_id, "Job Details") }}
                     </Heading>
                 </div>
@@ -34,8 +33,7 @@ const { job } = useJobDetails(toRef(props, "jobId"));
                 <RerunJobButton :job-id="props.jobId" outline />
             </div>
         </div>
-        <hr v-if="!props.minimal" />
-        <div v-else class="py-2" />
+        <hr v-if="job" />
     </div>
 </template>
 

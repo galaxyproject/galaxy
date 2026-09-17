@@ -2,10 +2,11 @@
 import { faSquare } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, toRef } from "vue";
 
 import { isRegisteredUser } from "@/api";
-import { deleteJob, type JobBaseModel, NON_TERMINAL_STATES, type ShowFullJobResponse } from "@/api/jobs";
+import { deleteJob, NON_TERMINAL_STATES } from "@/api/jobs";
+import { useJobDetails } from "@/composables/jobDetails.js";
 import { useToast } from "@/composables/toast";
 import { getHeaderClass, iconClasses } from "@/composables/useInvocationGraph";
 import { useUserStore } from "@/stores/userStore";
@@ -14,17 +15,22 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import GButton from "../BaseComponents/GButton.vue";
 
 const props = defineProps<{
-    job: JobBaseModel | ShowFullJobResponse;
+    jobId: string;
 }>();
 
 const badgeClass = computed(() => {
+    if (!job.value) {
+        return {};
+    }
     return {
-        ...getHeaderClass(props.job.state),
+        ...getHeaderClass(job.value.state),
         "text-center": true,
     };
 });
 
-const stateIcon = computed(() => iconClasses[props.job.state] || null);
+const { job } = useJobDetails(toRef(props, "jobId"));
+
+const stateIcon = computed(() => (job.value ? iconClasses[job.value.state] : null));
 
 const Toast = useToast();
 
@@ -32,11 +38,11 @@ const { currentUser } = storeToRefs(useUserStore());
 
 /** Whether the current user owns the job (can stop it) */
 const userOwnsJob = computed(() => {
-    if (!currentUser.value || !isRegisteredUser(currentUser.value)) {
+    if (!job.value || !currentUser.value || !isRegisteredUser(currentUser.value)) {
         return false;
     }
-    if ("user_id" in props.job && props.job.user_id) {
-        return props.job.user_id === currentUser.value.id;
+    if ("user_id" in job.value && job.value.user_id) {
+        return job.value.user_id === currentUser.value.id;
     }
     // `user_id` not available on `JobBaseModel` — caller context implies ownership
     return true;
@@ -51,19 +57,23 @@ const userOwnsJob = computed(() => {
  */
 const canStopJob = computed(
     () =>
+        job.value &&
         userOwnsJob.value &&
-        NON_TERMINAL_STATES.includes(props.job.state) &&
-        !props.job.tool_id.startsWith("upload") &&
-        props.job.tool_id !== "__DATA_FETCH__",
+        NON_TERMINAL_STATES.includes(job.value.state) &&
+        !job.value.tool_id.startsWith("upload") &&
+        job.value.tool_id !== "__DATA_FETCH__",
 );
 
 /** Whether the stop job action is currently being performed */
 const stopping = ref(false);
 
 async function stopJob() {
+    if (!job.value || stopping.value) {
+        return;
+    }
     stopping.value = true;
     try {
-        await deleteJob(props.job.id);
+        await deleteJob(job.value.id);
 
         Toast.success("Job scheduled to be stopped.");
     } catch (error) {
@@ -75,7 +85,7 @@ async function stopJob() {
 </script>
 
 <template>
-    <span class="job-state-badge rounded px-2 py-1 text-nowrap" :class="badgeClass">
+    <span v-if="job" class="job-state-badge rounded px-2 py-1 text-nowrap" :class="badgeClass">
         <FontAwesomeIcon
             v-if="stateIcon"
             :icon="stateIcon.icon"
@@ -95,7 +105,7 @@ async function stopJob() {
             @click.stop.prevent="stopJob">
             <FontAwesomeIcon :icon="faSquare" />
         </GButton>
-        {{ props.job.state }}
+        {{ job.state }}
     </span>
 </template>
 
