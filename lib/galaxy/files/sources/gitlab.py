@@ -1,11 +1,11 @@
 import functools
 from collections.abc import Iterator
 from contextlib import contextmanager
-from urllib.parse import urlparse
 from typing import (
     cast,
     Literal,
 )
+from urllib.parse import urlparse
 
 from galaxy.exceptions import (
     AuthenticationRequired,
