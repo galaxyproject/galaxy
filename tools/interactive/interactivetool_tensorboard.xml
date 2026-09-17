@@ -1,0 +1,47 @@
+<tool id="interactive_tool_tensorboard" tool_type="interactive" name="Interactive TensorBoard Environment" version="2.20.0" profile="23.0">
+    <description>
+        An interactive environment for visualizing and exploring machine learning experiments with TensorBoard.
+    </description>
+    <requirements>
+        <container type="docker">quay.io/leistivo/tensorboard:2.21.0-cf_tensorboard-feedstock_PR95</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="TensorBoard on $infile.display_name" requires_domain="True">
+            <port>6006</port>
+        </entry_point>
+    </entry_points>
+    <stdio>
+        <regex match="WARNING"
+               source="both"
+               level="warning"
+               description="TensorBoard warnings"
+               />
+    </stdio>
+    <command detect_errors="exit_code"><![CDATA[
+    #if $infile.ext == 'tfevents':
+        mkdir -p logs &&
+        ln -s '${infile}' logs/events.out.tfevents.galaxy &&
+        tensorboard --logdir logs --host 0.0.0.0 --port 6006
+    #else:
+        tensorboard --logdir '${infile.extra_files_path}' --host 0.0.0.0 --port 6006
+    #end if
+    ]]></command>
+    <inputs>
+        <param name="infile" type="data" format="directory,tfevents" label="TensorBoard logs"
+               help="Select a directory containing TensorBoard logs or a single TensorBoard event file (tfevents). Directory inputs preserve the run subdirectories for comparing experiments." />
+    </inputs>
+    <outputs />
+    <help><![CDATA[
+TensorBoard visualizes machine learning experiments, including scalar metrics,
+graphs, histograms, and images recorded in TensorBoard event logs.
+
+Select a directory dataset containing your TensorBoard logs, or a single dataset
+with the tfevents datatype. For directories, keep the original event filenames
+and run subdirectories so TensorBoard can discover and compare the runs.
+
+After starting the tool, open TensorBoard from Galaxy's active interactive tools.
+The available dashboards depend on the data recorded in your event logs.
+Stop the interactive tool in Galaxy when you have finished exploring.
+
+    ]]></help>
+</tool>
