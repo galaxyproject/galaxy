@@ -1,13 +1,6 @@
 <script setup lang="ts">
-import {
-    faArrowCircleLeft,
-    faArrowCircleRight,
-    faCheck,
-    faLightbulb,
-    faWrench,
-} from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown } from "bootstrap-vue";
+import { faLightbulb, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -19,13 +12,13 @@ import { useJobStore } from "@/stores/jobStore";
 import LoadingSpan from "../LoadingSpan.vue";
 import ToolRecommendation from "../ToolRecommendation.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
-import GButton from "@/components/BaseComponents/GButton.vue";
-import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import DetailBlock from "@/components/Common/DetailBlock.vue";
 import Heading from "@/components/Common/Heading.vue";
 import Webhook from "@/components/Common/Webhook.vue";
 import JobHeader from "@/components/JobInformation/JobHeader.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";
+import RerunJobButton from "@/components/JobInformation/RerunJobButton.vue";
+import JobState from "@/components/JobStates/JobState.vue";
 import ToolSuccessOutputs from "@/components/Tool/ToolSuccessOutputs.vue";
 import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 
@@ -44,30 +37,22 @@ if (!latestResponse.value || Object.keys(latestResponse.value).length === 0) {
     router.push(`/`);
 }
 
-const viewedJob = ref<JobBaseModel | ShowFullJobResponse | null>(jobResponse.value?.jobs?.[0] || null);
-
-watch(jobResponse, () => {
-    viewedJob.value = jobResponse.value?.jobs?.[0] || null;
+const currentIndex = ref(0);
+// BPagination is 1-indexed; bridge to the 0-indexed currentIndex.
+const paginationPage = computed<number>({
+    get: () => currentIndex.value + 1,
+    set: (val: number) => {
+        currentIndex.value = val - 1;
+    },
 });
 
-function navigateJob(direction: "previous" | "next") {
-    const jobs = jobResponse.value?.jobs || [];
-    if (!jobs.length) {
-        return;
-    }
+watch(jobResponse, () => {
+    currentIndex.value = 0;
+});
 
-    let currentIndex = jobs.findIndex((job) => job.id === viewedJob.value?.id);
-    if (currentIndex === -1) {
-        currentIndex = 0;
-    }
-
-    if (direction === "previous") {
-        currentIndex = (currentIndex - 1 + jobs.length) % jobs.length;
-    } else if (direction === "next") {
-        currentIndex = (currentIndex + 1) % jobs.length;
-    }
-    viewedJob.value = jobs[currentIndex] || null;
-}
+const viewedJob = computed<JobBaseModel | ShowFullJobResponse | null>(
+    () => jobResponse.value?.jobs?.[currentIndex.value] ?? jobResponse.value?.jobs?.[0] ?? null,
+);
 
 const webhook = ref<InstanceType<typeof Webhook> | null>(null);
 const webhookId = computed(() => webhook.value?.webhookId ?? null);
@@ -80,44 +65,29 @@ const webhookId = computed(() => webhook.value?.webhookId ?? null);
     <div v-else>
         <div v-if="nJobs > 1">
             <div class="d-flex justify-content-between">
-                <div class="multi-job-header">
-                    <span class="rounded px-2 py-1 tool-success-job-count">
-                        <FontAwesomeIcon :icon="faCheck" fixed-width />
-                        {{ nJobs }} Job{{ nJobs > 1 ? "s" : "" }} Submitted
-                    </span>
-                    <Heading :icon="faWrench" inline size="md">
-                        {{ latestResponse?.toolName || "Multiple Jobs Run" }}
-                    </Heading>
-                </div>
+                <Heading :icon="faWrench" inline size="md">
+                    {{ latestResponse?.toolName || "Multiple Jobs Run" }}
+                </Heading>
 
-                <div class="d-flex flex-gapx-1">
-                    <GButtonGroup>
-                        <GButton transparent @click="navigateJob('previous')">
-                            <FontAwesomeIcon :icon="faArrowCircleLeft" />
-                            Prev
-                        </GButton>
-                        <GButton transparent @click="navigateJob('next')">
-                            <FontAwesomeIcon :icon="faArrowCircleRight" />
-                            Next
-                        </GButton>
-                    </GButtonGroup>
-
-                    <BDropdown class="job-selection-dropdown" size="sm" variant="link">
-                        <BDropdownItem
-                            v-for="job in jobResponse.jobs"
-                            :key="job.id"
-                            :active="viewedJob?.id === job.id"
-                            @click="viewedJob = job">
-                            {{ job.id }}
-                        </BDropdownItem>
-                    </BDropdown>
+                <div class="multi-job-header-end">
+                    <JobState v-if="viewedJob" :job-id="viewedJob.id" />
+                    <BPagination
+                        v-model="paginationPage"
+                        :total-rows="nJobs"
+                        :per-page="1"
+                        size="sm"
+                        :limit="3"
+                        first-number
+                        last-number
+                        hide-goto-end-buttons
+                        class="mb-0 unselectable" />
+                    <RerunJobButton v-if="viewedJob" :job-id="viewedJob.id" outline />
                 </div>
             </div>
 
             <hr />
         </div>
-
-        <JobHeader v-if="viewedJob" :job-id="viewedJob.id" :minimal="nJobs > 1" />
+        <JobHeader v-else-if="viewedJob" :job-id="viewedJob.id" />
 
         <div v-if="viewedJob && jobResponse.produces_entry_points">
             <ToolEntryPoints :job-id="viewedJob.id" />
@@ -136,22 +106,11 @@ const webhookId = computed(() => webhook.value?.webhookId ?? null);
 </template>
 
 <style scoped lang="scss">
-.multi-job-header {
+.multi-job-header-end {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
+    justify-content: flex-end;
+    gap: 0.5rem;
     flex-wrap: wrap;
-
-    .tool-success-job-count {
-        background-color: var(--color-blue-200);
-    }
-}
-
-.job-selection-dropdown {
-    :deep(.dropdown-menu) {
-        overflow: auto;
-        max-height: 50vh;
-        min-width: 100%;
-    }
 }
 </style>
