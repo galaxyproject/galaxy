@@ -74,6 +74,27 @@ def test_arc_extends_the_gitlab_source():
     assert GitLabFilesSource.plugin_type == "gitlab"
 
 
+def test_exporting_without_a_token_says_so_rather_than_failing_as_credentials(fake_fs, tmp_path):
+    """A writable source with no token can be created; exporting to it never could work.
+
+    A push is never anonymous, so this is not a token that might be wrong - there is no
+    token. Letting it reach the server returns a 401 whose message is about checking your
+    credentials, which sends the user looking for a mistake in something they never set.
+    """
+    local = tmp_path / "payload.txt"
+    local.write_text("hello\n")
+    source = _arc_source(_source_config(writable=True, token=None))
+
+    with pytest.raises(AuthenticationRequired, match="no access token"):
+        source.write_from(
+            "gxfiles://test1/group/repo:-:assays/payload.txt",
+            str(local),
+            user_context=user_context_fixture(),
+        )
+
+    assert fake_fs.put_file_calls == [], "nothing may reach the backend"
+
+
 def test_each_source_opens_its_own_filesystem(monkeypatch):
     """The split lives in which filesystem each source opens, and nothing else.
 
