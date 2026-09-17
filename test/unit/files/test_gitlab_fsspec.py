@@ -161,8 +161,12 @@ def test_a_new_path_is_allowed_when_the_tree_endpoint_answers_an_empty_list():
 
     Reading only the status refused every new file on those instances: the check saw no
     exception, concluded the path was a folder, and told the user to name a file inside it,
-    which is itself a new path and was refused in turn. Replacing an existing file still
-    worked, because that skips this check, so nothing about the failure pointed here.
+    which is itself a new path and refused in turn.
+
+    Confirmed against a real GitLab 17.4.0: the tree endpoint answers 200 with an empty list
+    both for a path that is not there and for one that is a file, where 17.7 and later answer
+    404 for each. Driving this filesystem at that server without the entries check refused
+    `exports/<name>.txt` as "a folder in this project"; with it the file is committed.
     """
     fs, _ = _writable_fs(([], 0))
     asyncio.run(fs._refuse_a_directory(1, "assays/new.txt", "main"))
