@@ -1657,6 +1657,45 @@ class H5(Binary):
         return Exception(status_code, message)
 
 
+class NetCDF4(H5):
+    """
+    Class describing a netCDF4 file (HDF5-based).
+    
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test_tas.nc')
+    >>> NetCDF4().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mz5')
+    >>> NetCDF4().sniff(fname)
+    False
+    """
+    file_ext = "netcdf4"
+    edam_format = "format_3650"
+
+    def sniff(self, filename):
+        if not super().sniff(filename):
+            return False
+        try:
+            with h5py.File(filename, "r") as f:
+                return "_NCProperties" in f.attrs
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary netCDF4 file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary netCDF4 file (%s)" % (nice_size(dataset.get_size()))
+
+
 class Loom(H5):
     """
     Class describing a Loom file: http://loompy.org/
