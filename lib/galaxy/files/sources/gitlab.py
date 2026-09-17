@@ -167,6 +167,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         rather than reading the sentence it ends up in.
         """
         description = f"{operation} file source path {path}"
+        base_url_for_errors = (context.config.base_url or "").strip()
         fs = None
         try:
             fs = self._open_fs(context, self._get_cache_options(context.config))
@@ -227,6 +228,16 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                             else ""
                         ),
                     )
+                ) from e
+            if status == 200:
+                # The server answered, and the answer was not the JSON a GitLab API returns. The
+                # base_url points at something that is not an API root: most often the address of
+                # the page the user was looking at when they copied it. aiohttp reports this as
+                # a mimetype it could not decode, which explains nothing about the field to fix.
+                raise RequestParameterInvalidException(
+                    f"'{base_url_for_errors}' answered, but not as a GitLab API. Use the address of "
+                    f"the {self.entity_name} server itself, as in 'https://gitlab.com', rather than "
+                    "the address of a page on it."
                 ) from e
             if status == 400 and operation == "writing to":
                 # GitLab answers 400 for a commit it would not make, and aiohttp keeps only the
