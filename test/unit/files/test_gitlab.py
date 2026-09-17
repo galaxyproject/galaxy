@@ -740,6 +740,19 @@ def test_a_project_root_is_still_listable(fake_fs):
     assert fake_fs.list_page_calls, "the listing must still be attempted"
 
 
+def test_an_address_that_is_not_an_api_says_so(fake_fs):
+    """Copying the address of the page you are looking at is the obvious mistake.
+
+    The server answers 200 with a web page, and aiohttp reports a mimetype it could not
+    decode, which says nothing about which field is wrong.
+    """
+    source = _gitlab_source(_source_config(base_url="https://gitlab.com/explore"))
+    fake_fs.list_page_error = response_error(200, "Attempt to decode JSON with unexpected mimetype")
+
+    with pytest.raises(RequestParameterInvalidException, match="not as a GitLab API"):
+        source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+
+
 def test_a_base_url_with_a_protocol_is_accepted(fake_fs):
     """The check must not get in the way of the addresses people actually enter."""
     for base_url in ("https://gitlab.com", "https://gitlab.com/", "http://gitlab.internal:8080"):
