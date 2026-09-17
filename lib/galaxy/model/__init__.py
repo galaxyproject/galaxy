@@ -9061,7 +9061,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     reports_config: Mapped[bytes | None] = mapped_column(JSONType)
     creator_metadata: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONType)
     license: Mapped[str | None] = mapped_column(TEXT)
-    source_metadata: Mapped[dict[str, str] | None] = mapped_column(JSONType)
+    source_metadata: Mapped[dict[str, str | None] | None] = mapped_column(JSONType)
     readme: Mapped[str | None] = mapped_column(Text)
     logo_url: Mapped[str | None] = mapped_column(Text)
     help: Mapped[str | None] = mapped_column(Text)
