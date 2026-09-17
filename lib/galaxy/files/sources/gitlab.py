@@ -1,6 +1,7 @@
 import functools
 from collections.abc import Iterator
 from contextlib import contextmanager
+from urllib.parse import urlparse
 from typing import (
     cast,
     Literal,
@@ -115,6 +116,15 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
             raise self.required_package_exception
 
         config = context.config
+        # A base_url with no scheme reaches aiohttp as a relative URL, which it refuses with an
+        # exception carrying nothing but the URL it was handed. That surfaces to whoever filled in
+        # the form as "Reason: gitlab.com/api/v4/projects", which names neither the problem nor the
+        # field. Leaving out the protocol is the obvious thing to do, so it is worth saying so.
+        if urlparse(config.base_url).scheme not in ("http", "https"):
+            raise RequestParameterInvalidException(
+                f"'{config.base_url}' is not a usable address for {self.label}. Include the "
+                "protocol, as in 'https://gitlab.com'."
+            )
         # The template exposes base_url as an ordinary variable, so a user creating their own
         # instance chooses which host Galaxy talks to and sends their token to. Without this a
         # personal file source pointed at a link-local or loopback address turns the server into

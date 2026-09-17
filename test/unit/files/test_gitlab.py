@@ -685,6 +685,28 @@ def test_a_source_pointed_at_a_private_address_is_refused(fake_fs):
         assert fake_fs.list_page_calls == [], "nothing may reach the backend"
 
 
+def test_a_base_url_without_a_protocol_says_so(fake_fs):
+    """Leaving out the protocol is the obvious thing to do, and the backend explains it badly.
+
+    aiohttp refuses a relative URL with an exception carrying nothing but the URL, which reached
+    whoever filled in the form as "Reason: gitlab.com/api/v4/projects" - neither the problem nor
+    the field it belongs to.
+    """
+    for base_url in ("gitlab.com", "git.nfdi4plants.org/", "ftp://gitlab.com"):
+        source = _gitlab_source(_source_config(base_url=base_url))
+        with pytest.raises(RequestParameterInvalidException, match="protocol"):
+            source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+        assert fake_fs.list_page_calls == [], "nothing may reach the backend"
+
+
+def test_a_base_url_with_a_protocol_is_accepted(fake_fs):
+    """The check must not get in the way of the addresses people actually enter."""
+    for base_url in ("https://gitlab.com", "https://gitlab.com/", "http://gitlab.internal:8080"):
+        source = _gitlab_source(_source_config(base_url=base_url))
+        source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+    assert len(fake_fs.list_page_calls) == 3
+
+
 def test_an_unresolvable_host_is_left_to_fail_as_a_connection(fake_fs):
     """A host that does not resolve is not a way into the network, so it is not refused here.
 
