@@ -19,6 +19,7 @@ from galaxy.files.sources.gitlab_fsspec import (
     commit_actions,
     GITLAB_MAX_COMMIT_REQUEST_BYTES,
     MAX_COMMIT_BYTES,
+    refuse_a_directory,
     WritableGitLabFileSystem,
 )
 
@@ -212,3 +213,54 @@ def test_a_write_through_open_is_refused(mode):
         fs._open("group/repo:-:x.txt", mode=mode)
     with pytest.raises(NotImplementedError):
         asyncio.run(fs.open_async("group/repo:-:x.txt", mode=mode))
+
+
+# ----------------------------------------------------------------------
+# The folder guard, without arcfs
+# ----------------------------------------------------------------------
+class FakeClient:
+    """Just the one method the guard asks for."""
+
+    def __init__(self, answer):
+        self.answer = answer
+        self.calls: list[dict] = []
+
+    async def retrieve_project_level_page(self, repo_id, subdir, *, ref=None, per_page=100):
+        self.calls.append({"repo_id": repo_id, "subdir": subdir, "ref": ref, "per_page": per_page})
+        if isinstance(self.answer, Exception):
+            raise self.answer
+        return self.answer, len(self.answer)
+
+
+def test_a_folder_is_refused_without_arcfs():
+    """A create action against a folder replaces the folder and everything under it.
+
+    GitLab reports that as success, so this guard is the only thing between an export and a
+    destroyed directory.
+    """
+    client = FakeClient([{"path": "assays/a.txt", "type": "blob"}])
+    with pytest.raises(MessageException, match="is a folder"):
+        asyncio.run(refuse_a_directory(client, 1, "assays", "main"))
+
+
+def test_a_404_from_the_tree_endpoint_allows_a_new_path_without_arcfs():
+    """GitLab 17.7 and later answer 404 for a path that is not a folder."""
+    client = FakeClient(FileNotFoundError("assays/x.txt"))
+    asyncio.run(refuse_a_directory(client, 1, "assays/x.txt", "main"))
+
+
+def test_an_empty_tree_listing_allows_a_new_path_without_arcfs():
+    """Before 17.7 the same request answers 200 with [].
+
+    A guard reading only the status would refuse every new file on an older self-managed
+    instance. Git has no empty trees, so the entries are what decide it.
+    """
+    client = FakeClient([])
+    asyncio.run(refuse_a_directory(client, 1, "assays/x.txt", "main"))
+
+
+def test_the_guard_asks_about_the_branch_it_was_given():
+    """It has to be the branch the commit lands on, not the project default."""
+    client = FakeClient([])
+    asyncio.run(refuse_a_directory(client, 7, "assays/x.txt", "some-branch"))
+    assert client.calls == [{"repo_id": 7, "subdir": "assays/x.txt", "ref": "some-branch", "per_page": 1}]
