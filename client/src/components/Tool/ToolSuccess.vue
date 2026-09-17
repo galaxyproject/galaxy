@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faLightbulb, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { faLightbulb } from "@fortawesome/free-solid-svg-icons";
 import { BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
@@ -13,12 +13,9 @@ import LoadingSpan from "../LoadingSpan.vue";
 import ToolRecommendation from "../ToolRecommendation.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import DetailBlock from "@/components/Common/DetailBlock.vue";
-import Heading from "@/components/Common/Heading.vue";
 import Webhook from "@/components/Common/Webhook.vue";
 import JobHeader from "@/components/JobInformation/JobHeader.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";
-import RerunJobButton from "@/components/JobInformation/RerunJobButton.vue";
-import JobState from "@/components/JobStates/JobState.vue";
 import ToolSuccessOutputs from "@/components/Tool/ToolSuccessOutputs.vue";
 import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 
@@ -63,15 +60,11 @@ const webhookId = computed(() => webhook.value?.webhookId ?? null);
         <LoadingSpan message="Waiting on data" />
     </GAlert>
     <div v-else>
-        <div v-if="nJobs > 1">
-            <div class="d-flex justify-content-between">
-                <Heading :icon="faWrench" inline size="md">
-                    {{ latestResponse?.toolName || "Multiple Jobs Run" }}
-                </Heading>
-
-                <div class="multi-job-header-end">
-                    <JobState v-if="viewedJob" :job-id="viewedJob.id" />
+        <template v-if="viewedJob">
+            <JobHeader :job-id="viewedJob.id">
+                <template v-slot:pagination>
                     <BPagination
+                        v-if="nJobs > 1"
                         v-model="paginationPage"
                         :total-rows="nJobs"
                         :per-page="1"
@@ -81,19 +74,15 @@ const webhookId = computed(() => webhook.value?.webhookId ?? null);
                         last-number
                         hide-goto-end-buttons
                         class="mb-0 unselectable" />
-                    <RerunJobButton v-if="viewedJob" :job-id="viewedJob.id" outline />
-                </div>
+                </template>
+            </JobHeader>
+
+            <div v-if="jobResponse.produces_entry_points">
+                <ToolEntryPoints :job-id="viewedJob.id" />
             </div>
 
-            <hr />
-        </div>
-        <JobHeader v-else-if="viewedJob" :job-id="viewedJob.id" />
-
-        <div v-if="viewedJob && jobResponse.produces_entry_points">
-            <ToolEntryPoints :job-id="viewedJob.id" />
-        </div>
-
-        <JobInformation v-if="viewedJob" :job-id="viewedJob.id" collapsible />
+            <JobInformation :job-id="viewedJob.id" collapsible />
+        </template>
 
         <ToolSuccessOutputs :job-response="jobResponse" />
 
@@ -104,13 +93,3 @@ const webhookId = computed(() => webhook.value?.webhookId ?? null);
         <ToolRecommendation v-if="showRecommendation && jobDef?.tool_id" :tool-id="jobDef.tool_id" />
     </div>
 </template>
-
-<style scoped lang="scss">
-.multi-job-header-end {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-</style>

@@ -26,6 +26,12 @@ vi.mock("axios", () => ({
     },
 }));
 
+vi.mock("@/stores/toolStore", () => ({
+    useToolStore: () => ({
+        getToolNameById: () => TEST_TOOL_NAME,
+    }),
+}));
+
 const { server, http } = useServerMock();
 
 beforeEach(() => {
@@ -115,9 +121,9 @@ describe("ToolSuccess", () => {
             });
         });
 
-        it("renders JobHeader for the job", () => {
+        it("renders JobHeader for the job with tool name", () => {
             const jobHeader = wrapper.findComponent(JobHeader);
-            expect(jobHeader.exists()).toBe(true);
+            expect(jobHeader.text()).toContain(TEST_TOOL_NAME);
             expect(jobHeader.props("jobId")).toEqual(jobInformationResponse.id);
         });
 
@@ -163,13 +169,8 @@ describe("ToolSuccess", () => {
             });
         });
 
-        it("shows the tool name and a pagination control for each job", () => {
-            expect(wrapper.text()).toContain(TEST_TOOL_NAME);
+        it("shows a pagination control for each job", () => {
             expect(wrapper.findAll(SELECTORS.PAGINATION_ITEM).length).toBeGreaterThan(0);
-        });
-
-        it("does not render JobHeader (JobState/RerunJobButton are shown directly instead)", () => {
-            expect(wrapper.findComponent(JobHeader).exists()).toBe(false);
         });
 
         it("shows JobState and RerunJobButton for the currently viewed job", () => {
