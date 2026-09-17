@@ -33,12 +33,20 @@
           label: GitLab Access Token
           optional: true
           help: |
-              A personal access token. Browsing needs no more than the "read_api" scope on a
-              classic token, or read access to projects and repositories on a fine-grained one.
-              Exporting needs "api", or permission to push code and create commits. It is
-              required to see private projects.
-              Public projects can be browsed without one. A token also removes the limit some
-              servers place on how deep an anonymous listing can page.
+              A personal access token. It is required to see private projects. Public ones can
+              be browsed without one, though a token also removes the limit some servers place
+              on how deep an anonymous listing can page.
+
+              A classic token needs the "read_api" scope to browse, or "api" to export. That is
+              the simplest thing that works.
+
+              A fine-grained token needs "Project: Read" granted under "User", not only the
+              permission of the same name under "Group and project". Listing the projects you
+              can see is a user-level call, so the project-scoped permission alone is refused
+              with "403 ... requires ... user permissions: [Project: Read]". Add
+              "Repository: Read" for file contents, and for exports also "Code: Push" and
+              "Commit: Create". Give the token access to all groups and projects you are a
+              member of.
   configuration:
       type: gitlab
       base_url: "{{ variables.base_url }}"
