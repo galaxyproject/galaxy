@@ -508,7 +508,7 @@ class BaseJobRunner:
                     shell=True,
                     cwd=job_wrapper.working_directory,
                     env=os.environ,
-                    preexec_fn=os.setpgrp,
+                    start_new_session=True,
                 )
             log.debug("execution of external set_meta for job %d finished", job_wrapper.job_id)
 
