@@ -482,22 +482,32 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     ) -> tuple[list[AnyRemoteEntry], int]:
         """Recurse with failures raised rather than omitted.
 
-        fsspec's ``walk`` defaults to ``on_error="omit"``, which swallows FileNotFoundError and
-        every OSError. A project that is missing, private or has no commits, and a GitLab that
-        cannot be reached at all, would each come back as an empty folder, and the translation in
-        ``_filesystem`` would never run. Listing the same path without recursion reports all of
-        them correctly, so the two views would disagree about the same request.
+        This walks with its own stack rather than calling ``fs.walk(on_error="raise")``, because
+        that argument only governs the top directory. fsspec's ``walk`` recurses as
+        ``self.walk(full_dirs[d], maxdepth=..., detail=..., topdown=..., **kwargs)``, and
+        ``on_error`` is a named parameter rather than part of ``**kwargs``, so every level below
+        the first silently reverts to the ``"omit"`` default. Confirmed against fsspec 2026.7.0.
+
+        What that omits is not only a folder removed mid-walk. ``walk`` swallows every
+        ``OSError``, and aiohttp raises ``ClientConnectorError`` and friends, which are
+        ``OSError`` subclasses. A recursive listing is one request per directory, so a connection
+        reset partway through returned the remaining folders as empty, with HTTP 200 and no
+        indication that anything was missing, while listing the same folder on its own reported
+        the failure correctly.
+
+        Checking the cap before descending, rather than after, also stops a subtree being fetched
+        only to be discarded.
         """
         entries: list[AnyRemoteEntry] = []
-        count = 0
-        for _, dirs, files in fs.walk(path, detail=True, on_error="raise"):
-            to_entry = functools.partial(self._info_to_entry, config=config)
-            entries.extend(map(to_entry, cast(dict[str, dict], dirs).values()))
-            entries.extend(map(to_entry, cast(dict[str, dict], files).values()))
-            count += len(dirs) + len(files)
-            if count >= MAX_ITEMS_LIMIT:
+        to_entry = functools.partial(self._info_to_entry, config=config)
+        pending = [path]
+        while pending:
+            listing = cast(list[dict], fs.ls(pending.pop(), detail=True))
+            entries.extend(map(to_entry, listing))
+            if len(entries) >= MAX_ITEMS_LIMIT:
                 self._on_listing_exceeded()
                 break
+            pending.extend(info["name"] for info in listing if info.get("type") == "directory")
         return entries, len(entries)
 
     def _read_window(
