@@ -49,6 +49,32 @@ class ARCFilesSource(GitLabFilesSource):
     #: This source is the alternative the GitLab one points at, so it has none of its own.
     _large_file_remedy = ""
 
+    #: An ARC export commits to a generated branch and opens a merge request, so it never pushes
+    #: to the default branch and the protection that stops a project export does not apply.
+    _push_refused_hint = (
+        ". Exporting to an ARC also needs permission to create a branch, commit to it and open a "
+        "merge request, which a read-only role does not carry"
+    )
+
+    #: The ARC path sends no commit id, so a refused write is not a stale-read that re-exporting
+    #: resolves. The likeliest cause is that the export branch already carries this file name, and
+    #: that branch outlives the merge request, so re-exporting fails the same way.
+    _write_refused_hint = (
+        "The export branch may already hold a file by this name. Exports made with the same token "
+        "share one branch, and it is not removed when its merge request is merged, so export under "
+        "another name or delete that branch."
+    )
+
+    #: Not a single commit but a branch, an LFS upload, two commits and a merge request, so a
+    #: timeout part way through leaves some of it behind.
+    _timeout_hint = (
+        " An ARC export is several steps, so a branch, an uploaded file or a merge request may "
+        "have been created before it stopped."
+    )
+
+    #: An ARC lives on a DataHUB, and gitlab.com is not one.
+    _server_example = "https://git.nfdi4plants.org"
+
     template_config_class = ARCFileSourceTemplateConfiguration
     resolved_config_class = ARCFileSourceConfiguration
 

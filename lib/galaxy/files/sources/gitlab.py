@@ -277,12 +277,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                         description,
                         f"{detail}. A classic token may lack the '{self._token_scope_for(operation)}' "
                         "scope; a fine-grained token may lack the permissions this operation needs"
-                        + (
-                            ". A token with every scope is still refused by a protected branch, "
-                            "which GitLab applies to the default branch"
-                            if operation == "writing to"
-                            else ""
-                        ),
+                        + (self._push_refused_hint if operation == "writing to" else ""),
                     )
                 ) from e
             if status == 200:
@@ -292,8 +287,8 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 # a mimetype it could not decode, which explains nothing about the field to fix.
                 raise RequestParameterInvalidException(
                     f"'{base_url_for_errors}' answered, but not as a GitLab API. Use the address of "
-                    f"the {self.entity_name} server itself, as in 'https://gitlab.com', rather than "
-                    "the address of a page on it."
+                    f"the server itself, as in '{self._server_example}', rather than the address "
+                    "of a page on it."
                 ) from e
             if status == 400 and operation == "writing to":
                 # GitLab answers 400 for a commit it would not make, and aiohttp keeps only the
@@ -302,10 +297,8 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 # commit id the file was read at, so a file changed since then is refused rather
                 # than silently overwritten, and the user has to be told to try again.
                 raise MessageException(
-                    f"Problem {description}. {self.label} refused the commit. GitLab protects the "
-                    "default branch by default, so the token may not be allowed to push to it; "
-                    "otherwise the file may have changed since Galaxy read it, in which case "
-                    "exporting again will pick up the new version."
+                    f"Problem {description}. {self.label} refused the write. "
+                    f"{self._write_refused_hint}{self._said(reason_phrase)}"
                 ) from e
             if status == 413:
                 raise MessageException(
@@ -337,7 +330,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 # link runs out of it having committed nothing.
                 raise MessageException(
                     f"Problem {description}. {self.label} did not answer in time. A large file on "
-                    "a slow connection can exhaust the request budget; nothing was committed."
+                    f"a slow connection can exhaust the request budget.{self._timeout_hint}"
                 ) from e
             reason = detail if isinstance(status, int) else (str(e) or type(e).__name__)
             raise MessageException(f"Problem {description}. Reason: {reason}") from e
@@ -409,6 +402,29 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 # GitLab pages as it takes to fill it.
                 self._on_listing_exceeded()
             return self._read_window(fs, fs_path, config, offset or 0, min(limit, MAX_ITEMS_LIMIT), write_intent)
+
+    #: Appended to a 403 on a write. What a token needs in order to push is not the same thing
+    #: for a project as for an ARC, and an ARC never touches the branch this warns about.
+    _push_refused_hint = (
+        ". A token with every scope is still refused by a protected branch, which GitLab applies "
+        "to the default branch"
+    )
+
+    #: How a refused write is explained. A project export is one commit carrying the id the file
+    #: was read at, so a stale id is the likely cause and re-exporting resolves it. An ARC export
+    #: sends no such id and takes a different path entirely, so the same sentence would be wrong.
+    _write_refused_hint = (
+        "GitLab protects the default branch by default, so the token may not be allowed to push "
+        "to it; otherwise the file may have changed since Galaxy read it, in which case exporting "
+        "again will pick up the new version."
+    )
+
+    #: Appended to a timeout. A project export is a single commit request, so a timeout before the
+    #: server answered usually means nothing landed, but the request may still have been processed.
+    _timeout_hint = " Nothing was committed unless the server had already processed the request."
+
+    #: Stands in for the address of the server in the "this is not an API" message.
+    _server_example = "https://gitlab.com"
 
     #: Appended to the message for a file too large to commit. An ARC has somewhere else to put
     #: it; a plain project does not, so only the GitLab source has something to suggest.
@@ -589,6 +605,18 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         """
         segments = [segment for segment in part.strip().strip("/").split("/") if segment not in ("", ".")]
         return bool(segments) and ".." not in segments
+
+    @staticmethod
+    def _said(reason: str | None) -> str:
+        """Append GitLab's own words, when the backend passed them through.
+
+        A newer arcfs reads the body of a refused write, so ``reason`` can carry GitLab's actual
+        complaint. An older one leaves the HTTP reason phrase, which only repeats the status, so
+        those are dropped rather than shown twice.
+        """
+        if not reason or reason.strip().lower() in ("bad request", "forbidden", "unauthorized"):
+            return ""
+        return f" GitLab said: {reason}"
 
     @property
     def _article(self) -> str:

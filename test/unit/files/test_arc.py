@@ -371,3 +371,41 @@ def test_write_outside_an_arc_is_rejected(fake_fs, target):
     with pytest.raises(RequestParameterInvalidException, match="inside an ARC"):
         write_from(file_sources, f"gxfiles://test1{target}", "data\n", user_context=user_context_fixture())
     assert fake_fs.put_file_calls == [], "nothing may reach arcfs"
+
+
+@pytest.mark.parametrize(
+    "status,must_not_say,must_say",
+    [
+        (403, "protected branch", "merge request"),
+        (400, "pick up the new version", "export branch"),
+    ],
+)
+def test_an_arc_write_failure_is_not_explained_as_a_plain_commit(fake_fs, tmp_path, status, must_not_say, must_say):
+    """An ARC export never touches the default branch and sends no commit id.
+
+    It goes to a generated branch through Git LFS and a merge request, so the explanations the
+    GitLab source gives for a refused push and a refused commit are both wrong here, and the
+    remedies they suggest do not apply.
+    """
+    local = tmp_path / "payload.txt"
+    local.write_text("hello\n")
+    source = _arc_source(_source_config(writable=True, token="t"))
+    fake_fs.put_file_error = _response_error(status, "Bad Request" if status == 400 else "Forbidden")
+
+    with pytest.raises(MessageException) as caught:
+        source.write_from(
+            "gxfiles://test1/group/repo1:-:assays/payload.txt", str(local), user_context=user_context_fixture()
+        )
+
+    message = str(caught.value)
+    assert must_not_say not in message, f"that explains a plain GitLab commit, not an ARC export: {message}"
+    assert must_say in message
+
+
+def test_an_arc_names_a_datahub_not_gitlab_com(fake_fs):
+    """gitlab.com is not a DataHUB, so it is no help as an example address."""
+    source = _arc_source(_source_config())
+    fake_fs.list_page_error = _response_error(200, "Attempt to decode JSON with unexpected mimetype")
+
+    with pytest.raises(RequestParameterInvalidException, match="git.nfdi4plants.org"):
+        source.list("/", limit=5, offset=0, user_context=user_context_fixture())
