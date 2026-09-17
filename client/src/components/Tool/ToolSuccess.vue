@@ -26,6 +26,7 @@ import Heading from "@/components/Common/Heading.vue";
 import Webhook from "@/components/Common/Webhook.vue";
 import JobHeader from "@/components/JobInformation/JobHeader.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";
+import ToolSuccessOutputs from "@/components/Tool/ToolSuccessOutputs.vue";
 import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 
 const { config } = useConfig(true);
@@ -116,15 +117,15 @@ const webhookId = computed(() => webhook.value?.webhookId ?? null);
             <hr />
         </div>
 
-        <template v-if="viewedJob">
-            <JobHeader :job-id="viewedJob.id" :minimal="nJobs > 1" />
+        <JobHeader v-if="viewedJob" :job-id="viewedJob.id" :minimal="nJobs > 1" />
 
-            <div v-if="jobResponse.produces_entry_points">
-                <ToolEntryPoints :job-id="viewedJob.id" />
-            </div>
+        <div v-if="viewedJob && jobResponse.produces_entry_points">
+            <ToolEntryPoints :job-id="viewedJob.id" />
+        </div>
 
-            <JobInformation :job-id="viewedJob.id" collapsible />
-        </template>
+        <JobInformation v-if="viewedJob" :job-id="viewedJob.id" collapsible />
+
+        <ToolSuccessOutputs :job-response="jobResponse" />
 
         <DetailBlock v-if="jobDef" v-show="webhookId" :header-icon="faLightbulb" title="Before You Go">
             <Webhook ref="webhook" type="tool" :tool-id="jobDef.tool_id || undefined" />
