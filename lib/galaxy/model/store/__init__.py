@@ -2798,9 +2798,10 @@ class FileSourceModelExportStore(abc.ABC, DirectoryModelExportStore):
             file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
             file_source = file_source_path.file_source
             assert os.path.exists(self.out_file)
-            self.file_source_uri = f"{file_source.get_scheme()}://{file_source.get_prefix()}" + file_source.write_from(
+            actual_path_or_uri = file_source.write_from(
                 file_source_path.path, self.out_file, user_context=self.user_context
             )
+            self.file_source_uri = file_source.uri_from_write_result(actual_path_or_uri)
         shutil.rmtree(self.temp_output_dir)
 
 

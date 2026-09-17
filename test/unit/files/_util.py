@@ -158,9 +158,8 @@ def write_from(
     with tempfile.NamedTemporaryFile(mode="w") as f:
         f.write(content)
         f.flush()
-        return f"{file_source.get_scheme()}://{file_source.get_prefix()}" + file_source.write_from(
-            file_source_path.path, f.name, user_context=user_context
-        )
+        actual_path_or_uri = file_source.write_from(file_source_path.path, f.name, user_context=user_context)
+        return file_source.uri_from_write_result(actual_path_or_uri)
 
 
 def configured_file_sources(conf_file, file_sources_config: FileSourcePluginsConfig | None = None):
@@ -180,14 +179,14 @@ def assert_can_write_and_read_to_conf(conf: dict):
     file_source_id = conf["id"]
     file_sources = configured_file_sources([conf])
     test_uri = f"gxfiles://{file_source_id}/{test_filename}"
-    write_from(
+    actual_uri = write_from(
         file_sources,
         test_uri,
         test_contents,
     )
     assert_realizes_contains(
         file_sources,
-        test_uri,
+        actual_uri,
         test_contents,
     )
 
