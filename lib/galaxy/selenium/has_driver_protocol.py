@@ -379,13 +379,16 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
     @abstractmethod
     def press(
         self,
-        *keys: Key,
+        *keys: Key | str,
         modifiers: Sequence[Key] = (),
         element: WebElementProtocol | None = None,
     ) -> None:
-        """Press keys in order, with modifiers held down for each.
+        """Press named keys or single printable characters in order.
 
-        Sends to element if given, otherwise to whatever currently has focus.
+        Focus element once if supplied, then send to the current focus. Hold
+        distinct modifier Keys across the sequence and release them afterward.
+        Invalid keys or modifiers raise ValueError before browser interaction.
+        A valid empty sequence does nothing.
         """
         ...
 

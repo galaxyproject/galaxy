@@ -29,9 +29,9 @@ import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
-from .playwright_element import (
-    _SELENIUM_KEY_TO_PLAYWRIGHT,
-    _SELENIUM_MODIFIERS,
+from .selenium_keys import (
+    SELENIUM_KEY_TO_PLAYWRIGHT,
+    SELENIUM_MODIFIERS,
 )
 
 if TYPE_CHECKING:
@@ -3023,14 +3023,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
             page = pw_driver.page
             all_chars = "".join(str(v) for v in value)
-            has_special = any(c in _SELENIUM_KEY_TO_PLAYWRIGHT for c in all_chars)
+            has_special = any(c in SELENIUM_KEY_TO_PLAYWRIGHT for c in all_chars)
             if not has_special:
                 page.keyboard.type(all_chars)
             else:
                 modifiers: list[str] = []
                 for char in all_chars:
-                    pw_key = _SELENIUM_KEY_TO_PLAYWRIGHT.get(char)
-                    if pw_key and char in _SELENIUM_MODIFIERS:
+                    pw_key = SELENIUM_KEY_TO_PLAYWRIGHT.get(char)
+                    if pw_key and char in SELENIUM_MODIFIERS:
                         modifiers.append(pw_key)
                     elif pw_key:
                         combo = "+".join(modifiers + [pw_key])

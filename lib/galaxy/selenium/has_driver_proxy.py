@@ -332,11 +332,11 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
 
     def press(
         self,
-        *keys: Key,
+        *keys: Key | str,
         modifiers: Sequence[Key] = (),
         element: WebElementProtocol | None = None,
     ) -> None:
-        """Press keys in order, with modifiers held down for each."""
+        """Press keys in order, holding modifiers across the sequence."""
         self._driver_impl.press(*keys, modifiers=modifiers, element=element)
 
     def send_enter(self, element: WebElementProtocol | None = None):

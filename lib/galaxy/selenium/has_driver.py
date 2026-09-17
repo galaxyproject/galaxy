@@ -43,33 +43,15 @@ from .has_driver_protocol import (
     TimeoutCallback,
     WaitTypeT,
 )
-from .keys import Key
+from .keys import (
+    Key,
+    validate_key_press,
+)
+from .selenium_keys import KEY_TO_SELENIUM
 from .wait_methods_mixin import WaitMethodsMixin
 from .web_element_protocol import WebElementProtocol
 
 UNSPECIFIED_TIMEOUT = object()
-
-KEY_TO_SELENIUM: dict[Key, str] = {
-    Key.ALT: Keys.ALT,
-    Key.COMMAND: Keys.COMMAND,
-    Key.CONTROL: Keys.CONTROL,
-    Key.META: Keys.META,
-    Key.SHIFT: Keys.SHIFT,
-    Key.BACKSPACE: Keys.BACKSPACE,
-    Key.DELETE: Keys.DELETE,
-    Key.ENTER: Keys.ENTER,
-    Key.ESCAPE: Keys.ESCAPE,
-    Key.SPACE: Keys.SPACE,
-    Key.TAB: Keys.TAB,
-    Key.ARROW_DOWN: Keys.ARROW_DOWN,
-    Key.ARROW_LEFT: Keys.ARROW_LEFT,
-    Key.ARROW_RIGHT: Keys.ARROW_RIGHT,
-    Key.ARROW_UP: Keys.ARROW_UP,
-    Key.END: Keys.END,
-    Key.HOME: Keys.HOME,
-    Key.PAGE_DOWN: Keys.PAGE_DOWN,
-    Key.PAGE_UP: Keys.PAGE_UP,
-}
 
 HasFindElement = WebDriver | WebElement
 DEFAULT_AXE_SCRIPT_URL = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.7.1/axe.min.js"
@@ -146,7 +128,6 @@ class TimeoutMessageMixin:
 
 class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
     by: type[By] = By
-    keys: type[Keys] = Keys
     driver: WebDriver
     axe_script_url: str = DEFAULT_AXE_SCRIPT_URL
     axe_skip: bool = False
@@ -397,18 +378,17 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
 
     def press(
         self,
-        *keys: Key,
+        *keys: Key | str,
         modifiers: Sequence[Key] = (),
         element: WebElement | None = None,
     ) -> None:
-        selenium_keys = [KEY_TO_SELENIUM[key] for key in keys]
-        if element is not None and not modifiers:
-            element.send_keys(*selenium_keys)
+        validate_key_press(keys, modifiers)
+        if not keys:
             return
+        selenium_keys = [KEY_TO_SELENIUM[key] if isinstance(key, Key) else key for key in keys]
         chain = self.action_chains()
         if element is not None:
-            # ActionChains has no focus primitive and key_down(element) clicks -
-            # focus directly so the press has no pointer side effects.
+            # Focus once so Tab and other focus-changing keys can advance naturally.
             self.execute_script("arguments[0].focus();", element)
         for modifier in modifiers:
             chain = chain.key_down(KEY_TO_SELENIUM[modifier])

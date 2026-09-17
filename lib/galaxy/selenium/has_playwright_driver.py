@@ -153,7 +153,10 @@ from .has_driver_protocol import (
     TimeoutCallback,
     WaitTypeT,
 )
-from .keys import Key
+from .keys import (
+    Key,
+    validate_key_press,
+)
 from .playwright_element import PlaywrightElement
 from .wait_methods_mixin import WaitMethodsMixin
 from .web_element_protocol import WebElementProtocol
@@ -181,43 +184,6 @@ class PlaywrightResources(NamedTuple):
     page: Page
 
 
-class PlaywrightKeys:
-    """Mapping of Selenium Keys to Playwright key names."""
-
-    ENTER = "Enter"
-    ESCAPE = "Escape"
-    BACKSPACE = "Backspace"
-    TAB = "Tab"
-    SPACE = " "
-    ARROW_DOWN = "ArrowDown"
-    ARROW_UP = "ArrowUp"
-    ARROW_LEFT = "ArrowLeft"
-    ARROW_RIGHT = "ArrowRight"
-
-
-KEY_TO_PLAYWRIGHT: dict[Key, str] = {
-    Key.ALT: "Alt",
-    Key.COMMAND: "Meta",
-    Key.CONTROL: "Control",
-    Key.META: "Meta",
-    Key.SHIFT: "Shift",
-    Key.BACKSPACE: "Backspace",
-    Key.DELETE: "Delete",
-    Key.ENTER: "Enter",
-    Key.ESCAPE: "Escape",
-    Key.SPACE: " ",
-    Key.TAB: "Tab",
-    Key.ARROW_DOWN: "ArrowDown",
-    Key.ARROW_LEFT: "ArrowLeft",
-    Key.ARROW_RIGHT: "ArrowRight",
-    Key.ARROW_UP: "ArrowUp",
-    Key.END: "End",
-    Key.HOME: "Home",
-    Key.PAGE_DOWN: "PageDown",
-    Key.PAGE_UP: "PageUp",
-}
-
-
 class PlaywrightBy:
     """Locator strategy constants matching Selenium's By class."""
 
@@ -235,7 +201,6 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
     """Playwright-backed implementation of HasDriver interface."""
 
     by: type[PlaywrightBy] = PlaywrightBy
-    keys: type[PlaywrightKeys] = PlaywrightKeys
     axe_script_url: str = DEFAULT_AXE_SCRIPT_URL
     axe_skip: bool = False
     _current_frame: Frame | FrameLocator | None = None
@@ -736,26 +701,26 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
     def press(
         self,
-        *keys: Key,
+        *keys: Key | str,
         modifiers: Sequence[Key] = (),
         element: WebElementProtocol | None = None,
     ) -> None:
-        """
-        Press keys in order, with modifiers held down for each.
-
-        Args:
-            keys: Keys to press, in order
-            modifiers: Keys held down while each key is pressed
-            element: Optional element to send keys to. If None, sends to page.
-        """
-        held = [KEY_TO_PLAYWRIGHT[modifier] for modifier in modifiers]
-        handle = self._unwrap_element(element) if element is not None else None
-        for key in keys:
-            combo = "+".join([*held, KEY_TO_PLAYWRIGHT[key]])
-            if handle is not None:
-                self._send_key_to_element(combo, handle)
-            else:
-                self.page.keyboard.press(combo)
+        validate_key_press(keys, modifiers)
+        if not keys:
+            return
+        if element is not None:
+            self._unwrap_element(element).focus()
+        keyboard = self.page.keyboard
+        held: list[Key] = []
+        try:
+            for modifier in modifiers:
+                keyboard.down(modifier.value)
+                held.append(modifier)
+            for key in keys:
+                keyboard.press(key.value if isinstance(key, Key) else key)
+        finally:
+            for modifier in reversed(held):
+                keyboard.up(modifier.value)
 
     def send_enter(self, element: WebElementProtocol | None = None) -> None:
         """
@@ -799,17 +764,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         self.page.evaluate("element => element.value = ''", unwrapped)
         # Then send backspaces to trigger any input events
         for _ in range(25):
-            unwrapped.press(self.keys.BACKSPACE)
-
-    def _send_key_to_element(self, key: str, element: ElementHandle) -> None:
-        """
-        Internal: Send a key press to a specific element.
-
-        Args:
-            key: The key to send
-            element: ElementHandle to send key to
-        """
-        element.press(key)
+            self.press(Key.BACKSPACE, element=element)
 
     def hover(self, element: WebElementProtocol) -> None:
         """
