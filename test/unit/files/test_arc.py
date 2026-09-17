@@ -324,8 +324,40 @@ def test_writable_listing_asks_only_for_reachable_arcs(fake_fs):
 
 
 @pytest.mark.parametrize(
+    "source_path",
+    ["/history.tgz", "/", "/group/repo1:-:", "/group/repo1:-:/", "/group/repo1:-:/../escape.txt"],
+)
+def test_import_from_outside_an_arc_is_rejected(fake_fs, source_path):
+    """The import guard had never run: only its export twin was covered.
+
+    Deleting the call in _realize_to left the whole suite green, so the "Imports" wording and
+    the guard itself were both unexercised.
+    """
+    file_sources = configured_file_sources([_source_config()])
+    with pytest.raises(RequestParameterInvalidException, match="Imports have to name a file"):
+        file_sources.get_file_source_path(f"gxfiles://test1{source_path}").file_source.realize_to(
+            f"gxfiles://test1{source_path}", "/tmp/unused", user_context=user_context_fixture()
+        )
+    assert fake_fs.get_file_calls == [], "nothing may reach arcfs"
+
+
+@pytest.mark.parametrize(
     "target",
-    ["/history.tgz", "/exports/history.tgz", "/", "/group/repo1:-:", "/group/repo1:-:/", "/:-:/history.tgz"],
+    [
+        "/history.tgz",
+        "/exports/history.tgz",
+        "/",
+        "/group/repo1:-:",
+        "/group/repo1:-:/",
+        "/:-:/history.tgz",
+        # Nothing between the request and the API call bounds a target to inside the repository,
+        # so ".." is refused rather than normalised away. Without these the clause that does it
+        # can be deleted and every test still passes.
+        "/group/repo1:-:/../escape.txt",
+        "/group/repo1:-:/assays/../../escape.txt",
+        "/group/repo1:-:/..",
+        "/../repo1:-:/assays/x.txt",
+    ],
 )
 def test_write_outside_an_arc_is_rejected(fake_fs, target):
     """A target that does not name a file inside an ARC has to be refused before arcfs sees it.
