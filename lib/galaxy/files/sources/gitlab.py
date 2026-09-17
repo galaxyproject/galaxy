@@ -72,7 +72,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     another way, so ``ARCFilesSource`` opens a filesystem that does that instead; the write path
     itself is shared, because both take the same paths and need the same guard.
 
-    Known limitations, all of them properties of the backend rather than choices made here:
+    Known limitations:
 
     - Entries carry no size, timestamp or hash. GitLab's repository tree API does not return them,
       and asking per file would cost a request each.
@@ -85,6 +85,10 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
       going on shifts the ones after it, so such a window can repeat one project and miss another.
     - A listing without credentials cannot page very deep. GitLab caps how far an offset listing
       may page and applies the cap only to unauthenticated requests, so a token removes it.
+    - Everything is read from each project's default branch. There is no branch or ref setting, so
+      browsing, searching and importing cannot reach another branch, and an export commits to the
+      default one. This is the only item on this list that the backend does not impose: arcfs takes
+      a ``ref`` on listing, reading and writing, and this plugin passes it on none of them.
     """
 
     plugin_type = "gitlab"

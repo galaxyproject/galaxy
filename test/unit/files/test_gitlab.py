@@ -128,8 +128,10 @@ def test_open_fs_passes_config_and_skips_the_instance_cache(fake_fs):
     assert kwargs["asynchronous"] is False
     # Without this, one request's close() would tear down a filesystem shared with every other.
     assert kwargs["skip_instance_cache"] is True
-    # The fsspec cache options are forwarded for consistency with the other fsspec sources, but
-    # arcfs replaces fsspec's expiring DirCache with a plain dict and currently ignores them.
+    # The fsspec cache options are forwarded for consistency with the other fsspec sources. They
+    # reach a real expiring DirCache and arcfs does read and write it, but nothing is cached in
+    # practice: _open_fs builds a filesystem per operation and _filesystem closes it afterwards,
+    # so no entry outlives the request that made it.
     assert kwargs["listings_expiry_time"] == 120
     assert "use_listings_cache" in kwargs
 
