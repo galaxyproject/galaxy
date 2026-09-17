@@ -2,24 +2,17 @@
     <description>
         An interactive environment for visualizing and exploring machine learning experiments with TensorBoard.
     </description>
-
     <requirements>
-        <container type="docker">quay.io/leistivo/tensorboard:2.21.0-cf_tensorboard-feedstock_PR95</container>
+        <container type="docker">quay.io/galaxy/tensorboard:0.1</container>
     </requirements>
-
     <entry_points>
         <entry_point name="TensorBoard" requires_domain="True">
             <port>6006</port>
         </entry_point>
     </entry_points>
-
     <stdio>
-        <regex match="WARNING"
-               source="both"
-               level="warning"
-               description="TensorBoard warnings" />
+        <regex match="WARNING" source="both" level="warning" description="TensorBoard warnings"/>
     </stdio>
-
     <command detect_errors="exit_code"><![CDATA[
         #import re
 
@@ -48,35 +41,21 @@
             --host 0.0.0.0
             --port 6006
     ]]></command>
-
     <inputs>
         <conditional name="input_source">
             <param name="source" type="select" label="TensorBoard log input">
                 <option value="single" selected="true">Single event file</option>
                 <option value="collection">Dataset collection</option>
             </param>
-
             <when value="single">
-                <param name="infile"
-                       type="data"
-                       format="tfevents"
-                       label="TensorBoard event log"
-                       help="Select a TensorBoard event file." />
+                <param name="infile" type="data" format="tfevents" label="TensorBoard event log" help="Select a TensorBoard event file."/>
             </when>
-
             <when value="collection">
-                <param name="infiles"
-                       type="data_collection"
-                       collection_type="list"
-                       format="tfevents"
-                       label="TensorBoard event logs"
-                       help="Select a list collection of TensorBoard event files. Each collection element is displayed as a separate TensorBoard run." />
+                <param name="infiles" type="data_collection" collection_type="list" format="tfevents" label="TensorBoard event logs" help="Select a list collection of TensorBoard event files. Each collection element is displayed as a separate TensorBoard run."/>
             </when>
         </conditional>
     </inputs>
-
-    <outputs />
-
+    <outputs/>
     <help><![CDATA[
         TensorBoard visualizes machine learning experiments, including scalar metrics,
         graphs, histograms, and images recorded in TensorBoard event logs.
