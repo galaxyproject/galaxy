@@ -3620,7 +3620,12 @@ class DataManagerTool(OutputParameterJSONTool):
                     create=True,
                     preserve_symlinks=True,
                 )
-                hda.metadata.is_bundle = True
+                # Initial metadata extraction predates the bundle index. Refresh
+                # it now from the normalized index used for bundle consumption.
+                for association in hda.dataset.history_associations + hda.dataset.library_associations:
+                    if association.extension == "data_manager_json":
+                        association.metadata.is_bundle = True
+                        association.datatype.set_meta(association)
 
         else:
             raise Exception("Unknown data manager mode encountered type...")
