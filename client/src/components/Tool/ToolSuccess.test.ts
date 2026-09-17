@@ -12,6 +12,7 @@ import jobInformationResponse from "@/components/JobInformation/testData/jobInfo
 import { useConfig } from "@/composables/config";
 
 import ToolSuccess from "./ToolSuccess.vue";
+import ToolSuccessOutputs from "./ToolSuccessOutputs.vue";
 import JobHeader from "@/components/JobInformation/JobHeader.vue";
 
 vi.mock("@/composables/config", () => ({
@@ -86,6 +87,7 @@ async function mountToolSuccess(latestResponse: Record<string, unknown> | null) 
             JobHeader: true,
             Webhook: true,
             ToolRecommendation: true,
+            ToolSuccessOutputs: true,
         },
     }) as Wrapper<Vue>;
 
@@ -121,9 +123,28 @@ describe("ToolSuccess", () => {
         it("does not show the multi-job header or job count badge", () => {
             expect(wrapper.find(SELECTORS.JOB_COUNT_BADGE).exists()).toBe(false);
         });
+    });
 
-        // TODO: Add testing for rendering outputs
-        // it("shows both dataset and collection outputs correctly", async () => {
+    describe("with outputs", () => {
+        const TEST_OUTPUT = { id: "output_id", hid: 1, name: "output1" };
+        const TEST_OUTPUT_COLLECTION = { id: "collection_id", hid: 2, name: "collection1" };
+
+        it("passes both dataset and collection outputs through to ToolSuccessOutputs", async () => {
+            const wrapper = await mountToolSuccess({
+                jobDef: TEST_JOB_DEF,
+                jobResponse: {
+                    ...TEST_JOB_RESPONSE,
+                    outputs: [TEST_OUTPUT],
+                    output_collections: [TEST_OUTPUT_COLLECTION],
+                },
+                toolName: TEST_TOOL_NAME,
+            });
+
+            const outputs = wrapper.findComponent(ToolSuccessOutputs);
+            expect(outputs.exists()).toBe(true);
+            expect(outputs.props("jobResponse").outputs).toEqual([TEST_OUTPUT]);
+            expect(outputs.props("jobResponse").output_collections).toEqual([TEST_OUTPUT_COLLECTION]);
+        });
     });
 
     describe("with multiple jobs", () => {
