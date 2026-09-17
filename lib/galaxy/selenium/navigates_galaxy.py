@@ -1416,12 +1416,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         )
         self.sleep_for(self.wait_types.UX_RENDER)
         # seems like a Galaxy bug that these enter's are needed? - they are not when manually inputting things a human speeds
+        # only send them to <input> fields - the description is a <textarea> where ENTER inserts a literal newline
         self.send_enter(elem)
-        elem = editor.column_definition_description_by_index(index=index).wait_for_and_clear_and_send_keys(
+        editor.column_definition_description_by_index(index=index).wait_for_and_clear_and_send_keys(
             column_definition.description
         )
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.send_enter(elem)
         component = editor.column_definition_type_by_index(index=index)
         self.select_set_value(component, column_definition.type)
         self.sleep_for(self.wait_types.UX_RENDER)
