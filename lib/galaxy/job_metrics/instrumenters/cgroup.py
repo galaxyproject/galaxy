@@ -45,6 +45,7 @@ TITLES = {
     "memory.soft_limit_in_bytes": "Memory softlimit on cgroup",
     "memory.failcnt": "Failed to allocate memory count",
     "memory.oom_control.oom_kill_disable": "OOM Control enabled",
+    "memory.oom_control.oom_kill": "Number of processes belonging to this cgroup killed by any kind of OOM killer",
     "memory.oom_control.under_oom": "Was OOM Killer active?",
     "cpuacct.usage": "CPU Time",
     # cgroupsv2

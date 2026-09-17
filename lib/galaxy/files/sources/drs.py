@@ -66,6 +66,7 @@ class DRSFilesSource(BaseFilesSource[DRSFileSourceTemplateConfiguration, DRSFile
             fetch_url_allowlist=self._allowlist,
             headers=headers or None,
             force_http=config.force_http,
+            metadata_out=context.metadata_out,
         )
 
     def _write_from(

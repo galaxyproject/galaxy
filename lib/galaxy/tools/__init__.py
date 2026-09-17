@@ -65,6 +65,7 @@ from galaxy.model import (
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.types.paired_or_unpaired import SINGLETON_IDENTIFIER
 from galaxy.model.dataset_collections.types.sample_sheet_workbook import _sample_sheet_to_list_collection_type
+from galaxy.model.store.discover import safe_path_from_directory
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_shed.util.repository_util import get_installed_repository
@@ -93,6 +94,7 @@ from galaxy.tool_util.parameters import (
     input_models_for_pages,
     JobInternalToolState,
     RequestInternalDereferencedToolState,
+    UnmodelableToolInputs,
 )
 from galaxy.tool_util.parser import (
     get_tool_source,
@@ -104,6 +106,12 @@ from galaxy.tool_util.parser.interface import (
     PageSource,
     ToolSource,
 )
+from galaxy.tool_util.parser.output_objects import (
+    ToolExpressionOutput,
+    ToolOutput,
+    ToolOutputBase,
+    ToolOutputCollection,
+)
 from galaxy.tool_util.parser.util import (
     parse_profile_version,
     parse_tool_version_with_defaults,
@@ -113,7 +121,10 @@ from galaxy.tool_util.parser.xml import (
     XmlToolSource,
 )
 from galaxy.tool_util.parser.yaml import YamlToolSource
-from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
+from galaxy.tool_util.provided_metadata import (
+    NullToolProvidedMetadata,
+    parse_tool_provided_metadata,
+)
 from galaxy.tool_util.toolbox import (
     AbstractToolBox,
     AbstractToolTagManager,
@@ -269,10 +280,6 @@ if TYPE_CHECKING:
     from galaxy.model.tool_shed_install import ToolShedRepository
     from galaxy.objectstore import ObjectStore
     from galaxy.schema.schema import JobState
-    from galaxy.tool_util.parser.output_objects import (
-        ToolOutputBase,
-        ToolOutputCollection,
-    )
     from galaxy.tool_util.provided_metadata import BaseToolProvidedMetadata
     from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
     from galaxy.tools.actions.metadata import SetMetadataToolAction
@@ -826,6 +833,8 @@ class JobContext(BaseJobContext):
         self.max_discovered_files = float("inf") if max_discovered_files is None else max_discovered_files
         self.discovered_file_count = 0
         self._tag_handler = None
+        self.allows_unnamed_outputs = tool.allows_unnamed_outputs
+        self.allows_external_output_paths = tool.allows_external_output_paths
 
     @property
     def change_datatype_actions(self):
@@ -992,6 +1001,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
     job_search: "JobSearch"
     version: str
+    uses_tool_provided_metadata: bool
+    allows_unnamed_outputs: bool
 
     def __init__(
         self,
@@ -1464,6 +1475,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         # Read in name of galaxy.json metadata file and how to parse it.
         self.provided_metadata_file = tool_source.parse_provided_metadata_file()
         self.provided_metadata_style = tool_source.parse_provided_metadata_style()
+        self.uses_tool_provided_metadata = self._uses_tool_provided_metadata(tool_source)
+        self.allows_unnamed_outputs = tool_source.allows_tool_provided_metadata()
 
         # Parse result handling for tool exit codes and stdout/stderr messages:
         self.parse_stdio(tool_source)
@@ -1482,7 +1495,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             self.tool_action = getattr(mod, cls)()
             if getattr(self.tool_action, "requires_js_runtime", False):
                 try:
-                    expressions.find_engine(self.app.config)
+                    # Register the QuickJS worker as the cwl_utils JS engine.
+                    expressions.register()
                 except Exception:
                     message = REQUIRES_JS_RUNTIME_MESSAGE % self.id or getattr(self, "uuid", "unknown tool id")
                     raise Exception(message)
@@ -1661,10 +1675,44 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                         return result
 
     def tool_provided_metadata(self, job_wrapper):
-        meta_file = os.path.join(job_wrapper.tool_working_directory, self.provided_metadata_file)
+        if not self.uses_tool_provided_metadata:
+            return NullToolProvidedMetadata()
+        meta_file = safe_path_from_directory(self.provided_metadata_file, job_wrapper.tool_working_directory)
         return parse_tool_provided_metadata(
             meta_file, provided_metadata_style=self.provided_metadata_style, job_wrapper=job_wrapper
         )
+
+    @property
+    def allows_external_output_paths(self) -> bool:
+        return self.old_id == "__DATA_FETCH__" and self.dynamic_tool_id is None
+
+    def _uses_tool_provided_metadata(self, tool_source: ToolSource) -> bool:
+        if not tool_source.allows_tool_provided_metadata():
+            return False
+        if self.old_id in ("upload1", "__DATA_FETCH__") or tool_source.parse_provided_metadata_is_explicit():
+            return True
+
+        def output_uses_tool_provided_metadata(output: ToolOutputBase) -> bool:
+            if isinstance(output, ToolOutputCollection):
+                if any(
+                    description.discover_via == "tool_provided_metadata"
+                    for description in output.structure.dataset_collector_descriptions or []
+                ):
+                    return True
+                return any(output_uses_tool_provided_metadata(child) for child in output.outputs.values())
+
+            assert isinstance(output, (ToolOutput, ToolExpressionOutput))
+            if output.format == "auto":
+                return True
+            return any(
+                description.discover_via == "tool_provided_metadata"
+                for description in output.dataset_collector_descriptions
+            )
+
+        if any(output_uses_tool_provided_metadata(output) for output in self.outputs.values()):
+            return True
+
+        return not (self.tool_type == "interactive" or Version(str(self.profile)) >= Version("26.2"))
 
     def parse_command(self, tool_source):
         """ """
@@ -1701,6 +1749,10 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         try:
             parameters = input_models_for_pages(pages, self.profile)
             self.parameters = parameters
+        except UnmodelableToolInputs as e:
+            # Expected for the upload tools rather than a failure. Leaving parameters unset keeps
+            # every consumer on the path it already takes for a tool without a parameter schema.
+            log.debug("No parameter model for tool '%s': %s", self.id, e)
         except Exception:
             log.warning("Failed to generate parameter models for tool '%s'", self.id, exc_info=True)
         if pages.inputs_defined:
@@ -1990,7 +2042,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         try:
             return rst_to_html(help_content.content)
         except Exception:
-            log.info("Exception while parsing help for tool with id '%s'", self.id)
+            log.warning("Exception while parsing help for tool with id '%s'", self.id, exc_info=True)
             return ""
 
     def render_help(self, static_path: str, host_url: str) -> str:

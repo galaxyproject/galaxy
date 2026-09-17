@@ -3,6 +3,8 @@
  */
 import axios from "axios";
 
+import { VALID_INPUT_DATASET_STATES } from "@/api/datasets";
+import { DEFAULT_OPTIONS_PAGE_SIZE } from "@/components/Form/Elements/FormData/types";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -35,17 +37,31 @@ export async function getRunData(workflowId, version = null, instance = false) {
  * @param {Object} opts
  * @param {Array<string>} [opts.extensions] - sorted accept-set; empty/missing → no extension filter.
  * @param {String} [opts.type] - "dataset" | "dataset_collection".
+ * @param {String} [opts.tag] - exact dataset/collection tag required by the workflow input.
+ * @param {Boolean} [opts.visibleOnly] - restrict to visible items; false for
+ *   ``data_collection`` parameters, which offer hidden collections too.
  * @param {String} [opts.search] - name substring or numeric hid match.
  * @param {Number} [opts.offset]
  * @param {Number} [opts.limit]
  */
-export async function searchHistoryContents(historyId, { extensions, type, search, offset = 0, limit = 50 } = {}) {
+export async function searchHistoryContents(
+    historyId,
+    { extensions, type, tag, search, visibleOnly = true, offset = 0, limit = DEFAULT_OPTIONS_PAGE_SIZE } = {},
+) {
     const q = [];
     const qv = [];
-    q.push("visible-eq");
-    qv.push("True");
+    if (visibleOnly) {
+        q.push("visible-eq");
+        qv.push("True");
+    }
     q.push("deleted-eq");
     qv.push("False");
+    if (type !== "dataset_collection") {
+        // The server only offers datasets in an input-eligible state on the
+        // first page; without this the later pages would offer more than it did.
+        q.push("state-in");
+        qv.push(VALID_INPUT_DATASET_STATES.join(","));
+    }
     if (type) {
         q.push("history_content_type-eq");
         qv.push(type);
@@ -53,6 +69,10 @@ export async function searchHistoryContents(historyId, { extensions, type, searc
     if (extensions && extensions.length) {
         q.push("extension-in");
         qv.push(extensions.join(","));
+    }
+    if (tag) {
+        q.push("tag-eq");
+        qv.push(tag);
     }
     if (search) {
         const trimmed = String(search).trim();

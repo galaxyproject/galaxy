@@ -38,7 +38,11 @@ from galaxy.util.checkers import (
     COMPRESSION_CHECK_FUNCTIONS,
     is_tar,
 )
-from galaxy.util.path import StrPath
+from galaxy.util.path import (
+    safe_contains,
+    safe_relpath,
+    StrPath,
+)
 
 try:
     import pylibmagic  # noqa: F401  # isort:skip
@@ -59,6 +63,18 @@ BINARY_MIMETYPES = {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 }
+
+# A libmagic cookie builds its description in a buffer it owns and returns a pointer
+# to it, so it cannot be used from more than one thread at a time or the description
+# comes back torn. Datasets are sniffed concurrently (celery runs a thread pool), so
+# go through `magic.Magic`, which locks around every libmagic call.
+_MAGIC = magic.Magic(mime=True, mime_encoding=True)
+
+
+def _split_magic_description(description: str) -> tuple[str, str]:
+    """Split a libmagic ``<mime type>; charset=<encoding>`` description in two."""
+    mime_type, _, encoding = description.partition("; ")
+    return mime_type, encoding.removeprefix("charset=")
 
 
 def get_test_fname(fname):
@@ -81,13 +97,21 @@ stream_url_to_file = partial(files_stream_url_to_file, prefix="gx_url_paste")
 
 
 def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts):
+    # ``name`` can be user-controlled (e.g. the ``files_N|NAME`` of an ad-hoc
+    # ``force_composite`` upload), so it must never resolve outside of the
+    # dataset's extra files directory.
+    file_output_path = os.path.join(extra_files, name)
+    if not name or not safe_relpath(name) or not safe_contains(os.path.realpath(extra_files), file_output_path):
+        raise ValueError(
+            f"Invalid composite file name '{name}'; must be a relative path inside the dataset's extra files directory"
+        )
+
     if not is_binary:
         if upload_opts.get("space_to_tab"):
             convert_newlines_sep2tabs(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
         else:
             convert_newlines(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
 
-    file_output_path = os.path.join(extra_files, name)
     shutil.move(src_path, file_output_path)
 
     # groom the dataset file content if required by the corresponding datatype definition
@@ -612,15 +636,11 @@ class FilePrefix:
         self.truncated = truncated
         self.filename = filename
         self.non_utf8_error = non_utf8_error
-        file_magic = magic.detect_from_content(contents_header_bytes)
-        self.encoding = file_magic.encoding
-        self.mime_type = file_magic.mime_type
+        self.mime_type, self.encoding = _split_magic_description(_MAGIC.from_buffer(contents_header_bytes))
         self.compressed_mime_type = None
         self.compressed_encoding = None
         if compressed_format:
-            compressed_magic = magic.detect_from_filename(filename)
-            self.compressed_mime_type = compressed_magic.mime_type
-            self.compressed_encoding = compressed_magic.encoding
+            self.compressed_mime_type, self.compressed_encoding = _split_magic_description(_MAGIC.from_file(filename))
         self.compressed_format = compressed_format
         self.contents_header = contents_header
         self.contents_header_bytes = contents_header_bytes

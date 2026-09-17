@@ -3,7 +3,7 @@
 Galaxy supports the following authentication mechanisms:
 
 * [Galaxy Database](#galaxy-database) - Galaxy-specific login using e-mail address and password (the default);
-* [OIDC and OAuth2.0](#oidc-and-oauth2-0) - Login to Galaxy using your Google account, without having to create a Galaxy user;
+* [OIDC and OAuth2.0](#oidc-and-oauth2-0) - Login to Galaxy through an external OpenID Connect identity provider (e.g. Google, Keycloak, LS Login), without having to create a Galaxy password;
 * [Authentication Framework](#authentication-framework) - A plugin-driven framework supporting LDAP/Active Directory and PAM;
 * [Proxy Authentication](#remote-user-authentication) - HTTP [remote user](http://httpd.apache.org/docs/current/mod/mod_cgi.html#env) provided by any front-end Web server.
 
@@ -18,9 +18,11 @@ If deploying Galaxy using the default authentication option, user activation can
 ## OIDC and OAuth2.0
 Leveraging OpenID Connect (OIDC) protocol, we enable login to Galaxy without explicitly creating a Galaxy user. This feature is disabled by default. In short, to enable this feature, a Galaxy server admin has to take the following two steps:
 
-1. Define the Galaxy instance on an OIDC identity provider. At the moment, we support Google and Okta. To set a Galaxy instance on Google, go to _credentials_ section at [developers console](https://console.developers.google.com/), and configure the instance. At the end, you'll receive _client ID_ and _client secret_ take a note of these two tokens. For Okta, create a new application in Okta, type _web_. At the end you should take note of the _client ID_ and _client secret_ tokens.
+1. Register the Galaxy instance as a client with an OIDC identity provider (IdP). The IdP issues a _client ID_ and a _client secret_, and needs to be told the callback URL `<galaxy_url>/authnz/<provider>/callback`.
 
-2. Configure Galaxy. In the `galaxy.yml` file enable the OIDC service using the `enable_oidc` key and set the two configuration files (i.e., `oidc_config_file` and `oidc_backends_config_file`), based on the IdP information.
+2. Configure Galaxy. In the `galaxy.yml` file enable the OIDC service using the `enable_oidc` key and set the two configuration files (i.e., `oidc_config_file` and `oidc_backends_config_file`), based on the IdP information. Samples for both files are in [oidc_config.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/oidc_config.xml.sample) and [oidc_backends_config.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/oidc_backends_config.xml.sample).
+
+Each `<provider>` entry in `oidc_backends_config_file` is one of the backends Galaxy ships: `google`, `globus`, `okta`, `azure`, `keycloak`, `cilogon`, `auth0`, `egi_checkin`, `lifescience` (LS Login), `einfracz`, `nfdi`, `tapis`, the deprecated `elixir`, and the generic `oidc` backend for any standards-compliant provider. Per-provider options such as `label`, `require_create_confirmation`, `require_user_activation` and `require_session_refresh` are documented in [oidc_backends_config.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/oidc_backends_config.xml.sample).
 
 The configuration is explained with provider-specific details at [User Authentication Configuration](https://galaxyproject.org/authnz/config/oidc/). How to authenticate from the user perspective we describe [here](https://galaxyproject.org/authnz/use/oidc/).
 
@@ -39,7 +41,7 @@ On the otherhand, `ldap3` is a pure-Python implementation of the OpenLDAP client
 These same mechanisms can also be configured by proxies serving Galaxy (e.g. nginx or Apache), but configuring them
 within Galaxy allows users to use the Galaxy UI for logging in instead of relying on a proxy.
 
-To configure one or more authentication plugins, simply copy ``config/auth_conf.xml.sample`` to ``config/auth_conf.xml``.
+To configure one or more authentication plugins, simply copy [auth_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/auth_conf.xml.sample) to ``config/auth_conf.xml``.
 The provided sample configuration file has numerous commented out examples and serves as the most up-to-date source
 of documentation on configuring these plugins.
 
@@ -101,10 +103,10 @@ __all__ = ("LDAPCustom",)
 ```
 
 In this simple custom LDAP authenticator, we are verifying the remote IP address of the client is declared in the whitelisted
-IP addresses. The so-called `white-listed-ips` can be provided within the `auth_config.xml` file. However this can be done in
+IP addresses. The so-called `white-listed-ips` can be provided within the `auth_conf.xml` file. However this can be done in
 many ways depending on the deployments like getting white listed IPs from LDAP query or simply reading it from a file on the
 file system. This list of IP addresses can be a global whitelist or IP addresses per user. In order to use this authenticator,
-we need to declare it in the `auth_config.xml` file as `<type>ldap_custom</type>`.
+we need to declare it in the `auth_conf.xml` file as `<type>ldap_custom</type>`.
 
 ## Remote User Authentication
 
@@ -150,14 +152,7 @@ user_activation_on: true
 ```
 
 
-There is also the option for tracking jobs in database that is required to be turned on for the account activation to be effective. By default it is off.
-
-```yaml
-track_jobs_in_database: true
-```
-
-
-After you turn on both of these every user that will try to register after this configuration file takes effect will have the activation email sent to the email address provided. Unless the `activation_grace_period` (see below) is set, the user won't be able to login before the activation happens.
+After you turn this on every user that will try to register after this configuration file takes effect will have the activation email sent to the email address provided. Unless the `activation_grace_period` (see below) is set, the user won't be able to login before the activation happens.
 
 Furthermore in order for this to work correctly smtp server and email need be set:
 
@@ -172,7 +167,7 @@ Smtp server takes care of the email sending and the `email_from` is used as the 
 
 ### Email template
 
-You can modify the activation email body by modifying the provided templates. You can use them in [html](https://github.com/galaxyproject/galaxy/blob/release_23.0/lib/galaxy/config/templates/mail/activation-email.html) or [txt](https://github.com/galaxyproject/galaxy/blob/release_23.0/lib/galaxy/config/templates/mail/activation-email.txt) depending on your emailing configuration.
+You can modify the activation email body by modifying the provided templates. You can use them in [html](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/templates/mail/activation-email.html) or [txt](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/templates/mail/activation-email.txt) depending on your emailing configuration.
 
 The mapping of mentioned templates' variables to config options is as follows:
 ```
@@ -189,19 +184,20 @@ If an activated user changes email address in user settings, their account will 
 ### Grace period
 
 In case you want the account activation feature but don't want to disable login completely you can set the `activation_grace_period` parameter. It specifies, in hours, the period in between registration time and the login time that the user will be allowed to log in even with an inactive account.
-```
-# Activation grace period. Activation is not forced (login is not disabled) until
-# grace period has passed. Users under grace period can't run jobs (see inactivity_box_content).
-# In hours. Default is 3. Enter 0 to disable grace period.
-# Users with OpenID logins have grace period forever.
-#activation_grace_period = 3
+```yaml
+# Activation grace period (in hours). Activation is not forced (login is not
+# disabled) until grace period has passed. Users under grace period can't run
+# jobs. Enter 0 to disable grace period. Default is 3.
+activation_grace_period: 3
 ```
 
+Accounts created through an OIDC login are activated immediately, because the e-mail address verified by the identity provider is trusted. A provider can opt out of this with `require_user_activation` in [oidc_backends_config.xml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/oidc_backends_config.xml.sample), in which case its users go through the same activation flow as password accounts.
+
 However with inactive account the user won't be able to run jobs and warning message will be shown to them at the top of the page. It is customizable via the `inactivity_box_content` parameter.
-```
+```yaml
 # Used for warning box for inactive accounts (unable to run jobs).
 # In use only if activation_grace_period is set.
-#inactivity_box_content = Your account has not been activated yet. Please activate your account by verifying your email address. For now you can access everything at Galaxy but your jobs won't run.
+inactivity_box_content: Your account has not been activated yet. Please activate your account by verifying your email address. For now you can access everything at Galaxy but your jobs won't run.
 ```
 
 ### Disposable email address filtering
@@ -210,10 +206,10 @@ To prevent users from using unwanted email addresses for the email activation ad
 #### Blocklist
 
 The domain blocklist can be turned on through the `email_domain_blocklist_file` path parameter. Users that use disposable email domains defined at the file in this provided path will be refused registration.
-```
+```yaml
 # E-mail domains blocklist is used for filtering out users that are using disposable email address
 # during the registration. If their address domain matches any domain in the BL they are refused the registration.
-email_domain_blocklist_file = config/disposable_email_blocklist.conf
+email_domain_blocklist_file: config/disposable_email_blocklist.conf
 ```
 
 In the file each domain is on its own line and without the *@* sign. Example of the blocklist file format:
@@ -234,19 +230,33 @@ The domain allowlist can be turned on through the `email_domain_allowlist_file` 
 
 ## Authentication Related Code
 
-The `lib/galaxy/webapps/galaxy/controllers/user.py` file provides much of the authentication-related logic in the `User` class. Of the supported mechanisms, only those needing to perform actual authentication work require any substantial amount of code in this file; the integration of "remote user" information is performed in the `lib/galaxy/web/framework/__init__.py` file.
+Password login, registration, account activation and logout for database-backed accounts live in the `User` controller in `lib/galaxy/webapps/galaxy/controllers/user.py` (`login`, `create`, `activate`, `logout`) and in `lib/galaxy/managers/users.py`. Password checks are delegated to the plugins in `lib/galaxy/auth/`, which is where the [Authentication Framework](#authentication-framework) providers (`localdb`, `ldap`, `ldap3`, `activedirectory`, `PAM`, `alwaysreject`) are implemented.
 
-Within the `User` class, code supporting authentication mechanisms will need to provide the following things:
+OIDC login is handled by the `authnz` controller in `lib/galaxy/webapps/galaxy/controllers/authnz.py` together with `lib/galaxy/authnz/managers.py` (provider configuration, token refresh) and `lib/galaxy/authnz/psa_authnz.py` (the [Python Social Auth](https://python-social-auth.readthedocs.io/) pipeline that creates users and associates identities).
 
-* Support within the `login` method for any additional information shown in the login screen. Since the login screen is likely to be modified to show alternative authentication methods alongside the conventional e-mail and password fields, it is possible that information such as identity providers will also need to be made available in order to simplify the experience for users.
-* A separate method to handle the initial stage of authentication for the mechanism. For example, OpenID authentication requests are handled by the `openid_auth` method initially.
-* Additional methods to handle any subsequent stages of authentication. For example, OpenID authentication involves the handling of subsequent requests in the `openid_process`, `openid_associate` and `openid_manage` methods.
+Remote user headers are consumed in `lib/galaxy/webapps/base/webapp.py` when the session for a request is established.
 
 ### Database Tables
 
-The database employs a `galaxy_user` table which records the details of all registered users, and this table is exposed to the code through the `User` abstraction found in `lib/galaxy/model/mapping.py`. Each logged-in user is assigned a session which references the user in the `galaxy_session` table (exposed via `GalaxySession`).
+The database employs a `galaxy_user` table which records the details of all registered users, and this table is exposed to the code through the `User` class in `lib/galaxy/model/__init__.py`. Each logged-in user is assigned a session which references the user in the `galaxy_session` table (exposed via `GalaxySession`). Users created through remote user authentication are flagged with `galaxy_user.external`.
 
-User information from external sources, such as OpenID, is found in peripheral tables such as `galaxy_user_openid` (exposed by `UserOpenID`) and references the registered user and session of that user.
+External OIDC identities are stored in `oidc_user_authnz_tokens` (exposed via `UserAuthnzToken`). Each row links one external identity to one Galaxy user and carries the provider's backend name, the subject identifier (`uid`) issued by the provider, and the access, refresh and ID tokens in `extra_data`.
+
+#### Removing or replacing an OIDC provider
+
+Rows in `oidc_user_authnz_tokens` are keyed by the backend name of the provider, which for some providers differs from the name used in `oidc_backends_config_file` (for example `google` is stored as `google-openidconnect`, `lifescience` as `life_science`; `elixir`, `keycloak`, `oidc` and most others are stored unchanged). `SELECT DISTINCT provider FROM oidc_user_authnz_tokens;` shows what your database holds.
+
+If you remove a provider from `oidc_backends_config_file`, or replace it with a different backend (for example the deprecated `elixir` with `lifescience`), the rows for the old provider stay in the database. They are harmless: Galaxy skips them when refreshing tokens, and nobody can log in through a provider that is not configured. Affected users still see the old entry under _User > Preferences > Manage Third-Party Identities_, labelled with the raw provider name, and cannot disconnect it themselves because there is no configured backend to disconnect from.
+
+The old rows are not migrated to a replacement provider. When a user logs in through the new provider, Galaxy creates a fresh row for that identity. If the user is already logged in, the identity is attached to their account. Otherwise, if an account with the same e-mail address exists, the user is either associated automatically (when the new provider is the only login method configured) or asked to log in to that account first and confirm the connection.
+
+To remove stale rows for a provider that is gone for good, run for example:
+
+```sql
+DELETE FROM oidc_user_authnz_tokens WHERE provider = 'elixir';
+```
+
+Do this only if the provider will not come back under the same name. The row is what ties the external identity to the Galaxy account, so after deleting it a user who logs in through a re-added provider goes through the account association flow again.
 
 ### Authenticating a User
 
@@ -255,5 +265,5 @@ The following steps are followed in any code that seeks to recognise a user with
 1. The identity credential, currently the e-mail address of the user, is used to find any previously-registered user in the database.
 1. Where no user exists and the login mechanism requires explicit registration, authentication fails at this point. Otherwise, a user is automatically created for previously unknown identities.
 1. For conventional accounts requiring a password, authentication fails at this point if a valid password is not specified. Otherwise, an alternative mechanism for completing authentication may be invoked.
-1. Upon completion of the authentication of a user's identity, any association of that identity with the Galaxy user instance may be performed. For example, an OpenID identity may be associated with a user created for that identity.
+1. Upon completion of the authentication of a user's identity, any association of that identity with the Galaxy user instance may be performed. For example, an OIDC identity may be associated with a user created for that identity.
 1. Finally, the login is handled using the `handle_user_login` method on the `GalaxyWebTransaction` object, associating the user with a new session.

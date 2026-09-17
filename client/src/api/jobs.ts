@@ -16,7 +16,8 @@ export type JobMetric = components["schemas"]["JobMetric"];
 export type JobMessage =
     | components["schemas"]["ExitCodeJobMessage"]
     | components["schemas"]["RegexJobMessage"]
-    | components["schemas"]["MaxDiscoveredFilesJobMessage"];
+    | components["schemas"]["MaxDiscoveredFilesJobMessage"]
+    | components["schemas"]["OutputCollectionSecurityJobMessage"];
 
 export const NON_TERMINAL_STATES = ["new", "queued", "running", "waiting", "paused", "resubmitted", "upload"];
 export const ERROR_STATES = ["error", "deleted", "deleting", "failed"];

@@ -386,22 +386,14 @@ steps:
                 history_id=history_id,
             )
 
-            # Get status via WES API
-            status = self._get_run_status_validated(invocation_id)
+            # A successfully finished invocation (Galaxy state "completed") must map to
+            # the terminal WES state COMPLETE - not UNKNOWN - so clients can poll for done.
+            self.workflow_populator.wait_for_invocation_and_completion(invocation_id, assert_ok=True)
+            invocation = self.workflow_populator.get_invocation(invocation_id)
+            assert invocation["state"] == "completed"
 
-            # Verify state is properly mapped
-            # After waiting for completion, should be COMPLETE or similar
-            assert status["state"] in [
-                "QUEUED",
-                "INITIALIZING",
-                "RUNNING",
-                "PAUSED",
-                "COMPLETE",
-                "EXECUTOR_ERROR",
-                "SYSTEM_ERROR",
-                "CANCELED",
-                "CANCELING",
-            ]
+            status = self._get_run_status_validated(invocation_id)
+            assert status["state"] == "COMPLETE"
 
     def test_wes_error_handling_missing_workflow_type(self):
         """Test error handling when workflow_type is missing."""
@@ -528,16 +520,23 @@ steps:
             self._assert_status_code_is(response, 200)
 
     def test_wes_submit_run_with_gxworkflow_uri_with_instance_param(self):
-        """Test gxworkflow:// URI with instance=true parameter."""
+        """Test gxworkflow:// URI with instance=true runs that version, not the latest."""
         with self.dataset_populator.test_history() as history_id:
             dataset_id = self._get_test_dataset_id(history_id)
 
             # Upload a workflow to get its ID
             workflow_id = self._upload_yaml_workflow(WORKFLOW_SIMPLE)
-            latest_instance_id = self._latest_instance_id(workflow_id, history_id)
+            first_instance_id = self._latest_instance_id(workflow_id, history_id)
+
+            # Create a second version so the referenced instance is no longer the latest
+            workflow_object = self._download_workflow(workflow_id)
+            workflow_object["steps"]["1"]["annotation"] = "second version"
+            update_response = self.workflow_populator.update_workflow(workflow_id, workflow_object)
+            self._assert_status_code_is(update_response, 200)
+            assert self._latest_instance_id(workflow_id, history_id) != first_instance_id
 
             # Construct gxworkflow:// URI with instance=true
-            workflow_uri = f"gxworkflow://{latest_instance_id}?instance=true"
+            workflow_uri = f"gxworkflow://{first_instance_id}?instance=true"
 
             # Submit workflow using the gxworkflow:// URI
             data = {
@@ -553,6 +552,46 @@ steps:
 
             # Validate response
             assert run_id is not None
+            invocation = self.workflow_populator.get_invocation(run_id)
+            assert invocation["workflow_id"] == first_instance_id
+
+    def test_wes_submit_run_with_gxworkflow_uri_published_workflow(self):
+        """A published workflow owned by another user can be run via gxworkflow://."""
+        with self._different_user():
+            workflow_id = self._upload_yaml_workflow(WORKFLOW_SIMPLE)
+            self.workflow_populator.make_public(workflow_id)
+
+        with self.dataset_populator.test_history() as history_id:
+            dataset_id = self._get_test_dataset_id(history_id)
+
+            data = {
+                "workflow_type": "gx_workflow_ga",
+                "workflow_type_version": "v1",
+                "workflow_params": json.dumps({"input1": dataset_id}),
+                "workflow_url": f"gxworkflow://{workflow_id}",
+            }
+
+            response = self._wes_post("ga4gh/wes/v1/runs", data=data)
+            self._assert_status_code_is(response, 200)
+            assert response.json()["run_id"] is not None
+
+    def test_wes_submit_run_with_gxworkflow_uri_inaccessible_workflow(self):
+        """An unshared workflow owned by another user cannot be run via gxworkflow://."""
+        with self._different_user():
+            workflow_id = self._upload_yaml_workflow(WORKFLOW_SIMPLE)
+
+        with self.dataset_populator.test_history() as history_id:
+            dataset_id = self._get_test_dataset_id(history_id)
+
+            data = {
+                "workflow_type": "gx_workflow_ga",
+                "workflow_type_version": "v1",
+                "workflow_params": json.dumps({"input1": dataset_id}),
+                "workflow_url": f"gxworkflow://{workflow_id}",
+            }
+
+            response = self._wes_post("ga4gh/wes/v1/runs", data=data)
+            self._assert_status_code_is(response, 403)
 
     def test_wes_job_stdout_endpoint(self):
         """Test /api/jobs/{job_id}/stdout endpoint returns job stdout."""

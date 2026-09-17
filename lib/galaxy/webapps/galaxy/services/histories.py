@@ -262,8 +262,15 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         from URL or File depending on the provided parameters in the payload.
         """
         copy_this_history_id = payload.history_id
-        if trans.anonymous and not copy_this_history_id:  # Copying/Importing histories is allowed for anonymous users
-            raise glx_exceptions.AuthenticationRequired("You need to be logged in to create histories.")
+        if trans.anonymous:
+            # Copying/Importing histories is allowed for anonymous users, but only when there is a
+            # galaxy_session to own the result. A request with neither an API key nor a galaxysession
+            # cookie (e.g. a raw API call) has nowhere to put the new history, so reject it instead of
+            # doing the (potentially expensive) copy and creating an unreachable, orphaned history.
+            if not copy_this_history_id:
+                raise glx_exceptions.AuthenticationRequired("You need to be logged in to create histories.")
+            if not trans.galaxy_session:
+                raise glx_exceptions.AuthenticationRequired("You need an active session to copy histories.")
         if trans.user and trans.user.bootstrap_admin_user:
             raise glx_exceptions.RealUserRequiredException("Only real users can create histories.")
         hist_name = None

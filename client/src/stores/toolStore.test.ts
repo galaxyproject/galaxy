@@ -36,4 +36,20 @@ describe("toolStore", () => {
             helpFormat: "markdown",
         });
     });
+
+    it("settles a failed help request and retries it later", async () => {
+        const error = new Error("request failed");
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        vi.mocked(axios.get)
+            .mockRejectedValueOnce(error)
+            .mockResolvedValueOnce({ data: { help: "Recovered help", help_format: "markdown" } });
+        const store = useToolStore();
+
+        await store.fetchHelpForId("test-tool");
+        expect(store.helpDataCached["test-tool"]).toEqual({ help: "", failed: true });
+
+        await store.fetchHelpForId("test-tool");
+        expect(axios.get).toHaveBeenCalledTimes(2);
+        expect(store.helpDataCached["test-tool"]).toMatchObject({ help: "Recovered help" });
+    });
 });

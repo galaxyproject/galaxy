@@ -162,6 +162,10 @@ class ToolSource(metaclass=ABCMeta):
         """Parse the class of the tool."""
         return None
 
+    def allows_tool_provided_metadata(self) -> bool:
+        """Return whether this source may enable tool-provided metadata."""
+        return False
+
     def parse_tool_module(self) -> Optional[Tuple[str, str]]:
         """Load Tool class from a custom module. (Optional).
 
@@ -357,6 +361,10 @@ class ToolSource(metaclass=ABCMeta):
     def parse_provided_metadata_file(self):
         """Return location of provided metadata file (e.g. galaxy.json)."""
         return "galaxy.json"
+
+    def parse_provided_metadata_is_explicit(self) -> bool:
+        """Return whether tool-provided metadata was explicitly configured."""
+        return False
 
     @abstractmethod
     def parse_outputs(
@@ -868,6 +876,18 @@ class RequiredFiles:
         return files
 
 
+def resolve_element_tests(as_dict):
+    """Return the nested element tests, preferring the "element_tests" key over its "elements" alias.
+
+    "element_tests" is the preferred key; "elements" is the accepted alias (see
+    https://github.com/galaxyproject/planemo/pull/1417). Both the top-level test definition and each
+    nested collection element may use either, so resolution goes through this single function.
+    """
+    if as_dict.get("element_tests") is not None:
+        return as_dict["element_tests"]
+    return as_dict.get("elements", {})
+
+
 class TestCollectionOutputDef:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
@@ -900,10 +920,9 @@ class TestCollectionOutputDef:
         if "attributes" not in as_dict:
             as_dict["attributes"] = {}
         attributes = as_dict["attributes"]
-        # setup preferred name "elements" in accordance with work in https://github.com/galaxyproject/planemo/pull/1417
-        # TODO: test this works recursively...
-        if "elements" in as_dict and "element_tests" not in as_dict:
-            as_dict["element_tests"] = as_dict["elements"]
+        # setup preferred name "element_tests" in accordance with work in https://github.com/galaxyproject/planemo/pull/1417
+        if "elements" in as_dict or "element_tests" in as_dict:
+            as_dict["element_tests"] = resolve_element_tests(as_dict)
         if "collection_type" in as_dict:
             attributes["type"] = as_dict["collection_type"]
         return TestCollectionOutputDef.from_dict(as_dict)

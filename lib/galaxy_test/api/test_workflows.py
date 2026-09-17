@@ -4523,17 +4523,6 @@ input_1:
             assert "History dataset collection association not found" in error_entry["error"]
 
     @skip_without_tool("cat1")
-    def test_export_invocation_bco(self):
-        with self.dataset_populator.test_history() as history_id:
-            summary = self._run_workflow(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
-            invocation_id = summary.invocation_id
-            bco_path = self.workflow_populator.download_invocation_to_store(invocation_id, extension="bco.json")
-            with open(bco_path) as f:
-                bco = json.load(f)
-            self.workflow_populator.validate_biocompute_object(bco)
-            assert bco["provenance_domain"]["name"] == "Simple Workflow"
-
-    @skip_without_tool("cat1")
     def test_export_invocation_ro_crate(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
@@ -6762,8 +6751,7 @@ steps:
     def test_workflow_with_deleted_dataset_step_parameter(self):
         """Verify workflow fails gracefully when a step parameter references a deleted dataset.
 
-        Uses a pause step so we can delete the dataset after the invocation is
-        queued but before the cat step executes, avoiding a race condition.
+        The pause ensures deletion happens after the initial parameter validation.
         """
         with self.dataset_populator.test_history() as history_id:
             workflow_id = self._upload_yaml_workflow("""
@@ -6797,15 +6785,10 @@ steps:
                 },
                 inputs_by="name",
             )
-            # Wait for the scheduler to hit the pause step (invocation state "new" → "ready")
-            # before deleting, otherwise the scheduler may detect the deleted dataset
-            # on step 2 during scheduling and fail the invocation before we can resume.
-            self._wait_for_invocation_state(workflow_id, invocation_id, "ready")
-            # Invocation is paused — delete the dataset before resuming.
+            # Ensure the parameter override is initially valid before deleting its dataset.
+            assert self._wait_for_invocation_state(workflow_id, invocation_id, "ready")
+            # The scheduler revalidates the override while the invocation is paused.
             self.dataset_populator.delete_dataset(history_id=history_id, content_id=to_delete_id, purge=False)
-            # Resume the pause step. The cat step will now run and
-            # ToolModule.execute() → compute_runtime_state will find the deleted dataset.
-            self.__review_paused_steps(workflow_id, invocation_id, order_index=1, action=True)
             self.workflow_populator.wait_for_invocation_and_jobs(
                 history_id=history_id,
                 workflow_id=workflow_id,

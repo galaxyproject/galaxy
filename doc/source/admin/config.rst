@@ -106,6 +106,17 @@ Configuration Basics
 .. _Gravity: https://github.com/galaxyproject/gravity
 
 
+Per-process configuration
+-------------------------
+
+Options in the ``galaxy`` section can also be supplied through environment variables with the
+``GALAXY_CONFIG_`` prefix and the option name in uppercase. These values apply when the option
+is absent from the configuration file. Use the ``GALAXY_CONFIG_OVERRIDE_`` prefix to override
+a value set in the file.
+
+Set environment variables in the service's environment to customize individual processes while
+sharing a common ``galaxy.yml``.
+
 Configuration Options
 ----------------------------
 

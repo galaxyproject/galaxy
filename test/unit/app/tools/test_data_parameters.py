@@ -8,6 +8,7 @@ import pytest
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.tools.parameters.basic import ParameterValueError
+from galaxy.tools.parameters.pagination import DEFAULT_OPTIONS_PAGE_SIZE
 from .util import BaseParameterTestCase
 
 
@@ -194,14 +195,16 @@ class TestDataToolParameter(BaseParameterTestCase):
         # Stub the paginated query helper used by ``DataToolParameter.to_dict``.
         # The fakes mock ``find_conversion_destination`` at the HDA level rather
         # than at the datatypes-registry level, so we deliberately ignore the
-        # SQL ``extensions``/``valid_states`` filters here and return all
-        # visible HDAs — the matcher path then exercises the per-HDA mocked
+        # SQL ``extensions``/``valid_states``/``tag`` filters here and return
+        # all visible HDAs — the matcher path then exercises the per-HDA mocked
         # conversion logic. We sort by ``hid`` descending to mirror the real
         # query's ordering (newest-first), which ``get_initial_value`` relies
         # on to pick the most recent matching HDA.
         visible_desc = sorted(visible, key=lambda h: h.hid, reverse=True)
 
-        def _paginated(*, extensions=None, valid_states=None, search=None, offset=0, limit=50):
+        def _paginated(
+            *, extensions=None, valid_states=None, tag=None, search=None, offset=0, limit=DEFAULT_OPTIONS_PAGE_SIZE
+        ):
             return visible_desc[offset : offset + limit], len(visible_desc)
 
         self.test_history.paginated_active_visible_datasets = _paginated  # type: ignore[method-assign]

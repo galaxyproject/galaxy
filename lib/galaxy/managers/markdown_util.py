@@ -1402,16 +1402,16 @@ def _parse_directive_argument_value(arg_name: str, line: str) -> Optional[str]:
 
 def _remap_galaxy_markdown_calls(func, markdown):
     def _remap_container(container):
-        matching_line = None
+        match = None
         for line in container.splitlines():
-            if GALAXY_MARKDOWN_FUNCTION_CALL_LINE.match(line):
-                assert matching_line is None
-                matching_line = line
+            line_match = GALAXY_MARKDOWN_FUNCTION_CALL_LINE.match(line)
+            if line_match:
+                if match is not None:
+                    raise MalformedContents("Only one Galaxy directive is allowed per fenced Galaxy block (```galaxy)")
+                match = line_match
 
-        if matching_line:
-            match = GALAXY_MARKDOWN_FUNCTION_CALL_LINE.match(line)
-            assert match  # already matched
-            return func(match.group(1), f"{matching_line}\n")
+        if match:
+            return func(match.group(1), f"{match.group(0)}\n")
         else:
             return (container, True)
 

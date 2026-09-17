@@ -180,10 +180,11 @@ class SessionRequestContext(WorkRequestContext):
         return self.galaxy_session
 
     def set_history(self, history):
-        if history and not history.deleted and self.galaxy_session:
-            self.galaxy_session.current_history = history
-        self.sa_session.add(self.galaxy_session)
-        self.sa_session.commit()
+        if self.galaxy_session:
+            if history and not history.deleted:
+                self.galaxy_session.current_history = history
+            self.sa_session.add(self.galaxy_session)
+            self.sa_session.commit()
 
 
 def proxy_work_context_for_history(

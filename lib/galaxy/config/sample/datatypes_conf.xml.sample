@@ -1231,6 +1231,9 @@
     <datatype extension="mlmodel" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" description="A Protocol Buffers-based (Protobuf) format developed by Apple for storing machine learning models" description_url="https://apple.github.io/coremltools/mlmodel/index.html"/>
     <datatype extension="deacon.idx" type="galaxy.datatypes.binary:Binary" subclass="true" mimetype="application/octet-stream" display_in_upload="true" description="Binary index format which is compatible with Deacon."/>
     <datatype extension="tfevents" type="galaxy.datatypes.binary:TensorBoardEvents" mimetype="application/octet-stream" display_in_upload="true" description="TensorBoard event log containing TFRecord-encoded protocol buffer events" description_url="https://www.tensorflow.org/tensorboard"/>
+    <datatype extension="rmsx.json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="true" description="RMSX Molstar viewer manifest containing per-slice structures and residue-level RMSX values.">
+      <visualization plugin="rmsxflipbook" />
+    </datatype>
   </registration>
 
   <sniffers>

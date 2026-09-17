@@ -355,6 +355,22 @@ class TestDatasetsApi(ApiTestCase):
         assert content_type.startswith("text/plain"), content_type
         assert display_response.text == contents
 
+    def test_display_preview_large_fasta_uses_text_plain(self, history_id):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/22719
+        # A fasta larger than the 100 KB preview limit must still be served as
+        # text/plain so the browser preserves newlines; otherwise the header line
+        # runs into the sequence and the content is rendered as HTML.
+        header = ">seq0 large fasta regression test\n"
+        contents = header + "".join(f"{'ACGT' * 20}\n" for _ in range(2000))
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, file_type="fasta", wait=True)
+        display_response = self._get(f"histories/{history_id}/contents/{hda1['id']}/display", {"preview": "True"})
+        self._assert_status_code_is(display_response, 200)
+        content_type = display_response.headers.get("content-type", "")
+        assert content_type.startswith("text/plain"), content_type
+        assert display_response.headers.get("x-content-truncated") == "100000"
+        assert display_response.text.startswith(header)
+        assert len(display_response.text) <= 100000
+
     def test_display_extra_paths(self, history_id: str):
         test_data_resolver = TestDataResolver()
         with open(test_data_resolver.get_filename("1.fasta")) as fh:

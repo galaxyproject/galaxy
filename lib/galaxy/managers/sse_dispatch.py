@@ -25,7 +25,10 @@ from galaxy.queue_worker import (
     ControlTask,
     GalaxyQueueWorker,
 )
-from galaxy.queues import all_control_queues_for_declare
+from galaxy.queues import (
+    all_control_queues_for_declare,
+    WEBAPP_CONTROL_ROUTING_KEY,
+)
 from galaxy.web.statsd_client import VanillaGalaxyStatsdClient
 from galaxy.web_stack import ApplicationStack
 
@@ -98,8 +101,6 @@ class SSEEventDispatcher:
             return
         if self._statsd_client is not None:
             self._statsd_client.incr("galaxy.sse.dispatch.count", tags={"task": task})
-        # Only fan out to webapp processes — job handlers and workflow schedulers
-        # don't have browser SSE connections to push to.
         declare_queues = self._get_declare_queues()
         log.debug(
             "SSE dispatch task=%s addressed to %d webapp worker(s): %s",
@@ -112,7 +113,7 @@ class SSEEventDispatcher:
         try:
             control_task.send_task(
                 payload={"task": task, "kwargs": kwargs},
-                routing_key="control.*",
+                routing_key=WEBAPP_CONTROL_ROUTING_KEY,
                 expiration=10,
                 declare_queues=declare_queues,
             )

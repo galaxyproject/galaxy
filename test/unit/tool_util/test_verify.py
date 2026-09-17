@@ -16,6 +16,7 @@ import numpy
 import pytest
 from PIL import Image
 
+from galaxy.tool_util.parser.interface import TestCollectionOutputDef
 from galaxy.tool_util.verify import (
     files_contains,
     files_delta,
@@ -24,6 +25,7 @@ from galaxy.tool_util.verify import (
     files_re_match,
     files_re_match_multiline,
 )
+from galaxy.tool_util.verify.interactor import verify_collection
 
 F1 = b"A\nB\nC"
 F2 = b"A\nB\nD\nE" * 61
@@ -257,3 +259,56 @@ def test_files_image_diff(file1, file2, attributes, expect):
             files_image_diff(file1.path, file2.path, attributes)
     else:
         files_image_diff(file1.path, file2.path, attributes)
+
+
+def test_verify_collection_element_tests_on_single_dataset():
+    output_def = TestCollectionOutputDef.from_dict(
+        {
+            "name": "My Report",
+            "element_tests": {"sample1": {"asserts": {"has_text": {"text": "hello"}}}},
+        }
+    )
+    with pytest.raises(AssertionError) as exc_info:
+        verify_collection(output_def, {"path": "/tmp/whatever", "class": "File"}, lambda *a, **k: None)
+    assert "My Report" in str(exc_info.value)
+
+
+def _nested_data_collection():
+    return {
+        "collection_type": "list:list",
+        "elements": [
+            {
+                "element_identifier": "sample1",
+                "element_type": "dataset_collection",
+                "object": {
+                    "elements": [
+                        {"element_identifier": "dnacomp", "element_type": "hda", "_output_object": {}},
+                    ],
+                },
+            },
+        ],
+    }
+
+
+def test_verify_collection_nested_element_tests_are_checked():
+    output_def = TestCollectionOutputDef.from_dict(
+        {
+            "name": "mapDamage Visualisation",
+            "element_tests": {"sample1": {"element_tests": {"dnacomp": {"asserts": {"has_text": {"text": "x"}}}}}},
+        }
+    )
+    calls = []
+    verify_collection(output_def, _nested_data_collection(), lambda el, a, o: calls.append(el["element_identifier"]))
+    assert calls == ["dnacomp"]
+
+
+def test_verify_collection_nested_elements_alias_still_checked():
+    output_def = TestCollectionOutputDef.from_dict(
+        {
+            "name": "mapDamage Visualisation",
+            "element_tests": {"sample1": {"elements": {"dnacomp": {"asserts": {"has_text": {"text": "x"}}}}}},
+        }
+    )
+    calls = []
+    verify_collection(output_def, _nested_data_collection(), lambda el, a, o: calls.append(el["element_identifier"]))
+    assert calls == ["dnacomp"]

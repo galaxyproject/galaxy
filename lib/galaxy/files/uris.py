@@ -15,7 +15,10 @@ from galaxy.files import (
     ConfiguredFileSources,
     NoMatchingFileSource,
 )
-from galaxy.files.models import FilesSourceOptions
+from galaxy.files.models import (
+    FilesSourceOptions,
+    RealizedSourceMetadata,
+)
 from galaxy.util import (
     stream_to_open_named_file,
     unicodify,
@@ -44,14 +47,23 @@ def stream_url_to_file(
     user_context=None,
     target_path: Optional[str] = None,
     file_source_opts: Optional[FilesSourceOptions] = None,
+    metadata_out: Optional[RealizedSourceMetadata] = None,
 ) -> str:
+    """Stream ``url`` to a local path and return that path.
+
+    ``metadata_out``, if supplied, is populated by file sources that can report metadata
+    about the source they realized. Only the DRS file source does so today, setting a
+    ``name`` key from the DRS object's own name.
+    """
     file_sources = ensure_file_sources(file_sources)
     file_source, rel_path = file_sources.get_file_source_path(url)
     if file_source:
         if not target_path:
             with tempfile.NamedTemporaryFile(prefix=prefix, delete=False, dir=dir) as temp:
                 target_path = temp.name
-        file_source.realize_to(rel_path, target_path, user_context=user_context, opts=file_source_opts)
+        file_source.realize_to(
+            rel_path, target_path, user_context=user_context, opts=file_source_opts, metadata_out=metadata_out
+        )
         return target_path
     else:
         raise NoMatchingFileSource(f"Could not find a matching handler for: {url}")

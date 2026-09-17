@@ -1180,8 +1180,16 @@ export default {
                 proceed = true;
             }
             if (!proceed) {
+                if (forceSave) {
+                    // The save the modal asked for failed. Close it so the error is visible and
+                    // its `busy` latch -- only cleared when the modal is shown again -- doesn't
+                    // leave Cancel/Don't Save/Save disabled with no way back.
+                    this.showSaveChangesModal = false;
+                }
                 return;
             }
+
+            this.showSaveChangesModal = false;
 
             if (appendVersion && this.version !== undefined) {
                 url += `&version=${this.version}`;
@@ -1350,7 +1358,7 @@ export default {
                 await until(() => this.datatypesMapperLoading).toBe(false);
                 await nextTick();
 
-                if (fitGraph) {
+                if (fitGraph && this.workflowGraph) {
                     this.workflowGraph.fitWorkflow();
                 } else {
                     // If we are not fitting the graph, adjust for coordinate shifts so the nodes appear in the same position
@@ -1366,15 +1374,17 @@ export default {
          * @param boundsBefore The bounding box min coordinates we had before refetching the workflow
          */
         adjustForCoordinateShift(transformBefore, boundsBefore) {
-            const adjustedTransform = this.calculateAdjustedTransform(transformBefore, boundsBefore);
+            if (this.workflowGraph) {
+                const adjustedTransform = this.calculateAdjustedTransform(transformBefore, boundsBefore);
 
-            // TODO: Once we migrate to Composition API we can probably handle this within the workflowBoundingBox
-            // and d3Zoom composables
-            this.workflowGraph.setTransform(adjustedTransform);
+                // TODO: Once we migrate to Composition API we can probably handle this within the workflowBoundingBox
+                // and d3Zoom composables
+                this.workflowGraph.setTransform(adjustedTransform);
 
-            // TODO: Verify if setting scale is still needed after setting full transform
-            //       I still needed to set scale separately otherwise it would reset to 1
-            this.stateStore.scale = adjustedTransform.k;
+                // TODO: Verify if setting scale is still needed after setting full transform
+                //       I still needed to set scale separately otherwise it would reset to 1
+                this.stateStore.scale = adjustedTransform.k;
+            }
         },
         onLicense(license) {
             if (this.license != license) {

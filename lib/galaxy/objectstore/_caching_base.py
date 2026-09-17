@@ -1,11 +1,13 @@
 import logging
 import os
 import shutil
+import tempfile
 from contextlib import contextmanager
 from datetime import datetime
 from typing import (
     Any,
     Dict,
+    Iterator,
     Optional,
 )
 
@@ -121,8 +123,6 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         file_ok = self._download(rel_path)
         if file_ok:
             fix_permissions(self.config, self._get_cache_path(rel_path_dir))
-        else:
-            unlink(self._get_cache_path(rel_path), ignore_errors=True)
         return file_ok
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
@@ -397,26 +397,26 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         raise NotImplementedError()
 
     @contextmanager
-    def _atomic_download(self, cache_path):
-        """Download to a temp file then atomically rename to prevent serving partial files.
-
-        Usage::
-
-            with self._atomic_download(local_destination) as tmp_path:
-                do_download(tmp_path)
-        """
-        tmp_path = cache_path + ".tmp"
+    def _atomic_download(self, cache_path: str, expected_size: Optional[int] = None) -> Iterator[str]:
+        """Yield a unique temporary path and publish it atomically after optional size validation."""
+        fd, tmp_path = tempfile.mkstemp(
+            dir=os.path.dirname(cache_path),
+            prefix=f".{os.path.basename(cache_path)}.",
+            suffix=".tmp",
+        )
+        os.close(fd)
+        os.unlink(tmp_path)
         try:
             yield tmp_path
-            os.rename(tmp_path, cache_path)
-        except BaseException:
-            # Catch BaseException (not just Exception) so that KeyboardInterrupt
-            # and SystemExit also trigger cleanup — we re-raise immediately, so
-            # propagation is not blocked. Without this, interrupted downloads
-            # leave .tmp files that poison the cache on next startup.
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
-            raise
+            downloaded_size = os.path.getsize(tmp_path)
+            if expected_size is not None and expected_size >= 0 and downloaded_size != expected_size:
+                raise OSError(
+                    f"downloaded object size does not match remote size for {cache_path}: "
+                    f"expected {expected_size}, got {downloaded_size}"
+                )
+            os.replace(tmp_path, cache_path)
+        finally:
+            unlink(tmp_path, ignore_errors=True)
 
     def _download(self, rel_path: str) -> bool:
         raise NotImplementedError()

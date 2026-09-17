@@ -1,3 +1,4 @@
+import logging
 from collections.abc import (
     Callable,
     Iterable,
@@ -18,6 +19,8 @@ from galaxy.model import (
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
 
+log = logging.getLogger(__name__)
+
 
 def get_npns_roles(session):
     """
@@ -32,6 +35,15 @@ def get_npns_roles(session):
 
 
 def get_private_user_role(user, session):
+    """Return the user's private role, or None.
+
+    A user is supposed to have exactly one private role. Databases in the wild
+    contain users with more than one, which used to make every code path that
+    resolves a private role (including login) raise MultipleResultsFound. We
+    always pick the oldest role instead, so that all callers agree on which
+    role is *the* private role, and so that the role picked is the one existing
+    dataset permissions are most likely to reference.
+    """
     stmt = (
         select(Role)
         .where(
@@ -42,8 +54,18 @@ def get_private_user_role(user, session):
             )
         )
         .distinct()
+        .order_by(Role.id)
     )
-    return session.execute(stmt).scalar_one_or_none()
+    roles = session.scalars(stmt).all()
+    if len(roles) > 1:
+        log.error(
+            "User %s has %d private roles (%s); using role %s. Duplicate private roles should be removed by an administrator.",
+            user.id,
+            len(roles),
+            [role.id for role in roles],
+            roles[0].id,
+        )
+    return roles[0] if roles else None
 
 
 def get_roles_by_ids(session: galaxy_scoped_session, role_ids):

@@ -42,9 +42,8 @@ async function loadTools(offset: number, limit: number): Promise<{ items: Tool[]
     return { items, total: props.tools.length };
 }
 
-// Force ScrollList remount when tools change (e.g. after search),
-// ensuring loadTools is called again to await help data for new results.
-const toolsKey = computed(() => `${props.tools.length}-${props.tools[0]?.id}`);
+// Remount ScrollList when its result set changes so it reloads help data.
+const toolsKey = computed(() => JSON.stringify(props.tools.map((tool) => tool.id)));
 </script>
 
 <template>

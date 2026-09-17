@@ -34,22 +34,6 @@ log = logging.getLogger(__name__)
 logging.getLogger("boto").setLevel(logging.INFO)  # Otherwise boto is quite noisy
 
 
-def download_directory(bucket, remote_folder, local_path):
-    objects = bucket.list(prefix=remote_folder)
-    for obj in objects:
-        remote_file_path = obj.key
-        local_file_path = os.path.join(local_path, os.path.relpath(remote_file_path, remote_folder))
-        os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-        tmp_file_path = local_file_path + ".tmp"
-        try:
-            obj.get_contents_to_filename(tmp_file_path)
-            os.rename(tmp_file_path, local_file_path)
-        except Exception:
-            if os.path.exists(tmp_file_path):
-                os.remove(tmp_file_path)
-            raise
-
-
 def parse_config_xml(config_xml):
     try:
         a_xml = config_xml.findall("auth")[0]
@@ -317,11 +301,14 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
             if self.use_axel:
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, local_destination)
                 url = key.generate_url(7200)
-                return self._axel_download(url, local_destination)
+                with self._atomic_download(local_destination, remote_size) as tmp:
+                    if not self._axel_download(url, tmp):
+                        raise OSError(f"Failed to download key '{rel_path}' with axel")
+                return True
             else:
                 log.debug("Pulled key '%s' into cache to %s", rel_path, local_destination)
                 self.transfer_progress = 0  # Reset transfer progress counter
-                with self._atomic_download(local_destination) as tmp:
+                with self._atomic_download(local_destination, remote_size) as tmp:
                     key.get_contents_to_filename(tmp, cb=self._transfer_cb, num_cb=10)
                 return True
         except S3ResponseError:
@@ -406,7 +393,11 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
             return False
 
     def _download_directory_into_cache(self, rel_path, cache_path):
-        download_directory(self._bucket, rel_path, cache_path)
+        for obj in self._bucket.list(prefix=rel_path):
+            local_file_path = os.path.join(cache_path, os.path.relpath(obj.key, rel_path))
+            os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+            with self._atomic_download(local_file_path, obj.size) as tmp:
+                obj.get_contents_to_filename(tmp)
 
     def _get_object_url(self, obj, **kwargs):
         if self._exists(obj, **kwargs):

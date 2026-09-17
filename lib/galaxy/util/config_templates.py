@@ -57,7 +57,10 @@ from galaxy.exceptions import (
     RequestParameterMissingException,
 )
 from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    str_removeprefix,
+)
 
 log = logging.getLogger(__name__)
 
@@ -74,6 +77,36 @@ EnvironmentDict = Dict[str, str]
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", coerce_numbers_to_str=True)
+
+
+def split_ftp_host_path(data: Any) -> Any:
+    """Split a path embedded in an FTP ``host`` field into ``host`` + ``root``.
+
+    If ``root`` is already set, no splitting occurs.  A protocol prefix
+    (e.g. ``ftp://``) is stripped before splitting so that values like
+    ``ftp://ftp.gnu.org/gnu/`` are handled correctly.
+    """
+    if not isinstance(data, dict):
+        return data
+    root = data.get("root")
+    if not isinstance(root, str) or root == "":
+        root = None
+    host = data.get("host")
+    if root is None and isinstance(host, str) and "/" in host:
+        data = dict(data)
+        host = str_removeprefix(str_removeprefix(host, "ftp://"), "ftps://")
+        if "/" in host:
+            host_part, _, path_part = host.partition("/")
+            data["host"] = host_part
+            data["root"] = "/" + path_part
+        else:
+            data["host"] = host
+    if data.get("root") is not None and (not isinstance(data["root"], str) or data["root"] == ""):
+        data = dict(data)
+        data["root"] = None
+    if isinstance(data.get("root"), str) and ".." in data["root"].split("/"):
+        raise ValueError(f"FTP root must not contain '..' path segments: {data['root']!r}")
+    return data
 
 
 class BaseTemplateVariable(StrictModel):

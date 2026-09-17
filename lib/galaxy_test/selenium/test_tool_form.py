@@ -319,6 +319,38 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         ), f"Expected dropdown to render exactly 50 options (default page size), got {len(options)}"
 
     @selenium_test
+    def test_data_options_load_more_appends(self):
+        """Scrolling the dropdown's ``Loading more…`` sentinel into view must
+        fetch the next page and *append* it to the select. Regression test for
+        issue #23135 — the load-more request fired but the fetched options never
+        reached the dropdown because ``FormDisplay`` renders from a clone of
+        ``inputs`` that only re-syncs on array-identity change."""
+        history_id = self.current_history_id()
+        # 60 datasets with a default 50-per-page cap leaves a full second page.
+        self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+        self.home()
+        self.tool_open("cat1")
+        select_field = self.components.tool_form.parameter_data_select(parameter="input1").wait_for_visible()
+        trigger = select_field.find_element(By.CSS_SELECTOR, ".multiselect__select")
+        trigger.click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        assert len(select_field.find_elements(By.CSS_SELECTOR, "[role='option']")) == 50
+
+        # Scroll the load-more sentinel into view to trigger the intersection
+        # observer, then confirm additional options were appended. Re-query and
+        # re-scroll on each retry: the sentinel disappears once the final page
+        # loads, and the option list re-renders when the new page arrives.
+        @retry_assertion_during_transitions
+        def assert_more_options_loaded():
+            sentinels = select_field.find_elements(By.CSS_SELECTOR, ".form-data-load-more-sentinel")
+            if sentinels:
+                self.scroll_into_view(sentinels[0])
+            options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
+            assert len(options) > 50, f"Expected the dropdown to append a second page (>50 options), got {len(options)}"
+
+        assert_more_options_loaded()
+
+    @selenium_test
     def test_data_options_pinned_via_rerun(self):
         """A dataset selected as a tool input but living deep in history (past
         the first page window) must still appear in the rerun form's dropdown

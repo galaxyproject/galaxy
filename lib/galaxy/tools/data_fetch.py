@@ -22,6 +22,7 @@ from galaxy.datatypes.upload_util import (
 from galaxy.files.models import (
     FilesSourceOptions,
     PartialFilesSourceProperties,
+    RealizedSourceMetadata,
 )
 from galaxy.files.uris import (
     ensure_file_sources,
@@ -30,7 +31,9 @@ from galaxy.files.uris import (
 )
 from galaxy.util import (
     in_directory,
+    safe_contains,
     safe_makedirs,
+    safe_relpath,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import CompressedFile
@@ -377,11 +380,21 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                 extra_files_path = f"{path}_extra"
                 staged_extra_files = extra_files_path
                 os.mkdir(extra_files_path)
+                # Names come from the request and may be nested (``a/b``), but must
+                # never resolve outside of the extra files directory.
+                real_extra_files_path = os.path.realpath(extra_files_path)
+
+                def check_extra_file_name(name):
+                    if not name or not safe_relpath(name):
+                        raise UploadProblemException(
+                            f"Invalid extra file name '{name}'; must be a relative path inside the dataset's extra files directory"
+                        )
+                    return name
 
                 def walk_extra_files(items, prefix=""):
                     for item in items:
                         if "elements" in item:
-                            name = item.get("name")
+                            name = check_extra_file_name(item.get("name"))
                             if not prefix:
                                 item_prefix = name
                             else:
@@ -389,12 +402,17 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                             walk_extra_files(item.get("elements"), prefix=item_prefix)
                         else:
                             src_name, src_path, _ = _has_src_to_path(upload_config, item)
+                            check_extra_file_name(src_name)
                             if prefix:
                                 rel_path = os.path.join(prefix, src_name)
                             else:
                                 rel_path = src_name
 
-                            file_output_path = os.path.join(extra_files_path, rel_path)
+                            file_output_path = os.path.join(real_extra_files_path, rel_path)
+                            if not safe_contains(real_extra_files_path, file_output_path):
+                                raise UploadProblemException(
+                                    f"Invalid extra file name '{rel_path}'; must be a relative path inside the dataset's extra files directory"
+                                )
                             parent_dir = os.path.dirname(file_output_path)
                             if not os.path.exists(parent_dir):
                                 safe_makedirs(parent_dir)
@@ -517,7 +535,9 @@ def _directory_to_items(directory):
 
 def _has_src_to_name(item) -> Optional[str]:
     # Logic should broadly match logic of _has_src_to_path but not resolve the item
-    # into a path.
+    # into a path. Deliberately does not consult file source metadata the way
+    # _has_src_to_path does - a DRS name would require the very fetch deferral avoids,
+    # so deferred DRS datasets keep the URI basename.
     name = item.get("name")
     src = item.get("src")
     if src == "url":
@@ -564,12 +584,16 @@ def _has_src_to_path(
             extra_props = PartialFilesSourceProperties(**{"http_headers": headers})
             file_source_options = FilesSourceOptions(extra_props=extra_props)
 
+        # Populated by file sources that can report a better name than the URI offers -
+        # a DRS URI's last path segment is typically an opaque identifier.
+        source_metadata: RealizedSourceMetadata = {}
         try:
             path = stream_url_to_file(
                 url,
                 file_sources=upload_config.file_sources,
                 dir=upload_config.working_directory,
                 file_source_opts=file_source_options,
+                metadata_out=source_metadata,
             )
         except Exception as e:
             raise Exception(f"Failed to fetch url {url}. {str(e)}")
@@ -582,7 +606,7 @@ def _has_src_to_path(
                 if hash_value:
                     _handle_hash_validation(hash_function, hash_value, path)
         if name is None:
-            name = url.split("/")[-1]
+            name = source_metadata.get("name") or url.split("/")[-1]
     elif src == "pasted":
         path = stream_to_file(StringIO(item["paste_content"]), dir=upload_config.working_directory)
         if name is None:

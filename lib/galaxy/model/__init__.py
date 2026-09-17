@@ -166,6 +166,7 @@ from galaxy.model.item_attrs import (
     UsesAnnotations,
 )
 from galaxy.model.orm.util import add_object_to_object_session
+from galaxy.model.tag_filter import build_tag_filter
 from galaxy.objectstore import USER_OBJECTS_SCHEME
 from galaxy.objectstore.templates import (
     ObjectStoreConfiguration,
@@ -1301,6 +1302,20 @@ ON CONFLICT
 
     def attempt_create_private_role(self):
         session = required_object_session(self)
+        if self.id is not None:
+            # Two requests logging in the same user concurrently would each find no
+            # private role and each insert one; a user with more than one private role
+            # is in an inconsistent state that no code path can resolve. Take a row lock
+            # on the user so the loser of the race re-checks after the winner commits.
+            session.execute(select(User.id).where(User.id == self.id).with_for_update())
+            stmt = (
+                select(Role.id)
+                .join(UserRoleAssociation, Role.id == UserRoleAssociation.role_id)
+                .where(and_(UserRoleAssociation.user_id == self.id, Role.type == Role.types.PRIVATE))
+            )
+            if session.scalars(stmt).first() is not None:
+                session.commit()  # release the lock
+                return
         role = Role(type=Role.types.PRIVATE)
         assoc = UserRoleAssociation(self, role)
         session.add(assoc)
@@ -4086,12 +4101,13 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
         *,
         extensions: Optional[set[str]] = None,
         valid_states: Optional[tuple[str, ...]] = None,
+        tag: Optional[str] = None,
         search: Optional[str] = None,
         offset: int = 0,
         limit: int = 50,
     ) -> tuple[list["HistoryDatasetAssociation"], int]:
-        """Active, visible HDAs filtered by extension, dataset state, and an
-        optional ``search`` term, paginated.
+        """Active, visible HDAs filtered by extension, dataset state, tag,
+        and an optional ``search`` term, paginated.
 
         Returns ``(rows, total)`` where ``total`` is the count under the same WHERE
         clause. Used by data-tool-parameter ``to_dict`` to avoid loading the entire
@@ -4107,6 +4123,10 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
             filters.append(HistoryDatasetAssociation.extension.in_(extensions))
         if valid_states is not None:
             filters.append(HistoryDatasetAssociation.dataset.has(Dataset.state.in_(valid_states)))
+        if tag:
+            filters.append(
+                build_tag_filter(HistoryDatasetAssociation, HistoryDatasetAssociationTagAssociation, "eq", tag)
+            )
         if search:
             name_match = HistoryDatasetAssociation.name.ilike(f"%{search}%")
             if search.isdigit():
@@ -4191,17 +4211,18 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
         self,
         *,
         visible_only: bool = True,
+        tag: Optional[str] = None,
         search: Optional[str] = None,
         offset: int = 0,
         limit: int = 50,
     ) -> tuple[list["HistoryDatasetCollectionAssociation"], int]:
-        """Active HDCAs paginated. Pass ``visible_only=False`` to include
-        hidden collections (matches the legacy ``active_dataset_collections``
-        semantics used by some tool-form paths). ``search`` matches
-        case-insensitively against the collection name and (when numeric)
-        against the hid. Extension filtering for collections is exposed via
-        the history-contents filter parser (see
-        :py:meth:`_hdca_extensions_only_in_clause`).
+        """Active HDCAs filtered by tag and an optional ``search`` term,
+        paginated. Pass ``visible_only=False`` to include hidden collections
+        (matches the legacy ``active_dataset_collections`` semantics used by
+        some tool-form paths). ``search`` matches case-insensitively against
+        the collection name and (when numeric) against the hid. Extension
+        filtering for collections is exposed via the history-contents filter
+        parser (see :py:meth:`_hdca_extensions_only_in_clause`).
         """
         filters = [
             HistoryDatasetCollectionAssociation.history_id == self.id,
@@ -4209,6 +4230,10 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
         ]
         if visible_only:
             filters.append(HistoryDatasetCollectionAssociation.visible.is_(True))
+        if tag:
+            filters.append(
+                build_tag_filter(HistoryDatasetCollectionAssociation, HistoryDatasetCollectionTagAssociation, "eq", tag)
+            )
         if search:
             name_match = HistoryDatasetCollectionAssociation.name.ilike(f"%{search}%")
             if search.isdigit():
@@ -9706,7 +9731,7 @@ class WorkflowComment(Base, RepresentById):
             "position": self.position,
             "size": self.size,
             "type": self.type,
-            "color": self.color,
+            "color": self.color if self.color is not None else "none",
             "data": self.data,
         }
 
@@ -9729,6 +9754,8 @@ class WorkflowComment(Base, RepresentById):
         comment.position = dict.get("position", None)
         comment.size = dict.get("size", None)
         comment.color = dict.get("color", "none")
+        if comment.color is None:
+            comment.color = "none"
         comment.data = dict.get("data", None)
         return comment
 

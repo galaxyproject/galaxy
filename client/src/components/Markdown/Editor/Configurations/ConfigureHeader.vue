@@ -5,24 +5,39 @@
             <div class="small mb-2">Fill in the fields below to map required inputs to this cell.</div>
         </div>
         <div class="d-flex gap-1">
-            <CellButton
+            <GButton
                 v-if="hasChanged !== undefined"
-                title="Apply Changes"
+                transparent
+                color="blue"
+                icon-only
+                tooltip
                 tooltip-placement="bottom"
-                :icon="faCheck"
-                @click="$emit('ok')" />
-            <CellButton title="Cancel" tooltip-placement="bottom" :icon="faTimes" @click="onCancel" />
+                title="Apply Changes"
+                @click="$emit('ok')">
+                <FontAwesomeIcon :icon="faCheck" fixed-width />
+            </GButton>
+            <GButton
+                transparent
+                color="blue"
+                icon-only
+                tooltip
+                tooltip-placement="bottom"
+                title="Cancel"
+                @click="onCancel">
+                <FontAwesomeIcon :icon="faTimes" fixed-width />
+            </GButton>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
-import CellButton from "@/components/Markdown/Editor/CellButton.vue";
 
 const props = withDefaults(
     defineProps<{

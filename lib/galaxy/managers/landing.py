@@ -103,8 +103,7 @@ class LandingRequestManager:
         ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
         tool = get_tool_from_toolbox(self.app.toolbox, ref, user=None)
         landing_request_state = LandingRequestToolState(request_state or {})
-        # Okay this is a hack until tool request API commit is merged, tools don't yet have a parameter
-        # schema - so we can't do this properly.
+        # The upload tools have no typed parameter schema; everything else decodes through it.
         if tool.parameters is not None:
             parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
             internal_landing_request_state = landing_decode(

@@ -371,6 +371,8 @@ function onPointerUp(e: PointerEvent) {
     const unclickable = path.every((target) => !isClickable(target as Element));
 
     if (!unclickable) {
+        // clicking a control inside the node ends any double click in progress
+        doubleClickTime = 0;
         return;
     }
 

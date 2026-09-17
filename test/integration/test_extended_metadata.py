@@ -295,6 +295,42 @@ class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
         purge_while_job_running(self.dataset_populator, extra_sleep=10)
 
 
+class TestExtendedMetadataSecurityIntegration(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+    framework_tool_and_types = True
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["metadata_strategy"] = "extended"
+        config["object_store_store_by"] = "uuid"
+        config["retry_metadata_internally"] = False
+
+    def test_tool_provided_metadata_cannot_collect_outside_working_directory(self):
+        with self.dataset_populator.test_history() as history_id:
+            response = self.dataset_populator.run_tool(
+                "tool_provided_metadata_security",
+                inputs={},
+                history_id=history_id,
+            )
+            job_id = response["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(job_id, assert_ok=False)
+
+            job_details_response = self.dataset_populator.get_job_details(job_id, full=True)
+            job_details_response.raise_for_status()
+            job_details = job_details_response.json()
+            assert job_details["state"] == "error"
+            assert "output_collection_security" in {
+                message["type"] for message in (job_details.get("job_messages") or [])
+            }
+
+            history_contents = self.dataset_populator.get_history_contents(history_id)
+            assert "outside working directory sentinel" not in {content["name"] for content in history_contents}
+
+
 class TestExtendedMetadataDeferredIntegration(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
 

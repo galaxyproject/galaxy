@@ -227,7 +227,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         self.logical_path = logical_dict.get("path") or f"/{self.zone}/home/{self.username}"
 
         cache_dict = config_dict.get("cache") or {}
-        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_path
+        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         self.cache_updated_data = cache_dict.get("cache_updated_data", True)
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}

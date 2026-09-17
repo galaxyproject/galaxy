@@ -135,6 +135,7 @@ export async function secureHistoryOnServer(history: AnyHistory) {
         securedHistory: result.data,
         message: response.data.message as string,
         sharingStatusChanged: response.data.sharing_status_changed as boolean,
+        skippedDatasets: response.data.skipped_datasets as number,
     };
 }
 

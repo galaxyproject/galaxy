@@ -27,7 +27,7 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        sorted_histories = self.get_published_history_names_from_server(sort_by="name")
+        sorted_histories = self.get_published_history_names_from_server(order="name-asc")
         self.assert_histories_present(sorted_histories, sort_by_matters=True)
 
     @selenium_only("Not yet migrated to support Playwright backend")
@@ -39,7 +39,7 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.wait_for_and_click_selector('[data-title="Sort by Update time ascending"]')
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        expected_history_names = self.get_published_history_names_from_server(sort_by="update_time")
+        expected_history_names = self.get_published_history_names_from_server(order="update_time-asc")
         self.assert_histories_present(expected_history_names, sort_by_matters=True)
 
     @selenium_only("Not yet migrated to support Playwright backend")
@@ -107,14 +107,12 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
             else:
                 assert history_name == expected_histories[index]
 
-    def get_published_history_names_from_server(self, sort_by=None):
-        published_histories = self.dataset_populator._get("histories/published").json()
-        if sort_by:
-            published_histories = sorted(published_histories, key=lambda x: x[sort_by])
-        all_published_history_names = []
-        for his in published_histories:
-            all_published_history_names.append(his["name"])
-        return all_published_history_names
+    def get_published_history_names_from_server(self, order=None):
+        # The database collation decides name ordering, so re-sorting the response here
+        # could only ever agree with one backend. Let the server order it, like the grid.
+        params = {"order": order} if order else None
+        published_histories = self.dataset_populator._get("histories/published", params).json()
+        return [history["name"] for history in published_histories]
 
     def get_present_histories(self):
         self.sleep_for(self.wait_types.UX_RENDER)

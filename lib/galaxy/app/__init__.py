@@ -158,7 +158,10 @@ from galaxy.structured_app import (
     StructuredApp,
 )
 from galaxy.tool_shed.cache import ToolShedRepositoryCache
-from galaxy.tool_shed.galaxy_install.client import InstallationTarget
+from galaxy.tool_shed.galaxy_install.client import (
+    INSTALLATION_RELOAD_TIMEOUT,
+    InstallationTarget,
+)
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import (
     InstalledRepositoryManager,
 )
@@ -363,18 +366,6 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             self._configure_genome_builds()
         assert self._genome_builds is not None
         return self._genome_builds
-
-    def wait_for_toolbox_reload(self, old_toolbox):
-        timer = ExecutionTimer()
-        log.debug("Waiting for toolbox reload")
-        # Wait till toolbox reload has been triggered (or more than 60 seconds have passed)
-        while timer.elapsed < 60:
-            if self.toolbox.has_reloaded(old_toolbox):
-                log.debug("Finished waiting for toolbox reload %s", timer)
-                break
-            time.sleep(0.1)
-        else:
-            log.warning("Waiting for toolbox reload timed out after 60 seconds")
 
     def _configure_tool_config_files(self):
         if self.config.shed_tool_config_file not in self.config.tool_configs:
@@ -630,6 +621,17 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     """Extends the MinimalGalaxyApplication with most managers that are not tied to a web or job handling context."""
 
     model: GalaxyModelMapping
+
+    def wait_for_toolbox_reload(self, old_toolbox):
+        timer = ExecutionTimer()
+        log.debug("Waiting for toolbox reload")
+        while timer.elapsed < INSTALLATION_RELOAD_TIMEOUT:
+            if self.toolbox.has_reloaded(old_toolbox):
+                log.debug("Finished waiting for toolbox reload %s", timer)
+                break
+            time.sleep(0.1)
+        else:
+            log.warning("Waiting for toolbox reload timed out after %s seconds", INSTALLATION_RELOAD_TIMEOUT)
 
     def __init__(
         self,
