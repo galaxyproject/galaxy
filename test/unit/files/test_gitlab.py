@@ -761,6 +761,31 @@ def test_a_base_url_with_a_protocol_is_accepted(fake_fs):
     assert len(fake_fs.list_page_calls) == 3
 
 
+def test_a_root_of_slashes_and_blanks_is_still_the_root(fake_fs):
+    """The recursive-root refusal read only the slashes, so " / " walked the whole instance.
+
+    fsspec strips whitespace and arcfs resolves a path of blanks to the root project listing,
+    so the path reached fs.walk on the root and descended into every visible project.
+    """
+    for path in ("/ /", "/\t/", "  /  ", "//", " "):
+        source = _gitlab_source(_source_config())
+        with pytest.raises(RequestParameterInvalidException, match="recursively is not supported"):
+            source.list(path, recursive=True, limit=5, offset=0, user_context=user_context_fixture())
+        assert fake_fs.walk_calls == [], f"{path!r} must not reach the backend"
+
+
+def test_an_offset_without_a_limit_reads_the_window_it_asked_for(fake_fs):
+    """limit and offset are independent query parameters, so offset can arrive alone.
+
+    The window was read from zero and sliced afterwards, so an offset past what one window
+    holds came back empty while the total still reported the real size, and the same offset
+    with a limit beside it was served correctly.
+    """
+    source = _gitlab_source(_source_config())
+    source.list("/", limit=None, offset=900, user_context=user_context_fixture())
+    assert fake_fs.list_page_calls[-1]["offset"] == 900, "the backend must be asked for the window"
+
+
 def test_a_private_address_is_refused_however_it_is_written(fake_fs):
     """Two spellings reached the network with the user's token attached.
 
