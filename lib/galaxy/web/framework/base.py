@@ -35,6 +35,7 @@ from galaxy.util import smart_str
 from galaxy.util.resources import resource_string
 
 if TYPE_CHECKING:
+    from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
@@ -110,7 +111,7 @@ class WebApplication:
         self.mapper.minimization = True
         self.transaction_factory = DefaultWebTransaction
         # Set if trace logging is enabled
-        self.trace_logger = None
+        self.trace_logger: FluentTraceLogger | None = None
         self.session_factories = []
 
     def add_ui_controller(self, controller_name, controller):
