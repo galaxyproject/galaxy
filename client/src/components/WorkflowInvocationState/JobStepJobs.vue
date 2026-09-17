@@ -156,7 +156,7 @@ watch(
             </template>
 
             <template v-slot:cell(state)="data">
-                <JobState :job="data.item" />
+                <JobState :job-id="data.item.id" />
             </template>
 
             <template v-slot:cell(duration)="data">
