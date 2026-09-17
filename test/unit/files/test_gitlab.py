@@ -701,7 +701,7 @@ def test_a_source_pointed_at_a_private_address_is_refused(fake_fs):
     """
     for base_url in ("http://127.0.0.1:8080", "http://169.254.169.254", "http://10.0.0.5"):
         source = _gitlab_source(_source_config(base_url=base_url))
-        with pytest.raises(ConfigDoesNotAllowException):
+        with pytest.raises(ConfigDoesNotAllowException, match="fetch_url_allowlist"):
             source.list("/", limit=5, offset=0, user_context=user_context_fixture())
         assert fake_fs.list_page_calls == [], "nothing may reach the backend"
 
@@ -839,6 +839,22 @@ def test_a_public_address_is_allowed_however_it_is_written(fake_fs):
         source = _gitlab_source(_source_config(base_url=base_url))
         source.list("/", limit=5, offset=0, user_context=user_context_fixture())
     assert len(fake_fs.list_page_calls) == 3
+
+
+def test_a_private_host_name_is_refused_with_something_actionable(fake_fs):
+    """A self-hosted GitLab on a private network is an ordinary thing to configure.
+
+    The shared check says only "Access to this address in not permitted by server
+    configuration", naming neither the address nor the file source, so an admin has nothing
+    to go on. Only the address-literal path had a message of our own.
+    """
+    source = _gitlab_source(_source_config(base_url="http://localhost:8929"))
+    with pytest.raises(ConfigDoesNotAllowException) as caught:
+        source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+
+    message = str(caught.value)
+    assert "localhost:8929" in message, "it has to name the address"
+    assert "fetch_url_allowlist" in message, "and the setting that changes it"
 
 
 def test_an_unresolvable_host_is_left_to_fail_as_a_connection(fake_fs):
