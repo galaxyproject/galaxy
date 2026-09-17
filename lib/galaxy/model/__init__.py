@@ -10515,12 +10515,8 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
 
         sub_invocation = subworkflow_assoc.subworkflow_invocation
 
-        # Leverage subworkflow's completion state if available
-        if sub_invocation.state == InvocationState.COMPLETED.value:
-            return True
-
-        # Otherwise check the subworkflow
-        return sub_invocation.is_complete
+        # The child must have its completion recorded before the parent can complete.
+        return sub_invocation.state == InvocationState.COMPLETED.value
 
     @property
     def preferred_object_stores(self) -> WorkflowInvocationStepObjectStores:
