@@ -1233,6 +1233,7 @@
     <datatype extension="rmsx.json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="true" description="RMSX Molstar viewer manifest containing per-slice structures and residue-level RMSX values.">
       <visualization plugin="rmsxflipbook" />
     </datatype>
+    <datatype extension="tfevents" type="galaxy.datatypes.binary:TensorBoardEvents" mimetype="application/octet-stream" display_in_upload="true" description="TensorBoard event log containing TFRecord-encoded protocol buffer events" description_url="https://www.tensorflow.org/tensorboard"/>
   </registration>
 
   <sniffers>
