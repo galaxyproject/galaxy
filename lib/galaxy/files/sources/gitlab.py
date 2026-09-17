@@ -120,17 +120,22 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         # exception carrying nothing but the URL it was handed. That surfaces to whoever filled in
         # the form as "Reason: gitlab.com/api/v4/projects", which names neither the problem nor the
         # field. Leaving out the protocol is the obvious thing to do, so it is worth saying so.
-        if urlparse(config.base_url).scheme not in ("http", "https"):
+        # Stripped because a URL pasted from a browser or a wiki often carries whitespace, and
+        # it survives into the hostname, where it becomes a connection failure naming a host
+        # that looks exactly right.
+        base_url = config.base_url.strip()
+        parts = urlparse(base_url)
+        if parts.scheme not in ("http", "https") or not parts.netloc:
             raise RequestParameterInvalidException(
-                f"'{config.base_url}' is not a usable address for {self.label}. Include the "
-                "protocol, as in 'https://gitlab.com'."
+                f"'{config.base_url}' is not a usable address for {self.label}. It needs a "
+                "protocol and a host, as in 'https://gitlab.com'."
             )
         # The template exposes base_url as an ordinary variable, so a user creating their own
         # instance chooses which host Galaxy talks to and sends their token to. Without this a
         # personal file source pointed at a link-local or loopback address turns the server into
         # a probe for its own network, with the error ladder reporting what it found.
         try:
-            validate_non_local(config.base_url, self._file_sources_config.fetch_url_allowlist or [])
+            validate_non_local(base_url, self._file_sources_config.fetch_url_allowlist or [])
         except RequestParameterInvalidException:
             # The host does not resolve. Galaxy cannot reach it either, so there is nothing here
             # to protect against, and a connection error says more than "could not verify" does.
@@ -139,7 +144,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         return cast(
             "GitLabARCFileSystem",
             filesystem_class(
-                base_url=config.base_url,
+                base_url=base_url,
                 token=config.token,
                 asynchronous=False,
                 # Without this, fsspec caches one instance per (base_url, token) for the whole
@@ -291,6 +296,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         total, and makes arcfs fetch and keep the whole project catalogue in one call, so it is only
         used for recursion inside a project.
         """
+        self._require_a_project(path)
         if recursive:
             if self._is_source_root(path):
                 # fsspec would rewrite "/" to arcfs' root marker, which arcfs resolves as a project
@@ -335,6 +341,33 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     #: Appended to the message for a file too large to commit. An ARC has somewhere else to put
     #: it; a plain project does not, so only the GitLab source has something to suggest.
     _large_file_remedy = " An ARC file source, which uploads through Git LFS instead, can carry it."
+
+    def _require_a_project(self, path: str) -> None:
+        """Refuse a listing whose path carries the marker but names no project.
+
+        ``:-:`` on its own, or anything with an empty left side, is a path a user can produce by
+        editing the address bar or by pasting half of one. The backend does not catch it: it asks
+        GitLab for the project named "", which is the endpoint that lists *all* projects, and then
+        indexes the list as if it were one project's payload. That surfaces as
+        ``list indices must be integers or slices, not str``, a Python error about Galaxy's own
+        internals standing where an explanation of the user's path should be.
+
+        Listing a project root is legitimate, so this only checks the project side, unlike
+        ``_require_a_file_inside``.
+
+        Args:
+            path: The Galaxy-side path the caller named.
+
+        Raises:
+            RequestParameterInvalidException: If the marker is present with no project before it.
+        """
+        project, marker, _ = path.partition(ROOT_MARKER)
+        if marker and not self._names_something(project):
+            raise RequestParameterInvalidException(
+                f"'{path}' does not name {self._article} {self.entity_name}. A path is "
+                f"'group/project{ROOT_MARKER}' with an optional folder after it. Use the file "
+                "browser rather than editing the path by hand."
+            )
 
     def _require_a_file_inside(self, path: str, what: str) -> None:
         """Refuse a path that does not name a file inside a project.
