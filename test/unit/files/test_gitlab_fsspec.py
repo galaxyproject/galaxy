@@ -67,16 +67,21 @@ def test_a_file_without_the_execute_bit_does_not_gain_one():
         assert "execute_filemode" not in commit_actions("assays/x.txt", CONTENT, existing)[-1]
 
 
-def test_the_size_limit_leaves_room_for_base64():
-    """The ceiling is GitLab's documented request limit, not a number chosen here.
+def test_the_size_limit_is_bounded_by_the_worker_not_by_gitlab():
+    """What a commit may carry is limited by this process, not by what GitLab would accept.
 
-    Asserting the expression back would pass for any derivation, so what is pinned is the
-    property the derivation exists for: the encoded form of a file at the limit still fits in a
-    request, because base64 spends four bytes for every three.
+    The content is read, base64-encoded and then serialised into the request body, so several
+    copies are resident at once in a worker shared with every other file source. Sizing the
+    ceiling to GitLab's own request limit put that over a gigabyte for a single export. It is
+    also kept under the 20 MB above which GitLab rate limits commits to three every thirty
+    seconds, which is the point where a commit stops being a sensible way to move a file.
     """
-    assert GITLAB_MAX_COMMIT_REQUEST_BYTES == 314_572_800
+    assert GITLAB_MAX_COMMIT_REQUEST_BYTES == 314_572_800, "GitLab's documented request limit"
     encoded = 4 * ((MAX_COMMIT_BYTES + 2) // 3)
-    assert encoded <= GITLAB_MAX_COMMIT_REQUEST_BYTES
+    assert encoded <= GITLAB_MAX_COMMIT_REQUEST_BYTES, "the encoded form must still fit a request"
+    assert MAX_COMMIT_BYTES <= 20 * 1024 * 1024, "above this GitLab rate limits the commit"
+    # Several copies of the file are live at the peak, so the ceiling has to leave a worker room.
+    assert MAX_COMMIT_BYTES * 5 < 200 * 1024 * 1024, "one export must not be able to exhaust a worker"
 
 
 def test_a_file_over_the_limit_is_refused_before_it_is_sent():

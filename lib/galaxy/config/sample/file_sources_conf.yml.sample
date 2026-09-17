@@ -332,7 +332,9 @@
 # GitLab file source. Requires the optional 'arcfs-fsspec' package. Public projects can be browsed
 # without a token; private ones need a personal access token. Browsing needs no more than the
 # "read_api" scope, or read access to projects and repositories on a fine-grained token. Exporting
-# needs "api", or permission to push code and create commits, and commits the file to the branch.
+# needs "api", or permission to push code and create commits. An export commits to the project's
+# default branch, which GitLab protects by default, so the token's user must be allowed to push
+# there. Exports are limited to 20 MB because the file travels inside the commit request.
 - type: gitlab
   id: gitlab
   label: GitLab
