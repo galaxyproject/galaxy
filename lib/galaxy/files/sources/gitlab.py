@@ -1,14 +1,19 @@
 import functools
+import ipaddress
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import (
     cast,
     Literal,
 )
-from urllib.parse import urlparse
+from urllib.parse import (
+    ParseResult,
+    urlparse,
+)
 
 from galaxy.exceptions import (
     AuthenticationRequired,
+    ConfigDoesNotAllowException,
     MessageException,
     ObjectNotFound,
     RequestParameterInvalidException,
@@ -134,13 +139,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         # instance chooses which host Galaxy talks to and sends their token to. Without this a
         # personal file source pointed at a link-local or loopback address turns the server into
         # a probe for its own network, with the error ladder reporting what it found.
-        try:
-            validate_non_local(base_url, self._file_sources_config.fetch_url_allowlist or [])
-        except RequestParameterInvalidException:
-            # The host does not resolve. Galaxy cannot reach it either, so there is nothing here
-            # to protect against, and a connection error says more than "could not verify" does.
-            # The refusal that matters is ConfigDoesNotAllowException, which is left to propagate.
-            pass
+        self._refuse_a_private_address(base_url, parts)
         return cast(
             "GitLabARCFileSystem",
             filesystem_class(
@@ -154,6 +153,59 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 **cache_options,
             ),
         )
+
+    def _refuse_a_private_address(self, base_url: str, parts: "ParseResult") -> None:
+        """Refuse a base_url that points into the network Galaxy itself sits on.
+
+        The template exposes base_url as an ordinary variable, so a user creating their own
+        instance chooses which host Galaxy talks to and sends their token to. Without this a
+        personal file source pointed at a loopback or link-local address turns the server into a
+        probe for its own network, with the error ladder reporting what it found.
+
+        ``validate_non_local`` is the shared check every such source uses, but it cannot be handed
+        the raw URL here. It tests for a scheme with a case-sensitive ``startswith``, so an
+        uppercase ``HTTP://127.0.0.1`` returns unchecked while the lowercase form is refused; and
+        it resolves an IPv6 literal with its brackets still attached, which fails and is reported
+        as an unresolvable host rather than as a private one. An address written either way would
+        otherwise pass, because yarl normalises both before aiohttp connects.
+
+        So the host is taken from ``urlparse``, which lowercases it and removes the brackets. A
+        literal address needs no DNS and is checked directly against the same allowlist; anything
+        else is a name, and goes to the shared check.
+
+        Args:
+            base_url: The address as configured, stripped, for the error message.
+            parts: That address already parsed.
+
+        Raises:
+            ConfigDoesNotAllowException: If the address is private and not allowlisted.
+        """
+        allowlist = self._file_sources_config.fetch_url_allowlist or []
+        host = parts.hostname or ""
+        try:
+            literal = ipaddress.ip_address(host)
+        except ValueError:
+            literal = None
+
+        if literal is None:
+            try:
+                validate_non_local(f"{parts.scheme}://{host}", allowlist)
+            except RequestParameterInvalidException:
+                # A name that does not resolve. Galaxy cannot reach it either, so there is
+                # nothing here to protect against, and the connection error that follows says
+                # more than "could not verify" does.
+                pass
+            return
+
+        if not literal.is_private:
+            return
+        for allowlisted in allowlist:
+            if isinstance(allowlisted, (ipaddress.IPv4Network, ipaddress.IPv6Network)):
+                if literal in allowlisted:
+                    return
+            elif literal == allowlisted:
+                return
+        raise ConfigDoesNotAllowException(f"'{base_url}' is not an address this server is allowed to reach.")
 
     @contextmanager
     def _filesystem(

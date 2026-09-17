@@ -761,6 +761,37 @@ def test_a_base_url_with_a_protocol_is_accepted(fake_fs):
     assert len(fake_fs.list_page_calls) == 3
 
 
+def test_a_private_address_is_refused_however_it_is_written(fake_fs):
+    """Two spellings reached the network with the user's token attached.
+
+    validate_non_local tests for a scheme with a case-sensitive startswith, so an uppercase
+    scheme returned unchecked; and it resolves an IPv6 literal with its brackets still on,
+    which fails and arrives as "could not verify", which this source used to treat as an
+    unresolvable name and allow. yarl normalises both before aiohttp connects, so each of
+    these did reach the address.
+    """
+    for base_url in (
+        "HTTP://127.0.0.1:8080",
+        "Https://10.0.0.1",
+        "HtTp://169.254.169.254",
+        "http://[::1]:9200",
+        "http://[fd00::1]:80",
+        "http://[::ffff:127.0.0.1]:80",
+    ):
+        source = _gitlab_source(_source_config(base_url=base_url))
+        with pytest.raises(ConfigDoesNotAllowException):
+            source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+        assert fake_fs.list_page_calls == [], f"{base_url} must not reach the backend"
+
+
+def test_a_public_address_is_allowed_however_it_is_written(fake_fs):
+    """The normalisation must not start refusing ordinary addresses."""
+    for base_url in ("https://gitlab.com", "HTTPS://GitLab.com", "https://gitlab.com:443"):
+        source = _gitlab_source(_source_config(base_url=base_url))
+        source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+    assert len(fake_fs.list_page_calls) == 3
+
+
 def test_an_unresolvable_host_is_left_to_fail_as_a_connection(fake_fs):
     """A host that does not resolve is not a way into the network, so it is not refused here.
 
