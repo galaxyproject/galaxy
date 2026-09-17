@@ -193,7 +193,16 @@ def files_count(directory):
 
 
 @integration_util.skip_unless_docker()
-class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
+class BaseSeaweedFSObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
+    """A store backed by a disposable SeaweedFS container.
+
+    Subclasses supply the store configuration; everything else -- container
+    lifecycle, temp directories and the metadata settings the object store
+    tests need -- is shared.
+    """
+
+    object_store_config = OBJECT_STORE_CONFIG
+    object_store_config_filename = "object_store_conf.xml"
     object_store_cache_path: str
 
     @classmethod
@@ -213,14 +222,14 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
         cls.object_store_cache_path = os.path.join(temp_directory, "object_store_cache")
-        config_path = os.path.join(temp_directory, "object_store_conf.xml")
+        config_path = os.path.join(temp_directory, cls.object_store_config_filename)
         config["object_store_store_by"] = "uuid"
         config["metadata_strategy"] = "extended"
         config["outputs_to_working_directory"] = True
         config["retry_metadata_internally"] = False
         with open(config_path, "w") as f:
             f.write(
-                OBJECT_STORE_CONFIG.safe_substitute(
+                cls.object_store_config.safe_substitute(
                     {
                         "temp_directory": temp_directory,
                         "host": OBJECT_STORE_HOST,
@@ -242,60 +251,20 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
         return True
 
 
+# The shared default is the S3-style XML configuration the swift tests use.
+BaseSwiftObjectStoreIntegrationTestCase = BaseSeaweedFSObjectStoreIntegrationTestCase
+
+
 @integration_util.skip_unless_docker()
-class BaseCloudObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
-    """Run the cloudbridge-based cloud object store against SeaweedFS.
+class BaseCloudObjectStoreIntegrationTestCase(BaseSeaweedFSObjectStoreIntegrationTestCase):
+    """The cloudbridge-based cloud store.
 
     The transfer block keeps the multipart threshold at the 5 MiB provider
     minimum so modest test datasets exercise the multipart upload path.
     """
 
-    object_store_cache_path: str
-
-    @classmethod
-    def setUpClass(cls):
-        cls.container_name = f"{cls.__name__}_container"
-        start_seaweedfs(cls.container_name)
-        super().setUpClass()
-
-    @classmethod
-    def tearDownClass(cls):
-        docker_rm(cls.container_name)
-        super().tearDownClass()
-
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        super().handle_galaxy_config_kwds(config)
-        temp_directory = cls._test_driver.mkdtemp()
-        cls.object_stores_parent = temp_directory
-        cls.object_store_cache_path = os.path.join(temp_directory, "object_store_cache")
-        config_path = os.path.join(temp_directory, "object_store_conf.yml")
-        config["object_store_store_by"] = "uuid"
-        config["metadata_strategy"] = "extended"
-        config["outputs_to_working_directory"] = True
-        config["retry_metadata_internally"] = False
-        with open(config_path, "w") as f:
-            f.write(
-                CLOUD_OBJECT_STORE_CONFIG.safe_substitute(
-                    {
-                        "temp_directory": temp_directory,
-                        "host": OBJECT_STORE_HOST,
-                        "port": OBJECT_STORE_PORT,
-                        "access_key": OBJECT_STORE_ACCESS_KEY,
-                        "secret_key": OBJECT_STORE_SECRET_KEY,
-                        "cache_updated_data": cls.updateCacheData(),
-                    }
-                )
-            )
-        config["object_store_config_file"] = config_path
-
-    def setUp(self):
-        super().setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-
-    @classmethod
-    def updateCacheData(cls):
-        return True
+    object_store_config = CLOUD_OBJECT_STORE_CONFIG
+    object_store_config_filename = "object_store_conf.yml"
 
 
 class BaseAzureObjectStoreIntegrationTestCase(

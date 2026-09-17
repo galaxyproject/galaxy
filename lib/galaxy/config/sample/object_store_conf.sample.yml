@@ -184,10 +184,9 @@ backends:
 # tested with multiple non-AWS APIs including minio and GCP. The
 # cloud implementation is based on CloudBridge and supports parallel
 # multipart uploads and downloads with per-direction tuning like
-# boto3; its distinguishing feature is that the same store type also
-# speaks Azure Blob, Google Cloud Storage, and OpenStack Swift
-# natively. For a pure S3 setup boto3 remains the most battle-tested
-# choice; choose cloud for multi-cloud deployments or native Swift.
+# boto3, and the same store type also speaks Azure Blob, Google Cloud
+# Storage, and OpenStack Swift natively. For a pure S3 setup boto3
+# remains the most battle-tested choice.
 
 #
 # Sample AWS S3 Object Store configuration (newest boto3 client)
@@ -424,6 +423,7 @@ provider: aws
 # through Galaxy's cache. See the boto3 example above for the tradeoffs. Defaults to false.
 # enable_direct_download: true
 auth:
+  # Omit both keys to use the environment or the instance role instead.
   access_key: ...
   secret_key: ...
   # Optional: session token for temporary (STS) credentials, and bucket region.
@@ -433,7 +433,7 @@ bucket:
   name: unique_bucket_name
   use_reduced_redundancy: false
 # Optional: S3-compatible endpoints (MinIO, Ceph RGW, ...); the endpoint
-# scheme conveys http/https.
+# scheme conveys http/https. region may be given here or under auth.
 # connection:
 #   endpoint_url: https://s3.example.org/
 #   validate_certs: true

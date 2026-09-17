@@ -7,8 +7,14 @@ from tempfile import (
     mkdtemp,
     mkstemp,
 )
+from types import SimpleNamespace
+from typing import (
+    Any,
+    cast,
+)
 from unittest.mock import (
     call,
+    create_autospec,
     MagicMock,
     patch,
 )
@@ -49,6 +55,22 @@ from galaxy.util import (
     unlink,
 )
 from galaxy.util.unittest_utils import skip_unless_environ
+
+try:
+    # Guarded like lib/galaxy/objectstore/cloud.py so this module still imports
+    # where cloudbridge is not installed.
+    from cloudbridge.base.resources import (
+        BasePageableObjectMixin,
+        ClientPagedResultList,
+    )
+    from cloudbridge.interfaces.resources import (
+        Bucket,
+        BucketObject,
+    )
+    from cloudbridge.interfaces.subservices import BucketObjectSubService
+except ImportError:
+    BasePageableObjectMixin = ClientPagedResultList = None  # type: ignore[assignment,misc]
+    Bucket = BucketObject = BucketObjectSubService = None  # type: ignore[assignment,misc]
 
 
 def test_persist_extra_files_skips_symlink_outside_source_directory(tmp_path):
@@ -1618,14 +1640,6 @@ class _FakePagedObjectContainer:
     """
 
     def __init__(self, keys, page_size=1):
-        from types import SimpleNamespace
-        from typing import (
-            Any,
-            cast,
-        )
-
-        from cloudbridge.base.resources import BasePageableObjectMixin
-
         self._keys = keys
         # Duck-typed stand-in for a cloudbridge provider; only the result-limit
         # config is consulted by ClientPagedResultList.
@@ -1633,8 +1647,6 @@ class _FakePagedObjectContainer:
 
         class _Container(BasePageableObjectMixin):
             def list(self, limit=None, marker=None, prefix=None):
-                from cloudbridge.base.resources import ClientPagedResultList
-
                 return ClientPagedResultList(provider, keys, limit=limit, marker=marker)
 
         self._container = _Container()
@@ -1643,18 +1655,30 @@ class _FakePagedObjectContainer:
         return getattr(self._container, item)
 
 
+def _cloud_object(name=None):
+    """A BucketObject double that rejects calls the real interface would."""
+    obj = create_autospec(BucketObject, instance=True)
+    if name is not None:
+        obj.id = name
+        obj.name = name
+    return obj
+
+
+def _cloud_bucket():
+    bucket = create_autospec(Bucket, instance=True)
+    bucket.objects = create_autospec(BucketObjectSubService, instance=True)
+    return bucket
+
+
 def _fake_remote_key(name):
-    key = MagicMock()
-    key.id = name
-    key.name = name
-    return key
+    return _cloud_object(name)
 
 
 @patch_object_stores_to_skip_initialize
 def test_cloud_store_delete_all_paginates():
     with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
         keys = [_fake_remote_key(f"files/dir/dataset_{i}.dat") for i in range(3)]
-        bucket = MagicMock()
+        bucket = _cloud_bucket()
         bucket.objects = _FakePagedObjectContainer(keys, page_size=1)
         object_store.bucket = bucket
 
@@ -1667,7 +1691,7 @@ def test_cloud_store_delete_all_paginates():
 def test_cloud_store_download_directory_paginates(tmp_path):
     with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
         keys = [_fake_remote_key(f"files/dir/part_{i}.dat") for i in range(3)]
-        bucket = MagicMock()
+        bucket = _cloud_bucket()
         bucket.objects = _FakePagedObjectContainer(keys, page_size=1)
         object_store.bucket = bucket
 
@@ -1685,7 +1709,7 @@ def test_cloud_store_download_directory_paginates(tmp_path):
 @patch_object_stores_to_skip_initialize
 def test_cloud_store_download_passes_transfer_config():
     with TestConfig(CLOUD_TRANSFER_TEST_CONFIG) as (directory, object_store):
-        key = MagicMock()
+        key = _cloud_object()
         object_store._download_to(key, "/tmp/dataset_1.dat")
         assert key.download_to_file.call_count == 1
         assert key.download_to_file.call_args.args == ("/tmp/dataset_1.dat",)
@@ -1695,7 +1719,7 @@ def test_cloud_store_download_passes_transfer_config():
         assert transfer_config.max_concurrency == 2
 
     with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
-        key = MagicMock()
+        key = _cloud_object()
         object_store._download_to(key, "/tmp/dataset_1.dat")
         assert key.download_to_file.call_args.kwargs["config"] is None
 
@@ -1703,10 +1727,8 @@ def test_cloud_store_download_passes_transfer_config():
 @patch_object_stores_to_skip_initialize
 def test_cloud_store_push_file_single_remote_lookup():
     with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
-        # An existing remote object is uploaded in place - no create and
-        # exactly one remote lookup.
-        existing = MagicMock()
-        bucket = MagicMock()
+        existing = _cloud_object()
+        bucket = _cloud_bucket()
         bucket.objects.get.return_value = existing
         object_store.bucket = bucket
         assert object_store._push_file_to_path("files/dataset_1.dat", "/tmp/dataset_1.dat")
@@ -1715,9 +1737,8 @@ def test_cloud_store_push_file_single_remote_lookup():
         assert existing.upload_from_file.call_count == 1
         assert existing.upload_from_file.call_args.args == ("/tmp/dataset_1.dat",)
 
-        # A missing remote object is created first, then uploaded.
-        created = MagicMock()
-        bucket = MagicMock()
+        created = _cloud_object()
+        bucket = _cloud_bucket()
         bucket.objects.get.return_value = None
         bucket.objects.create.return_value = created
         object_store.bucket = bucket
@@ -1731,8 +1752,8 @@ def test_cloud_store_push_file_single_remote_lookup():
 @patch_object_stores_to_skip_initialize
 def test_cloud_store_push_string_single_remote_lookup():
     with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
-        existing = MagicMock()
-        bucket = MagicMock()
+        existing = _cloud_object()
+        bucket = _cloud_bucket()
         bucket.objects.get.return_value = existing
         object_store.bucket = bucket
         assert object_store._push_string_to_path("files/dataset_1.dat", "some content")
@@ -1741,8 +1762,8 @@ def test_cloud_store_push_string_single_remote_lookup():
         assert existing.upload.call_count == 1
         assert existing.upload.call_args.args == ("some content",)
 
-        created = MagicMock()
-        bucket = MagicMock()
+        created = _cloud_object()
+        bucket = _cloud_bucket()
         bucket.objects.get.return_value = None
         bucket.objects.create.return_value = created
         object_store.bucket = bucket
@@ -1885,6 +1906,42 @@ def test_config_parse_cloud_gcp_requires_exactly_one_credential_source():
             pass
 
 
+CLOUD_GOOGLE_XML_DICT_CONFIG = """<object_store type="cloud" provider="google">
+    <auth credentials_dict="not-a-dict" />
+    <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
+    <cache path="database/object_store_cache" size="1000" />
+    <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+    <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>
+"""
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_google_ignores_credentials_dict_from_xml():
+    # An XML attribute is a string, and the provider needs a mapping, so the
+    # option is YAML-only and the store must report the credentials as missing.
+    with pytest.raises(Exception, match="exactly one"):
+        with TestConfig(CLOUD_GOOGLE_XML_DICT_CONFIG):
+            pass
+
+
+CLOUD_OPENSTACK_HALF_APP_CREDENTIAL_CONFIG = """<object_store type="cloud" provider="openstack">
+    <auth auth_url="https://keystone.example.org:5000/v3" application_credential_id="an_app_cred_id" />
+    <bucket name="unique_container_name" use_reduced_redundancy="False" />
+    <cache path="database/object_store_cache" size="1000" />
+    <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+    <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>
+"""
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_openstack_rejects_half_an_application_credential():
+    with pytest.raises(Exception, match="application_credential_secret"):
+        with TestConfig(CLOUD_OPENSTACK_HALF_APP_CREDENTIAL_CONFIG):
+            pass
+
+
 CLOUD_OPENSTACK_TEST_CONFIG = get_example("cloud_openstack_simple.xml")
 CLOUD_OPENSTACK_TEST_CONFIG_YAML = get_example("cloud_openstack_simple.yml")
 
@@ -1970,9 +2027,9 @@ def test_config_parse_cloud_direct_download():
 @patch_object_stores_to_skip_initialize
 def test_cloud_get_direct_download_url_forwards_response_headers():
     with TestConfig(CLOUD_DIRECT_DOWNLOAD_CONFIG_YAML) as (directory, object_store):
-        key = MagicMock()
+        key = _cloud_object()
         key.generate_url.return_value = "https://cloud.example.org/signed"
-        bucket = MagicMock()
+        bucket = _cloud_bucket()
         bucket.objects.get.return_value = key
         object_store.bucket = bucket
         with patch.object(object_store, "_exists", return_value=True):
@@ -1992,8 +2049,8 @@ def test_cloud_get_direct_download_url_forwards_response_headers():
 @patch_object_stores_to_skip_initialize
 def test_cloud_get_direct_download_url_returns_none_when_disabled():
     with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
-        key = MagicMock()
-        bucket = MagicMock()
+        key = _cloud_object()
+        bucket = _cloud_bucket()
         bucket.objects.get.return_value = key
         object_store.bucket = bucket
         with patch.object(object_store, "_exists", return_value=True):
@@ -2005,8 +2062,8 @@ def test_cloud_get_direct_download_url_returns_none_when_disabled():
 @patch_object_stores_to_skip_initialize
 def test_cloud_store_uploads_pass_transfer_config():
     with TestConfig(CLOUD_TRANSFER_TEST_CONFIG) as (directory, object_store):
-        obj = MagicMock()
-        bucket = MagicMock()
+        obj = _cloud_object()
+        bucket = _cloud_bucket()
         bucket.objects.get.return_value = obj
         object_store.bucket = bucket
 
@@ -2026,8 +2083,8 @@ def test_cloud_store_uploads_pass_transfer_config():
 @patch_object_stores_to_skip_initialize
 def test_cloud_store_uploads_pass_no_config_when_unconfigured():
     with TestConfig(CLOUD_AWS_TEST_CONFIG) as (directory, object_store):
-        obj = MagicMock()
-        bucket = MagicMock()
+        obj = _cloud_object()
+        bucket = _cloud_bucket()
         bucket.objects.get.return_value = obj
         object_store.bucket = bucket
 
@@ -2243,7 +2300,6 @@ def verify_caching_object_store_functionality(tmp_path, object_store, check_get_
     reset_cache(object_store.cache_target)
     assert not object_store.exists(to_delete_dataset)
 
-    # Test bigger file to force multi-process.
     big_file_dataset = MockDataset(6)
     size = 1024
     path = tmp_path / "big_file.bytes"
@@ -2300,8 +2356,6 @@ def verify_caching_object_store_functionality(tmp_path, object_store, check_get_
 
 
 def verify_big_file_storage_roundtrip(tmp_path, object_store, size_bytes):
-    # Store a file large enough to cross the configured multipart threshold
-    # and verify it round-trips bit-for-bit through the remote store.
     big_file_dataset = MockDataset(11)
     path = tmp_path / "big_file_roundtrip.bytes"
     content = os.urandom(size_bytes)

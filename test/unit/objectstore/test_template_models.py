@@ -4,12 +4,15 @@ import pytest
 from pydantic import ValidationError
 from yaml import safe_load
 
+from galaxy.objectstore.cloud import ALL_TRANSFER_OPTION_KEYS
 from galaxy.objectstore.templates.examples import get_example
 from galaxy.objectstore.templates.manager import raw_config_to_catalog
 from galaxy.objectstore.templates.models import (
     AwsS3ObjectStoreConfiguration,
     AzureObjectStoreConfiguration,
     CloudObjectStoreConfiguration,
+    CloudTransfer,
+    CloudTransferTemplate,
     DiskObjectStoreConfiguration,
     GenericS3ObjectStoreConfiguration,
     ObjectStoreTemplateCatalog,
@@ -382,19 +385,49 @@ CLOUD_TEMPLATE_WITH = """
 @pytest.mark.parametrize(
     "provider,option",
     [
-        # Short-lived credentials would expire and leave a dead store behind.
         ("aws", "session_token: a_session_token"),
         ("azure", "access_token: an_access_token"),
-        # A path on the Galaxy server is not something a user can supply.
         ("google", "credentials_file: /etc/galaxy/gcp.json"),
     ],
 )
 def test_cloud_template_omits_options_unfit_for_user_defined_stores(provider, option):
-    # These stores are persisted in the database and must keep working
-    # indefinitely, so the template surface stays narrower than the store's own
-    # configuration in object_store_conf.yml.
-    with pytest.raises(ValidationError):
+    field = option.split(":")[0]
+    with pytest.raises(ValidationError, match=field):
         _parse_template_library(CLOUD_TEMPLATE_WITH.format(provider=provider, option=option))
+
+
+CLOUD_TEMPLATE_MISSING_AUTH = """
+- id: cloud_store
+  name: Cloud Store
+  description: A cloud object store.
+  configuration:
+    type: cloud
+    provider: {provider}
+    auth:
+        {auth}
+    bucket:
+        name: a_bucket
+"""
+
+
+@pytest.mark.parametrize(
+    "provider,auth,expected",
+    [
+        ("aws", "region: us-east-1", "access_key"),
+        ("openstack", "region: RegionOne", "auth_url"),
+        ("openstack", "auth_url: https://keystone.example.org:5000/v3", "username"),
+        ("azure", "region: eastus", "subscription_id"),
+        ("google", "region: us-central1", "exactly one"),
+    ],
+)
+def test_cloud_template_rejects_credentials_the_provider_cannot_use(provider, auth, expected):
+    with pytest.raises(ValidationError, match=expected):
+        _parse_template_library(CLOUD_TEMPLATE_MISSING_AUTH.format(provider=provider, auth=auth))
+
+
+def test_cloud_transfer_models_match_the_store_option_keys():
+    assert set(CloudTransfer.model_fields) == set(ALL_TRANSFER_OPTION_KEYS)
+    assert set(CloudTransferTemplate.model_fields) == set(ALL_TRANSFER_OPTION_KEYS)
 
 
 def test_parsing_cloud():

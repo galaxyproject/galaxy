@@ -245,13 +245,12 @@ def test_object_store_templates_default_needs_no_dependencies():
 
 
 def test_optional_requirements_carry_cloudbridge_extras():
-    # The line handed to pip must request the provider's extra.
+    # The version specifier must survive the extras rewrite.
     with _config_context() as cc:
         object_store_config = cc.write_config("objectstore.yml", DISTRIBUTED_WITH_CLOUD_PROVIDERS_CONFIG_YAML)
         galaxy_config = cc.write_config("galaxy.yml", f"galaxy:\n  object_store_config_file: {object_store_config}\n")
         requirements = [r for r in optional(galaxy_config) if r.startswith("cloudbridge")]
-        assert len(requirements) == 1
-        assert requirements[0].startswith("cloudbridge[azure,openstack]")
+        assert requirements == ["cloudbridge[azure,openstack]>=4.4.0"]
 
 
 def test_fs_default():
