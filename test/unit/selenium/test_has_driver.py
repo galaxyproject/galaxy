@@ -1326,3 +1326,24 @@ class TestKeyPresses:
 
         key_log = has_driver_instance.find_element_by_id("key-log")
         assert key_log.text == "Escape"
+
+
+class TestActiveElement:
+    """Tests for the active_element() focus accessor."""
+
+    def test_active_element_after_click(self, has_driver_instance, base_url):
+        """A clicked input becomes the active element."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+
+        has_driver_instance.move_to_and_click(target)
+
+        assert has_driver_instance.active_element().get_attribute("id") == "key-target"
+
+    def test_active_element_follows_tab(self, has_driver_instance, base_url):
+        """Focus moves with TAB, so active_element() tracks keyboard navigation."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+
+        has_driver_instance.press(Key.TAB)
+
+        assert has_driver_instance.active_element().get_attribute("id") == "key-target"

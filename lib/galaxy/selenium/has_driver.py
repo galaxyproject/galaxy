@@ -392,6 +392,9 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         self.action_chains().move_to_element(element).perform()
 
+    def active_element(self) -> WebElement:
+        return self.driver.switch_to.active_element
+
     def press(
         self,
         *keys: Key,
