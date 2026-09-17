@@ -390,10 +390,15 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 return self._paginate(matched, limit, offset), len(matched)
 
             if limit is None:
-                entries, total = self._read_window(fs, fs_path, config, 0, MAX_ITEMS_LIMIT, write_intent)
-                if total > len(entries):
+                # The window has to start where the caller asked. Reading from zero and slicing
+                # afterwards returned nothing at all for any offset past MAX_ITEMS_LIMIT, and a
+                # short page before it, while the total reported the real size - so the same
+                # offset answered differently depending on whether a limit came with it.
+                start = offset or 0
+                entries, total = self._read_window(fs, fs_path, config, start, MAX_ITEMS_LIMIT, write_intent)
+                if total > start + len(entries):
                     self._on_listing_exceeded()
-                return self._paginate(entries, limit, offset), total
+                return entries, total
 
             if limit > MAX_ITEMS_LIMIT:
                 # Nothing bounds the limit a caller may ask for, and arcfs will fetch as many
@@ -606,7 +611,17 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
 
     @staticmethod
     def _is_source_root(path: str) -> bool:
-        return not path.strip("/")
+        """Whether the path names the source itself rather than anything inside it.
+
+        Whitespace is stripped as well as slashes because everything downstream does: fsspec
+        strips it, and arcfs resolves a path of blanks to the root project listing. Reading only
+        the slashes made "/ /" look like an ordinary path, so a recursive listing of it walked
+        every project on the instance instead of being refused.
+
+        Both are stripped in one pass rather than one after the other, because the whitespace can
+        sit between the slashes: ``"/ /".strip().strip("/")`` is still ``" "``.
+        """
+        return not path.strip("/ \t\n\r\v\f")
 
     @staticmethod
     def _filter_by_name(entries: list[AnyRemoteEntry], query: str) -> list[AnyRemoteEntry]:
