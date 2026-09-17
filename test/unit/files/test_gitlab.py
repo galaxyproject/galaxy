@@ -499,7 +499,9 @@ def test_unpaginated_listing_warns_when_it_truncates(huge_fake_fs, caplog):
     source = _gitlab_source()
     with caplog.at_level(logging.WARNING):
         entries, total = source.list("/", user_context=user_context_fixture())
-    assert len(entries) == 1000
+    # The cap is a shared constant; naming it here rather than its value keeps this test honest
+    # when it changes, as it did from 1000 to 500.
+    assert len(entries) == MAX_ITEMS_LIMIT
     assert total == 1500
     assert "exceeded maximum items" in caplog.text
 
