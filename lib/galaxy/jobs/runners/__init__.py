@@ -34,11 +34,7 @@ from galaxy.job_execution.output_collect import (
 )
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.job_destination import JobDestination
-from galaxy.jobs.oidc_user import (
-    OidcUsernameError,
-    parse_config as parse_oidc_username_config,
-    RESOLVED_PARAM as OIDC_USERNAME_PARAM,
-)
+from galaxy.jobs.oidc_user import configure_destination as configure_oidc_username
 from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
@@ -544,16 +540,6 @@ class BaseJobRunner:
     def write_executable_script(self, path: str, contents: str, job_io: DescribesScriptIntegrityChecks) -> None:
         write_script(path, contents, job_io)
 
-    def _configure_docker_username_from_oidc_token_claim(self, job_wrapper: "MinimalJobWrapper") -> None:
-        destination_info = job_wrapper.job_destination.params
-        oidc_username_config = parse_oidc_username_config(destination_info)
-        if oidc_username_config is None:
-            return
-        user = job_wrapper.get_job().user
-        if user is None:
-            raise OidcUsernameError("Failed to get a username for container from OIDC token, job has no user.")
-        destination_info[OIDC_USERNAME_PARAM] = oidc_username_config.username_for(user)
-
     def _find_container(
         self,
         job_wrapper: "MinimalJobWrapper",
@@ -597,7 +583,7 @@ class BaseJobRunner:
             job_directory_type=job_directory_type,
         )
 
-        self._configure_docker_username_from_oidc_token_claim(job_wrapper)
+        configure_oidc_username(job_wrapper)
         destination_info = job_wrapper.job_destination.params
         container = self.app.container_finder.find_container(tool_info, destination_info, job_info)
         if container:

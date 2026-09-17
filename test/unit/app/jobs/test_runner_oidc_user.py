@@ -5,10 +5,10 @@ import pytest
 
 from galaxy.exceptions import ConfigurationError
 from galaxy.jobs.oidc_user import (
+    configure_destination,
     OidcUsernameError,
     validate_destination,
 )
-from galaxy.jobs.runners import BaseJobRunner
 
 TOKEN_SECRET = "unit-test-signing-key-at-least-32-bytes"
 
@@ -30,7 +30,7 @@ def _configure(tokens, providers=None, **destination_params):
     wrapper = SimpleNamespace(
         job_destination=SimpleNamespace(params=params), get_job=lambda: SimpleNamespace(user=user)
     )
-    BaseJobRunner._configure_docker_username_from_oidc_token_claim(None, wrapper)
+    configure_destination(wrapper)
     return params
 
 
@@ -83,7 +83,7 @@ def test_job_without_a_user_fails():
         get_job=lambda: SimpleNamespace(user=None),
     )
     with pytest.raises(OidcUsernameError, match="job has no user"):
-        BaseJobRunner._configure_docker_username_from_oidc_token_claim(None, wrapper)
+        configure_destination(wrapper)
 
 
 @pytest.mark.parametrize(

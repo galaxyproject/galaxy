@@ -12,6 +12,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import (
     Any,
+    Protocol,
     TYPE_CHECKING,
 )
 
@@ -19,6 +20,7 @@ import jwt
 
 from galaxy.authnz.util import provider_name_to_backend
 from galaxy.exceptions import ConfigurationError
+from galaxy.jobs.job_destination import JobDestination
 from galaxy.tool_util.deps import docker_util
 from galaxy.util import (
     asbool,
@@ -26,7 +28,10 @@ from galaxy.util import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.model import User
+    from galaxy.model import (
+        Job,
+        User,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -135,3 +140,24 @@ def validate_destination(destination_id: str | None, destination_params: Mapping
         parse_config(destination_params)
     except ConfigurationError as exc:
         raise ConfigurationError(f"Invalid destination [{destination_id}]: {unicodify(exc)}") from exc
+
+
+class DescribesJobIdentity(Protocol):
+    """The part of a job wrapper this needs, so the resolver can be exercised without one."""
+
+    @property
+    def job_destination(self) -> JobDestination: ...
+
+    def get_job(self) -> "Job": ...
+
+
+def configure_destination(job_wrapper: DescribesJobIdentity) -> None:
+    """Record the identity this job's container should use on its destination parameters."""
+    destination_params = job_wrapper.job_destination.params
+    config = parse_config(destination_params)
+    if config is None:
+        return
+    user = job_wrapper.get_job().user
+    if user is None:
+        raise OidcUsernameError("Failed to get a username for container from OIDC token, job has no user.")
+    destination_params[RESOLVED_PARAM] = config.username_for(user)
