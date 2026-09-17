@@ -1660,7 +1660,7 @@ class H5(Binary):
 class NetCDF4(H5):
     """
     Class describing a netCDF4 file (HDF5-based).
-    
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test_tas.nc')
     >>> NetCDF4().sniff(fname)
@@ -1669,6 +1669,7 @@ class NetCDF4(H5):
     >>> NetCDF4().sniff(fname)
     False
     """
+
     file_ext = "netcdf4"
     edam_format = "format_3650"
 
@@ -1676,7 +1677,7 @@ class NetCDF4(H5):
         if not super().sniff(filename):
             return False
         try:
-            with h5py.File(filename, "r") as f:
+            with h5py.File(filename, "r", locking=False) as f:
                 return "_NCProperties" in f.attrs
         except Exception:
             return False
@@ -1693,7 +1694,7 @@ class NetCDF4(H5):
         try:
             return dataset.peek
         except Exception:
-            return "Binary netCDF4 file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary netCDF4 file ({nice_size(dataset.get_size())})"
 
 
 class Loom(H5):
