@@ -90,6 +90,49 @@ def commit_actions(inside: str, content: str, existing: dict | None) -> list[dic
     return actions
 
 
+async def refuse_a_directory(client, repo_id: int, inside: str, branch: str) -> None:
+    """Refuse a target naming a folder rather than a file inside one.
+
+    Git stores a path as a blob or a tree and a commit may swap one for the other, so a create
+    action against a folder replaces that folder and everything under it in a single commit, on
+    whatever branch the export named. GitLab gives no warning: the files endpoint answers 404 for
+    a folder exactly as it does for a path that is not there, so nothing on the write path can
+    tell the two apart.
+
+    The tree endpoint can, but not in one way across versions: GitLab answers a path that is not a
+    folder with 404 from 17.7 on, and with an empty list before it, so a check that reads only the
+    status refuses every new file on an older self-managed instance. Git has no empty trees, so the
+    entries decide it whichever way the status went.
+
+    This costs a request, but only on the branch where the file is new, because a path that is
+    already a file cannot also be a folder.
+
+    A plain function rather than a method, for the reason given at the top of this module: the
+    class it belongs to cannot be built without ``arcfs-fsspec``, which CI does not install, so a
+    method here would be a guard that no CI run ever executes. ``client`` is anything with
+    ``retrieve_project_level_page``.
+
+    Args:
+        client: The GitLab client to ask.
+        repo_id: Numeric GitLab project id.
+        inside: Repository-internal path the export targets.
+        branch: Branch the export would commit to.
+
+    Raises:
+        MessageException: If ``inside`` is a folder on ``branch``.
+    """
+    try:
+        entries, _ = await client.retrieve_project_level_page(repo_id, inside, ref=branch, per_page=1)
+    except FileNotFoundError:
+        return
+    if not entries:
+        return
+    raise MessageException(
+        f"{inside} is a folder in this project, not a file. Exporting to it would "
+        "replace the folder and everything inside it. Name a file within it instead."
+    )
+
+
 def check_commit_size(size: int, rpath: str) -> None:
     """Refuse a file GitLab will not carry inside a commit request.
 
@@ -178,32 +221,8 @@ if GitLabARCFileSystem is not None:
             return await super().open_async(path, mode=mode, **kwargs)
 
         async def _refuse_a_directory(self, repo_id: int, inside: str, branch: str) -> None:
-            """Refuse a target naming a folder rather than a file inside one.
-
-            Git stores a path as a blob or a tree and a commit may swap one for the other, so a
-            create action against a folder replaces that folder and everything under it in a
-            single commit, on whatever branch the export named. GitLab gives no warning: the
-            files endpoint answers 404 for a folder exactly as it does for a path that is not
-            there, so nothing earlier in this method can tell the two apart.
-
-            The tree endpoint can, but not in one way across versions: GitLab answers a path that
-            is not a folder with 404 from 17.7 on, and with an empty list before it, so a check
-            that reads only the status refuses every new file on an older self-managed instance.
-            Git has no empty trees, so the entries decide it whichever way the status went.
-
-            This costs a request, but only on the branch where the file is new, because a path
-            that is already a file cannot also be a folder.
-            """
-            try:
-                entries, _ = await self.client.retrieve_project_level_page(repo_id, inside, ref=branch, per_page=1)
-            except FileNotFoundError:
-                return
-            if not entries:
-                return
-            raise MessageException(
-                f"{inside} is a folder in this project, not a file. Exporting to it would "
-                "replace the folder and everything inside it. Name a file within it instead."
-            )
+            """Refuse a target naming a folder rather than a file inside one."""
+            await refuse_a_directory(self.client, repo_id, inside, branch)
 
         async def _existing_file(self, repo_id: int, inside: str, branch: str) -> dict | None:
             """Return GitLab's metadata for the file, or ``None`` if the branch has no such path.
@@ -231,4 +250,10 @@ else:
     WritableGitLabFileSystem = None  # type: ignore[assignment, misc, unused-ignore]
 
 
-__all__ = ("MAX_COMMIT_BYTES", "WritableGitLabFileSystem", "check_commit_size", "commit_actions")
+__all__ = (
+    "MAX_COMMIT_BYTES",
+    "WritableGitLabFileSystem",
+    "check_commit_size",
+    "commit_actions",
+    "refuse_a_directory",
+)
