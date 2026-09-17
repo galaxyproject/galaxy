@@ -699,6 +699,47 @@ def test_a_base_url_without_a_protocol_says_so(fake_fs):
         assert fake_fs.list_page_calls == [], "nothing may reach the backend"
 
 
+def test_a_base_url_with_no_host_says_so(fake_fs):
+    """A scheme alone is not an address, and reached the backend as a bare URL again."""
+    for base_url in ("https://", "http://", "https:///"):
+        source = _gitlab_source(_source_config(base_url=base_url))
+        with pytest.raises(RequestParameterInvalidException, match="protocol and a host"):
+            source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+        assert fake_fs.list_page_calls == [], "nothing may reach the backend"
+
+
+def test_a_base_url_is_stripped_before_it_is_used(fake_fs):
+    """A URL pasted from a browser or a wiki often carries whitespace.
+
+    It survives into the hostname, where it becomes a connection failure naming a host that
+    looks exactly right, with the space invisible in the message.
+    """
+    source = _gitlab_source(_source_config(base_url="  https://gitlab.com \n"))
+    source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+    assert fake_fs.init_kwargs[-1]["base_url"] == "https://gitlab.com"
+
+
+def test_a_path_that_names_no_project_is_refused(fake_fs):
+    """The marker alone is a path a user can produce by editing the address bar.
+
+    The backend asks GitLab for the project named "", which is the endpoint that lists every
+    project, then indexes that list as one project's payload. The user was shown
+    "list indices must be integers or slices, not str".
+    """
+    for path in (":-:", ":-:assays", "  :-:  /x.txt"):
+        source = _gitlab_source(_source_config())
+        with pytest.raises(RequestParameterInvalidException, match="does not name"):
+            source.list(path, limit=5, offset=0, user_context=user_context_fixture())
+        assert fake_fs.list_page_calls == [], "nothing may reach the backend"
+
+
+def test_a_project_root_is_still_listable(fake_fs):
+    """The guard checks only the project side: listing a project root is ordinary."""
+    source = _gitlab_source(_source_config())
+    source.list("group/repo1:-:", limit=5, offset=0, user_context=user_context_fixture())
+    assert fake_fs.list_page_calls, "the listing must still be attempted"
+
+
 def test_a_base_url_with_a_protocol_is_accepted(fake_fs):
     """The check must not get in the way of the addresses people actually enter."""
     for base_url in ("https://gitlab.com", "https://gitlab.com/", "http://gitlab.internal:8080"):
