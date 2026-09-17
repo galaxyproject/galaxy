@@ -225,25 +225,33 @@ if GitLabARCFileSystem is not None:
             await refuse_a_directory(self.client, repo_id, inside, branch)
 
         async def _existing_file(self, repo_id: int, inside: str, branch: str) -> dict | None:
-            """Return GitLab's metadata for the file, or ``None`` if the branch has no such path.
+            """Return what a replacement needs to know, or ``None`` if the branch has no such path.
 
-            This costs the file's own bytes, because the endpoint answers with the content
-            base64-encoded and the backend offers nothing cheaper. It buys three things that
-            each need a request otherwise: whether to create or replace, the commit id that
-            makes the replacement safe against a concurrent write, and the execute bit.
+            This asks with HEAD rather than GET. The JSON endpoint answers with the whole file
+            base64-encoded, so replacing a small dataset over a path that already held a large
+            plain blob read and parsed hundreds of megabytes inside a Galaxy worker to obtain two
+            header-sized fields. ``check_commit_size`` bounds the file being written, not the one
+            already there, so nothing capped that. HEAD returns the same metadata in headers with
+            an empty body.
+
+            Reaching past arcfs for the request is the same liberty this class already takes with
+            ``self.client``; it is a stopgap until the package exposes a metadata call of its own.
             """
-            try:
-                answer = await self.client.get_file(repo_id, inside, branch)
-            except FileNotFoundError:
-                # Either the path is not on the branch or the repository has no commits at all;
-                # both mean there is nothing to replace.
-                return None
-            # Keep the two fields that are used and let the rest go: the answer carries the whole
-            # existing file base64-encoded, and holding it through the upload would put several
-            # copies of a large file in memory at once.
+            session = await self.client._ensure()
+            url = self.client._repository_file_url(repo_id, inside)
+            async with session.head(url, params={"ref": branch}) as answer:
+                if answer.status == 404:
+                    # Either the path is not on the branch or the repository has no commits at
+                    # all; both mean there is nothing to replace.
+                    return None
+                answer.raise_for_status()
+                headers = answer.headers
             return {
-                "last_commit_id": answer.get("last_commit_id"),
-                "execute_filemode": answer.get("execute_filemode"),
+                "last_commit_id": headers.get("X-Gitlab-Last-Commit-Id"),
+                # Headers are text, so the flag arrives as "true" or "false" and the string
+                # "false" is true. Comparing rather than testing keeps the execute bit from being
+                # set on every replacement.
+                "execute_filemode": headers.get("X-Gitlab-Execute-Filemode", "").lower() == "true",
             }
 
 else:

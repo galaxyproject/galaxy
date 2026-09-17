@@ -124,6 +124,34 @@ def _writable_fs(tree_answer, existing=None):
     fs = WritableGitLabFileSystem("https://example.invalid", "token", skip_instance_cache=True)
     calls: dict = {"commits": []}
 
+    class _Head:
+        """What GitLab answers a HEAD on the files endpoint with: headers, no body."""
+
+        def __init__(self):
+            if existing is None:
+                self.status = 404
+                self.headers: dict = {}
+            else:
+                self.status = 200
+                self.headers = {
+                    "X-Gitlab-Last-Commit-Id": existing.get("last_commit_id", ""),
+                    # GitLab sends this as text, and the string "false" is true.
+                    "X-Gitlab-Execute-Filemode": "true" if existing.get("execute_filemode") else "false",
+                }
+
+        def raise_for_status(self):
+            return None
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+    class _Session:
+        def head(self, url, **kwargs):
+            return _Head()
+
     class _Client:
         token = "token"
 
@@ -137,6 +165,12 @@ def _writable_fs(tree_answer, existing=None):
             if existing is None:
                 raise FileNotFoundError(path)
             return existing
+
+        def _repository_file_url(self, repo_id, path):
+            return f"https://example.invalid/api/v4/projects/{repo_id}/repository/files/{path}"
+
+        async def _ensure(self):
+            return _Session()
 
         async def retrieve_project_level_page(self, repo_id, subdir, *, ref=None, page=1, per_page=100):
             if isinstance(tree_answer, Exception):
@@ -264,3 +298,25 @@ def test_the_guard_asks_about_the_branch_it_was_given():
     client = FakeClient([])
     asyncio.run(refuse_a_directory(client, 7, "assays/x.txt", "some-branch"))
     assert client.calls == [{"repo_id": 7, "subdir": "assays/x.txt", "ref": "some-branch", "per_page": 1}]
+
+
+def test_the_execute_bit_is_read_as_a_flag_not_as_a_string():
+    """HEAD returns this header as text, and the string "false" is true.
+
+    Passing the header through untested would set the execute bit on every replacement of an
+    ordinary file. The parts of commit_actions that decide this are covered above; this covers
+    the conversion, which is the step HEAD introduced.
+    """
+    pytest.importorskip("arcfs")
+    for filemode, expected in ((False, False), (True, True)):
+        fs, _ = _writable_fs(FileNotFoundError("x"), existing={"last_commit_id": "abc", "execute_filemode": filemode})
+        answer = asyncio.run(fs._existing_file(1, "assays/x.txt", "main"))
+        assert answer is not None
+        assert answer["execute_filemode"] is expected, f"header said {filemode!r}"
+
+
+def test_a_missing_file_is_reported_as_nothing_to_replace():
+    """HEAD answers 404 with no body, exactly as the JSON endpoint did."""
+    pytest.importorskip("arcfs")
+    fs, _ = _writable_fs(FileNotFoundError("x"), existing=None)
+    assert asyncio.run(fs._existing_file(1, "assays/x.txt", "main")) is None
