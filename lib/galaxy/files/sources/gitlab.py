@@ -199,6 +199,12 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 # nothing here to protect against, and the connection error that follows says
                 # more than "could not verify" does.
                 pass
+            except ConfigDoesNotAllowException as e:
+                # The shared check says only "Access to this address in not permitted by server
+                # configuration", which names neither the address nor the file source. A
+                # self-hosted GitLab on a private network is an ordinary thing to configure and
+                # lands here, so it has to say which setting to look at.
+                raise ConfigDoesNotAllowException(self._private_address_message(base_url)) from e
             return
 
         if not literal.is_private:
@@ -209,7 +215,17 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                     return
             elif literal == allowlisted:
                 return
-        raise ConfigDoesNotAllowException(f"'{base_url}' is not an address this server is allowed to reach.")
+        raise ConfigDoesNotAllowException(self._private_address_message(base_url))
+
+    def _private_address_message(self, base_url: str) -> str:
+        """Say which address was refused, for which source, and what an admin can do about it."""
+        return (
+            f"{self.label} is configured with '{base_url}', which is an address on this server's "
+            "own network. Galaxy does not fetch from those unless an administrator lists them in "
+            "fetch_url_allowlist. A self-hosted GitLab usually needs that entry; list the host "
+            "itself rather than a whole private range, since the allowlist applies to every URL "
+            "Galaxy fetches."
+        )
 
     @contextmanager
     def _filesystem(
