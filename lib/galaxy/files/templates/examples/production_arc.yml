@@ -32,10 +32,19 @@
           label: DataHUB Access Token
           optional: true
           help: |
-              A personal access token for the DataHUB (GitLab) instance. A classic token needs the
-              "api" scope; a fine-grained one needs to read projects and repositories, and for
-              exports to push code and create branches, commits and merge requests. It is required
-              to see private ARCs and to export data; public ARCs can be browsed without it.
+              A personal access token for the DataHUB (GitLab) instance. It is required to see
+              private ARCs and to export data; public ARCs can be browsed without one.
+
+              A classic token needs the "api" scope, or "read_api" to browse only. That is the
+              simplest thing that works.
+
+              A fine-grained token needs "Project: Read" granted under "User", not only the
+              permission of the same name under "Group and project". Listing the ARCs you can
+              see is a user-level call, so the project-scoped permission alone is refused with
+              "403 ... requires ... user permissions: [Project: Read]". Add "Repository: Read"
+              for file contents, and for exports also "Code: Push" and "Create" on Branch,
+              Commit and Merge Request. Give the token access to all groups and projects you
+              are a member of.
   configuration:
       type: arc
       base_url: "{{ variables.base_url }}"
