@@ -1,6 +1,10 @@
+import functools
 from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import cast
+from typing import (
+    cast,
+    Literal,
+)
 
 from galaxy.exceptions import (
     AuthenticationRequired,
@@ -20,6 +24,7 @@ from galaxy.files.sources._fsspec import (
     MAX_ITEMS_LIMIT,
 )
 from galaxy.files.sources.gitlab_fsspec import WritableGitLabFileSystem
+from galaxy.files.uris import validate_non_local
 from galaxy.util.config_templates import TemplateExpansion
 
 try:
@@ -33,6 +38,12 @@ except ImportError:
 # usual assumptions about "/"-separated paths hold: an entry's name is its last segment, and a
 # project's path is a prefix of the paths of the entries inside it.
 ROOT_MARKER = ":-:"
+
+#: What the caller was doing, for the messages that name it and the two branches of the error
+#: ladder that behave differently per operation. It reads as prose because it is spliced into
+#: "Problem {operation} file source path ...", but the ladder compares the value rather than
+#: parsing the sentence, so rewording a message cannot change which error a user gets.
+Operation = Literal["listing", "reading", "writing to"]
 
 
 class GitLabFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
@@ -82,14 +93,14 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     entity_name = "project"
 
     @staticmethod
-    def _token_scope_for(description: str) -> str:
+    def _token_scope_for(operation: Operation) -> str:
         """Classic-token scope the refused operation needs, not the widest this source might.
 
         A writable source still serves users who only browse it, and a 403 on a listing that
         told them to mint a token with push rights on every project they can reach would be
         advice to over-privilege, contradicting this source's own template help.
         """
-        return "api" if description.startswith("writing") else "read_api"
+        return "api" if operation == "writing to" else "read_api"
 
     def _open_fs(
         self,
@@ -104,6 +115,17 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
             raise self.required_package_exception
 
         config = context.config
+        # The template exposes base_url as an ordinary variable, so a user creating their own
+        # instance chooses which host Galaxy talks to and sends their token to. Without this a
+        # personal file source pointed at a link-local or loopback address turns the server into
+        # a probe for its own network, with the error ladder reporting what it found.
+        try:
+            validate_non_local(config.base_url, self._file_sources_config.fetch_url_allowlist or [])
+        except RequestParameterInvalidException:
+            # The host does not resolve. Galaxy cannot reach it either, so there is nothing here
+            # to protect against, and a connection error says more than "could not verify" does.
+            # The refusal that matters is ConfigDoesNotAllowException, which is left to propagate.
+            pass
         return cast(
             "GitLabARCFileSystem",
             filesystem_class(
@@ -120,14 +142,16 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
 
     @contextmanager
     def _filesystem(
-        self, context: FilesSourceRuntimeContext[GitLabFileSourceConfiguration], description: str
+        self, context: FilesSourceRuntimeContext[GitLabFileSourceConfiguration], operation: Operation, path: str
     ) -> Iterator[tuple["GitLabARCFileSystem", GitLabFileSourceConfiguration]]:
         """Open a filesystem for one operation and translate arcfs failures into Galaxy exceptions.
 
         ``_open_fs`` builds a fresh instance per operation, so closing it here cannot affect anything
-        else in flight. ``description`` completes the "Problem ..." message of unexpected failures,
-        including the one raised when the package is missing.
+        else in flight. ``operation`` says what the caller was doing: it completes the "Problem ..."
+        message of unexpected failures, and the two branches that differ per operation compare it
+        rather than reading the sentence it ends up in.
         """
+        description = f"{operation} file source path {path}"
         fs = None
         try:
             fs = self._open_fs(context, self._get_cache_options(context.config))
@@ -139,7 +163,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 # Refused by the local filesystem, so the user's GitLab credentials are not the problem.
                 raise MessageException(f"Problem {description}. Reason: {e.strerror or e}") from e
             # arcfs does not raise this for authentication today, but a future version might.
-            raise AuthenticationRequired(self._credentials_message(description, e))
+            raise AuthenticationRequired(self._credentials_message(description, e)) from e
         except FileNotFoundError as e:
             if e.filename is not None:
                 # A local path that Galaxy staged, not anything in GitLab. Saying the project is missing
@@ -170,7 +194,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
             detail = f"{status} {reason_phrase}" if reason_phrase else str(status)
             if status == 401:
                 # A missing, invalid, expired or revoked token.
-                raise AuthenticationRequired(self._credentials_message(description, detail))
+                raise AuthenticationRequired(self._credentials_message(description, detail)) from e
             if status == 403:
                 # The token authenticated but is not allowed to do this. A classic token is missing
                 # the "api" scope; a fine-grained one is missing the resource permission this call
@@ -179,11 +203,11 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 raise AuthenticationRequired(
                     self._credentials_message(
                         description,
-                        f"{detail}. A classic token may lack the '{self._token_scope_for(description)}' "
+                        f"{detail}. A classic token may lack the '{self._token_scope_for(operation)}' "
                         "scope; a fine-grained token may lack the permissions this operation needs",
                     )
-                )
-            if status == 400:
+                ) from e
+            if status == 400 and operation == "writing to":
                 # GitLab answers 400 for a commit it would not make, and aiohttp keeps only the
                 # status, so the body saying which is gone by the time this runs. The likeliest
                 # cause on a write is the one this source deliberately provokes: it sends the
@@ -196,10 +220,9 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
             if status == 413:
                 raise MessageException(
                     f"Problem {description}. The file is larger than {self.label} accepts in a "
-                    "single request. A smaller file, or an ARC file source, which uploads through "
-                    "Git LFS instead, can carry it."
+                    f"single request.{self._large_file_remedy}"
                 ) from e
-            if status == 405 and description.startswith("listing"):
+            if status == 405 and operation == "listing":
                 # GitLab limits how far an offset listing may page and answers 405 once past it,
                 # with no hint that paging is what it objected to. It enforces this only for
                 # unauthenticated requests, so a token removes the limit entirely. The cap applies
@@ -257,7 +280,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 raise RequestParameterInvalidException(
                     "Listing every project recursively is not supported. Please list a single project instead."
                 )
-            with self._filesystem(context, f"listing file source path {path}") as (fs, config):
+            with self._filesystem(context, "listing", path) as (fs, config):
                 entries, total = self._list_recursive(fs, self._to_filesystem_path(path, config), config)
                 if query:
                     # Without this the filter is silently dropped and the whole subtree comes back
@@ -265,9 +288,9 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                     # match beyond it is still not found, exactly as on the non-recursive path.
                     entries = self._filter_by_name(entries, query)
                     total = len(entries)
-                return self._apply_pagination(entries, limit, offset), total
+                return self._paginate(entries, limit, offset), total
 
-        with self._filesystem(context, f"listing file source path {path}") as (fs, config):
+        with self._filesystem(context, "listing", path) as (fs, config):
             fs_path = self._to_filesystem_path(path, config)
 
             if query:
@@ -277,19 +300,82 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 if total > len(entries):
                     self._on_listing_exceeded()
                 matched = self._filter_by_name(entries, query)
-                return self._apply_pagination(matched, limit, offset), len(matched)
+                return self._paginate(matched, limit, offset), len(matched)
 
             if limit is None:
                 entries, total = self._read_window(fs, fs_path, config, 0, MAX_ITEMS_LIMIT, write_intent)
                 if total > len(entries):
                     self._on_listing_exceeded()
-                return self._apply_pagination(entries, limit, offset), total
+                return self._paginate(entries, limit, offset), total
 
             if limit > MAX_ITEMS_LIMIT:
                 # Nothing bounds the limit a caller may ask for, and arcfs will fetch as many
                 # GitLab pages as it takes to fill it.
                 self._on_listing_exceeded()
             return self._read_window(fs, fs_path, config, offset or 0, min(limit, MAX_ITEMS_LIMIT), write_intent)
+
+    #: Appended to the message for a file too large to commit. An ARC has somewhere else to put
+    #: it; a plain project does not, so only the GitLab source has something to suggest.
+    _large_file_remedy = " An ARC file source, which uploads through Git LFS instead, can carry it."
+
+    def _require_a_file_inside(self, path: str, what: str) -> None:
+        """Refuse a path that does not name a file inside a project.
+
+        Each of the three ways it can fail reaches the backend as its own obscure failure.
+        Without the marker the backend cannot tell where the project path ends, so it probes
+        prefixes and builds the whole project index before failing, with a message about a
+        missing project for a path that never named one. With nothing after the marker the path
+        is a project itself, which a listing of the top level offers verbatim, and the backend
+        refuses it with an error carrying only the path again, so the user is told their path
+        failed because of their path. With nothing before the marker the project part is empty,
+        which the backend does not catch at all: it asks GitLab for the project named "",
+        reaching the endpoint that lists projects, and fails on the shape of the answer.
+
+        Args:
+            path: The Galaxy-side path the caller named.
+            what: "Exports" or "Imports", so the message names what the user was doing.
+        """
+        project, marker, inside = path.partition(ROOT_MARKER)
+        if marker and self._names_something(project) and self._names_something(inside):
+            return
+        raise RequestParameterInvalidException(
+            f"{what} have to name a file inside {self._article} {self.entity_name}, in the form "
+            f"the file browser produces (group/project{ROOT_MARKER}/folder/file). The top level "
+            f"of this file source lists the {self.entity_name}s themselves and cannot hold files."
+        )
+
+    def _paginate(self, entries: list[AnyRemoteEntry], limit: int | None, offset: int | None) -> list[AnyRemoteEntry]:
+        """Apply the caller's window, including an offset given without a limit.
+
+        The shared helper returns the list untouched unless a limit is set, so an offset on its
+        own is dropped and every page comes back as the first one while the total says otherwise.
+        """
+        if limit is None and offset:
+            return entries[offset:]
+        return self._apply_pagination(entries, limit, offset)
+
+    def _list_recursive(
+        self, fs: "GitLabARCFileSystem", path: str, config: GitLabFileSourceConfiguration
+    ) -> tuple[list[AnyRemoteEntry], int]:
+        """Recurse with failures raised rather than omitted.
+
+        fsspec's ``walk`` defaults to ``on_error="omit"``, which swallows FileNotFoundError and
+        every OSError. A project that is missing, private or has no commits, and a GitLab that
+        cannot be reached at all, would each come back as an empty folder, and the translation in
+        ``_filesystem`` would never run. Listing the same path without recursion reports all of
+        them correctly, so the two views would disagree about the same request.
+        """
+        entries: list[AnyRemoteEntry] = []
+        count = 0
+        for _, dirs, files in fs.walk(path, detail=True, on_error="raise"):
+            to_entry = functools.partial(self._info_to_entry, config=config)
+            entries.extend(map(to_entry, cast(dict[str, dict], dirs).values()))
+            entries.extend(map(to_entry, cast(dict[str, dict], files).values()))
+            count += len(dirs) + len(files)
+            if count >= MAX_ITEMS_LIMIT:
+                self._on_listing_exceeded()
+                break
+        return entries, len(entries)
 
     def _read_window(
         self,
@@ -336,7 +422,8 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         native_path: str,
         context: FilesSourceRuntimeContext[GitLabFileSourceConfiguration],
     ):
-        with self._filesystem(context, f"reading file source path {source_path}") as (fs, config):
+        self._require_a_file_inside(source_path, "Imports")
+        with self._filesystem(context, "reading", source_path) as (fs, config):
             fs.get_file(self._to_filesystem_path(source_path, config), native_path)
 
     def _write_from(
@@ -345,26 +432,8 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         native_path: str,
         context: FilesSourceRuntimeContext[GitLabFileSourceConfiguration],
     ):
-        project, marker, inside = target_path.partition(ROOT_MARKER)
-        if not marker or not self._names_something(project) or not self._names_something(inside):
-            # Each of the three ways a target can fail to name a file inside a project reaches
-            # the backend as its own obscure failure. Without the marker the backend cannot tell
-            # where the project path ends, so it probes prefixes and then builds the whole
-            # project index before failing, with a message about a missing project for a path
-            # that never named one. With nothing after the marker the target is a project
-            # itself, which is what a listing of the top level offers verbatim as a destination;
-            # the backend refuses that with an IsADirectoryError carrying only the path again, so
-            # the user is told their path failed because of their path. With nothing before the
-            # marker the project path is empty, which the backend does not catch at all: it asks
-            # GitLab for the project named "", reaching the endpoint that lists projects instead,
-            # and then fails on the shape of the answer.
-            raise RequestParameterInvalidException(
-                f"Exports have to name a file inside {self._article} {self.entity_name}, in the "
-                f"form the file browser produces (group/project{ROOT_MARKER}/folder/file). The "
-                f"top level of this file source lists the {self.entity_name}s themselves and "
-                "cannot hold files."
-            )
-        with self._filesystem(context, f"writing to file source path {target_path}") as (fs, config):
+        self._require_a_file_inside(target_path, "Exports")
+        with self._filesystem(context, "writing to", target_path) as (fs, config):
             fs.put_file(native_path, self._to_filesystem_path(target_path, config))
 
     @staticmethod

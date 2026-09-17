@@ -187,3 +187,19 @@ def test_writing_over_a_folder_commits_nothing(tmp_path):
     with pytest.raises(MessageException):
         asyncio.run(fs._put_file(str(local), "group/repo:-:assays"))
     assert calls["commits"] == [], "nothing may be committed over a folder"
+
+
+@pytest.mark.parametrize("mode", ["wb", "ab", "xb", "rb+", "r+b", "w+b"])
+def test_a_write_through_open_is_refused(mode):
+    """``open`` reaches the inherited object, which uploads the ARC way and opens a merge request.
+
+    That is the one thing this class exists not to do, so every mode carrying write intent is
+    refused rather than only the obvious ones: "r+b" and "rb+" are read-write and would
+    otherwise pass a test for the absence of "r".
+    """
+    pytest.importorskip("arcfs")
+    fs = WritableGitLabFileSystem("https://example.invalid", "token", skip_instance_cache=True)
+    with pytest.raises(NotImplementedError):
+        fs._open("group/repo:-:x.txt", mode=mode)
+    with pytest.raises(NotImplementedError):
+        asyncio.run(fs.open_async("group/repo:-:x.txt", mode=mode))

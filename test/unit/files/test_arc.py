@@ -83,6 +83,12 @@ def test_each_source_opens_its_own_filesystem(monkeypatch):
     sources opened the same filesystem, exports would quietly go to the wrong kind of place
     rather than fail, so the wiring is asserted by driving a write through each.
     """
+    # The fakes below set required_module on each class, so they cannot show that ARC declares
+    # one of its own. Without that declaration ARC inherits the GitLab filesystem and commits raw
+    # content to the default branch where an ARC expects a pointer behind a merge request, and
+    # nothing else in this suite would notice.
+    assert "required_module" in vars(ARCFilesSource), "ARC must open its own filesystem, not inherit one"
+
     gitlab_fs = install_fake(monkeypatch, gitlab, GitLabFilesSource, FAKE_TREE, FAKE_FILES)
     arc_fs = install_fake(monkeypatch, gitlab, ARCFilesSource, FAKE_TREE, FAKE_FILES)
 
