@@ -729,6 +729,11 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         self._frame_or_page.locator(selector).first.click()
 
+    def active_element(self) -> WebElementProtocol:
+        handle = self._frame_or_page.evaluate_handle("document.activeElement").as_element()
+        assert handle is not None, "No element currently has focus"
+        return PlaywrightElement(handle, self)
+
     def press(
         self,
         *keys: Key,

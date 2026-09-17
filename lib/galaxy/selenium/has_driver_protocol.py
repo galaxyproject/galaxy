@@ -372,6 +372,11 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
 
     # Keyboard interactions
     @abstractmethod
+    def active_element(self) -> WebElementProtocol:
+        """Return the element that currently has focus."""
+        ...
+
+    @abstractmethod
     def press(
         self,
         *keys: Key,

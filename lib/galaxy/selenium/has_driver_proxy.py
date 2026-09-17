@@ -326,6 +326,10 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
 
     # Keyboard interactions
 
+    def active_element(self) -> WebElementProtocol:
+        """Return the element that currently has focus."""
+        return self._driver_impl.active_element()
+
     def press(
         self,
         *keys: Key,
