@@ -169,13 +169,19 @@ if GitLabARCFileSystem is not None:
             files endpoint answers 404 for a folder exactly as it does for a path that is not
             there, so nothing earlier in this method can tell the two apart.
 
-            The tree endpoint can: it answers with the entries for a folder and 404 for anything
-            else, including a file. This costs a request, but only on the branch where the file
-            is new, because a path that is already a file cannot also be a folder.
+            The tree endpoint can, but not in one way across versions: GitLab answers a path that
+            is not a folder with 404 from 17.7 on, and with an empty list before it, so a check
+            that reads only the status refuses every new file on an older self-managed instance.
+            Git has no empty trees, so the entries decide it whichever way the status went.
+
+            This costs a request, but only on the branch where the file is new, because a path
+            that is already a file cannot also be a folder.
             """
             try:
-                await self.client.retrieve_project_level_page(repo_id, inside, ref=branch, per_page=1)
+                entries, _ = await self.client.retrieve_project_level_page(repo_id, inside, ref=branch, per_page=1)
             except FileNotFoundError:
+                return
+            if not entries:
                 return
             raise MessageException(
                 f"{inside} is a folder in this project, not a file. Exporting to it would "

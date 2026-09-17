@@ -7,6 +7,7 @@ decide that are plain functions rather than methods precisely so they run withou
 ``arcfs-fsspec`` package, which CI does not install.
 """
 
+import asyncio
 import base64
 
 import pytest
@@ -105,3 +106,84 @@ def test_the_gitlab_source_opens_this_filesystem():
     assert GitLabFilesSource.required_module is WritableGitLabFileSystem
     assert ARCFilesSource.required_module is GitLabARCFileSystem
     assert issubclass(WritableGitLabFileSystem, GitLabARCFileSystem)
+
+
+def _writable_fs(tree_answer, existing=None):
+    """A filesystem whose backend calls are stubbed, so the write path runs without a network.
+
+    ``tree_answer`` is what the tree endpoint does for the target: an exception to raise, or the
+    ``(entries, total)`` tuple it returns.
+    """
+    pytest.importorskip("arcfs")
+    fs = WritableGitLabFileSystem("https://example.invalid", "token", skip_instance_cache=True)
+    calls: dict = {"commits": []}
+
+    class _Client:
+        token = "token"
+
+        async def get_project_by_path(self, path, **kwargs):
+            return {"id": 1, "original_path": path, "default_branch": "main"}
+
+        async def get_default_branch(self, repo_id):
+            return "main"
+
+        async def get_file(self, repo_id, path, ref):
+            if existing is None:
+                raise FileNotFoundError(path)
+            return existing
+
+        async def retrieve_project_level_page(self, repo_id, subdir, *, ref=None, page=1, per_page=100):
+            if isinstance(tree_answer, Exception):
+                raise tree_answer
+            return tree_answer
+
+        async def create_commit(self, repo_id, branch, message, actions):
+            calls["commits"].append({"branch": branch, "message": message, "actions": actions})
+            return {"id": "deadbeef"}
+
+    fs.client = _Client()
+    return fs, calls
+
+
+def test_a_new_path_is_allowed_when_the_tree_endpoint_answers_404():
+    """GitLab 17.7 and later answer a path that is not a folder with 404."""
+    fs, _ = _writable_fs(FileNotFoundError("assays/new.txt"))
+    asyncio.run(fs._refuse_a_directory(1, "assays/new.txt", "main"))
+
+
+def test_a_new_path_is_allowed_when_the_tree_endpoint_answers_an_empty_list():
+    """Before 17.7 a self-managed GitLab answered the same case with 200 and an empty list.
+
+    Reading only the status refused every new file on those instances: the check saw no
+    exception, concluded the path was a folder, and told the user to name a file inside it,
+    which is itself a new path and was refused in turn. Replacing an existing file still
+    worked, because that skips this check, so nothing about the failure pointed here.
+    """
+    fs, _ = _writable_fs(([], 0))
+    asyncio.run(fs._refuse_a_directory(1, "assays/new.txt", "main"))
+
+
+def test_a_folder_is_refused():
+    """Git has no empty trees, so entries are what distinguish a folder, whatever the status."""
+    fs, _ = _writable_fs(([{"name": "inner.txt", "type": "blob"}], 1))
+    with pytest.raises(MessageException) as excinfo:
+        asyncio.run(fs._refuse_a_directory(1, "assays", "main"))
+    assert "is a folder in this project" in str(excinfo.value)
+
+
+def test_writing_a_new_file_commits_a_create(tmp_path):
+    fs, calls = _writable_fs(FileNotFoundError("x"))
+    local = tmp_path / "payload.txt"
+    local.write_bytes(b"hello")
+    asyncio.run(fs._put_file(str(local), "group/repo:-:assays/new.txt"))
+    assert [a["action"] for a in calls["commits"][0]["actions"]] == ["create"]
+    assert calls["commits"][0]["branch"] == "main"
+
+
+def test_writing_over_a_folder_commits_nothing(tmp_path):
+    fs, calls = _writable_fs(([{"name": "inner.txt", "type": "blob"}], 1))
+    local = tmp_path / "payload.txt"
+    local.write_bytes(b"hello")
+    with pytest.raises(MessageException):
+        asyncio.run(fs._put_file(str(local), "group/repo:-:assays"))
+    assert calls["commits"] == [], "nothing may be committed over a folder"
