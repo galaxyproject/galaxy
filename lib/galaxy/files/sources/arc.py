@@ -46,6 +46,9 @@ class ARCFilesSource(GitLabFilesSource):
 
     entity_name = "ARC"
 
+    #: This source is the alternative the GitLab one points at, so it has none of its own.
+    _large_file_remedy = ""
+
     template_config_class = ARCFileSourceTemplateConfiguration
     resolved_config_class = ARCFileSourceConfiguration
 

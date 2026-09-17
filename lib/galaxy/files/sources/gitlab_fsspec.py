@@ -153,12 +153,23 @@ if GitLabARCFileSystem is not None:
             the one thing this class exists not to do. Refusing is not a limitation being added:
             the inherited object commits only from ``__aexit__``, so the ordinary write-then-close
             sequence discards the data either way. ``put_file`` is the supported route.
+
+            The test is for write intent rather than the absence of "r", because "r+b" and "rb+"
+            are read-write and would otherwise reach the inherited writer.
             """
-            if "r" not in mode:
+            if set(mode) & set("wax+"):
                 raise NotImplementedError(
                     "This file source commits whole files. Use put_file rather than open(..., 'wb')."
                 )
             return super()._open(path, mode=mode, **kwargs)
+
+        async def open_async(self, path, mode="rb", **kwargs):
+            """Refuse an async write for the same reason ``_open`` does."""
+            if set(mode) & set("wax+"):
+                raise NotImplementedError(
+                    "This file source commits whole files. Use put_file rather than open_async(..., 'wb')."
+                )
+            return await super().open_async(path, mode=mode, **kwargs)
 
         async def _refuse_a_directory(self, repo_id: int, inside: str, branch: str) -> None:
             """Refuse a target naming a folder rather than a file inside one.

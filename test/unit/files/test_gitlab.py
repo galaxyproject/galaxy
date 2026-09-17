@@ -17,6 +17,7 @@ from multidict import (
 
 from galaxy.exceptions import (
     AuthenticationRequired,
+    ConfigDoesNotAllowException,
     MessageException,
     ObjectNotFound,
     RequestParameterInvalidException,
@@ -51,7 +52,6 @@ from ._util import (
     user_context_fixture,
 )
 
-PUBLIC_GITLAB_URL = "https://gitlab.com"
 PUBLIC_DATAHUB_URL = "https://git.nfdi4plants.org"
 TRANSIENT_STATUSES = (429, 500, 502, 503, 504)
 
@@ -113,7 +113,6 @@ def test_reported_writability_follows_the_accessor(fake_fs, monkeypatch):
 
 
 def test_missing_package_gives_actionable_error(monkeypatch):
-    monkeypatch.setattr(gitlab, "GitLabARCFileSystem", None)
     monkeypatch.setattr(GitLabFilesSource, "required_module", None)
     with pytest.raises(Exception, match="arcfs-fsspec"):
         _gitlab_source()
@@ -670,3 +669,28 @@ def test_read_listing_does_not_narrow_to_own_projects(fake_fs):
     source = _gitlab_source()
     source.list("/", limit=5, offset=0, user_context=user_context_fixture())
     assert fake_fs.list_page_membership == [False]
+
+
+def test_a_source_pointed_at_a_private_address_is_refused(fake_fs):
+    """base_url is a template variable, so the user chooses which host Galaxy talks to.
+
+    A personal file source aimed at a loopback or link-local address would have Galaxy probe its
+    own network on the user's behalf and send their token there, with the error ladder reporting
+    what it found. Other sources that fetch a user-supplied URL run the same check.
+    """
+    for base_url in ("http://127.0.0.1:8080", "http://169.254.169.254", "http://10.0.0.5"):
+        source = _gitlab_source(_source_config(base_url=base_url))
+        with pytest.raises(ConfigDoesNotAllowException):
+            source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+        assert fake_fs.list_page_calls == [], "nothing may reach the backend"
+
+
+def test_an_unresolvable_host_is_left_to_fail_as_a_connection(fake_fs):
+    """A host that does not resolve is not a way into the network, so it is not refused here.
+
+    Galaxy cannot reach it either, and the connection error that follows says more than a
+    verification failure would.
+    """
+    source = _gitlab_source(_source_config(base_url="https://gitlab.example.org"))
+    source.list("/", limit=5, offset=0, user_context=user_context_fixture())
+    assert fake_fs.list_page_calls, "the listing must still be attempted"

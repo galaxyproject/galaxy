@@ -126,15 +126,14 @@ def _is_sub_path(origin: str, destination: str) -> bool:
 
 
 def install_fake(monkeypatch, module, source_class, tree: dict, files: dict) -> FakeRecorder:
-    """Patch the filesystem class a plugin uses, and return the call recorder.
+    """Patch the filesystem class a plugin opens, and return the call recorder.
 
-    Both names matter: ``_open_fs`` reads the module-level name, and ``FsspecFilesSource.__init__``
-    refuses to construct the plugin when ``required_module`` is None.
+    ``_open_fs`` instantiates ``self.required_module``, so setting it on the plugin class is what
+    redirects the source at the fake. It is also what ``FsspecFilesSource.__init__`` checks before
+    it will construct the plugin at all.
     """
     recorder = FakeRecorder()
-    fake_class = _make_fake_fs_class(recorder, tree, files)
-    monkeypatch.setattr(module, "GitLabARCFileSystem", fake_class)
-    monkeypatch.setattr(source_class, "required_module", fake_class)
+    monkeypatch.setattr(source_class, "required_module", _make_fake_fs_class(recorder, tree, files))
     return recorder
 
 
