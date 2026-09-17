@@ -80,10 +80,12 @@ class CpuInfoPlugin(InstrumentPlugin):
         if self.unique:
             for field, by_processor in per_field_values.items():
                 distinct_values = set(by_processor.values())
-                if len(distinct_values) == 1:
+                reported_by_all = len(by_processor) == processor_count
+                if len(distinct_values) == 1 and reported_by_all:
                     properties[field] = distinct_values.pop()
                 else:
-                    # Processors disagree on this field: keep per-processor keys for it.
+                    # Processors disagree, or some processors did not report this
+                    # field at all: keep per-processor keys for it.
                     for processor_id, value in by_processor.items():
                         properties[f"processor_{processor_id}_{field}"] = value
 
