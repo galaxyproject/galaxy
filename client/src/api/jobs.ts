@@ -59,7 +59,6 @@ export interface JobResponse {
 export interface ResponseVal {
     jobDef: JobRequest;
     jobResponse: JobResponse;
-    toolName: string;
 }
 
 export interface SubmitToolJobParams {

@@ -21,15 +21,12 @@ const { job } = useJobDetails(toRef(props, "jobId"));
 <template>
     <div>
         <div class="d-flex justify-content-between">
-            <div class="job-header">
-                <div class="job-header-title">
-                    <JobState class="job-information-state-badge" :job-id="props.jobId" />
-                    <Heading v-if="job" :icon="faWrench" inline size="md">
-                        {{ toolStore.getToolNameById(job.tool_id, "Job Details") }}
-                    </Heading>
-                </div>
-            </div>
-            <div>
+            <Heading v-if="job" :icon="faWrench" inline size="md">
+                {{ toolStore.getToolNameById(job.tool_id, "Job Details") }}
+            </Heading>
+            <div class="job-header-end">
+                <JobState class="job-information-state-badge" :job-id="props.jobId" />
+                <slot name="pagination" />
                 <RerunJobButton :job-id="props.jobId" outline />
             </div>
         </div>
@@ -38,16 +35,11 @@ const { job } = useJobDetails(toRef(props, "jobId"));
 </template>
 
 <style lang="scss" scoped>
-.job-header {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.job-header-title {
+.job-header-end {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
+    justify-content: flex-end;
+    gap: 0.5rem;
     flex-wrap: wrap;
 }
 </style>
