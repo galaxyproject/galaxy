@@ -9,6 +9,7 @@ from selenium.common.exceptions import (
     TimeoutException as SeleniumTimeoutException,
 )
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 
 from galaxy.navigation.components import Target
@@ -1363,8 +1364,6 @@ class TestKeyPresses:
         assert has_driver_instance.execute_script("return window.clickCount") == 0
 
     def test_legacy_send_keys_shortcut_and_return(self, has_driver_instance, base_url):
-        from selenium.webdriver.common.keys import Keys
-
         has_driver_instance.navigate_to(f"{base_url}/keys.html")
         target = has_driver_instance.find_element_by_id("key-target")
         target.send_keys(Keys.CONTROL, "a")
