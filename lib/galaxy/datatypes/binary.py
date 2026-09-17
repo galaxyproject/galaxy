@@ -1662,7 +1662,7 @@ class NetCDF4(H5):
     Class describing a netCDF4 file (HDF5-based).
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('test_tas.nc')
+    >>> fname = get_test_fname('test_tas.netcdf4')
     >>> NetCDF4().sniff(fname)
     True
     >>> fname = get_test_fname('test.mz5')
