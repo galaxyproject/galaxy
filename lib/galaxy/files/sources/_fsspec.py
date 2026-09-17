@@ -37,7 +37,7 @@ PACKAGE_MESSAGE = "FilesSource plugin is missing required Python fsspec plugin p
 # Maximum number of items to return in a single listing.
 # This is a safeguard to prevent excessive memory usage and performance issues
 # since is a huge number of items is not practical for browsing in most use cases.
-MAX_ITEMS_LIMIT = 1000
+MAX_ITEMS_LIMIT = 500
 
 
 class FsspecCommonCacheOptions(StrictModel):
@@ -157,6 +157,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
             # This is not ideal but necessary due to how fsspec handles listings.
             # At least we reduce the traffic to the client produced by a large listing ¯\_(ツ)_/¯
             paginated_entries = self._apply_pagination(entries_list, limit, offset)
+            self._enrich_entries(fs, paginated_entries, context.config)
 
             return paginated_entries, total_count
 
@@ -311,6 +312,19 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
             if entry_path and entry_path.rstrip("/") != normalized_path:
                 entries_list.append(self._info_to_entry(entry, config))
         return entries_list
+
+    def _enrich_entries(
+        self,
+        fs: AbstractFileSystem,
+        entries: list[AnyRemoteEntry],
+        config: FsspecResolvedConfigurationType,
+    ) -> None:
+        """Enrich the (already paginated) entries with exact metadata.
+
+        Some fsspec filesystems omit expensive-to-compute metadata (e.g. size) when
+        listing. Subclasses can override this to fetch exact metadata for the visible
+        page of entries only, keeping the cost proportional to the page size.
+        """
 
     def _apply_pagination(
         self, entries_list: list[AnyRemoteEntry], limit: int | None, offset: int | None
