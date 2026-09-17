@@ -117,7 +117,7 @@ def test_default_evaluation_uses_worker(monkeypatch):
         workers.append(worker)
         return worker
 
-    monkeypatch.setattr(js_engine.subprocess, "Popen", record_worker)
+    monkeypatch.setattr(subprocess, "Popen", record_worker)
     assert SandboxedJSEngine().eval("1 + 1") == 2
     assert len(workers) == 1
     assert workers[0].args == [sys.executable, js_engine.WORKER_SCRIPT]
@@ -275,7 +275,7 @@ def test_response_recursion_error_is_translated(monkeypatch):
     def fail_to_decode(response):
         raise RecursionError("response nesting limit exceeded")
 
-    monkeypatch.setattr(js_engine.json, "loads", fail_to_decode)
+    monkeypatch.setattr(json, "loads", fail_to_decode)
     with pytest.raises(JavascriptException, match="Malformed response") as exc:
         evaluate_program("JSON.stringify(42)")
     assert isinstance(exc.value.__cause__, RecursionError)
