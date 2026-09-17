@@ -618,10 +618,13 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         the slashes made "/ /" look like an ordinary path, so a recursive listing of it walked
         every project on the instance instead of being refused.
 
-        Both are stripped in one pass rather than one after the other, because the whitespace can
-        sit between the slashes: ``"/ /".strip().strip("/")`` is still ``" "``.
+        The slashes are removed and what is left is stripped, rather than stripping a set of
+        characters: the whitespace can sit between the slashes, so ``"/ /".strip().strip("/")``
+        is still ``" "``; and ``str.strip`` is what arcfs uses, which covers every character
+        Python calls whitespace, so naming an ASCII set here would miss the non-breaking space,
+        the ideographic space and the separator controls that arcfs still resolves to the root.
         """
-        return not path.strip("/ \t\n\r\v\f")
+        return not path.replace("/", "").strip()
 
     @staticmethod
     def _filter_by_name(entries: list[AnyRemoteEntry], query: str) -> list[AnyRemoteEntry]:
