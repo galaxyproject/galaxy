@@ -1,5 +1,6 @@
 """Unit tests for galaxy.selenium.has_driver module."""
 
+import sys
 from typing import cast
 
 import pytest
@@ -1326,6 +1327,49 @@ class TestKeyPresses:
 
         key_log = has_driver_instance.find_element_by_id("key-log")
         assert key_log.text == "Escape"
+
+    def test_press_character_with_modifier(self, has_driver_instance, base_url):
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+        has_driver_instance.press("a", modifiers=[Key.CONTROL], element=target)
+        assert has_driver_instance.find_element_by_id("target-log").text == "ctrl+Control ctrl+a"
+        has_driver_instance.press("b")
+        assert target.get_attribute("value") == "b"
+
+    def test_press_select_all_shortcut(self, has_driver_instance, base_url):
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+        target.send_keys("replace this")
+        modifier = Key.META if sys.platform == "darwin" else Key.CONTROL
+        has_driver_instance.press("a", modifiers=[modifier], element=target)
+        has_driver_instance.press("b")
+        assert target.get_attribute("value") == "b"
+
+    def test_press_multiple_tabs_to_element(self, has_driver_instance, base_url):
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+        has_driver_instance.press(Key.TAB, Key.TAB, element=target)
+        assert has_driver_instance.active_element().get_attribute("id") == "third-target"
+
+    def test_press_sequence_holds_and_releases_modifier(self, has_driver_instance, base_url):
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+        has_driver_instance.press(Key.ARROW_LEFT, Key.ARROW_RIGHT, modifiers=[Key.SHIFT], element=target)
+        has_driver_instance.press(Key.ENTER)
+        assert has_driver_instance.find_element_by_id("key-events").text == (
+            "keydown:shift+Shift keydown:shift+ArrowLeft keyup:shift+ArrowLeft "
+            "keydown:shift+ArrowRight keyup:shift+ArrowRight keyup:Shift keydown:Enter keyup:Enter"
+        )
+        assert has_driver_instance.execute_script("return window.clickCount") == 0
+
+    def test_legacy_send_keys_shortcut_and_return(self, has_driver_instance, base_url):
+        from selenium.webdriver.common.keys import Keys
+
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+        target.send_keys(Keys.CONTROL, "a")
+        target.send_keys(Keys.RETURN)
+        assert has_driver_instance.find_element_by_id("target-log").text == "ctrl+Control ctrl+a Enter"
 
 
 class TestActiveElement:
