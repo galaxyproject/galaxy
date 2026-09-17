@@ -767,7 +767,10 @@ def test_a_root_of_slashes_and_blanks_is_still_the_root(fake_fs):
     fsspec strips whitespace and arcfs resolves a path of blanks to the root project listing,
     so the path reached fs.walk on the root and descended into every visible project.
     """
-    for path in ("/ /", "/\t/", "  /  ", "//", " "):
+    # Unicode whitespace too: arcfs strips with str.strip, which covers every character Python
+    # calls whitespace, so an ASCII set here would leave the non-breaking space, the ideographic
+    # space and the separator controls resolving to the root while Galaxy called them a project.
+    for path in ("/ /", "/\t/", "  /  ", "//", " ", "/\xa0/", "/\u2003/", "/\u3000/", "/\x1c/"):
         source = _gitlab_source(_source_config())
         with pytest.raises(RequestParameterInvalidException, match="recursively is not supported"):
             source.list(path, recursive=True, limit=5, offset=0, user_context=user_context_fixture())
