@@ -1,4 +1,5 @@
 <tool id="interactive_tool_tensorboard" tool_type="interactive" name="Interactive TensorBoard Environment" version="2.21.0" profile="23.0">
+    <icon src="tensorboard.png" />
     <description>
         An interactive environment for visualizing and exploring machine learning experiments with TensorBoard.
     </description>
