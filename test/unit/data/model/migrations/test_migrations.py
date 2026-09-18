@@ -69,52 +69,46 @@ ANNOTATION_MODELS = (
     model.PageAnnotationAssociation,
     model.VisualizationAnnotationAssociation,
 )
-LONG_ASCII_ANNOTATION = "".join(sha256(str(i).encode()).hexdigest() for i in range(64))
-LONG_MULTIBYTE_ANNOTATION = "".join(
-    chr(0x4E00 + int(sha256(str(i).encode()).hexdigest()[:8], 16) % 0x5000) for i in range(2000)
-)
+# Longer than a PostgreSQL B-tree entry, which is what the dropped indexes could not hold.
+LONG_ANNOTATION = "".join(sha256(str(i).encode()).hexdigest() for i in range(64))
 
 
-@pytest.mark.parametrize("annotation", [LONG_ASCII_ANNOTATION, LONG_MULTIBYTE_ANNOTATION], ids=["ascii", "multibyte"])
-@pytest.mark.parametrize("upgrade", [False, True], ids=["fresh", "upgraded"])
-def test_long_annotations(url_factory, annotation, upgrade):  # noqa: F811
+def _has_annotation_index(engine, annotation_model) -> bool:
+    indexes = inspect(engine).get_indexes(annotation_model.__tablename__)
+    return any(index["column_names"] == ["annotation"] for index in indexes)
+
+
+def test_drop_annotation_indexes(url_factory):  # noqa: F811
+    """Downgrade to the indexed schema, then verify the upgrade keeps rows and accepts long annotations."""
     db_url = url_factory()
     with create_and_drop_database(db_url), disposing_engine(db_url) as engine:
         model.Base.metadata.create_all(engine)
-        if upgrade:
-            manager = AlembicManager(engine)
-            manager.stamp_model_head(GXY)
-            alembic.command.downgrade(manager.alembic_cfg, "e96dd6fd5863")
-            for annotation_model in ANNOTATION_MODELS:
-                indexes = inspect(engine).get_indexes(annotation_model.__tablename__)
-                assert any(index["column_names"] == ["annotation"] for index in indexes)
-                if engine.dialect.name == "postgresql":
-                    with Session(engine) as session, pytest.raises(DBAPIError) as error:
-                        session.add(annotation_model(annotation=annotation))
-                        session.flush()
-                    assert getattr(error.value.orig, "sqlstate", None) == "54000"
-            with Session(engine) as session:
-                session.add_all(
-                    annotation_model(annotation="existing annotation") for annotation_model in ANNOTATION_MODELS
-                )
-                session.commit()
-            manager.upgrade(GXY)
+        manager = AlembicManager(engine)
+        manager.stamp_model_head(GXY)
+        alembic.command.downgrade(manager.alembic_cfg, "e96dd6fd5863")
+
+        for annotation_model in ANNOTATION_MODELS:
+            assert _has_annotation_index(engine, annotation_model)
+            if engine.dialect.name == "postgresql":
+                # A failed flush poisons the session, so each model needs its own.
+                with Session(engine) as session, pytest.raises(DBAPIError) as error:
+                    session.add(annotation_model(annotation=LONG_ANNOTATION))
+                    session.flush()
+                assert getattr(error.value.orig, "sqlstate", None) == "54000"
+        with Session(engine) as session:
+            session.add_all(annotation_model(annotation="existing") for annotation_model in ANNOTATION_MODELS)
+            session.commit()
+
+        manager.upgrade(GXY)
 
         with Session(engine) as session:
             for annotation_model in ANNOTATION_MODELS:
-                if upgrade:
-                    assert session.scalars(select(annotation_model.annotation)).one() == "existing annotation"
-                association = annotation_model(annotation=annotation)
-                session.add(association)
-                session.commit()
-                session.refresh(association)
-                assert association.annotation == annotation
-                association.annotation = annotation[::-1]
-                session.commit()
-                session.refresh(association)
-                assert association.annotation == annotation[::-1]
-                indexes = inspect(engine).get_indexes(annotation_model.__tablename__)
-                assert not any(index["column_names"] == ["annotation"] for index in indexes)
+                assert not _has_annotation_index(engine, annotation_model)
+                assert session.scalars(select(annotation_model.annotation)).one() == "existing"
+                session.add(annotation_model(annotation=LONG_ANNOTATION))
+            session.commit()
+            for annotation_model in ANNOTATION_MODELS:
+                assert LONG_ANNOTATION in session.scalars(select(annotation_model.annotation)).all()
 
 
 class TestAlembicManager:

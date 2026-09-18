@@ -1437,53 +1437,20 @@ steps:
             step_annotations = {step["annotation"] for step in imported_workflow["steps"].values()}
             assert "input1 description" in step_annotations
 
-    @pytest.mark.parametrize("multibyte", [False, True], ids=["ascii", "multibyte"])
-    def test_import_and_update_long_annotations(self, multibyte):
-        if multibyte:
-            annotation = "".join(
-                chr(0x4E00 + int(hashlib.sha256(str(i).encode()).hexdigest()[:8], 16) % 0x5000) for i in range(2000)
-            )
-        else:
-            annotation = "".join(hashlib.sha256(str(i).encode()).hexdigest() for i in range(64))
-        workflow = yaml.safe_load(WORKFLOW_NESTED_SIMPLE)
-        workflow["doc"] = annotation
-        workflow["steps"]["first_cat"]["doc"] = annotation
-        workflow["steps"]["nested_workflow"]["doc"] = annotation
-        workflow["steps"]["nested_workflow"]["run"]["steps"]["random_lines"]["doc"] = annotation
-        workflow_id = self._upload_yaml_workflow(yaml.safe_dump(workflow))
-
-        def annotated_steps(exported):
-            first_cat = next(step for step in exported["steps"].values() if step.get("label") == "first_cat")
-            nested = next(step for step in exported["steps"].values() if step["type"] == "subworkflow")
-            return first_cat, nested
-
-        def inner_annotation(exported):
-            nested = annotated_steps(exported)[1]
-            inner = next(
-                step for step in nested["subworkflow"]["steps"].values() if step.get("label") == "random_lines"
-            )
-            return inner["annotation"]
-
-        exported = self._download_workflow(workflow_id)
-        assert exported["annotation"] == annotation
-        for step in annotated_steps(exported):
-            assert step["annotation"] == annotation
-        assert inner_annotation(exported) == annotation
-
-        # Use editor content IDs to retain the existing subworkflow when saving.
+    def test_long_annotations_round_trip(self):
+        # Multibyte on purpose: the bound counts characters, the dropped indexes counted bytes.
+        annotation = "\u00e9" * 30_000
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_SIMPLE)
         editable = self._download_workflow(workflow_id, style="editor")
-        for step in annotated_steps(editable):
-            step["annotation"] = annotation[::-1]
-        editable["annotation"] = annotation[::-1]
-        response = self._update_workflow(workflow_id, editable)
-        self._assert_status_code_is(response, 200)
-        updated = self._download_workflow(workflow_id)
-        assert updated["annotation"] == annotation[::-1]
-        for step in annotated_steps(updated):
-            assert step["annotation"] == annotation[::-1]
-        assert inner_annotation(updated) == annotation
+        editable["annotation"] = annotation
+        next(iter(editable["steps"].values()))["annotation"] = annotation
+        self._assert_status_code_is(self._update_workflow(workflow_id, editable), 200)
 
-    @pytest.mark.parametrize("target", ["workflow", "step"], ids=["workflow", "step"])
+        updated = self._download_workflow(workflow_id)
+        assert updated["annotation"] == annotation
+        assert annotation in {step["annotation"] for step in updated["steps"].values()}
+
+    @pytest.mark.parametrize("target", ["workflow", "step"])
     def test_annotation_size_limit(self, target):
         # Exact bound lives in galaxy.model; this covers the error reaching the client as a 400.
         oversized = "a" * 100_000

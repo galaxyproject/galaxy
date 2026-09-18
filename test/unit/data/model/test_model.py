@@ -84,26 +84,19 @@ def test_resubmission_count_counts_resubmitted_state_history_entries():
     assert job.resubmission_count == 2
 
 
-@pytest.mark.parametrize(
-    "annotation_model",
-    [
-        model.HistoryAnnotationAssociation,
-        model.HistoryDatasetAssociationAnnotationAssociation,
-        model.StoredWorkflowAnnotationAssociation,
-        model.WorkflowStepAnnotationAssociation,
-        model.PageAnnotationAssociation,
-        model.VisualizationAnnotationAssociation,
-        model.HistoryDatasetCollectionAssociationAnnotationAssociation,
-        model.LibraryDatasetCollectionAnnotationAssociation,
-    ],
-    ids=lambda cls: cls.__name__,
-)
+ANNOTATION_MODELS = model.ItemAnnotationAssociation.__subclasses__()
+
+
+@pytest.mark.parametrize("annotation_model", ANNOTATION_MODELS, ids=lambda cls: cls.__name__)
 def test_annotation_size_limit(annotation_model):
-    assert annotation_model(annotation=None).annotation is None
-
     at_limit = "a" * model.MAX_ANNOTATION_SIZE
+    assert annotation_model(annotation=None).annotation is None
     assert annotation_model(annotation=at_limit).annotation == at_limit
-
-    association = annotation_model()
     with pytest.raises(RequestParameterInvalidException, match="Annotation too large"):
-        association.annotation = "a" * (model.MAX_ANNOTATION_SIZE + 1)
+        annotation_model(annotation=at_limit + "a")
+
+
+def test_annotation_columns_are_not_indexed():
+    for annotation_model in ANNOTATION_MODELS:
+        indexes = annotation_model.__table__.indexes
+        assert not any(list(index.columns.keys()) == ["annotation"] for index in indexes)
