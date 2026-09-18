@@ -4,12 +4,14 @@ import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { useConfig } from "@/composables/config";
 import { registerUploadController, unregisterUploadController } from "@/composables/upload/uploadCancellation";
 import type { LibraryDatasetUploadItem, UploadedDataset } from "@/composables/upload/uploadItemTypes";
-import { datasetsFromFetchResponse } from "@/composables/upload/uploadResponse";
+import { datasetCollectionsFromFetchResponse, datasetsFromFetchResponse } from "@/composables/upload/uploadResponse";
 import type { InitializedUploads, TrackedUpload } from "@/composables/upload/uploadTracking";
 import {
+    buildDatasetIdMapping,
     initializeTrackedUploads,
-    markTrackedCompleted,
     markTrackedError,
+    markTrackedProcessing,
+    resolveDirectCollectionResult,
     splitTrackedUploadsByType,
 } from "@/composables/upload/uploadTracking";
 import { useUploadBatchOperations } from "@/composables/upload/useUploadBatchOperations";
@@ -33,10 +35,7 @@ interface ProcessApiUploadsOptions extends UploadProcessingOptions {
     targetObjectStoreId?: string;
 }
 
-/**
- * Composable that provides a centralized handler for submitting a prepared upload
- * to the Galaxy API.
- */
+/** Submits a prepared upload to the Galaxy API. Processing items resolve via the monitor store. */
 export function useUploadSubmission() {
     const uploadState = useUploadState();
     const uploadBatchOperations = useUploadBatchOperations({ autoRecover: false });
@@ -53,26 +52,22 @@ export function useUploadSubmission() {
         });
     }
 
-    /**
-     * Determines if the prepared upload is for direct collection creation.
-     * Data library items are not compatible with direct collection creation because
-     * they require copying datasets rather than uploading files, so the presence of any
-     * data library items means we cannot do direct collection creation.
-     */
+    function addHdaDatasetsToBatch(batchId: string | undefined, hdaDatasets: UploadedDataset[]): void {
+        if (batchId) {
+            hdaDatasets.forEach((dataset) => uploadState.addBatchDatasetId(batchId, dataset.id));
+        }
+    }
+
+    /** Library items copy instead of uploading, so they cannot use direct collection creation. */
     function isDirectCollectionCreation(prepared: PreparedUpload): boolean {
         return Boolean(prepared.collectionConfig && prepared.uploadItems?.every(isFetchApiCompatible));
     }
 
     /**
-     * Process API-based uploads with progress tracking.
+     * Uploads file-based items, tracking progress in the upload state store.
      *
-     * This function handles the upload of file-based items through the Galaxy API,
-     * supporting both regular dataset uploads and direct collection creation. Progress
-     * is tracked via callbacks and the upload state store.
-     *
-     * `signal` cancels the whole submission at once (used for collection/composite
-     * uploads, which must be submitted atomically). `signals` provides one AbortSignal
-     * per standalone item — cancelling one item skips it while the rest still upload.
+     * `signal` cancels an atomic submission at once; `signals` carries one
+     * AbortSignal per standalone item.
      */
     async function processApiUploads(
         prepared: PreparedUpload,
@@ -95,24 +90,23 @@ export function useUploadSubmission() {
             preferredObjectStoreId: targetObjectStoreId,
             success: (response) => {
                 const uploadedDatasets = datasetsFromFetchResponse(response);
-
                 const completedIds = signals ? apiIds.filter((_, i) => !signals[i]?.aborted) : apiIds;
-                markTrackedCompleted(uploadState, completedIds);
-                datasets.push(...uploadedDatasets);
 
-                if (batchId) {
-                    if (directCollectionCreation) {
-                        const createdCollection = uploadedDatasets.find((dataset) => dataset.src === "hdca");
-                        if (createdCollection) {
-                            uploadState.setBatchCollectionId(batchId, createdCollection.id);
-                        }
-                        uploadState.updateBatchStatus(batchId, "completed");
-                    } else {
-                        uploadedDatasets
-                            .filter((dataset) => dataset.src === "hda")
-                            .forEach((dataset) => uploadState.addBatchDatasetId(batchId, dataset.id));
-                    }
+                if (batchId && directCollectionCreation) {
+                    // Items go to processing; the HDCA resolves via monitoring.
+                    resolveDirectCollectionResult(uploadState, batchId, completedIds, response);
+
+                    datasets.push(...uploadedDatasets, ...datasetCollectionsFromFetchResponse(response));
+                    return;
                 }
+
+                const hdaDatasets = uploadedDatasets.filter((dataset) => dataset.src === "hda");
+
+                const datasetIdsByUploadId = buildDatasetIdMapping(completedIds, hdaDatasets);
+                markTrackedProcessing(uploadState, completedIds, datasetIdsByUploadId);
+
+                datasets.push(...uploadedDatasets);
+                addHdaDatasetsToBatch(batchId, hdaDatasets);
             },
             error: (uploadError) => {
                 if (!signals && signal?.aborted) {
@@ -164,20 +158,14 @@ export function useUploadSubmission() {
     }
 
     /**
-     * Process library dataset uploads with progress tracking.
+     * Copies library datasets into the history.
      *
-     * This function copies datasets from data libraries into the current history.
-     * Each library dataset is processed sequentially, with progress tracking for each item.
+     * `signal` cancels remaining copies at once; `signals` carries one
+     * AbortSignal per item.
      *
-     * `signal` cancels all remaining library uploads at once (collection batches).
-     * `signals` provides one AbortSignal per item — a cancelled item is skipped, and the
-     * rest are still copied.
-     *
-     * @param libraryUploads - Array of tracked library upload items to process
-     * @param historyId - The target history ID to copy datasets into
-     * @param datasets - Array to collect successfully copied datasets
-     * @param options - Optional batch ID and cancellation signals
-     * @returns Promise that resolves when all library uploads complete
+     * @param libraryUploads - Tracked library uploads to process
+     * @param historyId - Target history ID
+     * @param datasets - Collects successfully copied datasets
      */
     async function processLibraryUploads(
         libraryUploads: TrackedUpload<LibraryDatasetUploadItem>[],
@@ -207,30 +195,27 @@ export function useUploadSubmission() {
                     "name" in copied && typeof copied.name === "string" ? copied.name : tracked.item.name;
                 const copiedHid = "hid" in copied && typeof copied.hid === "number" ? copied.hid : undefined;
 
-                datasets.push({
+                const produced: UploadedDataset = {
                     id: copied.id,
                     name: copiedName,
                     hid: copiedHid,
                     src: "hda",
-                });
-                if (batchId) {
-                    uploadState.addBatchDatasetId(batchId, copied.id);
-                }
+                };
+                datasets.push(produced);
+                addHdaDatasetsToBatch(batchId, [produced]);
             }
-            markTrackedCompleted(uploadState, [tracked.id]);
+            const datasetIds = copied && "id" in copied && copied.id ? [copied.id] : [];
+            markTrackedProcessing(
+                uploadState,
+                [tracked.id],
+                new Map(datasetIds.length > 0 ? [[tracked.id, datasetIds]] : []),
+            );
         }
     }
 
     /**
-     * Registers cancellation controllers for an upload submission, runs the
-     * upload process, and guarantees cleanup.
-     *
-     * In atomic mode a single `AbortController` is shared by all items (and the
-     * optional batch). In per-file mode each item gets its own controller so
-     * cancelling one item doesn't affect the others.
-     *
-     * @param fn - Receives a `CancellationConfig` (either `signal` or `signals`)
-     *   where `signals` is positional, aligned with `allUploadIds`.
+     * Runs the upload with registered cancellation controllers, then unregisters.
+     * Atomic mode shares one controller; per-file mode gives each item its own.
      */
     async function withCancellation(
         allUploadIds: string[],
@@ -259,14 +244,7 @@ export function useUploadSubmission() {
         }
     }
 
-    /**
-     * Submit a prepared upload to Galaxy and return the resulting datasets.
-     *
-     * Progress is tracked automatically in the upload state store so the
-     * progress panel reflects upload status. An optional `onProgress` callback
-     * can be used by the caller to update its own local progress indicator
-     * (e.g. the modal progress bar).
-     */
+    /** Submits a prepared upload; `onProgress` mirrors progress to the caller. */
     async function submitPreparedUpload(
         historyId: string,
         prepared: PreparedUpload,
