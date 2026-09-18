@@ -97,6 +97,7 @@ def test_annotation_size_limit(annotation_model):
 
 
 def test_annotation_columns_are_not_indexed():
-    for annotation_model in ANNOTATION_MODELS:
-        indexes = annotation_model.__table__.indexes
-        assert not any(list(index.columns.keys()) == ["annotation"] for index in indexes)
+    tables = [table for table in model.Base.metadata.tables.values() if "annotation" in table.columns]
+    assert len(tables) == len(ANNOTATION_MODELS)  # every annotated table carries the length validator
+    for table in tables:
+        assert not any(list(index.columns.keys()) == ["annotation"] for index in table.indexes)
