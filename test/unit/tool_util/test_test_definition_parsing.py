@@ -101,6 +101,12 @@ class TestTestParsing(TestCase):
         assert "maxseconds" in test_dict
         assert test_dict["maxseconds"] == 5
 
+    def test_profile_reaches_test_dict(self):
+        # the assertion separator gate reads the profile off the description, not the tool source
+        self._init_tool_for_path(functional_test_tool_path("column_assertion_delimiter.xml"))
+        test_dicts = [td.to_dict() for td in self._parse_tests()]
+        assert [td["profile"] for td in test_dicts] == ["26.2", "26.2"]
+
     def test_simple_state_parsing(self):
         self._init_tool_for_path(functional_test_tool_path("simple_constructs.xml"))
         test_dicts = self._parse_tests()

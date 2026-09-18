@@ -2193,6 +2193,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
         maxseconds=maxseconds,
         tool_id=processed_dict["tool_id"],
         tool_version=processed_dict.get("tool_version"),
+        profile=processed_dict.get("profile"),
         exception=exception,
         num_outputs=num_outputs,
         required_files=required_files,
