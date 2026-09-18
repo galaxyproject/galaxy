@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import {
     faCheck,
     faClock,
@@ -7,6 +8,7 @@ import {
     faInbox,
     faRetweet,
     faTrash,
+    faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
@@ -14,8 +16,8 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import type { UserNotification } from "@/api/notifications";
-import type { CardAction } from "@/components/Common/GCard.types";
+import type { RequestedTool, UserNotification } from "@/api/notifications";
+import type { CardAction, TitleIcon } from "@/components/Common/GCard.types";
 import { useMarkdown } from "@/composables/markdown";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { absPath } from "@/utils/redirect";
@@ -36,6 +38,44 @@ const notificationsStore = useNotificationsStore();
 const router = useRouter();
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: false });
+
+/** Display label for a requested tool: name, else shed id, else URL, else a placeholder. */
+function toolLabel(tool: RequestedTool | undefined): string {
+    return tool?.name || tool?.tool_shed_id || tool?.tool_url || "(unspecified)";
+}
+
+interface ToolDetailRow {
+    label: string;
+    value: string;
+    /** Break long unbroken values (ids, URLs). */
+    breakText?: boolean;
+    /** Preserve the line structure of multiline values. */
+    multiline?: boolean;
+}
+
+/** The detail rows shown for a requested tool; values already used as the tool's label are skipped. */
+function toolDetailRows(tool: RequestedTool | undefined): ToolDetailRow[] {
+    if (!tool) {
+        return [];
+    }
+    const rows: ToolDetailRow[] = [];
+    if (tool.tool_shed_id && tool.name) {
+        rows.push({ label: "Tool shed ID", value: tool.tool_shed_id, breakText: true });
+    }
+    if (tool.tool_url && (tool.name || tool.tool_shed_id)) {
+        rows.push({ label: "URL", value: tool.tool_url, breakText: true });
+    }
+    if (tool.description) {
+        rows.push({ label: "Description", value: tool.description, multiline: true });
+    }
+    if (tool.scientific_domain) {
+        rows.push({ label: "Scientific domain", value: tool.scientific_domain });
+    }
+    if (tool.requested_version) {
+        rows.push({ label: "Version", value: tool.requested_version });
+    }
+    return rows;
+}
 
 function handleMessageClick(event: MouseEvent) {
     const target = event.target as HTMLElement;
@@ -63,22 +103,36 @@ const title = computed(() => {
         return `${sharedItemType.value} shared with you by ${props.notification.content.owner_name}`;
     } else if (props.notification.category === "storage_operation") {
         return props.notification.content.subject;
+    } else if (props.notification.category === "tool_installation_request") {
+        const tools = props.notification.content.tools;
+        return tools.length === 1 && tools[0]
+            ? `Tool Installation Request: ${toolLabel(tools[0])}`
+            : `Tool Installation Request: ${tools.length} tools`;
     } else {
         return props.notification.content.subject;
     }
 });
 
-const titleIcon = computed(() => {
+const titleIcon = computed<TitleIcon>(() => {
+    const iconMap: Record<string, IconDefinition> = {
+        new_shared_item: faRetweet,
+        storage_operation: faHourglassHalf,
+        tool_installation_request: faWrench,
+    };
     return {
-        icon:
-            props.notification.category === "new_shared_item"
-                ? faRetweet
-                : props.notification.category === "storage_operation"
-                  ? faHourglassHalf
-                  : faInbox,
+        icon: iconMap[props.notification.category] ?? faInbox,
         class: `text-${notificationVariant.value}`,
     };
 });
+
+/** The single requested tool, when a tool installation request contains exactly one. */
+const singleRequestedTool = computed(() =>
+    props.notification.category === "tool_installation_request" && props.notification.content.tools.length === 1
+        ? props.notification.content.tools[0]
+        : undefined,
+);
+
+const singleToolDetailRows = computed(() => toolDetailRows(singleRequestedTool.value));
 
 const sharedItemType = computed(() => {
     if (props.notification.category === "new_shared_item" && props.notification.content?.item_type) {
@@ -152,70 +206,137 @@ function markNotificationAsSeen() {
 </script>
 
 <template>
-    <GCard
-        v-if="props.notification"
-        :id="props.notification.id"
-        :title="title"
-        :primary-actions="primaryActions"
-        :title-size="'sm'"
-        :title-icon="titleIcon"
-        :selected="props.selected"
-        :selectable="props.selectable"
-        :update-time="props.notification.publication_time ?? props.notification.create_time"
-        :update-time-icon="faClock"
-        :update-time-title="`Sent ${props.notification.publication_time ? 'on' : 'at'}`"
-        :content-class="[props.unreadBorder && !props.notification.seen_time ? 'border-dark unread-notification' : '']"
-        @select="emit('select', [props.notification])">
-        <template v-slot:description>
-            <template v-if="props.notification.category === 'new_shared_item'">
-                <span>The user</span>{{ " " }}<b>{{ props.notification.content.owner_name }}</b
-                >{{ " " }}<span>shared </span>
-                <BLink
-                    v-g-tooltip.bottom
-                    :title="`View ${props.notification.content.item_type} in new tab`"
-                    class="text-primary"
-                    :href="absPath(props.notification.content.slug)"
-                    target="_blank"
-                    @click="markNotificationAsSeen()">
-                    {{ props.notification.content.item_name }}
-                    <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width size="sm" />
-                </BLink>
-                <em>{{ props.notification.content.item_type }}</em
-                >{{ " " }}<span> with you.</span>
+    <div v-if="props.notification" :id="`notification-card-${props.notification.id}`">
+        <GCard
+            :id="props.notification.id"
+            :title="title"
+            :primary-actions="primaryActions"
+            :title-size="'sm'"
+            :title-icon="titleIcon"
+            :selected="props.selected"
+            :selectable="props.selectable"
+            :update-time="props.notification.publication_time ?? props.notification.create_time"
+            :update-time-icon="faClock"
+            :update-time-title="`Sent ${props.notification.publication_time ? 'on' : 'at'}`"
+            :content-class="[
+                props.unreadBorder && !props.notification.seen_time ? 'border-dark unread-notification' : '',
+            ]"
+            @select="emit('select', [props.notification])">
+            <template v-slot:description>
+                <template v-if="props.notification.category === 'new_shared_item'">
+                    <span>The user</span>{{ " " }}<b>{{ props.notification.content.owner_name }}</b
+                    >{{ " " }}<span>shared </span>
+                    <BLink
+                        v-g-tooltip.bottom
+                        :title="`View ${props.notification.content.item_type} in new tab`"
+                        class="text-primary"
+                        :href="absPath(props.notification.content.slug)"
+                        target="_blank"
+                        @click="markNotificationAsSeen()">
+                        {{ props.notification.content.item_name }}
+                        <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width size="sm" />
+                    </BLink>
+                    <em>{{ props.notification.content.item_type }}</em
+                    >{{ " " }}<span> with you.</span>
+                </template>
+                <template v-else-if="props.notification.category === 'tool_installation_request'">
+                    <dl class="mb-0">
+                        <template v-if="props.notification.content.tools.length > 1">
+                            <dt>Tools</dt>
+                            <dd>
+                                <ul class="mb-0 pl-3">
+                                    <li v-for="(tool, index) in props.notification.content.tools" :key="index">
+                                        {{ toolLabel(tool) }}
+                                        <!-- Per-tool details nested under the tool so it is clear
+                                             which tool each detail belongs to. -->
+                                        <ul v-if="toolDetailRows(tool).length" class="mb-0 pl-3 list-unstyled">
+                                            <li v-for="row in toolDetailRows(tool)" :key="row.label">
+                                                <strong>{{ row.label }}:</strong>
+                                                <span
+                                                    :class="{
+                                                        'text-break': row.breakText,
+                                                        'preserve-lines': row.multiline,
+                                                    }"
+                                                    >{{ row.value }}</span
+                                                >
+                                            </li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </dd>
+                        </template>
+                        <template v-else>
+                            <dt>Tool</dt>
+                            <dd>{{ toolLabel(singleRequestedTool) }}</dd>
+                        </template>
+                        <template v-for="row in singleToolDetailRows">
+                            <dt :key="`detail-dt-${row.label}`">{{ row.label }}</dt>
+                            <dd :key="`detail-dd-${row.label}`">
+                                <span
+                                    :class="{
+                                        'text-break': row.breakText,
+                                        'preserve-lines': row.multiline,
+                                    }"
+                                    >{{ row.value }}</span
+                                >
+                            </dd>
+                        </template>
+                        <template v-if="props.notification.content.workflow_id">
+                            <dt>Workflow</dt>
+                            <dd>
+                                <RouterLink :to="`/workflows/run?id=${props.notification.content.workflow_id}`">
+                                    {{ props.notification.content.workflow_id }}
+                                </RouterLink>
+                            </dd>
+                        </template>
+                        <template v-if="props.notification.content.additional_remarks">
+                            <dt>Additional remarks</dt>
+                            <dd class="preserve-lines">{{ props.notification.content.additional_remarks }}</dd>
+                        </template>
+                        <template v-if="props.notification.content.requester_email">
+                            <dt>Requested by</dt>
+                            <dd>
+                                <BLink :href="`mailto:${props.notification.content.requester_email}`">
+                                    {{ props.notification.content.requester_email }}
+                                </BLink>
+                            </dd>
+                        </template>
+                    </dl>
+                </template>
+                <template v-else-if="props.notification.category === 'storage_operation'">
+                    <p>
+                        {{ props.notification.content.message }}
+                    </p>
+                    <p class="mb-1">
+                        <strong>Mode:</strong> {{ props.notification.content.mode }}
+                        <span class="mx-2">|</span>
+                        <strong>State:</strong> {{ props.notification.content.state }}
+                    </p>
+                    <p class="mb-1">
+                        <strong>Total:</strong> {{ props.notification.content.total_count }}
+                        <span class="mx-2">|</span>
+                        <strong>Succeeded:</strong> {{ props.notification.content.succeeded_count }}
+                        <span class="mx-2">|</span>
+                        <strong>Failed:</strong> {{ props.notification.content.failed_count }}
+                        <span class="mx-2">|</span>
+                        <strong>Skipped:</strong> {{ props.notification.content.skipped_count }}
+                    </p>
+                    <BLink
+                        class="text-primary"
+                        :href="props.notification.content.run_url"
+                        @click="markNotificationAsSeen()">
+                        Open storage operation run status
+                    </BLink>
+                </template>
+                <template v-else>
+                    <span
+                        class="notification-message"
+                        @click="handleMessageClick"
+                        v-html="renderMarkdown(props.notification.content.message)"></span>
+                </template>
             </template>
-            <template v-else-if="props.notification.category === 'storage_operation'">
-                <p>
-                    {{ props.notification.content.message }}
-                </p>
-                <p class="mb-1">
-                    <strong>Mode:</strong> {{ props.notification.content.mode }}
-                    <span class="mx-2">|</span>
-                    <strong>State:</strong> {{ props.notification.content.state }}
-                </p>
-                <p class="mb-1">
-                    <strong>Total:</strong> {{ props.notification.content.total_count }}
-                    <span class="mx-2">|</span>
-                    <strong>Succeeded:</strong> {{ props.notification.content.succeeded_count }}
-                    <span class="mx-2">|</span>
-                    <strong>Failed:</strong> {{ props.notification.content.failed_count }}
-                    <span class="mx-2">|</span>
-                    <strong>Skipped:</strong> {{ props.notification.content.skipped_count }}
-                </p>
-                <BLink
-                    class="text-primary"
-                    :href="props.notification.content.run_url"
-                    @click="markNotificationAsSeen()">
-                    Open storage operation run status
-                </BLink>
-            </template>
-            <template v-else>
-                <span
-                    class="notification-message"
-                    @click="handleMessageClick"
-                    v-html="renderMarkdown(props.notification.content.message)" />
-            </template>
-        </template>
-    </GCard>
+        </GCard>
+    </div>
 </template>
 
 <style lang="scss">
@@ -223,5 +344,9 @@ function markNotificationAsSeen() {
     p {
         margin: 0;
     }
+}
+
+.preserve-lines {
+    white-space: pre-line;
 }
 </style>

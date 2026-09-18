@@ -1,15 +1,18 @@
+import "@/composables/__mocks__/filter";
+
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import toolsListUntyped from "@/components/ToolsView/testData/toolsList.json";
 import toolsListInPanelUntyped from "@/components/ToolsView/testData/toolsListInPanel.json";
-import { setMockConfig } from "@/composables/__mocks__/config";
+import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
 import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
+import ToolInstallationRequestForm from "../Tool/ToolInstallationRequestForm.vue";
 import ToolBox from "./ToolBox.vue";
 
 vi.mock("@/composables/config");
@@ -61,6 +64,10 @@ interface MountToolBoxOptions {
     recentTools?: string[];
     /** Override the active panel view (default: `"my_panel"`). */
     currentPanelView?: string;
+    /** Mount the workflow editor variant of the toolbox. */
+    workflow?: boolean;
+    /** Start on the favorites panel (default: true). */
+    favoritesDefault?: boolean;
     /** Install spies / extra store setup before `mount`. Runs after the defaults are applied. */
     setupStores?: (toolStore: ReturnType<typeof useToolStore>, userStore: ReturnType<typeof useUserStore>) => void;
 }
@@ -92,7 +99,8 @@ function mountToolBox(options: MountToolBoxOptions = {}) {
         localVue,
         router,
         propsData: {
-            favoritesDefault: true,
+            favoritesDefault: options.favoritesDefault ?? true,
+            workflow: options.workflow ?? false,
             useSearchWorker: false,
         },
     });
@@ -492,4 +500,114 @@ describe("ToolBox search", () => {
     // ToolPanel.test.ts > "does not request tool tags during default tool
     // panel startup" (the negative case). An additional spy-only test here
     // would duplicate the gate check without exercising user-visible behavior.
+});
+
+const ANONYMOUS_USER = { id: "anon", isAnonymous: true } as any;
+
+/** A default-panel toolbox with search results already in the store. */
+async function mountDefaultPanelToolBox(options: MountToolBoxOptions = {}) {
+    const { wrapper } = mountToolBox({
+        currentPanelView: "default",
+        favoritesDefault: false,
+        currentUser: SIGNED_IN_USER,
+        ...options,
+    });
+    await flushPromises();
+    return wrapper;
+}
+
+async function searchFor(wrapper: Wrapper<Vue>, query: string) {
+    await wrapper.find("input.search-query").setValue(query);
+    vi.advanceTimersByTime(250);
+    await flushPromises();
+}
+
+const REQUEST_BUTTON = '[data-description="request tool installation button"]';
+
+describe("ToolBox — Request Tool Installation button", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+        setMockConfig({
+            toolbox_auto_sort: true,
+            enable_notification_system: true,
+            enable_tool_installation_request_form: true,
+        });
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+        resetMockConfig();
+        setMockConfig({ toolbox_auto_sort: true });
+    });
+
+    it("is hidden when search returns results", async () => {
+        const wrapper = await mountDefaultPanelToolBox();
+        await searchFor(wrapper, "Filter");
+
+        expect(wrapper.find(REQUEST_BUTTON).exists()).toBe(false);
+    });
+
+    it("is visible when search returns no results", async () => {
+        const wrapper = await mountDefaultPanelToolBox();
+        await searchFor(wrapper, "xyznonexistenttool123");
+
+        expect(wrapper.find(".alert-warning").exists()).toBe(true);
+        expect(wrapper.find(REQUEST_BUTTON).exists()).toBe(true);
+    });
+
+    it("is hidden when enable_tool_installation_request_form config is false", async () => {
+        setMockConfig({
+            toolbox_auto_sort: true,
+            enable_notification_system: true,
+            enable_tool_installation_request_form: false,
+        });
+        const wrapper = await mountDefaultPanelToolBox();
+        await searchFor(wrapper, "xyznonexistenttool123");
+
+        expect(wrapper.find(".alert-warning").exists()).toBe(true);
+        expect(wrapper.find(REQUEST_BUTTON).exists()).toBe(false);
+    });
+
+    it("is hidden when the notification system is off, which the request needs", async () => {
+        setMockConfig({
+            toolbox_auto_sort: true,
+            enable_notification_system: false,
+            enable_tool_installation_request_form: true,
+        });
+        const wrapper = await mountDefaultPanelToolBox();
+        await searchFor(wrapper, "xyznonexistenttool123");
+
+        expect(wrapper.find(".alert-warning").exists()).toBe(true);
+        expect(wrapper.find(REQUEST_BUTTON).exists()).toBe(false);
+    });
+
+    it("is hidden for anonymous users even when search returns no results", async () => {
+        const wrapper = await mountDefaultPanelToolBox({ currentUser: ANONYMOUS_USER });
+        await searchFor(wrapper, "xyznonexistenttool123");
+
+        expect(wrapper.find(".alert-warning").exists()).toBe(true);
+        expect(wrapper.find(REQUEST_BUTTON).exists()).toBe(false);
+    });
+
+    it("is hidden in workflow mode even when search returns no results", async () => {
+        const wrapper = await mountDefaultPanelToolBox({ workflow: true });
+        await searchFor(wrapper, "xyznonexistenttool123");
+
+        expect(wrapper.find(".alert-warning").exists()).toBe(true);
+        expect(wrapper.find(REQUEST_BUTTON).exists()).toBe(false);
+    });
+
+    it("opens the tool installation request form modal when clicked", async () => {
+        const wrapper = await mountDefaultPanelToolBox();
+        await searchFor(wrapper, "xyznonexistenttool123");
+
+        const button = wrapper.find(REQUEST_BUTTON);
+        expect(button.exists()).toBe(true);
+
+        await button.trigger("click");
+        await flushPromises();
+
+        const requestForm = wrapper.findComponent(ToolInstallationRequestForm);
+        expect(requestForm.props("show")).toBe(true);
+    });
 });

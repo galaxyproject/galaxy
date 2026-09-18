@@ -4112,6 +4112,12 @@ export interface paths {
         /**
          * Sends a notification to a list of recipients (users, groups or roles).
          * @description Sends a notification to a list of recipients (users, groups or roles).
+         *
+         *     Administrators can address arbitrary recipients. Other authenticated users can only
+         *     submit the request categories Galaxy accepts from users (currently
+         *     ``tool_installation_request``); for those, the recipients are resolved server-side and
+         *     the ``recipients`` field is ignored. Submissions are rate-limited per user
+         *     (``send_notification_rate_limit``).
          */
         post: operations["send_notification_api_notifications_post"];
         /** Deletes a list of notifications received by the user in a single request. */
@@ -19950,6 +19956,7 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["ToolInstallationRequestCreateContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Expiration time
@@ -20039,6 +20046,7 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["ToolInstallationRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Create time
@@ -21266,7 +21274,7 @@ export interface components {
          *     displayed in the notification preferences.
          * @enum {string}
          */
-        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation";
+        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation" | "tool_installation_request";
         /** PluginAspectStatus */
         PluginAspectStatus: {
             /** Message */
@@ -21920,6 +21928,48 @@ export interface components {
             | "track_config"
             | "genome_data"
             | "in_use_state";
+        /**
+         * RequestedTool
+         * @description A single requested tool in a tool installation request.
+         *
+         *     This is the per-item model: each entry describes one tool. An installation
+         *     request submits an array of these, wrapped by
+         *     :class:`ToolInstallationRequestNotificationContent` which carries the
+         *     request-level metadata. All fields are sanitized on validation: control
+         *     characters are collapsed and whitespace-only values become ``None``.
+         */
+        RequestedTool: {
+            /**
+             * Description
+             * @description Short description of the tool and its scientific use case.
+             */
+            description?: string | null;
+            /**
+             * Tool name
+             * @description The human-readable name of the tool, if known.
+             */
+            name?: string | null;
+            /**
+             * Requested version
+             * @description The version of the tool being requested, if any.
+             */
+            requested_version?: string | null;
+            /**
+             * Scientific domain
+             * @description The scientific domain for the requested tool.
+             */
+            scientific_domain?: string | null;
+            /**
+             * Tool shed ID
+             * @description The fully qualified tool shed repository ID (e.g. ``toolshed.g2.bx.psu.edu/repos/devteam/bwa``), if known.
+             */
+            tool_shed_id?: string | null;
+            /**
+             * Tool URL
+             * @description Homepage or repository URL for the requested tool. Must be an http(s) URL.
+             */
+            tool_url?: string | null;
+        };
         /**
          * Requirement
          * @description Available types of job sources (model classes) that produce dataset collections.
@@ -24886,6 +24936,69 @@ export interface components {
              */
             values: string;
         };
+        /**
+         * ToolInstallationRequestCreateContent
+         * @description A tool installation request as a user submits it.
+         *
+         *     The requested ``tools`` plus request-level context: the workflow that needs
+         *     them and any remarks for the admins.
+         */
+        ToolInstallationRequestCreateContent: {
+            /**
+             * Additional remarks
+             * @description Any additional information or context for the request.
+             */
+            additional_remarks?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_installation_request";
+            /**
+             * Requested tools
+             * @description The tools being requested. Each entry describes a single tool.
+             */
+            tools: components["schemas"]["RequestedTool"][];
+            /**
+             * Workflow ID
+             * @description Encoded ID of the workflow requiring these tools, if applicable.
+             */
+            workflow_id?: string | null;
+        };
+        /**
+         * ToolInstallationRequestNotificationContent
+         * @description A tool installation request as delivered to its recipients.
+         *
+         *     Adds ``requester_email``, taken from the authenticated submitter, so the
+         *     admin's notification card can name and contact the requester.
+         */
+        ToolInstallationRequestNotificationContent: {
+            /**
+             * Additional remarks
+             * @description Any additional information or context for the request.
+             */
+            additional_remarks?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_installation_request";
+            /**
+             * Requester email
+             * @description Email address of the user who made the request.
+             */
+            requester_email?: string | null;
+            /**
+             * Requested tools
+             * @description The tools being requested. Each entry describes a single tool.
+             */
+            tools: components["schemas"]["RequestedTool"][];
+            /**
+             * Workflow ID
+             * @description Encoded ID of the workflow requiring these tools, if applicable.
+             */
+            workflow_id?: string | null;
+        };
         /** ToolLandingRequest */
         ToolLandingRequest: {
             /** Origin */
@@ -25918,6 +26031,13 @@ export interface components {
          *             "push": true
          *           },
          *           "enabled": true
+         *         },
+         *         "tool_installation_request": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
          *         }
          *       }
          *     }
@@ -26337,6 +26457,13 @@ export interface components {
          *             "push": true
          *           },
          *           "enabled": true
+         *         },
+         *         "tool_installation_request": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
          *         }
          *       }
          *     }
@@ -26367,7 +26494,8 @@ export interface components {
             content:
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
-                | components["schemas"]["StorageOperationNotificationContent"];
+                | components["schemas"]["StorageOperationNotificationContent"]
+                | components["schemas"]["ToolInstallationRequestNotificationContent"];
             /**
              * Create time
              * Format: date-time

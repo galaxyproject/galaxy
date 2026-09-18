@@ -1,0 +1,27 @@
+Use this template to customize the HTML email a user will receive
+when they submit a tool installation request.
+
+Template begins here >>>>>>
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>[Galaxy] Tool installation request submitted</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  </head>
+  <body style="font-family: 'Roboto', sans-serif;">
+
+    <p style="font-size: 12pt;">
+      Hello {{ name }},<br><br>
+
+      Your request to install the following tool(s) on <b>{{ hostname }}</b> has been submitted to the administrators:
+    </p>
+
+    {% include "mail/notifications/_tool_installation_request_fields.html" %}
+
+    <p style="font-size: 10pt; color: #666; margin-top: 20px;">
+      You received this email because you submitted a tool installation request on this Galaxy instance.
+    </p>
+
+  </body>
+</html>

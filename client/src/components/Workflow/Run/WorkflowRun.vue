@@ -15,9 +15,10 @@ import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { WorkflowRunModel } from "./model";
-import { getRunData } from "./services";
+import { getRunData, WorkflowMissingToolsError } from "./services";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import WorkflowMissingToolsRequest from "@/components/Workflow/Run/WorkflowMissingToolsRequest.vue";
 import WorkflowRunForm from "@/components/Workflow/Run/WorkflowRunForm.vue";
 import WorkflowRunFormSimple from "@/components/Workflow/Run/WorkflowRunFormSimple.vue";
 import WorkflowRunSuccess from "@/components/Workflow/Run/WorkflowRunSuccess.vue";
@@ -61,9 +62,14 @@ const disableSimpleFormReason = ref<
 >(undefined);
 const submissionError = ref("");
 const workflowError = ref("");
+const missingToolIds = ref<string[]>([]);
 const workflowName = ref("");
 const workflowModel: any = ref(null);
 const owner = ref<string>();
+// The StoredWorkflow this run page is for. In instance mode `props.workflowId`
+// is a Workflow (instance) id, which must not be sent with a tool installation
+// request: the server validates and links `workflow_id` as a StoredWorkflow id.
+const storedWorkflowId = ref<string | undefined>(props.instance ? undefined : props.workflowId);
 
 const currentHistoryId = computed(() => historyStore.currentHistoryId);
 const editorLink = computed(() => {
@@ -90,6 +96,7 @@ if (props.instance) {
         if (workflow.value) {
             workflowName.value = workflow.value?.name;
             owner.value = workflow.value?.owner;
+            storedWorkflowId.value = workflow.value?.id;
         }
     });
 }
@@ -150,23 +157,46 @@ async function loadRun() {
         workflowName.value = incomingModel.name;
         workflowModel.value = incomingModel;
         owner.value = incomingModel.runData.owner;
+        // loadRun re-runs on history changes: a successful reload clears any
+        // error state left by an earlier attempt.
+        workflowError.value = "";
+        missingToolIds.value = [];
         loading.value = false;
     } catch (e) {
-        const errMessage = errorMessageAsString(e);
-        if (errMessage === "Workflow step has upgrade messages") {
-            hasUpgradeMessages.value = true;
-            if (!props.instance) {
+        if (e instanceof WorkflowMissingToolsError) {
+            workflowError.value = e.message;
+            missingToolIds.value = e.missingToolIds;
+            if (!workflowName.value) {
                 try {
-                    const storedWorkflow = await getWorkflowInfo(props.workflowId);
+                    const storedWorkflow = await getWorkflowInfo(props.workflowId, undefined, props.instance);
                     owner.value = storedWorkflow.owner;
                     workflowName.value = storedWorkflow.name;
+                    if (props.instance) {
+                        storedWorkflowId.value = storedWorkflow.id;
+                    }
                 } catch {
-                    // just show original error
-                    workflowError.value = errMessage;
+                    // best-effort: name not critical for the request button
                 }
             }
         } else {
-            workflowError.value = errMessage;
+            // Only a missing-tools failure may offer the install request.
+            missingToolIds.value = [];
+            const errMessage = errorMessageAsString(e);
+            if (errMessage === "Workflow step has upgrade messages") {
+                hasUpgradeMessages.value = true;
+                if (!props.instance) {
+                    try {
+                        const storedWorkflow = await getWorkflowInfo(props.workflowId);
+                        owner.value = storedWorkflow.owner;
+                        workflowName.value = storedWorkflow.name;
+                    } catch {
+                        // just show original error
+                        workflowError.value = errMessage;
+                    }
+                }
+            } else {
+                workflowError.value = errMessage;
+            }
         }
         loading.value = false;
     }
@@ -220,6 +250,7 @@ defineExpose({
         <BAlert v-if="workflowError" variant="danger" show>
             <h2 class="h-text">Workflow cannot be executed. Please resolve the following issue:</h2>
             {{ workflowError }}
+            <WorkflowMissingToolsRequest :missing-tool-ids="missingToolIds" :workflow-id="storedWorkflowId" />
         </BAlert>
         <span v-else>
             <BAlert v-if="loading" variant="info" show>
