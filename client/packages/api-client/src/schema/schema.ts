@@ -26174,7 +26174,7 @@ export interface components {
              * @description Docker container image for the tool, as a fully qualified registry/repository:tag string. This image is the tool's entire execution environment, so every command used by shell_command must already exist in it. Do not prefix the value with 'docker://' -- Galaxy adds that itself for Singularity and Apptainer destinations. An unqualified name is resolved against the container runtime's own default registry (Docker Hub), which is rarely what you want.
              * @example quay.io/biocontainers/python:3.13
              */
-            container?: string | null;
+            container: string;
             /**
              * description
              * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
@@ -26235,11 +26235,7 @@ export interface components {
              * @default []
              */
             requirements:
-                | (
-                      | components["schemas"]["JavascriptRequirement"]
-                      | components["schemas"]["ResourceRequirement"]
-                      | components["schemas"]["ContainerRequirement"]
-                  )[]
+                | (components["schemas"]["JavascriptRequirement"] | components["schemas"]["ResourceRequirement"])[]
                 | null;
             /**
              * shell_command
@@ -26320,7 +26316,7 @@ export interface components {
              * @description Docker container image for the tool, as a fully qualified registry/repository:tag string. This image is the tool's entire execution environment, so every command used by shell_command must already exist in it. Do not prefix the value with 'docker://' -- Galaxy adds that itself for Singularity and Apptainer destinations. An unqualified name is resolved against the container runtime's own default registry (Docker Hub), which is rarely what you want.
              * @example quay.io/biocontainers/python:3.13
              */
-            container?: string | null;
+            container: string;
             /**
              * description
              * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
@@ -26381,11 +26377,7 @@ export interface components {
              * @default []
              */
             requirements:
-                | (
-                      | components["schemas"]["JavascriptRequirement"]
-                      | components["schemas"]["ResourceRequirement"]
-                      | components["schemas"]["ContainerRequirement"]
-                  )[]
+                | (components["schemas"]["JavascriptRequirement"] | components["schemas"]["ResourceRequirement"])[]
                 | null;
             /**
              * shell_command
