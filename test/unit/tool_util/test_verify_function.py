@@ -1,3 +1,5 @@
+import pytest
+
 from galaxy.tool_util.unittest_utils import t_data_downloader_for
 from galaxy.tool_util.verify import verify
 
@@ -95,111 +97,73 @@ def test_sim_size_failure_still_updates(tmp_path):
     assert (tmp_path / filename).open("rb").read() == b"expected"
 
 
-def test_csv_ftype_auto_sep_profile_26():
-    """For profile >= 26.0, ftype='csv' automatically sets separator for has_n_columns."""
-    item_label = "csv test profile 26.0"
-    output_content = b"col1,col2,col3\n"
-    attributes = {
-        "ftype": "csv",
-        "assert_list": [
-            {
-                "tag": "has_n_columns",
-                "attributes": {"n": "3"},
-                "children": [],
-            }
-        ],
-    }
+CSV_CONTENT = b"col1,col2,col3\n"
+TABULAR_CONTENT = b"col1\tcol2\tcol3\n"
 
-    # With profile >= 26.0, ftype="csv" triggers sep="," auto-detection
+
+def _has_n_columns(n, **attributes):
+    return [{"tag": "has_n_columns", "attributes": {"n": str(n), **attributes}, "children": []}]
+
+
+def _verify_columns(content, assert_list, profile=None, delimiter=None, fetches=None):
+    def get_delimiter():
+        if fetches is not None:
+            fetches.append(True)
+        return delimiter
+
     verify(
-        item_label,
-        output_content,
-        attributes=attributes,
+        "column assertion",
+        content,
+        attributes={"assert_list": assert_list},
         filename=None,
-        get_filecontent=t_data_downloader_for(output_content),
-        profile="26.0",
+        get_filecontent=t_data_downloader_for(content),
+        profile=profile,
+        get_delimiter=get_delimiter,
     )
 
 
-def test_csv_ftype_auto_sep_legacy_profile():
-    """Without profile, default behavior still uses tab separator for has_n_columns."""
-    item_label = "csv test legacy profile"
-    output_content = b"col1,col2,col3\n"
-    attributes = {
-        "ftype": "csv",
-        "assert_list": [
-            {
-                "tag": "has_n_columns",
-                "attributes": {"n": "3"},
-                "children": [],
-            }
-        ],
-    }
-
-    # Without a profile, sep auto-detection is not applied, so the default
-    # separator remains a tab character. Splitting a comma-separated line on
-    # tabs yields 1 column instead of 3, so this should raise an AssertionError.
-    raised = False
-    try:
-        verify(
-            item_label,
-            output_content,
-            attributes=attributes,
-            filename=None,
-            get_filecontent=t_data_downloader_for(output_content),
-        )
-    except AssertionError:
-        raised = True
-
-    assert raised
+def test_delimiter_metadata_sets_sep():
+    """profile >= 26.2 splits on the delimiter the datatype recorded for the dataset"""
+    _verify_columns(CSV_CONTENT, _has_n_columns(3), profile="26.2", delimiter=",")
 
 
-def test_tabular_ftype_auto_sep():
-    """test that ftype='tabular' uses tab separator for has_n_columns assertion"""
-    item_label = "tabular test"
-    output_content = b"col1\tcol2\tcol3\n"
-    attributes = {
-        "ftype": "tabular",
-        "assert_list": [
-            {
-                "tag": "has_n_columns",
-                "attributes": {"n": "3"},
-                "children": [],
-            }
-        ],
-    }
+def test_delimiter_metadata_ignored_for_older_profile():
+    """older profiles keep the historical tab default, so csv reads as one column"""
+    with pytest.raises(AssertionError):
+        _verify_columns(CSV_CONTENT, _has_n_columns(3), profile="26.1", delimiter=",")
 
-    # This should pass because ftype="tabular" triggers sep="\t" (default)
+    _verify_columns(CSV_CONTENT, _has_n_columns(1), profile="26.1", delimiter=",")
+
+
+def test_delimiter_not_fetched_for_older_profile():
+    """the delimiter lookup costs an API call, so it must not happen behind the gate"""
+    fetches: list = []
+    _verify_columns(TABULAR_CONTENT, _has_n_columns(3), profile="26.1", delimiter=",", fetches=fetches)
+    assert not fetches
+
+
+def test_tab_delimiter_metadata():
+    _verify_columns(TABULAR_CONTENT, _has_n_columns(3), profile="26.2", delimiter="\t")
+
+
+def test_unset_delimiter_metadata_falls_back_to_tab():
+    """delimiter is declared optional with no_value=[], so an unset element is not a string"""
+    _verify_columns(TABULAR_CONTENT, _has_n_columns(3), profile="26.2", delimiter=[])
+    _verify_columns(TABULAR_CONTENT, _has_n_columns(3), profile="26.2", delimiter=None)
+
+
+def test_explicit_sep_overrides_delimiter_metadata():
+    """an explicit sep in the assertion wins over the dataset delimiter"""
+    _verify_columns(TABULAR_CONTENT, _has_n_columns(3, sep="\t"), profile="26.2", delimiter=",")
+
+
+def test_no_delimiter_source_keeps_tab_default():
+    """callers without dataset metadata (workflow and selenium tests) keep the tab default"""
     verify(
-        item_label,
-        output_content,
-        attributes=attributes,
+        "column assertion",
+        TABULAR_CONTENT,
+        attributes={"assert_list": _has_n_columns(3)},
         filename=None,
-        get_filecontent=t_data_downloader_for(output_content),
-    )
-
-
-def test_csv_ftype_explicit_sep_override():
-    """test that explicit sep in assertion overrides ftype='csv' auto-detection"""
-    item_label = "csv with explicit sep test"
-    # Tab-separated data (not comma-separated!)
-    output_content = b"col1\tcol2\tcol3\n"
-    attributes = {
-        "ftype": "csv",  # ftype is csv but data is actually tab-separated
-        "assert_list": [
-            {
-                "tag": "has_n_columns",
-                "attributes": {"n": "3", "sep": "\t"},  # Explicit sep overrides
-                "children": [],
-            }
-        ],
-    }
-
-    # This should pass because explicit sep="\t" overrides the ftype="csv" auto-detection
-    verify(
-        item_label,
-        output_content,
-        attributes=attributes,
-        filename=None,
-        get_filecontent=t_data_downloader_for(output_content),
+        get_filecontent=t_data_downloader_for(TABULAR_CONTENT),
+        profile="26.2",
     )

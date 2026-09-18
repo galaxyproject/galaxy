@@ -490,8 +490,20 @@ class GalaxyInteractorApi:
             test_data_downloader=test_data_downloader,
             keep_outputs_dir=self.keep_outputs_dir,
             profile=profile,
+            get_delimiter=lambda: self._dataset_delimiter(history_id, hda_id),
         )
         self._verify_metadata(history_id, hda_id, attributes)
+
+    def _dataset_delimiter(self, history_id, hid):
+        """Delimiter the datatype recorded for this dataset, if it declares one.
+
+        Tabular datatypes publish their column separator as ``delimiter`` metadata,
+        which is what csv outputs need assertions to split on.
+        """
+        response = self._get(f"histories/{history_id}/contents/{hid}")
+        if response.status_code != 200:
+            return None
+        return response.json().get("metadata_delimiter")
 
     def _verify_metadata(self, history_id, hid, attributes):
         """Check dataset metadata.
@@ -1544,6 +1556,7 @@ def verify_hid(
     dataset_fetcher=None,
     keep_outputs_dir: str | None = None,
     profile: str | None = None,
+    get_delimiter: Callable[[], Any] | None = None,
 ):
     assert dataset_fetcher is not None
 
@@ -1567,6 +1580,7 @@ def verify_hid(
         keep_outputs_dir=keep_outputs_dir,
         verify_extra_files=verify_extra_files,
         profile=profile,
+        get_delimiter=get_delimiter,
     )
 
 
