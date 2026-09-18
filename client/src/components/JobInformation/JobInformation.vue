@@ -6,6 +6,7 @@ import { useRoute } from "vue-router/composables";
 import { GalaxyApi } from "@/api";
 import type { CardAction } from "@/components/Common/GCard.types";
 import { useJobConsoleOutput, useJobDetails } from "@/composables/jobDetails";
+import { useToolStore } from "@/stores/toolStore";
 import { rethrowSimple } from "@/utils/simple-error";
 import { stateIsTerminal } from "@/utils/utils";
 
@@ -37,6 +38,7 @@ const props = withDefaults(
 );
 
 const route = useRoute();
+const toolStore = useToolStore();
 
 /** Invocation ID for the run that the job might have come from. It is `null` if the job has no associated invocation,
  * or `undefined` if it has not been fetched yet.
@@ -74,7 +76,7 @@ const primaryActions = computed<CardAction[]>(() => {
             variant: "link",
         });
     }
-    if (props.includeRerunIndicator) {
+    if (props.includeRerunIndicator && job.value && toolStore.getToolForId(job.value.tool_id)?.is_workflow_compatible) {
         actions.push({
             id: "job-info-card-rerun",
             class: "text-decoration-none",

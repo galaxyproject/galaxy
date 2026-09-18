@@ -29,6 +29,7 @@ vi.mock("axios", () => ({
 vi.mock("@/stores/toolStore", () => ({
     useToolStore: () => ({
         getToolNameById: () => TEST_TOOL_NAME,
+        getToolForId: () => ({ is_workflow_compatible: true }),
     }),
 }));
 
