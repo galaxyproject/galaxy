@@ -12,10 +12,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
 import type { CompositeFileUploadItem, CompositeSlotQueueItem, UploadItem } from "@/composables/upload/uploadItemTypes";
+import { isCancellableUpload } from "@/composables/upload/uploadItemTypes";
 import { useHistoryStore } from "@/stores/historyStore";
 import { bytesToString } from "@/utils/utils";
 
-import { getFileProgressUi, getUploadItemDisplayInfo } from "./uploadProgressUi";
+import { getFileProgressUi, getFileStatusMessage, getUploadItemDisplayInfo } from "./uploadProgressUi";
 
 import UploadItemCard from "./UploadItemCard.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
@@ -36,6 +37,7 @@ const historyStore = useHistoryStore();
 
 const ui = computed(() => getFileProgressUi(props.file));
 const displayInfo = computed(() => getUploadItemDisplayInfo(props.file));
+const statusMessage = computed(() => getFileStatusMessage(props.file));
 const uploadedAtIso = computed(() => new Date(props.file.createdAt).toISOString());
 
 const targetHistoryName = computed(() =>
@@ -48,11 +50,7 @@ const isDifferentHistory = computed(
 
 const hasError = computed(() => props.file.status === "error");
 
-const isCancellable = computed(
-    () =>
-        !props.nested &&
-        (props.file.status === "queued" || props.file.status === "uploading" || props.file.status === "processing"),
-);
+const isCancellable = computed(() => !props.nested && isCancellableUpload(props.file));
 
 const cardBadges = computed(() => {
     const badges = [] as any[];
@@ -156,6 +154,9 @@ function onCancel(event: Event) {
                     :aria-valuenow="props.file.progress"
                     aria-valuemin="0"
                     aria-valuemax="100"></div>
+            </div>
+            <div v-if="statusMessage" class="status-message text-muted small mt-1">
+                {{ statusMessage }}
             </div>
             <div v-if="props.file.error" class="error-message text-danger small mt-1">
                 {{ props.file.error }}
