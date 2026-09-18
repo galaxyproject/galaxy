@@ -5,6 +5,7 @@ from shutil import rmtree
 from tempfile import mkdtemp
 
 import pytest
+from packaging.requirements import Requirement
 
 from galaxy.dependencies import (
     ConditionalDependencies,
@@ -245,12 +246,17 @@ def test_object_store_templates_default_needs_no_dependencies():
 
 
 def test_optional_requirements_carry_cloudbridge_extras():
-    # The version specifier must survive the extras rewrite.
+    # The version specifier must survive the extras rewrite - whatever
+    # conditional-requirements.txt currently pins it to.
     with _config_context() as cc:
         object_store_config = cc.write_config("objectstore.yml", DISTRIBUTED_WITH_CLOUD_PROVIDERS_CONFIG_YAML)
         galaxy_config = cc.write_config("galaxy.yml", f"galaxy:\n  object_store_config_file: {object_store_config}\n")
+        conditional = ConditionalDependencies(galaxy_config)
+        specifier = next(
+            Requirement(dep.line).specifier for dep in conditional.conditional_reqs if dep.name == "cloudbridge"
+        )
         requirements = [r for r in optional(galaxy_config) if r.startswith("cloudbridge")]
-        assert requirements == ["cloudbridge[azure,openstack]>=4.4.0"]
+        assert requirements == [f"cloudbridge[azure,openstack]{specifier}"]
 
 
 def test_fs_default():
