@@ -72,5 +72,5 @@ class FreehandComment(BaseComment):
     data: FreehandCommentData
 
 
-class WorkflowCommentModel(RootModel):
+class WorkflowCommentModel(RootModel[TextComment | MarkdownComment | FrameComment | FreehandComment]):
     root: TextComment | MarkdownComment | FrameComment | FreehandComment = Field(..., discriminator="type")
