@@ -313,6 +313,31 @@ def test_user_tool_source_rejects_unknown_top_level_key():
         UserToolSource.model_validate(bad)
 
 
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"requirements": [{"type": "resource", "cores_mni": 8}]},
+        {"requirements": [{"type": "javascript", "expression_lib": ["1"], "expressionLib": ["1"]}]},
+        {"citations": [{"type": "doi", "content": "10.1234/abc.def", "url": "https://example.org"}]},
+        {"configfiles": [{"name": "conf", "content": "x", "eval_engnie": "ecmascript"}]},
+        {"help": {"format": "markdown", "content": "Hi", "title": "Help"}},
+        {"inputs": [{"name": "mode", "type": "select", "options": [{"label": "A", "value": "a", "default": True}]}]},
+    ],
+)
+def test_user_tool_source_rejects_unknown_nested_keys(overrides):
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        UserToolSource.model_validate(
+            {
+                "class": "GalaxyUserTool",
+                "name": "Unknown nested key",
+                "version": "0.1.0",
+                "container": "busybox",
+                "shell_command": "true",
+                **overrides,
+            }
+        )
+
+
 def test_user_tool_source_validates_pr19434_example():
     tool = UserToolSource.model_validate(CAT_USER_DEFINED)
     assert tool.inputs[0].root.type == "data"

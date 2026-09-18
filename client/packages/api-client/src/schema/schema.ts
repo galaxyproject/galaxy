@@ -16275,7 +16275,7 @@ export interface components {
             label?: string | null;
             /**
              * Metadata Source
-             * @description Single dataset input whose datatype-specific metadata this output copies as defaults. Use this when the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments.
+             * @description Data input whose datatype-specific metadata this output copies as defaults. Use this when the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments.
              */
             metadata_source?: string | null;
             /**
@@ -16502,7 +16502,7 @@ export interface components {
             label?: string | null;
             /**
              * Metadata Source
-             * @description Single dataset input whose datatype-specific metadata this output copies as defaults. Use this when the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments.
+             * @description Data input whose datatype-specific metadata this output copies as defaults. Use this when the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments.
              */
             metadata_source?: string | null;
             /**
@@ -21800,8 +21800,8 @@ export interface components {
          *     Set the minimum resources needed to run the job and, when useful, an upper
          *     limit. Galaxy exposes the allocated CPU count to the command as
          *     ``$GALAXY_SLOTS``. Use numbers or numeric strings. Other strings are
-         *     reserved for expressions, which are not evaluated yet and are currently
-         *     ignored.
+         *     reserved for expressions, which are not supported yet: a non-numeric value
+         *     fails the create-time lint check.
          */
         ResourceRequirement: {
             /**
@@ -21859,7 +21859,7 @@ export interface components {
             ram_min: number | string | null;
             /**
              * Shm Size
-             * @description Size of /dev/shm to request as `<number><unit>`. The optional unit can be `b` (bytes), `k` (kilobytes), `m` (megabytes), or `g` (gigabytes); without a unit, the value is bytes.
+             * @description Size of /dev/shm to request, in bytes.
              */
             shm_size?: number | string | null;
             /**

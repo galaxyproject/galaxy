@@ -24,6 +24,8 @@ from ._base import ToolSourceBaseModel
 
 
 class Container(ToolSourceBaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     type: Literal["docker", "singularity"]
     container_id: str
 
@@ -33,6 +35,8 @@ class Requirement(ToolSourceBaseModel):
 
 
 class ContainerRequirement(ToolSourceBaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     type: Literal["container"]
     container: Container
 
@@ -67,9 +71,11 @@ class ResourceRequirement(ToolSourceBaseModel):
     Set the minimum resources needed to run the job and, when useful, an upper
     limit. Galaxy exposes the allocated CPU count to the command as
     ``$GALAXY_SLOTS``. Use numbers or numeric strings. Other strings are
-    reserved for expressions, which are not evaluated yet and are currently
-    ignored.
+    reserved for expressions, which are not supported yet: a non-numeric value
+    fails the create-time lint check.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     type: Literal["resource"]
     cores_min: Annotated[
@@ -110,12 +116,7 @@ class ResourceRequirement(ToolSourceBaseModel):
     ] = None
     shm_size: Annotated[
         ResourceRequirementValue,
-        Field(
-            description=(
-                "Size of /dev/shm to request as `<number><unit>`. The optional unit can be `b` (bytes), "
-                "`k` (kilobytes), `m` (megabytes), or `g` (gigabytes); without a unit, the value is bytes."
-            )
-        ),
+        Field(description="Size of /dev/shm to request, in bytes."),
     ] = None
     timelimit: Annotated[
         ResourceRequirementValue,
@@ -124,6 +125,8 @@ class ResourceRequirement(ToolSourceBaseModel):
 
 
 class JavascriptRequirement(ToolSourceBaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     type: Literal["javascript"]
     expression_lib: Optional[
         List[
@@ -186,6 +189,8 @@ class XmlTemplateConfigFile(TemplateConfigFile):
 
 
 class YamlTemplateConfigFile(TemplateConfigFile):
+    model_config = ConfigDict(extra="forbid")
+
     eval_engine: Literal["ecmascript"] = "ecmascript"
 
 
@@ -200,6 +205,8 @@ BIBTEX_RE = re.compile(r"^@[a-zA-Z]+\s*\{", re.MULTILINE)
 
 
 class Citation(ToolSourceBaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     type: str
     content: str
 
@@ -246,6 +253,8 @@ class Citation(ToolSourceBaseModel):
 
 
 class HelpContent(ToolSourceBaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     format: Literal["restructuredtext", "plain_text", "markdown"]
     content: str
 
