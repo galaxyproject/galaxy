@@ -51,18 +51,8 @@ const userOwnsJob = computed(() => {
 /** Whether to render this button
  * 1. If the job is not the user's own
  * 2. Job is not in a terminal state
- * 3. Job is not an upload or data fetch tool
- *    (actually decided based on if the tool `is_workflow_compatible`,
- *    but that would require an extra fetch. Just going by known non-rerunnable tool ids for now)
  */
-const canStopJob = computed(
-    () =>
-        job.value &&
-        userOwnsJob.value &&
-        NON_TERMINAL_STATES.includes(job.value.state) &&
-        !job.value.tool_id.startsWith("upload") &&
-        job.value.tool_id !== "__DATA_FETCH__",
-);
+const canStopJob = computed(() => job.value && userOwnsJob.value && NON_TERMINAL_STATES.includes(job.value.state));
 
 /** Whether the stop job action is currently being performed */
 const stopping = ref(false);

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { faRedo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed } from "vue";
+import { computed, toRef } from "vue";
 import { useRoute } from "vue-router/composables";
+
+import { useJobDetails } from "@/composables/jobDetails.js";
+import { useToolStore } from "@/stores/toolStore";
 
 import GButton from "../BaseComponents/GButton.vue";
 
@@ -13,11 +16,17 @@ const props = defineProps<{
     outline?: boolean;
 }>();
 
+const { job } = useJobDetails(toRef(props, "jobId"));
+const toolStore = useToolStore();
+
 const rerunUrl = computed(() => `/?job_id=${props.jobId}`);
+
+const canRerunJob = computed(() => job.value && toolStore.getToolForId(job.value.tool_id)?.is_workflow_compatible);
 </script>
 
 <template>
     <GButton
+        v-if="canRerunJob"
         title="Run Job Again"
         size="small"
         color="blue"
