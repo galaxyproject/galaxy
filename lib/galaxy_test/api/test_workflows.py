@@ -1483,6 +1483,20 @@ steps:
             assert step["annotation"] == annotation[::-1]
         assert inner_annotation(updated) == annotation
 
+    @pytest.mark.parametrize("target", ["workflow", "step"], ids=["workflow", "step"])
+    def test_annotation_size_limit(self, target):
+        # Exact bound lives in galaxy.model; this covers the error reaching the client as a 400.
+        oversized = "a" * 100_000
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_SIMPLE)
+        editable = self._download_workflow(workflow_id, style="editor")
+        if target == "workflow":
+            editable["annotation"] = oversized
+        else:
+            next(iter(editable["steps"].values()))["annotation"] = oversized
+        response = self._update_workflow(workflow_id, editable)
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Annotation too large")
+
     def test_import_subworkflows(self):
         def get_subworkflow_content_id(workflow_id):
             workflow_contents = self._download_workflow(workflow_id, style="editor")

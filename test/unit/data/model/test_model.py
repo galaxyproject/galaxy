@@ -3,7 +3,10 @@ from uuid import (
     uuid4,
 )
 
+import pytest
+
 from galaxy import model
+from galaxy.exceptions import RequestParameterInvalidException
 
 
 def test_get_uuid():
@@ -79,3 +82,28 @@ def test_resubmission_count_counts_resubmitted_state_history_entries():
     _record_state(job, model.Job.states.RESUBMITTED)
     _record_state(job, model.Job.states.OK)
     assert job.resubmission_count == 2
+
+
+@pytest.mark.parametrize(
+    "annotation_model",
+    [
+        model.HistoryAnnotationAssociation,
+        model.HistoryDatasetAssociationAnnotationAssociation,
+        model.StoredWorkflowAnnotationAssociation,
+        model.WorkflowStepAnnotationAssociation,
+        model.PageAnnotationAssociation,
+        model.VisualizationAnnotationAssociation,
+        model.HistoryDatasetCollectionAssociationAnnotationAssociation,
+        model.LibraryDatasetCollectionAnnotationAssociation,
+    ],
+    ids=lambda cls: cls.__name__,
+)
+def test_annotation_size_limit(annotation_model):
+    assert annotation_model(annotation=None).annotation is None
+
+    at_limit = "a" * model.MAX_ANNOTATION_SIZE
+    assert annotation_model(annotation=at_limit).annotation == at_limit
+
+    association = annotation_model()
+    with pytest.raises(RequestParameterInvalidException, match="Annotation too large"):
+        association.annotation = "a" * (model.MAX_ANNOTATION_SIZE + 1)

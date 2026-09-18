@@ -260,6 +260,7 @@ _datatypes_registry = None
 
 MAX_WORKFLOW_README_SIZE = 20000
 MAX_WORKFLOW_HELP_SIZE = 40000
+MAX_ANNOTATION_SIZE = 65536
 STR_TO_STR_DICT = dict[str, str]
 
 
@@ -12283,7 +12284,19 @@ class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
 
 
 # Item annotation classes.
-class HistoryAnnotationAssociation(Base, RepresentById):
+class ItemAnnotationAssociation:
+    """Bounds annotation length; the column itself is unbounded TEXT."""
+
+    @validates("annotation")
+    def validates_annotation(self, key, annotation):
+        if annotation is not None and (size := len(annotation)) > MAX_ANNOTATION_SIZE:
+            raise galaxy.exceptions.RequestParameterInvalidException(
+                f"Annotation too large ({size}), maximum allowed length ({MAX_ANNOTATION_SIZE})."
+            )
+        return annotation
+
+
+class HistoryAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "history_annotation_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -12294,7 +12307,7 @@ class HistoryAnnotationAssociation(Base, RepresentById):
     user: Mapped["User"] = relationship()
 
 
-class HistoryDatasetAssociationAnnotationAssociation(Base, RepresentById):
+class HistoryDatasetAssociationAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "history_dataset_association_annotation_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -12307,7 +12320,7 @@ class HistoryDatasetAssociationAnnotationAssociation(Base, RepresentById):
     user: Mapped[Optional["User"]] = relationship()
 
 
-class StoredWorkflowAnnotationAssociation(Base, RepresentById):
+class StoredWorkflowAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "stored_workflow_annotation_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -12318,7 +12331,7 @@ class StoredWorkflowAnnotationAssociation(Base, RepresentById):
     user: Mapped[Optional["User"]] = relationship()
 
 
-class WorkflowStepAnnotationAssociation(Base, RepresentById):
+class WorkflowStepAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "workflow_step_annotation_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -12329,7 +12342,7 @@ class WorkflowStepAnnotationAssociation(Base, RepresentById):
     user: Mapped[Optional["User"]] = relationship()
 
 
-class PageAnnotationAssociation(Base, RepresentById):
+class PageAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "page_annotation_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -12340,7 +12353,7 @@ class PageAnnotationAssociation(Base, RepresentById):
     user: Mapped[Optional["User"]] = relationship()
 
 
-class VisualizationAnnotationAssociation(Base, RepresentById):
+class VisualizationAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "visualization_annotation_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -12351,7 +12364,7 @@ class VisualizationAnnotationAssociation(Base, RepresentById):
     user: Mapped[Optional["User"]] = relationship()
 
 
-class HistoryDatasetCollectionAssociationAnnotationAssociation(Base, RepresentById):
+class HistoryDatasetCollectionAssociationAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "history_dataset_collection_annotation_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -12366,7 +12379,7 @@ class HistoryDatasetCollectionAssociationAnnotationAssociation(Base, RepresentBy
     user: Mapped[Optional["User"]] = relationship()
 
 
-class LibraryDatasetCollectionAnnotationAssociation(Base, RepresentById):
+class LibraryDatasetCollectionAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "library_dataset_collection_annotation_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
