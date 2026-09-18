@@ -52,7 +52,14 @@ const jobIsRunning = computed(() => job.value?.state === "running");
 
 // Console output is only polled while the job is actively running
 const consoleOutputJobId = computed(() => (jobIsRunning.value ? props.jobId : undefined));
-const { stdout: stdout_text, stderr: stderr_text } = useJobConsoleOutput(consoleOutputJobId);
+const { stdout: polledStdout, stderr: polledStderr } = useJobConsoleOutput(consoleOutputJobId);
+
+const stdout_text = computed(() =>
+    job.value && stateIsTerminal({ state: job.value.state }) ? (job.value.tool_stdout ?? "") : polledStdout.value,
+);
+const stderr_text = computed(() =>
+    job.value && stateIsTerminal({ state: job.value.state }) ? (job.value.tool_stderr ?? "") : polledStderr.value,
+);
 
 const routeToInvocation = computed(() => `/workflows/invocations/${fetchedInvocationId.value}`);
 
@@ -96,19 +103,6 @@ const metadataDetail = ref<Record<string, string>>({
     exit_code: `Tools may use exit codes to indicate specific execution errors. Many programs use 0 to indicate success and non-zero exit codes to indicate errors. Galaxy allows each tool to specify exit codes that indicate errors. https://docs.galaxyproject.org/en/master/dev/schema.html#tool-stdio-exit-code`,
     error_level: `NO_ERROR = 0</br>LOG = 1</br>QC = 1.1</br>WARNING = 2</br>FATAL = 3</br>FATAL_OOM = 4</br>MAX = 4`,
 });
-
-// Once the job reaches a terminal state, prefer its own tool_stdout/tool_stderr as the final,
-// complete output
-watch(
-    job,
-    (newJob) => {
-        if (newJob && stateIsTerminal({ state: newJob.state })) {
-            stdout_text.value = newJob.tool_stdout ?? "";
-            stderr_text.value = newJob.tool_stderr ?? "";
-        }
-    },
-    { immediate: true },
-);
 
 function filterMetadata(jobMessages: JobMessage[]): Partial<JobMessage>[] {
     return jobMessages.map((item) => {

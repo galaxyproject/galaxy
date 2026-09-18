@@ -121,8 +121,8 @@ export function useResourceWatcher<T = unknown>(
     /**
      * Fully tears down this watcher: stops any in-progress poll and removes its
      * `visibilitychange` listener. Call this once the watcher is permanently done (as opposed to
-     * `stopWatchingResource`, which can be resumed later) 
-     * 
+     * `stopWatchingResource`, which can be resumed later)
+     *
      * e.g. a caller that creates one watcher per resource id and is finished with a particular
      * id for good. Without this, the listener added by `setupVisibilityListeners` outlives
      * the watcher for the rest of the page's life.
