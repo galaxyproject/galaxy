@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { faCheck, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { nextTick, onUnmounted, ref, watch } from "vue";
 
 import localize from "@/utils/localization";
+
+import CheckDraw from "@/components/Common/SuccessIndicator/CheckDraw.vue";
 
 interface Props {
     /** If the object has unsaved changes */
@@ -22,29 +24,31 @@ const props = withDefaults(defineProps<Props>(), {
 /** Briefly shown after a successful save when the exposed `flashSavedIndicator` method is called. */
 const showSavedIndicator = ref(false);
 
+/** Used to key each individual flash so `CheckDraw` replays its draw-in animation each time. */
+const flashKey = ref(0);
+
 let savedIndicatorTimeout: ReturnType<typeof setTimeout> | undefined;
-let flashGeneration = 0;
 let unmounted = false;
 
 onUnmounted(() => {
     unmounted = true;
-    flashGeneration++;
+    flashKey.value++;
     clearTimeout(savedIndicatorTimeout);
 });
 
 /** Flashes a "Saved" indicator when called, given `props.hasChanges` is `false`. */
 async function flashSavedIndicator() {
-    const generation = ++flashGeneration;
+    const generation = ++flashKey.value;
     clearTimeout(savedIndicatorTimeout);
 
     // Let a simultaneous `hasChanges` update settle before deciding whether the feedback is still valid.
     await nextTick();
-    if (unmounted || generation !== flashGeneration || props.hasChanges) {
+    if (unmounted || generation !== flashKey.value || props.hasChanges) {
         return;
     }
     showSavedIndicator.value = true;
     savedIndicatorTimeout = setTimeout(() => {
-        if (!unmounted && generation === flashGeneration) {
+        if (!unmounted && generation === flashKey.value) {
             showSavedIndicator.value = false;
         }
     }, 1500);
@@ -56,7 +60,7 @@ watch(
     () => props.hasChanges,
     (hasChanges) => {
         if (hasChanges) {
-            flashGeneration++;
+            flashKey.value++;
             clearTimeout(savedIndicatorTimeout);
             showSavedIndicator.value = false;
         }
@@ -83,7 +87,7 @@ defineExpose({
                 v-show="showSavedIndicator"
                 class="changes-saved-indicator"
                 :data-description="`${props.objectNamespace} saved indicator`">
-                <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+                <CheckDraw v-if="showSavedIndicator" :key="flashKey" />
                 {{ localize("Saved") }}
             </span>
         </transition>
@@ -102,6 +106,9 @@ defineExpose({
 
     .changes-saved-indicator {
         color: var(--color-green-700);
+        display: flex;
+        gap: 0.25rem;
+        align-items: center;
     }
 
     .saved-indicator-enter-active,
