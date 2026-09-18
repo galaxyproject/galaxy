@@ -3,8 +3,9 @@
  *
  * Backend uses "page" everywhere — that's an implementation detail.
  * Frontend terminology:
- *   - "Galaxy Notebook" — history-attached pages (the working document)
- *   - "Report"          — standalone pages (the publishable artifact)
+ *   - "Galaxy Notebook"   — history-attached pages (the working document)
+ *   - "Notebook"          — standalone pages (the publishable artifact)
+ *   - "Invocation Report" — pages generated for a workflow invocation
  *
  * Change strings here to rename across the entire UI.
  */
@@ -47,17 +48,17 @@ export const PAGE_LABELS: Record<
         historyCounterTooltip: "Galaxy Notebooks",
     },
     standalone: {
-        entityName: "Report",
-        entityNamePlural: "Reports",
+        entityName: "Notebook",
+        entityNamePlural: "Notebooks",
         titleIcon: faFileContract,
-        defaultTitle: "Untitled Report",
-        editorBackLabel: "Back to Reports",
-        newButton: "Create Report",
-        emptyStateTitle: "No reports yet",
-        emptyStateDescription: "Create a report to publish your analysis.",
-        editButton: "Edit Report",
-        viewButton: "View Report",
-        createButton: "Create Report",
+        defaultTitle: "Untitled Notebook",
+        editorBackLabel: "Back to Notebooks",
+        newButton: "Create Notebook",
+        emptyStateTitle: "No notebooks yet",
+        emptyStateDescription: "Create a notebook to publish your analysis.",
+        editButton: "Edit Notebook",
+        viewButton: "View Notebook",
+        createButton: "Create Notebook",
     },
     invocation: {
         entityName: "Invocation Report",
@@ -75,26 +76,26 @@ export const PAGE_LABELS: Record<
     },
 } as const;
 
-/** Grid page (lists standalone reports). */
+/** Grid page (lists standalone notebooks). */
 export const GRID_LABELS = {
-    heading: "Reports",
-    createButton: "Create Report",
-    myTab: "My Reports",
-    publicTab: "Public Reports",
-    loginRequired: "Manage your Reports",
-    savedTitle: "Saved Reports",
-    publishedTitle: "Published Reports",
-    gridPlural: "Reports",
-    deleteConfirm: "Are you sure that you want to delete the selected report?",
-    restoreConfirm: "Are you sure that you want to restore the selected report?",
-    windowTitle: (title: unknown) => `Report: ${title}`,
+    heading: "Notebooks",
+    createButton: "Create Notebook",
+    myTab: "My Notebooks",
+    publicTab: "Public Notebooks",
+    loginRequired: "Manage your Notebooks",
+    savedTitle: "Saved Notebooks",
+    publishedTitle: "Published Notebooks",
+    gridPlural: "Notebooks",
+    deleteConfirm: "Are you sure that you want to delete the selected notebook?",
+    restoreConfirm: "Are you sure that you want to restore the selected notebook?",
+    windowTitle: (title: unknown) => `Notebook: ${title}`,
 } as const;
 
 /** Activity bar entry. */
 export const ACTIVITY_LABELS = {
-    title: "Reports",
-    description: "Display and create new reports.",
-    tooltip: "Show all reports",
+    title: "Notebooks",
+    description: "Display and create new notebooks.",
+    tooltip: "Show all notebooks",
 } as const;
 
 /** Agent type registry. */
@@ -105,11 +106,11 @@ export const AGENT_LABELS = {
 
 /** Error messages (store) — generic since they apply to both types. */
 export const ERROR_MESSAGES = {
-    loadList: "Failed to load pages",
-    loadPage: "Failed to load page",
-    createPage: "Failed to create page",
-    savePage: "Failed to save page",
-    deletePage: "Failed to delete page",
+    loadList: "Failed to load notebooks",
+    loadPage: "Failed to load notebook",
+    createPage: "Failed to create notebook",
+    savePage: "Failed to save notebook",
+    deletePage: "Failed to delete notebook",
     loadRevisions: "Failed to load revisions",
     loadRevision: "Failed to load revision",
     restoreRevision: "Failed to restore revision",
@@ -117,29 +118,29 @@ export const ERROR_MESSAGES = {
 
 /** Published page view. */
 export const PUBLISHED_LABELS = {
-    editButton: "Edit Report",
-    loadingMessage: "Loading Report",
-    errorHeading: "Failed to load Report",
-    modelClass: "Report",
+    editButton: "Edit Notebook",
+    loadingMessage: "Loading Notebook",
+    errorHeading: "Failed to load Notebook",
+    modelClass: "Notebook",
 } as const;
 
-/** Page form (create/edit standalone reports). */
+/** Page form (create/edit standalone notebooks). */
 export const FORM_LABELS = {
-    createTitle: "Create a new Report",
-    editTitle: "Edit Report",
+    createTitle: "Create a new Notebook",
+    editTitle: "Edit Notebook",
     slugHelp:
-        "A unique identifier that will be used for public links to this report. " +
+        "A unique identifier that will be used for public links to this notebook. " +
         "This field can only contain lowercase letters, numbers, and dashes (-).",
-    annotationHelp: "A description of the report. The annotation is shown alongside published reports.",
+    annotationHelp: "A description of the notebook. The annotation is shown alongside published notebooks.",
 } as const;
 
 /** Embed labels. */
 export const EMBED_LABELS = {
-    iframeTitle: "Galaxy Report Embed",
-    showTitle: "Show report title",
+    iframeTitle: "Galaxy Notebook Embed",
+    showTitle: "Show notebook title",
 } as const;
 
 /** Object permissions modal. */
 export const PERMISSIONS_LABELS = {
-    modalTitle: "Report Object Permissions",
+    modalTitle: "Notebook Object Permissions",
 } as const;

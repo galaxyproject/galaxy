@@ -119,7 +119,7 @@ describe("PageView", () => {
 
             const editBtn = wrapper.find('[data-description="page view edit button"]');
             expect(editBtn.exists()).toBe(true);
-            expect(editBtn.text()).toContain("Edit Report");
+            expect(editBtn.text()).toContain("Edit Notebook");
         });
 
         it("shows page title in toolbar", async () => {
