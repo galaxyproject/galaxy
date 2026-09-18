@@ -426,15 +426,16 @@ sections:
       | `cuda_compute_capability` | Minimum required CUDA compute capability. | No |
       | `gpu_memory_min` | Minimum required GPU memory in MiB. | No |
       | `cuda_device_count_min`, `cuda_device_count_max` | Minimum and maximum number of GPUs to reserve. | No |
-      | `shm_size` | Requested `/dev/shm` size, optionally suffixed with `b`, `k`, `m`, or `g`. | No |
+      | `shm_size` | Requested `/dev/shm` size in bytes. | No |
       | `timelimit` | Maximum runtime in seconds. Galaxy terminates the job if it is exceeded. | No |
 
       Pass `$GALAXY_SLOTS` to threaded programs; Galaxy sets it to the number
       of CPU cores allocated to the job.
 
       Use numbers or numeric strings. Other strings are reserved for runtime
-      expressions; expression evaluation for resource requirements is not
-      implemented yet, so those values are currently ignored.
+      expressions, which are not supported yet: a non-numeric value such as
+      `2g` fails the create-time lint check (`ResourceRequirementExpression`),
+      so the tool cannot be saved until it is corrected.
 
   - id: validation
     title: What does Galaxy check for me?
@@ -443,8 +444,9 @@ sections:
       Galaxy checks a user-defined tool at several points before it ever runs:
 
       - **Schema validation.** Unknown keys are rejected anywhere in the
-        document, so a misspelled or XML-only field fails immediately rather
-        than being ignored.
+        document, including inside inputs, outputs, requirements, config files
+        and citations, so a misspelled or XML-only field fails immediately
+        rather than being ignored.
       - **Cross-field validation.** Every `$(inputs.input_name)` referenced from
         `shell_command` or a config file must correspond to a declared input,
         and every output must declare where its bytes come from.

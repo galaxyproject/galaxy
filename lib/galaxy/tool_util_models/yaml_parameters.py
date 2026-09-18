@@ -60,6 +60,8 @@ from .parameters import (
 class YamlLabelValue(BaseModel):
     """YAML-friendly option model — ``selected`` defaults to ``False``."""
 
+    model_config = ConfigDict(extra="forbid")
+
     label: str
     value: str
     selected: bool = False
