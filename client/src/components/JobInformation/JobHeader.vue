@@ -11,6 +11,7 @@ import JobState from "@/components/JobStates/JobState.vue";
 
 const props = defineProps<{
     jobId: string;
+    noToolName?: boolean;
 }>();
 
 const toolStore = useToolStore();
@@ -21,7 +22,7 @@ const { job } = useJobDetails(toRef(props, "jobId"));
 <template>
     <div>
         <div class="d-flex justify-content-between">
-            <Heading v-if="job" :icon="faWrench" inline size="md">
+            <Heading v-if="job && !props.noToolName" :icon="faWrench" inline size="md">
                 {{ toolStore.getToolNameById(job.tool_id, "Job Details") }}
             </Heading>
             <div class="job-header-end">
