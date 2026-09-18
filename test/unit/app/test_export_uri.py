@@ -9,13 +9,13 @@ import pytest
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConf,
+    DictFileSourcesUserContext,
 )
 from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.model.store import TarModelExportStore
-from ._util import (
-    user_context_fixture,
-    write_from,
-)
+
+TEST_USERNAME = "alice"
+TEST_EMAIL = "alice@galaxyproject.org"
 
 
 @pytest.fixture(params=["posix", "gxftp", "absolute_result"])
@@ -42,7 +42,11 @@ def export_destination(request, tmp_path, monkeypatch):
             return expected
 
         monkeypatch.setattr(source, "_write_from", write_to_assigned_path)
-    context = user_context_fixture(user_ftp_dir=str(tmp_path))
+    context = DictFileSourcesUserContext(
+        username=TEST_USERNAME,
+        email=TEST_EMAIL,
+        user_ftp_dir=str(tmp_path),
+    )
     return file_sources, destination, expected, context
 
 
@@ -78,12 +82,18 @@ def test_export_store_records_readable_uri(export_destination, tmp_path):
         assert archive.getnames()
 
 
-def test_write_helper_returns_readable_uri(export_destination, tmp_path):
+def test_write_from_returns_readable_uri(export_destination, tmp_path):
     file_sources, destination, expected, context = export_destination
-    actual_uri = write_from(file_sources, destination, "archive contents", user_context=context)
+    payload = tmp_path / "payload.txt"
+    payload.write_text("archive contents")
+    source_path = file_sources.get_file_source_path(destination)
+    file_source = source_path.file_source
+
+    written = file_source.write_from(source_path.path, str(payload), user_context=context)
+    actual_uri = file_source.uri_from_write_result(written)
 
     assert actual_uri == expected
-    source_path = file_sources.get_file_source_path(actual_uri)
+    realized_path = file_sources.get_file_source_path(actual_uri)
     downloaded = tmp_path / "downloaded.txt"
-    source_path.file_source.realize_to(source_path.path, str(downloaded), user_context=context)
+    realized_path.file_source.realize_to(realized_path.path, str(downloaded), user_context=context)
     assert downloaded.read_text() == "archive contents"
