@@ -20,9 +20,19 @@ export type JobMessage =
     | components["schemas"]["OutputCollectionSecurityJobMessage"]
     | components["schemas"]["OutputDiscoveryJobMessage"];
 
-export const NON_TERMINAL_STATES = ["new", "queued", "running", "waiting", "paused", "resubmitted", "upload"];
-export const ERROR_STATES = ["error", "deleted", "deleting", "failed"];
-export const TERMINAL_STATES = ["ok", "skipped", "stop", "stopping"].concat(ERROR_STATES);
+export const NON_TERMINAL_STATES = [
+    "new",
+    "queued",
+    "running",
+    "waiting",
+    "paused",
+    "resubmitted",
+    "upload",
+    "stopping",
+    "deleting",
+];
+export const ERROR_STATES = ["error", "deleted", "failed"];
+export const TERMINAL_STATES = ["ok", "skipped", "stop"].concat(ERROR_STATES);
 
 interface JobDef {
     tool_id: string;
