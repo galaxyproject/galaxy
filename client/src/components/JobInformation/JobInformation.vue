@@ -96,12 +96,16 @@ const metadataDetail = ref<Record<string, string>>({
 
 // Once the job reaches a terminal state, prefer its own tool_stdout/tool_stderr as the final,
 // complete output
-watch(job, (newJob) => {
-    if (newJob && stateIsTerminal({ state: newJob.state })) {
-        stdout_text.value = newJob.tool_stdout ?? "";
-        stderr_text.value = newJob.tool_stderr ?? "";
-    }
-});
+watch(
+    job,
+    (newJob) => {
+        if (newJob && stateIsTerminal({ state: newJob.state })) {
+            stdout_text.value = newJob.tool_stdout ?? "";
+            stderr_text.value = newJob.tool_stderr ?? "";
+        }
+    },
+    { immediate: true },
+);
 
 function filterMetadata(jobMessages: JobMessage[]): Partial<JobMessage>[] {
     return jobMessages.map((item) => {
