@@ -84,6 +84,7 @@ export function getWorkflowFilters(activeList = "my", isAnonymous = false) {
             menuItem: true,
         },
         t: { type: "MultiTags", handler: contains("t", "t", expandNameTag), menuItem: false },
+        tool_id: { placeholder: "tool ID", type: String, handler: contains("tool_id"), menuItem: true },
     } as const;
 
     if (activeList === "my") {
