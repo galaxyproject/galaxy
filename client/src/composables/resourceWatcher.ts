@@ -155,6 +155,10 @@ export function useResourceWatcher<T = unknown>(
         stopWatchingResource,
         startWatchingResourceIfNeeded,
         stopWatchingResourceIfNeeded,
+        /**
+         * Fully tears down this watcher (stops polling and removes its `visibilitychange`
+         * listener). Call once, when this watcher instance is permanently done being used.
+         */
         dispose,
         /**
          * Reactive boolean ref indicating whether the resource watcher is currently active.

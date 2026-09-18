@@ -112,6 +112,16 @@ export function useKeyedCache<T>(
         return fetchPromise;
     }
 
+    /**
+     * Removes a stored item (and any associated error/retry state) from the cache, e.g. for
+     * callers implementing their own eviction policy. Does not affect any in-flight request.
+     */
+    function removeItemById(id: string) {
+        del(storedItems.value, id);
+        del(loadingErrors.value, id);
+        delete retryCounts[id];
+    }
+
     return {
         /**
          * The stored items as a reactive object.
@@ -136,5 +146,9 @@ export function useKeyedCache<T>(
          * And reactively updates the stored item when the fetch completes.
          */
         fetchItemById,
+        /**
+         * Removes a stored item from the cache.
+         */
+        removeItemById,
     };
 }

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useServerMock } from "@/api/client/__mocks__";
 import type { JobState, ShowFullJobResponse } from "@/api/jobs";
 
-import { useJobStore } from "./jobStore";
+import { MAX_CACHED_JOBS, useJobStore } from "./jobStore";
 
 const { server, http } = useServerMock();
 
@@ -25,6 +25,14 @@ function buildJob(id: string, state: JobState): ShowFullJobResponse {
         params: {},
         tool_id: "cat1",
     } as ShowFullJobResponse;
+}
+
+/** Starts `pollJobUntilTerminal` for each id one at a time, awaiting an MSW flush after each. */
+async function pollManyJobs(store: ReturnType<typeof useJobStore>, ids: string[]) {
+    for (const id of ids) {
+        store.pollJobUntilTerminal({ id });
+        await flushPromises();
+    }
 }
 
 describe("useJobStore", () => {
@@ -196,5 +204,86 @@ describe("useJobStore", () => {
         await advanceTimersAndFlush(1000);
         expect(callCount).toBe(2);
         expect(lastFullParam).toBe("true");
+    });
+});
+
+describe("useJobStore eviction", () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+    });
+
+    afterEach(() => {
+        vi.clearAllTimers();
+    });
+
+    it("evicts the least-recently-touched terminal job once the cache exceeds its cap", async () => {
+        const callCounts: Record<string, number> = {};
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response, params }) => {
+                const id = params.job_id as string;
+                callCounts[id] = (callCounts[id] ?? 0) + 1;
+                return response(200).json(buildJob(id, "ok"));
+            }),
+        );
+
+        const store = useJobStore();
+
+        // Fill the cache to exactly its cap. job-0 is the oldest entry, never touched again below.
+        await pollManyJobs(
+            store,
+            Array.from({ length: MAX_CACHED_JOBS }, (_, i) => `job-${i}`),
+        );
+        expect(callCounts["job-0"]).toBe(1);
+
+        // One more distinct job pushes the cache over the cap.
+        store.pollJobUntilTerminal({ id: "job-overflow" });
+        await flushPromises();
+        expect(callCounts["job-overflow"]).toBe(1);
+
+        // job-0 was the least-recently-touched entry and should have been evicted -- reading it
+        // again now must trigger a fresh fetch rather than being satisfied by the (removed) cache
+        // entry, since a cached+terminal job would otherwise never be re-fetched.
+        store.pollJobUntilTerminal({ id: "job-0" });
+        await flushPromises();
+        expect(callCounts["job-0"]).toBe(2);
+
+        // The most recently added (still-cached) job, by contrast, is not re-fetched.
+        store.pollJobUntilTerminal({ id: `job-${MAX_CACHED_JOBS - 1}` });
+        await flushPromises();
+        expect(callCounts[`job-${MAX_CACHED_JOBS - 1}`]).toBe(1);
+    });
+
+    it("never evicts a job that is still actively being polled", async () => {
+        let runningJobCallCount = 0;
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response, params }) => {
+                if (params.job_id === "still-running") {
+                    runningJobCallCount++;
+                    return response(200).json(buildJob("still-running", "running"));
+                }
+                return response(200).json(buildJob(params.job_id as string, "ok"));
+            }),
+        );
+
+        const store = useJobStore();
+
+        // Start a poll for a non-terminal job first, so it's the oldest entry once the cache
+        // fills up with terminal jobs after it.
+        store.pollJobUntilTerminal({ id: "still-running" });
+        await flushPromises();
+        expect(runningJobCallCount).toBe(1);
+
+        await pollManyJobs(
+            store,
+            Array.from({ length: MAX_CACHED_JOBS }, (_, i) => `job-${i}`),
+        );
+
+        // Despite being the least-recently-touched entry, "still-running" must survive because
+        // it's still actively polled -- evicting it would silently stop a live poll's caller
+        // from ever seeing further updates.
+        expect(store.getJob("still-running")).not.toBeNull();
+
+        await advanceTimersAndFlush(1000);
+        expect(runningJobCallCount).toBe(2);
     });
 });
