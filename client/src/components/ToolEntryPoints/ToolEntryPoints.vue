@@ -98,54 +98,56 @@ const currentStatus = computed<{ title: string; icon: IconDefinition; class?: st
 
 <template>
     <DetailBlock :header-icon="faLaptop" title="Interactive Tools">
-        <GCard
-            :content-class="currentStatus.class === 'fa-spin' ? 'entry-points-card-loading' : undefined"
-            :badges="badges"
-            :primary-actions="primaryActions"
-            :secondary-actions="secondaryActions"
-            :title="currentStatus.title"
-            :title-icon="currentStatus"
-            title-size="text">
-            <template v-slot:description>
-                <div v-if="entryPointsForJob(props.jobId).length > 1" class="entry-points-grid">
-                    <GButton
-                        v-for="entryPoint of entryPointsForJob(props.jobId)"
-                        :key="entryPoint.id"
-                        data-description="entry point button"
-                        :disabled="!entryPoint.active"
-                        :disabled-title="`${entryPoint.name} is waiting to become active...`"
-                        :href="entryPoint.active ? entryPoint.target : undefined"
-                        target="_blank"
-                        rel="noopener"
-                        color="blue"
-                        outline
-                        size="small"
-                        title="Open in a new tab">
-                        <div class="d-flex justify-content-between align-items-center flex-gapx-1 w-100">
-                            <div class="d-flex align-items-center flex-gapx-1">
-                                <FontAwesomeIcon
-                                    fixed-width
-                                    :class="{ 'status-dot': entryPoint.active }"
-                                    :icon="entryPoint.active ? faCircle : faSpinner"
-                                    :spin="!entryPoint.active" />
-                                {{ entryPoint.name }}
+        <template v-slot:custom-content>
+            <GCard
+                :content-class="currentStatus.class === 'fa-spin' ? 'entry-points-card-loading' : undefined"
+                :badges="badges"
+                :primary-actions="primaryActions"
+                :secondary-actions="secondaryActions"
+                :title="currentStatus.title"
+                :title-icon="currentStatus"
+                title-size="text">
+                <template v-slot:description>
+                    <div v-if="entryPointsForJob(props.jobId).length > 1" class="entry-points-grid">
+                        <GButton
+                            v-for="entryPoint of entryPointsForJob(props.jobId)"
+                            :key="entryPoint.id"
+                            data-description="entry point button"
+                            :disabled="!entryPoint.active"
+                            :disabled-title="`${entryPoint.name} is waiting to become active...`"
+                            :href="entryPoint.active ? entryPoint.target : undefined"
+                            target="_blank"
+                            rel="noopener"
+                            color="blue"
+                            outline
+                            size="small"
+                            title="Open in a new tab">
+                            <div class="d-flex justify-content-between align-items-center flex-gapx-1 w-100">
+                                <div class="d-flex align-items-center flex-gapx-1">
+                                    <FontAwesomeIcon
+                                        fixed-width
+                                        :class="{ 'status-dot': entryPoint.active }"
+                                        :icon="entryPoint.active ? faCircle : faSpinner"
+                                        :spin="!entryPoint.active" />
+                                    {{ entryPoint.name }}
+                                </div>
+                                <FontAwesomeIcon :icon="faExternalLinkAlt" />
                             </div>
-                            <FontAwesomeIcon :icon="faExternalLinkAlt" />
-                        </div>
-                    </GButton>
-                </div>
-            </template>
+                        </GButton>
+                    </div>
+                </template>
 
-            <template v-slot:update-time>
-                <i
-                    v-if="
-                        entryPointsForJob(props.jobId).length > 1 &&
-                        entryPointsForJob(props.jobId).some((ep) => !ep.active)
-                    ">
-                    Some sessions are not active yet
-                </i>
-            </template>
-        </GCard>
+                <template v-slot:update-time>
+                    <i
+                        v-if="
+                            entryPointsForJob(props.jobId).length > 1 &&
+                            entryPointsForJob(props.jobId).some((ep) => !ep.active)
+                        ">
+                        Some sessions are not active yet
+                    </i>
+                </template>
+            </GCard>
+        </template>
     </DetailBlock>
 </template>
 

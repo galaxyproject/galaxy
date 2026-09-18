@@ -6,6 +6,16 @@
  * content in the second row.)
  *
  * The content is optionally collapsible.
+ * The content by default is placed in a `GCard` but can be overloaded by providing a
+ * `custom-content` slot.
+ *
+ * @component DetailBlock
+ * @example
+ * <DetailBlock header-icon="faInfoCircle" title="Job Information" :collapsible="true">
+ *     <template v-slot:custom-content>
+ *         <p>This is the custom content for the detail block.</p>
+ *     </template>
+ * </DetailBlock>
  */
 
 import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
@@ -13,6 +23,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
+import GCard from "@/components/Common/GCard.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 const props = defineProps<{
@@ -45,7 +56,11 @@ function toggleCollapse() {
 
             <div class="detail-block-spacer" />
             <GCollapse :visible="collapseState !== 'closed'">
-                <slot />
+                <slot name="custom-content">
+                    <GCard>
+                        <slot />
+                    </GCard>
+                </slot>
             </GCollapse>
         </div>
     </div>
