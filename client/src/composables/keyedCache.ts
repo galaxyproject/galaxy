@@ -95,7 +95,7 @@ export function useKeyedCache<T>(
         const fetchPromise = (async () => {
             try {
                 const fetchItem = unref(fetchItemHandler);
-                const item = await fetchQueue.enqueue(fetchItem, { id: itemId }, itemId);
+                const item = await fetchQueue.enqueue(fetchItem, params, itemId);
                 set(storedItems.value, itemId, item);
                 del(loadingErrors.value, itemId);
                 delete retryCounts[itemId];

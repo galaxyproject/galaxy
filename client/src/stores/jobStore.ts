@@ -11,12 +11,17 @@ import { type ResponseVal, type ShowFullJobResponse, TERMINAL_STATES } from "@/a
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
 import { rethrowSimpleWithStatus } from "@/utils/simple-error";
 
+interface JobFetchParams extends FetchParams {
+    /** Whether to request the full job representation. Defaults to `true`. */
+    full?: boolean;
+}
+
 export const useJobStore = defineStore("jobStore", () => {
     const latestResponse = ref<ResponseVal | null>(null);
 
-    async function fetchJobById(params: FetchParams): Promise<ShowFullJobResponse> {
+    async function fetchJobById(params: JobFetchParams): Promise<ShowFullJobResponse> {
         const { data, error, response } = await GalaxyApi().GET("/api/jobs/{job_id}", {
-            params: { path: { job_id: params.id }, query: { full: true } },
+            params: { path: { job_id: params.id }, query: { full: params.full ?? true } },
         });
         if (error) {
             rethrowSimpleWithStatus(error, response);
@@ -29,30 +34,92 @@ export const useJobStore = defineStore("jobStore", () => {
     }
 
     const {
-        fetchItemById: fetchJob,
+        storedItems: storedJobs,
+        fetchItemById: fetchJobKeyedCache,
         getItemById: getJob,
         getItemLoadError: getJobLoadError,
         isLoadingItem: isLoadingJob,
     } = useKeyedCache<ShowFullJobResponse>(fetchJobById);
 
-    /** A track of all active polls so we don't duplicate polls for the same ID */
-    const activePolls = new Set<string>();
+    /** An overloaded fetch function that ensures the job is retrieved from the keyed cache,
+     * but with the additional, optional `full` option for requesting the full job representation.
+     */
+    async function fetchJob(params: JobFetchParams) {
+        return fetchJobKeyedCache(params as FetchParams);
+    }
 
-    function pollJobUntilTerminal(params: FetchParams) {
-        if (activePolls.has(params.id)) {
+    /** Tracks job ids for which the full representation has been loaded. */
+    const fullyLoadedJobIds = new Set<string>();
+
+    /** A track of all active polls (by `job_id` and whether the stored
+     * representation is full) so we don't duplicate polls for the same ID */
+    const activePolls = new Map<string, boolean>();
+
+    /**
+     * Polls a job until it reaches a terminal state. If the job is already terminal and cached,
+     * it may not poll at all. If the stored job is not a full representation and a full one is
+     * requested, it will fetch the full representation once *or* switch an ongoing poll to request
+     * the full representation if needed.
+     */
+    function pollJobUntilTerminal(params: JobFetchParams) {
+        const { id, full = true } = params;
+
+        // Not using `getJob` here because that would trigger a fetch if the job isn't already cached
+        const cachedJob = storedJobs.value[id];
+        const cachedJobIsTerminal = !!cachedJob && TERMINAL_STATES.indexOf(cachedJob.state) !== -1;
+
+        /** Whether the cached job satisfies the current request, considering the `full` option. */
+        const cacheSatisfiesRequest = full ? fullyLoadedJobIds.has(id) : !!cachedJob;
+        if (cachedJobIsTerminal && cacheSatisfiesRequest) {
+            // Already have everything this call needs, and the job won't change anymore.
             return;
         }
-        activePolls.add(params.id);
+
+        // The cached job is terminal but doesn't satisfy the currently requested structure
+        if (cachedJobIsTerminal) {
+            fetchJob({ id, full: true }).then((job) => {
+                if (job) {
+                    fullyLoadedJobIds.add(id);
+                }
+            });
+            return;
+        }
+
+        /** The ongoing poll for this job ID.
+         * - `true` if there is an ongoing poll which is `full`,
+         * - `false` if there is still an ongoing non-`full` poll,
+         * - `undefined` if there is no ongoing poll.
+         */
+        const runningPollIsFull = activePolls.get(id);
+        if (runningPollIsFull !== undefined) {
+            // Already requesting `full` OR this caller only needs `full: false`
+            if (runningPollIsFull || !full) {
+                return;
+            }
+
+            // We need to switch an ongoing non-`full` poll to request `full`.
+            activePolls.set(id, true);
+            return;
+        }
+
+        activePolls.set(id, full);
 
         function poll() {
-            fetchJob(params);
+            // Read (not close over) the current requested level -- a later call may have upgraded
+            // this poll to `full: true` since it started.
+            const requestFull = activePolls.get(id) ?? full;
+            fetchJob({ id, full: requestFull }).then((job) => {
+                if (job && requestFull) {
+                    fullyLoadedJobIds.add(id);
+                }
+            });
             setTimeout(tick, 1000);
         }
 
         function tick() {
-            const job = getJob.value(params.id);
+            const job = storedJobs.value[id];
             if (job && TERMINAL_STATES.indexOf(job.state) !== -1) {
-                activePolls.delete(params.id);
+                activePolls.delete(id);
                 return;
             }
             poll();
