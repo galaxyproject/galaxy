@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faInfoCircle, faRedo } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref, toRef, watch } from "vue";
+import { useRoute } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
+import type { CardAction } from "@/components/Common/GCard.types";
 import { useJobConsoleOutput, useJobDetails } from "@/composables/jobDetails";
 import { rethrowSimple } from "@/utils/simple-error";
 import { stateIsTerminal } from "@/utils/utils";
@@ -12,6 +14,7 @@ import type { JobMessage } from "../../api/jobs";
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
 import DetailBlock from "@/components/Common/DetailBlock.vue";
+import GCard from "@/components/Common/GCard.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -23,6 +26,8 @@ const props = withDefaults(
         includeTimes?: boolean;
         /** If `true`, the rerun indicator is shown. */
         includeRerunIndicator?: boolean;
+        /** If `true`, we render a "View full details" button */
+        includeViewFullDetailsButton?: boolean;
         /** If provided, this component will skip fetching the invocation ID for the job. */
         invocationId?: string;
         /** If `true`, the section is collapsible */
@@ -30,6 +35,8 @@ const props = withDefaults(
     }>(),
     { invocationId: undefined },
 );
+
+const route = useRoute();
 
 /** Invocation ID for the run that the job might have come from. It is `null` if the job has no associated invocation,
  * or `undefined` if it has not been fetched yet.
@@ -53,22 +60,34 @@ const toolVersion = computed(() =>
 );
 const traceback = computed(() => (job.value && "traceback" in job.value ? (job.value?.traceback as string) : null));
 
-// TODO: Bring back to implement rerun here
-// const jobInfoIndicators = computed(() => {
-//     if (props.includeRerunIndicator) {
-//         return [
-//             {
-//                 id: "job-info-card-rerun",
-//                 class: "py-1",
-//                 label: "Rerun",
-//                 title: "Rerun this job",
-//                 icon: faRedo,
-//                 to: `/?job_id=${props.jobId}`,
-//             },
-//         ];
-//     }
-//     return [];
-// });
+const primaryActions = computed<CardAction[]>(() => {
+    const actions: CardAction[] = [];
+    if (props.includeViewFullDetailsButton && route.path !== `/jobs/${props.jobId}/view`) {
+        actions.push({
+            id: "go-to-job-details",
+            class: "text-decoration-none",
+            label: "View full details",
+            icon: faArrowRight,
+            title: "View full job details",
+            to: `/jobs/${props.jobId}/view`,
+            size: "md",
+            variant: "link",
+        });
+    }
+    if (props.includeRerunIndicator) {
+        actions.push({
+            id: "job-info-card-rerun",
+            class: "text-decoration-none",
+            label: "Rerun",
+            icon: faRedo,
+            title: "Rerun this job",
+            to: `/?job_id=${props.jobId}`,
+            size: "md",
+            variant: "link",
+        });
+    }
+    return actions;
+});
 
 const metadataDetail = ref<Record<string, string>>({
     exit_code: `Tools may use exit codes to indicate specific execution errors. Many programs use 0 to indicate success and non-zero exit codes to indicate errors. Galaxy allows each tool to specify exit codes that indicate errors. https://docs.galaxyproject.org/en/master/dev/schema.html#tool-stdio-exit-code`,
@@ -139,122 +158,137 @@ watch(
 
 <template>
     <DetailBlock :header-icon="faInfoCircle" title="Job Execution Details" :collapsible="props.collapsible">
-        <table id="job-information" class="tabletip info_data_table job-info-table mt-2">
-            <tbody>
-                <tr v-if="job && job.tool_id">
-                    <td>Galaxy Tool ID</td>
-                    <td id="galaxy-tool-id">
-                        {{ job.tool_id }}
-                        <CopyToClipboard
-                            message="Tool ID was copied to your clipboard"
-                            :text="job.tool_id"
-                            title="Copy Tool ID" />
-                    </td>
-                </tr>
-                <tr v-if="job && job.state">
-                    <td>Job State</td>
-                    <td data-description="galaxy-job-state">
-                        <HelpText :uri="`galaxy.jobs.states.${job.state}`" :text="job.state" />
-                    </td>
-                </tr>
-                <tr v-if="toolVersion">
-                    <td>Galaxy Tool Version</td>
-                    <td id="galaxy-tool-version">{{ toolVersion }}</td>
-                </tr>
-                <tr v-if="job && props.includeTimes">
-                    <td>Created</td>
-                    <td v-if="job.create_time" id="created">
-                        <UtcDate :date="job.create_time" mode="pretty" />
-                    </td>
-                </tr>
-                <tr v-if="job && props.includeTimes">
-                    <td>Updated</td>
-                    <td v-if="job.update_time" id="updated">
-                        <UtcDate :date="job.update_time" mode="pretty" />
-                    </td>
-                </tr>
-                <tr v-if="job && job.job_messages && job.job_messages.length > 0" id="job-messages">
-                    <td>Job Messages</td>
-                    <td>
-                        <ul v-if="Array.isArray(job.job_messages)" class="pl-2 mb-0">
-                            <div v-for="(message, m) in filterMetadata(job.job_messages)" :key="m" class="job-message">
-                                <div v-if="job.job_messages.length > 1">
-                                    <u>Job Message {{ m + 1 }}:</u>
-                                </div>
-                                <li v-for="(value, name, i) in message" :key="i">
-                                    <span
-                                        v-if="metadataDetail[name]"
-                                        v-g-tooltip.html
-                                        class="tooltipJobInfo"
-                                        :title="metadataDetail[name]">
-                                        <strong>{{ name }}:</strong>
-                                    </span>
-                                    <strong v-else>{{ name }}:</strong>
-                                    {{ value }}
-                                </li>
-                                <hr v-if="m + 1 < job.job_messages.length" />
-                            </div>
-                        </ul>
-                        <div v-else>
-                            {{ job.job_messages }}
-                        </div>
-                    </td>
-                </tr>
+        <template v-slot:custom-content>
+            <GCard :primary-actions="primaryActions">
+                <template v-slot:description>
+                    <table id="job-information" class="tabletip info_data_table job-info-table">
+                        <tbody>
+                            <tr v-if="job && job.tool_id">
+                                <td>Galaxy Tool ID</td>
+                                <td id="galaxy-tool-id">
+                                    {{ job.tool_id }}
+                                    <CopyToClipboard
+                                        message="Tool ID was copied to your clipboard"
+                                        :text="job.tool_id"
+                                        title="Copy Tool ID" />
+                                </td>
+                            </tr>
+                            <tr v-if="job && job.state">
+                                <td>Job State</td>
+                                <td data-description="galaxy-job-state">
+                                    <HelpText :uri="`galaxy.jobs.states.${job.state}`" :text="job.state" />
+                                </td>
+                            </tr>
+                            <tr v-if="toolVersion">
+                                <td>Galaxy Tool Version</td>
+                                <td id="galaxy-tool-version">{{ toolVersion }}</td>
+                            </tr>
+                            <tr v-if="job && props.includeTimes">
+                                <td>Created</td>
+                                <td v-if="job.create_time" id="created">
+                                    <UtcDate :date="job.create_time" mode="pretty" />
+                                </td>
+                            </tr>
+                            <tr v-if="job && props.includeTimes">
+                                <td>Updated</td>
+                                <td v-if="job.update_time" id="updated">
+                                    <UtcDate :date="job.update_time" mode="pretty" />
+                                </td>
+                            </tr>
+                            <tr v-if="job && job.job_messages && job.job_messages.length > 0" id="job-messages">
+                                <td>Job Messages</td>
+                                <td>
+                                    <ul v-if="Array.isArray(job.job_messages)" class="pl-2 mb-0">
+                                        <div
+                                            v-for="(message, m) in filterMetadata(job.job_messages)"
+                                            :key="m"
+                                            class="job-message">
+                                            <div v-if="job.job_messages.length > 1">
+                                                <u>Job Message {{ m + 1 }}:</u>
+                                            </div>
+                                            <li v-for="(value, name, i) in message" :key="i">
+                                                <span
+                                                    v-if="metadataDetail[name]"
+                                                    v-g-tooltip.html
+                                                    class="tooltipJobInfo"
+                                                    :title="metadataDetail[name]">
+                                                    <strong>{{ name }}:</strong>
+                                                </span>
+                                                <strong v-else>{{ name }}:</strong>
+                                                {{ value }}
+                                            </li>
+                                            <hr v-if="m + 1 < job.job_messages.length" />
+                                        </div>
+                                    </ul>
+                                    <div v-else>
+                                        {{ job.job_messages }}
+                                    </div>
+                                </td>
+                            </tr>
 
-                <slot name="extra-table-rows" />
+                            <slot name="extra-table-rows" />
 
-                <tr v-if="job && job.id">
-                    <td>Job API ID</td>
-                    <td id="encoded-job-id">{{ job.id }} <DecodedId :id="job.id" /></td>
-                </tr>
-                <tr v-if="job && job.copied_from_job_id">
-                    <td>Copied from Job API ID</td>
-                    <td id="encoded-copied-from-job-id">
-                        {{ job.copied_from_job_id }} <DecodedId :id="job.copied_from_job_id" />
-                    </td>
-                </tr>
-                <tr v-if="fetchedInvocationId">
-                    <td>Workflow Invocation</td>
-                    <td>
-                        <router-link :to="routeToInvocation">{{ fetchedInvocationId }}</router-link>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                            <tr v-if="job && job.id">
+                                <td>Job API ID</td>
+                                <td id="encoded-job-id">{{ job.id }} <DecodedId :id="job.id" /></td>
+                            </tr>
+                            <tr v-if="job && job.copied_from_job_id">
+                                <td>Copied from Job API ID</td>
+                                <td id="encoded-copied-from-job-id">
+                                    {{ job.copied_from_job_id }} <DecodedId :id="job.copied_from_job_id" />
+                                </td>
+                            </tr>
+                            <tr v-if="fetchedInvocationId">
+                                <td>Workflow Invocation</td>
+                                <td>
+                                    <router-link :to="routeToInvocation">{{ fetchedInvocationId }}</router-link>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
 
-        <div class="px-2 py-1">
-            <CodeRow
-                v-if="job && job.command_line"
-                id="command-line"
-                help-uri="unix.commandLine"
-                :code-label="'Command Line'"
-                :code-item="job.command_line" />
-            <CodeRow
-                v-if="job"
-                id="stdout"
-                help-uri="unix.stdout"
-                :code-label="'Tool Standard Output'"
-                :code-item="stdout_text" />
-            <CodeRow
-                v-if="job"
-                id="stderr"
-                help-uri="unix.stderr"
-                :code-label="'Tool Standard Error'"
-                :code-item="stderr_text" />
-            <CodeRow
-                v-if="traceback"
-                id="traceback"
-                help-uri="unix.traceback"
-                :code-label="'Unexpected Job Errors'"
-                :code-item="traceback" />
-            <CodeRow
-                v-if="job"
-                id="exit-code"
-                help-uri="unix.exitCode"
-                :code-label="'Tool Exit Code'"
-                :code-item="String(job.exit_code)" />
-            <slot name="extra-code-rows" />
-        </div>
+                    <div class="px-2 py-2">
+                        <CodeRow
+                            v-if="job && job.command_line"
+                            id="command-line"
+                            help-uri="unix.commandLine"
+                            :code-label="'Command Line'"
+                            :code-item="job.command_line" />
+                        <CodeRow
+                            v-if="job"
+                            id="stdout"
+                            help-uri="unix.stdout"
+                            :code-label="'Tool Standard Output'"
+                            :code-item="stdout_text" />
+                        <CodeRow
+                            v-if="job"
+                            id="stderr"
+                            help-uri="unix.stderr"
+                            :code-label="'Tool Standard Error'"
+                            :code-item="stderr_text" />
+                        <CodeRow
+                            v-if="traceback"
+                            id="traceback"
+                            help-uri="unix.traceback"
+                            :code-label="'Unexpected Job Errors'"
+                            :code-item="traceback" />
+                        <CodeRow
+                            v-if="job"
+                            id="exit-code"
+                            help-uri="unix.exitCode"
+                            :code-label="'Tool Exit Code'"
+                            :code-item="String(job.exit_code)" />
+                        <slot name="extra-code-rows" />
+                    </div>
+                </template>
+
+                <template v-slot:update-time>
+                    <i v-if="props.includeViewFullDetailsButton" class="mb-0">
+                        View more information on the details page.
+                    </i>
+                </template>
+            </GCard>
+        </template>
     </DetailBlock>
 </template>
 <style scoped lang="scss">

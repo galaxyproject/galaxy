@@ -14,6 +14,10 @@ import JobInformation from "./JobInformation.vue";
 
 vi.mock("app");
 
+vi.mock("vue-router/composables", () => ({
+    useRoute: vi.fn(() => ({})),
+}));
+
 const JOB_ID = "test_id";
 
 const localVue = getLocalVue();
