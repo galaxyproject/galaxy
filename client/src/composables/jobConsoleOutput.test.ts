@@ -33,8 +33,8 @@ function mountJobConsoleOutput(jobId: Ref<string | undefined>) {
         },
     });
 
-    mount(TestComponent);
-    return mounted;
+    const wrapper = mount(TestComponent);
+    return { ...mounted, wrapper };
 }
 
 describe("useJobConsoleOutput", () => {
@@ -123,5 +123,25 @@ describe("useJobConsoleOutput", () => {
 
         expect(stdout.value).toBe("");
         expect(callCount).toBe(0);
+    });
+
+    it("stops polling once the consuming component unmounts", async () => {
+        let callCount = 0;
+        server.use(
+            http.get("/api/jobs/{job_id}/console_output", ({ response }) => {
+                callCount++;
+                return response(200).json(buildConsoleOutput({ stdout: "line\n" }));
+            }),
+        );
+
+        const jobId = ref<string | undefined>("job1");
+        const { wrapper } = mountJobConsoleOutput(jobId);
+        await flushPromises();
+        expect(callCount).toBe(1);
+
+        wrapper.destroy();
+
+        await advanceTimersAndFlush(5000);
+        expect(callCount).toBe(1);
     });
 });
