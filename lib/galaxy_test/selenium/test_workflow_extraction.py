@@ -12,29 +12,19 @@ from galaxy_test.base.populators import skip_without_tool
 from galaxy_test.base.workflow_assertions import WorkflowStructureAssertions
 from galaxy_test.base.workflow_fixtures import WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION
 from .framework import (
+    ExtractsWorkflows,
     managed_history,
     selenium_test,
     SeleniumTestCase,
 )
 
 
-class TestWorkflowExtractionSelenium(SeleniumTestCase, WorkflowStructureAssertions):
+class TestWorkflowExtractionSelenium(SeleniumTestCase, ExtractsWorkflows, WorkflowStructureAssertions):
     """Selenium tests for workflow extraction from history."""
 
     ensure_registered = True
 
     # --- Test Setup Helpers ---
-
-    def setup_cat1_history(self, history_id: str) -> str:
-        """Run cat1 workflow and return the cat1 job_id."""
-        workflow = self.workflow_populator.load_workflow(name="test_for_extract")
-        workflow_request, _, workflow_id = self.workflow_populator.setup_workflow_run(workflow, history_id=history_id)
-        self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request, history_id=history_id)
-        # Get cat1 job
-        jobs = self.dataset_populator.history_jobs(history_id)
-        cat1_jobs = [j for j in jobs if j["tool_id"] == "cat1"]
-        assert cat1_jobs, "Expected cat1 job to be present"
-        return cat1_jobs[0]["id"]
 
     def setup_mapped_collection_history(self, history_id: str) -> tuple:
         """Create paired collection and run random_lines mapped over it twice.
@@ -150,84 +140,16 @@ test_data:
         hdca_hid = contents[0]["hid"]
         return hdca_hid, job_ids
 
-    # --- UI Extraction Helpers ---
-
-    def extract_workflow_toggle_job(self, job_id: str):
-        """Toggle the selection checkbox for a specific job card by job_id."""
-        checkbox = self.components.workflow_extract.card_checkbox_by_job_id(job_id=job_id)
-        element = checkbox.wait_for_present()
-        self.execute_script_click(element)
-
-    def find_workflow_by_name(self, name: str) -> str:
-        """Find workflow ID by name via API. Returns most recently created if multiple match."""
-        response = self.workflow_populator._get("workflows")
-        response.raise_for_status()
-        workflows = response.json()
-        matching = [w for w in workflows if w["name"] == name]
-        assert len(matching) >= 1, f"Expected at least 1 workflow '{name}', found 0: {[w['name'] for w in workflows]}"
-        # Return most recently created workflow if multiple match
-        matching.sort(key=lambda w: w["create_time"], reverse=True)
-        return matching[0]["id"]
-
-    def get_workflow_by_name(self, name: str) -> dict:
-        """Find and download workflow by name."""
-        workflow_id = self.find_workflow_by_name(name)
-        return self.workflow_populator.download_workflow(workflow_id)
-
-    def extract_workflow_and_download(self, name: str, screenshot_name: str | None = None) -> dict:
-        """Navigate to extraction, submit form, return downloaded workflow."""
-        self.navigate_to_workflow_extraction()
-        if screenshot_name:
-            self.screenshot(screenshot_name)
-        self.extract_workflow_name_and_submit(name)
-        return self.get_workflow_by_name(name)
-
-    def count_job_checkboxes(self) -> int:
-        """Count the number of tool-step cards in the extraction form."""
-        return len(self.components.workflow_extract.tool_card_checkbox.all())
-
-    def count_checked_job_checkboxes(self) -> int:
-        """Count the number of checked tool-step cards."""
-        return len(self.components.workflow_extract.tool_card_checkbox_checked.all())
-
-    def get_job_checkbox_values(self) -> list:
-        """Get job IDs from all tool-step cards."""
-        cards = self.components.workflow_extract.tool_card_with_job_id.all()
-        return [card.get_attribute("data-job-id") for card in cards]
-
-    def extract_workflow_toggle_output_star(self, job_id: str):
-        """Star/un-star the first output of the tool card for the given job.
-        The star button in WorkflowExtractionCard.vue is disabled while
-        `!props.job.checked` — a regression that defaults cards to
-        unchecked turns the click into a silent no-op, so the test surfaces
-        the bug directly rather than via a downstream timeout."""
-        star = self.components.workflow_extract.output_star_for_job(job_id=job_id).wait_for_present()
-        assert not star.get_attribute("disabled"), f"star for job {job_id} is disabled — its card is unchecked"
-        self.execute_script_click(star)
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-    def extract_workflow_rename_output(self, job_id: str, new_label: str):
-        """Click the output label button, type a new label in the modal, and
-        click the modal OK button. Requires the output to already be starred
-        (label button is v-if=output.exposed)."""
-        label_button = self.components.workflow_extract.output_label_for_job(job_id=job_id).wait_for_present()
-        self.execute_script_click(label_button)
-        self.components.workflow_extract.output_rename_input.wait_for_and_clear_and_send_keys(new_label)
-        self.components.workflow_extract.output_rename_confirm.wait_for_and_click()
-        # Modal closes asynchronously after the rename callback resolves.
-        self.components.workflow_extract.output_rename_input.wait_for_absent()
-
-    def extract_workflow_cancel_rename_output(self, job_id: str):
-        """Open the rename modal, type some text, and dismiss without
-        confirming. Asserts the modal closes without applying the rename."""
-        label_button = self.components.workflow_extract.output_label_for_job(job_id=job_id).wait_for_present()
-        self.execute_script_click(label_button)
-        self.components.workflow_extract.output_rename_input.wait_for_and_clear_and_send_keys("discarded label")
-        self.components.workflow_extract.output_rename_cancel.wait_for_and_click()
-        self.components.workflow_extract.output_rename_input.wait_for_absent()
-
-    def count_active_output_stars(self) -> int:
-        return len(self.components.workflow_extract.all_active_output_stars.all())
+    def extract_workflow_label_step(self, job_id: str, label: str):
+        """Click the label (pencil) control for the tool card, type a label in
+        the modal, and confirm. The control is only rendered when the card is
+        checked."""
+        badge = self.components.workflow_extract.step_label_add_for_job(job_id=job_id).wait_for_present()
+        self.execute_script_click(badge)
+        self.components.workflow_extract.step_rename_input.wait_for_and_clear_and_send_keys(label)
+        self.screenshot("workflow_extract_step_label_modal")
+        self.components.workflow_extract.step_rename_confirm.wait_for_and_click()
+        self.components.workflow_extract.step_rename_input.wait_for_absent()
 
     @selenium_test
     @managed_history
@@ -523,6 +445,28 @@ test_data:
         assert len(outputs) == 1, outputs
         assert outputs[0]["output_name"] == "out_file1"
         assert outputs[0]["label"] == "cat1 result"
+
+    @skip_without_tool("cat1")
+    @selenium_test
+    @managed_history
+    def test_extract_step_label_creates_labeled_step(self):
+        """Label a tool step via the extraction UI, submit, and confirm the
+        downloaded workflow's tool step carries the label."""
+        history_id = self.current_history_id()
+        cat1_job_id = self.setup_cat1_history(history_id)
+
+        self.navigate_to_workflow_extraction()
+        self.components.workflow_extract.step_label_add_for_job(job_id=cat1_job_id).wait_for_present()
+        self.screenshot("workflow_extract_step_label_affordance")
+        self.extract_workflow_label_step(cat1_job_id, "my cat step")
+        self.screenshot("workflow_extract_step_labeled")
+
+        workflow_name = "Selenium Step Label"
+        self.extract_workflow_name_and_submit(workflow_name)
+
+        workflow = self.get_workflow_by_name(workflow_name)
+        tool_steps = self.assert_steps_of_type(workflow, "tool", expected_len=1)
+        assert tool_steps[0]["label"] == "my cat step", tool_steps[0]
 
     @skip_without_tool("cat1")
     @selenium_test

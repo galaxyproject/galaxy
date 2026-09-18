@@ -17,6 +17,7 @@ export type WorkflowExtractionJob = components["schemas"]["WorkflowExtractionJob
 type WorkflowExtractionResult = components["schemas"]["WorkflowExtractionResult"];
 export type WorkflowExtractionSummary = components["schemas"]["WorkflowExtractionSummary"];
 export type OutputLabelHint = components["schemas"]["OutputLabelHint"];
+export type StepLabelHint = components["schemas"]["StepLabelHint"];
 
 export type HistoryCounts = Pick<CustomHistoryView, "nice_size" | "contents_active" | "contents_states">;
 

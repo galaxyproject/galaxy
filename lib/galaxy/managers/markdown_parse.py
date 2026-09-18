@@ -45,6 +45,17 @@ EMBED_DIRECTIVE_REGEX = re.compile(r"\$\{galaxy\s+%s\}" % GALAXY_MARKDOWN_EMBED_
 EMBED_DIRECTIVE_REGEX_ANY = re.compile(r"\$\{galaxy\s+.*\}")
 
 
+# Directive argument values are matched by ARG_VAL_REGEX, which accepts "..." with
+# no escape syntax, and a directive must occupy a single line. So a value carrying a
+# double quote or a line break has no representation as a quoted directive argument.
+UNQUOTABLE_ARGUMENT_CHARS = '"\r\n'
+
+
+def is_quotable_argument_value(value: str) -> bool:
+    """Whether ``value`` can be embedded in a directive as a double-quoted argument."""
+    return not any(char in value for char in UNQUOTABLE_ARGUMENT_CHARS)
+
+
 def validate_galaxy_markdown(galaxy_markdown, internal=True):
     """Validate the supplied markdown and throw an ValueError with reason if invalid."""
 
