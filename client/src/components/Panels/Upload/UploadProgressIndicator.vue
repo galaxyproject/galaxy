@@ -14,8 +14,10 @@ const {
     completedCount,
     errorCount,
     cancelledCount,
-    uploadingCount,
     hasActiveUploads,
+    hasUploadingItems,
+    hasProcessingItems,
+    isUploading,
     totalProgress,
 } = useUploadState();
 
@@ -27,7 +29,7 @@ const statusIcon = computed(() => {
     if (errorCount.value > 0) {
         return faTimes;
     }
-    if (hasActiveUploads.value) {
+    if (isUploading.value) {
         return faSpinner;
     }
     return faCheck;
@@ -37,15 +39,18 @@ const statusClass = computed(() => {
     if (errorCount.value > 0) {
         return "text-danger";
     }
-    if (hasActiveUploads.value) {
+    if (isUploading.value) {
         return "text-primary";
     }
     return "text-success";
 });
 
 const statusText = computed(() => {
-    if (hasActiveUploads.value) {
-        return "Uploading";
+    if (hasUploadingItems.value) {
+        return hasProcessingItems.value ? "Uploading & Finalizing" : "Uploading";
+    }
+    if (hasProcessingItems.value) {
+        return "Finalizing";
     }
     if (uploads.value.length > 0 && completedCount.value === uploads.value.length) {
         return "Upload Complete";
@@ -81,11 +86,7 @@ function stopAll(event: Event) {
                 @keydown.space.prevent="showDetails">
                 <div class="progress-header">
                     <div class="d-flex align-items-center flex-grow-1">
-                        <FontAwesomeIcon
-                            :icon="statusIcon"
-                            :class="statusClass"
-                            :spin="uploadingCount > 0"
-                            class="mr-2" />
+                        <FontAwesomeIcon :icon="statusIcon" :class="statusClass" :spin="isUploading" class="mr-2" />
                         <div class="progress-summary">
                             <span class="font-weight-bold status-text">{{ statusText }}</span>
                             <span class="text-muted small ml-2 file-info">
