@@ -52,6 +52,7 @@ FileSourceTemplateType = Literal[
     "huggingface",
     "github",
     "iiif",
+    "ipfs",
     "mavedb",
     "omero",
     "ssh",
@@ -502,6 +503,20 @@ class IIIFFileSourceConfiguration(StrictModel):
     manifest_url: str
 
 
+class IPFSFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["ipfs"]
+    root: str | TemplateExpansion
+    gateway_url: str | TemplateExpansion
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class IPFSFileSourceConfiguration(StrictModel):
+    type: Literal["ipfs"]
+    root: str
+    gateway_url: str
+
+
 class MaveDBFileSourceTemplateConfiguration(StrictModel):
     type: Literal["mavedb"]
     base_url: str | TemplateExpansion = "https://api.mavedb.org/api/v1"
@@ -605,6 +620,7 @@ FileSourceTemplateConfiguration = Annotated[
     | HuggingFaceFileSourceTemplateConfiguration
     | GithubFileSourceTemplateConfiguration
     | IIIFFileSourceTemplateConfiguration
+    | IPFSFileSourceTemplateConfiguration
     | MaveDBFileSourceTemplateConfiguration
     | OmeroFileSourceTemplateConfiguration
     | SshFileSourceTemplateConfiguration
@@ -635,6 +651,7 @@ FileSourceConfiguration = Annotated[
     | HuggingFaceFileSourceConfiguration
     | GithubFileSourceConfiguration
     | IIIFFileSourceConfiguration
+    | IPFSFileSourceConfiguration
     | MaveDBFileSourceConfiguration
     | OmeroFileSourceConfiguration
     | SshFileSourceConfiguration
@@ -725,6 +742,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "huggingface": HuggingFaceFileSourceConfiguration,
     "github": GithubFileSourceConfiguration,
     "iiif": IIIFFileSourceConfiguration,
+    "ipfs": IPFSFileSourceConfiguration,
     "mavedb": MaveDBFileSourceConfiguration,
     "omero": OmeroFileSourceConfiguration,
     "ssh": SshFileSourceConfiguration,
