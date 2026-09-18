@@ -114,7 +114,10 @@ async function submitLogin() {
         } else if (connectExternalProvider.value) {
             window.location.href = withPrefix("/user/external_ids?connect_external=true");
         } else if (response.data.redirect) {
-            window.location.href = withPrefix(encodeURI(response.data.redirect));
+            // Already percent-encoded on the way here (quote() in webapp.py, then the
+            // browser's own encoding of the query parameter), so encoding it again turns
+            // a %20 into %2520.
+            window.location.href = withPrefix(response.data.redirect);
         } else {
             window.location.href = withPrefix("/");
         }

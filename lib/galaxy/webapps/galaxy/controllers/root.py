@@ -14,10 +14,9 @@ from galaxy.managers.histories import HistoryManager
 from galaxy.model import HistoryDatasetAssociation
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import StructuredApp
-from galaxy.util import is_safe_local_redirect
 from galaxy.webapps.base import controller
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
-from .authnz import LOGIN_NEXT_COOKIE_NAME
+from .authnz import stash_login_next
 from ..api import depends
 
 log = logging.getLogger(__name__)
@@ -67,12 +66,8 @@ class RootController(controller.BaseUIController, UsesAnnotations):
         ):
             provider = next(iter(trans.app.config.oidc.keys()))
             # Stash where the user was headed before handing them to the provider --
-            # the OIDC callback has no other way to recover it. Matches what the authnz
-            # controller does for the multi-provider case.
-            login_next = redirect if is_safe_local_redirect(redirect) else "/"
-            if redirect and login_next != redirect:
-                log.warning("Ignoring redirect target outside of Galaxy: %s", redirect)
-            trans.set_cookie(value=login_next, name=LOGIN_NEXT_COOKIE_NAME, age=1)
+            # the OIDC callback has no other way to recover it.
+            stash_login_next(trans, redirect)
             success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
             if success:
                 return trans.response.send_redirect(redirect_uri)

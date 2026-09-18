@@ -217,7 +217,6 @@ export default {
         repeatClone(input, cacheId) {
             const clonedInputs = structuredClone(input.cache[cacheId]);
 
-            set(input, "cache", input.cache ?? []);
             input.cache.splice(cacheId + 1, 0, clonedInputs);
 
             this.onChangeForm();
