@@ -4,7 +4,7 @@
         An interactive environment for visualizing and exploring machine learning experiments with TensorBoard.
     </description>
     <requirements>
-        <container type="docker">quay.io/galaxy/tensorboard:0.1</container>
+        <container type="docker">quay.io/galaxy/tensorboard:2.21.0</container>
     </requirements>
     <entry_points>
         <entry_point name="TensorBoard" requires_domain="True">
