@@ -8,9 +8,18 @@ import { stateIsTerminal } from "@/utils/utils";
 
 const DEFAULT_POLL_INTERVAL_MS = 3000;
 
-/** Reactively reads (and keeps polling) a job's full details via `jobStore`. */
-export function useJobDetails(jobId: Ref<string | undefined>, options: { autoRefresh?: boolean } = {}) {
-    const { autoRefresh = true } = options;
+/** Reactively reads (and keeps polling) a job's details via `jobStore`.
+ *
+ * @param options Has option `full?: boolean` (default `true`) which picks which representation to
+ * request:
+ *
+ * `full = false` only needs the smaller, base job shape, and is satisfied by an already-cached job of
+ * either shape.
+ * A job already cached as terminal is never re-fetched, regardless of which shape is requested (unless a `full: true`
+ * caller needs to upgrade a base-only cached entry).
+ */
+export function useJobDetails(jobId: Ref<string | undefined>, options: { autoRefresh?: boolean; full?: boolean } = {}) {
+    const { autoRefresh = true, full = true } = options;
     const jobStore = useJobStore();
 
     const job = computed(() => jobStore.getJob(jobId.value ?? "") ?? null);
@@ -21,7 +30,7 @@ export function useJobDetails(jobId: Ref<string | undefined>, options: { autoRef
         jobId,
         (id) => {
             if (autoRefresh && id) {
-                jobStore.pollJobUntilTerminal({ id });
+                jobStore.pollJobUntilTerminal({ id, full });
             }
         },
         { immediate: true },
