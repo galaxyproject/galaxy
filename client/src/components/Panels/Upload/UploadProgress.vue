@@ -4,6 +4,7 @@ import { BPagination } from "bootstrap-vue";
 import { usePagination } from "@/composables/pagination";
 import { useUploadBatchOperations } from "@/composables/upload/useUploadBatchOperations";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import { useUploadDatasetMonitorStore } from "@/stores/uploadDatasetMonitorStore";
 
 import { getUploadRootBreadcrumb } from "./uploadBreadcrumb";
 import { useUploadState } from "./uploadState";
@@ -15,7 +16,8 @@ import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 const uploadBatchOperations = useUploadBatchOperations();
 const uploadState = useUploadState();
-const { orderedUploadItems, batchesWithProgress, activeItems, hasCompleted, isUploading } = uploadState;
+useUploadDatasetMonitorStore();
+const { orderedUploadItems, batchesWithProgress, activeItems, hasCompleted, hasActiveUploads } = uploadState;
 
 const { paginatedItems, currentPage, itemsPerPage, showPagination, onPageChange } = usePagination(orderedUploadItems, {
     itemsPerPage: 24,
@@ -77,7 +79,9 @@ function onStopAll() {
     <div class="upload-progress-view d-flex flex-column h-100">
         <BreadcrumbHeading :items="breadcrumbItems">
             <div v-if="activeItems.length > 0" class="d-flex flex-gapx-1">
-                <GButton v-if="isUploading" size="small" outline color="red" @click="onStopAll()"> Stop All </GButton>
+                <GButton v-if="hasActiveUploads" size="small" outline color="red" @click="onStopAll()">
+                    Stop All
+                </GButton>
                 <GButton v-if="hasCompleted" size="small" outline color="grey" @click="onClearCompleted()">
                     Clear Completed
                 </GButton>
