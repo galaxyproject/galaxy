@@ -26,15 +26,27 @@ export function useJobDetails(jobId: Ref<string | undefined>, options: { autoRef
     const error = computed(() => (jobId.value ? jobStore.getJobLoadError(jobId.value) : null));
     const loading = computed(() => (jobId.value ? jobStore.isLoadingJob(jobId.value) : false));
 
+    // Tracks this call's own interest in whichever job id it last started polling, so it can be
+    // released (stopping the underlying poll once no one else needs it) on the next id change or
+    // on unmount; otherwise the poll would keep running for the lifetime of the whole session.
+    let stopWatchingJob: (() => void) | undefined;
+
     watch(
         jobId,
         (id) => {
+            stopWatchingJob?.();
+            stopWatchingJob = undefined;
             if (autoRefresh && id) {
-                jobStore.pollJobUntilTerminal({ id, full });
+                // Guard against a falsy return: a stubbed/mocked store action (e.g. Pinia
+                // testing's default `stubActions: true`) returns `undefined` rather than the
+                // real `{ stopWatchingJob }`.
+                stopWatchingJob = jobStore.pollJobUntilTerminal({ id, full })?.stopWatchingJob;
             }
         },
         { immediate: true },
     );
+
+    onUnmounted(() => stopWatchingJob?.());
 
     return { job, error, loading };
 }

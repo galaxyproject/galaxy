@@ -52,18 +52,27 @@ export const useJobStore = defineStore("jobStore", () => {
     /** Tracks job ids for which the full representation has been loaded. */
     const fullyLoadedJobIds = new Set<string>();
 
-    /** A track of all active polls (by `job_id` and whether the stored
-     * representation is full) so we don't duplicate polls for the same ID */
-    const activePolls = new Map<string, { watcher: ReturnType<typeof useResourceWatcher>; full: boolean }>();
+    /** A track of all active polls (by `job_id` and whether the stored representation is full),
+     * plus a count of how many callers still want that poll running, so we don't duplicate polls
+     * for the same ID and stop polling once the last interested caller goes away. */
+    const activePolls = new Map<
+        string,
+        { watcher: ReturnType<typeof useResourceWatcher>; full: boolean; refCount: number }
+    >();
 
     /**
      * Polls a job until it reaches a terminal state. If the job is already terminal and cached,
      * it may not poll at all. If the stored job is not a full representation and a full one is
      * requested, it will fetch the full representation once *or* switch an ongoing poll to request
      * the full representation if needed.
+     *
+     * Returns a `stopWatchingJob` function the caller must invoke (e.g. from `onUnmounted`) once it
+     * no longer needs this job polled because the underlying poll only actually stops once every caller
+     * that started it has done so.
      */
-    function pollJobUntilTerminal(params: JobFetchParams) {
+    function pollJobUntilTerminal(params: JobFetchParams): { stopWatchingJob: () => void } {
         const { id, full = true } = params;
+        const stopWatchingReturn = { stopWatchingJob: () => {} };
 
         // Not using `getJob` here because that would trigger a fetch if the job isn't already cached
         const cachedJob = storedJobs.value[id];
@@ -73,7 +82,7 @@ export const useJobStore = defineStore("jobStore", () => {
         const cacheSatisfiesRequest = full ? fullyLoadedJobIds.has(id) : !!cachedJob;
         if (cachedJobIsTerminal && cacheSatisfiesRequest) {
             // Already have everything this call needs, and the job won't change anymore.
-            return;
+            return stopWatchingReturn;
         }
 
         // The cached job is terminal but doesn't satisfy the currently requested structure
@@ -83,19 +92,17 @@ export const useJobStore = defineStore("jobStore", () => {
                     fullyLoadedJobIds.add(id);
                 }
             });
-            return;
+            return stopWatchingReturn;
         }
 
         const runningPoll = activePolls.get(id);
         if (runningPoll !== undefined) {
-            // Already requesting `full` OR this caller only needs `full: false`
-            if (runningPoll.full || !full) {
-                return;
-            }
-
+            runningPoll.refCount++;
             // We need to switch an ongoing non-`full` poll to request `full`.
-            runningPoll.full = true;
-            return;
+            if (full && !runningPoll.full) {
+                runningPoll.full = true;
+            }
+            return { stopWatchingJob: () => stopWatchingJob(id) };
         }
 
         const watcher = useResourceWatcher(
@@ -114,8 +121,23 @@ export const useJobStore = defineStore("jobStore", () => {
             },
             { shortPollingInterval: 1000, longPollingInterval: 1000 },
         );
-        activePolls.set(id, { watcher, full });
+        activePolls.set(id, { watcher, full, refCount: 1 });
         watcher.startWatchingResource();
+        return { stopWatchingJob: () => stopWatchingJob(id) };
+    }
+
+    /** Marks one caller as no longer interested in a job's poll; the poll itself only stops once
+     * every caller that started it has done the same (see `pollJobUntilTerminal`'s `refCount`). */
+    function stopWatchingJob(id: string) {
+        const runningPoll = activePolls.get(id);
+        if (!runningPoll) {
+            return;
+        }
+        runningPoll.refCount--;
+        if (runningPoll.refCount <= 0) {
+            runningPoll.watcher.stopWatchingResource();
+            activePolls.delete(id);
+        }
     }
 
     return {
