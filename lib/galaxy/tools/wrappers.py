@@ -2,6 +2,7 @@ import abc
 import logging
 import os
 import shlex
+import string
 import tempfile
 from collections.abc import (
     Iterable,
@@ -420,6 +421,13 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         self._element_identifier = identifier
 
     @property
+    def safe_element_identifier(self) -> str | None:
+        return sanitize_for_filename(
+            self.element_identifier,
+            valid_filename_chars=set(string.ascii_letters + string.digits + "-_."),
+        ).lstrip("-.")
+
+    @property
     def element_identifier(self) -> str:
         identifier = self._element_identifier
         if identifier is None:
@@ -720,6 +728,13 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     @property
     def is_collection(self) -> bool:
         return True
+
+    @property
+    def safe_element_identifier(self) -> str | None:
+        return sanitize_for_filename(
+            self.name,
+            valid_filename_chars=set(string.ascii_letters + string.digits + "-_."),
+        ).lstrip("-")
 
     @property
     def element_identifier(self) -> str | None:
