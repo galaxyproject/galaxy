@@ -235,6 +235,10 @@ function onJobInfoLeave(el: Element, done: () => void) {
                                             <HelpText :uri="`galaxy.jobs.states.${job.state}`" :text="job.state" />
                                         </td>
                                     </tr>
+                                    <tr v-if="job.exit_code !== null && job.exit_code !== undefined">
+                                        <td>Tool <HelpText uri="unix.exitCode" text="Exit Code" /></td>
+                                        <td id="exit-code">{{ job.exit_code }}</td>
+                                    </tr>
                                     <tr v-if="toolVersion">
                                         <td>Galaxy Tool Version</td>
                                         <td id="galaxy-tool-version">{{ toolVersion }}</td>
@@ -326,11 +330,6 @@ function onJobInfoLeave(el: Element, done: () => void) {
                                     help-uri="unix.traceback"
                                     :code-label="'Unexpected Job Errors'"
                                     :code-item="traceback" />
-                                <CodeRow
-                                    id="exit-code"
-                                    help-uri="unix.exitCode"
-                                    :code-label="'Tool Exit Code'"
-                                    :code-item="String(job.exit_code)" />
                                 <slot name="extra-code-rows" />
                             </div>
                         </div>
