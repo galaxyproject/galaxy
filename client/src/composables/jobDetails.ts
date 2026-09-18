@@ -2,6 +2,7 @@ import { computed, onUnmounted, type Ref, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { JobConsoleOutput } from "@/api/jobs";
+import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useJobStore } from "@/stores/jobStore";
 import { rethrowSimple } from "@/utils/simple-error";
 import { stateIsTerminal } from "@/utils/utils";
@@ -63,15 +64,7 @@ export function useJobConsoleOutput(
     const state = ref<string | null | undefined>(undefined);
     const error = ref<unknown>(null);
 
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     let currentJobId: string | undefined;
-
-    function clearPoll() {
-        if (timeoutId !== null) {
-            clearTimeout(timeoutId);
-            timeoutId = null;
-        }
-    }
 
     async function fetchConsoleOutput(id: string) {
         const { data, error: fetchError } = await GalaxyApi().GET("/api/jobs/{job_id}/console_output", {
@@ -91,50 +84,54 @@ export function useJobConsoleOutput(
         return data as JobConsoleOutput;
     }
 
-    async function poll(id: string) {
-        try {
-            const result = await fetchConsoleOutput(id);
-            if (id !== currentJobId) {
+    const watcher = useResourceWatcher<string>(
+        async (id?: unknown) => {
+            if (typeof id !== "string" || id !== currentJobId) {
                 return;
             }
-            if (result.stdout != null) {
-                stdout.value += result.stdout;
+            try {
+                const result = await fetchConsoleOutput(id);
+                if (id !== currentJobId) {
+                    return;
+                }
+                if (result.stdout != null) {
+                    stdout.value += result.stdout;
+                }
+                if (result.stderr != null) {
+                    stderr.value += result.stderr;
+                }
+                state.value = result.state;
+                error.value = null;
+            } catch (e) {
+                if (id !== currentJobId) {
+                    return;
+                }
+                error.value = e;
             }
-            if (result.stderr != null) {
-                stderr.value += result.stderr;
+            // `autoRefresh: false` means "fetch once, never schedule a repeat" -- same as a
+            // terminal state, stopping the watcher after this single tick satisfies that.
+            if (id === currentJobId && (!autoRefresh || stateIsTerminal({ state: state.value }))) {
+                watcher.stopWatchingResource();
             }
-            state.value = result.state;
-            error.value = null;
-        } catch (e) {
-            if (id !== currentJobId) {
-                return;
-            }
-            error.value = e;
-        }
-
-        if (id !== currentJobId) {
-            return;
-        }
-        if (autoRefresh && !stateIsTerminal({ state: state.value })) {
-            timeoutId = setTimeout(() => poll(id), pollInterval);
-        }
-    }
+        },
+        { shortPollingInterval: pollInterval, longPollingInterval: pollInterval },
+    );
 
     function restart(id: string | undefined) {
-        clearPoll();
+        watcher.stopWatchingResource();
         currentJobId = id;
         stdout.value = "";
         stderr.value = "";
         state.value = undefined;
         error.value = null;
         if (id) {
-            poll(id);
+            watcher.startWatchingResource(id);
         }
     }
 
     watch(jobId, (id) => restart(id), { immediate: true });
 
-    onUnmounted(clearPoll);
+    onUnmounted(() => watcher.dispose());
 
     return { stdout, stderr, error };
 }
