@@ -9,8 +9,7 @@ import type { HistoryGraphNode } from "./historyGraphMapper";
 import JobDetailsTabs from "./JobDetailsTabs.vue";
 import ToolExecutionJobs from "./ToolExecutionJobs.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";
-import RerunJobButton from "@/components/JobInformation/RerunJobButton.vue";
-import JobState from "@/components/JobStates/JobState.vue";
+import JobHeader from "@/components/JobInformation/JobHeader.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
@@ -44,8 +43,7 @@ const { jobId: creatingJobId, loading: lookupLoading, error: lookupError } = use
         <BAlert v-else-if="isDatasetLike && lookupError" variant="info" show class="mb-0">{{ lookupError }}</BAlert>
         <GTabs v-else-if="isDatasetLike && creatingJobId">
             <template v-slot:nav-end>
-                <JobState v-if="creatingJobId" :job-id="creatingJobId" class="mr-2" />
-                <RerunJobButton v-if="creatingJobId" :job-id="creatingJobId" outline />
+                <JobHeader v-if="creatingJobId" :job-id="creatingJobId" no-tool-name />
             </template>
             <JobDetailsTabs
                 :key="creatingJobId"
