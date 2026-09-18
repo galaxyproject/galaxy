@@ -9,6 +9,7 @@ import { ref } from "vue";
 import { GalaxyApi } from "@/api";
 import { type ResponseVal, type ShowFullJobResponse, TERMINAL_STATES } from "@/api/jobs";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
+import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { rethrowSimpleWithStatus } from "@/utils/simple-error";
 
 interface JobFetchParams extends FetchParams {
@@ -53,7 +54,7 @@ export const useJobStore = defineStore("jobStore", () => {
 
     /** A track of all active polls (by `job_id` and whether the stored
      * representation is full) so we don't duplicate polls for the same ID */
-    const activePolls = new Map<string, boolean>();
+    const activePolls = new Map<string, { watcher: ReturnType<typeof useResourceWatcher>; full: boolean }>();
 
     /**
      * Polls a job until it reaches a terminal state. If the job is already terminal and cached,
@@ -85,47 +86,36 @@ export const useJobStore = defineStore("jobStore", () => {
             return;
         }
 
-        /** The ongoing poll for this job ID.
-         * - `true` if there is an ongoing poll which is `full`,
-         * - `false` if there is still an ongoing non-`full` poll,
-         * - `undefined` if there is no ongoing poll.
-         */
-        const runningPollIsFull = activePolls.get(id);
-        if (runningPollIsFull !== undefined) {
+        const runningPoll = activePolls.get(id);
+        if (runningPoll !== undefined) {
             // Already requesting `full` OR this caller only needs `full: false`
-            if (runningPollIsFull || !full) {
+            if (runningPoll.full || !full) {
                 return;
             }
 
             // We need to switch an ongoing non-`full` poll to request `full`.
-            activePolls.set(id, true);
+            runningPoll.full = true;
             return;
         }
 
-        activePolls.set(id, full);
-
-        function poll() {
-            // Read (not close over) the current requested level -- a later call may have upgraded
-            // this poll to `full: true` since it started.
-            const requestFull = activePolls.get(id) ?? full;
-            fetchJob({ id, full: requestFull }).then((job) => {
+        const watcher = useResourceWatcher(
+            async () => {
+                // Read (not close over) the current requested level as a later call may have
+                // upgraded this poll to `full: true` since it started.
+                const requestFull = activePolls.get(id)?.full ?? full;
+                const job = await fetchJob({ id, full: requestFull });
                 if (job && requestFull) {
                     fullyLoadedJobIds.add(id);
                 }
-            });
-            setTimeout(tick, 1000);
-        }
-
-        function tick() {
-            const job = storedJobs.value[id];
-            if (job && TERMINAL_STATES.indexOf(job.state) !== -1) {
-                activePolls.delete(id);
-                return;
-            }
-            poll();
-        }
-
-        poll();
+                if (job && TERMINAL_STATES.indexOf(job.state) !== -1) {
+                    watcher.stopWatchingResource();
+                    activePolls.delete(id);
+                }
+            },
+            { shortPollingInterval: 1000, longPollingInterval: 1000 },
+        );
+        activePolls.set(id, { watcher, full });
+        watcher.startWatchingResource();
     }
 
     return {
