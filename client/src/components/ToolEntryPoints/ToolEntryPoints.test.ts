@@ -78,6 +78,7 @@ function mountWithEntryPoints(entryPoints: EntryPoint[], jobId = JOB_ID) {
         pinia: testPinia,
         stubs: {
             FontAwesomeIcon: true,
+            RouterLink: true,
         },
     });
 }
