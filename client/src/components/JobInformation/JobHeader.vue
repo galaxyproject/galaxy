@@ -6,12 +6,14 @@ import { useJobDetails } from "@/composables/jobDetails";
 import { useToolStore } from "@/stores/toolStore";
 
 import Heading from "@/components/Common/Heading.vue";
+import SuccessIconOverlay from "@/components/Common/SuccessIndicator/SuccessIconOverlay.vue";
 import RerunJobButton from "@/components/JobInformation/RerunJobButton.vue";
 import JobState from "@/components/JobStates/JobState.vue";
 
 const props = defineProps<{
     jobId: string;
     noToolName?: boolean;
+    animateSuccess?: boolean;
 }>();
 
 const toolStore = useToolStore();
@@ -22,7 +24,12 @@ const { job } = useJobDetails(toRef(props, "jobId"));
 <template>
     <div>
         <div class="d-flex justify-content-between">
-            <Heading v-if="job && !props.noToolName" :icon="faWrench" inline size="md">
+            <Heading
+                v-if="job && !props.noToolName"
+                :icon="!props.animateSuccess ? faWrench : undefined"
+                inline
+                size="md">
+                <SuccessIconOverlay v-if="props.animateSuccess" :covered-icon="faWrench" />
                 {{ toolStore.getToolNameById(job.tool_id, "Job Details") }}
             </Heading>
             <div class="job-header-end">
