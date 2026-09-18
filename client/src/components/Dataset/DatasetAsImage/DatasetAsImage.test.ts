@@ -30,7 +30,7 @@ describe("DatasetAsImage", () => {
 
     async function render(type: string, props = {}) {
         fetchMock.mockResolvedValue(new Response("image", { headers: { "Content-Type": type } }));
-        wrapper = mount(DatasetAsImage, {
+        wrapper = mount(DatasetAsImage as object, {
             localVue: getLocalVue(),
             propsData: { historyDatasetId: "dataset-id", ...props },
         });
