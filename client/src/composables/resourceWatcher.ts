@@ -118,6 +118,23 @@ export function useResourceWatcher<T = unknown>(
         }
     }
 
+    /**
+     * Fully tears down this watcher: stops any in-progress poll and removes its
+     * `visibilitychange` listener. Call this once the watcher is permanently done (as opposed to
+     * `stopWatchingResource`, which can be resumed later) 
+     * 
+     * e.g. a caller that creates one watcher per resource id and is finished with a particular
+     * id for good. Without this, the listener added by `setupVisibilityListeners` outlives
+     * the watcher for the rest of the page's life.
+     */
+    function dispose() {
+        stopWatcher();
+        if (isEventSetup) {
+            isEventSetup = false;
+            document.removeEventListener("visibilitychange", updateThrottle);
+        }
+    }
+
     function updateThrottle() {
         if (document.visibilityState === "visible") {
             currentPollingInterval = shortPollingInterval;
@@ -151,5 +168,10 @@ export function useResourceWatcher<T = unknown>(
          * Reactive boolean ref indicating whether the resource watcher is currently active.
          */
         isWatchingResource: readonly(isWatchingResource),
+        /**
+         * Fully tears down this watcher (stops polling and removes its `visibilitychange`
+         * listener). Call once, when this watcher instance is permanently done being used.
+         */
+        dispose,
     };
 }
