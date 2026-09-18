@@ -81,7 +81,7 @@ const webhookId = computed(() => webhook.value?.webhookId ?? null);
                 <ToolEntryPoints :job-id="viewedJob.id" />
             </div>
 
-            <JobInformation :job-id="viewedJob.id" collapsible />
+            <JobInformation :job-id="viewedJob.id" collapsible include-view-full-details-button />
         </template>
 
         <ToolSuccessOutputs :job-response="jobResponse" />
