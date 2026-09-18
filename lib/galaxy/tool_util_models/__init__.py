@@ -220,9 +220,7 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
     outputs: DynamicToolOutputs = []
     citations: Annotated[
         Optional[List[Citation]],
-        Field(
-            description="DOI or BibTeX references for publications describing the wrapped tool."
-        ),
+        Field(description="DOI or BibTeX references for publications describing the wrapped tool."),
     ] = None
     license: Annotated[
         Optional[str],
@@ -241,9 +239,7 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
     ] = None
     xrefs: Annotated[
         Optional[List[XrefDict]],
-        Field(
-            description="External registry identifiers, each with a registry `type` and identifier `value`."
-        ),
+        Field(description="External registry identifiers, each with a registry `type` and identifier `value`."),
     ] = None
     profile: Optional[float] = None
     help: Annotated[
@@ -379,7 +375,7 @@ _USER_TOOL_SOURCE_FIELD_ORDER: Tuple[str, ...] = (
 class UserToolSourceAuthoringView(_DynamicToolSourceBase):
     """A Galaxy user-defined tool: a containerized shell command wrapped with typed inputs and outputs.
 
-    Provide the tool's identity (``id``, ``name``, ``version``), a ``container``
+    Provide the tool's identity (``id``, ``name``, ``version``), a container
     image to run in, and a ``shell_command`` that references inputs as
     ``$(inputs.input_name)`` for scalar values or ``$(inputs.input_name.path)`` for files.
     Declare every referenced input under ``inputs`` and every produced file under
@@ -401,6 +397,12 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
             examples=["quay.io/biocontainers/python:3.13"],
         ),
     ]
+    # User-defined tools select their image only through the top-level ``container``
+    # field, so the trusted-tool container requirement form is not offered here.
+    requirements: Annotated[
+        Optional[List[Union[JavascriptRequirement, ResourceRequirement]]],
+        Field(description="JavaScript helpers and compute resource requests needed to execute this tool."),
+    ] = []  # type: ignore[assignment]
     # Required here (it's optional on the base for stored/legacy rows). Galaxy's
     # linter rejects a versionless tool, so forcing it into the structured-output
     # ``required`` set stops the model dropping it -- notably on a retry, where the
@@ -424,10 +426,20 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
     # YAML the tool editor renders leads with identity + runtime.
     _CANONICAL_FIELD_ORDER: ClassVar[Tuple[str, ...]] = _USER_TOOL_SOURCE_FIELD_ORDER
 
+    @model_validator(mode="before")
+    @classmethod
+    def _require_container(cls, values):
+        if isinstance(values, dict) and values.get("container") is None:
+            raise PydanticCustomError(
+                "dynamic_tool.container_required",
+                "set the top-level container field",
+            )
+        return values
+
     @field_validator("container", mode="after")
     @classmethod
     def _reject_blank_container(cls, value: str) -> str:
-        if not value or not value.strip():
+        if not value.strip():
             raise PydanticCustomError(
                 "dynamic_tool.blank_container",
                 "container must not be empty",
@@ -497,7 +509,7 @@ class UserToolSource(UserToolSourceAuthoringView):
                         }
                     ],
                 }
-            ]
+            ],
         }
     )
 
