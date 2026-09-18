@@ -3,7 +3,7 @@ import { BAlert, BPagination } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { JobBaseModel, JobState } from "@/api/jobs";
-import { statePlaceholders } from "@/composables/useInvocationGraph";
+import { statePlaceholders } from "@/composables/useInvocationGraph.js";
 
 import GButton from "../BaseComponents/GButton.vue";
 import JobDetailsDisplayed from "../JobInformation/JobDetails.vue";

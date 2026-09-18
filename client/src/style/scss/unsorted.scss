@@ -160,7 +160,6 @@ div.form-row-input label {
 .errormessagelarge,
 .warningmessagelarge,
 .donemessagelarge,
-.infomessagelarge,
 .form-help .error,
 .form-help .warning,
 .form-help .note {
@@ -190,11 +189,6 @@ div.form-row-input label {
     @extend .alert-success;
     padding-left: 52px;
     background-image: url(../../assets/images/ok_large.png);
-}
-
-.infomessagelarge {
-    @extend .alert-info;
-    background-image: url(../../assets/images/info_large.png);
 }
 
 .errormessage,

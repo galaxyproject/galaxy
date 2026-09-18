@@ -95,7 +95,7 @@ export function useKeyedCache<T>(
         const fetchPromise = (async () => {
             try {
                 const fetchItem = unref(fetchItemHandler);
-                const item = await fetchQueue.enqueue(fetchItem, { id: itemId }, itemId);
+                const item = await fetchQueue.enqueue(fetchItem, params, itemId);
                 set(storedItems.value, itemId, item);
                 del(loadingErrors.value, itemId);
                 delete retryCounts[itemId];
@@ -110,6 +110,16 @@ export function useKeyedCache<T>(
 
         set(loadingRequests.value, itemId, fetchPromise);
         return fetchPromise;
+    }
+
+    /**
+     * Removes a stored item (and any associated error/retry state) from the cache, e.g. for
+     * callers implementing their own eviction policy. Does not affect any in-flight request.
+     */
+    function removeItemById(id: string) {
+        del(storedItems.value, id);
+        del(loadingErrors.value, id);
+        delete retryCounts[id];
     }
 
     return {
@@ -136,5 +146,9 @@ export function useKeyedCache<T>(
          * And reactively updates the stored item when the fetch completes.
          */
         fetchItemById,
+        /**
+         * Removes a stored item from the cache.
+         */
+        removeItemById,
     };
 }

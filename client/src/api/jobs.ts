@@ -43,10 +43,14 @@ export interface JobResponse {
     outputs: {
         hid: number;
         name: string;
+        history_content_type: "dataset";
+        id: string;
     }[]; // TODO: This is temporary, adjust when API response is typed
     output_collections: {
         hid: number;
         name: string;
+        history_content_type: "dataset_collection";
+        id: string;
     }[]; // TODO: This is temporary, adjust when API response is typed
     // implicit_collections // TODO: Add when API response is typed
     errors?: any;
@@ -54,7 +58,6 @@ export interface JobResponse {
 export interface ResponseVal {
     jobDef: JobRequest;
     jobResponse: JobResponse;
-    toolName: string;
 }
 
 export interface SubmitToolJobParams {

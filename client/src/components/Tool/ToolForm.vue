@@ -454,7 +454,6 @@ async function onExecute() {
             jobStore.saveLatestResponse({
                 jobDef,
                 jobResponse,
-                toolName: toolName.value,
             });
         } else if (nErrors > 0) {
             showError.value = true;

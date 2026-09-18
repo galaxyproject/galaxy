@@ -177,9 +177,9 @@ export const useToolStore = defineStore("toolStore", () => {
     });
 
     const getToolNameById = computed(() => {
-        return (toolId: string) => {
+        return (toolId: string, defaultValue = "...") => {
             const details = toolsById.value[toolId];
-            return details?.name || "...";
+            return details?.name || defaultValue;
         };
     });
 
