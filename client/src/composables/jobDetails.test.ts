@@ -31,7 +31,7 @@ function buildJob(id: string, state: JobState, overrides: Partial<ShowFullJobRes
     } as ShowFullJobResponse;
 }
 
-function mountJobDetails(jobId: Ref<string | undefined>) {
+function mountJobDetails(jobId: Ref<string | undefined>, options?: { autoRefresh?: boolean; full?: boolean }) {
     const mounted = {
         job: ref<ShowFullJobResponse | null>(null),
         error: ref<unknown>(null),
@@ -40,13 +40,13 @@ function mountJobDetails(jobId: Ref<string | undefined>) {
 
     const TestComponent = defineComponent({
         setup() {
-            Object.assign(mounted, useJobDetails(jobId));
+            Object.assign(mounted, useJobDetails(jobId, options));
             return () => null;
         },
     });
 
-    mount(TestComponent);
-    return mounted;
+    const wrapper = mount(TestComponent);
+    return { ...mounted, wrapper };
 }
 
 describe("useJobDetails", () => {
@@ -147,5 +147,89 @@ describe("useJobDetails", () => {
 
         expect(job.value).toBeNull();
         expect(error.value).toBeTruthy();
+    });
+
+    it("stops polling once the consuming component unmounts", async () => {
+        let callCount = 0;
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response }) => {
+                callCount++;
+                return response(200).json(buildJob("job1", "running"));
+            }),
+        );
+
+        const jobId = ref<string | undefined>("job1");
+        const { wrapper } = mountJobDetails(jobId);
+        await flushPromises();
+        expect(callCount).toBe(1);
+
+        await advanceTimersAndFlush(1000);
+        expect(callCount).toBe(2);
+
+        wrapper.destroy();
+
+        // With the poller stopped, further time passing must not produce any more requests,
+        // otherwise it would keep hitting the server for the rest of the session even though
+        // nothing is displaying this job anymore.
+        await advanceTimersAndFlush(5000);
+        expect(callCount).toBe(2);
+    });
+
+    it("stops the previous job's poll when jobId changes to a different job", async () => {
+        let job1Calls = 0;
+        let job2Calls = 0;
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response, params }) => {
+                if (params.job_id === "job1") {
+                    job1Calls++;
+                    return response(200).json(buildJob("job1", "running"));
+                }
+                job2Calls++;
+                return response(200).json(buildJob("job2", "running"));
+            }),
+        );
+
+        const jobId = ref<string | undefined>("job1");
+        mountJobDetails(jobId);
+        await flushPromises();
+        expect(job1Calls).toBe(1);
+
+        jobId.value = "job2";
+        await flushPromises();
+        expect(job2Calls).toBe(1);
+
+        // job1's poll must have been released when we switched away from it, not left running
+        // alongside job2's.
+        await advanceTimersAndFlush(1000);
+        expect(job1Calls).toBe(1);
+        expect(job2Calls).toBe(2);
+    });
+
+    it("keeps polling a shared job alive until every consumer has unmounted", async () => {
+        let callCount = 0;
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response }) => {
+                callCount++;
+                return response(200).json(buildJob("job1", "running"));
+            }),
+        );
+
+        const jobId = ref<string | undefined>("job1");
+        const first = mountJobDetails(jobId);
+        const second = mountJobDetails(jobId);
+        await flushPromises();
+        expect(callCount).toBe(1); // jobStore dedupes the actual request across both consumers
+
+        first.wrapper.destroy();
+
+        // The second consumer is still mounted and interested, so the poll must keep going.
+        await advanceTimersAndFlush(1000);
+        expect(callCount).toBe(2);
+
+        second.wrapper.destroy();
+
+        // Now that both consumers are gone, the poll must actually stop.
+        await advanceTimersAndFlush(5000);
+        expect(callCount).toBe(2);
     });
 });
