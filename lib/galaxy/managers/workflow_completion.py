@@ -16,6 +16,7 @@ from sqlalchemy.orm.scoping import scoped_session
 from galaxy.model import (
     WorkflowInvocation,
     WorkflowInvocationCompletion,
+    WorkflowInvocationToSubworkflowInvocationAssociation,
 )
 from galaxy.schema.invocation import InvocationState
 from galaxy.structured_app import MinimalManagerApp
@@ -90,7 +91,8 @@ class WorkflowCompletionManager:
         Find invocations that are SCHEDULED but not yet recorded as complete.
 
         These are invocations that have had all their steps scheduled but
-        haven't been checked for job completion yet.
+        haven't been checked for job completion yet. Parents are eligible only
+        after their subworkflow invocations have completed.
 
         Args:
             limit: Maximum number of invocation IDs to return.
@@ -107,6 +109,14 @@ class WorkflowCompletionManager:
             )
             .where(WorkflowInvocation.state == InvocationState.SCHEDULED.value)
             .where(WorkflowInvocationCompletion.id.is_(None))
+            # Waiting parents must not fill the batch and prevent their children from being checked.
+            .where(
+                ~WorkflowInvocation.subworkflow_invocations.any(
+                    WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation.has(
+                        WorkflowInvocation.state != InvocationState.COMPLETED.value
+                    )
+                )
+            )
         )
         if handler is not None:
             stmt = stmt.where(WorkflowInvocation.handler == handler)
