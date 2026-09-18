@@ -967,6 +967,13 @@ class User(Base, Dictifiable, RepresentById):
 
     def get_user_data_tables(self, data_table: str):
         session = required_object_session(self)
+        assert session.bind
+        if session.bind.dialect.name == "postgresql":
+            is_bundle = to_json(session, HistoryDatasetAssociation._metadata, ["is_bundle"]) == "true"
+        else:
+            # sqlite's json_extract returns JSON ``true`` as the integer 1, which never
+            # equals the string "true"; json_type reports the JSON type name instead.
+            is_bundle = func.json_type(HistoryDatasetAssociation._metadata, "$.is_bundle") == "true"
         metadata_select = (
             select(HistoryDatasetAssociation)
             .join(Dataset)
@@ -979,7 +986,7 @@ class User(Base, Dictifiable, RepresentById):
                 # excludes data manager runs that actually populated tables.
                 # maybe track this formally by creating a different datatype for bundles ?
                 HistoryDatasetAssociation._metadata.contains(data_table),
-                to_json(session, HistoryDatasetAssociation._metadata, ["is_bundle"]) == "true",
+                is_bundle,
             )
             .order_by(HistoryDatasetAssociation.id)
         )
