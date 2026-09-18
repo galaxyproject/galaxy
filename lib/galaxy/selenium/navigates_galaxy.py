@@ -804,7 +804,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         action_element = target_card.find_element(By.CSS_SELECTOR, action_selector)
         # Hover over parent card first to activate hover state in headless mode
-        self.action_chains().move_to_element(target_card).perform()
+        self.hover(target_card)
         self.move_to_and_click(action_element)
 
     def edit_dataset_dbkey(self, dbkey_text):
@@ -1354,10 +1354,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         found_option = False
         for option_element in option_elements:
             if option_label in option_element.text:
-                action_chains = self.action_chains()
-                action_chains.move_to_element(option_element)
-                action_chains.click()
-                action_chains.perform()
+                self.move_to_and_click(option_element)
                 found_option = True
                 break
 
@@ -1701,14 +1698,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.wait_for_selector_absent_or_hidden(".toast", wait_type=WAIT_TYPES.UX_POPUP)
 
     def clear_tooltips(self, selector_to_move="#center"):
-        if self.backend_type == "selenium":
-            action_chains = self.action_chains()
-            center_element = self.find_element_by_selector(selector_to_move)
-            action_chains.move_to_element(center_element).perform()
-        else:
-            page = self.page
-            center_element = page.locator(selector_to_move)
-            center_element.hover(force=True)
+        self.hover(self.find_element_by_selector(selector_to_move))
         self.wait_for_selector_absent_or_hidden(".g-tooltip-d", wait_type=WAIT_TYPES.UX_POPUP)
 
     def pages_index_table_elements(self):
@@ -1771,8 +1761,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def workflow_rename(self, new_name, workflow_index=0):
         workflow = self.workflow_card_element(workflow_index=workflow_index)
-        action_chains = self.action_chains()
-        action_chains.move_to_element(workflow).perform()
+        self.hover(workflow)
         workflow.find_element(By.CSS_SELECTOR, ".g-card-rename").click()
         self.rename_modal_rename("workflow", new_name)
 
@@ -1903,14 +1892,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             # Wait for the settings panel slideDown animation (0.2s) to complete
             self.sleep_for(self.wait_types.UX_RENDER)
             expand_link = workflow_run.expand_form_link.wait_for_clickable()
-            # Use ActionChains for Selenium - regular click doesn't work reliably
-            # on GButton components due to internal tooltip element.
-            # Playwright doesn't have this issue and doesn't support ActionChains.
-            if self.backend_type == "selenium":
-                ac = self.action_chains()
-                ac.move_to_element(expand_link).click().perform()
-            else:
-                expand_link.click()
+            # A plain click doesn't work reliably on GButton components due to
+            # an internal tooltip element - move to the element first.
+            self.move_to_and_click(expand_link)
             workflow_run.expanded_form.wait_for_visible()
 
     def workflow_create_new(
@@ -2707,9 +2691,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def get_tooltip_text(self, element, sleep=0, click_away=True):
         tooltip_balloon = self.components._.tooltip_balloon
         self._clear_tooltip(tooltip_balloon)
-        action_chains = self.action_chains()
-        action_chains.move_to_element(element)
-        action_chains.perform()
+        self.hover(element)
 
         if sleep > 0:
             time.sleep(sleep)
