@@ -7,8 +7,7 @@ import { useToolExecutionJobs } from "./useToolExecutionJobs";
 
 import JobDetailsTabs from "./JobDetailsTabs.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";
-import RerunJobButton from "@/components/JobInformation/RerunJobButton.vue";
-import JobState from "@/components/JobStates/JobState.vue";
+import JobHeader from "@/components/JobInformation/JobHeader.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
@@ -45,19 +44,21 @@ const paginationPage = computed<number>({
         <template v-else-if="currentJob">
             <GTabs>
                 <template v-slot:nav-end>
-                    <JobState v-if="currentJob" :job-id="currentJob.id" class="mr-2" />
-                    <BPagination
-                        v-if="hasMany"
-                        v-model="paginationPage"
-                        :total-rows="jobs.length"
-                        :per-page="1"
-                        size="sm"
-                        :limit="3"
-                        first-number
-                        last-number
-                        hide-goto-end-buttons
-                        class="mb-0 mr-2" />
-                    <RerunJobButton v-if="currentJob" :job-id="currentJob.id" outline />
+                    <JobHeader v-if="currentJob" :job-id="currentJob.id" no-tool-name>
+                        <template v-slot:pagination>
+                            <BPagination
+                                v-if="hasMany"
+                                v-model="paginationPage"
+                                :total-rows="jobs.length"
+                                :per-page="1"
+                                size="sm"
+                                :limit="3"
+                                first-number
+                                last-number
+                                hide-goto-end-buttons
+                                class="mb-0 mr-2" />
+                        </template>
+                    </JobHeader>
                 </template>
                 <JobDetailsTabs :job-id="currentJob.id" :info-title="props.infoTitle" :info-icon="props.infoIcon" />
             </GTabs>
