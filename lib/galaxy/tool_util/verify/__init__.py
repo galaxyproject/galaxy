@@ -35,6 +35,8 @@ except ImportError:
     tifffile = None  # type: ignore[assignment, unused-ignore]
 
 
+from packaging.version import Version
+
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
@@ -72,6 +74,7 @@ def verify(
     keep_outputs_dir: str | None = None,
     verify_extra_files: Callable | None = None,
     mode="file",
+    profile: str | None = None,
 ):
     """Verify the content of a test output using test definitions described by attributes.
 
@@ -96,7 +99,11 @@ def verify(
     assertions = attributes.get("assert_list", None)
     if assertions is not None:
         try:
-            verify_assertions(output_content, attributes["assert_list"], attributes.get("decompress", False))
+            # Auto-detect separator based on file type for profile >= 26.0
+            sep: str | None = None
+            if profile and Version(profile) >= Version("26.0"):
+                sep = "," if attributes.get("ftype") == "csv" else "\t"
+            verify_assertions(output_content, attributes["assert_list"], attributes.get("decompress", False), sep=sep)
         except AssertionError as err:
             errmsg = f"{item_label} different than expected\n"
             errmsg += unicodify(err)
