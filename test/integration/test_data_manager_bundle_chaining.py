@@ -9,11 +9,9 @@ import pytest
 from galaxy.model import HistoryDatasetAssociation
 from galaxy.tools.parameters.dynamic_options import DynamicOptions
 from galaxy_test.base.populators import WorkflowPopulator
-from galaxy_test.driver.integration_util import skip_unless_postgres
 from .test_tool_data_delete import DataManagerIntegrationTestCase
 
 
-@skip_unless_postgres()
 class TestDataManagerBundleChaining(DataManagerIntegrationTestCase):
     temp_tool_data_dir: str
 
