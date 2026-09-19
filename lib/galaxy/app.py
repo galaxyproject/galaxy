@@ -428,6 +428,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
                 config_filename=self.config.shed_tool_data_table_config,
                 tool_data_path=self.tool_data_tables.tool_data_path,
                 from_shed_config=from_shed_config,
+                fail_on_exception=False,  # Don't stop booting just cause admin installed a tool with conflicting data tables
             )
         except OSError as exc:
             # Missing shed_tool_data_table_config is okay if it's the default
