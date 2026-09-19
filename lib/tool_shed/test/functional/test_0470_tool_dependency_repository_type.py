@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +60,7 @@ emboss_repository_long_description = "Galaxy wrappers for Emboss version 5.0.0 t
 """
 
 
-class TestEnvironmentInheritance(ShedTwillTestCase):
+class TestEnvironmentInheritance(ShedTestCase):
     """Test referencing environment variables that were defined in a separate tool dependency."""
 
     def test_0000_initiate_users_and_category(self):
@@ -146,10 +144,9 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         # Upload the tool dependency definition to the package_x11_client_1_5_proto_7_0_0470 repository.
         self.user_populator().setup_test_data_repo("libx11_proto", package_x11_repository, start=1, end=2)
         count = self._get_metadata_revision_count(package_x11_repository)
-        assert count == 1, (
-            "package_x11_client_1_5_proto_7_0_0470 has incorrect number of metadata revisions, expected 1 but found %d"
-            % count
-        )
+        assert (
+            count == 1
+        ), f"package_x11_client_1_5_proto_7_0_0470 has incorrect number of metadata revisions, expected 1 but found {count}"
 
     def test_0025_upload_updated_tool_dependency_to_package_emboss(self):
         """Upload a new tool_dependencies.xml to package_emboss_5_0_0_0470.
@@ -166,9 +163,9 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
             "package_emboss_5_0_0_0470", package_emboss_repository, start=1, end=2
         )
         count = self._get_metadata_revision_count(package_emboss_repository)
-        assert count == 2, (
-            "package_emboss_5_0_0_0470 has incorrect number of metadata revisions, expected 2 but found %d" % count
-        )
+        assert (
+            count == 2
+        ), f"package_emboss_5_0_0_0470 has incorrect number of metadata revisions, expected 2 but found {count}"
 
     def test_0030_upload_updated_tool_dependency_to_emboss_5_repository(self):
         """Upload a new tool_dependencies.xml to emboss_5_0470.
@@ -218,11 +215,9 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         self.reset_repository_metadata(package_emboss_repository)
         self.reset_repository_metadata(package_x11_repository)
         count = self._get_metadata_revision_count(package_emboss_repository)
-        assert count == 1, "Repository package_emboss_5_0_0 has %d installable revisions, expected 1." % count
+        assert count == 1, f"Repository package_emboss_5_0_0 has {count} installable revisions, expected 1."
         count = self._get_metadata_revision_count(package_x11_repository)
-        assert count == 1, (
-            "Repository package_x11_client_1_5_proto_7_0 has %d installable revisions, expected 1." % count
-        )
+        assert count == 1, f"Repository package_x11_client_1_5_proto_7_0 has {count} installable revisions, expected 1."
 
     def test_0050_reset_emboss_5_metadata(self):
         """Reset metadata on emboss_5.
@@ -232,4 +227,4 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
         self.reset_repository_metadata(emboss_repository)
         count = self._get_metadata_revision_count(emboss_repository)
-        assert count == 1, "Repository emboss_5 has %d installable revisions, expected 1." % count
+        assert count == 1, f"Repository emboss_5 has {count} installable revisions, expected 1."

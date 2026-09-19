@@ -1,16 +1,20 @@
 <template>
     <div>
-        <div v-for="(input, index) in inputs" :key="index">
+        <div
+            v-for="(input, index) in inputs"
+            :key="index"
+            :class="{ 'bordered-input': syncWithGraph && activeNodeId === index }">
             <div v-if="input.type == 'conditional'" class="ui-portlet-section mt-3">
                 <div class="portlet-header">
-                    <b>{{ input.test_param.label }}</b>
+                    <b v-localize>{{ input.test_param.label || input.test_param.name }}</b>
                 </div>
                 <div class="portlet-content">
                     <FormElement
                         :id="conditionalPrefix(input, input.test_param.name)"
                         v-model="input.test_param.value"
                         :type="input.test_param.type"
-                        :help="input.test_param.help"
+                        :help="localize(input.test_param.help)"
+                        :help-format="input.test_param.help_format"
                         :refresh-on-change="false"
                         :disabled="sustainConditionals"
                         :attributes="input.test_param"
@@ -20,7 +24,9 @@
                             v-if="conditionalMatch(input, caseId)"
                             v-bind="$props"
                             :inputs="caseDetails.inputs"
-                            :prefix="getPrefix(input.name)" />
+                            :prefix="getPrefix(input.name)"
+                            @load-more="$emit('load-more', $event)"
+                            @search-change="$emit('search-change', $event)" />
                     </div>
                 </div>
             </div>
@@ -32,13 +38,24 @@
                     :prefix="prefix"
                     @insert="() => repeatInsert(input)"
                     @delete="(id) => repeatDelete(input, id)"
+                    @clone="(id) => repeatClone(input, id)"
                     @swap="(a, b) => repeatSwap(input, a, b)" />
             </div>
             <div v-else-if="input.type == 'section'">
-                <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
+                <FormCard
+                    :title="localize(input.title || input.name)"
+                    :expanded.sync="input.expanded"
+                    :collapsible="true">
                     <template v-slot:body>
-                        <div v-if="input.help" class="my-2" data-description="section help">{{ input.help }}</div>
-                        <FormNode v-bind="$props" :inputs="input.inputs" :prefix="getPrefix(input.name)" />
+                        <div v-if="input.help" class="my-2" data-description="section help">
+                            {{ localize(input.help) }}
+                        </div>
+                        <FormNode
+                            v-bind="$props"
+                            :inputs="input.inputs"
+                            :prefix="getPrefix(input.name)"
+                            @load-more="$emit('load-more', $event)"
+                            @search-change="$emit('search-change', $event)" />
                     </template>
                 </FormCard>
             </div>
@@ -46,11 +63,12 @@
                 v-else
                 :id="getPrefix(input.name)"
                 v-model="input.value"
-                :title="input.label || input.name"
+                :title="localize(input.label || input.name)"
                 :type="input.type"
                 :error="input.error"
                 :warning="input.warning"
-                :help="input.help"
+                :help="localize(input.help)"
+                :help-format="input.help_format"
                 :refresh-on-change="input.refresh_on_change"
                 :attributes="input.attributes || input"
                 :collapsed-enable-text="collapsedEnableText"
@@ -59,7 +77,27 @@
                 :collapsed-disable-icon="collapsedDisableIcon"
                 :loading="loading"
                 :workflow-building-mode="workflowBuildingMode"
-                @change="onChange" />
+                :workflow-run="workflowRun"
+                @change="onChange"
+                @load-more="$emit('load-more', $event)"
+                @search-change="$emit('search-change', $event)">
+                <template v-slot:workflow-run-form-title-badges>
+                    <FormInputMismatchBadge v-if="valMismatches(input.name)" @stop-flagging="$emit('stop-flagging')" />
+                </template>
+                <template v-slot:workflow-run-form-title-items>
+                    <GButton
+                        v-if="syncWithGraph"
+                        size="small"
+                        color="blue"
+                        transparent
+                        :title="activeNodeId === index ? 'Active' : 'View in Graph'"
+                        :disabled="activeNodeId === index"
+                        @click="$emit('update:active-node-id', index)">
+                        <span class="fas fa-sitemap" />
+                        <span class="fas fa-arrow-right" />
+                    </GButton>
+                </template>
+            </FormElement>
         </div>
     </div>
 </template>
@@ -69,8 +107,10 @@ import { set } from "vue";
 
 import { matchCase } from "@/components/Form/utilities";
 
+import FormInputMismatchBadge from "./Elements/FormInputMismatchBadge.vue";
 import FormCard from "./FormCard.vue";
 import FormRepeat from "./FormRepeat.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 
 export default {
@@ -79,6 +119,8 @@ export default {
         FormCard,
         FormElement,
         FormRepeat,
+        FormInputMismatchBadge,
+        GButton,
     },
     props: {
         inputs: {
@@ -110,11 +152,11 @@ export default {
             default: null,
         },
         collapsedEnableIcon: {
-            type: String,
+            type: Object,
             default: null,
         },
         collapsedDisableIcon: {
-            type: String,
+            type: Object,
             default: null,
         },
         onChange: {
@@ -128,6 +170,22 @@ export default {
         workflowBuildingMode: {
             type: Boolean,
             default: false,
+        },
+        workflowRun: {
+            type: Boolean,
+            default: false,
+        },
+        activeNodeId: {
+            type: Number,
+            default: null,
+        },
+        syncWithGraph: {
+            type: Boolean,
+            default: false,
+        },
+        stepsNotMatchingRequest: {
+            type: Array,
+            default: () => [],
         },
     },
     methods: {
@@ -156,6 +214,14 @@ export default {
             input.cache.splice(cacheId, 1);
             this.onChangeForm();
         },
+        repeatClone(input, cacheId) {
+            const clonedInputs = structuredClone(input.cache[cacheId]);
+
+            set(input, "cache", input.cache ?? []);
+            input.cache.splice(cacheId + 1, 0, clonedInputs);
+
+            this.onChangeForm();
+        },
         repeatSwap(input, a, b) {
             const tmpA = input.cache[a];
             const tmpB = input.cache[b];
@@ -165,6 +231,16 @@ export default {
 
             this.onChangeForm();
         },
+        valMismatches(name) {
+            return this.workflowRun && this.stepsNotMatchingRequest.map((step) => step.toString()).includes(name);
+        },
     },
 };
 </script>
+
+<style scoped>
+.bordered-input {
+    border: 1px solid blue;
+    border-radius: 0.25rem;
+}
+</style>

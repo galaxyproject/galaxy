@@ -1,12 +1,11 @@
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { mockFetcher } from "@/schema/__mocks__";
-import { DatasetCollectionAttributes } from "@/stores/services";
+import type { DatasetCollectionAttributes } from "@/api";
+import { useServerMock } from "@/api/client/__mocks__";
 
 import { useCollectionAttributesStore } from "./collectionAttributesStore";
-
-jest.mock("@/schema");
 
 const FAKE_HDCA_ID = "123";
 
@@ -19,12 +18,20 @@ const FAKE_ATTRIBUTES: DatasetCollectionAttributes = {
     tags: ["tag1", "tag2"],
 };
 
-const fetchCollectionAttributes = jest.fn().mockResolvedValue({ data: FAKE_ATTRIBUTES });
+const fetchCollectionAttributesMock = vi.fn().mockReturnValue(FAKE_ATTRIBUTES);
+
+const { server, http } = useServerMock();
 
 describe("collectionAttributesStore", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
-        mockFetcher.path("/api/dataset_collections/{id}/attributes").method("get").mock(fetchCollectionAttributes);
+        fetchCollectionAttributesMock.mockClear();
+
+        server.use(
+            http.get("/api/dataset_collections/{hdca_id}/attributes", ({ response }) => {
+                return response(200).json(fetchCollectionAttributesMock());
+            }),
+        );
     });
 
     it("should fetch attributes and store them", async () => {
@@ -39,7 +46,7 @@ describe("collectionAttributesStore", () => {
         expect(store.isLoadingAttributes(FAKE_HDCA_ID)).toBeFalsy();
 
         expect(store.storedAttributes[FAKE_HDCA_ID]).toEqual(FAKE_ATTRIBUTES);
-        expect(fetchCollectionAttributes).toHaveBeenCalled();
+        expect(fetchCollectionAttributesMock).toHaveBeenCalled();
     });
 
     it("should not fetch attributes if already stored", async () => {
@@ -50,6 +57,6 @@ describe("collectionAttributesStore", () => {
         const result = store.getAttributes(FAKE_HDCA_ID);
 
         expect(result).toEqual(FAKE_ATTRIBUTES);
-        expect(fetchCollectionAttributes).not.toHaveBeenCalled();
+        expect(fetchCollectionAttributesMock).not.toHaveBeenCalled();
     });
 });

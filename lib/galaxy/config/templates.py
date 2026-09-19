@@ -10,14 +10,17 @@ from pathlib import Path
 
 from jinja2 import Environment
 
-from galaxy.util.resources import resource_path
+from galaxy.util.resources import (
+    resource_path,
+    Traversable,
+)
 
 TEMPLATE_SEP = ">>>>>>"  # Used to split templates into doc/body sections
 
 
 def render(template_path: str, context: dict, custom_templates_dir: str) -> str:
     """Read and return templated content as string."""
-    with open(_get_template_path(template_path, custom_templates_dir)) as f:
+    with _get_template_path(template_path, custom_templates_dir).open() as f:
         template_str = _get_template_body(f.read())
     tmpl = Environment().from_string(template_str)
     return tmpl.render(**context)
@@ -28,9 +31,9 @@ def _get_template_body(template: str) -> str:
     return template.split(TEMPLATE_SEP, 1)[-1].split("\n", 1)[1]
 
 
-def _get_template_path(relpath: str, custom_templates_dir: str) -> Path:
+def _get_template_path(relpath: str, custom_templates_dir: str) -> Traversable:
     """Return template file path."""
-    default_path = resource_path("galaxy.config", "templates") / relpath
+    default_path = resource_path(__name__, "templates") / relpath
     custom_path = Path(custom_templates_dir) / relpath
     if custom_path.exists():
         return custom_path

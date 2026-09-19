@@ -1,32 +1,28 @@
-<template>
-    <b-button
-        v-b-tooltip.noninteractive.hover
-        class="back-to-top"
-        :class="{ show: offset > 100 }"
-        title="Scroll To Top"
-        variant="info"
-        @click="$emit('click')">
-        <FontAwesomeIcon icon="fa-chevron-up" />
-    </b-button>
-</template>
-
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
+<script setup lang="ts">
 import { faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-library.add(faChevronUp);
+import GButton from "@/components/BaseComponents/GButton.vue";
 
-export default {
-    components: { FontAwesomeIcon },
-    props: {
-        offset: {
-            type: Number,
-            default: 0,
-        },
-    },
-};
+interface Props {
+    offset: number;
+}
+const props = withDefaults(defineProps<Props>(), {
+    offset: 0,
+});
 </script>
+
+<template>
+    <GButton
+        v-g-tooltip.hover
+        class="back-to-top"
+        :class="{ show: props.offset > 100 }"
+        :title="props.offset > 100 ? 'Scroll To Top' : ''"
+        color="blue"
+        @click="$emit('click')">
+        <FontAwesomeIcon :icon="faChevronUp" />
+    </GButton>
+</template>
 
 <style lang="scss" scoped>
 .back-to-top {
@@ -35,6 +31,7 @@ export default {
     position: absolute;
     opacity: 0;
     transition: opacity 0.4s;
+    z-index: 1000;
 
     &.show {
         opacity: 1;

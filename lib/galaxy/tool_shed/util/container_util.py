@@ -1,5 +1,4 @@
 import logging
-from typing import Union
 
 from galaxy.util.tool_shed.common_util import remove_protocol_from_tool_shed_url
 
@@ -14,8 +13,8 @@ def generate_repository_dependencies_key_for_repository(
     repository_name: str,
     repository_owner: str,
     changeset_revision: str,
-    prior_installation_required: Union[bool, str],
-    only_if_compiling_contained_td: Union[bool, str],
+    prior_installation_required: bool | str,
+    only_if_compiling_contained_td: bool | str,
 ) -> str:
     """
     Assumes tool shed is current tool shed since repository dependencies across tool sheds
@@ -25,19 +24,7 @@ def generate_repository_dependencies_key_for_repository(
     # of the Galaxy database for an installed repository.  This value does not include the protocol, but does include
     # the port if there is one.
     tool_shed = remove_protocol_from_tool_shed_url(toolshed_base_url)
-    return "{}{}{}{}{}{}{}{}{}{}{}".format(
-        tool_shed,
-        STRSEP,
-        repository_name,
-        STRSEP,
-        repository_owner,
-        STRSEP,
-        changeset_revision,
-        STRSEP,
-        str(prior_installation_required),
-        STRSEP,
-        str(only_if_compiling_contained_td),
-    )
+    return f"{tool_shed}{STRSEP}{repository_name}{STRSEP}{repository_owner}{STRSEP}{changeset_revision}{STRSEP}{prior_installation_required}{STRSEP}{only_if_compiling_contained_td}"
 
 
 def get_components_from_key(key: str) -> tuple:

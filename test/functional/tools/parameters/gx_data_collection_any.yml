@@ -1,0 +1,17 @@
+class: GalaxyTool
+id: gx_data_collection_any_y
+name: gx_data_collection_any_y
+version: "1.0.0"
+container: busybox
+shell_command: |
+  echo "Collection type: $(inputs.parameter.collection_type)" > output.txt
+  echo "Name: $(inputs.parameter.name)" >> output.txt
+inputs:
+  - name: parameter
+    type: data_collection
+    label: Input collection (any type)
+outputs:
+  - name: output
+    type: data
+    format: txt
+    from_work_dir: output.txt

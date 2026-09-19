@@ -1,5 +1,6 @@
 import functools
 import os
+import threading
 
 try:
     import docutils.core
@@ -25,7 +26,7 @@ class FakeStream:
             self.log_.warning(str)
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def get_publisher(error=False):
     docutils_writer = docutils.writers.html4css1.Writer()
     docutils_template_path = os.path.join(os.path.dirname(__file__), "docutils_template.txt")
@@ -57,12 +58,17 @@ def get_publisher(error=False):
     return pub
 
 
-@functools.lru_cache(maxsize=None)
-def rst_to_html(s, error=False):
+# Cached docutils publishers are stateful and not thread-safe.
+_publish_lock = threading.Lock()
+
+
+@functools.cache
+def rst_to_html(s, error=False) -> str:
     if docutils is None:
         raise Exception("Attempted to use rst_to_html but docutils unavailable.")
 
-    publisher = get_publisher(error=error)
-    publisher.set_source(s, None)
-    publisher.set_destination(None, None)
-    return publisher.publish(enable_exit_status=False)
+    with _publish_lock:
+        publisher = get_publisher(error=error)
+        publisher.set_source(s, None)
+        publisher.set_destination(None, None)
+        return publisher.publish(enable_exit_status=False)

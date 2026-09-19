@@ -1,12 +1,12 @@
 """The module defines the abstract interface for resolving container images for tool execution."""
+
 from abc import (
     ABCMeta,
     abstractmethod,
-    abstractproperty,
 )
+from collections.abc import Container
 from typing import (
     Any,
-    Container,
     Optional,
     TYPE_CHECKING,
 )
@@ -64,7 +64,8 @@ class ContainerResolver(Dictifiable, metaclass=ABCMeta):
         of the tool and its requirements.
         """
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def resolver_type(self) -> str:
         """Short label for the type of container resolution."""
 

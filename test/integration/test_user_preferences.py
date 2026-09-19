@@ -8,7 +8,7 @@ from requests import (
     put,
 )
 
-from galaxy.managers.users import get_user_by_email
+from galaxy.model.db.user import get_user_by_email
 from galaxy_test.driver import integration_util
 
 TEST_USER_EMAIL = "test_user_preferences@bx.psu.edu"
@@ -21,6 +21,7 @@ class TestUserPreferences(integration_util.IntegrationTestCase):
         app = cast(Any, self._test_driver.app if self._test_driver else None)
 
         db_user = get_user_by_email(app.model.session, user["email"])
+        assert db_user is not None
 
         # create some initial data
         put(url)

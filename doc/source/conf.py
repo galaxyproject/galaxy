@@ -14,8 +14,6 @@ import datetime
 import os
 import sys
 
-import sphinx_rtd_theme
-
 # Set GALAXY_DOCS_SKIP_VIEW_CODE=1 to skip embedding highlighted source
 # code into docs.
 SKIP_VIEW_CODE = os.environ.get("GALAXY_DOCS_SKIP_VIEW_CODE", False) == "1"
@@ -42,16 +40,18 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ["myst_parser", "sphinx.ext.intersphinx"]
+extensions = ["myst_parser", "sphinx.ext.intersphinx", "sphinx.ext.mathjax"]
 if not SKIP_SOURCE:
     # TODO: Add https://pypi.org/project/sphinx-autodoc-typehints
     extensions += ["sphinx.ext.doctest", "sphinx.ext.todo", "sphinx.ext.coverage", "sphinx.ext.autodoc"]
     if not SKIP_VIEW_CODE:
         extensions.append("sphinx.ext.viewcode")
 myst_enable_extensions = [
+    "dollarmath",
     "attrs_block",
     "deflist",
     "substitution",
+    "colon_fence",
 ]
 myst_heading_anchors = 5
 myst_heading_slug_func = "docutils.nodes.make_id"
@@ -161,11 +161,7 @@ html_theme_options = {
     "collapse_navigation": False,
     "display_version": True,
     "navigation_depth": 2,
-    "canonical_url": "https://docs.galaxyproject.org/en/master/",
 }
-
-# Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -173,6 +169,8 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 # html_short_title = None
+
+html_baseurl = "https://docs.galaxyproject.org/en/master/"
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.

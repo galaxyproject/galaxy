@@ -1,20 +1,14 @@
 import hashlib
 import logging
-from operator import itemgetter
-from typing import (
-    Optional,
-    Set,
-)
 
 from galaxy import exceptions
 from galaxy.files import (
     ConfiguredFileSources,
-    ProvidesUserFileSourcesUserContext,
+    FileSourcePath,
+    ProvidesFileSourcesUserContext,
 )
-from galaxy.files.sources import (
-    FilesSourceOptions,
-    PluginKind,
-)
+from galaxy.files.models import FilesSourceOptions
+from galaxy.files.sources import PluginKind
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.remote_files import (
     AnyRemoteFilesListResponse,
@@ -25,10 +19,7 @@ from galaxy.schema.remote_files import (
     RemoteFilesTarget,
 )
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.util import (
-    jstree,
-    smart_str,
-)
+from galaxy.util import jstree
 
 log = logging.getLogger(__name__)
 
@@ -45,19 +36,27 @@ class RemoteFilesManager:
         self,
         user_ctx: ProvidesUserContext,
         target: str,
-        format: Optional[RemoteFilesFormat],
-        recursive: Optional[bool],
-        disable: Optional[RemoteFilesDisableMode],
-        writeable: Optional[bool] = False,
-    ) -> AnyRemoteFilesListResponse:
-        """Returns a list of remote files available to the user."""
+        format: RemoteFilesFormat | None,
+        recursive: bool | None,
+        disable: RemoteFilesDisableMode | None,
+        write_intent: bool | None = False,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
+    ) -> tuple[AnyRemoteFilesListResponse, int]:
+        """Returns a list of remote files and directories available to the user and the total count of them."""
 
-        user_file_source_context = ProvidesUserFileSourcesUserContext(user_ctx)
+        user_file_source_context = ProvidesFileSourcesUserContext(user_ctx)
         default_recursive = False
         default_format = RemoteFilesFormat.uri
 
         if "://" in target:
             uri = target
+            # Reject URIs with embedded schemes (e.g. gxfiles://foo_http://evil.com)
+            scheme_end = uri.index("://") + 3
+            if "://" in uri[scheme_end:]:
+                raise exceptions.RequestParameterInvalidException(f"Malformed URI: {uri}")
         elif target == RemoteFilesTarget.userdir:
             uri = "gxuserimport://"
             default_format = RemoteFilesFormat.flat
@@ -85,34 +84,38 @@ class RemoteFilesManager:
         file_source = file_source_path.file_source
 
         opts = FilesSourceOptions()
-        opts.writeable = writeable or False
+        opts.write_intent = write_intent or False
         try:
-            index = file_source.list(
+            index, count = file_source.list(
                 file_source_path.path,
                 recursive=recursive,
                 user_context=user_file_source_context,
                 opts=opts,
+                limit=limit,
+                offset=offset,
+                query=query,
+                sort_by=sort_by,
             )
         except exceptions.MessageException:
-            log.warning(f"Problem listing file source path {file_source_path}", exc_info=True)
+            log.warning(self._get_error_message(file_source_path), exc_info=True)
             raise
         except Exception:
-            message = f"Problem listing file source path {file_source_path}"
+            message = self._get_error_message(file_source_path)
             log.warning(message, exc_info=True)
             raise exceptions.InternalServerError(message)
         if format == RemoteFilesFormat.flat:
             # rip out directories, ensure sorted by path
-            index = [i for i in index if i["class"] == "File"]
-            index = sorted(index, key=itemgetter("path"))
+            index = [i for i in index if i.class_ == "File"]
+            index = sorted(index, key=lambda x: x.path)
         elif format == RemoteFilesFormat.jstree:
             if disable is None:
                 disable = RemoteFilesDisableMode.folders
 
             jstree_paths = []
             for ent in index:
-                path = ent["path"]
-                path_hash = hashlib.sha1(smart_str(path)).hexdigest()
-                if ent["class"] == "Directory":
+                path = ent.path
+                path_hash = hashlib.sha1(path.encode()).hexdigest()
+                if ent.class_ == "Directory":
                     path_type = "folder"
                     disabled = True if disable == RemoteFilesDisableMode.folders else False
                 else:
@@ -129,17 +132,20 @@ class RemoteFilesManager:
             userdir_jstree = jstree.JSTree(jstree_paths)
             index = userdir_jstree.jsonData()
 
-        return index
+        return index, count
+
+    def _get_error_message(self, file_source_path: FileSourcePath) -> str:
+        return f"Problem listing file source path {file_source_path.file_source.get_uri_root()}{file_source_path.path}"
 
     def get_files_source_plugins(
         self,
         user_context: ProvidesUserContext,
-        browsable_only: Optional[bool] = True,
-        include_kind: Optional[Set[PluginKind]] = None,
-        exclude_kind: Optional[Set[PluginKind]] = None,
+        browsable_only: bool | None = True,
+        include_kind: set[PluginKind] | None = None,
+        exclude_kind: set[PluginKind] | None = None,
     ):
         """Display plugin information for each of the gxfiles:// URI targets available."""
-        user_file_source_context = ProvidesUserFileSourcesUserContext(user_context)
+        user_file_source_context = ProvidesFileSourcesUserContext(user_context)
         browsable_only = True if browsable_only is None else browsable_only
         plugins_dict = self._file_sources.plugins_to_dict(
             user_context=user_file_source_context,
@@ -156,18 +162,21 @@ class RemoteFilesManager:
     def create_entry(self, user_ctx: ProvidesUserContext, entry_data: CreateEntryPayload) -> CreatedEntryResponse:
         """Create an entry (directory or record) in a remote files location."""
         target = entry_data.target
-        user_file_source_context = ProvidesUserFileSourcesUserContext(user_ctx)
+        user_file_source_context = ProvidesFileSourcesUserContext(user_ctx)
         self._file_sources.validate_uri_root(target, user_context=user_file_source_context)
         file_source_path = self._file_sources.get_file_source_path(target)
         file_source = file_source_path.file_source
         try:
-            result = file_source.create_entry(entry_data.dict(), user_context=user_file_source_context)
+            result = file_source.create_entry(entry_data, user_context=user_file_source_context)
+        except exceptions.MessageException:
+            log.warning(f"Problem creating entry {entry_data.name} in file source {entry_data.target}", exc_info=True)
+            raise
         except Exception:
             message = f"Problem creating entry {entry_data.name} in file source {entry_data.target}"
             log.warning(message, exc_info=True)
             raise exceptions.InternalServerError(message)
         return CreatedEntryResponse(
-            name=result["name"],
-            uri=result["uri"],
-            external_link=result.get("external_link", None),
+            name=result.name,
+            uri=result.uri,
+            external_link=result.external_link,
         )

@@ -16,15 +16,14 @@ from galaxy.model.unittest_utils.migration_scripts_testing_utils import (  # noq
 from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401 - url_factory is a fixture we have to import explicitly
     url_factory,
 )
-from galaxy.util import in_packages
 from galaxy.util.resources import resource_path
-
-pytestmark = pytest.mark.skipif(in_packages(), reason="Running from packages")
 
 DbUrl = NewType("DbUrl", str)
 
 BASE_ID = "ts0"
 COMMAND = "manage_toolshed_db.sh"
+
+SKIP_REASON = "Slow test: database migration management scripts"
 
 
 @pytest.fixture(scope="session")
@@ -73,6 +72,7 @@ def create_alembic_branch(config: Config, versions_dir: str) -> None:
     alembic.command.revision(config, head="base", rev_id=BASE_ID, version_path=versions_dir)
 
 
+@pytest.mark.skip(SKIP_REASON)
 class TestVersionCommand:
     def test_version_cmd(self, config):
         alembic.command.revision(config, rev_id="1", head=BASE_ID)
@@ -92,6 +92,7 @@ class TestVersionCommand:
         assert "Revises: 1" in completed.stdout
 
 
+@pytest.mark.skip(SKIP_REASON)
 class TestDbVersionCommand:
     def test_dbversion_cmd(self, config):
         alembic.command.revision(config, rev_id="1", head=BASE_ID)
@@ -119,6 +120,7 @@ class TestDbVersionCommand:
         assert "Revises: 1" in completed.stdout
 
 
+@pytest.mark.skip(SKIP_REASON)
 class TestUpgradeCommand:
     def test_upgrade_cmd(self, config):
         alembic.command.revision(config, rev_id="1", head=BASE_ID)
@@ -188,6 +190,7 @@ class TestUpgradeCommand:
         assert heads == ("d",)
 
 
+@pytest.mark.skip(SKIP_REASON)
 class TestDowngradeCommand:
     def test_downgrade_cmd(self, config):
         alembic.command.revision(config, rev_id="1", head=BASE_ID)

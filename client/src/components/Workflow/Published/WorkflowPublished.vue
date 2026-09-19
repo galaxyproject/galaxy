@@ -1,213 +1,258 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import axios, { type AxiosError } from "axios";
-import { computed, ref, watch } from "vue";
+import { until } from "@vueuse/core";
+import { BAlert, BCard } from "bootstrap-vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 
+import { getWorkflowInfo, type StoredWorkflowDetailed } from "@/api/workflows";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
+import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
-import { usePanels } from "@/composables/usePanels";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
-import { useUserStore } from "@/stores/userStore";
-import type { Workflow } from "@/stores/workflowStore";
+import type { Steps } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
-import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
-import WorkflowInformation from "./WorkflowInformation.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import Heading from "@/components/Common/Heading.vue";
-import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
+import WorkflowInformation from "@/components/Workflow/Published/WorkflowInformation.vue";
+import WorkflowPublishedButtons from "@/components/Workflow/Published/WorkflowPublishedButtons.vue";
 
-library.add(faSpinner, faUser, faBuilding, faPlay, faEdit, faDownload);
-
-const props = defineProps<{
+interface Props {
     id: string;
-}>();
+    version?: number;
+    zoom?: number;
+    embed?: boolean;
+    initialX?: number;
+    initialY?: number;
+    quickView?: boolean;
+    showAbout?: boolean;
+    showHeading?: boolean;
+    showMinimap?: boolean;
+    showButtons?: boolean;
+    showZoomControls?: boolean;
+}
 
-const workflowInfo = ref<
-    | {
-          name: string;
-          [key: string]: unknown;
-          license?: string;
-          tags?: string[];
-          update_time: string;
-      }
-    | undefined
->();
-
-const workflow = ref<Workflow | null>(null);
-
-const loading = ref(true);
-const errored = ref(false);
-const errorMessage = ref("");
+const props = withDefaults(defineProps<Props>(), {
+    version: undefined,
+    zoom: 0.75,
+    embed: false,
+    initialX: -20,
+    initialY: -20,
+    quickView: false,
+    showAbout: true,
+    showHeading: true,
+    showMinimap: true,
+    showButtons: true,
+    showZoomControls: true,
+});
 
 const { datatypesMapper } = useDatatypesMapper();
 
 const { stateStore } = provideScopedWorkflowStores(props.id);
 
-stateStore.setScale(0.75);
+const loading = ref(true);
+const errorMessage = ref("");
+const workflowInfo = ref<StoredWorkflowDetailed>();
+const workflow = ref<StoredWorkflowDetailed | null>(null);
 
-watch(
-    () => props.id,
-    async (id) => {
-        workflowInfo.value = undefined;
-        loading.value = true;
-        errored.value = false;
-        errorMessage.value = "";
+const hasError = computed(() => !!errorMessage.value);
 
-        try {
-            const [{ data: workflowInfoData }, { data: fullWorkflow }] = await Promise.all([
-                axios.get(withPrefix(`/api/workflows/${id}`)),
-                axios.get(withPrefix(`/workflow/load_workflow?_=true&id=${id}`)),
-            ]);
+const initialPosition = computed(() => ({
+    x: -props.initialX * props.zoom,
+    y: -props.initialY * props.zoom,
+}));
 
-            assertDefined(workflowInfoData.name);
+/** Workflow steps force typed as `Steps` from the `workflowStepStore` */
+const workflowSteps = computed(() => (workflow.value?.steps as unknown as Steps) ?? []);
 
-            workflowInfo.value = workflowInfoData;
-            workflow.value = fullWorkflow;
+const showHeader = computed(() => props.showHeading || props.showButtons);
 
-            fromSimple(props.id, fullWorkflow);
-        } catch (e) {
-            const error = e as AxiosError<{ err_msg?: string }>;
+async function load() {
+    errorMessage.value = "";
 
-            if (error.response?.data.err_msg) {
-                errorMessage.value = error.response.data.err_msg;
-            }
+    try {
+        const [workflowInfoData, fullWorkflow] = await Promise.all([
+            getWorkflowInfo(props.id, props.version),
+            getWorkflowFull(props.id, props.version),
+        ]);
 
-            errored.value = true;
-        } finally {
-            loading.value = false;
-        }
-    },
-    {
-        immediate: true,
-    }
-);
+        assertDefined(workflowInfoData.name);
 
-const { showActivityBar, showToolbox } = usePanels();
+        workflowInfo.value = workflowInfoData;
+        workflow.value = fullWorkflow;
 
-const downloadUrl = computed(() => withPrefix(`/api/workflows/${props.id}/download?format=json-download`));
-const importUrl = computed(() => withPrefix(`/workflow/imp?id=${props.id}`));
-const runUrl = computed(() => withPrefix(`/workflows/run?id=${props.id}`));
-
-const userStore = useUserStore();
-
-function logInTitle(title: string) {
-    if (userStore.isAnonymous) {
-        return `Log in to ${title}`;
-    } else {
-        return title;
+        fromSimple(props.id, fullWorkflow);
+    } catch (e) {
+        errorMessage.value = errorMessageAsString(e);
+    } finally {
+        loading.value = false;
     }
 }
+
+watch(
+    () => props.zoom,
+    () => (stateStore.scale = props.zoom),
+    { immediate: true },
+);
+
+const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
+
+onMounted(async () => {
+    await load();
+    await until(workflow).toBeTruthy();
+    await nextTick();
+
+    // @ts-ignore: TS2339 component method not exposed in template ref type
+    workflowGraph.value?.fitWorkflow(0.25, 1.5, 20.0);
+});
+
+defineExpose({
+    workflow,
+    workflowInfo,
+});
 </script>
 
 <template>
-    <div id="columns" class="d-flex">
-        <ActivityBar v-if="showActivityBar" />
-        <FlexPanel v-if="showToolbox" side="left">
-            <ToolPanel />
-        </FlexPanel>
+    <div id="columns" class="workflow-published">
+        <ActivityBar v-if="!props.embed && !props.quickView" />
 
-        <div id="center" class="m-3 w-100 overflow-auto d-flex flex-column">
+        <div id="center" class="container-root" :class="{ 'p-3': !props.quickView }">
             <div v-if="loading">
-                <Heading h1 separator size="xl">
-                    <FontAwesomeIcon icon="fa-spinner" spin />
+                <Heading h1 separator size="lg">
+                    <FontAwesomeIcon :icon="faSpinner" spin />
                     Loading Workflow
                 </Heading>
             </div>
-            <div v-else-if="errored">
-                <Heading h1 separator size="xl"> Failed to load published Workflow </Heading>
+            <div v-else-if="hasError">
+                <Heading h1 separator size="lg"> Failed to load published Workflow </Heading>
 
-                <b-alert v-if="errorMessage" show variant="danger">
+                <BAlert show variant="danger">
                     {{ errorMessage }}
-                </b-alert>
-                <b-alert v-else show variant="danger"> Unknown Error </b-alert>
+                </BAlert>
             </div>
-            <div v-else-if="workflowInfo" class="published-workflow">
-                <div class="workflow-preview d-flex flex-column">
-                    <span class="d-flex w-100 flex-gapx-1 flex-wrap justify-content-center align-items-center mb-2">
-                        <Heading h1 separator inline size="xl" class="flex-grow-1 mb-0">Workflow Preview</Heading>
+            <div v-else-if="workflowInfo" class="published-workflow" :class="{ 'has-header': showHeader }">
+                <div v-if="showHeader" class="workflow-header">
+                    <Heading v-if="props.showHeading" h1 separator inline size="lg" class="flex-grow-1 mb-0">
+                        <span v-if="props.showAbout"> Workflow Preview </span>
+                        <span v-else> {{ workflowInfo.name }} </span>
+                    </Heading>
 
-                        <span>
-                            <b-button :to="downloadUrl" title="Download Workflow" variant="secondary" size="md">
-                                <FontAwesomeIcon icon="fa-download" />
-                                Download
-                            </b-button>
-
-                            <b-button
-                                :href="importUrl"
-                                :disabled="userStore.isAnonymous"
-                                :title="logInTitle('Import Workflow')"
-                                data-description="workflow import"
-                                target="blank"
-                                variant="secondary"
-                                size="md">
-                                <FontAwesomeIcon icon="fa-edit" />
-                                Import
-                            </b-button>
-
-                            <b-button
-                                :to="runUrl"
-                                :disabled="userStore.isAnonymous"
-                                :title="logInTitle('Run Workflow')"
-                                variant="primary"
-                                size="md">
-                                <FontAwesomeIcon icon="fa-play" />
-                                Run
-                            </b-button>
-                        </span>
-                    </span>
-
-                    <b-card class="workflow-card">
-                        <WorkflowGraph
-                            v-if="workflow && datatypesMapper"
-                            :steps="workflow.steps"
-                            :datatypes-mapper="datatypesMapper"
-                            readonly />
-                    </b-card>
+                    <WorkflowPublishedButtons
+                        v-if="props.showButtons"
+                        :id="props.id"
+                        :embed="props.embed"
+                        :workflow-info="workflowInfo" />
                 </div>
 
-                <WorkflowInformation v-if="workflowInfo" :workflow-info="workflowInfo" />
+                <BCard class="workflow-preview" :class="{ 'only-preview': !props.showAbout }">
+                    <WorkflowGraph
+                        v-if="workflow && datatypesMapper"
+                        ref="workflowGraph"
+                        :steps="workflowSteps"
+                        :datatypes-mapper="datatypesMapper"
+                        :initial-position="initialPosition"
+                        :show-minimap="props.showMinimap"
+                        :show-zoom-controls="props.showZoomControls"
+                        readonly />
+                </BCard>
+
+                <WorkflowInformation
+                    v-if="props.showAbout && workflowInfo"
+                    class="workflow-information-container"
+                    :workflow-info="workflowInfo"
+                    :embedded="props.embed" />
             </div>
         </div>
     </div>
 </template>
 
 <style scoped lang="scss">
-.published-workflow {
+@import "@/style/scss/theme/blue.scss";
+
+.workflow-published {
     display: flex;
-    flex-grow: 1;
-    gap: 1rem;
     height: 100%;
 
-    .workflow-preview {
-        flex-grow: 1;
-
-        .workflow-card {
-            flex-grow: 1;
-        }
-    }
-
-    &:deep(.workflow-information) {
-        max-width: 500px;
+    .container-root {
+        container-type: inline-size;
+        width: 100%;
         height: 100%;
+        min-height: 0;
+        overflow: auto;
     }
 
-    @media only screen and (max-width: 1100px) {
-        flex-direction: column;
-        height: unset;
+    .published-workflow {
+        display: grid;
+        gap: 0.5rem 1rem;
+        grid-template-columns: minmax(0, 1fr) minmax(18rem, 30%);
+        grid-template-rows: minmax(0, 1fr);
+
+        height: 100%;
+        min-height: 0;
+
+        &.has-header {
+            grid-template-rows: auto minmax(0, 1fr);
+        }
+
+        .workflow-header {
+            grid-column: 1 / -1;
+
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
 
         .workflow-preview {
-            height: 450px;
+            grid-column: 1;
+            min-height: 0;
+
+            &.only-preview {
+                grid-column: 1 / -1;
+            }
+
+            &:deep(.card-body) {
+                height: 100%;
+                min-height: 0;
+            }
         }
 
-        &:deep(.workflow-information) {
-            max-width: unset;
-            height: unset;
+        &:deep(.workflow-information-container) {
+            height: 100%;
+            max-width: 500px;
+            align-self: stretch;
+            overflow: auto;
         }
+    }
+
+    @container (max-width: 900px) {
+        .published-workflow {
+            height: unset;
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: auto auto auto;
+
+            .workflow-preview {
+                grid-column: 1;
+                height: 450px;
+            }
+
+            &:deep(.workflow-information-container) {
+                max-width: unset;
+                height: unset;
+            }
+
+            .workflow-information-container {
+                grid-column: 1;
+            }
+        }
+    }
+
+    .view-button {
+        --fa-secondary-color: #{$brand-toggle};
+        --fa-secondary-opacity: 1;
     }
 }
 </style>

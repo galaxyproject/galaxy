@@ -1,11 +1,8 @@
 import logging
 from typing import (
-    Dict,
+    Literal,
     NamedTuple,
-    Optional,
 )
-
-from typing_extensions import Literal
 
 from galaxy.util import parse_xml_string
 from galaxy.util.path import StrPath
@@ -31,11 +28,11 @@ class AUTH_TUPLE(NamedTuple):
 
 
 class Registry:
-    tool_sheds: Dict[str, str]
-    tool_shed_api_versions: Dict[str, API_VERSION]
-    tool_sheds_auth: Dict[str, Optional[AUTH_TUPLE]]
+    tool_sheds: dict[str, str]
+    tool_shed_api_versions: dict[str, API_VERSION]
+    tool_sheds_auth: dict[str, AUTH_TUPLE | None]
 
-    def __init__(self, config: Optional[StrPath] = None):
+    def __init__(self, config: StrPath | None = None):
         self.tool_sheds = {}
         self.tool_sheds_auth = {}
         self.tool_shed_api_versions = {}
@@ -72,7 +69,7 @@ class Registry:
             except Exception as e:
                 log.warning(f'Error loading reference to tool shed "{name}", problem: {str(e)}')
 
-    def url_auth(self, url: str) -> Optional[AUTH_TUPLE]:
+    def url_auth(self, url: str) -> AUTH_TUPLE | None:
         """
         If the tool shed is using external auth, the client to the tool shed must authenticate to that
         as well.  This provides access to the six.moves.urllib.request.HTTPPasswordMgrWithdefaultRealm() object for the
@@ -81,8 +78,7 @@ class Registry:
         Following more what galaxy.demo_sequencer.controllers.common does might be more appropriate at
         some stage...
         """
-        shed_name = self._shed_name_for_url(url)
-        if shed_name is not None:
+        if (shed_name := self._shed_name_for_url(url)) is not None:
             return self.tool_sheds_auth[shed_name]
         else:
             log.debug(f"Invalid url '{str(url)}' received by tool shed registry's url_auth method.")
@@ -95,7 +91,7 @@ class Registry:
         else:
             return self.tool_shed_api_versions[shed_name] == "v1"
 
-    def _shed_name_for_url(self, url: str) -> Optional[str]:
+    def _shed_name_for_url(self, url: str) -> str | None:
         url_sans_protocol = common_util.remove_protocol_from_tool_shed_url(url)
         for shed_name, shed_url in self.tool_sheds.items():
             shed_url_sans_protocol = common_util.remove_protocol_from_tool_shed_url(shed_url)
@@ -103,7 +99,7 @@ class Registry:
                 return shed_name
         return None
 
-    def get_tool_shed_url(self, tool_shed: str) -> Optional[str]:
+    def get_tool_shed_url(self, tool_shed: str) -> str | None:
         """
         The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is
         something like: http://toolshed.g2.bx.psu.edu/

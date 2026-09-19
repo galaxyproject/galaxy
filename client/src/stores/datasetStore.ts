@@ -1,62 +1,44 @@
 import { defineStore } from "pinia";
-import Vue, { computed, ref } from "vue";
+import { computed, set } from "vue";
 
-import { DatasetDetails, DatasetEntry, HistoryContentItemBase } from "./services";
-import { fetchDatasetDetails } from "./services/dataset.service";
+import { type HDADetailed, type HistoryContentItemBase, isInaccessible } from "@/api";
+import { fetchDatasetDetails } from "@/api/datasets";
+import { useKeyedCache } from "@/composables/keyedCache";
 
 export const useDatasetStore = defineStore("datasetStore", () => {
-    const storedDatasets = ref<{ [key: string]: DatasetDetails }>({});
-    const loadingDatasets = ref<{ [key: string]: boolean }>({});
-
-    const getDataset = computed(() => {
-        return (datasetId: string) => {
-            const dataset = storedDatasets.value[datasetId];
-            if (needsUpdate(dataset)) {
-                fetchDataset({ id: datasetId });
+    const shouldFetch = computed(() => {
+        return (dataset?: HDADetailed) => {
+            if (!dataset) {
+                return true;
             }
-            return dataset ?? null;
+            if (isInaccessible(dataset)) {
+                return false;
+            }
+            const isNotDetailed = !("peek" in dataset);
+            return isNotDetailed;
         };
     });
 
-    const isLoadingDataset = computed(() => {
-        return (datasetId: string) => {
-            return loadingDatasets.value[datasetId] ?? false;
-        };
-    });
-
-    async function fetchDataset(params: { id: string }) {
-        Vue.set(loadingDatasets.value, params.id, true);
-        try {
-            const dataset = await fetchDatasetDetails(params);
-            Vue.set(storedDatasets.value, dataset.id, dataset);
-            return dataset;
-        } finally {
-            Vue.delete(loadingDatasets.value, params.id);
-        }
-    }
+    const { storedItems, getItemById, getItemLoadError, isLoadingItem, fetchItemById } = useKeyedCache<HDADetailed>(
+        fetchDatasetDetails,
+        shouldFetch,
+    );
 
     function saveDatasets(historyContentsPayload: HistoryContentItemBase[]) {
         const datasetList = historyContentsPayload.filter(
-            (entry) => entry.history_content_type === "dataset"
-        ) as DatasetEntry[];
+            (entry) => entry.history_content_type === "dataset",
+        ) as HDADetailed[];
         for (const dataset of datasetList) {
-            Vue.set(storedDatasets.value, dataset.id, dataset);
+            set(storedItems.value, dataset.id, dataset);
         }
-    }
-
-    function needsUpdate(dataset?: DatasetEntry) {
-        if (!dataset) {
-            return true;
-        }
-        const isNotDetailed = !("peek" in dataset);
-        return isNotDetailed;
     }
 
     return {
-        storedDatasets,
-        getDataset,
-        isLoadingDataset,
-        fetchDataset,
+        storedDatasets: storedItems,
+        getDataset: getItemById,
+        getDatasetError: getItemLoadError,
+        isLoadingDataset: isLoadingItem,
+        fetchDataset: fetchItemById,
         saveDatasets,
     };
 });

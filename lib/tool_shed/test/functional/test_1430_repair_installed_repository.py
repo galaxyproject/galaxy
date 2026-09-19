@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +32,7 @@ In Galaxy:
 """
 
 
-class TestRepairRepository(ShedTwillTestCase):
+class TestRepairRepository(ShedTestCase):
     """Test repairing an installed repository."""
 
     requires_galaxy = True

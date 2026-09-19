@@ -25,7 +25,6 @@ def solid2sanger(quality_string, min_qual=0):
                 qv = "0"
             if int(qv) < min_qual:
                 return False
-                break
             sanger += chr(int(qv) + 33)
         except Exception:
             pass
@@ -166,15 +165,13 @@ def main():
     options, args = parser.parse_args()
 
     if not (options.fout and options.fr and options.fq):
-        parser.error(
-            """
+        parser.error("""
         One or more of the three required paremetrs is missing:
         (1) --fr F3.csfasta file
         (2) --fq F3.qual file
         (3) --fout name of output file
         Use --help for more info
-        """
-        )
+        """)
 
     fr = open(options.fr)
     fq = open(options.fq)

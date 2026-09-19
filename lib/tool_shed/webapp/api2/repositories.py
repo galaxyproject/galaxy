@@ -1,12 +1,12 @@
+import hashlib
+import json
+import logging
 import os
 import shutil
 import tempfile
 from typing import (
     cast,
     IO,
-    List,
-    Optional,
-    Union,
 )
 
 from fastapi import (
@@ -17,37 +17,54 @@ from fastapi import (
     status,
     UploadFile,
 )
+from fastapi.encoders import jsonable_encoder
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
-from galaxy.exceptions import InsufficientPermissionsException
-from galaxy.model.base import transaction
+from galaxy.exceptions import (
+    ActionInputError,
+    InsufficientPermissionsException,
+    RequestParameterInvalidException,
+)
 from galaxy.webapps.galaxy.api import as_form
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.repositories import (
+    add_admin_user,
     can_manage_repo,
     can_update_repo,
     check_updates,
     create_repository,
+    ensure_can_manage,
     get_install_info,
     get_ordered_installable_revisions,
     get_repository_metadata_dict,
     get_repository_metadata_for_management,
     index_repositories,
+    index_repositories_paginated,
+    IndexRequest,
+    PaginatedIndexRequest,
     readmes,
+    remove_admin_user,
+    reset_metadata_on_repositories,
     reset_metadata_on_repository,
     search,
     to_detailed_model,
     to_model,
     UpdatesRequest,
     upload_tar_and_set_metadata,
+    usernames_with_admin_role,
 )
 from tool_shed.structured_app import ToolShedApp
-from tool_shed.util.repository_util import get_repository_in_tool_shed
+from tool_shed.util.repository_util import (
+    get_repository_in_tool_shed,
+    update_validated_repository,
+)
 from tool_shed_client.schema import (
     CreateRepositoryRequest,
     DetailedRepository,
     from_legacy_install_info,
+    IndexSortByType,
     InstallInfo,
+    PaginatedRepositoryIndexResults,
     Repository,
     RepositoryMetadata,
     RepositoryPermissions,
@@ -55,8 +72,11 @@ from tool_shed_client.schema import (
     RepositorySearchResults,
     RepositoryUpdate,
     RepositoryUpdateRequest,
+    ResetMetadataOnRepositoriesRequest,
+    ResetMetadataOnRepositoriesResponse,
     ResetMetadataOnRepositoryRequest,
     ResetMetadataOnRepositoryResponse,
+    UpdateRepositoryRequest,
     ValidRepostiroyUpdateMessage,
 )
 from . import (
@@ -66,15 +86,20 @@ from . import (
     depends,
     DependsOnTrans,
     DownloadableQueryParam,
+    DryRunQueryParam,
     OptionalHexlifyParam,
     OptionalRepositoryIdParam,
     OptionalRepositoryNameParam,
     OptionalRepositoryOwnerParam,
     RepositoryIdPathParam,
+    RepositoryIndexCategoryQueryParam,
     RepositoryIndexDeletedQueryParam,
+    RepositoryIndexFilterParam,
     RepositoryIndexNameQueryParam,
     RepositoryIndexOwnerQueryParam,
     RepositoryIndexQueryParam,
+    RepositoryIndexSortByParam,
+    RepositoryIndexSortDescParam,
     RepositorySearchPageQueryParam,
     RepositorySearchPageSizeQueryParam,
     RequiredChangesetParam,
@@ -83,11 +108,45 @@ from . import (
     RequiredRepositoryChangesetRevisionParam,
     Router,
     UsernameIdPathParam,
+    VerboseQueryParam,
 )
+
+log = logging.getLogger(__name__)
+
 
 router = Router(tags=["repositories"])
 
-IndexResponse = Union[RepositorySearchResults, List[Repository]]
+IndexResponse = RepositorySearchResults | list[Repository] | PaginatedRepositoryIndexResults
+
+# Install info for a given name/owner/changeset_revision only changes when the repository's
+# metadata is rebuilt, so it is worth caching. Clients that revalidate get a 304 from the
+# ETag; caches that do not revalidate serve their copy for a day.
+INSTALL_INFO_MAX_AGE = 86400
+INSTALL_INFO_CACHE_CONTROL = f"public, max-age={INSTALL_INFO_MAX_AGE}"
+
+
+def _etag_for(payload) -> str:
+    """Build an ETag from the payload the route is about to serialize."""
+    encoded = json.dumps(jsonable_encoder(payload), sort_keys=True, separators=(",", ":"))
+    return f'"{hashlib.sha256(encoded.encode("utf-8")).hexdigest()}"'
+
+
+def _if_none_match(request: Request) -> list[str]:
+    header = request.headers.get("if-none-match")
+    if not header:
+        return []
+    # A conditional request may list several tags; weak validators are compared by value.
+    return [tag.strip().removeprefix("W/") for tag in header.split(",")]
+
+
+def _cacheable(payload, request: Request, response: Response):
+    """Attach cache headers to payload, or hand back a 304 if the client already has it."""
+    etag = _etag_for(payload)
+    headers = {"ETag": etag, "Cache-Control": INSTALL_INFO_CACHE_CONTROL}
+    if etag in _if_none_match(request):
+        return Response(status_code=status.HTTP_304_NOT_MODIFIED, headers=headers)
+    response.headers.update(headers)
+    return payload
 
 
 @as_form
@@ -103,19 +162,30 @@ class FastAPIRepositories:
         "/api/repositories",
         description="Get a list of repositories or perform a search.",
         operation_id="repositories__index",
+        allow_cors=True,
     )
     def index(
         self,
-        q: Optional[str] = RepositoryIndexQueryParam,
-        page: Optional[int] = RepositorySearchPageQueryParam,
-        page_size: Optional[int] = RepositorySearchPageSizeQueryParam,
-        deleted: Optional[bool] = RepositoryIndexDeletedQueryParam,
-        owner: Optional[str] = RepositoryIndexOwnerQueryParam,
-        name: Optional[str] = RepositoryIndexNameQueryParam,
+        q: str | None = RepositoryIndexQueryParam,
+        filter: str | None = RepositoryIndexFilterParam,
+        page: int | None = RepositorySearchPageQueryParam,
+        page_size: int | None = RepositorySearchPageSizeQueryParam,
+        deleted: bool | None = RepositoryIndexDeletedQueryParam,
+        owner: str | None = RepositoryIndexOwnerQueryParam,
+        name: str | None = RepositoryIndexNameQueryParam,
+        category_id: str | None = RepositoryIndexCategoryQueryParam,
+        sort_desc: bool | None = RepositoryIndexSortDescParam,
+        sort_by: IndexSortByType | None = RepositoryIndexSortByParam,
         trans: SessionRequestContext = DependsOnTrans,
     ) -> IndexResponse:
+
+        if q and filter:
+            raise RequestParameterInvalidException(
+                "Cannot specify both the 'q' and 'filter' parameter at the same time."
+            )
+
         if q:
-            assert page is not None
+            page = page or 1
             assert page_size is not None
             search_results = search(trans, q, page, page_size)
             return RepositorySearchResults(**search_results)
@@ -125,8 +195,32 @@ class FastAPIRepositories:
         # elif params.tool_ids:
         #    response = index_tool_ids(self.app, params.tool_ids)
         #    return response
+        elif page:
+            assert page_size is not None
+            paginated_index_request = PaginatedIndexRequest(
+                page=page,
+                page_size=page_size,
+                owner=owner,
+                name=name,
+                deleted=deleted or False,
+                filter=filter,
+                category_id=category_id,
+                sort_by=sort_by,
+                sort_desc=sort_desc,
+            )
+            paginated_repositories = index_repositories_paginated(self.app, paginated_index_request)
+            return paginated_repositories
         else:
-            repositories = index_repositories(self.app, name, owner, deleted or False)
+            index_request = IndexRequest(
+                owner=owner,
+                name=name,
+                deleted=deleted or False,
+                filter=filter,
+                category_id=category_id,
+                sort_by=sort_by,
+                sort_desc=sort_desc,
+            )
+            repositories = index_repositories(self.app, index_request)
             return [to_model(self.app, r) for r in repositories]
 
     @router.get(
@@ -136,6 +230,8 @@ class FastAPIRepositories:
     )
     def legacy_install_info(
         self,
+        request: Request,
+        response: Response,
         trans: SessionRequestContext = DependsOnTrans,
         name: str = RequiredRepoNameParam,
         owner: str = RequiredRepoOwnerParam,
@@ -147,7 +243,7 @@ class FastAPIRepositories:
             owner,
             changeset_revision,
         )
-        return list(legacy_install_info)
+        return _cacheable(list(legacy_install_info), request, response)
 
     @router.get(
         "/api/repositories/install_info",
@@ -156,6 +252,8 @@ class FastAPIRepositories:
     )
     def install_info(
         self,
+        request: Request,
+        response: Response,
         trans: SessionRequestContext = DependsOnTrans,
         name: str = RequiredRepoNameParam,
         owner: str = RequiredRepoOwnerParam,
@@ -170,7 +268,7 @@ class FastAPIRepositories:
             owner,
             changeset_revision,
         )
-        return from_legacy_install_info(legacy_install_info)
+        return _cacheable(from_legacy_install_info(legacy_install_info), request, response)
 
     @router.get(
         "/api/repositories/{encoded_repository_id}/metadata",
@@ -189,7 +287,6 @@ class FastAPIRepositories:
         # fails 1020 if we try to use the model - I guess repository dependencies
         # are getting lost
         return as_dict
-        # return _hack_fastapi_4428(as_dict)
 
     @router.get(
         "/api_internal/repositories/{encoded_repository_id}/metadata",
@@ -201,22 +298,23 @@ class FastAPIRepositories:
         self,
         encoded_repository_id: str = RepositoryIdPathParam,
         downloadable_only: bool = DownloadableQueryParam,
-    ) -> dict:
+    ) -> RepositoryMetadata:
         recursive = True
         as_dict = get_repository_metadata_dict(self.app, encoded_repository_id, recursive, downloadable_only)
-        return _hack_fastapi_4428(as_dict)
+        return RepositoryMetadata(root=as_dict)
 
     @router.get(
         "/api/repositories/get_ordered_installable_revisions",
         description="Get an ordered list of the repository changeset revisions that are installable",
         operation_id="repositories__get_ordered_installable_revisions",
+        allow_cors=True,
     )
     def get_ordered_installable_revisions(
         self,
-        owner: Optional[str] = OptionalRepositoryOwnerParam,
-        name: Optional[str] = OptionalRepositoryNameParam,
-        tsr_id: Optional[str] = OptionalRepositoryIdParam,
-    ) -> List[str]:
+        owner: str | None = OptionalRepositoryOwnerParam,
+        name: str | None = OptionalRepositoryNameParam,
+        tsr_id: str | None = OptionalRepositoryIdParam,
+    ) -> list[str]:
         return get_ordered_installable_revisions(self.app, name, owner, tsr_id)
 
     @router.post(
@@ -231,7 +329,9 @@ class FastAPIRepositories:
             ResetMetadataOnRepositoryRequest
         ),
     ) -> ResetMetadataOnRepositoryResponse:
-        return reset_metadata_on_repository(trans, request.repository_id)
+        return reset_metadata_on_repository(
+            trans, request.repository_id, dry_run=request.dry_run, verbose=request.verbose
+        )
 
     @router.post(
         "/api/repositories/{encoded_repository_id}/reset_metadata",
@@ -242,8 +342,24 @@ class FastAPIRepositories:
         self,
         trans: SessionRequestContext = DependsOnTrans,
         encoded_repository_id: str = RepositoryIdPathParam,
+        dry_run: bool = DryRunQueryParam,
+        verbose: bool = VerboseQueryParam,
     ) -> ResetMetadataOnRepositoryResponse:
-        return reset_metadata_on_repository(trans, encoded_repository_id)
+        return reset_metadata_on_repository(trans, encoded_repository_id, dry_run=dry_run, verbose=verbose)
+
+    @router.post(
+        "/api/repositories/reset_metadata_on_repositories",
+        description="reset metadata on all of your repositories",
+        operation_id="repositories__reset_all",
+    )
+    def reset_metadata_on_repositories(
+        self,
+        trans: SessionRequestContext = DependsOnTrans,
+        request: ResetMetadataOnRepositoriesRequest = depend_on_either_json_or_form_data(
+            ResetMetadataOnRepositoriesRequest
+        ),
+    ) -> ResetMetadataOnRepositoriesResponse:
+        return reset_metadata_on_repositories(trans, request)
 
     @router.get(
         "/api/repositories/updates",
@@ -254,10 +370,10 @@ class FastAPIRepositories:
     )
     def updates(
         self,
-        owner: Optional[str] = OptionalRepositoryOwnerParam,
-        name: Optional[str] = OptionalRepositoryNameParam,
+        owner: str | None = OptionalRepositoryOwnerParam,
+        name: str | None = OptionalRepositoryNameParam,
         changeset_revision: str = RequiredRepositoryChangesetRevisionParam,
-        hexlify: Optional[bool] = OptionalHexlifyParam,
+        hexlify: bool | None = OptionalHexlifyParam,
     ):
         request = UpdatesRequest(
             name=name,
@@ -294,6 +410,29 @@ class FastAPIRepositories:
         repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
         return to_detailed_model(self.app, repository)
 
+    @router.put(
+        "/api/repositories/{encoded_repository_id}",
+        operation_id="repositories__update_repository",
+    )
+    def update_repository(
+        self,
+        trans: SessionRequestContext = DependsOnTrans,
+        encoded_repository_id: str = RepositoryIdPathParam,
+        request: UpdateRepositoryRequest = Body(...),
+    ) -> DetailedRepository:
+        repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
+        ensure_can_manage(trans, repository)
+
+        # may want to set some of these to null, so we're using the exclude_unset feature
+        # to just serialize the ones we want to use to a dictionary.
+        # by_alias=True ensures type_ → type, matching update_validated_repository's expected keys.
+        update_dictionary = request.model_dump(exclude_unset=True, by_alias=True)
+        repo_result, message = update_validated_repository(trans, repository, **update_dictionary)
+        if repo_result is None:
+            raise ActionInputError(message)
+
+        return to_detailed_model(self.app, repository)
+
     @router.get(
         "/api/repositories/{encoded_repository_id}/permissions",
         operation_id="repositories__permissions",
@@ -322,10 +461,9 @@ class FastAPIRepositories:
         self,
         trans: SessionRequestContext = DependsOnTrans,
         encoded_repository_id: str = RepositoryIdPathParam,
-    ) -> List[str]:
+    ) -> list[str]:
         repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
-        if not can_manage_repo(trans, repository):
-            raise InsufficientPermissionsException("You do not have permission to update this repository.")
+        ensure_can_manage(trans, repository)
         return trans.app.security_agent.usernames_that_can_push(repository)
 
     @router.post(
@@ -337,7 +475,7 @@ class FastAPIRepositories:
         trans: SessionRequestContext = DependsOnTrans,
         encoded_repository_id: str = RepositoryIdPathParam,
         username: str = UsernameIdPathParam,
-    ) -> List[str]:
+    ) -> list[str]:
         repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
         if not can_manage_repo(trans, repository):
             raise InsufficientPermissionsException("You do not have permission to update this repository.")
@@ -358,8 +496,7 @@ class FastAPIRepositories:
         repository_metadata = get_repository_metadata_for_management(trans, encoded_repository_id, changeset_revision)
         repository_metadata.malicious = True
         trans.sa_session.add(repository_metadata)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
@@ -376,8 +513,7 @@ class FastAPIRepositories:
         repository_metadata = get_repository_metadata_for_management(trans, encoded_repository_id, changeset_revision)
         repository_metadata.malicious = False
         trans.sa_session.add(repository_metadata)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.put(
@@ -391,12 +527,10 @@ class FastAPIRepositories:
         encoded_repository_id: str = RepositoryIdPathParam,
     ):
         repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
-        if not can_manage_repo(trans, repository):
-            raise InsufficientPermissionsException("You do not have permission to update this repository.")
+        ensure_can_manage(trans, repository)
         repository.deprecated = True
         trans.sa_session.add(repository)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
@@ -410,12 +544,10 @@ class FastAPIRepositories:
         encoded_repository_id: str = RepositoryIdPathParam,
     ):
         repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
-        if not can_manage_repo(trans, repository):
-            raise InsufficientPermissionsException("You do not have permission to update this repository.")
+        ensure_can_manage(trans, repository)
         repository.deprecated = False
         trans.sa_session.add(repository)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
@@ -427,12 +559,53 @@ class FastAPIRepositories:
         trans: SessionRequestContext = DependsOnTrans,
         encoded_repository_id: str = RepositoryIdPathParam,
         username: str = UsernameIdPathParam,
-    ) -> List[str]:
+    ) -> list[str]:
         repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
         if not can_manage_repo(trans, repository):
             raise InsufficientPermissionsException("You do not have permission to update this repository.")
         repository.set_allow_push(None, remove_auth=username)
         return trans.app.security_agent.usernames_that_can_push(repository)
+
+    @router.get(
+        "/api/repositories/{encoded_repository_id}/admins",
+        operation_id="repositories__show_admins",
+    )
+    def show_admins(
+        self,
+        trans: SessionRequestContext = DependsOnTrans,
+        encoded_repository_id: str = RepositoryIdPathParam,
+    ) -> list[str]:
+        repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
+        ensure_can_manage(trans, repository)
+        return usernames_with_admin_role(self.app, repository)
+
+    @router.post(
+        "/api/repositories/{encoded_repository_id}/admins/{username}",
+        operation_id="repositories__add_admin",
+    )
+    def add_admin(
+        self,
+        trans: SessionRequestContext = DependsOnTrans,
+        encoded_repository_id: str = RepositoryIdPathParam,
+        username: str = UsernameIdPathParam,
+    ) -> list[str]:
+        repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
+        ensure_can_manage(trans, repository)
+        return add_admin_user(self.app, repository, username)
+
+    @router.delete(
+        "/api/repositories/{encoded_repository_id}/admins/{username}",
+        operation_id="repositories__remove_admin",
+    )
+    def remove_admin(
+        self,
+        trans: SessionRequestContext = DependsOnTrans,
+        encoded_repository_id: str = RepositoryIdPathParam,
+        username: str = UsernameIdPathParam,
+    ) -> list[str]:
+        repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
+        ensure_can_manage(trans, repository)
+        return remove_admin_user(self.app, repository, username)
 
     @router.post(
         "/api/repositories/{encoded_repository_id}/changeset_revision",
@@ -443,15 +616,15 @@ class FastAPIRepositories:
         self,
         request: Request,
         encoded_repository_id: str = RepositoryIdPathParam,
-        commit_message: Optional[str] = CommitMessageQueryParam,
+        commit_message: str | None = CommitMessageQueryParam,
         trans: SessionRequestContext = DependsOnTrans,
-        files: Optional[List[UploadFile]] = None,
+        files: list[UploadFile] | None = None,
         revision_request: RepositoryUpdateRequest = Depends(RepositoryUpdateRequestFormData.as_form),  # type: ignore[attr-defined]
     ) -> RepositoryUpdate:
         try:
             # Code stolen from Marius' work in Galaxy's Tools API.
 
-            files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
+            files2: list[StarletteUploadFile] = cast(list[StarletteUploadFile], files or [])
             # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
             if not files2:
                 data = await request.form()
@@ -471,7 +644,7 @@ class FastAPIRepositories:
                 dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
             ) as dest:
                 upload_file_like: IO[bytes] = the_file.file
-                shutil.copyfileobj(upload_file_like, dest)  # type: ignore[misc] # https://github.com/python/mypy/issues/15031
+                shutil.copyfileobj(upload_file_like, dest)
             the_file.file.close()
             filename = dest.name
             try:
@@ -482,14 +655,11 @@ class FastAPIRepositories:
                     filename,
                     commit_message or revision_request.commit_message or "Uploaded",
                 )
-                return RepositoryUpdate(__root__=ValidRepostiroyUpdateMessage(message=message))
+                return RepositoryUpdate(root=ValidRepostiroyUpdateMessage(message=message))
             finally:
                 if os.path.exists(filename):
                     os.remove(filename)
         except Exception:
-            import logging
-
-            log = logging.getLogger(__name__)
             log.exception("Problem in here...")
             raise
 
@@ -506,9 +676,3 @@ class FastAPIRepositories:
     ) -> dict:
         repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
         return readmes(self.app, repository, changeset_revision)
-
-
-def _hack_fastapi_4428(as_dict) -> dict:
-    # https://github.com/tiangolo/fastapi/pull/4428#issuecomment-1145429263
-    # after pydantic2 swap to really returning the object
-    return RepositoryMetadata(__root__=as_dict).dict()["__root__"]

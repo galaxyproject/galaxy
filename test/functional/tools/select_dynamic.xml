@@ -1,0 +1,79 @@
+<!-- test how dynamic selects are used in the command section -->
+<tool id="select_dynamic" name="Dynamic select" version="1.0.0" profile="22.05">
+    <command><![CDATA[
+        echo "select $select" >> '$output1' &&
+        echo "select path $select.fields.path" >> '$output1' &&
+
+        ## direct access to the select parameter gives a comma sepated list of the `value`s
+        echo "select_mult $select_mult" >> '$output1'
+        ## looping over the select parameter gives the `value`s
+        #for i, o in enumerate($select_mult)
+            && echo "select_mult $i $o" >> '$output1'
+        #end for
+        ## acessing fields gives comma separated properties
+        ## and in case nothing is selected empty string
+        && echo "select_mult real_value $select_mult.fields.real_value" >> '$output1' 
+        && echo "select_mult dbkey $select_mult.fields.dbkey" >> '$output1' 
+        && echo "select_mult name $select_mult.fields.name" >> '$output1' 
+        && echo "select_mult path $select_mult.fields.path"  >> '$output1'
+        && echo "select_mult value $select_mult.fields.value" >> '$output1' 
+    ]]></command>
+    <inputs>
+        <param name="select" type="select" optional="true">
+            <options from_data_table="test_fasta_indexes">
+            </options>
+        </param>
+        <param name="select_mult" type="select" optional="true" multiple="true">
+            <options from_data_table="test_fasta_indexes">
+                <!-- all columns that should be accessible via the fields attribute need to be included
+                since the for loop should iterate over the paths column 3 is names value here
+                and the actual value column (0) is "renamed" to real_value  -->
+                <column name="real_value" index="0"/>
+                <column name="dbkey" index="1"/>
+                <column name="name" index="2"/>
+                <column name="value" index="3"/>
+                <!-- same column can be accessible via multiple names-->
+                <column name="path" index="3"/>
+            </options>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output1" format="tabular" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="select" value="hg19_name"/>
+            <param name="select_mult" value="hg19_name,hg18_name"/>
+            <output name="output1">
+                <assert_contents>
+                    <has_line line="select hg19_value" />
+                    <has_line line="select path hg19_path" />
+                    <has_line line="select_mult hg19_path,hg18_path" />
+                    <has_line line="select_mult 0 hg19_path" />
+                    <has_line line="select_mult 1 hg18_path" />
+                    <has_line line="select_mult real_value hg19_value,hg18_value" />
+                    <has_line line="select_mult dbkey hg19,hg18" />
+                    <has_line line="select_mult name hg19_name,hg18_name" />
+                    <has_line line="select_mult path hg19_path,hg18_path" />
+                    <has_line line="select_mult value hg19_path,hg18_path" />
+                    <has_n_lines n="10"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <output name="output1">
+                <assert_contents>
+                    <has_line line="select None" />
+                    <has_line line="select path " />
+                    <has_line line="select_mult None" />
+                    <has_line line="select_mult real_value " />
+                    <has_line line="select_mult dbkey " />
+                    <has_line line="select_mult name " />
+                    <has_line line="select_mult path " />
+                    <has_line line="select_mult value " />
+                    <has_n_lines n="8" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

@@ -1,22 +1,22 @@
 """The module describes the ``slack`` error plugin plugin."""
+
 import logging
 import uuid
 from typing import (
     Any,
-    Dict,
 )
 
-import requests
-
-from galaxy import web
-from galaxy.util import string_as_bool
+from galaxy.util import (
+    requests,
+    string_as_bool,
+)
 from .base_git import BaseGitPlugin
 
 log = logging.getLogger(__name__)
 
 
 class SlackPlugin(BaseGitPlugin):
-    """Send error report to Sentry."""
+    """Send error report to Slack."""
 
     plugin_type = "slack"
 
@@ -38,11 +38,11 @@ class SlackPlugin(BaseGitPlugin):
 
     def submit_report(self, dataset, job, tool, **kwargs):
         history_id_encoded = self.app.security.encode_id(dataset.history_id)
-        history_view_link = web.url_for("/histories/view", id=history_id_encoded, qualified=True)
+        history_view_link = self.app.url_for("/histories/view", id=history_id_encoded, qualified=True)
         error_report_id = str(uuid.uuid4())[0:13]
         title = self._generate_error_title(job)
 
-        blocks: Dict[str, Any] = {
+        blocks: dict[str, Any] = {
             "blocks": [
                 {
                     "type": "section",

@@ -19,7 +19,7 @@ upstream component or environment that is accessed through props and events -->
             :tags="tagModels"
             :autocomplete-items="autocompleteTags"
             :disabled="disabled"
-            placeholder="Add Tags"
+            :placeholder="localize('Add Tags')"
             :add-on-key="triggerKeys"
             :validation="validation"
             @before-adding-tag="beforeAddingTag"
@@ -34,6 +34,8 @@ upstream component or environment that is accessed through props and events -->
 
 <script>
 import VueTagsInput from "@johmun/vue-tags-input";
+
+import localize from "@/utils/localization";
 
 import { createTag, VALID_TAG_RE } from "./model";
 
@@ -94,6 +96,7 @@ export default {
         },
     },
     methods: {
+        localize,
         tagsChanged(newTags) {
             this.$emit("input", this.pluckLabels(newTags));
         },
@@ -133,8 +136,8 @@ export default {
 <style lang="scss">
 // Most styling of the tags should happen in here.
 
-@import "theme/blue";
-@import "scss/mixins";
+@import "@/style/scss/theme/blue";
+@import "@/style/scss/mixins";
 
 // Puts a little graphic in place of the text-input
 // when the input is not in focus

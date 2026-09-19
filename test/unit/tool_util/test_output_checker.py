@@ -3,6 +3,7 @@ from unittest.mock import Mock
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
+    output_discovery_job_message,
 )
 from galaxy.tool_util.parser.stdio import (
     StdioErrorLevel,
@@ -19,10 +20,17 @@ class TestOutputChecker(TestCase):
         )
         self.stdout = ""
         self.stderr = ""
-        self.tool_exit_code = None
+        self.tool_exit_code = 0
 
     def test_default_no_stderr_success(self):
         self.__assertSuccessful()
+
+    def test_output_discovery_job_message(self):
+        assert output_discovery_job_message()["desc"] == "Failed to collect job outputs"
+        assert (
+            output_discovery_job_message("Missing collection type")["desc"]
+            == "Failed to collect job outputs: Missing collection type"
+        )
 
     def test_default_stderr_failure(self):
         self.stderr = "foo"
@@ -72,6 +80,28 @@ class TestOutputChecker(TestCase):
         self.stderr = "foobar"
         self.__assertNotSuccessful()
 
+    def test_stderr_regex_group_positive_match(self):
+        regex = ToolStdioRegex()
+        regex.stderr_match = True
+        regex.match = "ERROR: (.{3})bar"
+        regex.desc = r"\1"
+        self.__add_regex(regex)
+        self.stderr = "ERROR: foobar"
+        _, _, _, job_messages = self.__check_output()
+        assert job_messages[0]["desc"] == "Fatal error: foo"
+        self.__assertNotSuccessful()
+
+    def test_stderr_regex_namedgroup_positive_match(self):
+        regex = ToolStdioRegex()
+        regex.stderr_match = True
+        regex.match = "ERROR: (?P<q>.{3})bar"
+        regex.desc = r"\g<q>"
+        self.__add_regex(regex)
+        self.stderr = "ERROR: foobar"
+        _, _, _, job_messages = self.__check_output()
+        assert job_messages[0]["desc"] == "Fatal error: foo"
+        self.__assertNotSuccessful()
+
     def test_stdout_ignored_for_stderr_regexes(self):
         regex = ToolStdioRegex()
         regex.stderr_match = True
@@ -99,5 +129,5 @@ class TestOutputChecker(TestCase):
 
     def __check_output(self):
         return check_output(
-            self.tool.stdio_regexes, self.tool.stdio_exit_codes, self.stdout, self.stderr, self.tool_exit_code, "job_id"
+            self.tool.stdio_regexes, self.tool.stdio_exit_codes, self.stdout, self.stderr, self.tool_exit_code
         )

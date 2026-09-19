@@ -1,4 +1,4 @@
-@import "~@fortawesome/fontawesome-free/scss/_variables";
+@import "@fortawesome/fontawesome-free/scss/_variables";
 
 // util class to make pointer cursor
 .cursor-pointer {
@@ -40,6 +40,17 @@
     overflow: auto !important;
 }
 
+.overflow-y {
+    overflow-y: auto !important;
+}
+
+// utility class to wrap words or break if necessary
+.word-wrap-break {
+    overflow-wrap: break-word;
+    white-space: normal;
+    word-break: break-word;
+}
+
 // utility class to set word wrap to normal
 .word-wrap-normal {
     word-wrap: normal;
@@ -67,6 +78,9 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .ui-modal {
     display: none;
     overflow: auto;
+    .title {
+        width: 100%;
+    }
     .modal-header.no-separator {
         border: none !important;
         padding-bottom: 0px !important;
@@ -137,11 +151,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
             }
         }
         .portlet-operations {
-            button {
-                margin-left: 0.25rem;
-                padding-top: 0;
-                padding-bottom: 0;
-            }
+            float: right;
         }
     }
     .portlet-buttons {
@@ -188,6 +198,17 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
+.ui-form-header-underlay::after {
+    content: "";
+    display: block;
+    position: absolute;
+    top: -$margin-h;
+    left: -0.5rem;
+    right: -0.5rem;
+    height: 50px;
+    background: linear-gradient($white 75%, change-color($white, $alpha: 0));
+}
+
 // popovers
 .popover {
     max-width: 70%;
@@ -220,7 +241,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
 
 .ui-textarea {
     @extend .ui-input;
-    height: 100px !important;
+    min-height: 100px;
 }
 
 .ui-switch {
@@ -247,48 +268,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     label.active {
         @extend .font-weight-bold;
         background: $btn-default-bg;
-    }
-}
-
-.ui-options {
-    .ui-options-list {
-        @extend .ui-input;
-        height: 100% !important;
-        input[type="checkbox"],
-        input[type="radio"] {
-            display: none;
-        }
-        label {
-            margin: 0px;
-            cursor: pointer;
-        }
-        .ui-drilldown-button {
-            float: left;
-            cursor: pointer;
-            font-size: 1.2em;
-            margin-right: 5px;
-            margin-top: 3px;
-        }
-        .ui-drilldown-subgroup {
-            display: none;
-            margin-left: 25px;
-        }
-        input[type="checkbox"] + label:before {
-            @extend .far;
-            margin-right: 5px;
-            content: fa-content($fa-var-square);
-        }
-        input[type="checkbox"]:checked + label:before {
-            content: fa-content($fa-var-check-square);
-        }
-        input[type="radio"] + label:before {
-            @extend .far;
-            margin-right: 5px;
-            content: fa-content($fa-var-circle);
-        }
-        input[type="radio"]:checked + label:before {
-            content: fa-content($fa-var-check-circle);
-        }
     }
 }
 
@@ -457,4 +436,31 @@ $ui-margin-horizontal-large: $margin-v * 2;
         background-color: $brand-primary;
         color: $brand-light;
     }
+}
+
+.outline-badge {
+    border: 1px solid $brand-primary;
+    color: $brand-primary;
+    background-color: transparent;
+
+    &:hover {
+        background-color: $brand-primary !important;
+        color: white !important;
+    }
+
+    &.badge-warning {
+        border-color: $brand-warning;
+        color: $brand-warning;
+
+        &:hover {
+            background-color: $brand-warning !important;
+        }
+    }
+}
+
+.card-container {
+    padding: 0.7rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.5rem;
+    border: 0.1rem solid $brand-secondary;
 }

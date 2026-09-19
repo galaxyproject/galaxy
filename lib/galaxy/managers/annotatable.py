@@ -4,14 +4,9 @@ Mixins for Annotatable model managers and serializers.
 
 import abc
 import logging
-from typing import (
-    Dict,
-    Optional,
-)
 
 from sqlalchemy.orm import scoped_session
 
-from galaxy.model.base import transaction
 from .base import (
     Deserializer,
     FunctionFilterParsersType,
@@ -25,7 +20,7 @@ log = logging.getLogger(__name__)
 # needed to extract this for use in manager *and* serializer, ideally, would use self.manager.annotation
 # from serializer, but history_contents has no self.manager
 # TODO: fix
-def _match_by_user(item, user) -> Optional[str]:
+def _match_by_user(item, user) -> str | None:
     if not user:
         return None
     for annotation in item.annotations:
@@ -39,10 +34,9 @@ class AnnotatableManagerMixin:
     annotation_assoc: type
 
     @abc.abstractmethod
-    def session(self) -> scoped_session:
-        ...
+    def session(self) -> scoped_session: ...
 
-    def annotation(self, item) -> Optional[str]:
+    def annotation(self, item) -> str | None:
         """
         Return the annotation string made by the `item`'s owner or `None` if there
         is no annotation.
@@ -65,8 +59,7 @@ class AnnotatableManagerMixin:
         annotation_obj = item.add_item_annotation(self.session(), user, item, annotation)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return annotation_obj
 
     def _user_annotation(self, item, user):
@@ -76,13 +69,12 @@ class AnnotatableManagerMixin:
         returned = item.delete_item_annotation(self.session(), user, item)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return returned
 
 
 class AnnotatableSerializerMixin:
-    serializers: Dict[str, Serializer]
+    serializers: dict[str, Serializer]
 
     def add_serializers(self):
         self.serializers["annotation"] = self.serialize_annotation
@@ -96,7 +88,7 @@ class AnnotatableSerializerMixin:
 
 
 class AnnotatableDeserializerMixin:
-    deserializers: Dict[str, Deserializer]
+    deserializers: dict[str, Deserializer]
 
     def add_deserializers(self):
         self.deserializers["annotation"] = self.deserialize_annotation
@@ -114,7 +106,7 @@ class AnnotatableDeserializerMixin:
 class AnnotatableFilterMixin:
     fn_filter_parsers: FunctionFilterParsersType
 
-    def _owner_annotation(self, item) -> Optional[str]:
+    def _owner_annotation(self, item) -> str | None:
         """
         Get the annotation by the item's owner.
         """

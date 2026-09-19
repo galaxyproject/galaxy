@@ -1,22 +1,22 @@
 """Utilities for loading tools and workflows from paths for admin user requests."""
+
 from typing import (
     Any,
-    Dict,
-    Optional,
 )
 
 import yaml
 
 from galaxy import exceptions
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.util import in_directory
 
 
-def artifact_class(trans, as_dict: Dict[str, Any], allow_in_directory: Optional[str] = None):
+def artifact_class(trans: ProvidesUserContext | None, as_dict: dict[str, Any], allow_in_directory: str | None = None):
     object_id = as_dict.get("object_id", None)
     if as_dict.get("src", None) == "from_path":
         workflow_path = as_dict.get("path")
         allow = not trans or trans.user_is_admin
-        allow = allow or (allow_in_directory and in_directory(workflow_path, allow_in_directory))
+        allow = allow or bool(allow_in_directory and in_directory(workflow_path, allow_in_directory))
 
         if not allow:
             raise exceptions.AdminRequiredException()

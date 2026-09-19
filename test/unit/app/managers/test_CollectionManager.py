@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-"""
-"""
+""" """
+
 from galaxy import model
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
@@ -100,7 +100,7 @@ class TestDatasetCollectionManager(BaseTestCase, CreatesCollectionsMixin):
                 "deleted": True,
                 "visible": False,
                 "name": "New Name",
-                "tags": ["name:one", "group:two", "three"]
+                "tags": ["name:one", "group:two", "three"],
                 # TODO: doesn't work
                 # 'annotations'      : [?]
             },

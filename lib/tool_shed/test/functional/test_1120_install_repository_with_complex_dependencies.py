@@ -1,9 +1,7 @@
 import os
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.testcase import ShedTestCase
 
 bwa_base_repository_name = "bwa_base_repository_0100"
 bwa_base_repository_description = "BWA Base"
@@ -22,7 +20,7 @@ category_description = "Test 0100 Complex Repository Dependencies"
 running_standalone = False
 
 
-class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
+class TestInstallingComplexRepositoryDependencies(ShedTestCase):
     """Test features related to installing repositories with complex repository dependencies."""
 
     requires_galaxy = True
@@ -60,7 +58,6 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
 
     def test_0010_create_bwa_base_repository(self):
         """Create and populate bwa_base_0100."""
-        global running_standalone
         if running_standalone:
             category = self.create_category(name=category_name, description=category_description)
             self.login(email=common.test_user_1_email, username=common.test_user_1_name)
@@ -72,7 +69,6 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self._get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
             self.commit_tar_to_repository(
                 repository,
                 "bwa/complex/bwa_base.tar",
@@ -81,7 +77,6 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
 
     def test_0015_generate_complex_repository_dependency_invalid_shed_url(self):
         """Generate and upload a complex repository definition that specifies an invalid tool shed URL."""
-        global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_0100", additional_paths=["complex", "shed"])
             base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
@@ -106,7 +101,6 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
 
     def test_0020_generate_complex_repository_dependency_invalid_repository_name(self):
         """Generate and upload a complex repository definition that specifies an invalid repository name."""
-        global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_0100", additional_paths=["complex", "shed"])
             base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
@@ -131,7 +125,6 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
 
     def test_0025_generate_complex_repository_dependency_invalid_owner_name(self):
         """Generate and upload a complex repository definition that specifies an invalid owner."""
-        global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_0100", additional_paths=["complex", "shed"])
             base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
@@ -156,7 +149,6 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
 
     def test_0030_generate_complex_repository_dependency_invalid_changeset_revision(self):
         """Generate and upload a complex repository definition that specifies an invalid changeset revision."""
-        global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_0100", additional_paths=["complex", "shed"])
             base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
@@ -181,7 +173,6 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
 
     def test_0035_generate_valid_complex_repository_dependency(self):
         """Generate and upload a valid tool_dependencies.xml file that specifies package_bwa_0_5_9_0100."""
-        global running_standalone
         if running_standalone:
             base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
             tool_repository = self._get_repository_by_name_and_owner(
@@ -206,7 +197,6 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
 
     def test_0040_update_tool_repository(self):
         """Upload a new tool_dependencies.xml to the tool repository, and verify that the base repository displays the new changeset."""
-        global running_standalone
         if running_standalone:
             base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
             tool_repository = self._get_repository_by_name_and_owner(

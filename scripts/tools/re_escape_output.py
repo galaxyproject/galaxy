@@ -5,6 +5,7 @@ Escapes a file into a form suitable for use with tool tests using re_match or re
 usage: re_escape_output.py [options] input_file [output_file]
     -m: Use Multiline Matching
 """
+
 import optparse
 import re
 
@@ -14,7 +15,7 @@ def __main__():
     parser.add_option(
         "-m", "--multiline", action="store_true", dest="multiline", default=False, help="Use Multiline Matching"
     )
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
     input = open(args[0], "rb")
     if len(args) > 1:
         output = open(args[1], "wb")
@@ -27,7 +28,7 @@ def __main__():
     if options.multiline:
         lines = [re.escape(input.read())]
     else:
-        lines = ["%s\n" % re.escape(line.rstrip("\n\r")) for line in input]
+        lines = ["{}\n".format(re.escape(line.rstrip("\n\r"))) for line in input]
     output.writelines(lines)
     output.close()
 

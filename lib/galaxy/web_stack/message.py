@@ -3,10 +3,6 @@
 import json
 import logging
 import types
-from typing import (
-    Optional,
-    Tuple,
-)
 
 log = logging.getLogger(__name__)
 
@@ -68,7 +64,9 @@ class ApplicationStackMessage(dict):
         names = set()
         for cls in reversed(self.__class__.mro()):
             names.update(
-                [x for x in dir(cls) if x.startswith("_") and not x.startswith("__") and type(getattr(cls, x)) == tuple]
+                x
+                for x in dir(cls)
+                if x.startswith("_") and not x.startswith("__") and type(getattr(cls, x)) == tuple  # noqa: E721
             )
         for name in names:
             setattr(self.__class__, name.lstrip("_"), property(lambda self, name=name: self._get_list_from_mro(name)))
@@ -106,7 +104,7 @@ class ApplicationStackMessage(dict):
         )
 
     @property
-    def target(self) -> Optional[str]:
+    def target(self) -> str | None:
         return self["target"]
 
     @target.setter  # type: ignore[attr-defined]
@@ -116,8 +114,8 @@ class ApplicationStackMessage(dict):
 
 class ParamMessage(ApplicationStackMessage):
     _validate_kwargs = ("params",)
-    _validate_params: Tuple[str, ...] = ()
-    _exclude_params: Tuple[str, ...] = ()
+    _validate_params: tuple[str, ...] = ()
+    _exclude_params: tuple[str, ...] = ()
 
     def __init__(self, target=None, params=None, **kwargs):
         super().__init__(target=target)
@@ -149,9 +147,9 @@ class TaskMessage(ParamMessage):
     def default_handler(self, msg):
         """Can be bound to an instance of any class that has message handling methods named like `_handle_{task}_method`"""
         name = f"_handle_{msg.task}_msg"
-        assert name in dir(self), "{cls} has no method _handle_{task}_msg, cannot handle message: {msg}".format(
-            cls=self.__class__.__name__, task=msg.task, msg=msg
-        )
+        assert name in dir(
+            self
+        ), f"{self.__class__.__name__} has no method _handle_{msg.task}_msg, cannot handle message: {msg}"
         getattr(self, f"_handle_{msg.task}_msg")(**msg.params)
 
     @property

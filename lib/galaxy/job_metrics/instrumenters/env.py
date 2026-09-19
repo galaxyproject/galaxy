@@ -1,10 +1,7 @@
 """The module describes the ``env`` job metrics plugin."""
+
 import logging
 import re
-from typing import (
-    List,
-    Optional,
-)
 
 from . import InstrumentPlugin
 from ..formatting import JobMetricFormatter
@@ -24,12 +21,14 @@ class EnvPlugin(InstrumentPlugin):
 
     plugin_type = "env"
     formatter = EnvFormatter()
-    variables: Optional[List[str]]
+    variables: list[str] | None
     default_safety = Safety.UNSAFE
 
     def __init__(self, **kwargs):
         variables_str = kwargs.get("variables", None)
-        if variables_str:
+        if isinstance(variables_str, list):
+            self.variables = variables_str
+        elif variables_str:
             self.variables = [v.strip() for v in variables_str.split(",")]
         else:
             self.variables = None
@@ -63,7 +62,7 @@ class EnvPlugin(InstrumentPlugin):
                 message = message_template % job_id
                 log.debug(message)
                 break
-            (var, value) = m.groups()
+            var, value = m.groups()
             if not variables or var in variables:
                 properties[var] = value
             env_string = env_string[m.end() :]

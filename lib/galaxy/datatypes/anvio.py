@@ -2,10 +2,10 @@
 Datatypes for Anvi'o
 https://github.com/merenlab/anvio
 """
+
 import glob
 import logging
 import os
-from typing import Optional
 
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.protocols import (
@@ -44,7 +44,7 @@ class AnvioComposite(Html):
                     missing_text = " (missing)"
                 rval.append(f'<li><a href="{composite_name}">{composite_name}</a>{opt_text}{missing_text}</li>')
             rval.append("</ul>")
-        defined_files = map(lambda x: x[0], defined_files)
+        defined_files = (x[0] for x in defined_files)
         extra_files = []
         for dirpath, _dirnames, filenames in os.walk(dataset.extra_files_path, followlinks=True):
             for filename in filenames:
@@ -85,7 +85,7 @@ class AnvioComposite(Html):
 class AnvioDB(AnvioComposite):
     """Class for AnvioDB database files."""
 
-    _anvio_basename: Optional[str] = None
+    _anvio_basename: str | None = None
     MetadataElement(name="anvio_basename", default=_anvio_basename, desc="Basename", readonly=True)
     file_ext = "anvio_db"
 

@@ -5,6 +5,7 @@ Revises: d0583094c8cd
 Create Date: 2022-06-10 10:38:25.212102
 
 """
+
 from sqlalchemy import (
     Column,
     String,

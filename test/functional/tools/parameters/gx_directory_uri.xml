@@ -1,0 +1,12 @@
+<tool id="gx_directory_uri" name="gx_directory_uri" version="1.0.0">
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command><![CDATA[
+        echo 'parameter: $parameter' > $output
+    ]]></command>
+    <inputs>
+        <param type="directory_uri" name="parameter" />
+    </inputs>
+    <expand macro="simple_text_output" />
+</tool>

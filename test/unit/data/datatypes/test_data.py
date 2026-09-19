@@ -2,6 +2,7 @@
 Unit tests for base DataTypes.
 .. seealso:: galaxy.datatypes.data
 """
+
 import os
 
 from galaxy.datatypes.anvio import AnvioStructureDB

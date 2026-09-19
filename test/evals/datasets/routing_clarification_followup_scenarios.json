@@ -1,0 +1,114 @@
+[
+  {
+    "name": "variant_calling_tutorial_second",
+    "original_query": "I need help with variant calling",
+    "clarification_question": "Do you want a tool recommendation or a tutorial?",
+    "answer": "the second one",
+    "expected": "gtn_training",
+    "answer_kind": "referential"
+  },
+  {
+    "name": "variant_calling_tool_first",
+    "original_query": "I need help with variant calling",
+    "clarification_question": "Do you want a tool recommendation or a tutorial?",
+    "answer": "the first one",
+    "expected": "tool_recommendation",
+    "answer_kind": "referential"
+  },
+  {
+    "name": "variant_calling_tutorial_named",
+    "original_query": "I need help with variant calling",
+    "clarification_question": "Do you want a tool recommendation or a tutorial?",
+    "answer": "a tutorial please",
+    "expected": "gtn_training",
+    "answer_kind": "named"
+  },
+  {
+    "name": "rnaseq_learn_how",
+    "original_query": "help me with RNA-seq analysis",
+    "clarification_question": "Are you looking to learn how to do it (a tutorial) or to find a specific tool?",
+    "answer": "learn how to do it",
+    "expected": "gtn_training",
+    "answer_kind": "named"
+  },
+  {
+    "name": "align_reads_tool",
+    "original_query": "I want to do something with my sequencing reads",
+    "clarification_question": "Do you want to align them (a tool recommendation) or learn the workflow (a tutorial)?",
+    "answer": "align them",
+    "expected": "tool_recommendation",
+    "answer_kind": "referential"
+  },
+  {
+    "name": "find_failed_job",
+    "original_query": "something went wrong with my analysis",
+    "clarification_question": "Do you want me to find the failed job in your history, or do you already have the error details to share?",
+    "answer": "find it for me",
+    "expected": "orchestrator",
+    "answer_kind": "referential"
+  },
+  {
+    "name": "error_paste_exit_code",
+    "original_query": "my tool isn't working",
+    "clarification_question": "Can you share the error message or exit code so I can diagnose it?",
+    "answer": "exit code 137, the job was killed",
+    "expected": "error_analysis",
+    "answer_kind": "named"
+  },
+  {
+    "name": "methods_section",
+    "original_query": "I need help writing up my history",
+    "clarification_question": "Do you want a summary, a methods section, or next-step suggestions?",
+    "answer": "the methods section",
+    "expected": "history",
+    "answer_kind": "named"
+  },
+  {
+    "name": "history_what_i_did",
+    "original_query": "tell me about my work",
+    "clarification_question": "Do you want a summary of what you did, or suggestions for what to do next?",
+    "answer": "what I did",
+    "expected": "history",
+    "answer_kind": "referential"
+  },
+  {
+    "name": "next_steps_suggestions",
+    "original_query": "I finished my alignment, now what",
+    "clarification_question": "Do you want next-step suggestions, or a tutorial on what usually comes next?",
+    "answer": "suggestions for what's next",
+    "expected": "next_step_advisor",
+    "answer_kind": "named"
+  },
+  {
+    "name": "custom_tool_wrap_it",
+    "original_query": "I have a command-line script",
+    "clarification_question": "Do you want to wrap it as a Galaxy tool, or find an existing tool that does the same thing?",
+    "answer": "wrap it as a tool",
+    "expected": "custom_tool",
+    "answer_kind": "named"
+  },
+  {
+    "name": "chipseq_tutorial",
+    "original_query": "I'm new to ChIP-seq",
+    "clarification_question": "Would you like a tutorial to learn it, or a tool recommendation to start right away?",
+    "answer": "tutorial",
+    "expected": "gtn_training",
+    "answer_kind": "named"
+  },
+  {
+    "name": "proteomics_tools",
+    "original_query": "I have mass spec data",
+    "clarification_question": "Do you want tool recommendations or a tutorial?",
+    "answer": "tools",
+    "expected": "tool_recommendation",
+    "answer_kind": "named"
+  },
+  {
+    "name": "assembly_first_option",
+    "original_query": "help me with genome assembly",
+    "clarification_question": "Do you want a tool recommendation or a tutorial?",
+    "answer": "the first option",
+    "expected": "tool_recommendation",
+    "answer_kind": "referential"
+  }
+]

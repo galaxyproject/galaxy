@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 import json
 
 from galaxy.util.plugin_config import plugins_dict

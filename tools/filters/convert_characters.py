@@ -10,7 +10,7 @@ def __main__():
     parser = optparse.OptionParser()
     parser.add_option("--strip", action="store_true", help="strip leading and trailing whitespaces")
     parser.add_option("--condense", action="store_true", help="condense consecutive delimiters")
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
     if len(args) != 3:
         parser.error("usage: convert_characters.py infile from_char outfile")
 

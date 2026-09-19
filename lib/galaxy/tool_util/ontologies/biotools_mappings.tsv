@@ -44,6 +44,7 @@ gffcompare	gffcompare
 sample_seqs	biopython
 seq_filter_by_id	biopython
 rxlr_motifs	signalp
+rxlr_motifs	hmmer2
 crossmap_bam	crossmap
 samtools_bam_to_cram	samtools
 crossmap_region	crossmap
@@ -132,7 +133,6 @@ samtools_fixmate	samtools
 samtool_filter2	samtools
 ngsutils_bam_filter	ngsutils
 samtools_rmdup	samtools
-sam_merge2	Broken link in tool shed
 bamhash	bamhash
 bedtools_annotatebed	bedtools
 bedtools_bed12tobed6	bedtools
@@ -260,7 +260,6 @@ fraggenescan	fraggenescan
 repeatmodeler	repeatmodeler
 promoter2	promoter
 Psortb	psortb
-rxlr_motifs	signalp hmmer2
 signalp3	signalp
 tmhmm2	tmhmm
 wolf_psort	wolf_psort
@@ -965,23 +964,23 @@ stacks2_tsv2bam	stacks
 stacks2_sstacks	stacks
 BayeScan	bayescan
 stacks2_cstacks	stacks
-NSPDK_candidateClust	graphclust, GraphClust2
-structure_to_gspan	graphclust, GraphClust2
-preproc	graphclust, GraphClust3
-preMloc	graphclust, GraphClust4
-nspdk_sparse	graphclust, GraphClust5
-locarna_best_subtree	graphclust, GraphClust6
-gspan	graphclust, GraphClust7
-glob_report	graphclust, GraphClust8
-cmFinder	graphclust, GraphClust9
-graphclust_align_cluster	graphclust, GraphClust10
-graphclust_aggregate_alignments	graphclust, GraphClust11
-graphclust_glob_report_no_align	graphclust, GraphClust12
-motifFinderPlot	graphclust, GraphClust13
+NSPDK_candidateClust	graphclust
+structure_to_gspan	graphclust
+preproc	graphclust
+preMloc	graphclust
+nspdk_sparse	graphclust
+locarna_best_subtree	graphclust
+gspan	graphclust
+glob_report	graphclust
+cmFinder	graphclust
+graphclust_align_cluster	graphclust
+graphclust_aggregate_alignments	graphclust
+graphclust_glob_report_no_align	graphclust
+motifFinderPlot	graphclust
 infernal_cmbuild	infernal
 infernal_cmsearch	infernal
 infernal_cmstat	infernal
-customize_metaphlan_database	metaphlan, seqtk
+customize_metaphlan_database	metaphlan
 merge_metaphlan_tables	metaphlan
 metabat2_jgi_summarize_bam_contig_depths	MetaBAT_2
 est_abundance	bracken
@@ -1898,10 +1897,10 @@ gatk_count_covariates	gatk
 spring_model	spring
 spring_minz	spring
 spring_cross	spring
-pubmed_by_queries	pubmed, simtext
-text_to_wordmatrix	pubmed, simtext
-abstracts_by_pmids	pubmed, simtext
-pmids_to_pubtator_matrix	pubmed, simtext
+pubmed_by_queries	pubmed
+text_to_wordmatrix	pubmed
+abstracts_by_pmids	pubmed
+pmids_to_pubtator_matrix	pubmed
 spring_model_all	spring
 spring_map	spring
 spring_mcc	spring

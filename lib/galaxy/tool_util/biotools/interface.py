@@ -1,9 +1,6 @@
 import re
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
 )
 
 TERM_PATTERN = re.compile(r"https?://edamontology.org/(.*)")
@@ -13,19 +10,19 @@ class ParsedBiotoolsEntry:
     """Provide XML wrapper relevant entities from a bio.tool entry - topics and operations."""
 
     biotoolsID: str
-    edam_topics: List[str]
-    edam_operations: List[str]
+    edam_topics: list[str]
+    edam_operations: list[str]
 
 
 class BiotoolsEntry:
     """Parse the RAW entries of interest for Galaxy from a bio.tools entry."""
 
     biotoolsID: str
-    topic: List[dict]
-    function: List[dict]
+    topic: list[dict]
+    function: list[dict]
 
     @staticmethod
-    def from_json(from_json: Dict[str, Any]) -> "BiotoolsEntry":
+    def from_json(from_json: dict[str, Any]) -> "BiotoolsEntry":
         entry = BiotoolsEntry()
         entry.biotoolsID = from_json["biotoolsID"]
         entry.topic = from_json.get("topic", [])
@@ -45,7 +42,7 @@ class BiotoolsEntry:
         return parsed
 
 
-def simplify_edam_dicts(a_list: List[Dict[str, str]]):
+def simplify_edam_dicts(a_list: list[dict[str, str]]):
     terms = []
     for term in map(simplify_edam_dict, a_list):
         if term:
@@ -53,10 +50,9 @@ def simplify_edam_dicts(a_list: List[Dict[str, str]]):
     return terms
 
 
-def simplify_edam_dict(as_dict: Dict[str, str]) -> Optional[str]:
+def simplify_edam_dict(as_dict: dict[str, str]) -> str | None:
     uri = as_dict["uri"]
-    match = TERM_PATTERN.match(uri)
-    if match:
+    if match := TERM_PATTERN.match(uri):
         return match.group(1)
     else:
         # TODO: log problem...

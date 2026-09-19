@@ -1,21 +1,16 @@
 """
 Functionality for dealing with dbkeys.
 """
+
 import logging
 import os.path
 import re
 from json import loads
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from galaxy.model import HistoryDatasetAssociation
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import (
     galaxy_directory,
     sanitize_lists_to_string,
@@ -25,11 +20,11 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 
-def read_dbnames(filename: Optional[str]) -> List[Tuple[str, str]]:
+def read_dbnames(filename: str | None) -> list[tuple[str, str]]:
     """Read build names from file"""
-    db_names: List[Tuple[str, str]] = []
+    db_names: list[tuple[str, str]] = []
     try:
-        ucsc_builds: Dict[str, List[Tuple[int, str, str]]] = {}
+        ucsc_builds: dict[str, list[tuple[int, str, str]]] = {}
         man_builds = []  # assume these are integers
         name_to_db_base = {}
         if filename is None:
@@ -125,7 +120,7 @@ class GenomeBuilds:
         if trans:
             db_dataset = trans.db_dataset_for(dbkey)
             if db_dataset:
-                chrom_info = db_dataset.file_name
+                chrom_info = db_dataset.get_file_name()
             else:
                 # Do Custom Build handling
                 if (
@@ -145,10 +140,12 @@ class GenomeBuilds:
                         build_fasta_dataset = trans.sa_session.get(
                             HistoryDatasetAssociation, custom_build_dict["fasta"]
                         )
-                        chrom_info = build_fasta_dataset.get_converted_dataset(trans, "len").file_name
+                        chrom_info = build_fasta_dataset.get_converted_dataset(trans, "len").get_file_name()
                     elif "len" in custom_build_dict:
                         # Build is defined by len file, so use it.
-                        chrom_info = trans.sa_session.get(HistoryDatasetAssociation, custom_build_dict["len"]).file_name
+                        chrom_info = trans.sa_session.get(
+                            HistoryDatasetAssociation, custom_build_dict["len"]
+                        ).get_file_name()
         # Check Data table
         if not chrom_info:
             dbkey_table = self._app.tool_data_tables.get(self._data_table_name, None)
@@ -163,6 +160,6 @@ class GenomeBuilds:
         return (chrom_info, db_dataset)
 
 
-def get_len_files_by_history(session: Session, history_id: int):
+def get_len_files_by_history(session: galaxy_scoped_session, history_id: int):
     stmt = select(HistoryDatasetAssociation).filter_by(history_id=history_id, extension="len", deleted=False)
     return session.scalars(stmt)

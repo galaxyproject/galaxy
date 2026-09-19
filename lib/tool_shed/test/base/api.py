@@ -1,9 +1,6 @@
 import os
-from functools import wraps
 from typing import (
     Any,
-    Dict,
-    Optional,
 )
 
 import pytest
@@ -27,7 +24,7 @@ from .populators import ToolShedPopulator
 
 
 class ShedBaseTestCase(DrivenFunctionalTestCase):
-    _populator: Optional[ToolShedPopulator] = None
+    _populator: ToolShedPopulator | None = None
 
     @property
     def populator(self) -> ToolShedPopulator:
@@ -90,40 +87,21 @@ class ShedBaseTestCase(DrivenFunctionalTestCase):
         pass
 
     @pytest.fixture(autouse=True)
-    def _get_driver(self, tool_shed_test_driver):
-        self._test_driver = tool_shed_test_driver
+    def _get_driver(self, embedded_driver):
+        self._test_driver = embedded_driver
 
 
 class ShedGalaxyInteractorApi(GalaxyInteractorApi):
     def __init__(self, galaxy_url: str):
-        interactor_kwds: Dict[str, Any] = {}
+        interactor_kwds: dict[str, Any] = {}
         interactor_kwds["galaxy_url"] = galaxy_url
         interactor_kwds["master_api_key"] = get_galaxy_admin_api_key()
         interactor_kwds["api_key"] = get_galaxy_user_key()
         super().__init__(**interactor_kwds)
 
 
-def make_skip_if_api_version_wrapper(version):
-    def wrapper(method):
-        @wraps(method)
-        def wrapped_method(api_test_case, *args, **kwd):
-            interactor: ShedApiInteractor = api_test_case.api_interactor
-            api_version = interactor.api_version
-            if api_version == version:
-                raise pytest.skip(f"{version} tool shed API found, skipping test")
-            return method(api_test_case, *args, **kwd)
-
-        return wrapped_method
-
-    return wrapper
-
-
-skip_if_api_v1 = make_skip_if_api_version_wrapper("v1")
-skip_if_api_v2 = make_skip_if_api_version_wrapper("v2")
-
-
 class ShedApiTestCase(ShedBaseTestCase, UsesShedApi):
-    _galaxy_interactor: Optional[GalaxyInteractorApi] = None
+    _galaxy_interactor: GalaxyInteractorApi | None = None
 
     @property
     def galaxy_interactor(self) -> GalaxyInteractorApi:

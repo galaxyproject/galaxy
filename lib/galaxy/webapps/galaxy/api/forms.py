@@ -1,24 +1,57 @@
 """
 API operations on FormDefinition objects.
 """
-import logging
 
+import logging
+from typing import Annotated
+
+from fastapi import Path
 from sqlalchemy import select
 
 from galaxy import web
 from galaxy.forms.forms import form_factory
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.forms import FormManager
 from galaxy.model import FormDefinition
-from galaxy.model.base import transaction
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.util import XML
 from galaxy.webapps.base.controller import url_for
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from galaxy.webapps.galaxy.api import (
+    depends,
+    DependsOnTrans,
+    Router,
+)
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
+router = Router(tags=["forms"])
+
+FormIDPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Form ID", description="The encoded database identifier of the form."),
+]
+
+
+@router.cbv
+class FastAPIForms:
+    form_manager: FormManager = depends(FormManager)
+
+    @router.delete("/api/forms/{id}", require_admin=True)
+    def delete(self, id: FormIDPathParam, trans: ProvidesUserContext = DependsOnTrans):
+        form = self.form_manager.get(trans, id)
+        self.form_manager.delete(trans, form)
+
+    @router.post("/api/forms/{id}/undelete", require_admin=True)
+    def undelete(self, id: FormIDPathParam, trans: ProvidesUserContext = DependsOnTrans):
+        form = self.form_manager.get(trans, id)
+        self.form_manager.undelete(trans, form)
+
 
 class FormDefinitionAPIController(BaseGalaxyAPIController):
     @web.legacy_expose_api
-    def index(self, trans, **kwd):
+    def index(self, trans: GalaxyWebTransaction, **kwd):
         """
         GET /api/forms
         Displays a collection (list) of forms.
@@ -38,7 +71,7 @@ class FormDefinitionAPIController(BaseGalaxyAPIController):
         return rval
 
     @web.legacy_expose_api
-    def show(self, trans, id, **kwd):
+    def show(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/forms/{encoded_form_id}
         Displays information about a form.
@@ -64,7 +97,7 @@ class FormDefinitionAPIController(BaseGalaxyAPIController):
         return item
 
     @web.legacy_expose_api
-    def create(self, trans, payload, **kwd):
+    def create(self, trans: GalaxyWebTransaction, payload, **kwd):
         """
         POST /api/forms
         Creates a new form.
@@ -79,8 +112,7 @@ class FormDefinitionAPIController(BaseGalaxyAPIController):
             # enhance to allow creating from more than just xml
         form_definition = form_factory.from_elem(XML(xml_text))
         trans.sa_session.add(form_definition)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         encoded_id = trans.security.encode_id(form_definition.id)
         item = form_definition.to_dict(
             view="element",

@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from sqlalchemy import (
     false,
@@ -9,7 +8,7 @@ from sqlalchemy import (
 import galaxy.model
 import galaxy.model.tool_shed_install
 import tool_shed.webapp.model as model
-from galaxy.managers.users import (
+from galaxy.model.db.user import (
     get_user_by_email,
     get_user_by_username,
 )
@@ -18,7 +17,7 @@ log = logging.getLogger("test.tool_shed.test_db_util")
 
 
 def sa_session():
-    from galaxy_test.driver.driver_util import tool_shed_context as sa_session
+    from .driver import tool_shed_context as sa_session
 
     return sa_session
 
@@ -38,7 +37,7 @@ def get_all_repositories():
     return sa_session().scalars(select(model.Repository)).all()
 
 
-def get_all_installed_repositories(session=None) -> List[galaxy.model.tool_shed_install.ToolShedRepository]:
+def get_all_installed_repositories(session=None) -> list[galaxy.model.tool_shed_install.ToolShedRepository]:
     if session is None:
         session = install_session()
     ToolShedRepository = galaxy.model.tool_shed_install.ToolShedRepository

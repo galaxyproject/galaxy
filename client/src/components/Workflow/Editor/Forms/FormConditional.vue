@@ -6,7 +6,7 @@ import type { Step } from "@/stores/workflowStepStore";
 import FormElement from "@/components/Form/FormElement.vue";
 
 const emit = defineEmits<{
-    (e: "onUpdateStep", value: Step): void;
+    (e: "onUpdateStep", id: number, value: Partial<Step>): void;
 }>();
 const props = defineProps<{
     step: Step;
@@ -18,15 +18,14 @@ const conditionalDefined = computed(() => {
 
 function onSkipBoolean(value: boolean) {
     if (props.step.when && value === false) {
-        emit("onUpdateStep", { ...props.step, when: undefined });
+        emit("onUpdateStep", props.step.id, { when: undefined });
     } else if (value === true && !props.step.when) {
         const when = "$(inputs.when)";
         const newStep = {
-            ...props.step,
             when,
             input_connections: { ...props.step.input_connections, when: undefined },
         };
-        emit("onUpdateStep", newStep);
+        emit("onUpdateStep", props.step.id, newStep);
     }
 }
 </script>

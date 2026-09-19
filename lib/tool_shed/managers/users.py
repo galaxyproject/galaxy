@@ -1,9 +1,6 @@
-from typing import List
-
 from sqlalchemy import select
 
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.model.base import transaction
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
@@ -18,9 +15,9 @@ from tool_shed_client.schema import (
 )
 
 
-def index(app: ToolShedApp, deleted: bool) -> List[ApiUser]:
-    users: List[ApiUser] = []
-    for user in get_users_by_deleted(app.model.context, app.model.User, deleted):
+def index(app: ToolShedApp, deleted: bool) -> list[ApiUser]:
+    users: list[ApiUser] = []
+    for user in get_users_by_deleted(app.model.context, User, deleted):
         users.append(get_api_user(app, user))
     return users
 
@@ -38,8 +35,7 @@ def create_user(app: ToolShedApp, email: str, username: str, password: str) -> U
     # else:
     #    user.active = True  # Activation is off, every new user is active by default.
     sa_session.add(user)
-    with transaction(sa_session):
-        sa_session.commit()
+    sa_session.commit()
     app.security_agent.create_private_user_role(user)
     return user
 
@@ -69,6 +65,9 @@ def _validate(trans: ProvidesUserContext, email: str, password: str, confirm: st
         return f"The term '{username}' is a reserved word in the Tool Shed, so it cannot be used as a public user name."
     message = "\n".join(
         (
+            # tool_shed.context.ProvidesUserContext is a structurally analogous but
+            # nominally distinct hierarchy from galaxy.managers.context.ProvidesAppContext;
+            # trans satisfies everything these helpers actually use (.app, .sa_session).
             validate_email(trans, email),
             validate_password(trans, password, confirm),
             validate_publicname(trans, username),

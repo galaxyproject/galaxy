@@ -1,24 +1,27 @@
 <script setup lang="ts">
+import { faSyncAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 
+import { type AsyncTaskResultSummary, GalaxyApi } from "@/api";
 import { useConfig } from "@/composables/config";
 import { useTaskMonitor } from "@/composables/taskMonitor";
-import { fetcher } from "@/schema";
+import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
-import { QuotaUsage, UserQuotaUsageData } from "./Quota/model";
-
+import GButton from "@/components/BaseComponents/GButton.vue";
 import QuotaUsageSummary from "@/components/User/DiskUsage/Quota/QuotaUsageSummary.vue";
 
 const { config, isConfigLoaded } = useConfig(true);
 const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
+const quotaUsageStore = useQuotaUsageStore();
 const { isRunning: isRecalculateTaskRunning, waitForTask } = useTaskMonitor();
 
-const quotaUsages = ref<QuotaUsage[]>();
+const quotaUsages = computed(() => quotaUsageStore?.quotaUsages);
 const errorMessage = ref<string>();
 const isRecalculating = ref<boolean>(false);
 
@@ -38,11 +41,10 @@ watch(
     (newValue, oldValue) => {
         // Make sure we reload the user and the quota usages when the recalculation is done
         if (oldValue && !newValue) {
-            const includeHistories = false;
-            userStore.loadUser(includeHistories);
-            loadQuotaUsages();
+            userStore.refreshUser();
+            quotaUsageStore.applyRecalculationCompletedRefresh();
         }
-    }
+    },
 );
 
 async function displayRecalculationForSeconds(seconds: number) {
@@ -56,37 +58,31 @@ async function displayRecalculationForSeconds(seconds: number) {
     });
 }
 
-const recalculateDiskUsage = fetcher.path("/api/users/current/recalculate_disk_usage").method("put").create();
-
 async function onRefresh() {
-    try {
-        const response = await recalculateDiskUsage({});
-        if (response.status == 200) {
-            // Wait for the task to complete
-            waitForTask(response.data.id);
-        } else if (response.status == 204) {
-            // We cannot track any task, so just display the
-            // recalculation message for a reasonable amount of time
-            await displayRecalculationForSeconds(30);
-        }
-    } catch (e) {
-        errorMessage.value = errorMessageAsString(e);
+    const { response, data, error } = await GalaxyApi().PUT("/api/users/current/recalculate_disk_usage");
+
+    if (error) {
+        errorMessage.value = errorMessageAsString(error);
+        return;
     }
-}
 
-const fetchQuotaUsages = fetcher.path("/api/users/{user_id}/usage").method("get").create();
-
-async function loadQuotaUsages() {
-    try {
-        const { data } = await fetchQuotaUsages({ user_id: "current" });
-        quotaUsages.value = data.map((u: UserQuotaUsageData) => new QuotaUsage(u));
-    } catch (e) {
-        errorMessage.value = errorMessageAsString(e);
+    if (response.status == 200) {
+        // Wait for the task to complete
+        const asyncTaskResponse = data as AsyncTaskResultSummary;
+        waitForTask(asyncTaskResponse.id);
+    } else if (response.status == 204) {
+        // We cannot track any task, so just display the
+        // recalculation message for a reasonable amount of time
+        await displayRecalculationForSeconds(30);
     }
 }
 
 onMounted(async () => {
-    await loadQuotaUsages();
+    try {
+        await quotaUsageStore.loadQuotaUsages();
+    } catch (error) {
+        errorMessage.value = errorMessageAsString(error);
+    }
 });
 </script>
 <template>
@@ -104,20 +100,14 @@ onMounted(async () => {
             </h2>
         </b-container>
         <b-container class="text-center mb-5 w-75">
-            <button
-                id="refresh-disk-usage"
-                title="Recalculate disk usage"
-                :disabled="isRefreshing"
-                variant="outline-secondary"
-                size="sm"
-                pill
-                @click="onRefresh">
-                <b-spinner v-if="isRefreshing" small />
-                <span v-else>Refresh</span>
-            </button>
-            <b-alert v-if="isRefreshing" class="refreshing-alert mt-2" variant="info" show dismissible fade>
-                Recalculating disk usage... this may take some time, please check back later.
+            <b-alert v-if="isRefreshing" class="refreshing-alert" variant="info" show>
+                <b-spinner small class="mr-2" />
+                <span v-localize>Recalculating disk usage... this may take some time, please check back later.</span>
             </b-alert>
+            <GButton v-else id="refresh-disk-usage" title="Recalculate disk usage" color="blue" @click="onRefresh">
+                <FontAwesomeIcon :icon="faSyncAlt" class="mr-1" />
+                <span v-localize>Refresh</span>
+            </GButton>
         </b-container>
     </div>
 </template>

@@ -41,7 +41,15 @@ const baseRules = {
     "vuejs-accessibility/form-control-has-label": "warn",
     "vuejs-accessibility/heading-has-content": "error",
     "vuejs-accessibility/iframe-has-title": "error",
-    "vuejs-accessibility/label-has-for": "warn",
+    "vuejs-accessibility/label-has-for": [
+        "warn",
+        {
+            required: {
+                some: ["nesting", "id"],
+            },
+            allowChildren: true,
+        },
+    ],
     "vuejs-accessibility/mouse-events-have-key-events": "warn",
     "vuejs-accessibility/no-autofocus": "error",
     "vuejs-accessibility/no-static-element-interactions": "warn",
@@ -74,6 +82,13 @@ const baseRules = {
     "import/first": "error",
     "import/newline-after-import": "error",
     "import/no-duplicates": "error",
+
+    "@typescript-eslint/consistent-type-imports": [
+        "error",
+        { prefer: "type-imports", fixStyle: "inline-type-imports" },
+    ],
+
+    "@typescript-eslint/no-import-type-side-effects": "error",
 };
 
 const baseExtends = [
@@ -94,13 +109,21 @@ module.exports = {
         es6: true,
     },
     rules: baseRules,
-    ignorePatterns: ["dist", "src/libs", "src/nls", "src/legacy"],
+    ignorePatterns: ["dist", "src/libs", "src/nls", "src/legacy", "packages/api-client"],
     plugins: basePlugins,
     overrides: [
         {
-            files: ["**/*.test.js", "**/*.test.ts", "**/tests/jest/**"],
-            env: {
-                jest: true,
+            files: ["**/*.test.js", "**/*.test.ts", "**/tests/vitest/**"],
+            globals: {
+                vi: "readonly",
+                describe: "readonly",
+                it: "readonly",
+                expect: "readonly",
+                beforeEach: "readonly",
+                afterEach: "readonly",
+                beforeAll: "readonly",
+                afterAll: "readonly",
+                test: "readonly",
             },
         },
         {

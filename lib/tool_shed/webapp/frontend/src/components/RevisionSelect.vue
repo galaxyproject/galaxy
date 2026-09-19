@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
+import { parseISO, format } from "date-fns"
 import { useModelWrapper } from "@/modelWrapper"
 
 import { components } from "@/schema"
@@ -19,12 +20,25 @@ const options = computed(() => {
     const opts = []
     const revisions = props.revisions || {}
     for (const key of Object.keys(revisions)) {
+        const revision = revisions[key]
+        let label = key
+        if (revision?.create_time) {
+            const date = parseISO(`${revision.create_time}Z`)
+            label = `${key} (${format(date, "yyyy-MM-dd")})`
+        }
         opts.push({
-            label: key,
-            value: revisions[key]?.changeset_revision,
+            label,
+            value: revision?.changeset_revision,
         })
     }
     return opts
+})
+
+const isLatest = computed(() => {
+    const currentValue = props.modelValue
+    const optionsArray = options.value
+    const lastOption = optionsArray[optionsArray.length - 1]
+    return lastOption && currentValue == lastOption.value
 })
 
 const emit = defineEmits<{ (event: string, newValue: string): void }>()
@@ -43,7 +57,8 @@ const selection = useModelWrapper(props, emit, "modelValue")
             :options="options"
             map-options
             emit-value
-            style="width: 250px"
+            class="q-mr-sm"
+            style="width: 350px"
         >
             <template #no-option>
                 <q-item>
@@ -51,6 +66,8 @@ const selection = useModelWrapper(props, emit, "modelValue")
                 </q-item>
             </template>
         </q-select>
+        <q-badge v-if="isLatest" color="positive"> newest revision </q-badge>
+        <q-badge color="warning" v-else> newer revision(s) available </q-badge>
         <slot></slot>
     </span>
 </template>

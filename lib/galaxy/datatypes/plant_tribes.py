@@ -30,7 +30,7 @@ class Smat(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "ESTScan scores matrices"
         else:
             dataset.peek = "file does not exist"
@@ -107,7 +107,7 @@ class PlantTribesKsComponents(Tabular):
         """
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         significant_components = []
-        with open(dataset.file_name) as fh:
+        with open(dataset.get_file_name()) as fh:
             for i, line in enumerate(fh):
                 if i == 0:
                     # Skip the first line.
@@ -124,7 +124,7 @@ class PlantTribesKsComponents(Tabular):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             if dataset.metadata.number_comp == 1:
                 dataset.blurb = "1 significant component"
             else:

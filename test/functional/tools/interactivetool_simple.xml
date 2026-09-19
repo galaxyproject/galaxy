@@ -3,7 +3,7 @@
         <container type="docker">galaxy/test-http-example:0.1</container>
     </requirements>
     <entry_points>
-        <entry_point name="Simple" requires_domain="True">
+        <entry_point name="Simple IT for $__user_email__" requires_domain="True">
             <port>7000</port>
             <url>/</url>
         </entry_point>

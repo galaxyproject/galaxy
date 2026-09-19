@@ -1,36 +1,40 @@
 @mixin node-terminal-style($side) {
+    --size: 11px;
+    --offset-extra: 4px;
+
     position: absolute;
-    #{$side}: -0.65rem;
-    border-radius: 50%;
-    background-color: $white;
+    #{$side}: calc(var(--offset-extra) * -1 - 0.65rem);
     display: grid;
     place-items: center;
-    width: 11px;
-    height: 11px;
+    width: calc(var(--size) + var(--offset-extra) * 2);
+    height: calc(var(--size) + var(--offset-extra) * 2);
     margin-top: 0.25rem;
+    transform: translateY(calc(var(--offset-extra) * -1));
 
     color: $brand-primary;
 
-    &.mapped-over {
-        width: 20px;
-        height: 20px;
-        margin-top: 0;
-        #{$side}: -0.8rem;
+    &::after {
+        position: absolute;
+        z-index: -1;
+        content: "";
+        width: var(--size);
+        height: var(--size);
+        border-radius: 50%;
+        background-color: $white;
+    }
 
-        .terminal-icon {
-            top: -1px;
-            left: -1px;
-            width: 22px;
-            height: 22px;
-        }
+    &.mapped-over {
+        --size: 20px;
+        #{$side}: calc(var(--offset-extra) * -1 - 0.8rem);
+        margin-top: 0;
     }
 
     .terminal-icon {
         position: absolute;
-        top: -1px;
-        left: -1px;
-        width: 13px;
-        height: 13px;
+        top: calc(var(--offset-extra) - 1px);
+        left: calc(var(--offset-extra) - 1px);
+        width: calc(var(--size) + 2px);
+        height: calc(var(--size) + 2px);
         pointer-events: none;
     }
 }

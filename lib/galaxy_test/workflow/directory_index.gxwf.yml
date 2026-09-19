@@ -1,0 +1,36 @@
+class: GalaxyWorkflow
+inputs:
+  reference:
+    type: data
+    format:
+      - fasta
+      - bwa_mem2_index
+outputs:
+  output:
+    outputSource: use_index/output
+steps:
+  create_index:
+    tool_id: create_directory_index
+    when: $(inputs.reference.format != "bwa_mem2_index" )
+    in:
+      reference:
+        source: reference
+  pick_value:
+    tool_id: pick_value
+    in:
+      style_cond|type_cond|pick_from_0|value:
+        source: create_index/index
+      style_cond|type_cond|pick_from_1|value:
+        source: reference
+    tool_state:
+      style_cond:
+        pick_style: first
+        type_cond:
+          param_type: data
+          pick_from:
+          - value: create_index/index
+          - value: reference
+  use_index:
+    tool_id: use_directory_index
+    in:
+      reference: pick_value/data_param

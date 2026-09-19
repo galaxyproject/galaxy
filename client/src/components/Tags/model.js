@@ -3,11 +3,11 @@
  * it's good practice to separate data modeling from data retrieval
  */
 
-import { keyedColorScheme } from "utils/color";
+import { keyedColorScheme } from "@/utils/color";
 
 // Valid tag regex. The basic format here is a tag name with optional subtags
 // separated by a period, and then an optional value after a colon.
-export const VALID_TAG_RE = /^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$/;
+export const VALID_TAG_RE = /^([^\s.:])+(\.[^\s.:]+)*(:\S+)?$/;
 
 export class TagModel {
     /**

@@ -1,7 +1,6 @@
 .git
 .tox
-.venv
-.venv3
+.venv*
 packages/*/.venv
 packages/*/build
 packages/*/dist

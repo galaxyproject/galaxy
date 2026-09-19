@@ -34,7 +34,7 @@ class InstallableContext(metaclass=abc.ABCMeta):
         """Return parent path of the location the installable will be created within."""
 
 
-def ensure_installed(installable_context, install_func, auto_init):
+def ensure_installed(installable_context: InstallableContext, install_func, auto_init):
     """Make sure target is installed - handle multiple processes potentially attempting installation."""
     parent_path = installable_context.parent_path
     desc = installable_context.installable_description

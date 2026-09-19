@@ -1,0 +1,19 @@
+<tool id="data_manager_select" name="Test Data Manager Select" tool_type="manage_data" version="0.0.1" profile="19.05">
+    <description>Mirrors twobit_builder shape: select sourced from a tool data table. Regression for #22674.</description>
+    <configfiles>
+        <configfile name="static_test_data">{"data_tables": {"test_fasta_indexes": [{"value": "regression_value", "dbkey": "regression_dbkey", "name": "regression_name", "path": "regression.fa"}]}}</configfile>
+    </configfiles>
+    <command detect_errors="exit_code"><![CDATA[
+        mkdir $out_file.files_path ;
+        echo "$index" > '$out_file.files_path/regression.fa';
+        cp '$static_test_data' '$out_file'
+    ]]></command>
+    <inputs>
+        <param name="index" type="select" label="Source FASTA Sequence">
+            <options from_data_table="test_fasta_indexes"/>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="out_file" format="data_manager_json"/>
+    </outputs>
+</tool>

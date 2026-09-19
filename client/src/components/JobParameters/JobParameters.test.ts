@@ -1,40 +1,30 @@
-import { mount, Wrapper } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
+import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
+import { beforeEach, describe, expect, it } from "vitest";
 
-import raw from "@/components/providers/test/json/Dataset.json";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import paramResponse from "./parameters-response.json";
 
 import JobParameters from "./JobParameters.vue";
 
 const JOB_ID = "foo";
-const DatasetProvider: any = {
-    render() {
-        return this.$scopedSlots.default({
-            loading: false,
-            result: raw,
-        });
-    },
-};
 const pinia = createPinia();
+const { server, http } = useServerMock();
 
 describe("JobParameters/JobParameters.vue", () => {
     const linkParam = paramResponse.parameters.find((element) => Array.isArray(element.value)) ?? {
         text: "Test Parameter not found",
         value: "NOT FOUND",
     };
-    let axiosMock: MockAdapter;
 
     beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(`/api/jobs/${JOB_ID}/parameters_display`).reply(200, paramResponse);
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
+        server.use(
+            http.untyped.get(`/api/jobs/${JOB_ID}/parameters_display`, () => {
+                return HttpResponse.json(paramResponse);
+            }),
+        );
     });
 
     it("should render job parameters", async () => {
@@ -42,10 +32,10 @@ describe("JobParameters/JobParameters.vue", () => {
             jobId: JOB_ID,
         };
 
-        const wrapper = mount(JobParameters, {
+        const wrapper = mount(JobParameters as object, {
             propsData,
             stubs: {
-                DatasetProvider: DatasetProvider,
+                GenericHistoryItem: true,
             },
             pinia,
         });
@@ -54,12 +44,18 @@ describe("JobParameters/JobParameters.vue", () => {
         const checkTableParameter = (
             element: Wrapper<any>,
             expectedTitle: string,
-            expectedValue: string,
-            link?: string
+            expectedValue: string | { id: string; src: string },
+            link?: string,
         ) => {
             const tds = element.findAll("td");
             expect(tds.at(0).text()).toBe(expectedTitle);
-            expect(tds.at(1).text()).toContain(expectedValue);
+            if (typeof expectedValue === "string") {
+                expect(tds.at(1).text()).toContain(expectedValue);
+            } else {
+                const genericItem = tds.at(1).find("generichistoryitem-stub");
+                expect(genericItem.attributes("item-id")).toBe(expectedValue.id);
+                expect(genericItem.attributes("item-src")).toBe(expectedValue.src);
+            }
             if (link) {
                 const a_element = tds.at(1).find("a");
                 expect(a_element.attributes("href")).toBe(link);
@@ -74,7 +70,13 @@ describe("JobParameters/JobParameters.vue", () => {
         expect(elements.length).toBe(3);
 
         checkTableParameter(elements.at(0), "Add this value", "22", undefined);
-        checkTableParameter(elements.at(1), linkParam.text, `${raw.hid}: ${raw.name}`, undefined);
+        const firstVal = Array.isArray(linkParam.value) ? linkParam.value[0] : { id: "", src: "" };
+        checkTableParameter(
+            elements.at(1),
+            linkParam.text,
+            { id: firstVal?.id || "", src: firstVal?.src || "" },
+            undefined,
+        );
         checkTableParameter(elements.at(2), "Iterate?", "NO", undefined);
     });
 
@@ -85,10 +87,10 @@ describe("JobParameters/JobParameters.vue", () => {
         };
 
         const getSingleParam = async (propsData: { jobId: string; param: string }) => {
-            const wrapper = mount(JobParameters, {
+            const wrapper = mount(JobParameters as object, {
                 propsData,
                 stubs: {
-                    DatasetProvider: DatasetProvider,
+                    GenericHistoryItem: true,
                 },
                 pinia,
             });

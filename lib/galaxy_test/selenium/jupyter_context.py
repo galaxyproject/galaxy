@@ -4,7 +4,6 @@ This provides an environment separate from test cases that can leaverage
 both Selenium for testing Galaxy with a browser and API populators for filling
 in fixture data rapidly in the target Galaxy.
 """
-from typing import Optional
 
 from galaxy.selenium.context import init as base_init
 from galaxy.selenium.jupyter_context import JupyterContextImpl
@@ -17,7 +16,7 @@ class JupyterTestContextImpl(JupyterContextImpl, GalaxyTestSeleniumContext):
     # restarts needed during test building.
     _interactive_components = True
 
-    def __init__(self, from_dict: Optional[dict] = None) -> None:
+    def __init__(self, from_dict: dict | None = None) -> None:
         from_dict = from_dict or {}
         super().__init__(from_dict)
         self.admin_api_key = from_dict.get("admin_api_key", get_admin_api_key())

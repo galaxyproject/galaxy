@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -22,7 +20,7 @@ repository_long_description = "This repository is in the test suite 0480"
 """
 
 
-class TestDependencyDefinitionValidation(ShedTwillTestCase):
+class TestDependencyDefinitionValidation(ShedTestCase):
     """Test the tool shed's tool dependency XML validation."""
 
     def test_0000_initiate_users_and_category(self):

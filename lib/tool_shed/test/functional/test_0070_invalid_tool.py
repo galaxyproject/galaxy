@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.testcase import ShedTestCase
 
 repository_name = "bismark_0070"
 repository_description = "Galaxy's bismark wrapper"
@@ -10,7 +8,7 @@ category_name = "Test 0070 Invalid Tool Revisions"
 category_description = "Tests for a repository with invalid tool revisions."
 
 
-class TestBismarkRepository(ShedTwillTestCase):
+class TestBismarkRepository(ShedTestCase):
     """Testing bismark with valid and invalid tool entries."""
 
     def test_0000_create_or_login_admin_user(self):

@@ -1,44 +1,28 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faInbox, faInfoCircle, faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BCard, BCol, BFormGroup, BRow } from "bootstrap-vue";
+import { BAlert, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import {
-    getGroups,
-    getRoles,
-    getUsers,
-    sendNotification,
-} from "@/components/admin/Notifications/notifications.services";
+import { GalaxyApi } from "@/api";
+import type { MessageNotificationCreateRequest } from "@/api/notifications";
+import { useMarkdown } from "@/composables/markdown";
 import { Toast } from "@/composables/toast";
-import { type components } from "@/schema";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";
+import GCard from "@/components/Common/GCard.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import GDateTime from "@/components/GDateTime.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import MessageNotification from "@/components/Notifications/Categories/MessageNotification.vue";
-
-library.add(faInfoCircle);
 
 type SelectOption = [string, string];
-type NotificationCreateData = components["schemas"]["NotificationCreateData"];
-type NotificationCreateRequest = components["schemas"]["NotificationCreateRequest"];
-
-interface MessageNotificationCreateData extends NotificationCreateData {
-    category: "message";
-    content: components["schemas"]["MessageNotificationContent"];
-}
-
-interface MessageNotificationCreateRequest extends NotificationCreateRequest {
-    notification: MessageNotificationCreateData;
-}
 
 const router = useRouter();
+
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 const loading = ref(false);
 const roles = ref<SelectOption[]>([]);
@@ -92,39 +76,69 @@ const expirationDate = computed({
     },
 });
 
+const isUrgent = computed(() => notificationData.value.notification.variant === "urgent");
+
 async function loadData<T>(
     getData: () => Promise<T[]>,
     target: Ref<SelectOption[]>,
-    formatter: (item: T) => SelectOption
+    formatter: (item: T) => SelectOption,
 ) {
-    try {
-        const tmp = await getData();
-        target.value = tmp.map(formatter);
-    } catch (error: any) {
-        Toast.error(errorMessageAsString(error));
-    }
+    const tmp = await getData();
+    target.value = tmp.map(formatter);
 }
 
-loadData(getUsers, users, (user) => {
+async function getAllGroups() {
+    const { data, error } = await GalaxyApi().GET("/api/groups");
+    if (error) {
+        Toast.error(errorMessageAsString(error));
+        return [];
+    }
+    return data;
+}
+
+async function getAllRoles() {
+    const { data, error } = await GalaxyApi().GET("/api/roles");
+    if (error) {
+        Toast.error(errorMessageAsString(error));
+        return [];
+    }
+    return data;
+}
+
+// TODO: this can potentially be a very large list, consider adding filters
+async function getAllUsers() {
+    const { data, error } = await GalaxyApi().GET("/api/users");
+    if (error) {
+        Toast.error(errorMessageAsString(error));
+        return [];
+    }
+    return data;
+}
+
+loadData(getAllUsers, users, (user) => {
     return [`${user.username} | ${user.email}`, user.id];
 });
 
-loadData(getRoles, roles, (role) => {
+loadData(getAllRoles, roles, (role) => {
     return [`${role.name} | ${role.description}`, role.id];
 });
 
-loadData(getGroups, groups, (group) => {
+loadData(getAllGroups, groups, (group) => {
     return [`${group.name}`, group.id];
 });
 
 async function sendNewNotification() {
-    try {
-        await sendNotification(notificationData.value);
-        Toast.success("Notification sent");
-        router.push("/admin/notifications");
-    } catch (error: any) {
+    const { error } = await GalaxyApi().POST("/api/notifications", {
+        body: notificationData.value,
+    });
+
+    if (error) {
         Toast.error(errorMessageAsString(error));
+        return;
     }
+
+    Toast.success("Notification sent");
+    router.push("/admin/notifications");
 }
 </script>
 
@@ -155,7 +169,8 @@ async function sendNewNotification() {
                 :optional="false"
                 help="The message can be written in markdown."
                 placeholder="Enter message"
-                required />
+                required
+                area />
 
             <FormElement
                 id="notification-variant"
@@ -163,12 +178,19 @@ async function sendNewNotification() {
                 type="select"
                 title="Variant"
                 :optional="false"
-                help="This will change the color of the notification"
+                help="This measures the urgency of the notification and will affect the color of the notification."
                 :options="[
                     ['Info', 'info'],
                     ['Warning', 'warning'],
                     ['Urgent', 'urgent'],
                 ]" />
+
+            <BAlert :show="isUrgent" variant="warning">
+                <span v-localize>
+                    Urgent notifications will ignore the user's notification preferences and will be sent to all
+                    available channels. Please use this option sparingly and only for critical notifications.
+                </span>
+            </BAlert>
 
             <FormElement
                 id="notification-recipients-user-ids"
@@ -222,9 +244,23 @@ async function sendNewNotification() {
                 <Heading size="md"> Preview </Heading>
             </BRow>
 
-            <BCard class="my-2">
-                <MessageNotification :options="{ notification: notificationData.notification, previewMode: true }" />
-            </BCard>
+            <GCard
+                id="notification-preview"
+                :title="notificationData.notification.content.subject"
+                :title-icon="{
+                    icon: faInbox,
+                    class: `text-${isUrgent ? 'danger' : notificationData.notification.variant}`,
+                }"
+                :description="notificationData.notification.content.message"
+                :update-time-title="`Published ${notificationData.notification.publication_time ? 'on' : 'at'}`"
+                @tagClick="() => {}">
+                <template v-slot:description>
+                    <span
+                        id="notification-message"
+                        class="notification-message"
+                        v-html="renderMarkdown(notificationData.notification.content.message)" />
+                </template>
+            </GCard>
 
             <BAlert show variant="info">
                 <FontAwesomeIcon class="mr-2" :icon="faInfoCircle" />
@@ -237,10 +273,10 @@ async function sendNewNotification() {
             <BRow class="m-2" align-h="center">
                 <AsyncButton
                     id="notification-submit"
-                    icon="save"
+                    :icon="faSave"
                     :title="!requiredFieldsFilled ? 'Please fill all required fields' : ''"
-                    variant="primary"
-                    size="md"
+                    color="blue"
+                    size="medium"
                     :disabled="!requiredFieldsFilled"
                     :action="sendNewNotification">
                     <span v-localize> Send Notification </span>

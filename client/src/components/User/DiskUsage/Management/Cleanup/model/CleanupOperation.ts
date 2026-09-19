@@ -1,4 +1,4 @@
-import type { components } from "@/schema";
+import type { components } from "@/api/schema";
 
 import type { CleanableSummary } from "./CleanableSummary";
 import type { CleanupResult } from "./CleanupResult";

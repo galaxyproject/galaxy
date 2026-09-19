@@ -1,21 +1,62 @@
 <tool id="output_filter" name="output_filter" version="1.0.0">
     <description>test for output filtering and expect_num_outputs</description>
     <command><![CDATA[
-echo 'test' > 1 &&
-echo 'test' > 2 &&
-echo 'test' > 3 &&
-echo 'test' > 4 &&
-echo 'test' > 5 &&
-echo 'test' > p1.forward &&
-echo 'test' > p1.reverse &&
-echo 'test' > p2.forward &&
-echo 'test' > p2.reverse 
+echo '1' > 1 &&
+echo '2' > 2 &&
+echo '3' > 3 &&
+echo '4' > 4 &&
+echo '5' > 5 &&
+echo 'p1.forward' > p1.forward &&
+echo 'p1.reverse' > p1.reverse &&
+echo 'p2.forward' > p2.forward &&
+echo 'p2.reverse' > p2.reverse
+#for $r in $repeat
+    #if $r.cond.select == "a" and $r.cond.inner_cond.inner_select == "2"
+        && echo "$r.cond.inner_cond.text" >> repeat_cond.txt
+    #end if
+#end for
     ]]></command>
     <inputs>
         <param name="produce_out_1" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Do Filter 1" />
         <param name="filter_text_1" type="text" value="1" />
         <param name="produce_collection" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Collection Filter" />
         <param name="produce_paired_collection" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Paired Collection Filter" />
+        <repeat name="repeat" title="repeat">
+            <conditional name="cond">
+                <param name="select" type="select" label="select">
+                    <option value="a"></option>
+                    <option value="b"></option>
+                </param>
+                <when value="a">
+                    <conditional name="inner_cond">
+                        <param name="inner_select" type="select" label="select">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                        </param>
+                        <when value="1">
+                            <param name="text" type="text" value="" label="text"/>
+                        </when>
+                        <when value="2">
+                            <param name="text" type="text" value="" label="text"/>
+                        </when>
+                    </conditional>
+                </when>
+                <when value="b">
+                    <conditional name="inner_cond">
+                        <param name="inner_select" type="select" label="select">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                        </param>
+                        <when value="1">
+                            <param name="text" type="text" value="" label="text"/>
+                        </when>
+                        <when value="2">
+                            <param name="text" type="text" value="" label="text"/>
+                        </when>
+                    </conditional>
+                </when>
+            </conditional>
+        </repeat>
     </inputs>
     <outputs>
         <data name="out_1" format="txt" from_work_dir="1">
@@ -26,7 +67,6 @@ echo 'test' > p2.reverse
             <!-- Must pass all filters... -->
             <filter>filter_text_1 == "foo"</filter>
         </data>
-        <data name="out_3" format="txt" from_work_dir="3"/>
         <collection name="list_output" type="list" label="List">
             <discover_datasets pattern="(?P&lt;identifier_0&gt;[45])" ext="txt" visible="true" />
             <filter>produce_collection is True</filter>
@@ -35,111 +75,101 @@ echo 'test' > p2.reverse
             <discover_datasets pattern="(?P&lt;identifier_0&gt;p[12])\.(?P&lt;identifier_1&gt;.*)" ext="txt" visible="true" />
             <filter>produce_paired_collection is True</filter>
         </collection>
+        <data name="repeat_cond_output" format="txt" from_work_dir="repeat_cond.txt">
+            <filter>any( [ r["cond"]["select"] == "a" and r["cond"]["inner_cond"]["inner_select"] == "2" for r in repeat ] )</filter>
+        </data>
     </outputs>
     <tests>
-        <test expect_num_outputs="3">
+        <test expect_num_outputs="2">
             <param name="produce_out_1" value="true" />
             <param name="filter_text_1" value="foo" />
             <output name="out_1">
                 <assert_contents>
-                    <has_line line="test" />
+                    <has_line line="1" />
                 </assert_contents>
             </output>
             <output name="out_2">
                 <assert_contents>
-                    <has_line line="test" />
-                </assert_contents>
-            </output>
-            <output name="out_3">
-                <assert_contents>
-                    <has_line line="test" />
-                </assert_contents>
-            </output>
-        </test>
-        <test expect_num_outputs="2">
-            <param name="produce_out_1" value="true" />
-            <param name="filter_text_1" value="bar" /> <!-- fails second filter in out2 -->
-            <output name="out_1">
-                <assert_contents>
-                    <has_line line="test" />
-                </assert_contents>
-            </output>
-            <output name="out_3">
-                <assert_contents>
-                    <has_line line="test" />
+                    <has_line line="2" />
                 </assert_contents>
             </output>
         </test>
         <test expect_num_outputs="1">
-            <param name="produce_out_1" value="false" />
-            <param name="filter_text_1" value="not_foo_or_bar" />
-            <output name="out_3">
+            <param name="produce_out_1" value="true" />
+            <param name="filter_text_1" value="bar" /> <!-- fails second filter in out2 -->
+            <output name="out_1">
                 <assert_contents>
-                    <has_line line="test" />
+                    <has_line line="1" />
                 </assert_contents>
             </output>
+        </test>
+        <test expect_num_outputs="0">
+            <param name="produce_out_1" value="false" />
+            <param name="filter_text_1" value="not_foo_or_bar" />
+            <assert_stdout>
+                <has_n_lines n="0"/>
+            </assert_stdout>
+        </test>
+        <test expect_num_outputs="3">
+            <param name="produce_out_1" value="true" />
+            <param name="filter_text_1" value="foo" />
+            <param name="produce_collection" value="true" />
+            <output name="out_1">
+                <assert_contents>
+                    <has_line line="1" />
+                </assert_contents>
+            </output>
+            <output name="out_2">
+                <assert_contents>
+                    <has_line line="2" />
+                </assert_contents>
+            </output>
+            <output_collection name="list_output" type="list" count="2">
+                <element name="4">
+                    <assert_contents>
+                        <has_line line="4" />
+                    </assert_contents>
+                </element>
+                <element name="5">
+                    <assert_contents>
+                        <has_line line="5" />
+                    </assert_contents>
+                </element>
+            </output_collection>
         </test>
         <test expect_num_outputs="4">
             <param name="produce_out_1" value="true" />
             <param name="filter_text_1" value="foo" />
             <param name="produce_collection" value="true" />
-            <output name="out_1">
-                <assert_contents>
-                    <has_line line="test" />
-                </assert_contents>
-            </output>
-            <output name="out_2">
-                <assert_contents>
-                    <has_line line="test" />
-                </assert_contents>
-            </output>
-            <output name="out_3">
-                <assert_contents>
-                    <has_line line="test" />
-                </assert_contents>
-            </output>
-            <output_collection name="list_output" type="list" count="2">
-                <element name="4">
-                    <assert_contents>
-                        <has_line line="test" />
-                    </assert_contents>
-                </element>
-                <element name="5">
-                    <assert_contents>
-                        <has_line line="test" />
-                    </assert_contents>
-                </element>
-            </output_collection>
-        </test>
-        <test expect_num_outputs="5">
-            <param name="produce_out_1" value="true" />
-            <param name="filter_text_1" value="foo" />
-            <param name="produce_collection" value="true" />
             <param name="produce_paired_collection" value="true" />
+            <repeat name="repeat">
+                <conditional name="cond">
+                    <param name="select" value="b"/>
+                    <conditional name="inner_cond">
+                        <param name="inner_select" value="1"/>
+                        <param name="text" value="b1"/>
+                    </conditional>
+                </conditional>
+            </repeat>
             <output name="out_1">
                 <assert_contents>
-                    <has_line line="test" />
+                    <has_line line="1" />
                 </assert_contents>
             </output>
             <output name="out_2">
                 <assert_contents>
-                    <has_line line="test" />
-                </assert_contents>
-            </output>
-            <output name="out_3">
-                <assert_contents>
-                    <has_line line="test" />
+                    <has_line line="2" />
                 </assert_contents>
             </output>
             <output_collection name="list_output" type="list" count="2">
                 <element name="4">
                     <assert_contents>
-                        <has_line line="test" />
+                        <has_line line="4" />
                     </assert_contents>
                 </element>
                 <element name="5">
                     <assert_contents>
-                        <has_line line="test" />
+                        <has_line line="5" />
                     </assert_contents>
                 </element>
             </output_collection>
@@ -147,28 +177,44 @@ echo 'test' > p2.reverse
                 <element name="p1">
                     <element name="forward">
                         <assert_contents>
-                            <has_line line="test" />
+                            <has_line line="p1.forward" />
                         </assert_contents>
                     </element>
                     <element name="reverse">
                         <assert_contents>
-                            <has_line line="test" />
+                            <has_line line="p1.reverse" />
                         </assert_contents>
                     </element>
                 </element>
                 <element name="p2">
                     <element name="forward">
                         <assert_contents>
-                            <has_line line="test" />
+                            <has_line line="p2.forward" />
                         </assert_contents>
                     </element>
                     <element name="reverse">
                         <assert_contents>
-                            <has_line line="test" />
+                            <has_line line="p2.reverse" />
                         </assert_contents>
                     </element>
                 </element>
             </output_collection>
+        </test>
+        <test expect_num_outputs="1">
+            <repeat name="repeat">
+                <conditional name="cond">
+                    <param name="select" value="a"/>
+                    <conditional name="inner_cond">
+                        <param name="inner_select" value="2"/>
+                        <param name="text" value="a2"/>
+                    </conditional>
+                </conditional>
+            </repeat>
+            <output name="repeat_cond_output">
+                <assert_contents>
+                    <has_line line="a2" />
+                </assert_contents>
+            </output>
         </test>
     </tests>
 </tool>

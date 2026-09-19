@@ -1,19 +1,21 @@
 import logging
-from typing import Optional
 
 from sqlalchemy import (
     false,
     select,
     true,
 )
-from sqlalchemy.orm import Session
 
 from galaxy import util
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.groups import get_group_by_name
 from galaxy.managers.quotas import QuotaManager
-from galaxy.managers.users import get_user_by_email
 from galaxy.model import Quota
+from galaxy.model.db.user import get_user_by_email
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.quota._schema import (
     CreateQuotaParams,
     CreateQuotaResult,
@@ -23,7 +25,10 @@ from galaxy.quota._schema import (
     QuotaSummaryList,
     UpdateQuotaParams,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    Security,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.web import url_for
 from galaxy.webapps.galaxy.services.base import ServiceBase
@@ -48,33 +53,31 @@ class QuotasService(ServiceBase):
             route = "quota"
             quotas = get_quotas(trans.sa_session, deleted=False)
         for quota in quotas:
-            item = quota.to_dict(value_mapper={"id": DecodedDatabaseIdField.encode})
-            encoded_id = DecodedDatabaseIdField.encode(quota.id)
+            item = quota.to_dict()
+            encoded_id = Security.security.encode_id(quota.id)
             item["url"] = url_for(route, id=encoded_id)
             rval.append(item)
-        return QuotaSummaryList.construct(__root__=rval)
+        return QuotaSummaryList(root=rval)
 
     def show(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, deleted: bool = False) -> QuotaDetails:
         """Displays information about a quota."""
         quota = self.quota_manager.get_quota(trans, id, deleted=deleted)
-        rval = quota.to_dict(
-            view="element", value_mapper={"id": DecodedDatabaseIdField.encode, "total_disk_usage": float}
-        )
-        return QuotaDetails.construct(**rval)
+        rval = quota.to_dict(view="element", value_mapper={"total_disk_usage": float})
+        return QuotaDetails(**rval)
 
     def create(self, trans: ProvidesUserContext, params: CreateQuotaParams) -> CreateQuotaResult:
         """Creates a new quota."""
-        payload = params.dict()
+        payload = params.model_dump()
         self.validate_in_users_and_groups(trans, payload)
         quota, message = self.quota_manager.create_quota(payload)
-        item = quota.to_dict(value_mapper={"id": DecodedDatabaseIdField.encode})
-        item["url"] = url_for("quota", id=DecodedDatabaseIdField.encode(quota.id))
+        item = quota.to_dict()
+        item["url"] = url_for("quota", id=Security.security.encode_id(quota.id))
         item["message"] = message
-        return CreateQuotaResult.construct(**item)
+        return CreateQuotaResult(**item)
 
     def update(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, params: UpdateQuotaParams) -> str:
         """Modifies a quota."""
-        payload = params.dict()
+        payload = params.model_dump()
         self.validate_in_users_and_groups(trans, payload)
         quota = self.quota_manager.get_quota(trans, id, deleted=False)
 
@@ -95,11 +98,12 @@ class QuotasService(ServiceBase):
         messages = []
         for method in methods:
             message = method(quota, params)
-            messages.append(message)
+            if message:
+                messages.append(message)
         return "; ".join(messages)
 
     def delete(
-        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, payload: Optional[DeleteQuotaPayload] = None
+        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, payload: DeleteQuotaPayload | None = None
     ) -> str:
         """Marks a quota as deleted."""
         quota = self.quota_manager.get_quota(
@@ -110,12 +114,17 @@ class QuotasService(ServiceBase):
             message += self.quota_manager.purge_quota(quota)
         return message
 
+    def purge(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> str:
+        """Purges a previously deleted quota."""
+        quota = self.quota_manager.get_quota(trans, id, deleted=True)
+        return self.quota_manager.purge_quota(quota)
+
     def undelete(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> str:
         """Restores a previously deleted quota."""
         quota = self.quota_manager.get_quota(trans, id, deleted=True)
         return self.quota_manager.undelete_quota(quota)
 
-    def validate_in_users_and_groups(self, trans, payload):
+    def validate_in_users_and_groups(self, trans: ProvidesAppContext, payload):
         """
         For convenience, in_users and in_groups can be encoded IDs or emails/group names in the API.
         """
@@ -124,7 +133,13 @@ class QuotasService(ServiceBase):
             try:
                 return trans.security.decode_id(item)
             except Exception:
-                return get_user_by_email(trans.sa_session, item).id
+                user = get_user_by_email(trans.sa_session, item)
+                if not user:
+                    # Try a case-insensitive match on the email
+                    user = get_user_by_email(trans.sa_session, item, case_sensitive=False)
+                if not user:
+                    raise ValueError(f"User with email address '{item}' not found.")
+                return user.id
 
         def get_group_id(item):
             try:
@@ -155,9 +170,7 @@ class QuotasService(ServiceBase):
         payload["in_groups"] = list(map(str, new_in_groups))
 
 
-def get_quotas(session: Session, deleted: bool = False):
-    is_deleted = true()
-    if not deleted:
-        is_deleted = false()
+def get_quotas(session: galaxy_scoped_session, deleted: bool = False):
+    is_deleted = true() if deleted else false()
     stmt = select(Quota).where(Quota.deleted == is_deleted)
     return session.scalars(stmt)

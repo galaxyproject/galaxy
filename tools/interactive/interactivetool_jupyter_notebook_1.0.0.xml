@@ -1,9 +1,12 @@
-<tool id="interactive_tool_jupyter_notebook" tool_type="interactive" name="Interactive JupyTool and notebook" version="1.0.0" profile="22.01">
+<tool id="interactive_tool_jupyter_notebook" tool_type="interactive" name="Interactive JupyterLab Notebook" version="1.0.0" profile="22.01">
     <requirements>
         <container type="docker">quay.io/bgruening/docker-jupyter-notebook:2021-03-05</container>
     </requirements>
+    <required_files>
+        <include path="default_notebook.ipynb"/>
+    </required_files>
     <entry_points>
-        <entry_point name="JupyTool interactive tool" requires_domain="True">
+        <entry_point name="JupyTool interactive tool" label="jupytool" requires_domain="False" requires_path_in_url="True">
             <port>8888</port>
             <url>ipython/lab</url>
         </entry_point>
@@ -14,6 +17,7 @@
         <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
         <environment_variable name="API_KEY" inject="api_key"/>
+        <environment_variable name="EP_PATH" inject="entry_point_path_for_label">jupytool</environment_variable>
     </environment_variables>
     <configfiles>
         <inputs name="inputs" filename="galaxy_inputs.json" data_style="staging_path_and_source_path"/>
@@ -80,6 +84,7 @@ except FileNotFoundError:
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./jupyter/outputs/collection &&
         mkdir -p ./jupyter/galaxy_inputs &&
+        export PROXY_PREFIX=\${EP_PATH%/ipython*} &&
 
         ## change into the directory where the notebooks are located
         cd ./jupyter/ &&

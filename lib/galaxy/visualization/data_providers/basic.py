@@ -1,8 +1,13 @@
-import sys
-from json import loads
-from typing import Iterator
+from json import (
+    JSONDecodeError,
+    loads,
+)
 
 from galaxy.datatypes.tabular import Tabular
+from galaxy.exceptions import (
+    RequestParameterInvalidException,
+    RequestParameterMissingException,
+)
 from galaxy.model import DatasetInstance
 
 
@@ -30,42 +35,6 @@ class BaseDataProvider:
         self.dependencies = dependencies
         self.error_max_vals = error_max_vals
 
-    def has_data(self, **kwargs):
-        """
-        Returns true if dataset has data in the specified genome window, false
-        otherwise.
-        """
-        raise Exception("Unimplemented Function")
-
-    def get_iterator(self, data_file, chrom, start, end, **kwargs) -> Iterator[str]:
-        """
-        Returns an iterator that provides data in the region chrom:start-end
-        """
-        raise Exception("Unimplemented Function")
-
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
-        """
-        Process data from an iterator to a format that can be provided to client.
-        """
-        raise Exception("Unimplemented Function")
-
-    def get_data(self, chrom, start, end, start_val=0, max_vals=sys.maxsize, **kwargs):
-        """
-        Returns data as specified by kwargs. start_val is the first element to
-        return and max_vals indicates the number of values to return.
-
-        Return value must be a dictionary with the following attributes:
-            dataset_type, data
-        """
-        iterator = self.get_iterator(chrom, start, end)
-        return self.process_data(iterator, start_val, max_vals, **kwargs)
-
-    def write_data_to_file(self, filename, **kwargs):
-        """
-        Write data in region defined by chrom, start, and end to a file.
-        """
-        raise Exception("Unimplemented Function")
-
 
 class ColumnDataProvider(BaseDataProvider):
     """Data provider for columnar data"""
@@ -75,7 +44,9 @@ class ColumnDataProvider(BaseDataProvider):
     def __init__(self, original_dataset, max_lines_returned=MAX_LINES_RETURNED):
         # Compatibility check.
         if not isinstance(original_dataset.datatype, Tabular):
-            raise Exception("Data provider can only be used with tabular data")
+            raise RequestParameterInvalidException(
+                "The 'column_with_stats' data provider can only be used with tabular datasets"
+            )
 
         # Attribute init.
         self.original_dataset = original_dataset
@@ -88,7 +59,7 @@ class ColumnDataProvider(BaseDataProvider):
         where each list is a line of data.
         """
         if not columns:
-            raise TypeError("parameter required: columns")
+            raise RequestParameterMissingException("parameter required: columns")
 
         # TODO: validate kwargs
         try:
@@ -113,13 +84,22 @@ class ColumnDataProvider(BaseDataProvider):
             start_val = int(self.original_dataset.metadata.comment_lines)
 
         # columns is an array of ints for now (should handle column names later)
-        columns = loads(columns)
-        for column in columns:
-            assert (column < self.original_dataset.metadata.columns) and (
-                column >= 0
-            ), "column index (%d) must be positive and less" % (column) + " than the number of columns: %d" % (
-                self.original_dataset.metadata.columns
+        try:
+            columns = loads(columns)
+        except (JSONDecodeError, TypeError):
+            raise RequestParameterInvalidException(
+                "parameter 'columns' must be a JSON-encoded list of integer column indices"
             )
+        if not isinstance(columns, list) or not all(isinstance(column, int) for column in columns):
+            raise RequestParameterInvalidException(
+                "parameter 'columns' must be a JSON-encoded list of integer column indices"
+            )
+        num_columns = self.original_dataset.metadata.columns
+        for column in columns:
+            if column < 0 or column >= num_columns:
+                raise RequestParameterInvalidException(
+                    f"column index ({column}) must be in the range [0, {num_columns})"
+                )
 
         # set up the response, column lists
         response = {}
@@ -144,7 +124,7 @@ class ColumnDataProvider(BaseDataProvider):
             return val
 
         returning_data = False
-        f = open(self.original_dataset.file_name)
+        f = open(self.original_dataset.get_file_name())
         # TODO: add f.seek if given fptr in kwargs
         for count, line in enumerate(f):
             # check line v. desired start, end

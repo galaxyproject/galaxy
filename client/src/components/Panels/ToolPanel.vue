@@ -1,140 +1,154 @@
 <script setup lang="ts">
+import { BAlert, BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
-import { useConfig } from "@/composables/config";
 import { useToolStore } from "@/stores/toolStore";
+import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import { MY_PANEL_VIEW_ID } from "./panelViews";
+import { countUniqueToolsInList, countUniqueToolsInPanel } from "./utilities";
 
 import LoadingSpan from "../LoadingSpan.vue";
+import ActivityPanel from "./ActivityPanel.vue";
 import FavoritesButton from "./Buttons/FavoritesButton.vue";
-import PanelViewButton from "./Buttons/PanelViewButton.vue";
+import PanelViewMenu from "./Menus/PanelViewMenu.vue";
 import ToolBox from "./ToolBox.vue";
-import Heading from "@/components/Common/Heading.vue";
 
+const toolStore = useToolStore();
+
+const userStore = useUserStore();
 const props = defineProps({
+    useSearchWorker: { type: Boolean, default: true },
     workflow: { type: Boolean, default: false },
-    editorWorkflows: { type: Array, default: null },
-    dataManagers: { type: Array, default: null },
-    moduleSections: { type: Array, default: null },
 });
 
 const emit = defineEmits<{
     (e: "onInsertTool", toolId: string, toolName: string): void;
-    (e: "onInsertModule", moduleName: string, moduleTitle: string | undefined): void;
-    (e: "onInsertWorkflow", workflowLatestId: string | undefined, workflowName: string): void;
-    (e: "onInsertWorkflowSteps", workflowId: string, workflowStepCount: number | undefined): void;
 }>();
 
-const { isConfigLoaded, config } = useConfig();
-const toolStore = useToolStore();
-const { currentPanelView, isPanelPopulated } = storeToRefs(toolStore);
+const { currentPanelView, currentToolSections, defaultPanelView, isPanelPopulated, toolSections, toolsById } =
+    storeToRefs(toolStore);
+const isMyPanel = computed(() => currentPanelView.value === MY_PANEL_VIEW_ID);
 
-const query = ref("");
-const panelViews = ref(null);
-const showAdvanced = ref(false);
-
-watch(
-    () => currentPanelView.value,
-    () => {
-        query.value = "";
+const errorMessage = ref("");
+const panelsFetched = ref(false);
+const showFavorites = ref(false);
+const defaultToolSections = computed(() => {
+    return (
+        toolSections.value.default ||
+        (defaultPanelView.value && defaultPanelView.value !== MY_PANEL_VIEW_ID
+            ? toolSections.value[defaultPanelView.value]
+            : null)
+    );
+});
+const headerToolSections = computed(() => {
+    if (isMyPanel.value) {
+        return defaultToolSections.value || currentToolSections.value;
     }
+    return currentToolSections.value;
+});
+const toolsCount = computed(() =>
+    countUniqueToolsInPanel(headerToolSections.value, countUniqueToolsInList(toolsById.value)),
 );
 
-// as soon as config is loaded, load tools
-watch(
-    () => isConfigLoaded.value,
-    async (newVal) => {
-        if (newVal) {
-            await loadTools();
-        }
-    },
-    { immediate: true }
-);
-
-// if currentPanelView ever becomes null || "", load tools
-watch(
-    () => currentPanelView.value,
-    async (newVal) => {
-        if (!newVal && isConfigLoaded.value) {
-            await loadTools();
-        }
+function formatToolsCount(count: number) {
+    if (count < 1000) {
+        return `${count}`;
     }
-);
-
-async function loadTools() {
-    panelViews.value = panelViews.value === null ? config.value.panel_views : panelViews.value;
-    try {
-        await toolStore.fetchTools();
-        await toolStore.initCurrentPanelView(config.value.default_panel_view);
-    } catch (error: any) {
-        console.error("ToolPanel - Load tools error:", error);
-    }
+    const thousands = Math.floor(count / 1000);
+    return `${thousands}k+`;
 }
 
-async function updatePanelView(panelView: string) {
-    await toolStore.setCurrentPanelView(panelView);
+const discoverToolsLabel = computed(() => {
+    return `${localize("Discover")} ${formatToolsCount(toolsCount.value)} ${localize("Tools")}`;
+});
+
+async function initializePanel() {
+    try {
+        await userStore.loadUser(false);
+        await toolStore.fetchPanels();
+        await toolStore.fetchTools();
+        await toolStore.initializePanel();
+    } catch (error) {
+        if (process.env.NODE_ENV != "test") {
+            console.error(`ToolPanel::initializePanel - ${error}`);
+        }
+
+        errorMessage.value = errorMessageAsString(error);
+    } finally {
+        panelsFetched.value = true;
+    }
 }
 
 function onInsertTool(toolId: string, toolName: string) {
     emit("onInsertTool", toolId, toolName);
 }
 
-function onInsertModule(moduleName: string, moduleTitle: string | undefined) {
-    emit("onInsertModule", moduleName, moduleTitle);
-}
+// if currentPanelView ever becomes null || "", load tools
+watch(
+    () => currentPanelView.value,
+    async (newVal) => {
+        if ((!newVal || !toolSections.value[newVal]) && panelsFetched.value) {
+            await initializePanel();
+        }
+    },
+);
 
-function onInsertWorkflow(workflowId: string | undefined, workflowName: string) {
-    emit("onInsertWorkflow", workflowId, workflowName);
-}
-
-function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | undefined) {
-    emit("onInsertWorkflowSteps", workflowId, workflowStepCount);
-}
+initializePanel();
 </script>
 
 <template>
-    <div v-if="isConfigLoaded" class="unified-panel" aria-labelledby="toolbox-heading">
-        <div unselectable="on">
-            <div class="unified-panel-header-inner">
-                <nav class="d-flex justify-content-between mx-3 my-2">
-                    <Heading v-if="!showAdvanced" id="toolbox-heading" h2 inline size="sm">{{
-                        localize("Tools")
-                    }}</Heading>
-                    <Heading v-else id="toolbox-heading" h2 inline size="sm">{{
-                        localize("Advanced Tool Search")
-                    }}</Heading>
-                    <div class="panel-header-buttons">
-                        <b-button-group>
-                            <FavoritesButton v-if="!showAdvanced" :query="query" @onFavorites="(q) => (query = q)" />
-                            <PanelViewButton
-                                v-if="panelViews && Object.keys(panelViews).length > 1"
-                                :panel-views="panelViews"
-                                :current-panel-view="currentPanelView"
-                                @updatePanelView="updatePanelView" />
-                        </b-button-group>
-                    </div>
-                </nav>
-            </div>
-        </div>
+    <ActivityPanel
+        v-if="panelsFetched"
+        id="toolbox-panel"
+        title="Tools"
+        aria-labelledby="toolbox-heading"
+        class="toolbox-panel"
+        :go-to-all-title="discoverToolsLabel"
+        go-to-all-data-description="toolbox discover tools"
+        :href="!props.workflow ? `/tools/list` : undefined">
+        <template v-slot:activity-panel-header-top>
+            <PanelViewMenu />
+        </template>
+        <template v-slot:header-buttons>
+            <FavoritesButton v-if="!isMyPanel" v-model="showFavorites" />
+        </template>
         <ToolBox
             v-if="isPanelPopulated"
             :workflow="props.workflow"
-            :panel-query.sync="query"
-            :panel-view="currentPanelView"
-            :show-advanced.sync="showAdvanced"
-            :editor-workflows="editorWorkflows"
-            :data-managers="dataManagers"
-            :module-sections="moduleSections"
-            @updatePanelView="updatePanelView"
-            @onInsertTool="onInsertTool"
-            @onInsertModule="onInsertModule"
-            @onInsertWorkflow="onInsertWorkflow"
-            @onInsertWorkflowSteps="onInsertWorkflowSteps" />
-        <div v-else>
-            <b-badge class="alert-info w-100">
-                <LoadingSpan message="Loading Toolbox" />
-            </b-badge>
+            :show-favorites.sync="showFavorites"
+            :favorites-default="isMyPanel"
+            :use-search-worker="useSearchWorker"
+            @onInsertTool="onInsertTool" />
+        <div v-else-if="errorMessage" data-description="tool panel error message">
+            <BAlert class="m-2" variant="danger" show>
+                {{ errorMessage }}
+            </BAlert>
         </div>
-    </div>
+        <div v-else>
+            <BBadge class="alert-info w-100">
+                <LoadingSpan message="Loading Toolbox" />
+            </BBadge>
+        </div>
+    </ActivityPanel>
+    <BAlert v-else-if="currentToolSections" class="m-2" variant="info" show>
+        <LoadingSpan message="Loading Toolbox" />
+    </BAlert>
 </template>
+
+<style lang="scss" scoped>
+.toolbox-panel {
+    padding: 0.5rem 0rem !important;
+
+    :deep(.activity-panel-header) {
+        margin-right: 1rem;
+        margin-left: 1rem;
+        .activity-panel-header-top {
+            align-items: flex-start;
+        }
+    }
+}
+</style>

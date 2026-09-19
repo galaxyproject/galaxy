@@ -1,6 +1,7 @@
 """
 Qualityscore class
 """
+
 import logging
 
 from galaxy.datatypes.protocols import DatasetProtocol

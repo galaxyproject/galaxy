@@ -1,28 +1,19 @@
-import bz2
-import gzip
 import json
 import logging
 import os
-import shutil
-import tempfile
 from collections import namedtuple
 from typing import (
-    List,
-    Optional,
-    Tuple,
     TYPE_CHECKING,
-    Union,
 )
 
 from sqlalchemy import select
 from sqlalchemy.sql.expression import null
 
 import tool_shed.repository_types.util as rt_util
+from galaxy.tool_shed.tools.data_table_manager import BaseShedToolDataTableManager
 from galaxy.util import checkers
 from galaxy.util.path import safe_relpath
-from tool_shed.tools.data_table_manager import ShedToolDataTableManager
 from tool_shed.util import (
-    basic_util,
     hg_util,
     shed_util_common as suc,
 )
@@ -100,7 +91,7 @@ def check_file_contents_for_email_alerts(app: "ToolShedApp"):
     """
     sa_session = app.model.session
     admin_users = app.config.get("admin_users", "").split(",")
-    for repository in get_repositories_with_alerts(sa_session, app.model.Repository):
+    for repository in get_repositories_with_alerts(sa_session, Repository):
         email_alerts = json.loads(repository.email_alerts)
         for user_email in email_alerts:
             if user_email in admin_users:
@@ -117,46 +108,7 @@ def check_file_content_for_html_and_images(file_path):
     return message
 
 
-def get_change_lines_in_file_for_tag(tag, change_dict):
-    """
-    The received change_dict is the jsonified version of the changes to a file in a
-    changeset being pushed to the Tool Shed from the command line. This method cleans
-    and returns appropriate lines for inspection.
-    """
-    cleaned_lines = []
-    data_list = change_dict.get("data", [])
-    for data_dict in data_list:
-        block = data_dict.get("block", "")
-        lines = block.split("\\n")
-        for line in lines:
-            index = line.find(tag)
-            if index > -1:
-                line = line[index:]
-                cleaned_lines.append(line)
-    return cleaned_lines
-
-
-def handle_bz2(repository: "Repository", uploaded_file_name):
-    with tempfile.NamedTemporaryFile(
-        mode="wb",
-        prefix=f"repo_{repository.id}_upload_bunzip2_",
-        dir=os.path.dirname(uploaded_file_name),
-        delete=False,
-    ) as uncompressed, bz2.BZ2File(uploaded_file_name, "rb") as bzipped_file:
-        while 1:
-            try:
-                chunk = bzipped_file.read(basic_util.CHUNK_SIZE)
-            except OSError:
-                os.remove(uncompressed.name)
-                log.exception(f'Problem uncompressing bz2 data "{uploaded_file_name}"')
-                return
-            if not chunk:
-                break
-            uncompressed.write(chunk)
-    shutil.move(uncompressed.name, uploaded_file_name)
-
-
-ChangeResponseT = Tuple[Union[bool, str], str, List[str], str, int, int]
+ChangeResponseT = tuple[bool | str, str, list[str], str, int, int]
 
 
 def handle_directory_changes(
@@ -171,7 +123,7 @@ def handle_directory_changes(
     commit_message: str,
     undesirable_dirs_removed: int,
     undesirable_files_removed: int,
-    repo_path: Optional[str] = None,
+    repo_path: str | None = None,
     dry_run: bool = False,
 ) -> ChangeResponseT:
     repo_path = repo_path or repository.repo_path(app)
@@ -216,7 +168,7 @@ def handle_directory_changes(
             # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded
             # by parsing the file and adding new entries to the in-memory app.tool_data_tables
             # dictionary.
-            stdtm = ShedToolDataTableManager(app)
+            stdtm = BaseShedToolDataTableManager(app)
             error, message = stdtm.handle_sample_tool_data_table_conf_file(filename_in_archive, persist=False)
             if error:
                 return (
@@ -239,32 +191,6 @@ def handle_directory_changes(
             admin_only=admin_only,
         )
     return True, "", files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
-
-
-def handle_gzip(repository, uploaded_file_name):
-    with tempfile.NamedTemporaryFile(
-        mode="wb", prefix=f"repo_{repository.id}_upload_gunzip_", dir=os.path.dirname(uploaded_file_name), delete=False
-    ) as uncompressed, gzip.GzipFile(uploaded_file_name, "rb") as gzipped_file:
-        while 1:
-            try:
-                chunk = gzipped_file.read(basic_util.CHUNK_SIZE)
-            except OSError:
-                os.remove(uncompressed.name)
-                log.exception(f'Problem uncompressing gz data "{uploaded_file_name}"')
-                return
-            if not chunk:
-                break
-            uncompressed.write(chunk)
-    shutil.move(uncompressed.name, uploaded_file_name)
-
-
-def uncompress(repository, uploaded_file_name, uploaded_file_filename, isgzip=False, isbz2=False):
-    if isgzip:
-        handle_gzip(repository, uploaded_file_name)
-        return uploaded_file_filename.rstrip(".gz")
-    if isbz2:
-        handle_bz2(repository, uploaded_file_name)
-        return uploaded_file_filename.rstrip(".bz2")
 
 
 def get_repositories_with_alerts(session, repository_model):

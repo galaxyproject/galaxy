@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +24,7 @@ category_description = (
 """
 
 
-class TestUpdateInstalledRepository(ShedTwillTestCase):
+class TestUpdateInstalledRepository(ShedTestCase):
     """Verify that the code correctly handles updating an installed repository, then uninstalling and reinstalling."""
 
     requires_galaxy = True

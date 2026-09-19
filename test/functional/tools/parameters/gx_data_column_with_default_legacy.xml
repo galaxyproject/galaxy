@@ -1,0 +1,22 @@
+<tool id="gx_data_column_with_default_legacy" name="gx_data_column_with_default_legacy" version="1.0.0">
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command><![CDATA[
+echo 'parameter: $parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <param name="ref_parameter" type="data" format="tabular" />
+        <param name="parameter" type="data_column" data_ref="ref_parameter" default_value="3" />
+    </inputs>
+    <expand macro="simple_text_output" />
+    <tests>
+        <!-- these parameters are implicitly optional -->
+        <test>
+            <param name="ref_parameter" value="2.tabular" />
+            <expand macro="assert_output">
+                <has_line line="parameter: 3"/>
+            </expand>
+        </test>
+    </tests>
+</tool>

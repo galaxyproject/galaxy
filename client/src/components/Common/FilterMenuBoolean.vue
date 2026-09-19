@@ -1,13 +1,26 @@
 <script setup lang="ts">
+import { BFormCheckbox, BFormGroup, BFormRadioGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
-const props = defineProps({
-    filter: { type: Object, required: true },
-    name: { type: String, required: true },
-    filters: { type: Object, required: true },
+import type { ValidFilter } from "@/utils/filtering";
+
+type FilterType = string | boolean | undefined;
+
+interface Props {
+    name: string;
+    filter: ValidFilter<any>;
+    filters: {
+        [k: string]: FilterType;
+    };
+    view?: "dropdown" | "popover" | "compact";
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    view: "dropdown",
 });
 
 const boolType = computed(() => props.filter.boolType || "default");
+const isCheckbox = computed(() => boolType.value === "is" && props.view === "compact");
 
 const options =
     boolType.value == "default"
@@ -22,9 +35,9 @@ const options =
           ];
 
 const emit = defineEmits<{
-    (e: "change", name: string, value: boolean | string | undefined): void;
-    (e: "on-enter"): void;
     (e: "on-esc"): void;
+    (e: "on-enter"): void;
+    (e: "change", name: string, value: FilterType): void;
 }>();
 
 const value = computed({
@@ -32,7 +45,7 @@ const value = computed({
         const value = props.filters[props.name];
         return value !== undefined ? value : "any";
     },
-    set: (newVal: boolean | string | undefined) => {
+    set: (newVal) => {
         const value = newVal !== null ? newVal : "any";
         emit("change", props.name, value);
     },
@@ -41,15 +54,19 @@ const value = computed({
 
 <template>
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-    <div @keyup.enter="emit('on-enter')" @keyup.esc="emit('on-esc')">
-        <small>{{ props.filter.placeholder }}:</small>
-        <b-form-group class="m-0">
-            <b-form-radio-group
+    <div :class="{ 'd-flex': isCheckbox }" @keyup.enter="emit('on-enter')" @keyup.esc="emit('on-esc')">
+        <small :class="{ 'mr-1': isCheckbox }">{{ props.filter.placeholder }}:</small>
+
+        <div v-if="isCheckbox" :data-description="`filter ${props.name}`">
+            <BFormCheckbox v-model="value" />
+        </div>
+        <BFormGroup v-else class="m-0">
+            <BFormRadioGroup
                 v-model="value"
                 :options="options"
                 size="sm"
                 buttons
                 :data-description="`filter ${props.name}`" />
-        </b-form-group>
+        </BFormGroup>
     </div>
 </template>

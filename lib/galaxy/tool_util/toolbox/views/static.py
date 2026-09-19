@@ -1,6 +1,5 @@
 import logging
 import re
-from typing import Optional
 
 from .definitions import (
     ExcludeTool,
@@ -69,8 +68,7 @@ class StaticToolPanelView(ToolPanelView):
 
     def apply_view(self, base_tool_panel: ToolPanelElements, toolbox_registry: ToolBoxRegistry) -> ToolPanelElements:
         def apply_filter(definition, elems):
-            excludes = self._all_excludes(definition)
-            if excludes:
+            if excludes := self._all_excludes(definition):
                 elems.apply_filter(build_filter(excludes))
 
         def definition_with_items_to_panel(definition, allow_sections: bool = True, items=None):
@@ -105,7 +103,7 @@ class StaticToolPanelView(ToolPanelView):
                                 f"Failed to find matching section for (id, name) = ({section_def.id}, {section_def.name})"
                             )
                             continue
-                        section = closest_section.copy()
+                        section = closest_section.copy(merge_tools=True)
                         if section_def.id is not None:
                             section.id = section_def.id
                         if section_def.name is not None:
@@ -120,7 +118,7 @@ class StaticToolPanelView(ToolPanelView):
                             f"Failed to find matching section for (id, name) = ({element.section}, {element.section})"
                         )
                         continue
-                    section = closest_section.copy()
+                    section = closest_section.copy(merge_tools=True)
                     apply_filter(element, section.elems)
                     new_panel.append_section(section.id, section)
                 elif element.content_type == "label":
@@ -151,15 +149,15 @@ class StaticToolPanelView(ToolPanelView):
                     if closest_section is None:
                         log.warning(f"Failed to find matching section for (id, name) = ({element.items_from}, None)")
                         continue
-                    elems = closest_section.elems.copy()
+                    section = closest_section.copy(merge_tools=True)
+                    elems = section.elems
                     apply_filter(element, elems)
                     for key, item in elems.items():
                         new_panel[key] = item
                 else:
                     raise AssertionError("Unknown static toolbox configuration element encountered.")
 
-            excludes = self._all_excludes(definition)
-            if excludes:
+            if excludes := self._all_excludes(definition):
                 new_panel.apply_filter(build_filter(excludes))
 
             return new_panel
@@ -170,7 +168,7 @@ class StaticToolPanelView(ToolPanelView):
             root_items = []
             # No items found, use base tool panel and apply filters to that...
             for _, panel_type, panel_value in base_tool_panel.panel_items_iter():
-                item: Optional[ExpandedRootContent] = None
+                item: ExpandedRootContent | None = None
                 if panel_type == panel_item_types.TOOL:
                     item = Tool(
                         id=panel_value.id,

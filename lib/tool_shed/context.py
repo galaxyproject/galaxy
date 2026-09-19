@@ -1,5 +1,4 @@
 import abc
-from typing import Optional
 
 from sqlalchemy.orm import scoped_session
 from typing_extensions import Protocol
@@ -24,7 +23,8 @@ class ProvidesAppContext(Protocol):
     Mixed in class must provide `app` property.
     """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def app(self) -> ToolShedApp:
         """Provide access to the shed ``app`` object."""
 
@@ -54,8 +54,9 @@ class ProvidesUserContext(ProvidesAppContext, Protocol):
     properties.
     """
 
-    @abc.abstractproperty
-    def user(self) -> Optional[User]:
+    @property
+    @abc.abstractmethod
+    def user(self) -> User | None:
         """Provide access to the user object."""
 
     @property
@@ -74,55 +75,48 @@ class ProvidesUserContext(ProvidesAppContext, Protocol):
 
 
 class ProvidesRepositoriesContext(ProvidesUserContext, Protocol):
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def repositories_hostname(self) -> str:
         """Provide access to hostname used by target mercurial server."""
 
 
 class SessionRequestContext(ProvidesRepositoriesContext, Protocol):
     @abc.abstractmethod
-    def get_galaxy_session(self) -> Optional[GalaxySession]:
-        ...
+    def get_galaxy_session(self) -> GalaxySession | None: ...
 
     @abc.abstractmethod
-    def set_galaxy_session(self, galaxy_session: GalaxySession):
-        ...
+    def set_galaxy_session(self, galaxy_session: GalaxySession): ...
 
-    @abc.abstractproperty
-    def request(self) -> GalaxyAbstractRequest:
-        ...
-
-    @abc.abstractproperty
-    def response(self) -> GalaxyAbstractResponse:
-        ...
-
+    @property
     @abc.abstractmethod
-    def url_builder(self):
-        ...
+    def request(self) -> GalaxyAbstractRequest: ...
 
-    @abc.abstractproperty
-    def session_csrf_token(self) -> str:
-        ...
+    @property
+    @abc.abstractmethod
+    def response(self) -> GalaxyAbstractResponse: ...
+
+    @property
+    @abc.abstractmethod
+    def session_csrf_token(self) -> str: ...
 
 
 class SessionRequestContextImpl(SessionRequestContext):
     _app: ToolShedApp
-    _user: Optional[User]
-    _galaxy_session: Optional[GalaxySession]
+    _user: User | None
+    _galaxy_session: GalaxySession | None
 
     def __init__(
         self,
         app: ToolShedApp,
         request: GalaxyAbstractRequest,
         response: GalaxyAbstractResponse,
-        user: Optional[User] = None,
-        galaxy_session: Optional[GalaxySession] = None,
-        url_builder=None,
+        user: User | None = None,
+        galaxy_session: GalaxySession | None = None,
     ):
         self._app = app
         self._user = user
         self._galaxy_session = galaxy_session
-        self._url_builder = url_builder
         self.__request = request
         self.__response = response
 
@@ -131,14 +125,10 @@ class SessionRequestContextImpl(SessionRequestContext):
         return self._app
 
     @property
-    def url_builder(self):
-        return self._url_builder
-
-    @property
-    def user(self) -> Optional[User]:
+    def user(self) -> User | None:
         return self._user
 
-    def get_galaxy_session(self) -> Optional[GalaxySession]:
+    def get_galaxy_session(self) -> GalaxySession | None:
         return self._galaxy_session
 
     def set_galaxy_session(self, galaxy_session: GalaxySession):
@@ -148,6 +138,10 @@ class SessionRequestContextImpl(SessionRequestContext):
 
     @property
     def repositories_hostname(self) -> str:
+        # Use configured tool_shed_url if available
+        if tool_shed_url := self.app.config.tool_shed_url:
+            return tool_shed_url.rstrip("/")
+        # Fall back to request-based URL
         return str(self.request.base).rstrip("/")
 
     @property
@@ -171,7 +165,7 @@ class SessionRequestContextImpl(SessionRequestContext):
         return token
 
     @property
-    def galaxy_session(self) -> Optional[GalaxySession]:
+    def galaxy_session(self) -> GalaxySession | None:
         return self._galaxy_session
 
     def log_event(self, str):

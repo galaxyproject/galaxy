@@ -95,11 +95,11 @@ def __main__():
                     chr["chromosome"],
                     "sequence",
                     "fasta",
-                    os.path.join(org["base_dir"], "%s.fna" % chr["chromosome"]),
+                    os.path.join(org["base_dir"], f"{chr['chromosome']}.fna"),
                 )
             )
             # GeneMark
-            if os.path.exists(os.path.join(org["base_dir"], "%s.GeneMark.bed" % chr["chromosome"])):
+            if os.path.exists(os.path.join(org["base_dir"], f"{chr['chromosome']}.GeneMark.bed")):
                 print(
                     "DATA\t{}_{}_{}\t{}\t{}\t{}\t{}\t{}".format(
                         build,
@@ -109,11 +109,11 @@ def __main__():
                         chr["chromosome"],
                         "GeneMark",
                         "bed",
-                        os.path.join(org["base_dir"], "%s.GeneMark.bed" % chr["chromosome"]),
+                        os.path.join(org["base_dir"], f"{chr['chromosome']}.GeneMark.bed"),
                     )
                 )
             # GenMarkHMM
-            if os.path.exists(os.path.join(org["base_dir"], "%s.GeneMarkHMM.bed" % chr["chromosome"])):
+            if os.path.exists(os.path.join(org["base_dir"], f"{chr['chromosome']}.GeneMarkHMM.bed")):
                 print(
                     "DATA\t{}_{}_{}\t{}\t{}\t{}\t{}\t{}".format(
                         build,
@@ -123,11 +123,11 @@ def __main__():
                         chr["chromosome"],
                         "GeneMarkHMM",
                         "bed",
-                        os.path.join(org["base_dir"], "%s.GeneMarkHMM.bed" % chr["chromosome"]),
+                        os.path.join(org["base_dir"], f"{chr['chromosome']}.GeneMarkHMM.bed"),
                     )
                 )
             # Glimmer3
-            if os.path.exists(os.path.join(org["base_dir"], "%s.Glimmer3.bed" % chr["chromosome"])):
+            if os.path.exists(os.path.join(org["base_dir"], f"{chr['chromosome']}.Glimmer3.bed")):
                 print(
                     "DATA\t{}_{}_{}\t{}\t{}\t{}\t{}\t{}".format(
                         build,
@@ -137,7 +137,7 @@ def __main__():
                         chr["chromosome"],
                         "Glimmer3",
                         "bed",
-                        os.path.join(org["base_dir"], "%s.Glimmer3.bed" % chr["chromosome"]),
+                        os.path.join(org["base_dir"], f"{chr['chromosome']}.Glimmer3.bed"),
                     )
                 )
 

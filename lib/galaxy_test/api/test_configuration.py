@@ -14,6 +14,7 @@ TEST_KEYS_FOR_ALL_USERS = [
     "logo_url",
     "terms_url",
     "allow_user_dataset_purge",
+    "subdomain_switcher",
 ]
 TEST_KEYS_FOR_ADMIN_ONLY = [
     "library_import_dir",
@@ -34,6 +35,13 @@ class TestConfigurationApi(ApiTestCase):
         config = self._get_configuration()
         assert_has_keys(config, *TEST_KEYS_FOR_ALL_USERS)
         assert_not_has_keys(config, *TEST_KEYS_FOR_ADMIN_ONLY)
+        assert config["subdomain_switcher"] == []
+
+    def test_anonymous_user_configuration(self):
+        with self._different_user(anon=True):
+            config = self._get_configuration()
+        assert_has_keys(config, "subdomain_switcher")
+        assert config["subdomain_switcher"] == []
 
     @requires_admin
     def test_admin_user_configuration(self):

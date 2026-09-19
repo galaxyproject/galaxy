@@ -1,5 +1,6 @@
 import bz2
 import gzip
+import lzma
 import os
 import re
 import tarfile
@@ -9,9 +10,7 @@ from io import (
     StringIO,
 )
 from typing import (
-    Dict,
     IO,
-    Tuple,
 )
 
 from typing_extensions import Protocol
@@ -31,8 +30,7 @@ HTML_REGEXPS = (
 
 
 class CompressionChecker(Protocol):
-    def __call__(self, file_path: str, check_content: bool = True) -> Tuple[bool, bool]:
-        ...
+    def __call__(self, file_path: str, check_content: bool = True) -> tuple[bool, bool]: ...
 
 
 def check_html(name, file_path: bool = True) -> bool:
@@ -86,7 +84,7 @@ def check_binary(name, file_path: bool = True) -> bool:
         temp.close()
 
 
-def check_gzip(file_path: str, check_content: bool = True) -> Tuple[bool, bool]:
+def check_gzip(file_path: str, check_content: bool = True) -> tuple[bool, bool]:
     # This method returns a tuple of booleans representing ( is_gzipped, is_valid )
     # Make sure we have a gzipped file
     try:
@@ -118,7 +116,27 @@ def check_gzip(file_path: str, check_content: bool = True) -> Tuple[bool, bool]:
     return (True, True)
 
 
-def check_bz2(file_path: str, check_content: bool = True) -> Tuple[bool, bool]:
+def check_xz(file_path: str, check_content: bool = True) -> tuple[bool, bool]:
+    try:
+        with open(file_path, "rb") as temp:
+            magic_check = temp.read(6)
+        if magic_check != util.xz_magic:
+            return (False, False)
+    except Exception:
+        return (False, False)
+
+    if not check_content:
+        return (True, True)
+
+    with lzma.LZMAFile(file_path, mode="rb") as xzipped_file:
+        chunk = xzipped_file.read(CHUNK_SIZE)
+    # See if we have a compressed HTML file
+    if check_html(chunk, file_path=False):
+        return (True, False)
+    return (True, True)
+
+
+def check_bz2(file_path: str, check_content: bool = True) -> tuple[bool, bool]:
     try:
         with open(file_path, "rb") as temp:
             magic_check = temp.read(3)
@@ -138,7 +156,7 @@ def check_bz2(file_path: str, check_content: bool = True) -> Tuple[bool, bool]:
     return (True, True)
 
 
-def check_zip(file_path: str, check_content: bool = True, files=1) -> Tuple[bool, bool]:
+def check_zip(file_path: str, check_content: bool = True, files=1) -> tuple[bool, bool]:
     if not zipfile.is_zipfile(file_path):
         return (False, False)
 
@@ -166,6 +184,11 @@ def is_gzip(file_path: str) -> bool:
     return is_gzipped
 
 
+def is_xz(file_path: str) -> bool:
+    is_xzipped, is_valid = check_xz(file_path, check_content=False)
+    return is_xzipped
+
+
 def is_zip(file_path: str) -> bool:
     is_zipped, is_valid = check_zip(file_path, check_content=False)
     return is_zipped
@@ -188,16 +211,15 @@ def iter_zip(file_path: str):
             yield (z.open(f), f)
 
 
-def check_image(file_path: str):
+def check_image(file_path: str) -> bool:
     """Simple wrapper around image_type to yield a True/False verdict"""
-    if image_type(file_path):
-        return True
-    return False
+    return bool(image_type(file_path))
 
 
-COMPRESSION_CHECK_FUNCTIONS: Dict[str, CompressionChecker] = {
+COMPRESSION_CHECK_FUNCTIONS: dict[str, CompressionChecker] = {
     "gzip": check_gzip,
     "bz2": check_bz2,
+    "xz": check_xz,
     "zip": check_zip,
 }
 
@@ -212,5 +234,6 @@ __all__ = (
     "COMPRESSION_CHECK_FUNCTIONS",
     "is_gzip",
     "is_bz2",
+    "is_xz",
     "is_zip",
 )

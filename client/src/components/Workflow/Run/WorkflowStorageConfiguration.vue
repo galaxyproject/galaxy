@@ -1,117 +1,116 @@
+<script setup lang="ts">
+import { faHdd } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
+import { computed, ref } from "vue";
+
+import { useConfigStore } from "@/stores/configurationStore";
+
+import WorkflowSelectPreferredObjectStore from "./WorkflowSelectPreferredObjectStore.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import WorkflowTargetPreferredObjectStorePopover from "@/components/Workflow/Run/WorkflowTargetPreferredObjectStorePopover.vue";
+
+interface Props {
+    splitObjectStore: boolean;
+    invocationPreferredObjectStoreId?: string | null;
+    invocationPreferredIntermediateObjectStoreId?: string | null;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    invocationPreferredObjectStoreId: null,
+    invocationPreferredIntermediateObjectStoreId: null,
+});
+
+const emit = defineEmits<{
+    (e: "updated", preferredObjectStoreId: string | null, intermediate: boolean): void;
+}>();
+
+const showPreferredObjectStoreModal = ref(false);
+const showIntermediatePreferredObjectStoreModal = ref(false);
+const selectedObjectStoreId = ref(props.invocationPreferredObjectStoreId);
+const selectedIntermediateObjectStoreId = ref(props.invocationPreferredIntermediateObjectStoreId);
+
+const { config } = storeToRefs(useConfigStore());
+
+const preferredOrEmptyString = computed(() => {
+    if (config.value?.object_store_always_respect_user_selection) {
+        return "";
+    } else {
+        return "Preferred";
+    }
+});
+
+const primaryModalTitle = computed(() => `Invocation ${preferredOrEmptyString.value} Galaxy Storage`);
+
+const intermediateModalTitle = computed(
+    () => `Invocation ${preferredOrEmptyString.value} Galaxy Storage (Intermediate Datasets)`,
+);
+
+const suffixPrimary = computed(() => {
+    if (props.splitObjectStore) {
+        return ` (Workflow Output Datasets)`;
+    } else {
+        return "";
+    }
+});
+
+function onUpdate(preferredObjectStoreId: string | null) {
+    selectedObjectStoreId.value = preferredObjectStoreId;
+    emit("updated", preferredObjectStoreId, false);
+}
+
+function onUpdateIntermediate(preferredObjectStoreId: string | null) {
+    selectedIntermediateObjectStoreId.value = preferredObjectStoreId;
+    emit("updated", preferredObjectStoreId, true);
+}
+</script>
+
 <template>
     <span class="workflow-storage-indicators">
-        <b-button
+        <GButton
             id="workflow-storage-indicator-primary"
             class="workflow-storage-indicator workflow-storage-indicator-primary"
-            v-bind="buttonProps"
+            transparent
+            color="blue"
             @click="showPreferredObjectStoreModal = true">
-            <span class="fa fa-hdd" />
-        </b-button>
+            <FontAwesomeIcon :icon="faHdd" />
+            Primary Storage
+        </GButton>
         <WorkflowTargetPreferredObjectStorePopover
             target="workflow-storage-indicator-primary"
             :title-suffix="suffixPrimary"
-            :invocation-preferred-object-store-id="selectedObjectStoreId">
+            :invocation-preferred-object-store-id="selectedObjectStoreId || undefined">
         </WorkflowTargetPreferredObjectStorePopover>
-        <b-modal
-            v-model="showPreferredObjectStoreModal"
-            title="Invocation Preferred Object Store"
-            v-bind="modalProps"
-            hide-footer>
+        <GModal :show.sync="showPreferredObjectStoreModal" :title="primaryModalTitle" size="small" fixed-height>
             <WorkflowSelectPreferredObjectStore
                 :invocation-preferred-object-store-id="selectedObjectStoreId"
                 @updated="onUpdate" />
-        </b-modal>
-        <b-button
+        </GModal>
+        <GButton
             v-if="splitObjectStore"
             id="workflow-storage-indicator-intermediate"
-            v-bind="buttonProps"
             class="workflow-storage-indicator workflow-storage-indicator-intermediate"
+            transparent
+            color="blue"
             @click="showIntermediatePreferredObjectStoreModal = true">
-            <span class="fa fa-hdd" />
-        </b-button>
+            <FontAwesomeIcon :icon="faHdd" />
+            Intermediate Storage
+        </GButton>
         <WorkflowTargetPreferredObjectStorePopover
             v-if="splitObjectStore"
             target="workflow-storage-indicator-intermediate"
             title-suffix=" (Intermediate Datasets)"
-            :invocation-preferred-object-store-id="selectedIntermediateObjectStoreId">
+            :invocation-preferred-object-store-id="selectedIntermediateObjectStoreId || undefined">
         </WorkflowTargetPreferredObjectStorePopover>
-        <b-modal
-            v-model="showIntermediatePreferredObjectStoreModal"
-            title="Invocation Preferred Object Store (Intermediate Datasets)"
-            v-bind="modalProps"
-            hide-footer>
+        <GModal
+            :show.sync="showIntermediatePreferredObjectStoreModal"
+            :title="intermediateModalTitle"
+            size="small"
+            fixed-height>
             <WorkflowSelectPreferredObjectStore
                 :invocation-preferred-object-store-id="selectedIntermediateObjectStoreId"
                 @updated="onUpdateIntermediate" />
-        </b-modal>
+        </GModal>
     </span>
 </template>
-
-<script>
-import WorkflowSelectPreferredObjectStore from "./WorkflowSelectPreferredObjectStore";
-import WorkflowTargetPreferredObjectStorePopover from "./WorkflowTargetPreferredObjectStorePopover";
-
-export default {
-    components: {
-        WorkflowSelectPreferredObjectStore,
-        WorkflowTargetPreferredObjectStorePopover,
-    },
-    props: {
-        splitObjectStore: {
-            type: Boolean,
-            required: true,
-        },
-        invocationPreferredObjectStoreId: {
-            type: String,
-            default: null,
-        },
-        invocationPreferredIntermediateObjectStoreId: {
-            type: String,
-            default: null,
-        },
-    },
-    data() {
-        return {
-            showPreferredObjectStoreModal: false,
-            showIntermediatePreferredObjectStoreModal: false,
-            selectedObjectStoreId: this.invocationPreferredObjectStoreId,
-            selectedIntermediateObjectStoreId: this.invocationPreferredIntermediateObjectStoreId,
-        };
-    },
-    computed: {
-        suffixPrimary() {
-            if (this.splitObjectStore) {
-                return ` (Workflow Output Datasets)`;
-            } else {
-                return "";
-            }
-        },
-        modalProps() {
-            return {
-                "modal-class": "invocation-preferred-object-store-modal",
-                "title-tag": "h3",
-                size: "sm",
-            };
-        },
-        buttonProps() {
-            return {
-                // size: 'sm',
-                role: "button",
-                variant: "link",
-            };
-        },
-    },
-    methods: {
-        async onUpdate(preferredObjectStoreId) {
-            this.selectedObjectStoreId = preferredObjectStoreId;
-            this.$emit("updated", preferredObjectStoreId, false);
-            this.showPreferredObjectStoreModal = false;
-        },
-        async onUpdateIntermediate(preferredObjectStoreId) {
-            this.selectedIntermediateObjectStoreId = preferredObjectStoreId;
-            this.$emit("updated", preferredObjectStoreId, true);
-            this.showIntermediatePreferredObjectStoreModal = false;
-        },
-    },
-};
-</script>

@@ -5,6 +5,7 @@ Revises: b855b714e8b8
 Create Date: 2023-03-02 15:16:36.737075
 
 """
+
 import sqlalchemy as sa
 
 from galaxy.model.custom_types import JSONType

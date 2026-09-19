@@ -1,6 +1,7 @@
 """
 API for updating Galaxy Pages
 """
+
 import logging
 
 from galaxy.managers.base import get_object
@@ -9,6 +10,7 @@ from galaxy.managers.pages import (
     PageManager,
 )
 from galaxy.web import expose_api
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from . import (
     BaseGalaxyAPIController,
     depends,
@@ -21,7 +23,7 @@ class PageRevisionsController(BaseGalaxyAPIController):
     manager: PageManager = depends(PageManager)
 
     @expose_api
-    def index(self, trans, page_id, **kwd):
+    def index(self, trans: GalaxyWebTransaction, page_id, **kwd):
         """
         index( self, trans, page_id, **kwd )
         * GET /api/pages/{page_id}/revisions
@@ -42,7 +44,7 @@ class PageRevisionsController(BaseGalaxyAPIController):
         return out
 
     @expose_api
-    def create(self, trans, page_id, payload, **kwd):
+    def create(self, trans: GalaxyWebTransaction, page_id, payload, **kwd):
         """
         create( self, trans, page_id, payload **kwd )
         * POST /api/pages/{page_id}/revisions

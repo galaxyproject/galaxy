@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +25,7 @@ data_manager_tar_file = "1460_files/data_manager_files/test_data_manager.tar"
 # TODO: Allow testing actual Execution of installed Data Manager Tool.
 
 
-class TestDataManagers(ShedTwillTestCase):
+class TestDataManagers(ShedTestCase):
     """Test installing a repository containing a Data Manager."""
 
     requires_galaxy = True
@@ -55,7 +53,6 @@ class TestDataManagers(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        assert repository, "No repository created with name {commit_tar_to_repository}"
         # Upload the data manager files to the repository.
         self.commit_tar_to_repository(
             repository,

@@ -1,0 +1,21 @@
+class: GalaxyWorkflow
+doc: |
+  Reproduce galaxyproject/galaxy-skills PR #20: an omitted optional
+  parameter_input connected to a tool parameter that lives INSIDE a
+  conditional must not leak a ConnectedValue sentinel into the templated
+  command line; the tool parameter's own default should apply instead.
+inputs:
+  optional_text:
+    type: text
+    optional: true
+outputs:
+  out:
+    outputSource: boolean_conditional/out_file1
+steps:
+  boolean_conditional:
+    tool_id: boolean_conditional
+    state:
+      p1:
+        p1use: true
+        p1val:
+          $link: optional_text

@@ -1,16 +1,19 @@
 <tool id="__EXTRACT_DATASET__"
       name="Extract dataset"
-      version="1.0.1"
+      version="1.0.2"
       tool_type="extract_element">
-  <description></description>
+  <description>from a collection by index or identifier</description>
   <type class="ExtractDatasetCollectionTool" module="galaxy.tools" />
+  <macros>
+    <import>model_operation_macros.xml</import>
+  </macros>
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
   <edam_operations>
     <edam_operation>operation_3695</edam_operation>
   </edam_operations>
   <inputs>
-    <param type="data_collection" collection_type="list,paired" name="input" label="Input List" />
+    <param type="data_collection" collection_type="list,paired,paired_or_unpaired,record" name="input" label="Input List" />
     <conditional name="which">
       <param name="which_dataset" type="select" label="How should a dataset be selected?">
         <option value="first">The first dataset</option>
@@ -19,7 +22,7 @@
       </param>
       <when value="first" />
       <when value="by_identifier">
-        <param name="identifier" label="Element identifier:" type="text">
+        <param name="identifier" label="Element identifier:" type="text" optional="false">
           <sanitizer invalid_char="">
               <valid initial="string.ascii_letters,string.digits">
                   <add value="_" />
@@ -44,21 +47,75 @@
 Synopsis
 ========
 
-Extracts datasets from a collection based on either position or identifier.
+Extracts a single dataset from a collection by position or identifier.
 
 ===========
 Description
 ===========
 
-The tool allow extracting datasets based on position (**The first dataset** and **Select by index** options) or name (**Select by element identifier** option). This tool effectively collapses the inner-most collection into a dataset. For nested collections (e.g a list of lists of lists: outer:middle:inner, extracting the inner dataset element) a new list is created where the selected element takes the position of the inner-most collection (so outer:middle, where middle is not a collection but the inner dataset element).
+This tool pulls one dataset out of a collection and places it in your history as a standalone dataset. You can select the dataset in three ways:
 
-.. class:: warningmark 
+- **The first dataset** — takes the first element of the collection.
+- **Select by index** — takes the element at a specific position (starting from 0).
+- **Select by element identifier** — takes the element whose name matches the given identifier.
 
-**Note**: Dataset index (numbering) begins with 0 (zero). 
+The extracted dataset is a copy of the original, so the input collection is not modified.
+
+========
+Examples
+========
+
+**Extract from a flat list** (case **A** in the image below)
+
+Given a list collection with three elements::
+
+ List: "RNA-seq samples"
+
+   control    →  control.fastq
+   treated    →  treated.fastq
+   reference  →  reference.fastq
+
+Selecting **by element identifier** = ``treated`` produces a single standalone dataset: ``treated.fastq``. Selecting **by index** = ``0`` would extract ``control.fastq`` instead.
+
+-------
+
+**Extract from a nested collection** (case **B** in the image below)
+
+When the input is a nested collection such as ``list:list``, Galaxy automatically maps the extraction over the outer list. The same selection is applied to every inner list, and the result is a flat list — one nesting level is removed.
+
+For example, given a ``list:list``::
+
+ list:list: "Paired analysis"
+
+   sampleA  →  [Dataset 1, Dataset 2, Dataset 3]
+   sampleB  →  [Dataset A, Dataset B, Dataset C]
+
+Extracting **by index** = ``1`` pulls element 1 from each inner list and produces a flat list::
+
+ List: "Paired analysis (extracted element)"
+
+   sampleA  →  Dataset 2
+   sampleB  →  Dataset B
+
+The outer identifiers (``sampleA``, ``sampleB``) are preserved. The inner lists are replaced by the single extracted element from each.
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/extract_dataset.svg
+  :alt: Extract dataset from collection
+  :width: 800
+
+-------
+
+.. class:: warningmark
+
+**Note**: Dataset index (numbering) begins with 0 (zero).
+
+-----
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
   ]]></help>
   <tests>
@@ -71,6 +128,28 @@ This tool will create new history datasets from your collection but your quota u
       </param>
       <output name="output" file="simple_line.txt">
         <metadata name="name" value="foo" />
+      </output>
+    </test>
+    <test>
+      <param name="input">
+        <collection type="paired_or_unpaired">
+          <element name="unpaired" value="simple_line.txt" />
+        </collection>
+      </param>
+      <output name="output" file="simple_line.txt">
+        <metadata name="name" value="unpaired" />
+      </output>
+    </test>
+    <test>
+      <param name="input">
+        <collection type="record">
+          <fields>[{"name": "parent", "type": "File"}, {"name": "child", "type": "File"}]</fields>
+          <element name="parent" value="simple_line.txt" />
+          <element name="child" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output name="output" file="simple_line.txt">
+        <metadata name="name" value="parent" />
       </output>
     </test>
     <test>

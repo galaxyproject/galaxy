@@ -14,7 +14,7 @@ Name: {{ name }}
 """
 DEFAULT_TEMPLATE_HEADER_SUBSTRING = "The following variables are available"
 DEFAULT_TEMPLATE_OUTPUT_SUBSTRING = "<!DOCTYPE html>"
-CUSTOM_TEMPLATE_OUTPUT = "This is my custom template!\n" f"Name: {CONTEXT['name']}"
+CUSTOM_TEMPLATE_OUTPUT = f"This is my custom template!\nName: {CONTEXT['name']}"
 
 
 def test_it_can_render_a_default_template(tmp_path):

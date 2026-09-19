@@ -4,7 +4,7 @@
     the initial response.  If value of 'URL_method' is 'post', any additional params coming back in the
     initial response ( in addition to 'URL' ) will be encoded and appended to URL and a post will be performed.
 -->
-<tool name="modENCODE modMine" id="modmine" tool_type="data_source" version="1.0.0">
+<tool name="modENCODE modMine" id="modmine" tool_type="data_source" version="1.0.0" profile="20.09">
     <description>server</description>
     <edam_operations>
         <edam_operation>operation_0224</edam_operation>

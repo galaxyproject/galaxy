@@ -1,6 +1,7 @@
 """
 Ordered set implementation from https://code.activestate.com/recipes/576694/
 """
+
 from collections.abc import MutableSet
 
 

@@ -1,0 +1,74 @@
+{
+    "0": {
+        "id": 0,
+        "type": "data_input",
+        "label": "data input",
+        "content_id": null,
+        "name": "Input dataset",
+        "errors": null,
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "output",
+                "extensions": ["input"],
+                "optional": false
+            }
+        ],
+        "annotation": "",
+        "input_connections": null,
+        "tool_state": null
+    },
+    "1": {
+        "id": 1,
+        "label": "step label",
+        "annotation": "",
+        "config_form": {
+            "inputs": [
+                {
+                    "name": "input",
+                    "type": "text",
+                    "value": "${untyped_parameter}"
+                }
+            ]
+        },
+        "inputs": [
+            {
+                "label": "input_label",
+                "name": "data_input",
+                "multiple": false,
+                "extensions": ["txt"],
+                "optional": false,
+                "input_type": "dataset"
+            }
+        ],
+        "input_connections": {
+            "data_input": {
+                "output_name": "output",
+                "id": 0
+            }
+        },
+        "outputs": [
+            {
+                "name": "output",
+                "extensions": ["input"],
+                "optional": false
+            }
+        ],
+        "workflow_outputs": [
+            {
+                "output_name": "output"
+            }
+        ],
+        "tool_state": null
+    },
+    "2": {
+        "id": 2,
+        "title": "",
+        "label": "",
+        "annotation": "",
+        "outputs": {},
+        "inputs": [],
+        "input_connections": null,
+        "tool_state": null
+    }
+}

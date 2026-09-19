@@ -1,56 +1,37 @@
-$(document).ready(function() {
+// Injected by the webhook framework (see appendScriptStyle in client/src/utils/utils.ts).
+// Runs in the global page scope wrapped in an IIFE, so it must be self-contained
+// vanilla JS -- Backbone, underscore and jQuery are no longer available globals.
+const root = typeof Galaxy !== "undefined" && Galaxy.root ? Galaxy.root : "/";
+const container = document.getElementById("phdcomics");
 
-    var galaxyRoot = typeof Galaxy != 'undefined' ? Galaxy.root : '/';
+if (container) {
+    container.innerHTML =
+        '<div id="phdcomics-header">' +
+        '<div id="phdcomics-name">PHD Comics</div>' +
+        '<button id="phdcomics-random" type="button">Random</button>' +
+        "</div>" +
+        '<div id="phdcomics-img"></div>';
 
-    var PHDComicsAppView = Backbone.View.extend({
-        el: '#phdcomics',
+    const imgContainer = document.getElementById("phdcomics-img");
 
-        appTemplate: _.template(
-            '<div id="phdcomics-header">' +
-                '<div id="phdcomics-name">PHD Comics</div>' +
-                '<button id="phdcomics-random">Random</button>' +
-            '</div>' +
-            '<div id="phdcomics-img"></div>'
-        ),
-
-        imgTemplate: _.template('<img src="<%= src %>"">'),
-
-        events: {
-            'click #phdcomics-random': 'getRandomComic'
-        },
-
-        initialize: function() {
-            this.render();
-        },
-
-        render: function() {
-            this.$el.html(this.appTemplate());
-            this.$comicImg = this.$('#phdcomics-img');
-            this.getRandomComic();
-            return this;
-        },
-
-        getRandomComic: function() {
-            var me = this,
-                url = galaxyRoot + 'api/webhooks/phdcomics/data';
-
-            this.$comicImg.html($('<div/>', {
-                id: 'phdcomics-loader'
-            }));
-
-            $.getJSON(url, function(data) {
-                if (data.success) {
-                    me.renderImg(data.src);
-                } else {
-                    console.error('[ERROR] "' + url + '":\n' + data.error);
-                }
-            });
-        },
-
-        renderImg: function(src) {
-            this.$comicImg.html(this.imgTemplate({src: src}));
+    async function loadRandomComic() {
+        imgContainer.innerHTML = '<div id="phdcomics-loader"></div>';
+        const url = `${root}api/webhooks/phdcomics/data`;
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data.success) {
+                const img = document.createElement("img");
+                img.src = data.src;
+                imgContainer.replaceChildren(img);
+            } else {
+                console.error(`[phdcomics webhook] "${url}":\n${data.error}`);
+            }
+        } catch (e) {
+            console.error(`[phdcomics webhook] request to "${url}" failed`, e);
         }
-    });
+    }
 
-    new PHDComicsAppView();
-});
+    document.getElementById("phdcomics-random").addEventListener("click", loadRandomComic);
+    loadRandomComic();
+}

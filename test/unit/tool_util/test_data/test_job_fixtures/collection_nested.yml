@@ -1,0 +1,13 @@
+input:
+  class: Collection
+  collection_type: list:paired
+  elements:
+    - identifier: p1
+      class: Collection
+      elements:
+        - identifier: forward
+          class: File
+          contents: "F"
+        - identifier: reverse
+          class: File
+          contents: "R"

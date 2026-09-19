@@ -2,16 +2,14 @@ from enum import Enum
 from typing import (
     Any,
     cast,
-    List,
-    Optional,
-    Union,
+    Literal,
 )
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
 )
-from typing_extensions import Literal
 
 
 class StaticToolBoxViewTypeEnum(str, Enum):
@@ -30,73 +28,57 @@ class ExcludeToolRegex(BaseModel):
 
 
 class ExcludeTypes(BaseModel):
-    types: List[str]
+    types: list[str]
 
 
-Exclusions = Union[
-    ExcludeTool,
-    ExcludeToolRegex,
-    ExcludeTypes,
-]
-OptionalExclusionList = Optional[List[Exclusions]]
+Exclusions = ExcludeTool | ExcludeToolRegex | ExcludeTypes
+OptionalExclusionList = list[Exclusions] | None
 
 
 class Tool(BaseModel):
     content_type: Literal["tool"] = Field("tool", alias="type")
     id: str
-
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class Label(BaseModel):
     content_type: Literal["label"] = Field(alias="type", default="label")
-    id: Optional[str]
+    id: str | None = None
     text: str
-
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class LabelShortcut(BaseModel):
-    content_type = "simple_label"
+    content_type: Literal["simple_label"] = "simple_label"
     label: str
 
 
 class Workflow(BaseModel):
     content_type: Literal["workflow"] = Field(alias="type", default="workflow")
     id: str
-
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ItemsFrom(BaseModel):
-    content_type = "items_from"
+    content_type: Literal["items_from"] = "items_from"
     items_from: str
-    excludes: OptionalExclusionList
+    excludes: OptionalExclusionList = None
 
 
-SectionContent = Union[
-    Tool,
-    Label,
-    LabelShortcut,
-    Workflow,
-    ItemsFrom,
-]
+SectionContent = Tool | Label | LabelShortcut | Workflow | ItemsFrom
 
 
 class HasItems:
-    items: Optional[List[Any]]
+    items: list[Any] | None
 
     @property
-    def items_expanded(self) -> Optional[List["ExpandedRootContent"]]:
+    def items_expanded(self) -> list["ExpandedRootContent"] | None:
         if self.items is None:
             return None
 
         # replace SectionAliases with individual SectionAlias objects
         # replace LabelShortcuts with Labels
-        items: List[ExpandedRootContent] = []
+        items: list[ExpandedRootContent] = []
         for item in self.items:
             item = cast(RootContent, item)
             if isinstance(item, SectionAliases):
@@ -120,59 +102,40 @@ class HasItems:
 
 class Section(BaseModel, HasItems):
     content_type: Literal["section"] = Field(alias="type")
-    id: Optional[str]
-    name: Optional[str]
-    items: Optional[List[SectionContent]]
-    excludes: OptionalExclusionList
-
-    class Config:
-        allow_population_by_field_name = True
+    id: str | None = None
+    name: str | None = None
+    items: list[SectionContent] | None = None
+    excludes: OptionalExclusionList = None
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class SectionAlias(BaseModel):
-    content_type = "section_alias"
+    content_type: Literal["section_alias"] = "section_alias"
     section: str
-    excludes: OptionalExclusionList
+    excludes: OptionalExclusionList = None
 
 
 class SectionAliases(BaseModel):
-    content_type = "section_aliases"
-    sections: List[str]
-    excludes: OptionalExclusionList
+    content_type: Literal["section_aliases"] = "section_aliases"
+    sections: list[str]
+    excludes: OptionalExclusionList = None
 
 
-RootContent = Union[
-    Section,
-    SectionAlias,
-    SectionAliases,
-    Tool,
-    Label,
-    LabelShortcut,
-    Workflow,
-    ItemsFrom,
-]
+RootContent = Section | SectionAlias | SectionAliases | Tool | Label | LabelShortcut | Workflow | ItemsFrom
 
-ExpandedRootContent = Union[
-    Section,
-    SectionAlias,
-    Tool,
-    Label,
-    Workflow,
-    ItemsFrom,
-]
+ExpandedRootContent = Section | SectionAlias | Tool | Label | Workflow | ItemsFrom
 
 
 class StaticToolBoxView(BaseModel, HasItems):
     id: str
     name: str
-    description: Optional[str]
+    description: str | None = None
     view_type: StaticToolBoxViewTypeEnum = Field(alias="type")
-    items: Optional[List[RootContent]]  # if empty, use integrated tool panel
-    excludes: OptionalExclusionList
+    items: list[RootContent] | None = None  # if empty, use integrated tool panel
+    excludes: OptionalExclusionList = None
 
     @staticmethod
     def from_dict(as_dict):
         return StaticToolBoxView(**as_dict)
 
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)

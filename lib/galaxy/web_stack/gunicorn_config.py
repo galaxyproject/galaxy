@@ -1,6 +1,7 @@
 """
 Gunicorn config file based on https://gist.github.com/hynek/ba655c8756924a5febc5285c712a7946
 """
+
 import gc
 import os
 import sys

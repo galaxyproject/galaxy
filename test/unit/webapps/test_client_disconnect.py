@@ -2,7 +2,6 @@ import asyncio
 import contextlib
 import threading
 import time
-from typing import Optional
 
 import pytest
 import requests
@@ -14,13 +13,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from galaxy.util import sockets
 
-error_encountered: Optional[str] = None
+error_encountered: str | None = None
 
 
 @pytest.fixture()
 def reset_global_vars():
     global error_encountered
-    global error_handled
     error_encountered = None
 
 

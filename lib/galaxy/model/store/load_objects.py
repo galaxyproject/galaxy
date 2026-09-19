@@ -5,11 +5,11 @@ import os
 import sys
 from typing import (
     Any,
-    Dict,
 )
 
-import requests
 import yaml
+
+from galaxy.util import requests
 
 DESCRIPTION = """Load a Galaxy model store into a running Galaxy instance.
 
@@ -35,8 +35,7 @@ def main(argv=None):
     api_url = f"{galaxy_url.rstrip('/')}/api"
     api_key = args.key
     assert api_key
-    history_id = args.history_id
-    if history_id:
+    if history_id := args.history_id:
         create_url = f"{api_url}/histories/{history_id}/contents_from_store?key={api_key}"
     else:
         create_url = f"{api_url}/histories/from_store?key={api_key}"
@@ -48,7 +47,7 @@ def main(argv=None):
         if store_path.endswith(json_ext):
             is_json = True
 
-    data: Dict[str, Any] = {}
+    data: dict[str, Any] = {}
     if is_json:
         with open(store_path) as f:
             store_dict = yaml.safe_load(f)

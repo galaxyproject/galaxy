@@ -1,7 +1,6 @@
 import tempfile
 from typing import (
     Any,
-    Dict,
 )
 
 from edam_ontology.streams import tabular_stream
@@ -22,7 +21,7 @@ def test_load_edam_tree_from_path():
     _verify_tree(tree)
 
 
-def _verify_tree(tree: Dict[str, Any]):
+def _verify_tree(tree: dict[str, Any]):
     assert tree is not None
     assert "operation_0004" in tree
     assert "topic_3974" in tree

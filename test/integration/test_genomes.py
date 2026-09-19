@@ -83,8 +83,9 @@ class TestGenomes(integration_util.IntegrationTestCase):
             sequence = "test-value"
 
         key = get_key()
-        with patch.object(self._app.genomes, "has_reference_data", return_value=True), patch.object(
-            self._app.genomes, "_get_reference_data", return_value=RefDataMock()
+        with (
+            patch.object(self._app.genomes, "has_reference_data", return_value=True),
+            patch.object(self._app.genomes, "_get_reference_data", return_value=RefDataMock()),
         ):
             response = self._get(f"genomes/{key}/sequences")
             self._assert_status_code_is(response, 200)
