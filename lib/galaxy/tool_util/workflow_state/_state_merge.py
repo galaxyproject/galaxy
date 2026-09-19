@@ -1,11 +1,15 @@
-"""Shared function for injecting ConnectedValue markers into format2 state dicts.
+"""Shared functions for injecting ConnectedValue markers into format2 state dicts.
 
 Walks the parameter tree to match pipe-separated connection paths
 (e.g. ``queries_0|input2``) to tool parameters.  Handles conditionals,
 repeats, and sections.  Used by both convert.py (post-conversion
 validation) and validation_format2.py (standalone format2 validation).
+
+Also owns the interpretation of what the walk leaves behind: a connection
+key matching no tool parameter is an error unless it feeds the step itself.
 """
 
+import re
 from typing import (
     cast,
 )
@@ -39,6 +43,51 @@ def inject_connections_into_state(
     for tool_input in tool_inputs:
         _merge_param(remaining, tool_input, state)
     return remaining
+
+
+UNMATCHED_CONNECTION_MESSAGE = "Failed to find parameter definition matching workflow linked key {key}"
+
+_INPUTS_ATTRIBUTE = re.compile(r"inputs\.([A-Za-z_]\w*)")
+_INPUTS_SUBSCRIPT = re.compile(r"""inputs\[['"]([^'"]+)['"]\]""")
+
+
+def step_level_connection_keys(when_expression: str | None = None) -> set[str]:
+    """Connection keys that feed the step itself rather than a tool parameter.
+
+    A conditional step's skip expression is wired through ``input_connections``
+    like any other input, but names no tool parameter.  Galaxy's native
+    encoding always calls that input ``when``; format2 lets the expression
+    reference any ``in:`` key, so the referenced names are recovered from the
+    expression itself.
+    """
+    keys = {"when"}
+    if when_expression:
+        keys.update(_INPUTS_ATTRIBUTE.findall(when_expression))
+        keys.update(_INPUTS_SUBSCRIPT.findall(when_expression))
+    return keys
+
+
+def unmatched_connection_keys(
+    remaining: dict[str, object],
+    when_expression: str | None = None,
+) -> list[str]:
+    """Narrow ``inject_connections_into_state`` leftovers to genuine errors.
+
+    A step-level key is dropped even when the step declares no expression —
+    ``when`` is reserved.  Keys consumed by the walk never reach *remaining*,
+    so a tool parameter genuinely named ``when`` is unaffected.
+    """
+    step_level = step_level_connection_keys(when_expression)
+    return sorted(key for key in remaining if key not in step_level)
+
+
+def raise_for_unmatched_connections(
+    remaining: dict[str, object],
+    when_expression: str | None = None,
+) -> None:
+    """Raise on the first connection key matching no tool parameter."""
+    for key in unmatched_connection_keys(remaining, when_expression):
+        raise Exception(UNMATCHED_CONNECTION_MESSAGE.format(key=key))
 
 
 def _merge_param(

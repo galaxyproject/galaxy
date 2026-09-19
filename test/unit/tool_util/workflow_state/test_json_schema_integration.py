@@ -18,7 +18,12 @@ from galaxy.tool_util.workflow_state.validate import (
     run_validate,
     ValidateOptions,
 )
+from galaxy.tool_util.workflow_state.validation_json_schema import (
+    validate_native_workflow_json_schema,
+)
+from galaxy.tool_util.workflow_state.workflow_tools import load_workflow
 from galaxy.tool_util_models.parameters import ToolParameterBundleModel
+from .functional_tool_info import FunctionalGetToolInfo
 from .json_schema_helpers import (
     FakeGetToolInfo,
     make_parsed_tool_simple as _make_parsed_tool,
@@ -281,3 +286,28 @@ class TestToolSchemaDirEndToEnd:
         with patch("galaxy.tool_util.workflow_state.validate.setup_tool_info", return_value=FakeGetToolInfo()):
             exit_code = run_validate(options)
         assert exit_code == 1
+
+
+# -- Connection keys matching no tool parameter ---------------------------------
+
+
+def _native_fixture(name: str) -> dict:
+    return load_workflow(os.path.join(os.path.dirname(__file__), "fixtures", name))
+
+
+def _cat_step_result(fixture_name: str):
+    result = validate_native_workflow_json_schema(_native_fixture(fixture_name), FunctionalGetToolInfo())
+    cat_results = [r for r in result.step_results if r.tool_id == "cat"]
+    assert cat_results, f"cat step not surfaced: {result.step_results}"
+    return cat_results[0]
+
+
+def test_json_schema_reports_unmatched_connection_key():
+    step_result = _cat_step_result("synthetic-cat-unmatched-connection.ga")
+    assert step_result.status == "fail"
+    assert any("not_a_real_port" in e.message for e in step_result.errors), step_result.errors
+
+
+def test_json_schema_allows_step_level_when_connection():
+    step_result = _cat_step_result("synthetic-cat-conditional.ga")
+    assert step_result.status == "ok", step_result.errors

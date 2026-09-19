@@ -12,12 +12,16 @@ from galaxy.tool_util.parameters import (
     WorkflowStepToolState,
 )
 from ._inline_tool import resolve_for_step
-from ._state_merge import inject_connections_into_state
+from ._state_merge import (
+    inject_connections_into_state,
+    raise_for_unmatched_connections,
+)
 from ._types import (
     Format2WorkflowDict,
     GetToolInfo,
     ToolInputs,
 )
+from ._util import step_when
 from .validation_native import validate_native_state
 
 
@@ -25,6 +29,7 @@ def validate_format2_state(
     tool_inputs: list[ToolParameterT],
     state: dict,
     connections: dict[str, object],
+    when_expression: str | None = None,
 ):
     """Validate format2 state + connections against tool definitions.
 
@@ -32,7 +37,9 @@ def validate_format2_state(
     2. Deep-copy state, inject ConnectedValue markers for *connections*
     3. Validate merged state against ``WorkflowStepLinkedToolState``
 
-    Raises on validation failure or unmatched connection paths.
+    Raises on validation failure or unmatched connection paths.  Inputs the
+    step's *when_expression* reads are connected to the step rather than to a
+    tool parameter, so they are exempt from the unmatched-path check.
     """
     source_model = WorkflowStepToolState.parameter_model_for(tool_inputs)
     if state:
@@ -41,9 +48,7 @@ def validate_format2_state(
 
     linked_state = copy.deepcopy(state)
     remaining = inject_connections_into_state(tool_inputs, linked_state, dict(connections))
-
-    for key in remaining:
-        raise Exception(f"Failed to find parameter definition matching workflow linked key {key}")
+    raise_for_unmatched_connections(remaining, when_expression)
 
     linked_model = WorkflowStepLinkedToolState.parameter_model_for(tool_inputs)
     linked_model.model_validate(linked_state)
@@ -78,9 +83,10 @@ def validate_step_against(step: NormalizedWorkflowStep, parsed_tool: ToolInputs)
     # A step carries either a schema-aware ``state`` block or a verbatim native
     # ``tool_state`` block (gxformat2's state-unaware conversion copies the
     # latter). State shape — not workflow format — picks the validator.
+    when_expression = step_when(step)
     if not step.state and step.tool_state:
-        validate_native_state(list(parsed_tool.inputs), dict(step.tool_state), connect)
+        validate_native_state(list(parsed_tool.inputs), dict(step.tool_state), connect, when_expression)
         return
 
     state = dict(step.state) if step.state else {}
-    validate_format2_state(list(parsed_tool.inputs), state, connect)
+    validate_format2_state(list(parsed_tool.inputs), state, connect, when_expression)

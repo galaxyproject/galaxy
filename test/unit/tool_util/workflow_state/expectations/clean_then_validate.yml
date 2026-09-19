@@ -52,3 +52,14 @@ clean_then_validate_iwc_rnaseq_subworkflow:
       value_absent: true
     - path: [steps, "17", subworkflow, steps, "2", tool_state, code]
       value_type: str
+
+# --- Conditional step: clean preserves the step-level `when` connection ---
+
+clean_then_validate_synthetic_cat_conditional:
+  fixture: synthetic-cat-conditional.ga
+  operation: clean_then_validate
+  assertions:
+    - path: [steps, "2", when]
+      value: $(inputs.when)
+    - path: [steps, "2", input_connections, when]
+      value_type: dict

@@ -94,6 +94,13 @@ def step_tool_version(step: StepLike) -> str | None:
     return cast(str | None, step.get("tool_version"))
 
 
+def step_when(step: StepLike) -> str | None:
+    """Return the step's conditional-execution expression, if any."""
+    if isinstance(step, (NormalizedNativeStep, NormalizedWorkflowStep)):
+        return step.when
+    return cast(str | None, step.get("when"))
+
+
 def step_tool_state(step: StepLike) -> dict:
     """Get parsed tool_state dict from a step (model or raw dict).
 
