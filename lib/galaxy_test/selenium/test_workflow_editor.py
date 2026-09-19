@@ -31,7 +31,6 @@ from galaxy_test.base.workflow_fixtures import (
 from .framework import (
     retry_assertion_during_transitions,
     RunsWorkflows,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesWorkflowAssertions,
