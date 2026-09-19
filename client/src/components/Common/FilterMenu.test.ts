@@ -1,10 +1,22 @@
-import { getLocalVue } from "@tests/jest/helpers";
-import { mount, Wrapper } from "@vue/test-utils";
+import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount, type Wrapper } from "@vue/test-utils";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useServerMock } from "@/api/client/__mocks__";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
+import { getWorkflowFilters } from "@/components/Workflow/List/workflowFilters";
 import Filtering, { compare, contains, equals, toBool, toDate } from "@/utils/filtering";
 
 import FilterMenu from "./FilterMenu.vue";
+
+// Mock object stores API before imports
+vi.mock("@/api/objectStores");
+
+const { server, http } = useServerMock();
+
+setupSelectableMock();
 
 const localVue = getLocalVue();
 const options = [
@@ -67,6 +79,22 @@ const TestFilters = new Filtering(validTestFilters, undefined);
 describe("FilterMenu", () => {
     let wrapper: Wrapper<Vue>;
 
+    beforeEach(() => {
+        server.use(
+            http.get("/api/users/{user_id}/usage", ({ response }) => {
+                return response(200).json([
+                    {
+                        quota: null,
+                        quota_bytes: null,
+                        quota_percent: null,
+                        quota_source_label: null,
+                        total_disk_usage: 4,
+                    },
+                ]);
+            }),
+        );
+    });
+
     function setUpWrapper(name: string, placeholder: string, filterClass: Filtering<unknown>) {
         wrapper = mount(FilterMenu as object, {
             propsData: {
@@ -80,6 +108,7 @@ describe("FilterMenu", () => {
             stubs: {
                 icon: { template: "<div></div>" },
             },
+            pinia: createTestingPinia({ createSpy: vi.fn }),
         });
     }
 
@@ -89,11 +118,13 @@ describe("FilterMenu", () => {
         await searchButton.trigger("click");
     }
 
-    async function expectCorrectEmits(showAdvanced: boolean, filterText: string, filterClass: Filtering<unknown>) {
+    async function expectCorrectEmits(filterText: string, filterClass: Filtering<unknown>, showAdvanced?: boolean) {
+        if (showAdvanced !== undefined) {
+            const toggleEmit = (wrapper.emitted()?.["update:show-advanced"]?.length ?? 0) - 1;
+            expect(wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0]).toEqual(showAdvanced);
+            await wrapper.setProps({ showAdvanced: wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0] });
+        }
         const filterEmit = (wrapper.emitted()["update:filter-text"]?.length ?? 0) - 1;
-        const toggleEmit = (wrapper.emitted()?.["update:show-advanced"]?.length ?? 0) - 1;
-        expect(wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0]).toEqual(showAdvanced);
-        await wrapper.setProps({ showAdvanced: wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0] });
         const receivedText = wrapper.emitted()["update:filter-text"]?.[filterEmit]?.[0];
         const receivedDict = filterClass.getQueryDict(receivedText);
         const parsedDict = filterClass.getQueryDict(filterText);
@@ -152,7 +183,7 @@ describe("FilterMenu", () => {
             }
         });
         // `has_help` filter should have help modal button
-        expect(wrapper.find("[title='Value Help']").classes().includes("btn")).toBe(true);
+        expect(wrapper.find("[title='Value Help']").classes().includes("g-button")).toBe(true);
         // ranged time field (has 2 datepickers)
         const createdGtInput = wrapper.find("[placeholder='after creation time']");
         const createdLtInput = wrapper.find("[placeholder='before creation time']");
@@ -185,54 +216,12 @@ describe("FilterMenu", () => {
         // perform search
         await performSearch();
         await expectCorrectEmits(
-            false,
             "create_time>'January 1, 2022' create_time<'January 1, 2023' " +
                 "filter_key:item-filter has_help:has-help-filter list_item:1234 " +
                 "number>1234 number<5678 name:name-filter radio:true bool_def:true",
-            TestFilters
+            TestFilters,
+            false,
         );
-    });
-
-    it("test buttons that navigate menu and keyup.enter/esc events", async () => {
-        setUpWrapper("Test Items", "search test items", TestFilters);
-
-        expect(wrapper.find("[data-description='advanced filters']").exists()).toBe(false);
-        await wrapper.setProps({ showAdvanced: true });
-        expect(wrapper.find("[data-description='advanced filters']").exists()).toBe(true);
-
-        // only add name filter in the advanced menu
-        let filterName = wrapper.find("[placeholder='any name']");
-        if (filterName.vm && filterName.props().type == "text") {
-            await filterName.setValue("sample name");
-        }
-
-        // -------- Test keyup.enter key:  ---------
-        // toggles view out and performs a search
-        await filterName.trigger("keyup.enter");
-        await expectCorrectEmits(false, "name:'sample name'", TestFilters);
-
-        // Test: clearing the filterText
-        const clearButton = wrapper.find("[data-description='reset query']");
-        await clearButton.trigger("click");
-        await expectCorrectEmits(false, "", TestFilters);
-
-        // Test: toggling view back in
-        const toggleButton = wrapper.find("[data-description='toggle advanced search']");
-        await toggleButton.trigger("click");
-        await expectCorrectEmits(true, "", TestFilters);
-
-        // -------- Test keyup.esc key:  ---------
-        // toggles view out only (doesn't cause a new search / doesn't emulate enter)
-
-        // find name field again (destroyed because of toggling out) and set value
-        filterName = wrapper.find("[placeholder='any name']");
-        if (filterName.vm && filterName.props().type == "text") {
-            filterName.setValue("newnamefilter");
-        }
-
-        // press esc key from name field (should not change emitted filterText unlike enter key)
-        await filterName.trigger("keyup.esc");
-        await expectCorrectEmits(false, "", TestFilters);
     });
 
     /**
@@ -260,13 +249,13 @@ describe("FilterMenu", () => {
 
         // expect "deleted = any" filter to be applied
         await performSearch();
-        await expectCorrectEmits(false, "visible:true", HistoryFilters);
+        await expectCorrectEmits("visible:true", HistoryFilters, false);
 
         // -------- Testing visible filter now:  ---------
 
         const toggleButton = wrapper.find("[data-description='toggle advanced search']");
         await toggleButton.trigger("click");
-        await expectCorrectEmits(true, "visible:true", HistoryFilters);
+        await expectCorrectEmits("visible:true", HistoryFilters, true);
         const visibleFilterBtnGrp = wrapper.find("[data-description='filter visible']");
         const visibleFilterAnyBtn = visibleFilterBtnGrp.find(".btn-secondary");
         expect(visibleFilterAnyBtn.text()).toBe("Any");
@@ -283,13 +272,34 @@ describe("FilterMenu", () => {
 
         // expect "visible = any" filter to be applied
         await performSearch();
-        await expectCorrectEmits(false, "deleted:any visible:any", HistoryFilters);
+        await expectCorrectEmits("deleted:any visible:any", HistoryFilters, false);
 
         // -------- Testing repeated search if it prevents bug:  ---------
         // (bug reported here: https://github.com/galaxyproject/galaxy/issues/16211)
         await toggleButton.trigger("click");
-        await expectCorrectEmits(true, "deleted:any visible:any", HistoryFilters);
+        await expectCorrectEmits("deleted:any visible:any", HistoryFilters, true);
         await performSearch();
-        await expectCorrectEmits(false, "deleted:any visible:any", HistoryFilters);
+        await expectCorrectEmits("deleted:any visible:any", HistoryFilters, false);
+    });
+
+    /**
+     * Testing the default values of the filters defined in the HistoryFilters: Filtering
+     * class, ensuring the default values are reflected in the radio-group buttons
+     */
+    it("test compact menu with checkbox filters on WorkflowFilters", async () => {
+        const myWorkflowFilters = getWorkflowFilters("my");
+        setUpWrapper("Workflows", "search workflows", myWorkflowFilters);
+        // a compact `FilterMenu` only needs to be opened once (doesn't toggle out automatically)
+        await wrapper.setProps({ showAdvanced: true, view: "compact" });
+
+        // -------- Testing auto search on value change:  ---------
+        const nameFilterInput = wrapper.find("#workflows-advanced-filter-name");
+        await nameFilterInput.setValue("myworkflow");
+        await expectCorrectEmits("name:myworkflow", myWorkflowFilters);
+
+        // -------- Testing deleted filter first:  ---------
+        const deletedFilterCheckbox = wrapper.find("[data-description='filter deleted'] input");
+        await deletedFilterCheckbox.setChecked();
+        await expectCorrectEmits("name:myworkflow is:deleted", myWorkflowFilters);
     });
 });

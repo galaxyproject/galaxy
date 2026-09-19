@@ -6,7 +6,6 @@ import uuid
 from collections import deque
 from itertools import chain
 from sys import getsizeof
-from typing import Optional
 
 import numpy
 import sqlalchemy
@@ -32,7 +31,7 @@ class SafeJsonEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, numpy.int_):
             return int(obj)
-        elif isinstance(obj, numpy.float_):
+        elif isinstance(obj, numpy.float64):
             return float(obj)
         elif isinstance(obj, bytes):
             return unicodify(obj)
@@ -44,7 +43,7 @@ json_encoder = SafeJsonEncoder(sort_keys=True)
 json_decoder = json.JSONDecoder()
 
 # Galaxy app will set this if configured to avoid circular dependency
-MAX_METADATA_VALUE_SIZE: Optional[int] = None
+MAX_METADATA_VALUE_SIZE: int | None = None
 
 
 def _sniffnfix_pg9_hex(value):
@@ -131,6 +130,8 @@ class DoubleEncodedJsonType(JSONType):
 
 class MutableJSONType(JSONType):
     """Associated with MutationObj"""
+
+    cache_ok = True
 
 
 class MutationObj(Mutable):

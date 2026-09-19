@@ -50,6 +50,7 @@ The community also maintains `a list of awesome Galaxy resources <https://github
    :caption: About Project
 
    Project Governance <project/organization>
+   Galaxy Release Process <project/releases>
    Issue Management <project/issues>
 
 Indices and tables

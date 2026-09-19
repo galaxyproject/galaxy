@@ -6,9 +6,6 @@ and configuration settings.
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
 )
 
 from fastapi import Path
@@ -55,7 +52,7 @@ class FastAPIConfiguration:
         summary="Return information about the current authenticated user",
         response_description="Information about the current authenticated user",
     )
-    def whoami(self, trans: ProvidesUserContext = DependsOnTrans) -> Optional[UserModel]:
+    def whoami(self, trans: ProvidesUserContext = DependsOnTrans) -> UserModel | None:
         """Return information about the current authenticated user."""
         return _user_to_model(trans.user)
 
@@ -68,8 +65,8 @@ class FastAPIConfiguration:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         view: SerializationViewQueryParam = None,
-        keys: Optional[str] = SerializationKeysQueryParam,
-    ) -> Dict[str, Any]:
+        keys: str | None = SerializationKeysQueryParam,
+    ) -> dict[str, Any]:
         """
         Return an object containing exposable configuration settings.
 
@@ -85,7 +82,7 @@ class FastAPIConfiguration:
         summary="Return Galaxy version information: major/minor version, optional extra info",
         response_description="Galaxy version information: major/minor version, optional extra info",
     )
-    def version(self) -> Dict[str, Any]:
+    def version(self) -> dict[str, Any]:
         """Return Galaxy version information: major/minor version, optional extra info."""
         return self.configuration_manager.version()
 
@@ -95,7 +92,7 @@ class FastAPIConfiguration:
         summary="Return dynamic tool configuration files",
         response_description="Dynamic tool configuration files",
     )
-    def dynamic_tool_confs(self) -> List[Dict[str, str]]:
+    def dynamic_tool_confs(self) -> list[dict[str, str]]:
         """Return dynamic tool configuration files."""
         return self.configuration_manager.dynamic_tool_confs()
 
@@ -105,7 +102,7 @@ class FastAPIConfiguration:
         summary="Decode a given id",
         response_description="Decoded id",
     )
-    def decode_id(self, encoded_id: str = EncodedIdPathParam) -> Dict[str, int]:
+    def decode_id(self, encoded_id: str = EncodedIdPathParam) -> dict[str, int]:
         """Decode a given id."""
         return self.configuration_manager.decode_id(encoded_id)
 
@@ -115,7 +112,7 @@ class FastAPIConfiguration:
         summary="Encode a given id",
         response_description="Encoded id",
     )
-    def encode_id(self, decoded_id: int = DecodedIdPathParam) -> Dict[str, str]:
+    def encode_id(self, decoded_id: int = DecodedIdPathParam) -> dict[str, str]:
         """Decode a given id."""
         return self.configuration_manager.encode_id(decoded_id)
 
@@ -125,7 +122,7 @@ class FastAPIConfiguration:
         summary="Return tool lineages for tools that have them",
         response_description="Tool lineages for tools that have them",
     )
-    def tool_lineages(self) -> List[Dict[str, Dict]]:
+    def tool_lineages(self) -> list[dict[str, dict]]:
         """Return tool lineages for tools that have them."""
         return self.configuration_manager.tool_lineages()
 
@@ -140,7 +137,15 @@ class FastAPIConfiguration:
 def _user_to_model(user):
     if user:
         return UserModel.model_construct(
-            **user.to_dict(view="element", value_mapper={"id": Security.security.encode_id})
+            **user.to_dict(
+                view="element",
+                value_mapper={
+                    "id": Security.security.encode_id,
+                    # Dictifiable otherwise stringifies datetimes via isoformat(); keep the
+                    # datetime object so UserModel.last_password_change serializes correctly.
+                    "last_password_change": lambda v: v,
+                },
+            )
         )
     return None
 

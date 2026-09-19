@@ -1,27 +1,35 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCog, faHourglassHalf, faRetweet } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faCog, faRetweet, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox } from "bootstrap-vue";
+import { BAlert, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
 import type { UserNotification } from "@/api/notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import NotificationCard from "@/components/Notifications/NotificationCard.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
 
-library.add(faCog, faHourglassHalf, faRetweet);
-
 const notificationsStore = useNotificationsStore();
 const { notifications, loadingNotifications } = storeToRefs(notificationsStore);
 
+interface Props {
+    shouldOpenPreferences?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    shouldOpenPreferences: false,
+});
+
 const showUnread = ref(false);
 const showShared = ref(false);
-const preferencesOpen = ref(false);
+const preferencesOpen = ref(props.shouldOpenPreferences);
 const selectedNotificationIds = ref<string[]>([]);
 
 const haveSelected = computed(() => selectedNotificationIds.value.length > 0);
@@ -29,7 +37,7 @@ const filteredNotifications = computed(() => {
     return notifications.value.filter(filterNotifications);
 });
 const allSelected = computed(
-    () => haveSelected.value && selectedNotificationIds.value.length === notifications.value.length
+    () => haveSelected.value && selectedNotificationIds.value.length === notifications.value.length,
 );
 
 function filterNotifications(notification: UserNotification) {
@@ -68,21 +76,27 @@ function togglePreferences() {
 <template>
     <div aria-labelledby="notifications-list" class="notifications-list-container">
         <div class="notifications-list-header">
-            <Heading id="notifications-title" h1 separator inline size="xl" class="flex-grow-1 mb-2">
+            <Heading id="notifications-title" h1 separator inline size="lg" class="flex-grow-1 mb-2">
                 Notifications
             </Heading>
 
-            <BButton class="mb-2" variant="outline-primary" :pressed="preferencesOpen" @click="togglePreferences">
+            <GButton
+                class="mb-2"
+                size="small"
+                color="blue"
+                outline
+                :pressed="preferencesOpen"
+                @click="togglePreferences">
                 <FontAwesomeIcon :icon="faCog" />
                 Notifications preferences
-            </BButton>
+            </GButton>
         </div>
 
-        <BCollapse v-model="preferencesOpen">
+        <GCollapse v-slot="{ contentActive }" v-model="preferencesOpen">
             <div class="notifications-list-preferences card-container">
-                <NotificationsPreferences v-if="preferencesOpen" header-size="h-md" :embedded="false" />
+                <NotificationsPreferences v-if="contentActive" header-size="h-md" :embedded="false" />
             </div>
-        </BCollapse>
+        </GCollapse>
 
         <BAlert v-if="loadingNotifications" show>
             <LoadingSpan message="Loading notifications" />
@@ -108,42 +122,44 @@ function togglePreferences() {
                     </div>
 
                     <div v-if="haveSelected">
-                        <BButton size="sm" variant="outline-primary" @click="updateNotifications({ seen: true })">
-                            <FontAwesomeIcon icon="check" />
+                        <GButton size="small" color="blue" outline @click="updateNotifications({ seen: true })">
+                            <FontAwesomeIcon :icon="faCheck" />
                             Mark as read
-                        </BButton>
+                        </GButton>
 
-                        <BButton size="sm" variant="outline-primary" @click="updateNotifications({ deleted: true })">
-                            <FontAwesomeIcon icon="trash" />
+                        <GButton size="small" color="blue" outline @click="updateNotifications({ deleted: true })">
+                            <FontAwesomeIcon :icon="faTrash" />
                             Delete
-                        </BButton>
+                        </GButton>
                     </div>
                 </div>
 
                 <div align-h="end" align-v="center">
                     <span class="mx-2"> Filters: </span>
 
-                    <BButtonGroup>
-                        <BButton
+                    <GButtonGroup>
+                        <GButton
                             id="show-unread-filter"
-                            size="sm"
+                            size="small"
                             :pressed="showUnread"
-                            variant="outline-primary"
+                            color="blue"
+                            outline
                             @click="showUnread = !showUnread">
-                            <FontAwesomeIcon icon="check" />
+                            <FontAwesomeIcon :icon="faCheck" />
                             Unread
-                        </BButton>
+                        </GButton>
 
-                        <BButton
+                        <GButton
                             id="show-shared-filter"
-                            size="sm"
+                            size="small"
                             :pressed="showShared"
-                            variant="outline-primary"
+                            color="blue"
+                            outline
                             @click="showShared = !showShared">
-                            <FontAwesomeIcon icon="retweet" />
+                            <FontAwesomeIcon :icon="faRetweet" />
                             Shared
-                        </BButton>
-                    </BButtonGroup>
+                        </GButton>
+                    </GButtonGroup>
                 </div>
             </div>
 
@@ -156,21 +172,21 @@ function togglePreferences() {
                 name="notifications-list"
                 class="notifications-list"
                 tag="div">
-                <div v-for="item in filteredNotifications" :key="item.id">
-                    <NotificationCard
-                        selectable
-                        unread-border
-                        :notification="item"
-                        :selected="selectedNotificationIds?.includes(item.id)"
-                        @select="selectOrDeselectNotification" />
-                </div>
+                <NotificationCard
+                    v-for="notification in filteredNotifications"
+                    :key="notification.id"
+                    selectable
+                    unread-border
+                    :notification="notification"
+                    :selected="selectedNotificationIds?.includes(notification.id)"
+                    @select="selectOrDeselectNotification" />
             </TransitionGroup>
         </div>
     </div>
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .notifications-list-container {
     .notifications-list-header {

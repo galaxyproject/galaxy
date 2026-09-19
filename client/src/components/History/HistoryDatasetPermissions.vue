@@ -1,16 +1,22 @@
 <script lang="ts" setup>
-import axios from "axios";
 import { computed, ref } from "vue";
+import { useRoute } from "vue-router/composables";
 
 import { initRefs, updateRefs, useCallbacks } from "@/composables/datasetPermissions";
-import { withPrefix } from "@/utils/redirect";
+import { useHistoryBreadCrumbsToForProps } from "@/composables/historyBreadcrumbs";
 
+import { getPermissions, getPermissionsUrl, setPermissions } from "./services";
+
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import DatasetPermissionsForm from "@/components/Dataset/DatasetPermissionsForm.vue";
 
 interface HistoryDatasetPermissionsProps {
     historyId: string;
+    noRedirect?: boolean;
 }
 const props = defineProps<HistoryDatasetPermissionsProps>();
+
+const route = useRoute();
 
 const loading = ref(true);
 
@@ -24,7 +30,7 @@ const {
 } = initRefs();
 
 const inputsUrl = computed(() => {
-    return `/history/permissions?id=${props.historyId}`;
+    return getPermissionsUrl(props.historyId);
 });
 
 const title = "Change default dataset permissions for history";
@@ -34,9 +40,11 @@ const formConfig = computed(() => {
         title: title,
         url: inputsUrl.value,
         submitTitle: "Save Permissions",
-        redirect: "/histories/list",
+        redirect: props.noRedirect ? undefined : "/histories/list",
     };
 });
+
+const { breadcrumbItems } = useHistoryBreadCrumbsToForProps(props, "Dataset Permissions");
 
 async function change(value: unknown) {
     const managePermissionValue: number = managePermissions.value[0] as number;
@@ -48,11 +56,11 @@ async function change(value: unknown) {
         DATASET_MANAGE_PERMISSIONS: [managePermissionValue],
         DATASET_ACCESS: access,
     };
-    axios.put(withPrefix(inputsUrl.value), formValue).then(onSuccess).catch(onError);
+    setPermissions(props.historyId, formValue).then(onSuccess).catch(onError);
 }
 
 async function init() {
-    const { data } = await axios.get(withPrefix(inputsUrl.value));
+    const { data } = await getPermissions(props.historyId);
     updateRefs(data.inputs, managePermissionsOptions, accessPermissionsOptions, managePermissions, accessPermissions);
     loading.value = false;
 }
@@ -61,11 +69,15 @@ const { onSuccess, onError } = useCallbacks(init);
 </script>
 
 <template>
-    <DatasetPermissionsForm
-        :loading="loading"
-        :simple-permissions="simplePermissions"
-        :title="title"
-        :form-config="formConfig"
-        :checked="checked"
-        @change="change" />
+    <div>
+        <BreadcrumbHeading v-if="route.path === '/histories/permissions'" :items="breadcrumbItems" />
+
+        <DatasetPermissionsForm
+            :loading="loading"
+            :simple-permissions="simplePermissions"
+            :title="title"
+            :form-config="formConfig"
+            :checked="checked"
+            @change="change" />
+    </div>
 </template>

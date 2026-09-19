@@ -1,12 +1,10 @@
 import logging
 import os
+from collections.abc import Callable
+from datetime import datetime
 from enum import Enum
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Optional,
-    TYPE_CHECKING,
 )
 
 from sqlalchemy import (
@@ -19,6 +17,9 @@ from sqlalchemy import (
     TEXT,
 )
 from sqlalchemy.orm import (
+    DeclarativeMeta,
+    Mapped,
+    mapped_column,
     registry,
     relationship,
 )
@@ -28,12 +29,14 @@ from galaxy.model.custom_types import (
     MutableJSONType,
     TrimmedString,
 )
-from galaxy.model.orm.now import now
 from galaxy.tool_util.toolbox.base import (
     AbstractToolBox,
     DynamicToolConfDict,
 )
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    now,
+)
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.tool_shed import common_util
@@ -42,20 +45,10 @@ log = logging.getLogger(__name__)
 
 mapper_registry = registry()
 
-if TYPE_CHECKING:
-    # Workaround for https://github.com/python/mypy/issues/14182
-    from sqlalchemy.orm.decl_api import DeclarativeMeta as _DeclarativeMeta
-
-    class DeclarativeMeta(_DeclarativeMeta, type):
-        pass
-
-else:
-    from sqlalchemy.orm.decl_api import DeclarativeMeta
-
 
 class HasToolBox(common_util.HasToolShedRegistry, Protocol):
     @property
-    def tool_dependency_dir(self) -> Optional[str]: ...
+    def tool_dependency_dir(self) -> str | None: ...
 
     @property
     def toolbox(self) -> AbstractToolBox: ...
@@ -75,24 +68,24 @@ class Base(metaclass=DeclarativeMeta):
 class ToolShedRepository(Base):
     __tablename__ = "tool_shed_repository"
 
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    tool_shed = Column(TrimmedString(255), index=True)
-    name = Column(TrimmedString(255), index=True)
-    description = Column(TEXT)
-    owner = Column(TrimmedString(255), index=True)
-    installed_changeset_revision = Column(TrimmedString(255))
-    changeset_revision = Column(TrimmedString(255), index=True)
-    ctx_rev = Column(TrimmedString(10))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    create_time: Mapped[datetime] = mapped_column(DateTime, default=now, nullable=True)
+    update_time: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now, nullable=True)
+    tool_shed: Mapped[str] = mapped_column(TrimmedString(255), index=True, nullable=True)
+    name: Mapped[str] = mapped_column(TrimmedString(255), index=True, nullable=True)
+    description: Mapped[str | None] = mapped_column(TEXT)
+    owner: Mapped[str] = mapped_column(TrimmedString(255), index=True, nullable=True)
+    installed_changeset_revision: Mapped[str] = mapped_column(TrimmedString(255), nullable=True)
+    changeset_revision: Mapped[str] = mapped_column(TrimmedString(255), index=True, nullable=True)
+    ctx_rev: Mapped[str | None] = mapped_column(TrimmedString(10))
     metadata_ = Column("metadata", MutableJSONType, nullable=True)
-    includes_datatypes = Column(Boolean, index=True, default=False)
+    includes_datatypes: Mapped[bool | None] = mapped_column(Boolean, index=True, default=False)
     tool_shed_status = Column(MutableJSONType, nullable=True)
-    deleted = Column(Boolean, index=True, default=False)
-    uninstalled = Column(Boolean, default=False)
-    dist_to_shed = Column(Boolean, default=False)
-    status = Column(TrimmedString(255))
-    error_message = Column(TEXT)
+    deleted: Mapped[bool | None] = mapped_column(Boolean, index=True, default=False)
+    uninstalled: Mapped[bool | None] = mapped_column(Boolean, default=False)
+    dist_to_shed: Mapped[bool | None] = mapped_column(Boolean, default=False)
+    status: Mapped[str | None] = mapped_column(TrimmedString(255))
+    error_message: Mapped[str | None] = mapped_column(TEXT)
     tool_versions = relationship("ToolVersion", back_populates="tool_shed_repository")
     tool_dependencies = relationship(
         "ToolDependency", order_by="ToolDependency.name", back_populates="tool_shed_repository"
@@ -189,7 +182,7 @@ class ToolShedRepository(Base):
         self.status = status
         self.error_message = error_message
 
-    def as_dict(self, value_mapper: Optional[Dict[str, Callable]] = None) -> Dict[str, Any]:
+    def as_dict(self, value_mapper: dict[str, Callable] | None = None) -> dict[str, Any]:
         return self.to_dict(view="element", value_mapper=value_mapper)
 
     @property
@@ -532,7 +525,7 @@ class ToolShedRepository(Base):
             return asbool(self.tool_shed_status.get("revision_update", False))
         return False
 
-    def to_dict(self, view="collection", value_mapper: Optional[Dict[str, Callable]] = None) -> Dict[str, Any]:
+    def to_dict(self, view="collection", value_mapper: dict[str, Callable] | None = None) -> dict[str, Any]:
         if value_mapper is None:
             value_mapper = {}
         rval = {}
@@ -654,11 +647,11 @@ class ToolShedRepository(Base):
 class RepositoryRepositoryDependencyAssociation(Base):
     __tablename__ = "repository_repository_dependency_association"
 
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    tool_shed_repository_id = Column(ForeignKey("tool_shed_repository.id"), index=True)
-    repository_dependency_id = Column(ForeignKey("repository_dependency.id"), index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    create_time: Mapped[datetime | None] = mapped_column(DateTime, default=now)
+    update_time: Mapped[datetime | None] = mapped_column(DateTime, default=now, onupdate=now)
+    tool_shed_repository_id: Mapped[int | None] = mapped_column(ForeignKey("tool_shed_repository.id"), index=True)
+    repository_dependency_id: Mapped[int | None] = mapped_column(ForeignKey("repository_dependency.id"), index=True)
     repository = relationship("ToolShedRepository", back_populates="required_repositories")
     repository_dependency = relationship("RepositoryDependency")
 
@@ -670,10 +663,12 @@ class RepositoryRepositoryDependencyAssociation(Base):
 class RepositoryDependency(Base):
     __tablename__ = "repository_dependency"
 
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    tool_shed_repository_id = Column(ForeignKey("tool_shed_repository.id"), index=True, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    create_time: Mapped[datetime | None] = mapped_column(DateTime, default=now)
+    update_time: Mapped[datetime | None] = mapped_column(DateTime, default=now, onupdate=now)
+    tool_shed_repository_id: Mapped[int] = mapped_column(
+        ForeignKey("tool_shed_repository.id"), index=True, nullable=False
+    )
     repository = relationship("ToolShedRepository")
 
     def __init__(self, tool_shed_repository_id=None):
@@ -683,15 +678,17 @@ class RepositoryDependency(Base):
 class ToolDependency(Base):
     __tablename__ = "tool_dependency"
 
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    tool_shed_repository_id = Column(ForeignKey("tool_shed_repository.id"), index=True, nullable=False)
-    name = Column(TrimmedString(255))
-    version = Column(TEXT)
-    type = Column(TrimmedString(40))
-    status = Column(TrimmedString(255), nullable=False)
-    error_message = Column(TEXT)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    create_time: Mapped[datetime | None] = mapped_column(DateTime, default=now)
+    update_time: Mapped[datetime | None] = mapped_column(DateTime, default=now, onupdate=now)
+    tool_shed_repository_id: Mapped[int] = mapped_column(
+        ForeignKey("tool_shed_repository.id"), index=True, nullable=False
+    )
+    name: Mapped[str] = mapped_column(TrimmedString(255), nullable=True)
+    version: Mapped[str] = mapped_column(TEXT, nullable=True)
+    type: Mapped[str | None] = mapped_column(TrimmedString(40))
+    status: Mapped[str] = mapped_column(TrimmedString(255), nullable=False)
+    error_message: Mapped[str | None] = mapped_column(TEXT)
     tool_shed_repository = relationship("ToolShedRepository", back_populates="tool_dependencies")
 
     # converting this one to Enum breaks the tool shed tests,
@@ -742,7 +739,7 @@ class ToolDependency(Base):
     def in_error_state(self):
         return self.status == self.installation_status.ERROR
 
-    def installation_directory(self, app: HasToolBox) -> Optional[str]:
+    def installation_directory(self, app: HasToolBox) -> str | None:
         if self.type == "package":
             assert app.tool_dependency_dir
             return os.path.join(
@@ -773,11 +770,13 @@ class ToolDependency(Base):
 class ToolVersion(Base, Dictifiable):
     __tablename__ = "tool_version"
 
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    tool_id = Column(String(255))
-    tool_shed_repository_id = Column(ForeignKey("tool_shed_repository.id"), index=True, nullable=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    create_time: Mapped[datetime | None] = mapped_column(DateTime, default=now)
+    update_time: Mapped[datetime | None] = mapped_column(DateTime, default=now, onupdate=now)
+    tool_id: Mapped[str | None] = mapped_column(String(255))
+    tool_shed_repository_id: Mapped[int | None] = mapped_column(
+        ForeignKey("tool_shed_repository.id"), index=True, nullable=True
+    )
     parent_tool_association = relationship(
         "ToolVersionAssociation", primaryjoin=(lambda: ToolVersion.id == ToolVersionAssociation.tool_id)
     )
@@ -801,6 +800,6 @@ class ToolVersion(Base, Dictifiable):
 class ToolVersionAssociation(Base):
     __tablename__ = "tool_version_association"
 
-    id = Column(Integer, primary_key=True)
-    tool_id = Column(ForeignKey("tool_version.id"), index=True, nullable=False)
-    parent_id = Column(ForeignKey("tool_version.id"), index=True, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    tool_id: Mapped[int] = mapped_column(ForeignKey("tool_version.id"), index=True, nullable=False)
+    parent_id: Mapped[int] = mapped_column(ForeignKey("tool_version.id"), index=True, nullable=False)

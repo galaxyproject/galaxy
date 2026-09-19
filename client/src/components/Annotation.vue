@@ -2,7 +2,7 @@
     <ClickToEdit
         ref="annotationInput"
         v-slot="{ toggleEdit, placeholder, stateValidator }"
-        v-b-tooltip.hover="{ boundary: 'viewport', placement: tooltipPlacement }"
+        v-g-tooltip.hover="{ placement: tooltipPlacement }"
         class="annotation"
         tag-name="p"
         :value="annotation"
@@ -24,8 +24,9 @@
 </template>
 
 <script>
-import ClickToEdit from "./ClickToEdit";
 import DebouncedInput from "./DebouncedInput";
+
+import ClickToEdit from "./ClickToEdit.vue";
 
 export default {
     components: {

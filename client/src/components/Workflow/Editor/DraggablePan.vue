@@ -9,6 +9,10 @@ const props = defineProps({
         type: Object as PropType<UnwrapRef<UseElementBoundingReturn>>,
         required: true,
     },
+    position: {
+        type: Object as PropType<Position>,
+        default: null,
+    },
     scale: {
         type: Number,
         required: false,
@@ -39,6 +43,10 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    selected: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 type Position = { x: number; y: number };
@@ -51,6 +59,7 @@ const emit = defineEmits<{
     (e: "pan-by", position: Position): void;
     (e: "move", position: MovePosition, event?: MouseEvent): void;
     (e: "mouseup", event: MouseEvent): void;
+    (e: "mousedown", event: MouseEvent): void;
     (e: "start"): void;
 }>();
 
@@ -157,14 +166,17 @@ function onStart() {
 <template>
     <Draggable
         :root-offset="rootOffset"
+        :position="props.position"
         :prevent-default="preventDefault"
         :stop-propagation="stopPropagation"
         :drag-data="dragData"
         :disabled="disabled"
         :snappable="snappable"
+        :selected="selected"
         @move="onMove"
         @mouseup="onMouseUp"
         @start="onStart"
+        @mousedown="(e) => emit('mousedown', e)"
         v-on="$listeners">
         <slot></slot>
     </Draggable>

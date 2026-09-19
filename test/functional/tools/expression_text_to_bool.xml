@@ -1,0 +1,27 @@
+<tool name="expression_text_to_bool" id="expression_text_to_bool" version="0.1.0" tool_type="expression">
+    <expression type="ecma5.1">
+        {
+            var value = $job.text_input;
+            if (value == "false" || value == "False") {
+                return {'bool_out': false};
+            }
+            return {'bool_out': !!value};
+        }
+    </expression>
+    <inputs>
+        <param type="text" label="Text input." name="text_input" />
+    </inputs>
+    <outputs>
+        <output type="boolean" name="bool_out" from="bool_out" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="text_input" value="hello" />
+            <output name="bool_out" value_json="true" />
+        </test>
+        <test>
+            <param name="text_input" value="" />
+            <output name="bool_out" value_json="false" />
+        </test>
+    </tests>
+</tool>

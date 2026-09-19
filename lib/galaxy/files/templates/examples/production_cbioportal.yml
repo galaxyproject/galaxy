@@ -1,0 +1,27 @@
+- id: cbioportal
+  version: 0
+  name: cBioPortal
+  description: |
+    [cBioPortal](https://www.cbioportal.org/) provides public cancer genomics study data.
+    This file source lets Galaxy browse public studies and import common cBioPortal
+    study files from the public DataHub archives.
+  variables:
+    api_url:
+      label: cBioPortal API URL
+      type: string
+      default: https://www.cbioportal.org/api
+      help: |
+        The cBioPortal API endpoint used to list studies and fetch study metadata, e.g.
+        https://www.cbioportal.org/api.
+    datahub_url:
+      label: cBioPortal DataHub archive URL
+      type: string
+      default: https://datahub.assets.cbioportal.org
+      help: |
+        The base URL where public cBioPortal study archives are available, e.g.
+        https://datahub.assets.cbioportal.org.
+  configuration:
+    type: cbioportal
+    api_url: "{{ variables.api_url }}"
+    datahub_url: "{{ variables.datahub_url }}"
+    writable: false

@@ -8,9 +8,10 @@ import pytest
 
 from galaxy.tool_util.toolbox import watcher
 from galaxy.util import bunch
+from galaxy.util.watcher import can_watch
 
 
-@pytest.mark.skipif(not watcher.can_watch, reason="watchdog not available")
+@pytest.mark.skipif(not can_watch, reason="watchdog not available")
 def test_watcher():
     with __test_directory() as t:
         tool_path = path.join(t, "test.xml")
@@ -29,7 +30,7 @@ def test_watcher():
         assert tool_watcher.observer is None
 
 
-@pytest.mark.skipif(not watcher.can_watch, reason="watchdog not available")
+@pytest.mark.skipif(not can_watch, reason="watchdog not available")
 def test_tool_conf_watcher():
     callback = CallbackRecorder()
     conf_watcher = watcher.get_tool_conf_watcher(callback.call)

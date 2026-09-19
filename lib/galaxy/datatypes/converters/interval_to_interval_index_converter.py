@@ -20,7 +20,7 @@ def main():
     parser.add_option("-c", "--chr-col", type="int", dest="chrom_col", default=1)
     parser.add_option("-s", "--start-col", type="int", dest="start_col", default=2)
     parser.add_option("-e", "--end-col", type="int", dest="end_col", default=3)
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
     input_fname, output_fname = args
 
     # Make column indices 0-based.

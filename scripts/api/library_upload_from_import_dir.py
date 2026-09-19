@@ -18,7 +18,7 @@ try:
     data["upload_option"] = "upload_directory"
     data["create_type"] = "file"
 except IndexError:
-    print("usage: %s key url folder_id file_type server_dir dbkey" % os.path.basename(sys.argv[0]))
+    print(f"usage: {os.path.basename(sys.argv[0])} key url folder_id file_type server_dir dbkey")
     sys.exit(1)
 
 submit(sys.argv[1], sys.argv[2], data)

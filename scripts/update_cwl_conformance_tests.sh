@@ -17,11 +17,7 @@ for version in $VERSIONS; do
         conformance_filepath=conformance_tests.yaml
         tests_dir=tests
     fi
-    if [ "$version" = '1.2' ]; then
-	branch=1.2.1_proposed
-    else
-	branch=main
-    fi
+    branch=main
     wget "https://github.com/common-workflow-language/${repo_name}/archive/${branch}.zip"
     unzip ${branch}.zip
     rm -rf "${DEST_DIR}/v${version}"

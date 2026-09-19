@@ -1,2 +1,2 @@
 // Galaxy core styles
-import "scss/base.scss";
+import "@/style/scss/base.scss";

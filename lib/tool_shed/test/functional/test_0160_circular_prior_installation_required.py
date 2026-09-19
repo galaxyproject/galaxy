@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 filter_repository_name = "filtering_0160"
 filter_repository_description = "Galaxy's filtering tool for test 0160"
@@ -26,7 +26,7 @@ Verify display.
 """
 
 
-class TestSimplePriorInstallation(ShedTwillTestCase):
+class TestSimplePriorInstallation(ShedTestCase):
     """Test features related to datatype converters."""
 
     def test_0000_initiate_users(self):

@@ -10,7 +10,7 @@ and enabling a Galaxy User to gain access to content inside in real-time.
 How Galaxy InteractiveTools work
 --------------------------------
 
-A InteractiveTool is defined in the same familiar way as standard Galaxy Tools,
+An InteractiveTool is defined in the same familiar way as standard Galaxy Tools,
 but are specified with ``tool_type="interactive"``, and providing additional
 entry point information:
 
@@ -104,6 +104,19 @@ the URL and headers, then somewhat massaged, and finally forwarded to the correc
 
 .. note::
 
+    Entry point mappings used by the proxy are stored on a SQLite database file located at ``interactivetools_map``. In
+    `some situations <https://www.sqlite.org/whentouse.html#situations_where_a_client_server_rdbms_may_work_better>`_,
+    SQLite may not be the best choice. A common case is a high-availability production setup, meaning that multiple
+    copies of Galaxy are running on different servers behind a load balancer.
+
+    For these situations, there exists an optional |configuration option interactivetoolsproxy_map|_ that allows using
+    any database supported by SQLAlchemy (it overrides ``interactivetools_map``).
+
+.. |configuration option interactivetoolsproxy_map| replace:: configuration option ``interactivetoolsproxy_map``
+.. _configuration option interactivetoolsproxy_map: ../config.html#interactivetoolsproxy-map
+
+.. note::
+
     A previous config option ``interactivetools_shorten_url`` was removed in commit `#73100de <https://github.com/galaxyproject/galaxy/pull/16795/commits/73100de17149ca3486c83b8c6ded74987c68a836>`_
     since similar functionality is now default behavior. Setting ``interactivetools_shorten_url`` to ``true`` shortened
     long interactive tool URLs (then default) from e.g.
@@ -168,12 +181,12 @@ An example ``job_conf.yml`` file as seen in ``config/job_conf.yml.interactivetoo
           # 'localhost' here is an arbitrary hostname that matches the IP address of your
           # Galaxy host. Make sure this hostname ('localhost') is also set in your galaxy.yml file, e.g.
           # `galaxy_infrastructure_url: http://localhost:8080`.
-          #docker_run_extra_arguments: add-host localhost:host-gateway
+          #docker_run_extra_arguments: --add-host localhost:host-gateway
 
           #docker_cmd: /usr/local/custom_docker/docker
           #docker_host:
-          #docker_container_id_override: busybox:ubuntu-14.04
-          #docker_default_container_id: busybox:ubuntu-14.04
+          #docker_container_id_override: busybox:1.36.1-glibc
+          #docker_default_container_id: busybox:1.36.1-glibc
           #require_container: true
           #container_monitor: true
           #container_monitor_result: file
@@ -189,7 +202,7 @@ An example ``job_conf.yml`` file as seen in ``config/job_conf.yml.interactivetoo
           default_destination_id: local
 
 
-The Galaxy currently contains a sizable collection of **InteractiveTools** directly in the
+Galaxy currently contains a sizable collection of **InteractiveTools** directly in the
 code base. To be enabled, they need to be commented in or added to the ``config/tool_conf.xml``:
 
 .. code-block:: xml
@@ -200,7 +213,7 @@ code base. To be enabled, they need to be commented in or added to the ``config/
     </toolbox>
 
 
-A InteractiveTool is defined in the same familiar way as standard Galaxy Tools,
+An InteractiveTool is defined in the same familiar way as standard Galaxy Tools,
 but are specified with ``tool_type="interactive"``, and providing additional
 entry point information:
 
@@ -255,7 +268,7 @@ server within an InteractiveTool container now must serve the contents under a p
 2.  Absolute links. Unfortunately many relevant services are implemented with absolute links, i.e. starting
     at the top-level ``/``. For such InteractiveTools to work with path-based URLs the contained web server
     needs to be configured with the path prefix/entry point path under which the content should be served. Two issues then
-    needs to be considered:
+    need to be considered:
 
     a.  How to inject the path prefix into the InteractiveTool at run-time?
 
@@ -313,7 +326,7 @@ server within an InteractiveTool container now must serve the contents under a p
         When ``requires_path_in_url="True"`` in the ``entry_point`` tag, the InteractiveTool proxy service forwards the HTTP requests
         with the full path intact.
 
-    Both values of ``requires_path_in_url`` can be combined with both injection mechanisms, leading two four configuration variants
+    Both values of ``requires_path_in_url`` can be combined with both injection mechanisms, leading to four configuration variants
     for path-based InteractiveTools. Choosing the correct one depends on the implementation of the web server contained in the
     InteractiveTool and can be a bit tricky to get correct. In some cases, none of these options will work. One solution can then
     be to configure another highly customized proxy web server within the InteractiveTool, e.g. using NGINX.
@@ -382,7 +395,7 @@ In both nginx config examples, you might want to replace localhost with your ser
 Job runner configuration in production
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-InteractiveTools have been enabled for the Condor, Slurm, Pulsar and Kuberneters job runner.
+InteractiveTools have been enabled for the Condor, Slurm, Pulsar and Kubernetes job runner.
 A destination configuration for Condor may look like this:
 
 .. code-block:: xml

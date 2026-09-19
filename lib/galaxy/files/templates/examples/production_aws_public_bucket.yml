@@ -1,0 +1,16 @@
+- id: aws_public
+  version: 0
+  name: Amazon Web Services Public Bucket
+  description: Setup anonymous access to a public AWS bucket.
+  configuration:
+    type: s3fs
+    bucket: "{{ variables.bucket }}"
+    writable: false
+    anon: true
+  variables:
+    bucket:
+      label: Bucket
+      type: string
+      help: |
+        The [Amazon Web Services Bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingBucket.html) to
+        anonymously access.

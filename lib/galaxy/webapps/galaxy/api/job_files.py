@@ -1,4 +1,4 @@
-""" API for asynchronous job running mechanisms can use to fetch or put files
+"""API for asynchronous job running mechanisms can use to fetch or put files
 related to running and queued jobs.
 """
 
@@ -11,7 +11,14 @@ from galaxy import (
     exceptions,
     util,
 )
-from galaxy.model import Job
+from galaxy.job_execution.setup import JobWorkingDirectory
+from galaxy.managers.context import ProvidesAppContext
+from galaxy.model import (
+    Job,
+    JobToOutputDatasetAssociation,
+    JobToOutputLibraryDatasetAssociation,
+)
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
@@ -34,7 +41,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
     """
 
     @expose_api_raw_anonymous_and_sessionless
-    def index(self, trans, job_id, **kwargs):
+    def index(self, trans: ProvidesAppContext, job_id: str, **kwargs):
         """
         GET /api/jobs/{job_id}/files
 
@@ -56,12 +63,24 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         :rtype:     binary
         :returns:   contents of file
         """
-        self.__authorize_job_access(trans, job_id, **kwargs)
-        path = kwargs.get("path", None)
-        return open(path, "rb")
+        job = self.__authorize_job_access(trans, job_id, **kwargs)
+        path = kwargs["path"]
+        try:
+            return open(path, "rb")
+        except FileNotFoundError:
+            # We know that the job is not terminal, but users (or admin scripts) can purge input datasets.
+            # Here we discriminate that case from truly unexpected bugs.
+            # Not failing the job here, this is or should be handled by pulsar.
+            match = re.match(r"(galaxy_)?dataset_(.*)\.dat", os.path.basename(path))
+            if match:
+                # This looks like a galaxy dataset, check if any job input has been deleted.
+                if any(jtid.dataset.dataset.purged for jtid in job.input_datasets):
+                    raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
+            else:
+                raise
 
     @expose_api_anonymous_and_sessionless
-    def create(self, trans, job_id, payload, **kwargs):
+    def create(self, trans: ProvidesAppContext, job_id: str, payload, **kwargs):
         """
         create( self, trans, job_id, payload, **kwargs )
         * POST /api/jobs/{job_id}/files
@@ -86,6 +105,8 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         """
         job = self.__authorize_job_access(trans, job_id, **payload)
         path = payload.get("path")
+        if not path:
+            raise exceptions.RequestParameterInvalidException("'path' parameter not provided or empty.")
         self.__check_job_can_write_to_path(trans, job, path)
 
         # Is this writing an unneeded file? Should this just copy in Python?
@@ -118,7 +139,11 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         target_dir = os.path.dirname(path)
         util.safe_makedirs(target_dir)
         try:
-            shutil.move(input_file.name, path)
+            if os.path.exists(path) and (path.endswith("tool_stdout") or path.endswith("tool_stderr")):
+                with open(path, "ab") as destination:
+                    shutil.copyfileobj(open(input_file.name, "rb"), destination)
+            else:
+                shutil.move(input_file.name, path)
         finally:
             try:
                 input_file.close()
@@ -129,7 +154,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         return {"message": "ok"}
 
     @expose_api_anonymous_and_sessionless
-    def tus_patch(self, trans, **kwds):
+    def tus_patch(self, trans: ProvidesAppContext, **kwds):
         """
         Exposed as PATCH /api/job_files/resumable_upload.
 
@@ -161,7 +186,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         return None
 
     @expose_api_anonymous_and_sessionless
-    def tus_hooks(self, trans, **kwds):
+    def tus_hooks(self, trans: ProvidesAppContext, **kwds):
         """No-op but if hook specified the way we do for user upload it would hit this action.
 
         Exposed as PATCH /api/job_files/tus_hooks and documented in the docstring for
@@ -169,7 +194,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         """
         pass
 
-    def __authorize_job_access(self, trans, encoded_job_id, **kwargs):
+    def __authorize_job_access(self, trans: ProvidesAppContext, encoded_job_id: str, **kwargs):
         for key in ["path", "job_key"]:
             if key not in kwargs:
                 error_message = f"Job files action requires a valid '{key}'."
@@ -182,12 +207,13 @@ class JobFilesAPIController(BaseGalaxyAPIController):
 
         # Verify job is active. Don't update the contents of complete jobs.
         job = trans.sa_session.get(Job, job_id)
-        if job.finished:
+        assert job
+        if job.state not in Job.non_ready_states:
             error_message = "Attempting to read or modify the files of a job that has already completed."
             raise exceptions.ItemAccessibilityException(error_message)
         return job
 
-    def __check_job_can_write_to_path(self, trans, job, path):
+    def __check_job_can_write_to_path(self, trans: ProvidesAppContext, job: Job, path: str):
         """Verify an idealized job runner should actually be able to write to
         the specified path - it must be a dataset output, a dataset "extra
         file", or a some place in the working directory of this job.
@@ -200,24 +226,24 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         if not in_work_dir and not self.__is_output_dataset_path(job, path):
             raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
 
-    def __is_output_dataset_path(self, job, path):
+    def __is_output_dataset_path(self, job: Job, path: str):
         """Check if is an output path for this job or a file in the an
         output's extra files path.
         """
-        da_lists = [job.output_datasets, job.output_library_datasets]
-        for da_list in da_lists:
-            for job_dataset_association in da_list:
-                dataset = job_dataset_association.dataset
-                if not dataset:
-                    continue
-                if os.path.abspath(dataset.get_file_name()) == os.path.abspath(path):
-                    return True
-                elif util.in_directory(path, dataset.extra_files_path):
-                    return True
+        all_output_assocs: list[JobToOutputDatasetAssociation | JobToOutputLibraryDatasetAssociation] = [
+            *job.output_datasets,
+            *job.output_library_datasets,
+        ]
+        for assoc in all_output_assocs:
+            dataset = assoc.dataset
+            if not dataset:
+                continue
+            if os.path.abspath(dataset.get_file_name()) == os.path.abspath(path):
+                return True
+            elif util.in_directory(path, dataset.extra_files_path):
+                return True
         return False
 
-    def __in_working_directory(self, job, path, app):
-        working_directory = app.object_store.get_filename(
-            job, base_dir="job_work", dir_only=True, extra_dir=str(job.id)
-        )
+    def __in_working_directory(self, job: Job, path: str, app: MinimalManagerApp):
+        working_directory = JobWorkingDirectory(job, app.object_store).resolve()
         return util.in_directory(path, working_directory)

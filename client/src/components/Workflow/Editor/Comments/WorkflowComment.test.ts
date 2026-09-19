@@ -1,17 +1,27 @@
+import { createTestingPinia } from "@pinia/testing";
+import { suppressErrorForCustomIcons } from "@tests/vitest/helpers";
 import { mount, shallowMount } from "@vue/test-utils";
-import { nextTick } from "vue";
+import { setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { nextTick, reactive, ref } from "vue";
+
+import type { LazyUndoRedoAction, UndoRedoAction } from "@/stores/undoRedoStore";
+import type { TextWorkflowComment } from "@/stores/workflowEditorCommentStore";
 
 import MarkdownComment from "./MarkdownComment.vue";
 import TextComment from "./TextComment.vue";
 import WorkflowComment from "./WorkflowComment.vue";
 
-const changeData = jest.fn();
-const changeSize = jest.fn();
-const changePosition = jest.fn();
-const changeColor = jest.fn();
-const deleteComment = jest.fn();
+const changeData = vi.fn();
+const changeSize = vi.fn();
+const changePosition = vi.fn();
+const changeColor = vi.fn();
+const deleteComment = vi.fn();
 
-jest.mock("@/composables/workflowStores", () => ({
+const pinia = createTestingPinia({ createSpy: vi.fn });
+setActivePinia(pinia);
+
+vi.mock("@/composables/workflowStores", () => ({
     useWorkflowStores: () => ({
         commentStore: {
             changeData,
@@ -20,9 +30,24 @@ jest.mock("@/composables/workflowStores", () => ({
             changeColor,
             deleteComment,
             isJustCreated: () => false,
+            getCommentMultiSelected: () => false,
+        },
+        toolbarStore: reactive({
+            snapActive: false,
+            snapDistance: 12,
+        }),
+        undoRedoStore: {
+            applyAction: (action: UndoRedoAction) => action.run(),
+            applyLazyAction: (action: LazyUndoRedoAction) => {
+                action.queued();
+                action.run();
+            },
         },
     }),
 }));
+
+// Mock transform injection that Draggable components expect
+const mockTransform = ref({ x: 0, y: 0, k: 1 });
 
 function getStyleProperty(element: Element, property: string) {
     const style = element.getAttribute("style") ?? "";
@@ -43,12 +68,19 @@ describe("WorkflowComment", () => {
         data: {},
     };
 
+    beforeEach(() => {
+        suppressErrorForCustomIcons();
+    });
+
     it("changes position and size reactively", async () => {
         const wrapper = shallowMount(WorkflowComment as any, {
             propsData: {
                 comment: { ...comment },
                 scale: 1,
                 rootOffset: {},
+            },
+            provide: {
+                transform: mockTransform,
             },
         });
 
@@ -91,6 +123,9 @@ describe("WorkflowComment", () => {
                 scale: 1,
                 rootOffset: {},
             },
+            provide: {
+                transform: mockTransform,
+            },
         });
 
         expect(wrapper.findComponent(TextComment).isVisible()).toBe(true);
@@ -106,11 +141,16 @@ describe("WorkflowComment", () => {
     });
 
     it("forwards events to the comment store", () => {
+        const testComment = { ...comment, id: 123, data: { size: 1, text: "HelloWorld" } } as TextWorkflowComment;
+
         const wrapper = mount(WorkflowComment as any, {
             propsData: {
-                comment: { ...comment, id: 123, data: { size: 1, text: "HelloWorld" } },
+                comment: testComment,
                 scale: 1,
                 rootOffset: {},
+            },
+            provide: {
+                transform: mockTransform,
             },
         });
 
@@ -138,6 +178,9 @@ describe("WorkflowComment", () => {
                 comment: { ...comment, id: 123, data: { size: 1, text: "HelloWorld" } },
                 scale: 1,
                 rootOffset: {},
+            },
+            provide: {
+                transform: mockTransform,
             },
         });
 

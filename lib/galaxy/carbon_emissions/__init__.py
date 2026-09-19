@@ -1,6 +1,7 @@
 import csv
 import logging
 import os
+from collections.abc import Iterator
 
 from typing_extensions import TypedDict
 
@@ -35,7 +36,7 @@ def get_carbon_intensity_entry(geographical_server_location_code: str) -> Carbon
     return {"location_name": "GLOBAL", "carbon_intensity": 475.0}
 
 
-def _load_locations(path: str):
+def _load_locations(path: str) -> Iterator[list[str]]:
     with open(path, newline="") as f:
         csv_reader = csv.reader(f, delimiter=",")
         yield from csv_reader

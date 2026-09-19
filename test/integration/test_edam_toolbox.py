@@ -61,3 +61,17 @@ class TestEdamToolboxDefaultIntegration(integration_util.IntegrationTestCase):
         assert isinstance(views, dict)
         edam_panel_view = views["ontology:edam_topics"]
         assert edam_panel_view["view_type"] == "ontology"
+
+
+class TestCachedEdamToolboxIntegration(
+    integration_util.CachedToolBoxIntegrationMixin,
+    TestEdamToolboxIntegration,
+):
+    pass
+
+
+class TestCachedEdamToolboxDefaultIntegration(
+    integration_util.CachedToolBoxIntegrationMixin,
+    TestEdamToolboxDefaultIntegration,
+):
+    pass

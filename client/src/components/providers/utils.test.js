@@ -1,5 +1,7 @@
 // sanity check tests for providers utils
 
+import { describe, expect, test } from "vitest";
+
 import { cleanPaginationParameters } from "./utils";
 
 describe("Providers utils", () => {

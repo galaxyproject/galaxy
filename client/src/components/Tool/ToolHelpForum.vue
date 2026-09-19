@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCard } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
-import { fetcher } from "@/api/schema";
+import { GalaxyApi } from "@/api";
+import { galaxyLogo } from "@/components/icons/galaxyIcons";
 import { useConfigStore } from "@/stores/configurationStore";
+import { errorMessageAsString } from "@/utils/simple-error";
+import { getShortToolId } from "@/utils/tool";
 
 import { createTopicUrl, type HelpForumPost, type HelpForumTopic, useHelpURLs } from "./helpForumUrls";
 
+import Alert from "@/components/Alert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 
@@ -18,23 +23,28 @@ const props = defineProps<{
 
 const toolHelpTag = "tool-help";
 
-const helpFetcher = fetcher.path("/api/help/forum/search").method("get").create();
-
 const topics = ref<HelpForumTopic[]>([]);
 const posts = ref<HelpForumPost[]>([]);
+const errorMessage = ref("");
 const helpAvailable = computed(() => topics.value.length > 0);
 
 const root = ref(null);
 
-const query = computed(() => `tags:${props.toolId}+${toolHelpTag} status:solved`);
+const shortToolId = computed(() => getShortToolId(props.toolId));
+const query = computed(() => `tags:${shortToolId.value}+${toolHelpTag} status:solved`);
 
 onMounted(async () => {
-    const response = await helpFetcher({ query: query.value });
+    const { data, error } = await GalaxyApi().GET("/api/help/forum/search", {
+        params: {
+            query: { query: query.value },
+        },
+    });
+    if (error) {
+        errorMessage.value = errorMessageAsString(error, "Failed to search the Help Forum.");
+    }
 
-    const data = response.data;
-
-    topics.value = (data.topics ?? []) as HelpForumTopic[];
-    posts.value = data.posts ?? [];
+    topics.value = data?.topics ?? [];
+    posts.value = data?.posts ?? [];
 });
 
 const displayCount = 5;
@@ -49,7 +59,7 @@ function blurbForTopic(topicId: number): string {
 
 const { createNewTopicUrl, searchTopicUrl } = useHelpURLs({
     title: computed(() => props.toolName),
-    tags: computed(() => [props.toolId, toolHelpTag]),
+    tags: computed(() => [shortToolId.value, toolHelpTag]),
     query,
 });
 
@@ -60,12 +70,14 @@ const configStore = useConfigStore();
     <div ref="root" class="tool-help-forum mt-2 mb-4">
         <Heading h2 separator bold size="sm">Help Forum</Heading>
 
+        <Alert v-if="errorMessage" variant="warning" :message="errorMessage" />
+
         <p v-if="helpAvailable">
             Following questions on the
             <ExternalLink :href="configStore.config.help_forum_api_url"> Help Forum </ExternalLink> may be related to
             this tool:
         </p>
-        <p v-else>
+        <p v-else-if="!errorMessage">
             There are no questions on the
             <ExternalLink :href="configStore.config.help_forum_api_url"> Help Forum </ExternalLink>
             about this tool.
@@ -80,14 +92,14 @@ const configStore = useConfigStore();
 
         <a v-if="hasMore" :href="searchTopicUrl.href" target="_blank" class="d-block mb-2">Show all...</a>
 
-        <BButton variant="primary" class="font-weight-bold" target="blank" :href="createNewTopicUrl.href">
-            <FontAwesomeIcon :icon="['gxd', 'galaxyLogo']" /> Ask a new question
-        </BButton>
+        <GButton color="blue" class="font-weight-bold" target="blank" :href="createNewTopicUrl.href">
+            <FontAwesomeIcon :icon="galaxyLogo" /> Ask a new question
+        </GButton>
     </div>
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .tool-help-forum {
     --fa-secondary-color: #{$brand-toggle};

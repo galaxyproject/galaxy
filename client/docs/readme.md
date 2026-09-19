@@ -30,10 +30,10 @@ idea that all data must live in Vuex all the time. That's a really undesirable s
 Although vuex is a well-organized (many would say over-organized) state machine, it is important
 to remember that it is still a kind of global injection and deserves to be considered as such.
 
--   [Should I Store This Data in
-    Vuex](https://markus.oberlehner.net/blog/should-i-store-this-data-in-vuex/)
--   [Vuex getters are great, but don’t overuse
-    them](https://codeburst.io/vuex-getters-are-great-but-dont-overuse-them-9c946689b414)
+- [Should I Store This Data in
+  Vuex](https://markus.oberlehner.net/blog/should-i-store-this-data-in-vuex/)
+- [Vuex getters are great, but don’t overuse
+  them](https://codeburst.io/vuex-getters-are-great-but-dont-overuse-them-9c946689b414)
 
 Data persistence should be something that happens near the top of your component tree, not down in
 the guts.

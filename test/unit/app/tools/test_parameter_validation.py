@@ -1,71 +1,64 @@
-from galaxy.datatypes.sniff import get_test_fname
+import os.path
+
 from galaxy.model import (
     Dataset,
     History,
     HistoryDatasetAssociation,
 )
+from galaxy.tools.parameters.basic import ParameterValueError
+from galaxy.util import galaxy_directory
 from .util import BaseParameterTestCase
 
-# def get_test_fname(fname):
-#     """Returns test data filename"""
-#     path, name = os.path.split(__file__)
-#     full_path = os.path.join(path, "test", fname)
-#     return full_path
+
+def get_test_data_path(name: str):
+    path = os.path.join(galaxy_directory(), "test-data", name)
+    assert os.path.isfile(path), f"{path} is not a file"
+    return path
 
 
 class TestParameterValidation(BaseParameterTestCase):
     def test_simple_ExpressionValidator(self):
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="text" value="">
     <validator type="expression" message="Not gonna happen">value.lower() == "foo"</validator>
-</param>"""
-        )
+</param>""")
         p.validate("Foo")
         p.validate("foo")
         with self.assertRaisesRegex(ValueError, "Not gonna happen"):
             p.validate("Fop")
 
     def test_negated_ExpressionValidator(self):
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="text" value="10">
     <validator type="expression" message="Not gonna happen" negate="true">value.lower() == "foo"</validator>
 </param>
-"""
-        )
+""")
         with self.assertRaisesRegex(ValueError, "Not gonna happen"):
             p.validate("Foo")
         p.validate("Fop")
 
     def test_boolean_ExpressionValidator(self):
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="text" value="">
     <validator type="expression" message="Not gonna happen">value</validator>
-</param>"""
-        )
+</param>""")
         p.validate("Foo")
         with self.assertRaisesRegex(ValueError, "Not gonna happen"):
             p.validate("")
 
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="integer" value="">
     <validator type="expression" message="Not gonna happen">value</validator>
-</param>"""
-        )
+</param>""")
         p.validate(3)
         with self.assertRaisesRegex(ValueError, "Not gonna happen"):
             p.validate(0)
 
     def test_ExpressionValidator_message(self):
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="text" value="">
     <validator type="expression">value.lower() == "foo"</validator>
-</param>"""
-        )
+</param>""")
         with self.assertRaisesRegex(
             ValueError, r"Value 'Fop' does not evaluate to True for 'value.lower\(\) == \"foo\"'"
         ):
@@ -76,144 +69,132 @@ class TestParameterValidation(BaseParameterTestCase):
             p.validate(1)
 
     def test_NoOptionsValidator(self):
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="index" type="select" label="Select reference genome">
     <validator type="no_options" message="No options available for selection"/>
-</param>"""
-        )
+</param>""")
         p.validate("foo")
-        with self.assertRaisesRegex(ValueError, "Parameter index: No options available for selection"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'index': No options available for selection"):
             p.validate(None)
 
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="index" type="select" label="Select reference genome">
     <options from_data_table="bowtie2_indexes"/>
     <validator type="no_options" negate="true"/>
-</param>"""
-        )
-        with self.assertRaisesRegex(ValueError, "Parameter index: Options available for selection"):
+</param>""")
+        with self.assertRaisesRegex(ValueError, "Parameter 'index': Options available for selection"):
             p.validate("foo")
         p.validate(None)
 
     def test_EmptyTextfieldValidator(self):
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="text" value="">
     <validator type="empty_field"/>
-</param>"""
-        )
+</param>""")
         p.validate("foo")
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Field requires a value"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Field requires a value"):
             p.validate("")
 
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="text" value="">
     <validator type="empty_field" negate="true"/>
-</param>"""
-        )
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Field must not set a value"):
+</param>""")
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Field must not set a value"):
             p.validate("foo")
         p.validate("")
 
     def test_RegexValidator(self):
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="text" value="10">
     <validator type="regex">[Ff]oo</validator>
-</param>"""
-        )
+</param>""")
         p.validate("Foo")
         p.validate("foo")
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value 'Fop' does not match regular expression '\[Ff\]oo'"
+            ValueError, r"Parameter 'blah': Value 'Fop' does not match regular expression '\[Ff\]oo'"
         ):
             p.validate("Fop")
 
         # test also valitation of lists (for select parameters)
         p.validate(["Foo", "foo"])
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value 'Fop' does not match regular expression '\[Ff\]oo'"
+            ValueError, r"Parameter 'blah': Value 'Fop' does not match regular expression '\[Ff\]oo'"
         ):
             p.validate(["Foo", "Fop"])
 
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="text" value="10">
     <validator type="regex" negate="true">[Ff]oo</validator>
-</param>"""
-        )
+</param>""")
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value 'Foo' does match regular expression '\[Ff\]oo'"
+            ValueError, r"Parameter 'blah': Value 'Foo' does match regular expression '\[Ff\]oo'"
         ):
             p.validate("Foo")
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value 'foo' does match regular expression '\[Ff\]oo'"
+            ValueError, r"Parameter 'blah': Value 'foo' does match regular expression '\[Ff\]oo'"
         ):
             p.validate("foo")
         p.validate("Fop")
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value 'foo' does match regular expression '\[Ff\]oo'"
+            ValueError, r"Parameter 'blah': Value 'foo' does match regular expression '\[Ff\]oo'"
         ):
             p.validate(["Fop", "foo"])
         p.validate(["Fop", "fop"])
 
     def test_LengthValidator(self):
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="text" value="foobar">
     <validator type="length" min="2" max="8"/>
-</param>"""
-        )
+</param>""")
         p.validate("foo")
         p.validate("bar")
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Must have length of at least 2 and at most 8"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Must have length of at least 2 and at most 8"):
             p.validate("f")
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Must have length of at least 2 and at most 8"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Must have length of at least 2 and at most 8"):
             p.validate("foobarbaz")
 
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="text" value="foobar">
     <validator type="length" min="2" max="8" negate="true"/>
-</param>"""
-        )
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Must not have length of at least 2 and at most 8"):
+</param>""")
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Must not have length of at least 2 and at most 8"):
             p.validate("foo")
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Must not have length of at least 2 and at most 8"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Must not have length of at least 2 and at most 8"):
             p.validate("bar")
         p.validate("f")
         p.validate("foobarbaz")
+        p = self._parameter_for(xml="""
+<param name="blah" type="text" optional="false">
+    <validator type="length" min="2" max="8"/>
+</param>""")
+        with self.assertRaisesRegex(ValueError, "No value provided"):
+            p.validate(None)
 
     def test_InRangeValidator(self):
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="integer" value="10">
     <validator type="in_range" message="Doh!! %s not in range" min="10" exclude_min="true" max="20"/>
-</param>"""
-        )
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Doh!! 10 not in range"):
+</param>""")
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Doh!! 10 not in range"):
             p.validate(10)
         p.validate(15)
         p.validate(20)
-        with self.assertRaisesRegex(ValueError, "Parameter blah: Doh!! 21 not in range"):
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': Doh!! 21 not in range"):
             p.validate(21)
 
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
  <param name="blah" type="integer" value="10">
     <validator type="in_range" min="10" exclude_min="true" max="20" negate="true"/>
-</param>"""
-        )
+</param>""")
         p.validate(10)
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value \('15'\) must not fulfill float\('10'\) < value <= float\('20'\)"
+            ValueError,
+            r"Parameter 'blah': Value \('15'\) must not fulfill \(10 < value <= 20\)",
         ):
             p.validate(15)
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value \('20'\) must not fulfill float\('10'\) < value <= float\('20'\)"
+            ValueError,
+            r"Parameter 'blah': Value \('20'\) must not fulfill \(10 < value <= 20\)",
         ):
             p.validate(20)
         p.validate(21)
@@ -232,25 +213,21 @@ class TestParameterValidation(BaseParameterTestCase):
         )
         notok_hda.state = Dataset.states.EMPTY
 
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="data" no_validation="true">
     <validator type="dataset_ok_validator"/>
-</param>"""
-        )
+</param>""")
         p.validate(ok_hda)
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: The selected dataset is still being generated, select another dataset or wait until it is completed",
+            "Parameter 'blah': The selected dataset is still being generated, select another dataset or wait until it is completed",
         ):
             p.validate(notok_hda)
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="data" no_validation="true">
     <validator type="dataset_ok_validator" negate="true"/>
-</param>"""
-        )
-        with self.assertRaisesRegex(ValueError, "Parameter blah: The selected dataset must not be in state OK"):
+</param>""")
+        with self.assertRaisesRegex(ValueError, "Parameter 'blah': The selected dataset must not be in state OK"):
             p.validate(ok_hda)
         p.validate(notok_hda)
 
@@ -259,35 +236,31 @@ class TestParameterValidation(BaseParameterTestCase):
         hist = History()
         with sa_session.begin():
             sa_session.add(hist)
-        empty_dataset = Dataset(external_filename=get_test_fname("empty.txt"))
+        empty_dataset = Dataset(external_filename=get_test_data_path("empty.txt"))
         empty_hda = hist.add_dataset(
             HistoryDatasetAssociation(id=1, extension="interval", dataset=empty_dataset, sa_session=sa_session)
         )
-        full_dataset = Dataset(external_filename=get_test_fname("1.json"))
+        full_dataset = Dataset(external_filename=get_test_data_path("1.interval"))
         full_hda = hist.add_dataset(
             HistoryDatasetAssociation(id=2, extension="interval", dataset=full_dataset, sa_session=sa_session)
         )
 
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="data">
     <validator type="empty_dataset"/>
-</param>"""
-        )
+</param>""")
         p.validate(full_hda)
         with self.assertRaisesRegex(
-            ValueError, "Parameter blah: The selected dataset is empty, this tool expects non-empty files."
+            ValueError, "Parameter 'blah': The selected dataset is empty, this tool expects non-empty files."
         ):
             p.validate(empty_hda)
 
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="data">
     <validator type="empty_dataset" negate="true"/>
-</param>"""
-        )
+</param>""")
         with self.assertRaisesRegex(
-            ValueError, "Parameter blah: The selected dataset is non-empty, this tool expects empty files."
+            ValueError, "Parameter 'blah': The selected dataset is non-empty, this tool expects empty files."
         ):
             p.validate(full_hda)
         p.validate(empty_hda)
@@ -308,29 +281,25 @@ class TestParameterValidation(BaseParameterTestCase):
         has_no_extra_hda.dataset.file_size = 10
         has_no_extra_hda.dataset.total_size = 10
 
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="data">
     <validator type="empty_extra_files_path"/>
-</param>"""
-        )
+</param>""")
         p.validate(has_extra_hda)
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: The selected dataset's extra_files_path directory is empty or does not exist, this tool expects non-empty extra_files_path directories associated with the selected input.",
+            "Parameter 'blah': The selected dataset's extra_files_path directory is empty or does not exist, this tool expects non-empty extra_files_path directories associated with the selected input.",
         ):
             p.validate(has_no_extra_hda)
 
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="data">
     <validator type="empty_extra_files_path" negate="true"/>
-</param>"""
-        )
+</param>""")
 
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: The selected dataset's extra_files_path directory is non-empty or does exist, this tool expects empty extra_files_path directories associated with the selected input.",
+            "Parameter 'blah': The selected dataset's extra_files_path directory is non-empty or does exist, this tool expects empty extra_files_path directories associated with the selected input.",
         ):
             p.validate(has_extra_hda)
         p.validate(has_no_extra_hda)
@@ -346,7 +315,7 @@ class TestParameterValidation(BaseParameterTestCase):
                 extension="bed",
                 create_dataset=True,
                 sa_session=sa_session,
-                dataset=Dataset(external_filename=get_test_fname("1.bed")),
+                dataset=Dataset(external_filename=get_test_data_path("1.bed")),
             )
         )
         hda.state = Dataset.states.OK
@@ -364,7 +333,7 @@ class TestParameterValidation(BaseParameterTestCase):
         p = self._parameter_for(xml=param_xml.format(check="strandCol", skip=""))
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: Metadata 'strandCol' missing, click the pencil icon in the history item to edit / save the metadata attributes",
+            "Parameter 'blah': Metadata 'strandCol' missing, click the pencil icon in the history item to edit / save the metadata attributes",
         ):
             p.validate(hda)
 
@@ -373,7 +342,7 @@ class TestParameterValidation(BaseParameterTestCase):
         p = self._parameter_for(xml=param_xml.format(check="", skip="dbkey,comment_lines,column_names,nameCol"))
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: Metadata 'strandCol' missing, click the pencil icon in the history item to edit / save the metadata attributes",
+            "Parameter 'blah': Metadata 'strandCol' missing, click the pencil icon in the history item to edit / save the metadata attributes",
         ):
             p.validate(hda)
 
@@ -386,7 +355,7 @@ class TestParameterValidation(BaseParameterTestCase):
         p = self._parameter_for(xml=param_xml_negate.format(check="nameCol", skip=""))
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: At least one of the checked metadata 'nameCol' is set, click the pencil icon in the history item to edit / save the metadata attributes",
+            "Parameter 'blah': At least one of the checked metadata 'nameCol' is set, click the pencil icon in the history item to edit / save the metadata attributes",
         ):
             p.validate(hda)
 
@@ -397,7 +366,7 @@ class TestParameterValidation(BaseParameterTestCase):
         )
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: At least one of the non skipped metadata 'dbkey,comment_lines,column_names,strandCol' is set, click the pencil icon in the history item to edit / save the metadata attributes",
+            "Parameter 'blah': At least one of the non skipped metadata 'dbkey,comment_lines,column_names,strandCol' is set, click the pencil icon in the history item to edit / save the metadata attributes",
         ):
             p.validate(hda)
 
@@ -416,40 +385,46 @@ class TestParameterValidation(BaseParameterTestCase):
         )
         has_no_dbkey_hda.state = Dataset.states.OK
 
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="data" no_validation="true">
     <validator type="unspecified_build"/>
-</param>"""
-        )
+</param>""")
         p.validate(has_dbkey_hda)
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: Unspecified genome build, click the pencil icon in the history item to set the genome build",
+            "Parameter 'blah': Unspecified genome build, click the pencil icon in the history item to set the genome build",
         ):
             p.validate(has_no_dbkey_hda)
 
-        p = self._parameter_for(
-            xml="""
+        p = self._parameter_for(xml="""
 <param name="blah" type="data" no_validation="true">
     <validator type="unspecified_build" negate="true"/>
-</param>"""
-        )
+</param>""")
         with self.assertRaisesRegex(
             ValueError,
-            "Parameter blah: Specified genome build, click the pencil icon in the history item to remove the genome build",
+            "Parameter 'blah': Specified genome build, click the pencil icon in the history item to remove the genome build",
         ):
             p.validate(has_dbkey_hda)
         p.validate(has_no_dbkey_hda)
 
     def test_RegexValidator_global_flag_inline(self):
         # tests that global inline flags continue to work past python 3.10
-        p = self._parameter_for(
-            xml=r"""
+        p = self._parameter_for(xml=r"""
 <param name="blah" type="text" value="">
     <validator type="regex">^(?ims)\s*select\s+.*\s+from\s+.*$</validator>
-</param>"""
-        )
+</param>""")
         p.validate("select id from job where id = 1;")
         with self.assertRaises(ValueError):
             p.validate("not sql")
+
+    def test_integer_to_python_raises_parameter_value_error(self):
+        p = self._parameter_for(xml='<param name="num" type="integer" value="10" />')
+        assert p.to_python(42, self.app) == 42
+        with self.assertRaises(ParameterValueError):
+            p.to_python(None, self.app)
+
+    def test_float_to_python_raises_parameter_value_error(self):
+        p = self._parameter_for(xml='<param name="num" type="float" value="1.0" />')
+        assert p.to_python(3.14, self.app) == 3.14
+        with self.assertRaises(ParameterValueError):
+            p.to_python(None, self.app)

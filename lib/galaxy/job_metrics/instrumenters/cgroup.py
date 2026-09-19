@@ -1,13 +1,9 @@
 """The module describes the ``cgroup`` job metrics plugin."""
 
-import decimal
 import logging
-import numbers
 from collections import namedtuple
 from typing import (
     Any,
-    Dict,
-    List,
 )
 
 from galaxy.util import (
@@ -47,6 +43,7 @@ TITLES = {
     "memory.soft_limit_in_bytes": "Memory softlimit on cgroup",
     "memory.failcnt": "Failed to allocate memory count",
     "memory.oom_control.oom_kill_disable": "OOM Control enabled",
+    "memory.oom_control.oom_kill": "Number of processes belonging to this cgroup killed by any kind of OOM killer",
     "memory.oom_control.under_oom": "Was OOM Killer active?",
     "cpuacct.usage": "CPU Time",
     # cgroupsv2
@@ -70,7 +67,7 @@ TITLES = {
 CONVERSION = {
     "memory.oom_control.oom_kill_disable": lambda x: "No" if x == 1 else "Yes",
     "memory.oom_control.under_oom": lambda x: "Yes" if x == 1 else "No",
-    "memory.peak": lambda x: nice_size(x),
+    "memory.peak": lambda x: nice_size(x, binary=True),
     "cpuacct.usage": lambda x: formatting.seconds_to_str(x / 10**9),  # convert nanoseconds
     "cpu.stat.system_usec": lambda x: formatting.seconds_to_str(x / 10**6),  # convert microseconds
     "cpu.stat.usage_usec": lambda x: formatting.seconds_to_str(x / 10**6),  # convert microseconds
@@ -95,9 +92,7 @@ if [ -e "/proc/$$/cgroup" -a -d "{cgroup_mount}" -a ! -f "{cgroup_mount}/cgroup.
         echo "__$(basename $f)__" >> {metrics}; cat "$f" >> {metrics} 2>/dev/null;
     done;
 fi
-""".replace(
-    "\n", " "
-).strip()
+""".replace("\n", " ").strip()
 CGROUPSV2_TEMPLATE = r"""
 if [ -e "/proc/$$/cgroup" -a -f "{cgroup_mount}/cgroup.controllers" ]; then
     cgroup_path=$(cat "/proc/$$/cgroup" | awk -F':' '($1=="0") {{print $3}}');
@@ -105,9 +100,7 @@ if [ -e "/proc/$$/cgroup" -a -f "{cgroup_mount}/cgroup.controllers" ]; then
         echo "__$(basename $f)__" >> {metrics}; cat "$f" >> {metrics} 2>/dev/null;
     done;
 fi
-""".replace(
-    "\n", " "
-).strip()
+""".replace("\n", " ").strip()
 
 
 Metric = namedtuple("Metric", ("key", "subkey", "value"))
@@ -120,11 +113,16 @@ class CgroupPluginFormatter(formatting.JobMetricFormatter):
             return formatting.FormattedMetric(title, CONVERSION[key](value))
         elif key.endswith("_bytes"):
             try:
-                return formatting.FormattedMetric(title, nice_size(value))
+                return formatting.FormattedMetric(title, nice_size(value, binary=True))
             except ValueError:
                 pass
-        elif isinstance(value, (decimal.Decimal, numbers.Integral, numbers.Real)) and value == int(value):
-            value = int(value)
+        else:
+            try:
+                int_value = int(value)
+                if value == int_value:
+                    value = int_value
+            except TypeError:
+                pass
         return formatting.FormattedMetric(title, str(value))
 
 
@@ -148,15 +146,15 @@ class CgroupPlugin(InstrumentPlugin):
             params = list(DEFAULT_PARAMS)
         self.params = params
 
-    def post_execute_instrument(self, job_directory: str) -> List[str]:
-        commands: List[str] = []
+    def post_execute_instrument(self, job_directory: str) -> list[str]:
+        commands: list[str] = []
         if self.version in ("auto", "1"):
             commands.append(self.__record_cgroup_v1_usage(job_directory))
         if self.version in ("auto", "2"):
             commands.append(self.__record_cgroup_v2_usage(job_directory))
         return commands
 
-    def job_properties(self, job_id, job_directory: str) -> Dict[str, Any]:
+    def job_properties(self, job_id, job_directory: str) -> dict[str, Any]:
         metrics = self.__read_metrics(self.__cgroup_metrics_file(job_directory))
         return metrics
 
@@ -174,7 +172,7 @@ class CgroupPlugin(InstrumentPlugin):
         return self._instrument_file_path(job_directory, "_metrics")
 
     def __read_metrics(self, path):
-        metrics: Dict[str, str] = {}
+        metrics: dict[str, str] = {}
         key = None
         with open(path) as infile:
             for line in infile:

@@ -45,6 +45,8 @@ AST_NODE_TYPE_WHITELIST = [
     "UnaryOp",
     "Invert",
     "Not",
+    "UAdd",
+    "USub",
     "NotIn",
     "In",
     "Is",
@@ -52,6 +54,7 @@ AST_NODE_TYPE_WHITELIST = [
     "List",
     "Index",
     "Subscript",
+    "Constant",
     "Name",
 ]
 
@@ -170,7 +173,7 @@ def check_expression(text):
 
     statements = module.body
     if not len(statements) == 1:
-        return False  # type: ignore[unreachable]
+        return False
     expression = statements[0]
     if expression.__class__.__name__ != "Expr":
         return False

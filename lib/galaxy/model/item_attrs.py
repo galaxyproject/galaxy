@@ -5,7 +5,7 @@ from sqlalchemy.sql.expression import func
 
 # Cannot import galaxy.model b/c it creates a circular import graph.
 import galaxy
-from galaxy.model.base import transaction
+from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
@@ -47,13 +47,11 @@ class UsesItemRatings:
             item_rating_assoc_class = self._get_item_rating_assoc_class(item, webapp_model=webapp_model)
             item_rating = item_rating_assoc_class(user, item, rating)
             db_session.add(item_rating)
-            with transaction(db_session):
-                db_session.commit()
+            db_session.commit()
         elif item_rating.rating != rating:
             # User has rated item; update rating.
             item_rating.rating = rating
-            with transaction(db_session):
-                db_session.commit()
+            db_session.commit()
         return item_rating
 
     def get_user_item_rating(self, db_session, user, item, webapp_model=None):
@@ -98,8 +96,7 @@ class UsesAnnotations:
     def delete_item_annotation(self, db_session, user, item):
         if annotation_assoc := get_item_annotation_obj(db_session, user, item):
             db_session.delete(annotation_assoc)
-            with transaction(db_session):
-                db_session.commit()
+            db_session.commit()
 
     def copy_item_annotation(self, db_session, source_user, source_item, target_user, target_item):
         """Copy an annotation from a user/item source to a user/item target."""
@@ -151,7 +148,7 @@ def get_item_annotation_str(db_session, user, item):
     else:
         annotation_obj = get_item_annotation_obj(db_session, user, item)
     if annotation_obj:
-        return galaxy.util.unicodify(annotation_obj.annotation)
+        return unicodify(annotation_obj.annotation)
     return None
 
 
@@ -180,12 +177,12 @@ def _get_annotation_assoc_class(item):
 def get_foreign_key(source_class, target_class):
     """Returns foreign key in source class that references target class."""
     target_fk = None
-    for fk in source_class.table.foreign_keys:
-        if fk.references(target_class.table):
+    for fk in source_class.__table__.foreign_keys:
+        if fk.references(target_class.__table__):
             target_fk = fk
             break
     if not target_fk:
-        raise Exception(f"No foreign key found between objects: {source_class.table}, {target_class.table}")
+        raise Exception(f"No foreign key found between objects: {source_class.__table__}, {target_class.__table__}")
     return target_fk
 
 

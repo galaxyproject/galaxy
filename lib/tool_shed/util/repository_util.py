@@ -2,10 +2,8 @@ import configparser
 import logging
 import os
 import re
+import tempfile
 from typing import (
-    List,
-    Optional,
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -17,34 +15,27 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import joinedload
 
-import tool_shed.dependencies.repository
+import tool_shed.dependencies.repository.relation_builder
 from galaxy import (
     util,
     web,
 )
-from galaxy.model.base import transaction
 from galaxy.tool_shed.util.repository_util import (
     create_or_update_tool_shed_repository,
     extract_components_from_tuple,
     generate_tool_shed_repository_install_dir,
     get_absolute_path_to_file_in_repository,
-    get_ids_of_tool_shed_repositories_being_installed,
     get_installed_repository,
     get_installed_tool_shed_repository,
     get_prior_import_or_install_required_dict,
     get_repo_info_tuple_contents,
     get_repository_admin_role_name,
     get_repository_and_repository_dependencies_from_repo_info_dict,
-    get_repository_by_id,
-    get_repository_by_name,
-    get_repository_by_name_and_owner,
     get_repository_dependency_types,
     get_repository_for_dependency_relationship,
     get_repository_ids_requiring_prior_import_or_install,
     get_repository_owner,
     get_repository_owner_from_clone_url,
-    get_repository_query,
-    get_role_by_id,
     get_tool_shed_from_clone_url,
     get_tool_shed_repository_by_id,
     get_tool_shed_status_for_installed_repository,
@@ -64,19 +55,36 @@ from tool_shed.util.metadata_util import (
     get_repository_metadata_by_changeset_revision,
     repository_metadata_by_changeset_revision,
 )
+from tool_shed.webapp import model
+from tool_shed.webapp.model.db import (
+    get_repository_by_name_and_owner,
+)
 
 if TYPE_CHECKING:
+    from sqlalchemy.orm import scoped_session
+
     from tool_shed.context import (
         ProvidesRepositoriesContext,
         ProvidesUserContext,
     )
     from tool_shed.structured_app import ToolShedApp
-    from tool_shed.webapp.model import Repository
 
 
 log = logging.getLogger(__name__)
 
 VALID_REPOSITORYNAME_RE = re.compile(r"^[a-z0-9\_]+$")
+
+
+def get_repository_by_id(app: "ToolShedApp", id):
+    """Get a repository from the database via id."""
+    sa_session = app.model.session
+    return sa_session.query(model.Repository).get(app.security.decode_id(id))
+
+
+def get_role_by_id(app: "ToolShedApp", role_id):
+    """Get a Role from the database by id."""
+    sa_session = app.model.session
+    return sa_session.query(model.Role).get(app.security.decode_id(role_id))
 
 
 def create_repo_info_dict(
@@ -115,10 +123,14 @@ def create_repo_info_dict(
     repository_dependencies will be None.
     """
     repo_info_dict = {}
-    repository = get_repository_by_name_and_owner(app, repository_name, repository_owner)
+    if repository is None:
+        repository = get_repository_by_name_and_owner(app.model.context, repository_name, repository_owner)
     if app.name == "tool_shed":
         # We're in the tool shed.
-        repository_metadata = repository_metadata_by_changeset_revision(app.model, repository.id, changeset_revision)
+        if repository_metadata is None:
+            repository_metadata = repository_metadata_by_changeset_revision(
+                app.model, repository.id, changeset_revision
+            )
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
@@ -161,26 +173,21 @@ def create_repo_info_dict(
     return repo_info_dict
 
 
-def create_repository_admin_role(app: "ToolShedApp", repository: "Repository"):
+def create_repository_admin_role(app: "ToolShedApp", repository: model.Repository):
     """
     Create a new role with name-spaced name based on the repository name and its owner's public user
-    name.  This will ensure that the tole name is unique.
+    name.  This will ensure that the role name is unique.
     """
     sa_session = app.model.session
     name = get_repository_admin_role_name(str(repository.name), str(repository.user.username))
     description = "A user or group member with this role can administer this repository."
-    role = app.model.Role(name=name, description=description, type=app.model.Role.types.SYSTEM)
+    role = model.Role(name=name, description=description, type=model.Role.types.SYSTEM)
     sa_session.add(role)
-    session = sa_session()
-    with transaction(session):
-        session.commit()
     # Associate the role with the repository owner.
-    app.model.UserRoleAssociation(repository.user, role)
+    model.UserRoleAssociation(repository.user, role)
     # Associate the role with the repository.
-    rra = app.model.RepositoryRoleAssociation(repository, role)
+    rra = model.RepositoryRoleAssociation(repository, role)
     sa_session.add(rra)
-    with transaction(session):
-        session.commit()
     return role
 
 
@@ -190,89 +197,95 @@ def create_repository(
     type: str,
     description,
     long_description,
-    user_id,
-    category_ids: Optional[List[str]] = None,
+    user,
+    category_ids: list[str] | None = None,
     remote_repository_url=None,
     homepage_url=None,
-) -> Tuple["Repository", str]:
+) -> tuple[model.Repository, str]:
     """Create a new ToolShed repository"""
     category_ids = category_ids or []
     sa_session = app.model.session
     # Add the repository record to the database.
-    repository = app.model.Repository(
+    repository = model.Repository(
         name=name,
         type=type,
         remote_repository_url=remote_repository_url,
         homepage_url=homepage_url,
         description=description,
         long_description=long_description,
-        user_id=user_id,
+        user=user,
     )
-    # Flush to get the id.
     sa_session.add(repository)
-    session = sa_session()
-    with transaction(session):
-        session.commit()
-    # Create an admin role for the repository.
-    create_repository_admin_role(app, repository)
-    # Determine the repository's repo_path on disk.
-    dir = os.path.join(app.config.file_path, *util.directory_hash_id(repository.id))
-    # Create directory if it does not exist.
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-    # Define repo name inside hashed directory.
-    repository_path = os.path.join(dir, "repo_%d" % repository.id)
-    # Create local repository directory.
-    if not os.path.exists(repository_path):
-        os.makedirs(repository_path)
-    # Create the local repository.
-    init_repository(repo_path=repository_path)
-    # Add an entry in the hgweb.config file for the local repository.
-    lhs = f"repos/{repository.user.username}/{repository.name}"
-    app.hgweb_config_manager.add_entry(lhs, repository_path)
-    # Create a .hg/hgrc file for the local repository.
-    create_hgrc_file(app, repository)
-    flush_needed = False
     if category_ids:
         # Create category associations
         for category_id in category_ids:
-            category = sa_session.get(app.model.Category, app.security.decode_id(category_id))
-            rca = app.model.RepositoryCategoryAssociation(repository, category)
+            category = sa_session.get(model.Category, app.security.decode_id(category_id))
+            rca = model.RepositoryCategoryAssociation(repository, category)
             sa_session.add(rca)
-            flush_needed = True
-    if flush_needed:
-        with transaction(session):
-            session.commit()
-    # Update the repository registry.
-    app.repository_registry.add_entry(repository)
+    # Create an admin role for the repository.
+    create_repository_admin_role(app, repository)
+    # Create a temporary repo_path on disk.
+    repository_path = tempfile.mkdtemp(
+        dir=app.config.file_path,
+        prefix=f"{repository.user.username}-{repository.name}",
+    )
+    # Created directory is readable, writable, and searchable only by the creating user ID,
+    # but we need to make it world-readable so non-shed user can serve files (e.g. hgweb run as different user).
+    os.chmod(repository_path, util.RWXR_XR_X)
+    # Create the local repository.
+    init_repository(repo_path=repository_path)
+    # Create a .hg/hgrc file for the local repository.
+    create_hgrc_file(app, repository, repo_path=repository_path)
+    # Add an entry in the hgweb.config file for the local repository.
+    lhs = f"{app.config.hgweb_repo_prefix}{repository.user.username}/{repository.name}"
+    # Flush to get the id.
+    session = sa_session()
+    session.commit()
+    final_repository_path = repository.ensure_hg_repository_path(app.config.file_path)
+    os.rename(repository_path, final_repository_path)
+    app.hgweb_config_manager.add_entry(lhs, final_repository_path)
     message = f"Repository <b>{escape(str(repository.name))}</b> has been created."
     return repository, message
 
 
 def generate_sharable_link_for_repository_in_tool_shed(
-    repository: "Repository", changeset_revision: Optional[str] = None
+    repository: model.Repository, changeset_revision: str | None = None, base_url: str | None = None
 ) -> str:
     """Generate the URL for sharing a repository that is in the tool shed."""
-    base_url = web.url_for("/", qualified=True).rstrip("/")
+    if base_url is None:
+        base_url = web.url_for("/", qualified=True).rstrip("/")
+    else:
+        base_url = base_url.rstrip("/")
     sharable_url = f"{base_url}/view/{repository.user.username}/{repository.name}"
     if changeset_revision:
         sharable_url += f"/{changeset_revision}"
     return sharable_url
 
 
-def get_repository_in_tool_shed(app, id, eagerload_columns=None):
+def get_repository_in_tool_shed(app: "ToolShedApp", id, eagerload_columns=None):
     """Get a repository on the tool shed side from the database via id."""
-    q = get_repository_query(app)
-    if eagerload_columns:
-        q = q.options(joinedload(*eagerload_columns))
-    return q.get(app.security.decode_id(id))
+    options = [joinedload(col) for col in eagerload_columns] if eagerload_columns else []
+    return app.model.context.get(model.Repository, app.security.decode_id(id), options=options)
 
 
-def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, changeset_revision):
+def get_repo_info_dict(
+    trans: "ProvidesRepositoriesContext",
+    repository_id,
+    changeset_revision,
+    repository=None,
+    repository_metadata=None,
+):
+    """Build the repo info dict for a repository revision.
+
+    Callers that have already loaded the repository and the metadata record for
+    changeset_revision can pass them in to avoid re-querying for them.
+    """
     app = trans.app
-    repository = get_repository_in_tool_shed(app, repository_id)
+    if repository is None:
+        repository = get_repository_in_tool_shed(app, repository_id)
     repository_clone_url = generate_clone_url_for(trans, repository)
-    repository_metadata = get_repository_metadata_by_changeset_revision(app, repository_id, changeset_revision)
+    if repository_metadata is None:
+        repository_metadata = get_repository_metadata_by_changeset_revision(app, repository_id, changeset_revision)
     if not repository_metadata:
         # The received changeset_revision is no longer installable, so get the next changeset_revision
         # in the repository's changelog.  This generally occurs only with repositories of type
@@ -311,8 +324,17 @@ def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, chan
         has_repository_dependencies_only_if_compiling_contained_td = False
         includes_tool_dependencies = False
         includes_tools_for_display_in_tool_panel = False
-    repo_path = repository.repo_path(app)
-    ctx_rev = str(changeset2rev(repo_path, changeset_revision))
+    # repository_metadata may describe the next installable revision rather than the requested
+    # one, in which case it says nothing about changeset_revision itself.
+    if repository_metadata is not None and repository_metadata.changeset_revision == changeset_revision:
+        metadata_for_changeset = repository_metadata
+    else:
+        metadata_for_changeset = None
+    # Deliberately not read from repository_metadata.numeric_revision: when a push updates
+    # the metadata record in place its changeset_revision advances to the new tip while
+    # numeric_revision keeps pointing at the previous changeset, and Galaxy clones at
+    # whatever ctx_rev we hand it.
+    ctx_rev = str(changeset2rev(repository.hg_repo, changeset_revision))
     repo_info_dict = create_repo_info_dict(
         app=app,
         repository_clone_url=repository_clone_url,
@@ -321,7 +343,7 @@ def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, chan
         repository_owner=repository.user.username,
         repository_name=repository.name,
         repository=repository,
-        repository_metadata=repository_metadata,
+        repository_metadata=metadata_for_changeset,
         tool_dependencies=None,
         repository_dependencies=None,
         trans=trans,
@@ -337,15 +359,17 @@ def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, chan
 
 
 def get_repositories_by_category(
-    app: "ToolShedApp", category_id, installable=False, sort_order="asc", sort_key="name", page=None, per_page=25
+    app: "ToolShedApp",
+    category_id,
+    installable: bool = False,
+    sort_order="asc",
+    sort_key="name",
+    page: int | None = None,
+    per_page: int = 25,
 ):
     repositories = []
     for repository in get_repositories(
         app.model.session,
-        app.model.Repository,
-        app.model.RepositoryCategoryAssociation,
-        app.model.User,
-        app.model.RepositoryMetadata,
         category_id,
         installable,
         sort_order,
@@ -381,40 +405,35 @@ def handle_role_associations(app: "ToolShedApp", role, repository, **kwd):
     repository_owner = repository.user
     if kwd.get("manage_role_associations_button", False):
         in_users_list = util.listify(kwd.get("in_users", []))
-        in_users = [sa_session.get(app.model.User, x) for x in in_users_list]
+        users = [y for y in (sa_session.get(model.User, x) for x in in_users_list) if y is not None]
         # Make sure the repository owner is always associated with the repostory's admin role.
         owner_associated = False
-        for user in in_users:
+        for user in users:
             if user.id == repository_owner.id:
                 owner_associated = True
                 break
         if not owner_associated:
-            in_users.append(repository_owner)
+            users.append(repository_owner)
             message += "The repository owner must always be associated with the repository's administrator role.  "
             status = "error"
         in_groups_list = util.listify(kwd.get("in_groups", []))
-        in_groups = [sa_session.get(app.model.Group, x) for x in in_groups_list]
+        groups = [sa_session.get(model.Group, x) for x in in_groups_list]
         in_repositories = [repository]
         app.security_agent.set_entity_role_associations(
-            roles=[role], users=in_users, groups=in_groups, repositories=in_repositories
+            roles=[role], users=users, groups=groups, repositories=in_repositories
         )
         sa_session.refresh(role)
-        message += "Role <b>%s</b> has been associated with %d users, %d groups and %d repositories.  " % (
-            escape(str(role.name)),
-            len(in_users),
-            len(in_groups),
-            len(in_repositories),
-        )
+        message += f"Role <b>{escape(str(role.name))}</b> has been associated with {len(users)} users, {len(groups)} groups and {len(in_repositories)} repositories.  "
     in_users = []
     out_users = []
     in_groups = []
     out_groups = []
-    for user in get_current_users(sa_session, app.model.User):
+    for user in get_current_users(sa_session):
         if user in [x.user for x in role.users]:
             in_users.append((user.id, user.email))
         else:
             out_users.append((user.id, user.email))
-    for group in get_current_groups(sa_session, app.model.Group):
+    for group in get_current_groups(sa_session):
         if group in [x.group for x in role.groups]:
             in_groups.append((group.id, group.name))
         else:
@@ -438,19 +457,29 @@ def change_repository_name_in_hgrc_file(hgrc_file: str, new_name: str) -> None:
         config.write(fh)
 
 
-def update_repository(trans: "ProvidesUserContext", id: str, **kwds) -> Tuple[Optional["Repository"], Optional[str]]:
+def update_repository(trans: "ProvidesUserContext", id: str, **kwds) -> tuple[model.Repository | None, str | None]:
     """Update an existing ToolShed repository"""
     app = trans.app
-    message = None
-    flush_needed = False
     sa_session = app.model.session
-    repository = sa_session.get(app.model.Repository, app.security.decode_id(id))
+    repository = sa_session.get(model.Repository, app.security.decode_id(id))
     if repository is None:
         return None, "Unknown repository ID"
 
-    if not (trans.user_is_admin or trans.app.security_agent.user_can_administer_repository(trans.user, repository)):
+    if not (trans.user_is_admin or app.security_agent.user_can_administer_repository(trans.user, repository)):
         message = "You are not the owner of this repository, so you cannot administer it."
         return None, message
+
+    return update_validated_repository(trans, repository, **kwds)
+
+
+def update_validated_repository(
+    trans: "ProvidesUserContext", repository: model.Repository, **kwds
+) -> tuple[model.Repository | None, str | None]:
+    """Update an existing ToolShed repository metadata once permissions have been checked."""
+    app = trans.app
+    sa_session = app.model.session
+    message = None
+    flush_needed = False
 
     # Allowlist properties that can be changed via this method
     for key in ("type", "description", "long_description", "remote_repository_url", "homepage_url"):
@@ -461,15 +490,13 @@ def update_repository(trans: "ProvidesUserContext", id: str, **kwds) -> Tuple[Op
 
     if "category_ids" in kwds and isinstance(kwds["category_ids"], list):
         # Remove existing category associations
-        delete_repository_category_associations(
-            sa_session, app.model.RepositoryCategoryAssociation, app.security.decode_id(id)
-        )
+        _delete_repository_category_associations(sa_session, model.RepositoryCategoryAssociation, repository.id)
 
         # Then (re)create category associations
         for category_id in kwds["category_ids"]:
-            category = sa_session.get(app.model.Category, app.security.decode_id(category_id))
+            category = sa_session.get(model.Category, app.security.decode_id(category_id))
             if category:
-                rca = app.model.RepositoryCategoryAssociation(repository, category)
+                rca = model.RepositoryCategoryAssociation(repository, category)
                 sa_session.add(rca)
             else:
                 pass
@@ -486,8 +513,8 @@ def update_repository(trans: "ProvidesUserContext", id: str, **kwds) -> Tuple[Op
 
         repo_dir = repository.repo_path(app)
         # Change the entry in the hgweb.config file for the repository.
-        old_lhs = f"repos/{repository.user.username}/{repository.name}"
-        new_lhs = f"repos/{repository.user.username}/{kwds['name']}"
+        old_lhs = f"{trans.app.config.hgweb_repo_prefix}{repository.user.username}/{repository.name}"
+        new_lhs = f"{trans.app.config.hgweb_repo_prefix}{repository.user.username}/{kwds['name']}"
         trans.app.hgweb_config_manager.change_entry(old_lhs, new_lhs, repo_dir)
 
         # Change the entry in the repository's hgrc file.
@@ -503,8 +530,7 @@ def update_repository(trans: "ProvidesUserContext", id: str, **kwds) -> Tuple[Op
 
     if flush_needed:
         trans.sa_session.add(repository)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         message = "The repository information has been updated."
     else:
         message = None
@@ -521,7 +547,7 @@ def validate_repository_name(app: "ToolShedApp", name, user):
         return "Enter the required repository name."
     if name in ["repos"]:
         return f"The term '{name}' is a reserved word in the Tool Shed, so it cannot be used as a repository name."
-    check_existing = get_repository_by_name_and_owner(app, name, user.username)
+    check_existing = get_repository_by_name_and_owner(app.model.context, name, user.username)
     if check_existing is not None:
         if check_existing.deleted:
             return f"You own a deleted repository named <b>{escape(name)}</b>, please choose a different name."
@@ -537,42 +563,32 @@ def validate_repository_name(app: "ToolShedApp", name, user):
 
 
 def get_repositories(
-    session,
-    repository_model,
-    repository_category_assoc_model,
-    user_model,
-    repository_metadata_model,
+    session: "scoped_session",
     category_id,
-    installable,
+    installable: bool,
     sort_order,
     sort_key,
-    page,
-    per_page,
+    page: int | None,
+    per_page: int,
 ):
-    Repository = repository_model
-    RepositoryCategoryAssociation = repository_category_assoc_model
-    User = user_model
-    RepositoryMetadata = repository_metadata_model
-
     stmt = (
-        select(Repository)
+        select(model.Repository)
         .join(
-            RepositoryCategoryAssociation,
-            Repository.id == RepositoryCategoryAssociation.repository_id,
+            model.RepositoryCategoryAssociation,
+            model.Repository.id == model.RepositoryCategoryAssociation.repository_id,
         )
-        .join(User, User.id == Repository.user_id)
-        .where(RepositoryCategoryAssociation.category_id == category_id)
+        .join(model.User, model.User.id == model.Repository.user_id)
+        .where(model.RepositoryCategoryAssociation.category_id == category_id)
     )
     if installable:
-        stmt1 = select(RepositoryMetadata.repository_id)
-        stmt = stmt.where(Repository.id.in_(stmt1))
+        stmt1 = select(model.RepositoryMetadata.repository_id)
+        stmt = stmt.where(model.Repository.id.in_(stmt1))
 
     if sort_key == "owner":
-        sort_by = User.username
+        sort_col = model.User.username
     else:
-        sort_by = Repository.name
-    if sort_order == "desc":
-        sort_by = sort_by.desc()
+        sort_col = model.Repository.name
+    sort_by = sort_col.desc() if sort_order == "desc" else sort_col
     stmt = stmt.order_by(sort_by)
 
     if page is not None:
@@ -584,17 +600,17 @@ def get_repositories(
     return session.scalars(stmt)
 
 
-def get_current_users(session, user_model):
-    stmt = select(user_model).where(user_model.deleted == false()).order_by(user_model.email)
+def get_current_users(session: "scoped_session"):
+    stmt = select(model.User).where(model.User.deleted == false()).order_by(model.User.email)
     return session.scalars(stmt)
 
 
-def get_current_groups(session, group_model):
-    stmt = select(group_model).where(group_model.deleted == false()).order_by(group_model.name)
+def get_current_groups(session: "scoped_session"):
+    stmt = select(model.Group).where(model.Group.deleted == false()).order_by(model.Group.name)
     return session.scalars(stmt)
 
 
-def delete_repository_category_associations(session, repository_category_assoc_model, repository_id):
+def _delete_repository_category_associations(session, repository_category_assoc_model, repository_id):
     stmt = delete(repository_category_assoc_model).where(repository_category_assoc_model.repository_id == repository_id)
     return session.execute(stmt)
 
@@ -609,7 +625,6 @@ __all__ = (
     "generate_sharable_link_for_repository_in_tool_shed",
     "generate_tool_shed_repository_install_dir",
     "get_absolute_path_to_file_in_repository",
-    "get_ids_of_tool_shed_repositories_being_installed",
     "get_installed_repository",
     "get_installed_tool_shed_repository",
     "get_prior_import_or_install_required_dict",
@@ -619,15 +634,12 @@ __all__ = (
     "get_repository_admin_role_name",
     "get_repository_and_repository_dependencies_from_repo_info_dict",
     "get_repository_by_id",
-    "get_repository_by_name",
-    "get_repository_by_name_and_owner",
     "get_repository_dependency_types",
     "get_repository_for_dependency_relationship",
     "get_repository_ids_requiring_prior_import_or_install",
     "get_repository_in_tool_shed",
     "get_repository_owner",
     "get_repository_owner_from_clone_url",
-    "get_repository_query",
     "get_role_by_id",
     "get_tool_shed_from_clone_url",
     "get_tool_shed_repository_by_id",

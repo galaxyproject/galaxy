@@ -1,9 +1,5 @@
 import logging
-from typing import (
-    Callable,
-    cast,
-    Dict,
-)
+from collections.abc import Callable
 
 from alembic import context
 from sqlalchemy import create_engine
@@ -61,8 +57,8 @@ def _configure_and_run_migrations_offline(url: str) -> None:
         context.run_migrations()
 
 
-def _configure_and_run_migrations_online(url) -> None:
-    engine = create_engine(url, future=True)
+def _configure_and_run_migrations_online(url: str) -> None:
+    engine = create_engine(url)
     with engine.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
@@ -72,11 +68,12 @@ def _configure_and_run_migrations_online(url) -> None:
 
 def _get_url_from_config() -> str:
     url = config.get_main_option("sqlalchemy.url")
-    return cast(str, url)
+    assert url
+    return url
 
 
 def _load_url() -> str:
-    context_dict = cast(Dict, context.get_x_argument(as_dictionary=True))
+    context_dict = context.get_x_argument(as_dictionary=True)
     url = context_dict.get("url")
     assert url
     return url

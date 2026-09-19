@@ -1,11 +1,10 @@
 import os
 import uuid
-from contextlib import contextmanager
-from typing import (
+from collections.abc import (
     Callable,
     Iterator,
-    Optional,
 )
+from contextlib import contextmanager
 
 import pytest
 from sqlalchemy import (
@@ -26,7 +25,7 @@ from galaxy.model.database_utils import (
     is_postgres,
 )
 
-# GALAXY_TEST_CONNECT_POSTGRES_URI='postgresql://postgres@localhost:5432/postgres' pytest test/unit/model
+# GALAXY_TEST_CONNECT_POSTGRES_URI='postgresql+psycopg://postgres@localhost:5432/postgres' pytest test/unit/model
 skip_if_not_postgres_uri = pytest.mark.skipif(
     not os.environ.get("GALAXY_TEST_CONNECT_POSTGRES_URI"), reason="GALAXY_TEST_CONNECT_POSTGRES_URI not set"
 )
@@ -67,7 +66,7 @@ def drop_existing_database(url: DbUrl) -> Iterator[None]:
 @contextmanager
 def disposing_engine(url: DbUrl) -> Iterator[Engine]:
     """Context manager for engine that disposes of its connection pool on exit."""
-    engine = create_engine(url, future=True)
+    engine = create_engine(url)
     try:
         yield engine
     finally:
@@ -145,7 +144,7 @@ def drop_database(db_url, database):
         _drop_database(db_url, database)
     else:
         url = make_url(db_url)
-        os.remove(url.database)
+        os.remove(url.database)  # type: ignore[arg-type]
 
 
 def dbcleanup_wrapper(session, obj, where_clause=None):
@@ -233,7 +232,7 @@ def _drop_postgres_database(url: DbUrl) -> None:
 
 
 def _drop_database(connection_url, database_name):
-    engine = create_engine(connection_url, isolation_level="AUTOCOMMIT", future=True)
+    engine = create_engine(connection_url, isolation_level="AUTOCOMMIT")
     preparer = IdentifierPreparer(engine.dialect)
     database_name = preparer.quote(database_name)
     stmt = text(f"DROP DATABASE IF EXISTS {database_name}")
@@ -251,7 +250,7 @@ def _generate_unique_database_name() -> str:
     return f"galaxytest_{uuid.uuid4().hex}"
 
 
-def _get_connection_url() -> Optional[str]:
+def _get_connection_url() -> str | None:
     return os.environ.get("GALAXY_TEST_DBURI")
 
 
@@ -263,4 +262,4 @@ def _make_sqlite_db_url(tmpdir: str, database: str) -> DbUrl:
 def _make_postgres_db_url(connection_url: DbUrl, database: str) -> DbUrl:
     url = make_url(connection_url)
     url = url.set(database=database)
-    return DbUrl(str(url))
+    return DbUrl(url.render_as_string(hide_password=False))

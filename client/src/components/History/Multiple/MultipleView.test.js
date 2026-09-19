@@ -1,19 +1,25 @@
+import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
-import MockUserHistories from "components/providers/MockUserHistories";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { useHistoryStore } from "stores/historyStore";
-import { useUserStore } from "stores/userStore";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
-import MultipleView from "./MultipleView";
+import { useServerMock } from "@/api/client/__mocks__";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+
+import MultipleView from "./MultipleView.vue";
 
 const USER_ID = "test-user-id";
 const FIRST_HISTORY_ID = "test-history-id-0";
 
-const getFakeHistorySummaries = (num, selectedIndex) => {
+setupMockConfig({});
+
+const { server, http } = useServerMock();
+
+const getFakeHistorySummaries = (num) => {
     return Array.from({ length: num }, (_, index) => ({
         id: `test-history-id-${index}`,
         name: `History-${index}`,
@@ -21,16 +27,36 @@ const getFakeHistorySummaries = (num, selectedIndex) => {
         update_time: new Date().toISOString(),
     }));
 };
-const currentUser = { id: USER_ID };
 
 describe("MultipleView", () => {
-    async function setUpWrapper(UserHistoriesMock, count, currentHistoryId) {
-        const axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(`api/histories/${FIRST_HISTORY_ID}`).reply(200, {});
+    async function setUpWrapper(count, currentHistoryId) {
+        const fakeSummaries = getFakeHistorySummaries(count);
+
+        server.use(
+            http.get("/api/object_stores", ({ response }) => {
+                return response(200).json([]);
+            }),
+
+            http.get("/api/histories/{history_id}", ({ response, params }) => {
+                const { history_id } = params;
+                const summary = fakeSummaries.find((s) => s.id === history_id);
+                if (!summary) {
+                    return response("4XX").json({ err_msg: "History not found", err_code: 404 }, { status: 404 });
+                }
+                return response(200).json(summary);
+            }),
+
+            http.get("/api/histories/{history_id}/contents", ({ response }) => {
+                return response(200).json({
+                    stats: { total_matches: 0 },
+                    contents: [],
+                });
+            }),
+        );
+
         const wrapper = mount(MultipleView, {
             pinia: createPinia(),
             stubs: {
-                UserHistories: UserHistoriesMock,
                 HistoryPanel: true,
                 icon: { template: "<div></div>" },
             },
@@ -38,15 +64,15 @@ describe("MultipleView", () => {
         });
 
         const userStore = useUserStore();
-        userStore.currentUser = currentUser;
+        userStore.currentUser = getFakeRegisteredUser({ id: USER_ID });
 
         const historyStore = useHistoryStore();
-        historyStore.setHistories(getFakeHistorySummaries(count, 0));
+        historyStore.setHistories(fakeSummaries);
         historyStore.setCurrentHistoryId(currentHistoryId);
 
         await flushPromises();
 
-        return { wrapper, axiosMock };
+        return wrapper;
     }
 
     it("more than 4 histories should not show the current history", async () => {
@@ -54,8 +80,7 @@ describe("MultipleView", () => {
         const currentHistoryId = FIRST_HISTORY_ID;
 
         // Set up UserHistories and wrapper
-        const UserHistoriesMock = MockUserHistories({ id: currentHistoryId }, getFakeHistorySummaries(count, 0), false);
-        const { wrapper, axiosMock } = await setUpWrapper(UserHistoriesMock, count, currentHistoryId);
+        const wrapper = await setUpWrapper(count, currentHistoryId);
 
         // Test: current (first) history should not be shown because only 4 latest are shown by default
         expect(wrapper.find("button[title='Current History']").exists()).toBeFalsy();
@@ -65,21 +90,59 @@ describe("MultipleView", () => {
         expect(wrapper.find("div[title='Currently showing 4 most recently updated histories']").exists()).toBeTruthy();
 
         expect(wrapper.find("[data-description='open select histories modal']").exists()).toBeTruthy();
-
-        axiosMock.reset();
     });
 
-    it("less than or equal to 4 histories should not show the current history", async () => {
+    it("less than 4 histories should show the current history", async () => {
         const count = 3;
         const currentHistoryId = FIRST_HISTORY_ID;
 
         // Set up UserHistories and wrapper
-        const UserHistoriesMock = MockUserHistories({ id: currentHistoryId }, getFakeHistorySummaries(count, 0), false);
-        const { wrapper, axiosMock } = await setUpWrapper(UserHistoriesMock, count, currentHistoryId);
+        const wrapper = await setUpWrapper(count, currentHistoryId);
 
         // Test: current (first) history should be shown because only 4 latest are shown by default, and count = 3
         expect(wrapper.find("button[title='Current History']").exists()).toBeTruthy();
+    });
 
-        axiosMock.reset();
+    it("load more button is shown when histories exceed the display limit", async () => {
+        const wrapper = await setUpWrapper(8, FIRST_HISTORY_ID);
+        expect(wrapper.find(".load-more-picker").exists()).toBeTruthy();
+    });
+
+    it("load more button is hidden when all histories fit within the display limit", async () => {
+        const wrapper = await setUpWrapper(3, FIRST_HISTORY_ID);
+        expect(wrapper.find(".load-more-picker").exists()).toBeFalsy();
+    });
+
+    it("clicking load more expands displayed histories and hides the button when all are shown", async () => {
+        const wrapper = await setUpWrapper(8, FIRST_HISTORY_ID);
+
+        // Initially 4 of 8 shown; load more is visible
+        expect(wrapper.find(".load-more-picker").exists()).toBeTruthy();
+        expect(wrapper.find("div[title='Currently showing 4 most recently updated histories']").exists()).toBeTruthy();
+
+        await wrapper.find(".load-more-picker").trigger("click");
+        await flushPromises();
+
+        // All 8 now shown; load more is gone and title reflects new count
+        expect(wrapper.find(".load-more-picker").exists()).toBeFalsy();
+        expect(wrapper.find("div[title='Currently showing 8 most recently updated histories']").exists()).toBeTruthy();
+    });
+
+    it("clicking load more multiple times progressively shows more histories", async () => {
+        const wrapper = await setUpWrapper(12, FIRST_HISTORY_ID);
+
+        expect(wrapper.find("div[title='Currently showing 4 most recently updated histories']").exists()).toBeTruthy();
+
+        // First click: 4 → 8; load more still present since 12 > 8
+        await wrapper.find(".load-more-picker").trigger("click");
+        await flushPromises();
+        expect(wrapper.find(".load-more-picker").exists()).toBeTruthy();
+        expect(wrapper.find("div[title='Currently showing 8 most recently updated histories']").exists()).toBeTruthy();
+
+        // Second click: 8 → 12; load more gone since 12 === 12
+        await wrapper.find(".load-more-picker").trigger("click");
+        await flushPromises();
+        expect(wrapper.find(".load-more-picker").exists()).toBeFalsy();
+        expect(wrapper.find("div[title='Currently showing 12 most recently updated histories']").exists()).toBeTruthy();
     });
 });

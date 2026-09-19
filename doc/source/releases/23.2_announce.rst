@@ -42,7 +42,6 @@ Administration Notes
 * Configuration options are now available for carbon emissions reporting. (`#16307 <https://github.com/galaxyproject/galaxy/pull/16307>`__)
 * The pgcleanup script has been modified to allow periodically deleting old datasets; operations can now be restricted to specific object store ids. (`#16340 <https://github.com/galaxyproject/galaxy/pull/16340>`__)
 * Tool memory usage has been improved. (`#16536 <https://github.com/galaxyproject/galaxy/pull/16536>`__)
-* Documentation added for tool panel and panel view administration. (`#17078 <https://github.com/galaxyproject/galaxy/pull/17078>`__)
 * Support added for cgroups-v2 (`#17169 <https://github.com/galaxyproject/galaxy/pull/17169>`__)
 * Support added for configuring job metrics inline; documentation improved (`#17178 <https://github.com/galaxyproject/galaxy/pull/17178>`__)
 

@@ -1,17 +1,15 @@
+import os
 import tarfile
+import tempfile
+from collections.abc import Iterator
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import (
-    List,
-    Optional,
-    Union,
-)
 
 import requests
 from typing_extensions import Protocol
 
 from galaxy.util.resources import (
-    files,
+    as_file,
     resource_path,
     Traversable,
 )
@@ -22,16 +20,19 @@ from tool_shed_client.schema import (
     Category,
     CreateCategoryRequest,
     CreateRepositoryRequest,
+    DetailedRepository,
     from_legacy_install_info,
     GetInstallInfoRequest,
     GetOrderedInstallableRevisionsRequest,
     InstallInfo,
     OrderedInstallableRevisions,
+    PaginatedRepositoryIndexResults,
     RepositoriesByCategory,
     Repository,
     RepositoryIndexRequest,
     RepositoryIndexResponse,
     RepositoryMetadata,
+    RepositoryPaginatedIndexRequest,
     RepositorySearchRequest,
     RepositorySearchResults,
     RepositoryUpdate,
@@ -40,6 +41,7 @@ from tool_shed_client.schema import (
     ResetMetadataOnRepositoryResponse,
     ToolSearchRequest,
     ToolSearchResults,
+    UpdateRepositoryRequest,
     Version,
 )
 from .api_util import (
@@ -47,39 +49,35 @@ from .api_util import (
     ShedApiInteractor,
 )
 
-HasRepositoryId = Union[str, Repository]
+HasRepositoryId = str | Repository
 
 DEFAULT_PREFIX = "repofortest"
-COLUMN_MAKER_PATH = resource_path(__package__, "../test_data/column_maker/column_maker.tar")
-COLUMN_MAKER_1_1_1_PATH = resource_path(__package__, "../test_data/column_maker/column_maker.tar")
+TEST_DATA_REPO_FILES = resource_path(__name__, "../test_data")
+COLUMN_MAKER_PATH = TEST_DATA_REPO_FILES.joinpath("column_maker/column_maker.tar")
+COLUMN_MAKER_1_1_1_PATH = TEST_DATA_REPO_FILES.joinpath("column_maker/column_maker_1.1.1.tar")
 DEFAULT_COMMIT_MESSAGE = "a test commit message"
-TEST_DATA_REPO_FILES = files("tool_shed.test.test_data")
 
 
-def repo_files(test_data_path: str) -> List[Path]:
+def repo_files(test_data_path: str) -> Iterator[Path]:
     repos = TEST_DATA_REPO_FILES.joinpath(f"repos/{test_data_path}")
-    paths = sorted(Path(str(x)) for x in repos.iterdir())
-    return paths
+    for child in sorted(_.name for _ in repos.iterdir()):
+        with as_file(repos.joinpath(child)) as path:
+            yield path
 
 
-def repo_tars(test_data_path: str) -> List[Path]:
-    tar_paths = []
+def repo_tars(test_data_path: str) -> Iterator[Path]:
     for path in repo_files(test_data_path):
-        if path.is_dir():
-            prefix = f"shedtest_{test_data_path}_{path.name}_"
-            tf = NamedTemporaryFile(delete=False, prefix=prefix)
+        assert path.is_dir()
+        prefix = f"shedtest_{test_data_path}_{path.name}_"
+        with NamedTemporaryFile(prefix=prefix) as tf:
             with tarfile.open(tf.name, "w:gz") as tar:
                 tar.add(str(path.absolute()), arcname=test_data_path or path.name)
-            tar_path = tf.name
-        else:
-            tar_path = str(path)
-        tar_paths.append(Path(tar_path))
-    return tar_paths
+            yield Path(tf.name)
 
 
 class HostsTestToolShed(Protocol):
     host: str
-    port: Optional[str]
+    port: str | None
 
 
 class ToolShedPopulator:
@@ -94,9 +92,9 @@ class ToolShedPopulator:
 
     def setup_bismark_repo(
         self,
-        repository_id: Optional[HasRepositoryId] = None,
-        end: Optional[int] = None,
-        category_id: Optional[str] = None,
+        repository_id: HasRepositoryId | None = None,
+        end: int | None = None,
+        category_id: str | None = None,
     ) -> HasRepositoryId:
         if repository_id is None:
             category_id = category_id or self.new_category(prefix="testbismark").id
@@ -106,10 +104,10 @@ class ToolShedPopulator:
     def setup_test_data_repo_by_id(
         self,
         test_data_path: str,
-        repository_id: Optional[HasRepositoryId] = None,
+        repository_id: HasRepositoryId | None = None,
         assert_ok=True,
         start: int = 0,
-        end: Optional[int] = None,
+        end: int | None = None,
     ) -> HasRepositoryId:
         if repository_id is None:
             prefix = test_data_path.replace("_", "")
@@ -136,11 +134,11 @@ class ToolShedPopulator:
     def setup_test_data_repo(
         self,
         test_data_path: str,
-        repository: Optional[Repository] = None,
+        repository: Repository | None = None,
         assert_ok=True,
         start: int = 0,
-        end: Optional[int] = None,
-        category_id: Optional[str] = None,
+        end: int | None = None,
+        category_id: str | None = None,
     ) -> Repository:
         if repository is None:
             prefix = test_data_path.replace("_", "")
@@ -153,7 +151,7 @@ class ToolShedPopulator:
     def setup_column_maker_repo(
         self,
         prefix=DEFAULT_PREFIX,
-        category_id: Optional[str] = None,
+        category_id: str | None = None,
     ) -> Repository:
         if category_id is None:
             category_id = self.new_category(prefix=prefix).id
@@ -178,7 +176,12 @@ class ToolShedPopulator:
         metadata = self.get_metadata(repository_id, True)
         return self.get_install_info(metadata)
 
-    def get_install_info(self, repository_metadata: RepositoryMetadata) -> InstallInfo:
+    def get_install_info_raw(
+        self,
+        repository_metadata: RepositoryMetadata,
+        path: str = "repositories/get_repository_revision_install_info",
+        headers: dict[str, str] | None = None,
+    ) -> requests.Response:
         revision_metadata = repository_metadata.latest_revision
         repo = revision_metadata.repository
         request = GetInstallInfoRequest(
@@ -186,13 +189,14 @@ class ToolShedPopulator:
             name=repo.name,
             changeset_revision=revision_metadata.changeset_revision,
         )
-        revisions_response = self._api_interactor.get(
-            "repositories/get_repository_revision_install_info", params=request.model_dump()
-        )
+        return self._api_interactor.get(path, params=request.model_dump(), headers=headers or {})
+
+    def get_install_info(self, repository_metadata: RepositoryMetadata) -> InstallInfo:
+        revisions_response = self.get_install_info_raw(repository_metadata)
         api_asserts.assert_status_code_is_ok(revisions_response)
         return from_legacy_install_info(revisions_response.json())
 
-    def update_column_maker_repo(self, repository: HasRepositoryId) -> requests.Response:
+    def update_column_maker_repo(self, repository: HasRepositoryId) -> RepositoryUpdate:
         response = self.upload_revision(
             repository,
             COLUMN_MAKER_1_1_1_PATH,
@@ -212,9 +216,20 @@ class ToolShedPopulator:
         )
         return response
 
+    def update_raw(self, repository: HasRepositoryId, request: UpdateRepositoryRequest) -> requests.Response:
+        repository_id = self._repository_id(repository)
+        body_json = request.model_dump(exclude_unset=True, by_alias=True)
+        put_response = self._api_interactor.put(f"repositories/{repository_id}", json=body_json)
+        return put_response
+
+    def update(self, repository: HasRepositoryId, request: UpdateRepositoryRequest) -> Repository:
+        response = self.update_raw(repository, request)
+        api_asserts.assert_status_code_is_ok(response)
+        return Repository(**response.json())
+
     def upload_revision(
         self, repository: HasRepositoryId, path: Traversable, commit_message: str = DEFAULT_COMMIT_MESSAGE
-    ):
+    ) -> RepositoryUpdate:
         response = self.upload_revision_raw(repository, path, commit_message=commit_message)
         if response.status_code != 200:
             response_json = None
@@ -231,7 +246,7 @@ class ToolShedPopulator:
             api_asserts.assert_status_code_is_ok(response)
         return RepositoryUpdate(root=response.json())
 
-    def new_repository(self, category_ids: Union[List[str], str], prefix: str = DEFAULT_PREFIX) -> Repository:
+    def new_repository(self, category_ids: list[str] | str, prefix: str = DEFAULT_PREFIX) -> Repository:
         name = random_name(prefix=prefix)
         synopsis = random_name(prefix=prefix)
         request = CreateRepositoryRequest(
@@ -251,9 +266,7 @@ class ToolShedPopulator:
         index_response.raise_for_status()
         return BuildSearchIndexResponse(**index_response.json())
 
-    def new_category(
-        self, name: Optional[str] = None, description: Optional[str] = None, prefix=DEFAULT_PREFIX
-    ) -> Category:
+    def new_category(self, name: str | None = None, description: str | None = None, prefix=DEFAULT_PREFIX) -> Category:
         category_name = name or random_name(prefix=prefix)
         category_description = description or "testcreaterepo"
         request = CreateCategoryRequest(name=category_name, description=category_description)
@@ -261,7 +274,7 @@ class ToolShedPopulator:
         response.raise_for_status()
         return Category(**response.json())
 
-    def get_categories(self) -> List[Category]:
+    def get_categories(self) -> list[Category]:
         response = self._api_interactor.get("categories")
         response.raise_for_status()
         return [Category(**c) for c in response.json()]
@@ -300,7 +313,7 @@ class ToolShedPopulator:
         actual_n = len(revisions.root)
         assert actual_n == n, f"Expected {n} repository revisions, found {actual_n} for {repository}"
 
-    def get_repository_for(self, owner: str, name: str, deleted: str = "false") -> Optional[Repository]:
+    def get_repository_for(self, owner: str, name: str, deleted: str = "false") -> Repository | None:
         request = RepositoryIndexRequest(
             owner=owner,
             name=name,
@@ -309,12 +322,21 @@ class ToolShedPopulator:
         index = self.repository_index(request)
         return index.root[0] if index.root else None
 
-    def repository_index(self, request: Optional[RepositoryIndexRequest]) -> RepositoryIndexResponse:
+    def repository_index(self, request: RepositoryIndexRequest | None) -> RepositoryIndexResponse:
         repository_response = self._api_interactor.get("repositories", params=(request.model_dump() if request else {}))
         api_asserts.assert_status_code_is_ok(repository_response)
         return RepositoryIndexResponse(root=repository_response.json())
 
-    def get_usernames_allowed_to_push(self, repository: HasRepositoryId) -> List[str]:
+    def repository_index_paginated(
+        self, request: RepositoryPaginatedIndexRequest | None
+    ) -> PaginatedRepositoryIndexResults:
+        repository_response = self._api_interactor.get(
+            "repositories", params=(request.model_dump() if request else {"page": 1})
+        )
+        api_asserts.assert_status_code_is_ok(repository_response)
+        return PaginatedRepositoryIndexResults(**repository_response.json())
+
+    def get_usernames_allowed_to_push(self, repository: HasRepositoryId) -> list[str]:
         repository_id = self._repository_id(repository)
         show_response = self._api_interactor.get(f"repositories/{repository_id}/allow_push")
         show_response.raise_for_status()
@@ -331,6 +353,36 @@ class ToolShedPopulator:
         repository_id = self._repository_id(repository)
         delete_response = self._api_interactor.delete(f"repositories/{repository_id}/allow_push/{username}")
         delete_response.raise_for_status()
+
+    def get_admin_users(self, repository: HasRepositoryId) -> list[str]:
+        repository_id = self._repository_id(repository)
+        response = self._api_interactor.get(f"repositories/{repository_id}/admins")
+        response.raise_for_status()
+        as_list = response.json()
+        assert isinstance(as_list, list)
+        return as_list
+
+    def add_admin_user(self, repository: HasRepositoryId, username: str) -> None:
+        repository_id = self._repository_id(repository)
+        response = self._api_interactor.post(f"repositories/{repository_id}/admins/{username}")
+        response.raise_for_status()
+
+    def remove_admin_user(self, repository: HasRepositoryId, username: str) -> None:
+        repository_id = self._repository_id(repository)
+        response = self._api_interactor.delete(f"repositories/{repository_id}/admins/{username}")
+        response.raise_for_status()
+
+    def add_admin_user_raw(self, repository: HasRepositoryId, username: str) -> requests.Response:
+        repository_id = self._repository_id(repository)
+        return self._api_interactor.post(f"repositories/{repository_id}/admins/{username}")
+
+    def remove_admin_user_raw(self, repository: HasRepositoryId, username: str) -> requests.Response:
+        repository_id = self._repository_id(repository)
+        return self._api_interactor.delete(f"repositories/{repository_id}/admins/{username}")
+
+    def get_admin_users_raw(self, repository: HasRepositoryId) -> requests.Response:
+        repository_id = self._repository_id(repository)
+        return self._api_interactor.get(f"repositories/{repository_id}/admins")
 
     def set_malicious(self, repository: HasRepositoryId, changeset_revision: str):
         repository_id = self._repository_id(repository)
@@ -361,11 +413,14 @@ class ToolShedPopulator:
         delete_response = self._api_interactor.delete(f"repositories/{repository_id}/deprecated")
         delete_response.raise_for_status()
 
-    def is_deprecated(self, repository: HasRepositoryId) -> bool:
+    def get_repository(self, repository: HasRepositoryId) -> DetailedRepository:
         repository_id = self._repository_id(repository)
         repository_response = self._api_interactor.get(f"repositories/{repository_id}")
         repository_response.raise_for_status()
-        return Repository(**repository_response.json()).deprecated
+        return DetailedRepository(**repository_response.json())
+
+    def is_deprecated(self, repository: HasRepositoryId) -> bool:
+        return self.get_repository(repository).deprecated
 
     def get_metadata(self, repository: HasRepositoryId, downloadable_only=True) -> RepositoryMetadata:
         repository_id = self._repository_id(repository)
@@ -375,9 +430,11 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(metadata_response)
         return RepositoryMetadata(root=metadata_response.json())
 
-    def reset_metadata(self, repository: HasRepositoryId) -> ResetMetadataOnRepositoryResponse:
+    def reset_metadata(
+        self, repository: HasRepositoryId, dry_run: bool = False, verbose: bool = False
+    ) -> ResetMetadataOnRepositoryResponse:
         repository_id = self._repository_id(repository)
-        request = ResetMetadataOnRepositoryRequest(repository_id=repository_id)
+        request = ResetMetadataOnRepositoryRequest(repository_id=repository_id, dry_run=dry_run, verbose=verbose)
         reset_response = self._api_interactor.post(
             "repositories/reset_metadata_on_repository", json=request.model_dump()
         )
@@ -398,7 +455,7 @@ class ToolShedPopulator:
         return ToolSearchResults(**search_response.json())
 
     def tool_guid(
-        self, shed_host: HostsTestToolShed, repository: Repository, tool_id: str, tool_version: Optional[str] = None
+        self, shed_host: HostsTestToolShed, repository: Repository, tool_id: str, tool_version: str | None = None
     ) -> str:
         owner = repository.owner
         name = repository.name
@@ -437,6 +494,40 @@ class ToolShedPopulator:
 
     def new_user(self, username: str, password: str):
         return ensure_user_with_email(self._admin_api_interactor, username, password)
+
+    def get_tip_changeset(self, repository: Repository) -> str:
+        """Get the tip changeset revision for a repository."""
+        revisions = self.get_ordered_installable_revisions(repository.owner, repository.name)
+        assert revisions.root, f"No installable revisions for {repository.name}"
+        return revisions.root[-1]
+
+    def create_repository_dependency(
+        self,
+        repository: Repository,
+        dependency_tuples: list[tuple[str, str, str, str]],
+        prior_installation_required: bool = False,
+    ) -> None:
+        """Upload a repository_dependencies.xml to wire up a dependency.
+
+        Each tuple in dependency_tuples is (shed_url, name, owner, changeset_revision).
+        """
+        prior_attr = ' prior_installation_required="True"' if prior_installation_required else ""
+        dep_lines = []
+        for shed_url, name, owner, changeset in dependency_tuples:
+            dep_lines.append(
+                f'    <repository toolshed="{shed_url}" name="{name}" '
+                f'owner="{owner}" changeset_revision="{changeset}"{prior_attr} />'
+            )
+        xml = '<?xml version="1.0"?>\n<repositories>\n' + "\n".join(dep_lines) + "\n</repositories>\n"
+        tmpdir = tempfile.mkdtemp(prefix="repo_dep_")
+        xml_path = os.path.join(tmpdir, "repository_dependencies.xml")
+        with open(xml_path, "w") as f:
+            f.write(xml)
+        tar_path = os.path.join(tmpdir, "repo_dep.tar.gz")
+        with tarfile.open(tar_path, "w:gz") as tar:
+            tar.add(xml_path, arcname="repository_dependencies.xml")
+        response = self.upload_revision_raw(repository, Path(tar_path), commit_message="Add repository dependency")
+        api_asserts.assert_status_code_is_ok(response)
 
     def _repository_id(self, has_id: HasRepositoryId) -> str:
         if isinstance(has_id, Repository):

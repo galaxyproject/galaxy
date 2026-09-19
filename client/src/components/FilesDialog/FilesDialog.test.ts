@@ -1,10 +1,34 @@
-import { createLocalVue, shallowMount, Wrapper } from "@vue/test-utils";
+import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
+import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
-import { selectionStates } from "@/components/SelectionDialog/selectionStates";
+import { useServerMock } from "@/api/client/__mocks__";
+import type { FileSourceTemplateSummary } from "@/api/fileSources";
+import { SELECTION_STATES, type SelectionItem, type SelectionState } from "@/components/SelectionDialog/selectionTypes";
 
-import { BaseRecordItem } from "./model";
+/**
+ * The following imports mock a remote file resource directory structure,
+ * which is navigated throughout the test cases further below.
+ * The directory tree path is as follows:
+ *
+ * |-- directory1
+ * |   |-- directory1file1
+ * |   |-- directory1file2
+ * |   |-- directory1file3
+ * |   |-- subdirectory1
+ * |   |   `-- subsubdirectory
+ * |   |       `-- subsubfile
+ * |   `-- subdirectory2
+ * |       `-- subdirectory2file
+ * |-- directory2
+ * |   |-- directory2file1
+ * |   `-- directory2file2
+ * |-- file1
+ * |-- file2
+ */
+import type { RemoteFilesList } from "./testingData";
 import {
     directory1RecursiveResponse,
     directory1Response,
@@ -12,7 +36,6 @@ import {
     directoryId,
     ftpId,
     pdbResponse,
-    RemoteFilesList,
     rootId,
     rootResponse,
     someErrorText,
@@ -22,86 +45,88 @@ import {
 } from "./testingData";
 
 import FilesDialog from "./FilesDialog.vue";
-import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
-jest.mock("app");
-jest.mock("@/api/schema");
+vi.mock("app");
 
-jest.mock("@/composables/config", () => ({
-    useConfig: jest.fn(() => ({
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
         config: { ftp_upload_site: "Test ftp upload site" },
         isConfigLoaded: true,
     })),
 }));
 
-interface RemoteFilesParams {
-    target: string;
-    recursive: boolean;
-    writeable?: boolean;
+const { server, http } = useServerMock();
+
+interface RowElement extends SelectionItem, Element {
+    selectionState: SelectionState;
 }
 
-interface RowElement extends BaseRecordItem, Element {
-    _rowVariant: string;
-}
-
-function paramsToKey(params: RemoteFilesParams) {
-    params.writeable = false;
-    return JSON.stringify(params);
+function paramsToKey(query: {
+    target?: string | null;
+    recursive?: string | null;
+    write_intent?: string | null;
+}): string {
+    return `${query.target}?recursive=${query.recursive}&write_intent=${query.write_intent ?? "false"}`;
 }
 
 const mockedOkApiRoutesMap = new Map<string, RemoteFilesList>([
-    [paramsToKey({ target: "gxfiles://pdb-gzip", recursive: false }), pdbResponse],
-    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: false }), directory1Response],
-    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: true }), directory1RecursiveResponse],
-    [paramsToKey({ target: "gxfiles://pdb-gzip/directory2", recursive: true }), directory2RecursiveResponse],
-    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1/subdirectory1", recursive: false }), subsubdirectoryResponse],
+    [paramsToKey({ target: "gxfiles://pdb-gzip", recursive: "false" }), pdbResponse],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: "false" }), directory1Response],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: "true" }), directory1RecursiveResponse],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory2", recursive: "true" }), directory2RecursiveResponse],
+    [
+        paramsToKey({ target: "gxfiles://pdb-gzip/directory1/subdirectory1", recursive: "false" }),
+        subsubdirectoryResponse,
+    ],
+    [paramsToKey({ target: "gxftp://", recursive: "false" }), pdbResponse],
 ]);
 
 const mockedErrorApiRoutesMap = new Map<string, RemoteFilesList>([
-    [paramsToKey({ target: "gxfiles://empty-dir", recursive: false }), []],
+    [paramsToKey({ target: "gxfiles://empty-dir", recursive: "false" }), []],
 ]);
 
-function getMockedBrowseResponse(param: RemoteFilesParams) {
-    const responseKey = paramsToKey(param);
-    if (mockedErrorApiRoutesMap.has(responseKey)) {
-        throw Error(someErrorText);
-    }
-    const result = mockedOkApiRoutesMap.get(responseKey);
-    return { data: result };
-}
+const initComponent = async (props: { multiple: boolean; mode?: string }, hasTemplates = false) => {
+    const localVue = getLocalVue();
 
-const initComponent = async (props: { multiple: boolean; mode?: string }) => {
-    const localVue = createLocalVue();
+    server.use(
+        http.get("/api/remote_files/plugins", ({ response }) => {
+            return response(200).json(rootResponse);
+        }),
 
-    mockFetcher.path("/api/remote_files/plugins").method("get").mock({ data: rootResponse });
-    mockFetcher.path("/api/remote_files").method("get").mock(getMockedBrowseResponse);
+        http.get("/api/remote_files", ({ response, query }) => {
+            const responseKey = paramsToKey({
+                target: query.get("target"),
+                recursive: query.get("recursive"),
+                write_intent: query.get("write_intent"),
+            });
+            if (mockedErrorApiRoutesMap.has(responseKey)) {
+                return response("4XX").json({ err_msg: someErrorText, err_code: 400 }, { status: 400 });
+            }
+            const mockedResponse = mockedOkApiRoutesMap.get(responseKey);
+            const mockedTotalMatches = mockedResponse?.length.toString() ?? "0";
+            if (!mockedResponse) {
+                return response("5XX").json({ err_msg: "No mocked response found", err_code: 500 }, { status: 500 });
+            }
+            return response(200).json(mockedResponse, { headers: { total_matches: mockedTotalMatches } });
+        }),
 
-    const wrapper = shallowMount(FilesDialog, {
+        http.get("/api/file_source_templates", ({ response }) => {
+            const fileSourceTemplates = hasTemplates ? [{ id: "test_template" } as FileSourceTemplateSummary] : [];
+            return response(200).json(fileSourceTemplates);
+        }),
+    );
+
+    const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+    const wrapper = mount(FilesDialog as object, {
         localVue,
-        propsData: props,
+        propsData: { ...props },
+        pinia: testingPinia,
     });
 
     await flushPromises();
-
     return wrapper;
 };
-// PLEASE NOTE
-// during this test we assume this path tree:
-// |-- directory1
-// |   |-- directory1file1
-// |   |-- directory1file2
-// |   |-- directory1file3
-// |   |-- subdirectory1
-// |   |   `-- subsubdirectory
-// |   |       `-- subsubfile
-// |   `-- subdirectory2
-// |       `-- subdirectory2file
-// |-- directory2
-// |   |-- directory2file1
-// |   `-- directory2file2
-// |-- file1
-// |-- file2
 
 describe("FilesDialog, file mode", () => {
     let wrapper: Wrapper<any>;
@@ -114,8 +139,15 @@ describe("FilesDialog, file mode", () => {
 
     it("should show the number of items expected", async () => {
         await utils.openRootDirectory();
-
         expect(utils.getRenderedRows().length).toBe(pdbResponse.length);
+    });
+
+    it("should list the user defined file sources first", async () => {
+        await utils.openRoot();
+        const rows = utils.getRenderedRows();
+        const firstItem = rows[0];
+        expect(firstItem).toBeDefined();
+        expect(firstItem!.url).toContain("gxuserfiles://");
     });
 
     it("should allow selecting files and update OK button accordingly", async () => {
@@ -132,7 +164,7 @@ describe("FilesDialog, file mode", () => {
         utils.expectNumberOfSelectedItemsToBe(filesInResponse.length);
 
         await utils.applyToEachFile((item) => {
-            expect(item._rowVariant).toBe(selectionStates.selected);
+            expect(item.selectionState).toBe(SELECTION_STATES.SELECTED);
         });
 
         utils.expectOkButtonEnabled();
@@ -153,7 +185,8 @@ describe("FilesDialog, file mode", () => {
         // go inside directory1
         await utils.openDirectoryById(targetDirectoryId);
 
-        utils.expectSelectAllIconStatusToBe(selectionStates.selected);
+        utils.expectSelectAllChecked();
+        utils.expectSelectAllNotIndeterminate();
 
         //every item should be selected
         utils.expectAllRenderedItemsSelected();
@@ -166,7 +199,7 @@ describe("FilesDialog, file mode", () => {
 
         // ensure that it has "mixed" status icon
         const directory = utils.findRenderedDirectory(targetDirectoryId);
-        expect(directory._rowVariant).toBe(selectionStates.mixed);
+        expect(directory.selectionState).toBe(SELECTION_STATES.MIXED);
     });
 
     it("should be able to unselect a sub-directory keeping the rest selected", async () => {
@@ -179,12 +212,13 @@ describe("FilesDialog, file mode", () => {
         // unselect subfolder
         await utils.clickOn(utils.findRenderedDirectory(subSubDirectoryId));
         // directory should be unselected
-        expect(utils.findRenderedDirectory(subSubDirectoryId)._rowVariant).toBe(selectionStates.unselected);
-        // selectAllIcon should be unselected
-        utils.expectSelectAllIconStatusToBe(selectionStates.unselected);
+        expect(utils.findRenderedDirectory(subSubDirectoryId).selectionState).toBe(SELECTION_STATES.UNSELECTED);
+        // selectAll checkbox should be unchecked
+        utils.expectSelectAllUnchecked();
+        utils.expectSelectAllNotIndeterminate();
         await utils.navigateBack();
         await utils.navigateBack();
-        expect(utils.findRenderedDirectory(directoryId)._rowVariant).toBe(selectionStates.mixed);
+        expect(utils.findRenderedDirectory(directoryId).selectionState).toBe(SELECTION_STATES.MIXED);
     });
 
     it("should select all on 'toggleSelectAll' event", async () => {
@@ -198,7 +232,7 @@ describe("FilesDialog, file mode", () => {
         utils.expectAllRenderedItemsSelected();
         await utils.navigateBack();
         const rootNode = utils.findRenderedDirectory(rootId);
-        expect(rootNode._rowVariant).toBe(selectionStates.selected);
+        expect(rootNode.selectionState).toBe(SELECTION_STATES.SELECTED);
     });
 
     it("should show ftp helper only in ftp directory", async () => {
@@ -219,6 +253,8 @@ describe("FilesDialog, file mode", () => {
     it("should show loading error and can return back when there is an error", async () => {
         utils.expectNoErrorMessage();
 
+        suppressDebugConsole(); // expecting error message.
+
         // open directory with error
         await utils.openDirectoryById("empty-dir");
         utils.expectErrorMessage();
@@ -226,6 +262,46 @@ describe("FilesDialog, file mode", () => {
         // back to the root folder
         await utils.navigateBack();
         expect(utils.getRenderedRows().length).toBe(rootResponse.length);
+    });
+});
+
+describe("FilesDialog, create new file source button", () => {
+    let wrapper: Wrapper<any>;
+    let utils: Utils;
+
+    beforeEach(async () => {
+        const hasTemplates = true;
+        wrapper = await initComponent({ multiple: false }, hasTemplates);
+        utils = new Utils(wrapper);
+    });
+    it("should not render create new button since file source templates are not defined", async () => {
+        const hasTemplates = false;
+        wrapper = await initComponent({ multiple: true }, hasTemplates);
+        const createNewButton = wrapper.find("[data-description='create new file source button']");
+        expect(createNewButton.exists()).toBe(false);
+    });
+
+    it("should render create new button since file source templates are defined and is at root", async () => {
+        await utils.openRoot();
+        const createNewButton = wrapper.find("[data-description='create new file source button']");
+        expect(createNewButton.exists()).toBe(true);
+    });
+
+    it("should not render create new button inside folders", async () => {
+        await utils.openRootDirectory();
+        const createNewButton = wrapper.find("[data-description='create new file source button']");
+        expect(createNewButton.exists()).toBe(false);
+    });
+});
+
+describe("FilesDialog, file mode with templates", () => {
+    let wrapper: Wrapper<any>;
+    beforeEach(async () => {
+        wrapper = await initComponent({ multiple: true }, true);
+    });
+    it("should render create new button since file source templates are defined", async () => {
+        const createNewButton = wrapper.find("[data-description='create new file source button']");
+        expect(createNewButton.exists()).toBe(true);
     });
 });
 
@@ -262,6 +338,8 @@ describe("FilesDialog, directory mode", () => {
     it("should show loading error and can return back when there is an error", async () => {
         utils.expectNoErrorMessage();
 
+        suppressDebugConsole(); // expecting error message.
+
         // open directory with error
         await utils.openDirectoryById("empty-dir");
         utils.expectErrorMessage();
@@ -279,15 +357,19 @@ class Utils {
         this.wrapper = wrapper;
     }
 
-    async openRootDirectory() {
+    async openRoot() {
         expect(this.wrapper.findComponent(SelectionDialog).exists()).toBe(true);
         expect(this.getRenderedRows().length).toBe(rootResponse.length);
+    }
+
+    async openRootDirectory() {
+        await this.openRoot();
         await this.openDirectoryById(rootId);
     }
 
     async navigateBack() {
-        const backBtn = this.getBackButton();
-        await backBtn.trigger("click");
+        const undoBtn = this.getUndoButton();
+        await undoBtn.trigger("click");
         await flushPromises();
     }
 
@@ -297,17 +379,17 @@ class Utils {
     }
 
     async openDirectory(directory: RowElement) {
-        this.getTable().vm.$emit("open", directory);
+        this.getSelectionDialog().vm.$emit("onOpen", directory);
         await flushPromises();
     }
 
     async clickOn(element: Element) {
-        this.getTable().vm.$emit("clicked", element);
+        this.getSelectionDialog().vm.$emit("onClick", element);
         await flushPromises();
     }
 
     async selectAll() {
-        this.getTable().vm.$emit("toggleSelectAll");
+        this.getSelectionDialog().vm.$emit("onSelectAll");
         await flushPromises();
     }
 
@@ -338,49 +420,69 @@ class Utils {
         await flushPromises();
     }
 
-    getTable(): any {
-        return this.wrapper.findComponent(DataDialogTable);
+    getSelectionDialog(): any {
+        return this.wrapper.findComponent(SelectionDialog);
     }
 
     getButtonById(id: string): any {
-        const button = this.wrapper.find(id);
+        const button = this.wrapper.find(`[data-description='selection dialog ${id}']`);
         expect(button.exists()).toBe(true);
         return button;
     }
 
     getOkButton(): any {
-        return this.getButtonById("#ok-btn");
+        return this.getButtonById("ok");
     }
 
-    getBackButton(): any {
-        return this.getButtonById("#back-btn");
+    getUndoButton(): any {
+        return this.getButtonById("undo");
     }
 
     getRenderedRows(): RowElement[] {
-        return this.getTable().props("items") as RowElement[];
+        return this.getSelectionDialog().props("items") as RowElement[];
     }
 
     expectAllRenderedItemsSelected() {
         this.getRenderedRows().forEach((item) => {
-            expect(item._rowVariant).toBe(selectionStates.selected);
+            expect(item.selectionState).toBe(SELECTION_STATES.SELECTED);
         });
     }
 
     expectNumberOfSelectedItemsToBe(number: number) {
-        const selectedItems = this.getRenderedRows().filter((item) => item._rowVariant === selectionStates.selected);
+        const selectedItems = this.getRenderedRows().filter(
+            (item) => item.selectionState === SELECTION_STATES.SELECTED,
+        );
         expect(selectedItems.length).toBe(number);
     }
 
     expectOkButtonDisabled() {
-        expect(this.getOkButton().attributes("disabled")).toBeTruthy();
+        // GButton uses aria-disabled instead of the native disabled attribute
+        expect(this.getOkButton().attributes("aria-disabled")).toBeTruthy();
     }
 
     expectOkButtonEnabled() {
-        expect(this.getOkButton().attributes("disabled")).toBeFalsy();
+        expect(this.getOkButton().attributes("aria-disabled")).toBeFalsy();
     }
 
-    expectSelectAllIconStatusToBe(status: string) {
-        expect(this.getTable().attributes("selectallicon")).toBe(status);
+    getSelectAllCheckbox(): Wrapper<any> {
+        const checkbox = this.wrapper.find("input[id^='g-table-select-all-']");
+        expect(checkbox.exists()).toBe(true);
+        return checkbox;
+    }
+
+    expectSelectAllChecked() {
+        const checkbox = this.getSelectAllCheckbox();
+        expect((checkbox.element as HTMLInputElement).checked).toBe(true);
+    }
+
+    expectSelectAllUnchecked() {
+        const checkbox = this.getSelectAllCheckbox();
+        expect((checkbox.element as HTMLInputElement).checked).toBe(false);
+    }
+
+    expectSelectAllNotIndeterminate() {
+        const checkbox = this.getSelectAllCheckbox();
+        expect((checkbox.element as HTMLInputElement).indeterminate).toBe(false);
     }
 
     expectNoErrorMessage() {

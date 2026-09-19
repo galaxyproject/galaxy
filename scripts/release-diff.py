@@ -105,7 +105,9 @@ def report_diff(added, changed, removed, new_files):
             "Changed",
             "The following configuration options have been changed",
             changed,
-            lambda x: f"-  {x[0]} has changed from\n\n   ::\n\n{_indent(x[1])}\n\n   to\n\n   ::\n\n{_indent(x[2])}\n\n",
+            lambda x: (
+                f"-  {x[0]} has changed from\n\n   ::\n\n{_indent(x[1])}\n\n   to\n\n   ::\n\n{_indent(x[2])}\n\n"
+            ),
         )
 
     if removed:
@@ -152,7 +154,7 @@ def main(old_revision, new_revision=None):
             old_contents = yaml.load(load_at_time(real_path, old_revision), Loader=MockOrderedLoader)
             new_contents = yaml.load(load_at_time(real_path, new_revision), Loader=MockOrderedLoader)
 
-            (a, r, c) = diff_files(old_contents, new_contents)
+            a, r, c = diff_files(old_contents, new_contents)
             if a:
                 added[filename] = sorted(a)
 

@@ -1,14 +1,11 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 import { nextTick } from "vue";
 
 import HeadlessMultiselect from "./HeadlessMultiselect.vue";
 
 describe("HeadlessMultiselect", () => {
-    // this function is not implemented in jsdom
-    // mocking it to avoid false errors
-    Element.prototype.scrollIntoView = jest.fn();
-
     const localVue = getLocalVue();
 
     type Props = InstanceType<typeof HeadlessMultiselect>["$props"];
@@ -20,7 +17,7 @@ describe("HeadlessMultiselect", () => {
         });
     };
 
-    const sampleOptions = ["#named", "#named_2", "#named_3", "abc", "def", "ghi"];
+    const sampleOptions = ["name:named", "name:named_2", "name:named_3", "abc", "def", "ghi"];
 
     const selectors = {
         openButton: ".toggle-button",
@@ -123,6 +120,8 @@ describe("HeadlessMultiselect", () => {
 
             expect(options.at(0).find("span").text()).toBe("bc");
             expect(options.at(1).find("span").text()).toBe("abc");
+
+            await close(wrapper);
         });
 
         it("allows for switching the highlighted value", async () => {
@@ -149,6 +148,8 @@ describe("HeadlessMultiselect", () => {
             await keyPress(input, "ArrowUp");
             highlighted = wrapper.find(selectors.highlighted);
             expect(highlighted.find("span").text()).toBe("#named_2");
+
+            await close(wrapper);
         });
 
         it("resets the highlighted option on input", async () => {
@@ -169,6 +170,8 @@ describe("HeadlessMultiselect", () => {
 
             highlighted = wrapper.find(selectors.highlighted);
             expect(highlighted.find("span").text()).toBe("a");
+
+            await close(wrapper);
         });
 
         it("shows if the input value is valid", async () => {
@@ -184,6 +187,7 @@ describe("HeadlessMultiselect", () => {
 
             await input.setValue("invalid");
             expect(() => wrapper.get(selectors.invalid)).not.toThrow();
+            await close(wrapper);
         });
     });
 
@@ -197,27 +201,29 @@ describe("HeadlessMultiselect", () => {
             const input = await open(wrapper);
 
             await keyPress(input, "Enter");
-            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["#named"]);
+            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named"]);
 
             await keyPress(input, "ArrowDown");
             await keyPress(input, "Enter");
-            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["#named_2"]);
+            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named_2"]);
+            await close(wrapper);
         });
 
         it("deselects options via keyboard", async () => {
             const wrapper = mountWithProps({
                 options: sampleOptions,
-                selected: ["#named", "#named_2", "#named_3"],
+                selected: ["name:named", "name:named_2", "name:named_3"],
             });
 
             const input = await open(wrapper);
 
             await keyPress(input, "Enter");
-            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["#named_2", "#named_3"]);
+            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named_2", "name:named_3"]);
 
             await keyPress(input, "ArrowDown");
             await keyPress(input, "Enter");
-            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["#named", "#named_3"]);
+            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named", "name:named_3"]);
+            await close(wrapper);
         });
 
         it("allows for adding new options", async () => {
@@ -231,6 +237,7 @@ describe("HeadlessMultiselect", () => {
             await keyPress(input, "Enter");
 
             expect(wrapper.emitted()["addOption"]?.[0]?.[0]).toBe("123");
+            await close(wrapper);
         });
 
         it("selects options with mouse", async () => {
@@ -243,26 +250,28 @@ describe("HeadlessMultiselect", () => {
             const options = wrapper.findAll(selectors.option);
 
             await options.at(0).trigger("click");
-            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["#named"]);
+            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named"]);
 
             await options.at(1).trigger("click");
-            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["#named_2"]);
+            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named_2"]);
+            await close(wrapper);
         });
 
         it("deselects options with mouse", async () => {
             const wrapper = mountWithProps({
                 options: sampleOptions,
-                selected: ["#named", "#named_2", "#named_3"],
+                selected: ["name:named", "name:named_2", "name:named_3"],
             });
 
             await open(wrapper);
             const options = wrapper.findAll(selectors.option);
 
             await options.at(0).trigger("click");
-            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["#named_2", "#named_3"]);
+            expect(wrapper.emitted()["input"]?.[0]?.[0]).toEqual(["name:named_2", "name:named_3"]);
 
             await options.at(1).trigger("click");
-            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["#named", "#named_3"]);
+            expect(wrapper.emitted()["input"]?.[1]?.[0]).toEqual(["name:named", "name:named_3"]);
+            await close(wrapper);
         });
     });
 });

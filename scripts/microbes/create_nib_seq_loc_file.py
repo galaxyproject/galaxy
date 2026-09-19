@@ -74,8 +74,8 @@ def __main__():
         for chr in org["chrs"]:
             chr = org["chrs"][chr]
 
-            fasta_file = os.path.join(org["base_dir"], "%s.fna" % chr["chromosome"])
-            nib_out_file = os.path.join(seq_path, "%s.nib " % chr["chromosome"])
+            fasta_file = os.path.join(org["base_dir"], f"{chr['chromosome']}.fna")
+            nib_out_file = os.path.join(seq_path, f"{chr['chromosome']}.nib ")
             # create nibs using faToNib binary
             # TODO: when bx supports writing nib, use it here instead
             command = f"faToNib {fasta_file} {nib_out_file}"

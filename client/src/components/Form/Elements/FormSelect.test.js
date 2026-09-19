@@ -1,13 +1,16 @@
+import "@/composables/__mocks__/filter";
+
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
 import MountTarget from "./FormSelection.vue";
 
 const localVue = getLocalVue(true);
 
 function createTarget(propsData) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
 
     return mount(MountTarget, {
         localVue,
@@ -25,7 +28,7 @@ const defaultOptions = [
 
 function testDefaultOptions(wrapper) {
     const target = wrapper.findComponent(MountTarget);
-    const options = target.findAll("li > span > span");
+    const options = target.findAll("li > span > div");
     expect(options.length).toBe(4);
     for (let i = 0; i < options.length; i++) {
         expect(options.at(i).text()).toBe(`label_${i + 1}`);
@@ -52,7 +55,7 @@ describe("FormSelect", () => {
             optional: true,
         });
         const target = wrapper.findComponent(MountTarget);
-        const options = target.findAll("li > span > span");
+        const options = target.findAll("li > span > div");
         expect(options.length).toBe(5);
         expect(options.at(0).text()).toBe("Nothing selected");
         const selectedDefault = wrapper.find(".multiselect__option--selected");
@@ -66,6 +69,20 @@ describe("FormSelect", () => {
         await wrapper.setProps({ value: null });
         const unselectDefault = wrapper.find(".multiselect__option--selected");
         expect(unselectDefault.text()).toBe("Nothing selected");
+    });
+
+    it("required multi-select emits null when fully cleared", async () => {
+        const wrapper = createTarget({
+            optional: false,
+            multiple: true,
+            options: defaultOptions,
+            value: ["value_1"],
+        });
+        const selected = wrapper.findAll(".multiselect__option--selected");
+        expect(selected.length).toBe(1);
+        selected.at(0).trigger("click");
+        const emitted = wrapper.emitted().input[0][0];
+        expect(emitted).toBe(null);
     });
 
     it("multiple values", async () => {

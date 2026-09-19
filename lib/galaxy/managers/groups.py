@@ -2,7 +2,6 @@ from sqlalchemy import (
     false,
     select,
 )
-from sqlalchemy.orm import Session
 
 from galaxy import model
 from galaxy.exceptions import (
@@ -12,14 +11,15 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.managers.context import ProvidesAppContext
-from galaxy.managers.roles import get_roles_by_ids
-from galaxy.managers.users import get_users_by_ids
 from galaxy.model import Group
-from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.fields import Security
-from galaxy.schema.groups import GroupCreatePayload
+from galaxy.schema.groups import (
+    GroupCreatePayload,
+    GroupUpdatePayload,
+)
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.work.context import SessionRequestContext
 
 
 class GroupsManager:
@@ -28,7 +28,7 @@ class GroupsManager:
     def __init__(self, app: MinimalManagerApp) -> None:
         self._app = app
 
-    def index(self, trans: ProvidesAppContext):
+    def index(self, trans: SessionRequestContext):
         """
         Displays a collection (list) of groups.
         """
@@ -40,7 +40,7 @@ class GroupsManager:
             rval.append(item)
         return rval
 
-    def create(self, trans: ProvidesAppContext, payload: GroupCreatePayload):
+    def create(self, trans: SessionRequestContext, payload: GroupCreatePayload):
         """
         Creates a new group.
         """
@@ -52,20 +52,29 @@ class GroupsManager:
 
         group = model.Group(name=name)
         sa_session.add(group)
-        user_ids = payload.user_ids
-        users = get_users_by_ids(sa_session, user_ids)
-        role_ids = payload.role_ids
-        roles = get_roles_by_ids(sa_session, role_ids)
-        trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
-        with transaction(sa_session):
-            sa_session.commit()
+
+        role_ids = list(payload.role_ids)
+        if payload.auto_create_role:
+            existing_role = sa_session.scalars(select(model.Role).where(model.Role.name == name).limit(1)).first()
+            if existing_role:
+                raise Conflict(f"A role with name '{name}' already exists")
+            role = model.Role(name=name, description=f"Role for group {name}")
+            sa_session.add(role)
+            sa_session.flush()
+            gra = model.GroupRoleAssociation(group, role)
+            sa_session.add(gra)
+
+        trans.app.security_agent.set_group_user_and_role_associations(
+            group, user_ids=payload.user_ids, role_ids=role_ids
+        )
+        sa_session.commit()
 
         encoded_id = Security.security.encode_id(group.id)
         item = group.to_dict(view="element")
         item["url"] = self._url_for(trans, "group", id=encoded_id)
         return [item]
 
-    def show(self, trans: ProvidesAppContext, group_id: int):
+    def show(self, trans: SessionRequestContext, group_id: int):
         """
         Displays information about a group.
         """
@@ -77,7 +86,7 @@ class GroupsManager:
         item["roles_url"] = self._url_for(trans, "group_roles", group_id=encoded_id)
         return item
 
-    def update(self, trans: ProvidesAppContext, group_id: int, payload: GroupCreatePayload):
+    def update(self, trans: SessionRequestContext, group_id: int, payload: GroupUpdatePayload):
         """
         Modifies a group.
         """
@@ -86,16 +95,11 @@ class GroupsManager:
         if name := payload.name:
             self._check_duplicated_group_name(sa_session, name)
             group.name = name
-            sa_session.add(group)
-        user_ids = payload.user_ids
-        users = get_users_by_ids(sa_session, user_ids)
-        role_ids = payload.role_ids
-        roles = get_roles_by_ids(sa_session, role_ids)
-        self._app.security_agent.set_entity_group_associations(
-            groups=[group], roles=roles, users=users, delete_existing_assocs=False
-        )
-        with transaction(sa_session):
             sa_session.commit()
+
+        self._app.security_agent.set_group_user_and_role_associations(
+            group, user_ids=payload.user_ids, role_ids=payload.role_ids
+        )
 
         encoded_id = Security.security.encode_id(group.id)
         item = group.to_dict(view="element")
@@ -106,8 +110,7 @@ class GroupsManager:
         group = self._get_group(trans.sa_session, group_id)
         group.deleted = True
         trans.sa_session.add(group)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
     def purge(self, trans: ProvidesAppContext, group_id: int):
         sa_session = trans.sa_session
@@ -124,8 +127,7 @@ class GroupsManager:
             sa_session.delete(gra)
         # Delete the group
         sa_session.delete(group)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
 
     def undelete(self, trans: ProvidesAppContext, group_id: int):
         group = self._get_group(trans.sa_session, group_id)
@@ -135,10 +137,9 @@ class GroupsManager:
             )
         group.deleted = False
         trans.sa_session.add(group)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
-    def _url_for(self, trans, name, **kwargs):
+    def _url_for(self, trans: SessionRequestContext, name, **kwargs):
         return trans.url_builder(name, **kwargs)
 
     def _check_duplicated_group_name(self, sa_session: galaxy_scoped_session, group_name: str) -> None:
@@ -152,11 +153,11 @@ class GroupsManager:
         return group
 
 
-def get_group_by_name(session: Session, name: str):
+def get_group_by_name(session: galaxy_scoped_session, name: str):
     stmt = select(Group).filter(Group.name == name).limit(1)
     return session.scalars(stmt).first()
 
 
-def get_not_deleted_groups(session: Session):
+def get_not_deleted_groups(session: galaxy_scoped_session):
     stmt = select(Group).where(Group.deleted == false())
     return session.scalars(stmt)

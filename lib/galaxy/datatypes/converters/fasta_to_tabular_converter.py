@@ -10,6 +10,7 @@
 Input: fasta
 Output: tabular
 """
+
 import os
 import sys
 

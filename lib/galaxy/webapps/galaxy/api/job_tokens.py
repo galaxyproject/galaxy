@@ -1,5 +1,4 @@
-""" API asynchronous job running mechanisms can use to get a fresh OIDC token.
-"""
+"""API asynchronous job running mechanisms can use to get a fresh OIDC token."""
 
 import logging
 
@@ -39,7 +38,7 @@ class FastAPIJobTokens:
         job_id: EncodedDatabaseIdField,
         job_key: str = Query(
             description=(
-                "A key used to authenticate this request as acting on" "behalf or a job runner for the specified job"
+                "A key used to authenticate this request as acting on behalf or a job runner for the specified job"
             ),
         ),
         provider: str = Query(
@@ -52,7 +51,7 @@ class FastAPIJobTokens:
         tokens = job.user.get_oidc_tokens(provider_name_to_backend(provider))
         return tokens["id"]
 
-    def __authorize_job_access(self, trans, encoded_job_id, job_key):
+    def __authorize_job_access(self, trans: ProvidesAppContext, encoded_job_id, job_key):
         session = trans.sa_session
         job_id = trans.security.decode_id(encoded_job_id)
         job = session.get(Job, job_id)
@@ -64,7 +63,7 @@ class FastAPIJobTokens:
 
         # Verify job is active
         job = session.get(Job, job_id)
-        if job.finished:
+        if job.state not in Job.non_ready_states:
             error_message = "Attempting to get oidc token for a job that has already completed."
             raise exceptions.ItemAccessibilityException(error_message)
         return job

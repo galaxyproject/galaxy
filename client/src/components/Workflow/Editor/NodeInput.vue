@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronCircleRight, faMinusSquare } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounce, type UseElementBoundingReturn } from "@vueuse/core";
@@ -30,8 +29,6 @@ import type { InputTerminalSource } from "@/stores/workflowStepStore";
 
 import { useRelativePosition } from "./composables/relativePosition";
 import { useTerminal } from "./composables/useTerminal";
-
-library.add(faChevronCircleRight, faMinusSquare);
 
 const props = defineProps({
     input: {
@@ -70,6 +67,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    blank: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 onBeforeUnmount(() => {
@@ -87,10 +88,11 @@ const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, input, dataty
 const dropTarget = ref<HTMLDivElement | null>(null);
 const position = useRelativePosition(
     dropTarget,
-    computed(() => props.parentNode)
+    computed(() => props.parentNode),
 );
 
-const { connectionStore, stateStore, stepStore } = useWorkflowStores();
+const stores = useWorkflowStores();
+const { connectionStore, stateStore } = stores;
 const hasTerminals = ref(false);
 watchEffect(() => {
     hasTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value).length > 0;
@@ -103,7 +105,7 @@ const connections = computed(() => {
 const invalidConnectionReasons = computed(() =>
     connections.value
         .map((connection) => connectionStore.invalidConnections[getConnectionId(connection)])
-        .filter((reason) => reason)
+        .filter((reason) => reason),
 );
 
 const { draggingTerminal } = storeToRefs(stateStore);
@@ -128,10 +130,10 @@ const acceptsInput = computed(() => {
 });
 
 const endX = computed(
-    () => position.value.offsetLeft + props.stepPosition.left + (dropTarget.value?.offsetWidth ?? 2) / 2
+    () => position.value.offsetLeft + props.stepPosition.left + (dropTarget.value?.offsetWidth ?? 2) / 2,
 );
 const endY = computed(
-    () => position.value.offsetTop + props.stepPosition.top + (dropTarget.value?.offsetHeight ?? 2) / 2
+    () => position.value.offsetTop + props.stepPosition.top + (dropTarget.value?.offsetHeight ?? 2) / 2,
 );
 
 watch([endX, endY], ([x, y]) => {
@@ -144,7 +146,7 @@ const label = computed(() => props.input.label || props.input.name);
 const hasConnections = computed(() => connections.value.length > 0);
 const rowClass = computed(() => {
     const classes = ["form-row", "dataRow", "input-data-row"];
-    if (props.input?.valid === false) {
+    if (!props.blank && props.input?.valid === false) {
         classes.push("form-row-error");
     }
     return classes;
@@ -178,8 +180,7 @@ function onDrop(event: DragEvent) {
         stepOut.stepId,
         stepOut.output,
         props.datatypesMapper,
-        connectionStore,
-        stepStore
+        stores,
     ) as OutputCollectionTerminal;
 
     showTooltip.value = false;
@@ -206,7 +207,7 @@ watch(
         if (!draggingTerminal.value) {
             draggedOver.value = false;
         }
-    }
+    },
 );
 </script>
 
@@ -232,20 +233,20 @@ watch(
             <b-tooltip v-if="reason" :target="id" :show="showTooltip">
                 {{ reason }}
             </b-tooltip>
-            <FontAwesomeIcon class="terminal-icon" icon="fa-chevron-circle-right" />
+            <FontAwesomeIcon class="terminal-icon" :icon="faChevronCircleRight" />
         </div>
         <button
             v-if="hasConnections && !readonly"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             :title="reason"
             class="delete-terminal-button"
             @click="onRemove">
-            <FontAwesomeIcon class="delete-button-icon" icon="fa-minus-square" />
+            <FontAwesomeIcon class="delete-button-icon" :icon="faMinusSquare" />
         </button>
-        {{ label }}
+        <span v-if="!blank">{{ label }}</span>
         <span
             v-if="!input.optional && !hasTerminals"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             class="input-required"
             title="Input is required">
             *
@@ -254,7 +255,7 @@ watch(
 </template>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 @import "nodeTerminalStyle.scss";
 
 .node-input {
@@ -299,8 +300,7 @@ watch(
 .delete-terminal-button {
     position: absolute;
     left: calc(-0.65rem - 5px);
-    top: 50%;
-    transform: translateY(-50%);
+    top: 0.25rem;
     display: grid;
     place-items: center;
     width: 0;

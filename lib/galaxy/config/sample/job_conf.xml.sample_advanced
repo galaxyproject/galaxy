@@ -26,6 +26,12 @@
         </plugin>
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
         <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />
+        <plugin id="htcondor" type="runner" load="galaxy.jobs.runners.htcondor:HTCondorJobRunner">
+            <!-- Optional connection overrides for a remote schedd/collector. -->
+            <!-- <param id="htcondor_collector">collector.example.org:9618</param> -->
+            <!-- <param id="htcondor_schedd">schedd@collector.example.org</param> -->
+            <!-- <param id="htcondor_config">/etc/condor/condor_config</param> -->
+        </plugin>
         <plugin id="slurm" type="runner" load="galaxy.jobs.runners.slurm:SlurmJobRunner" />
         <plugin id="dynamic" type="runner">
             <!-- The dynamic runner is not a real job running plugin and is
@@ -296,7 +302,7 @@
                     HDF5_USE_FILE_LOCKING: 'FALSE'
                     MY_OTHER_ENV_VAR: its_value
                 </param> -->
-            <!-- Sets additional environment variables (in YAML) to be passed to the k8s Jobs that handle each Galaxy job. 
+            <!-- Sets additional environment variables (in YAML) to be passed to the k8s Jobs that handle each Galaxy job.
                  This is probably possible to be set at the destination level as well, based on the source code. -->
 
             <!-- <param id="k8s_supplemental_group_id">0</param> -->
@@ -329,9 +335,16 @@
                  a requirement of the other.
 
                  -->
-            <!-- <param id="k8s_run_as_user_id">101</param> -->
+
+            <!-- <param id="k8s_fs_group_change_policy">OnRootMismatch</param> -->
+            <!-- When k8s_fs_group_id is set, Kubernetes recursively changes the ownership and permissions of every
+                 file on each mounted volume when the pod starts, which can delay job start-up considerably on large
+                 volumes. Set the policy to OnRootMismatch to skip the recursive change when the root of the volume
+                 already has the expected group. Valid values are OnRootMismatch and Always (the Kubernetes default).
+                 This can also be overridden per destination. -->
+            <!-- <param id="k8s_run_as_user_id">10001</param> -->
             <!-- ID of user that should be used by the tool command in the job containers -->
-            <!-- <param id="k8s_run_as_group_id">101</param> -->
+            <!-- <param id="k8s_run_as_group_id">10001</param> -->
             <!-- ID of group that should be used by the tool command in the job containers -->
             <!-- <param id="k8s_interactivetools_use_ssl">True</param> -->
             <!-- Whether to enabled HTTPS access in the k8s ingress spec generated for each interactive tools -->
@@ -422,14 +435,12 @@
                  (db-skip-locked, db-transaction-isolation) and the value is an integer > 0. Default is to grab as many
                  jobs ready to run as possible.
 
-               - `ready_window_size` - Handlers query for and dispatch jobs ready to run in a loop. If the number of
-                 jobs in the `new` state grows very large but they cannot be dispatched due to user concurrency limits,
-                 checking all of these jobs on every iteration can drastically slow down job throughput as each pending
-                 job is checked and then deferred due to limits. This option limits the number of jobs per user are
-                 returned by the query on each iteration. By default it is set to 100. Setting this lower can improve
-                 throughput for other users when one user submits thousands of independent jobs.
+               - `ready_window_size` - Limits the number of pending jobs each handler checks per user on each pass.
+                 Defaults to 100. Lower values can improve responsiveness for other users when one user has a large
+                 backlog, but may increase the time before deferred jobs are checked again. Anonymous sessions each
+                 have their own limit. This setting does not apply to SQLite or in-memory job queues.
 
-                 Be aware that anonymous users are treated as a single user by this algorithm.
+                 See https://docs.galaxyproject.org/en/latest/admin/jobs.html#ready-window-size for details.
 
                - `default` - An ID or tag of the handler(s) that should handle any jobs not assigned to a specific
                  handler (which is probably most of them). If unset, the default is any untagged handlers plus any
@@ -588,13 +599,13 @@
                trust tool's specified container - a destination wide override
                can be set. This will cause all jobs on this destination to use
                that docker image. -->
-          <!-- <param id="docker_container_id_override">busybox:ubuntu-14.04</param> -->
+          <!-- <param id="docker_container_id_override">busybox:1.36.1-glibc</param> -->
 
           <!-- Likewise, if deployer wants to use docker for isolation and
                does trust tool's specified container - but also wants tool's not
                configured to run in a container the following option can provide
                a fallback. -->
-          <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
+          <!-- <param id="docker_default_container_id">busybox:1.36.1-glibc</param> -->
 
           <!-- If the destination should be secured to only allow containerized jobs
                the following parameter may be set for the job destination. Some tools do
@@ -604,6 +615,12 @@
         </destination>
         <destination id="singularity_local" runner="local">
           <param id="singularity_enabled">true</param>
+          <!--Galaxy requests an isolated /tmp directory from singularity, which means
+              it will be mounted as read-only. This can cause some problems with tools that
+              do not use the TMP, TEMP, TMPDIR variable family properly. Setting
+              tmp_dir to true ensures that the /tmp directory in the container points
+              to the job specific working tmp directory.-->
+          <param id="tmp_dir">true</param>
           <!-- See the above documentation for docker_volumes, singularity_volumes works
                almost the same way. The only difference is that $default will expand with
                rw directories that in Docker would expand as ro if any of subdirectories are rw.
@@ -629,6 +646,18 @@
                argument by default. You can turn this off by setting singularity_cleanenv to `false`.
           -->
           <!-- <param id="singularity_cleanenv">true</param> -->
+          <!-- Singularity by default inherits the PID namespace, this can give
+               issues with multiprocessing, hence galaxy passes the `pid` argument
+               by default to isolate the PID namespace. You can turn this of by setting
+               singularity_pid to `false`.
+          -->
+          <!-- <param id="singularity_pid">true</param> -->
+          <!-- Singularity by default inherits the IPC namespace, this can give
+               issues with multiprocessing, hence galaxy passes the `ipc` argument
+               by default to isolate the PID namespace. You can turn this of by setting
+               singularity_ipc to `false`.
+          -->
+          <!-- <param id="singularity_ipc">true</param> -->
           <!-- Pass extra arguments to the singularity exec command not covered by the
                above options. -->
           <!-- <param id="singularity_run_extra_arguments"></param> -->
@@ -674,11 +703,11 @@
                the enabled container types for this destination will be used.
           -->
           <param id="container_override">
-              <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:ubuntu-14.04</container>
+              <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:1.36.1-glibc</container>
               <container type="singularity" shell="/bin/sh" resolve_dependencies="false">/path/to/default/container</container>
           </param>
           <param id="container">
-              <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:ubuntu-14.04</container>
+              <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:1.36.1-glibc</container>
               <container type="singularity" shell="/bin/sh" resolve_dependencies="false">/path/to/default/container</container>
           </param>
         </destination>
@@ -966,7 +995,19 @@
             container ID will be passed along to condor as
             the docker_image submission parameter.
             -->
-            <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
+            <!-- <param id="docker_default_container_id">busybox:1.36.1-glibc</param> -->
+        </destination>
+
+        <destination id="htcondor" runner="htcondor">
+            <!-- Same destination parameters as the condor runner, but using
+                 the htcondor2 Python bindings instead of the CLI.
+            -->
+            <param id="request_cpus">8</param>
+            <!-- Optional per-destination HTCondor connection overrides (not passed to submit):
+            <param id="htcondor_collector">collector.example.org:9618</param>
+            <param id="htcondor_schedd">schedd@collector.example.org</param>
+            <param id="htcondor_config">/etc/condor/condor_config</param>
+            -->
         </destination>
 
         <!-- Jobs can be re-submitted for various reasons (to the same destination or others,
@@ -1160,7 +1201,7 @@
             <!-- `fargate_version` is required to use Fargate compute resources -->
             <param id="auto_platform">true</param>
             <!-- To let AWS Batch retry on failed jobs, set the number of attempts to 2-10 and `on_exit` conditions -->
-            <!-- 
+            <!--
             <param id="retry_attempts">2</param>
             <param id="retry_on_exit_statusReason">...</param>
             <param id="retry_on_exit_reason">...</param>
@@ -1214,9 +1255,6 @@
         <tool id="longbar" destination="dynamic" resources="all" />
         <!-- Pick a handler randomly from those declaring this tag. -->
         <tool id="baz" handler="special_handlers" destination="bigmem"/>
-        <tool id="foo" handler="handler0">
-            <param id="source">trackster</param>
-        </tool>
     </tools>
     <limits>
         <!-- Certain limits can be defined. The 'concurrent_jobs' limits all

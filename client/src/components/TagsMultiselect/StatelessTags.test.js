@@ -1,13 +1,10 @@
+import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { useToast } from "composables/toast";
-import { getLocalVue } from "tests/jest/helpers";
-import { computed } from "vue";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useUserTagsStore } from "@/stores/userTagsStore";
+import StatelessTags from "./StatelessTags.vue";
 
-import StatelessTags from "./StatelessTags";
-
-const autocompleteTags = ["#named_user_tag", "abc", "my_tag"];
+const autocompleteTags = ["name:named_user_tag", "abc", "my_tag"];
 const toggleButton = ".toggle-button";
 
 const localVue = getLocalVue();
@@ -19,22 +16,30 @@ const mountWithProps = (props) => {
     });
 };
 
-jest.mock("@/stores/userTagsStore");
-const onNewTagSeenMock = jest.fn((tag) => tag);
-useUserTagsStore.mockReturnValue({
-    userTags: computed(() => autocompleteTags),
-    onNewTagSeen: onNewTagSeenMock,
-    onTagUsed: jest.fn(),
-    onMultipleNewTagsSeen: jest.fn(),
-});
-
-jest.mock("composables/toast");
-const warningMock = jest.fn((message, title) => {
+const onNewTagSeenMock = vi.fn((tag) => tag);
+const warningMock = vi.fn((message, title) => {
     return { message, title };
 });
-useToast.mockReturnValue({
-    warning: warningMock,
-});
+
+function normalize(tag) {
+    return tag.replace(/^#/, "name:");
+}
+
+vi.mock("@/stores/userTagsStore", () => ({
+    useUserTagsStore: vi.fn(() => ({
+        userTags: autocompleteTags,
+        onNewTagSeen: onNewTagSeenMock,
+        onTagUsed: vi.fn(),
+        onMultipleNewTagsSeen: vi.fn(),
+    })),
+    normalizeTag: vi.fn((tag) => normalize(tag)),
+}));
+
+vi.mock("@/composables/toast", () => ({
+    useToast: vi.fn(() => ({
+        warning: warningMock,
+    })),
+}));
 
 const selectors = {
     multiselect: ".headless-multiselect",
@@ -43,6 +48,12 @@ const selectors = {
 };
 
 describe("StatelessTags", () => {
+    beforeEach(() => {
+        suppressBootstrapVueWarnings();
+        onNewTagSeenMock.mockClear();
+        warningMock.mockClear();
+    });
+
     it("shows tags", () => {
         const wrapper = mountWithProps({
             value: ["tag_1", "tag_2", "tags:tag_3"],
@@ -88,7 +99,7 @@ describe("StatelessTags", () => {
         expect(visibleOptions.length).toBe(autocompleteTags.length);
 
         visibleOptions.wrappers.forEach((option, i) => {
-            expect(option.text()).toContain(autocompleteTags[i]);
+            expect(normalize(option.text())).toContain(autocompleteTags[i]);
         });
     });
 
@@ -138,7 +149,7 @@ describe("StatelessTags", () => {
             maxVisibleTags: 4,
         });
 
-        const tags = wrapper.findAll(".tag");
+        const tags = wrapper.findAll(".tag").wrappers.filter((w) => !w.element.closest(".g-tooltip"));
         expect(tags.length).toBe(4);
 
         const showMoreLink = wrapper.find(".toggle-link");

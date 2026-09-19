@@ -10,9 +10,8 @@ from datetime import (
     datetime,
 )
 from typing import (
-    List,
-    Optional,
-    Union,
+    Annotated,
+    Any,
 )
 
 from fastapi import (
@@ -21,7 +20,8 @@ from fastapi import (
     Path,
     Query,
 )
-from typing_extensions import Annotated
+from fastapi.responses import PlainTextResponse
+from pydantic import Field
 
 from galaxy import exceptions
 from galaxy.managers.context import (
@@ -38,25 +38,29 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.jobs import (
     DeleteJobPayload,
     EncodedJobDetails,
+    JobConsoleOutput,
     JobDestinationParams,
     JobDisplayParametersSummary,
     JobErrorSummary,
     JobInputAssociation,
     JobInputSummary,
     JobOutputAssociation,
+    JobOutputCollectionAssociation,
     ReportJobErrorPayload,
     SearchJobsPayload,
-    ShowFullJobResponse,
 )
 from galaxy.schema.schema import (
     DatasetSourceType,
     JobIndexSortByEnum,
     JobMetric,
+    JobMetricCollection,
     JobSummary,
 )
 from galaxy.schema.types import OffsetNaiveDatetime
+from galaxy.tool_util.output_checker import AnyJobMessage
 from galaxy.web import expose_api_anonymous
 from galaxy.webapps.base.controller import UsesVisualizationMixin
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
     depends,
@@ -67,11 +71,17 @@ from galaxy.webapps.galaxy.api import (
 )
 from galaxy.webapps.galaxy.api.common import query_parameter_as_list
 from galaxy.webapps.galaxy.services.jobs import (
+    JobCreateResponse,
     JobIndexPayload,
     JobIndexViewEnum,
+    JobRequest,
     JobsService,
 )
-from galaxy.work.context import WorkRequestContext
+from galaxy.work.context import (
+    proxy_work_context_for_history,
+    SessionRequestContext,
+)
+from .tools import validate_not_protected
 
 log = logging.getLogger(__name__)
 
@@ -91,14 +101,14 @@ UserDetailsQueryParam: bool = Query(
     description="If true, and requester is an admin, will return external job id and user email. This is only available to admins.",
 )
 
-UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+UserIdQueryParam: DecodedDatabaseIdField | None = Query(
     default=None,
     title="User ID",
     description="an encoded user id to restrict query to, must be own id if not admin user",
 )
 
 ViewQueryParam: JobIndexViewEnum = Query(
-    default="collection",
+    default=JobIndexViewEnum.collection,
     title="View",
     description="Determines columns to return. Defaults to 'collection'.",
 )
@@ -119,40 +129,46 @@ ToolIdLikeQueryParam = Query(
     description="Limit listing of jobs to those that match one of the included tool ID sql-like patterns. If none, all are returned",
 )
 
-DateRangeMinQueryParam: Optional[Union[OffsetNaiveDatetime, date]] = Query(
+DateRangeMinQueryParam: OffsetNaiveDatetime | date | None = Query(
     default=None,
     title="Date Range Minimum",
     description="Limit listing of jobs to those that are updated after specified date (e.g. '2014-01-01')",
 )
 
-DateRangeMaxQueryParam: Optional[Union[OffsetNaiveDatetime, date]] = Query(
+DateRangeMaxQueryParam: OffsetNaiveDatetime | date | None = Query(
     default=None,
     title="Date Range Maximum",
     description="Limit listing of jobs to those that are updated before specified date (e.g. '2014-01-01')",
 )
 
-HistoryIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+HistoryIdQueryParam: DecodedDatabaseIdField | None = Query(
     default=None,
     title="History ID",
     description="Limit listing of jobs to those that match the history_id. If none, jobs from any history may be returned.",
 )
 
-WorkflowIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+WorkflowIdQueryParam: DecodedDatabaseIdField | None = Query(
     default=None,
     title="Workflow ID",
     description="Limit listing of jobs to those that match the specified workflow ID. If none, jobs from any workflow (or from no workflows) may be returned.",
 )
 
-InvocationIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+InvocationIdQueryParam: DecodedDatabaseIdField | None = Query(
     default=None,
     title="Invocation ID",
     description="Limit listing of jobs to those that match the specified workflow invocation ID. If none, jobs from any workflow invocation (or from no workflows) may be returned.",
 )
 
-ImplicitCollectionJobsIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+ImplicitCollectionJobsIdQueryParam: DecodedDatabaseIdField | None = Query(
     default=None,
     title="Implicit Collection Jobs ID",
     description="Limit listing of jobs to those that match the specified implicit collection job ID. If none, jobs from any implicit collection execution (or from no implicit collection execution) may be returned.",
+)
+
+ToolRequestIdQueryParam: DecodedDatabaseIdField | None = Query(
+    default=None,
+    title="Tool Request ID",
+    description="Limit listing of jobs to those that were created from the supplied tool request ID. If none, jobs from any tool request (or from no workflows) may be returned.",
 )
 
 SortByQueryParam: JobIndexSortByEnum = Query(
@@ -161,10 +177,11 @@ SortByQueryParam: JobIndexSortByEnum = Query(
     description="Sort results by specified field.",
 )
 
-LimitQueryParam: int = Query(default=500, title="Limit", description="Maximum number of jobs to return.")
+LimitQueryParam: int = Query(default=500, ge=1, title="Limit", description="Maximum number of jobs to return.")
 
 OffsetQueryParam: int = Query(
     default=0,
+    ge=0,
     title="Offset",
     description="Return jobs starting from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, jobs 200-299 will be returned.",
 )
@@ -176,14 +193,14 @@ query_tags = [
     IndexQueryTag("handler", "The job handler name used to execute the job.", "h", admin_only=True),
 ]
 
-SearchQueryParam: Optional[str] = search_query_param(
+SearchQueryParam: str | None = search_query_param(
     model_name="Job",
     tags=query_tags,
     free_text_fields=["user", "tool", "handler", "runner"],
 )
 
-FullShowQueryParam: Optional[bool] = Query(title="Full show", description="Show extra information.")
-DeprecatedHdaLddaQueryParam: Optional[DatasetSourceType] = Query(
+FullShowQueryParam: bool | None = Query(title="Full show", description="Show extra information.")
+DeprecatedHdaLddaQueryParam: DatasetSourceType | None = Query(
     deprecated=True,
     title="HDA or LDDA",
     description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
@@ -202,31 +219,90 @@ SearchJobBody = Body(default=..., title="Search job", description="The values to
 DeleteJobBody = Body(title="Delete/cancel job", description="The values to delete/cancel a job")
 
 
+class ShowFullJobResponse(EncodedJobDetails):
+    tool_stdout: str | None = Field(
+        default=None,
+        title="Tool Standard Output",
+        description="The captured standard output of the tool executed by the job.",
+    )
+    tool_stderr: str | None = Field(
+        default=None,
+        title="Tool Standard Error",
+        description="The captured standard error of the tool executed by the job.",
+    )
+    job_stdout: str | None = Field(
+        default=None,
+        title="Job Standard Output",
+        description="The captured standard output of the job execution.",
+    )
+    job_stderr: str | None = Field(
+        default=None,
+        title="Job Standard Error",
+        description="The captured standard error of the job execution.",
+    )
+    stdout: str | None = Field(  # Legacy (tool_stdout + "\n" + job_stdout)
+        default=None,
+        title="Standard Output",
+        description="Combined tool and job standard output streams.",
+    )
+    stderr: str | None = Field(  # Legacy (tool_stderr + "\n" + job_stderr)
+        default=None,
+        title="Standard Error",
+        description="Combined tool and job standard error streams.",
+    )
+    job_messages: list[AnyJobMessage] | None = Field(
+        default=None,
+        title="Job Messages",
+        description="List with additional information and possible reasons for a failed job.",
+    )
+    dependencies: list[Any] | None = Field(
+        default=None,
+        title="Job dependencies",
+        description="The dependencies of the job.",
+    )
+    job_metrics: JobMetricCollection | None = Field(
+        default=None,
+        title="Job Metrics",
+        description=(
+            "Collections of metrics provided by `JobInstrumenter` plugins on a particular job. "
+            "Only administrators can see these metrics."
+        ),
+    )
+
+
 @router.cbv
 class FastAPIJobs:
     service: JobsService = depends(JobsService)
+
+    @router.post("/api/jobs")
+    def create(
+        self, trans: ProvidesHistoryContext = DependsOnTrans, job_request: JobRequest = Body(...)
+    ) -> JobCreateResponse:
+        validate_not_protected(job_request.tool_id)
+        return self.service.create(trans, job_request)
 
     @router.get("/api/jobs")
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        states: Optional[List[str]] = Depends(query_parameter_as_list(StateQueryParam)),
+        states: list[str] | None = Depends(query_parameter_as_list(StateQueryParam)),
         user_details: bool = UserDetailsQueryParam,
-        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
+        user_id: DecodedDatabaseIdField | None = UserIdQueryParam,
         view: JobIndexViewEnum = ViewQueryParam,
-        tool_ids: Optional[List[str]] = Depends(query_parameter_as_list(ToolIdQueryParam)),
-        tool_ids_like: Optional[List[str]] = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
-        date_range_min: Optional[Union[datetime, date]] = DateRangeMinQueryParam,
-        date_range_max: Optional[Union[datetime, date]] = DateRangeMaxQueryParam,
-        history_id: Optional[DecodedDatabaseIdField] = HistoryIdQueryParam,
-        workflow_id: Optional[DecodedDatabaseIdField] = WorkflowIdQueryParam,
-        invocation_id: Optional[DecodedDatabaseIdField] = InvocationIdQueryParam,
-        implicit_collection_jobs_id: Optional[DecodedDatabaseIdField] = ImplicitCollectionJobsIdQueryParam,
+        tool_ids: list[str] | None = Depends(query_parameter_as_list(ToolIdQueryParam)),
+        tool_ids_like: list[str] | None = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
+        date_range_min: datetime | date | None = DateRangeMinQueryParam,
+        date_range_max: datetime | date | None = DateRangeMaxQueryParam,
+        history_id: DecodedDatabaseIdField | None = HistoryIdQueryParam,
+        workflow_id: DecodedDatabaseIdField | None = WorkflowIdQueryParam,
+        invocation_id: DecodedDatabaseIdField | None = InvocationIdQueryParam,
+        implicit_collection_jobs_id: DecodedDatabaseIdField | None = ImplicitCollectionJobsIdQueryParam,
+        tool_request_id: DecodedDatabaseIdField | None = ToolRequestIdQueryParam,
         order_by: JobIndexSortByEnum = SortByQueryParam,
-        search: Optional[str] = SearchQueryParam,
+        search: str | None = SearchQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
-    ) -> List[Union[ShowFullJobResponse, EncodedJobDetails, JobSummary]]:
+    ) -> list[ShowFullJobResponse | EncodedJobDetails | JobSummary]:
         payload = JobIndexPayload.model_construct(
             states=states,
             user_details=user_details,
@@ -240,6 +316,7 @@ class FastAPIJobs:
             workflow_id=workflow_id,
             invocation_id=invocation_id,
             implicit_collection_jobs_id=implicit_collection_jobs_id,
+            tool_request_id=tool_request_id,
             order_by=order_by,
             search=search,
             limit=limit,
@@ -286,7 +363,7 @@ class FastAPIJobs:
         self,
         job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[JobOutputAssociation]:
+    ) -> list[JobOutputAssociation]:
         job = self.service.get_job(trans, job_id=job_id)
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with the given id")
@@ -343,7 +420,7 @@ class FastAPIJobs:
         self,
         job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[JobInputAssociation]:
+    ) -> list[JobInputAssociation]:
         job = self.service.get_job(trans=trans, job_id=job_id)
         associations = self.service.dictify_associations(trans, job.input_datasets, job.input_library_datasets)
         input_associations = []
@@ -360,53 +437,79 @@ class FastAPIJobs:
         self,
         job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[JobOutputAssociation]:
+    ) -> list[JobOutputAssociation | JobOutputCollectionAssociation]:
         job = self.service.get_job(trans=trans, job_id=job_id)
         associations = self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
-        output_associations = []
+        output_associations: list[JobOutputAssociation | JobOutputCollectionAssociation] = []
         for association in associations:
             output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
+
+        output_associations.extend(self.service.dictify_output_collection_associations(trans, job))
         return output_associations
+
+    @router.get(
+        "/api/jobs/{job_id}/console_output",
+        name="get_console_output",
+        summary="Returns STDOUT and STDERR from the tool running in a specific job.",
+    )
+    def console_output(
+        self,
+        job_id: JobIdPathParam,
+        stdout_position: int,
+        stdout_length: int,
+        stderr_position: int,
+        stderr_length: int,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> JobConsoleOutput:
+        """
+        Get the stdout and/or stderr from the tool running in a specific job. The position parameters are the index
+        of where to start reading stdout/stderr. The length parameters control how much
+        stdout/stderr is read.
+        """
+        job = self.service.get_job(trans, job_id)
+        output = self.service.job_manager.get_job_console_output(
+            trans,
+            job,
+            int(stdout_position),
+            int(stdout_length),
+            int(stderr_position),
+            int(stderr_length),
+        )
+        return JobConsoleOutput(state=output["state"], stdout=output["stdout"], stderr=output["stderr"])
 
     @router.get(
         "/api/jobs/{job_id}/parameters_display",
         name="resolve_parameters_display",
         summary="Resolve parameters as a list for nested display.",
+        unstable=True,
     )
     def parameters_display_by_job(
         self,
         job_id: JobIdPathParam,
-        hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
-        trans: ProvidesUserContext = DependsOnTrans,
+        hda_ldda: Annotated[DatasetSourceType | None, DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
-        """
-        Resolve parameters as a list for nested display.
-        This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-        this endpoint will change frequently.
-        """
+        """Resolve parameters as a list for nested display."""
         hda_ldda_str = hda_ldda or "hda"
         job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
-        return summarize_job_parameters(trans, job)
+        return JobDisplayParametersSummary(**summarize_job_parameters(trans, job))
 
     @router.get(
         "/api/datasets/{dataset_id}/parameters_display",
         name="resolve_parameters_display",
         summary="Resolve parameters as a list for nested display.",
         deprecated=True,
+        unstable=True,
     )
     def parameters_display_by_dataset(
         self,
         dataset_id: DatasetIdPathParam,
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
-        """
-        Resolve parameters as a list for nested display.
-        This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-        this endpoint will change frequently.
-        """
+        """Resolve parameters as a list for nested display."""
         job = self.service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
-        return summarize_job_parameters(trans, job)
+        return JobDisplayParametersSummary(**summarize_job_parameters(trans, job))
 
     @router.get(
         "/api/jobs/{job_id}/metrics",
@@ -416,9 +519,9 @@ class FastAPIJobs:
     def metrics_by_job(
         self,
         job_id: JobIdPathParam,
-        hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
+        hda_ldda: Annotated[DatasetSourceType | None, DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[Optional[JobMetric]]:
+    ) -> list[JobMetric | None]:
         hda_ldda_str = hda_ldda or "hda"
         job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
         return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
@@ -434,7 +537,7 @@ class FastAPIJobs:
         dataset_id: DatasetIdPathParam,
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[Optional[JobMetric]]:
+    ) -> list[JobMetric | None]:
         job = self.service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
         return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
 
@@ -461,7 +564,7 @@ class FastAPIJobs:
         self,
         payload: Annotated[SearchJobsPayload, SearchJobBody],
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> List[EncodedJobDetails]:
+    ) -> list[EncodedJobDetails]:
         """
         This method is designed to scan the list of previously run jobs and find records of jobs that had
         the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
@@ -472,27 +575,28 @@ class FastAPIJobs:
         tool = trans.app.toolbox.get_tool(tool_id)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
+        tool = trans.app.toolbox.materialize_tool(tool, reason="execution")
         inputs = payload.inputs
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.__annotations__.items():
             if k.startswith("files_") or k.startswith("__files_"):
                 inputs[k] = v
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history)
-        all_params, all_errors, _, _ = tool.expand_incoming(
-            trans=trans, incoming=inputs, request_context=request_context
-        )
+        request_context = proxy_work_context_for_history(trans)
+        all_params, all_errors, _, _ = tool.expand_incoming(request_context, incoming=inputs)
         if any(all_errors):
             return []
         params_dump = [tool.params_to_strings(param, trans.app, nested=True) for param in all_params]
         jobs = []
+        assert trans.user
         for param_dump, param in zip(params_dump, all_params):
             job = self.service.job_search.by_tool_input(
-                trans=trans,
+                user=trans.user,
                 tool_id=tool_id,
                 tool_version=tool.version,
                 param=param,
                 param_dump=param_dump,
                 job_state=payload.state,
+                history_id=payload.history_id,
             )
             if job:
                 jobs.append(job)
@@ -506,13 +610,43 @@ class FastAPIJobs:
     def show(
         self,
         job_id: JobIdPathParam,
-        full: Annotated[Optional[bool], FullShowQueryParam] = False,
+        full: Annotated[bool | None, FullShowQueryParam] = False,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> Union[ShowFullJobResponse, EncodedJobDetails]:
+    ) -> ShowFullJobResponse | EncodedJobDetails:
         if full:
             return ShowFullJobResponse(**self.service.show(trans, job_id, bool(full)))
         else:
             return EncodedJobDetails(**self.service.show(trans, job_id, bool(full)))
+
+    @router.get(
+        "/api/jobs/{job_id}/stdout",
+        name="get_job_stdout",
+        summary="Return stdout from job execution",
+        response_class=PlainTextResponse,
+    )
+    def stdout(
+        self,
+        job_id: JobIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> str:
+        """Return job stdout as plain text."""
+        job = self.service.get_job(trans=trans, job_id=job_id)
+        return job.stdout or ""
+
+    @router.get(
+        "/api/jobs/{job_id}/stderr",
+        name="get_job_stderr",
+        summary="Return stderr from job execution",
+        response_class=PlainTextResponse,
+    )
+    def stderr(
+        self,
+        job_id: JobIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> str:
+        """Return job stderr as plain text."""
+        job = self.service.get_job(trans=trans, job_id=job_id)
+        return job.stderr or ""
 
     @router.delete(
         "/api/jobs/{job_id}",
@@ -523,7 +657,7 @@ class FastAPIJobs:
         self,
         job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: Annotated[Optional[DeleteJobPayload], DeleteJobBody] = None,
+        payload: Annotated[DeleteJobPayload | None, DeleteJobBody] = None,
     ) -> bool:
         job = self.service.get_job(trans=trans, job_id=job_id)
         if payload:
@@ -537,7 +671,7 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
     job_manager = depends(JobManager)
 
     @expose_api_anonymous
-    def build_for_rerun(self, trans: ProvidesHistoryContext, id, **kwd):
+    def build_for_rerun(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         * GET /api/jobs/{id}/build_for_rerun
             returns a tool input/param template prepopulated with this job's
@@ -554,14 +688,16 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         job = self.__get_job(trans, id)
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with the given id")
-        tool = self.app.toolbox.get_tool(job.tool_id, kwd.get("tool_version") or job.tool_version)
+        tool = self.app.toolbox.tool_for_job(
+            job, exact=False, check_access=True, user=trans.user, tool_version=kwd.get("tool_version")
+        )
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
         if not tool.is_workflow_compatible:
             raise exceptions.ConfigDoesNotAllowException(f"Tool '{job.tool_id}' cannot be rerun.")
         return tool.to_json(trans, {}, job=job)
 
-    def __get_job(self, trans, job_id=None, dataset_id=None, **kwd):
+    def __get_job(self, trans: GalaxyWebTransaction, job_id=None, dataset_id=None, **kwd):
         if job_id is not None:
             decoded_job_id = self.decode_id(job_id)
             return self.job_manager.get_accessible_job(trans, decoded_job_id)

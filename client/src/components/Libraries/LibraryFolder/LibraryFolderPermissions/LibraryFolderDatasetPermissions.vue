@@ -3,16 +3,15 @@
         <b-container fluid>
             <div v-if="dataset">
                 <LibraryBreadcrumb :current-id="dataset_id" :full_path="dataset.full_path" />
-                <b-button
+                <GButton
                     data-toggle="tooltip"
                     data-placement="top"
                     title="Go to Dataset Details"
-                    variant="secondary"
                     type="button"
                     :href="`${root}libraries/folders/${folder_id}/dataset/${dataset_id}`">
-                    <FontAwesomeIcon :icon="['far', 'file']" />
+                    <FontAwesomeIcon :icon="faFile" />
                     &nbsp;Dataset Details
-                </b-button>
+                </GButton>
                 <PermissionsHeader :name="dataset.name" />
             </div>
 
@@ -59,16 +58,15 @@
                         Users without access permission <strong>cannot</strong> have other permissions on this dataset.
                         If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>."
                 @input="setUserPermissionsPreferences" />
-            <b-button
+            <GButton
                 data-toggle="tooltip"
                 data-placement="top"
                 title="Save modifications"
                 class="toolbtn_save_permissions"
-                variant="secondary"
                 @click="postPermissions">
-                <FontAwesomeIcon :icon="['far', 'save']" />
+                <FontAwesomeIcon :icon="faSave" />
                 &nbsp;Save
-            </b-button>
+            </GButton>
         </b-container>
     </div>
 </template>
@@ -76,28 +74,31 @@
 <script>
 import "vue-multiselect/dist/vue-multiselect.min.css";
 
+import { faFile, faSave } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getGalaxyInstance } from "app";
 import BootstrapVue from "bootstrap-vue";
-import { initPermissionsIcons } from "components/Libraries/icons";
-import { extractRoles } from "components/Libraries/library-utils";
-import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
-import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
-import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
-import { Services } from "components/Libraries/LibraryPermissions/services";
-import { Toast } from "composables/toast";
-import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import VueObserveVisibility from "vue-observe-visibility";
 
+import { getGalaxyInstance } from "@/app";
+import { extractRoles } from "@/components/Libraries/library-utils";
+import { Services } from "@/components/Libraries/LibraryPermissions/services";
+import { Toast } from "@/composables/toast";
+import { getAppRoot } from "@/onload/loadConfig";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
+import PermissionsHeader from "@/components/Libraries/LibraryPermissions/PermissionsHeader.vue";
+import PermissionsInputField from "@/components/Libraries/LibraryPermissions/PermissionsInputField.vue";
+
 Vue.use(VueObserveVisibility);
 Vue.use(BootstrapVue);
-initPermissionsIcons();
 
 export default {
     components: {
         PermissionsInputField,
         FontAwesomeIcon,
+        GButton,
         LibraryBreadcrumb,
         PermissionsHeader,
     },
@@ -113,6 +114,8 @@ export default {
     },
     data() {
         return {
+            faFile,
+            faSave,
             permissions: undefined,
             dataset: undefined,
             is_admin: undefined,
@@ -156,7 +159,7 @@ export default {
                             isMakePrivate
                                 ? "The dataset is now private to you."
                                 : "Access to this dataset is now unrestricted."
-                        }`
+                        }`,
                     );
                     this.assignFetchedPermissions(fetched_permissions);
                     this.$refs.access_field.assignValue(this.access_dataset_roles);
@@ -164,7 +167,7 @@ export default {
                 (error) => {
                     Toast.error("An error occurred while attempting to set folder permissions.");
                     console.error(error);
-                }
+                },
             );
         },
         setUserPermissionsPreferences(ids, permission_type) {
@@ -182,7 +185,7 @@ export default {
                 (error) => {
                     Toast.error("An error occurred while attempting to set folder permissions.");
                     console.error(error);
-                }
+                },
             );
         },
     },

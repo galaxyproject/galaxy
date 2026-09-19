@@ -1,10 +1,5 @@
 import os
 import sys
-from typing import (
-    List,
-    Optional,
-    Tuple,
-)
 
 import alembic.config
 from alembic.config import Config
@@ -59,7 +54,7 @@ def verify_database_is_initialized(db_url: str) -> None:
     if not database_exists(db_url):
         raise DatabaseDoesNotExistError(db_url)
 
-    engine = create_engine(db_url, future=True)
+    engine = create_engine(db_url)
     try:
         db_state = DatabaseStateCache(engine=engine)
         if db_state.is_database_empty() or db_state.contains_only_kombu_tables():
@@ -68,7 +63,7 @@ def verify_database_is_initialized(db_url: str) -> None:
         engine.dispose()
 
 
-def get_configuration(argv: List[str], cwd: str) -> Tuple[DatabaseConfig, DatabaseConfig, bool]:
+def get_configuration(argv: list[str], cwd: str) -> tuple[DatabaseConfig, DatabaseConfig, bool]:
     """
     Return a 3-item-tuple with configuration values used for managing databases.
     """
@@ -77,8 +72,8 @@ def get_configuration(argv: List[str], cwd: str) -> Tuple[DatabaseConfig, Databa
 
 
 def get_configuration_from_file(
-    cwd: str, config_file: Optional[str] = None
-) -> Tuple[DatabaseConfig, DatabaseConfig, bool]:
+    cwd: str, config_file: str | None = None
+) -> tuple[DatabaseConfig, DatabaseConfig, bool]:
     if config_file is None:
         cwds = [cwd, os.path.join(cwd, CONFIG_DIR_NAME)]
         config_file = find_config_file(DEFAULT_CONFIG_NAMES, dirs=cwds)
@@ -103,7 +98,7 @@ def get_configuration_from_file(
     return (gxy_config, tsi_config, is_auto_migrate)
 
 
-def add_db_urls_to_command_arguments(argv: List[str], gxy_url: str, tsi_url: str) -> None:
+def add_db_urls_to_command_arguments(argv: list[str], gxy_url: str, tsi_url: str) -> None:
     _insert_x_argument(argv, f"{TSI}_url", tsi_url)
     _insert_x_argument(argv, f"{GXY}_url", gxy_url)
 
@@ -161,7 +156,7 @@ class LegacyManageDb:
         """
         db_url = gxy_db_url or self.gxy_db_url
         try:
-            engine = create_engine(db_url, future=True)
+            engine = create_engine(db_url)
             version = self._get_gxy_alembic_db_version(engine)
             if not version:
                 version = self._get_gxy_sam_db_version(engine)
@@ -182,7 +177,7 @@ class LegacyManageDb:
         self._upgrade(gxy_db_url, GXY)
         self._upgrade(tsi_db_url, TSI)
 
-    def rename_config_argument(self, argv: List[str]) -> None:
+    def rename_config_argument(self, argv: list[str]) -> None:
         """
         Rename the optional config argument: we can't use '-c' because that option is used by Alembic.
         """
@@ -197,7 +192,7 @@ class LegacyManageDb:
 
     def _upgrade(self, db_url, model):
         try:
-            engine = create_engine(db_url, future=True)
+            engine = create_engine(db_url)
             am = get_alembic_manager(engine)
             am.upgrade(model)
         finally:

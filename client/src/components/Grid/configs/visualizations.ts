@@ -2,8 +2,8 @@ import { faCopy, faEdit, faEye, faPlus, faShareAlt, faTrash, faTrashRestore } fr
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { fetcher } from "@/api/schema";
 import { updateTags } from "@/api/tags";
+import { loadVisualizations, type VisualizationSortByLiteral } from "@/api/visualizations";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
@@ -13,31 +13,25 @@ import type { ActionArray, FieldArray, GridConfig } from "./types";
 const { emit } = useEventBus<string>("grid-router-push");
 
 /**
- * Api endpoint handlers
- */
-const getVisualizations = fetcher.path("/api/visualizations").method("get").create();
-
-/**
  * Local types
  */
-type SortKeyLiteral = "create_time" | "title" | "update_time" | "username" | undefined;
 type VisualizationEntry = Record<string, unknown>;
 
 /**
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { data, headers } = await getVisualizations({
+    const { data, totalMatches } = await loadVisualizations({
         limit,
         offset,
         search,
-        sort_by: sort_by as SortKeyLiteral,
-        sort_desc,
-        show_published: false,
-        show_own: true,
-        show_shared: false,
+        sortBy: sort_by as VisualizationSortByLiteral,
+        sortDesc: sort_desc,
+        showOwn: true,
+        showPublished: false,
+        showShared: false,
     });
-    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
+
     return [data, totalMatches];
 }
 
@@ -69,11 +63,9 @@ const fields: FieldArray = [
                 icon: faEye,
                 condition: (data: VisualizationEntry) => !data.deleted,
                 handler: (data: VisualizationEntry) => {
-                    if (data.type === "trackster") {
-                        window.location.href = withPrefix(`/visualization/${data.type}?id=${data.id}`);
-                    } else {
-                        window.location.href = withPrefix(`/plugins/visualizations/${data.type}/saved?id=${data.id}`);
-                    }
+                    emit(`/visualizations/display?visualization=${data.type}&visualization_id=${data.id}`, {
+                        title: data.title,
+                    });
                 },
             },
             {
@@ -205,21 +197,21 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
         menuItem: true,
     },
     published: {
-        placeholder: "Filter on published visualizations",
+        placeholder: "Published",
         type: Boolean,
         boolType: "is",
         handler: equals("published", "published", toBool),
         menuItem: true,
     },
     importable: {
-        placeholder: "Filter on importable visualizations",
+        placeholder: "Importable",
         type: Boolean,
         boolType: "is",
         handler: equals("importable", "importable", toBool),
         menuItem: true,
     },
     deleted: {
-        placeholder: "Filter on deleted visualizations",
+        placeholder: "Deleted",
         type: Boolean,
         boolType: "is",
         handler: equals("deleted", "deleted", toBool),

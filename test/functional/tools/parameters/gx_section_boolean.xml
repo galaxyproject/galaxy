@@ -1,0 +1,35 @@
+<tool id="gx_section_boolean" name="gx_section_boolean" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter.boolean_parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <section name="parameter">
+            <param name="boolean_parameter" type="boolean" truevalue="mytrue" falsevalue="myfalse" />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <section name="parameter">
+                <param name="boolean_parameter" value="true" />
+            </section>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="mytrue" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <section name="parameter">
+                <param name="boolean_parameter" value="false" />
+            </section>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="myfalse" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

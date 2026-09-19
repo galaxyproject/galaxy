@@ -12,19 +12,20 @@ histories, libraries, etc... should be annotated ideally.
 import os
 import unittest
 from functools import wraps
-from typing import Union
+from typing import (
+    Literal,
+)
 
 import pytest
-from typing_extensions import Literal
 
-KnownRequirementT = Union[
-    Literal["admin"],
-    Literal["celery"],
-    Literal["new_history"],
-    Literal["new_library"],
-    Literal["new_published_objects"],
-    Literal["new_user"],
-]
+KnownRequirementT = (
+    Literal["admin"]
+    | Literal["celery"]
+    | Literal["new_history"]
+    | Literal["new_library"]
+    | Literal["new_published_objects"]
+    | Literal["new_user"]
+)
 
 
 def has_requirement(method, tag: KnownRequirementT):
@@ -65,6 +66,14 @@ def _wrap_method_with_galaxy_requirement(method, tag: KnownRequirementT):
         return method(*args, **kwargs)
 
     return wrapped_method
+
+
+def requires_tool_id(tool_id: str):
+
+    def method_wrapper(method):
+        return pytest.mark.requires_tool_id(tool_id)(method)
+
+    return method_wrapper
 
 
 def requires_new_history(method):

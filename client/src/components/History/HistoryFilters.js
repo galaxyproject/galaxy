@@ -1,5 +1,4 @@
-import { STATES } from "components/History/Content/model/states";
-import StatesInfo from "components/History/Content/model/StatesInfo";
+import { STATES } from "@/components/History/Content/model/states";
 import Filtering, {
     compare,
     contains,
@@ -8,7 +7,9 @@ import Filtering, {
     quotaSourceFilter,
     toBool,
     toDate,
-} from "utils/filtering";
+} from "@/utils/filtering";
+
+import StatesInfo from "@/components/History/Content/model/StatesInfo.vue";
 
 const excludeStates = ["empty", "failed", "upload", "placeholder", "failed_populated_state", "new_populated_state"];
 const states = Object.keys(STATES).filter((state) => !excludeStates.includes(state));
@@ -17,14 +18,26 @@ const validFilters = {
     name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
     name_eq: { handler: equals("name"), menuItem: false },
     extension: { placeholder: "extension", type: String, handler: equals("extension"), menuItem: true },
+    history_content_type: {
+        placeholder: "content type",
+        type: "Dropdown",
+        handler: equals("history_content_type"),
+        datalist: [
+            { value: "dataset", text: "Datasets Only" },
+            { value: "dataset_collection", text: "Collections Only" },
+        ],
+        menuItem: true,
+        disablesFilters: { state: ["dataset_collection"] },
+    },
     tag: { placeholder: "tag", type: String, handler: contains("tags", "tag", expandNameTag), menuItem: true },
     state: {
         placeholder: "state",
-        type: String,
+        type: "Dropdown",
         handler: equals("state"),
         datalist: states,
         helpInfo: StatesInfo,
         menuItem: true,
+        disablesFilters: { history_content_type: null },
     },
     genome_build: { placeholder: "database", type: String, handler: contains("genome_build"), menuItem: true },
     genome_build_eq: { handler: equals("genome_build"), menuItem: false },

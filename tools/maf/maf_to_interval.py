@@ -3,6 +3,7 @@
 """
 Read a maf and output intervals for specified list of species.
 """
+
 import os
 import sys
 

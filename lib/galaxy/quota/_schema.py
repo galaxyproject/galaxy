@@ -1,14 +1,12 @@
 from enum import Enum
 from typing import (
-    List,
-    Optional,
+    Literal,
 )
 
 from pydantic import (
     Field,
     RootModel,
 )
-from typing_extensions import Literal
 
 from galaxy.schema.fields import (
     EncodedDatabaseIdField,
@@ -113,7 +111,7 @@ class QuotaBase(Model, WithModelClass):
         description="The `encoded identifier` of the quota.",
     )
     name: str = QuotaNameField
-    quota_source_label: Optional[str] = Field(
+    quota_source_label: str | None = Field(
         None,
         title="Quota Source Label",
         description="Quota source label",
@@ -133,7 +131,7 @@ class QuotaSummary(QuotaBase):
 
 
 class QuotaSummaryList(RootModel):
-    root: List[QuotaSummary] = Field(
+    root: list[QuotaSummary] = Field(
         default=[],
         title="List with summary information of Quotas.",
     )
@@ -152,17 +150,17 @@ class QuotaDetails(QuotaBase):
         title="Display Amount",
         description="Human-readable representation of the `amount` field.",
     )
-    default: List[DefaultQuota] = Field(
+    default: list[DefaultQuota] = Field(
         [],
         title="Default",
         description="A list indicating which types of default user quotas, if any, are associated with this quota.",
     )
-    users: List[UserQuota] = Field(
+    users: list[UserQuota] = Field(
         [],
         title="Users",
         description="A list of specific users associated with this quota.",
     )
-    groups: List[GroupQuota] = Field(
+    groups: list[GroupQuota] = Field(
         [],
         title="Groups",
         description="A list of specific groups of users associated with this quota.",
@@ -195,17 +193,17 @@ class CreateQuotaParams(Model):
             " equivalent to ``no``."
         ),
     )
-    quota_source_label: Optional[str] = Field(
+    quota_source_label: str | None = Field(
         default=None,
         title="Quota Source Label",
         description="If set, quota source label to apply this quota operation to. Otherwise, the default quota is used.",
     )
-    in_users: Optional[List[str]] = Field(
+    in_users: list[str] | None = Field(
         default=[],
         title="Users",
         description="A list of user IDs or user emails to associate with this quota.",
     )
-    in_groups: Optional[List[str]] = Field(
+    in_groups: list[str] | None = Field(
         default=[],
         title="Groups",
         description="A list of group IDs or names to associate with this quota.",
@@ -213,17 +211,17 @@ class CreateQuotaParams(Model):
 
 
 class UpdateQuotaParams(Model):
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         title="Name",
         description="The new name of the quota. This must be unique within a Galaxy instance.",
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None,
         title="Description",
         description="Detailed text description for this Quota.",
     )
-    amount: Optional[str] = Field(
+    amount: str | None = Field(
         None,
         title="Amount",
         description="Quota size (E.g. ``10000MB``, ``99 gb``, ``0.2T``, ``unlimited``)",
@@ -236,7 +234,7 @@ class UpdateQuotaParams(Model):
             " you must also provide the ``amount``, otherwise it will not take effect."
         ),
     )
-    default: Optional[DefaultQuotaValues] = Field(
+    default: DefaultQuotaValues | None = Field(
         default=None,
         title="Default",
         description=(
@@ -247,12 +245,12 @@ class UpdateQuotaParams(Model):
             " passing this parameter is equivalent to passing ``no``."
         ),
     )
-    in_users: Optional[List[str]] = Field(
+    in_users: list[str] | None = Field(
         default=None,
         title="Users",
         description="A list of user IDs or user emails to associate with this quota.",
     )
-    in_groups: Optional[List[str]] = Field(
+    in_groups: list[str] | None = Field(
         default=None,
         title="Groups",
         description="A list of group IDs or names to associate with this quota.",

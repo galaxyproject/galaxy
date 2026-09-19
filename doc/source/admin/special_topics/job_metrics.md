@@ -18,7 +18,7 @@ Job metrics can be collected for Pulsar jobs - but there is added complexity. Th
 
 See `job_metrics_conf.xml.sample` for the most updated information.
 
-The `core` plugin is one enabled by default and it is a cross-platform plugin used to caputre job run time and core allocation. `env` is the only other cross-platform plugin (should work with any *nix) and can be used to record all environment variables set at job runtime or just specific variables (e.g. `PATH`) - this can potentially be useful for debugging cluster issues. 
+The `core` plugin is one enabled by default and it is a cross-platform plugin used to capture job run time and core allocation. `env` is the only other cross-platform plugin (should work with any *nix) and can be used to record all environment variables set at job runtime or just specific variables (e.g. `PATH`) - this can potentially be useful for debugging cluster issues. 
 
 There are a number of remaining Linux-only plugins - there include `cpuinfo` and `meminfo` to collect CPU and memory about the node the Galaxy job runs on and `uname` to likewise collect host and operating system information.
 

@@ -139,14 +139,12 @@ def test_dont_read_properties_from_other_format(mock_properties):
 
 def test_nice_config_parser(tmp_path):
     conf_path = tmp_path / "config.ini"
-    conf_path.write_text(
-        """
+    conf_path.write_text("""
 [main]
 foo_path = %(here)s/cow
 FOO_PATH123 = hackedtonotchangecase
 config_file = %(__file__)s
-"""
-    )
+""")
     config_parser = nice_config_parser(conf_path)
     foo_path = config_parser.get("main", "foo_path")
     assert foo_path == str(tmp_path / "cow")
@@ -156,12 +154,10 @@ config_file = %(__file__)s
 
 def test_nice_config_parser_custom_exceptions(tmp_path):
     conf_path = tmp_path / "config.ini"
-    conf_path.write_text(
-        """
+    conf_path.write_text("""
 [main]
 foo_var = %(foobar)s/cow
-"""
-    )
+""")
     config_parser = nice_config_parser(conf_path)
     exc = None
     try:

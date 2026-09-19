@@ -10,8 +10,11 @@ from galaxy import (
 )
 from galaxy.managers import histories
 from galaxy.managers.sharable import SlugBuilder
-from galaxy.model import Role
-from galaxy.model.base import transaction
+from galaxy.model import (
+    Dataset,
+    Role,
+)
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -30,6 +33,8 @@ from galaxy.webapps.base.controller import (
     BaseUIController,
     SharableMixin,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from galaxy.webapps.galaxy.services.histories import HistoriesService
 from ..api import depends
 
 log = logging.getLogger(__name__)
@@ -39,16 +44,25 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
     history_serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
     slug_builder: SlugBuilder = depends(SlugBuilder)
+    service: HistoriesService = depends(HistoriesService)
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
 
     @web.expose
-    def index(self, trans):
+    def index(self, trans: GalaxyWebTransaction):
         return ""
 
     @expose_api_anonymous
-    def view(self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True):
+    def view(
+        self,
+        trans: GalaxyWebTransaction,
+        id=None,
+        show_deleted=False,
+        show_hidden=False,
+        use_panels=True,
+        **kwargs,
+    ):
         """
         View a history. If a history is importable, then it is viewable by any user.
         """
@@ -88,8 +102,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             "allow_user_dataset_purge": trans.app.config.allow_user_dataset_purge,
         }
 
-    @web.expose
-    def display_by_username_and_slug(self, trans, username, slug, **kwargs):
+    def _display_by_username_and_slug(self, trans: GalaxyWebTransaction, username, slug, **kwargs):
         """
         Display history based on a username and slug.
         """
@@ -97,7 +110,13 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         session = trans.sa_session
 
         user = session.scalars(select(model.User).filter_by(username=username).limit(1)).first()
-        history = session.scalars(select(model.History).filter_by(user=user, slug=slug, deleted=False).limit(1)).first()
+        history = session.scalars(
+            select(model.History)
+            .filter_by(user=user, slug=slug, deleted=False)
+            # return public histories first if slug is not unique
+            .order_by(model.History.importable.desc())
+            .limit(1)
+        ).first()
 
         if history is None:
             raise web.httpexceptions.HTTPNotFound()
@@ -117,25 +136,33 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             )
         )
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_login("changing default permissions")
-    def permissions(self, trans, payload=None, **kwd):
+    def permissions(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         """
         Sets the permissions on a history.
         """
         history_id = kwd.get("id")
         if not history_id:
-            return self.message_exception(trans, f"Invalid history id ({str(history_id)}) received")
+            raise exceptions.RequestParameterMissingException("No history id received")
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         if trans.request.method == "GET":
             inputs = []
-            all_roles = trans.user.all_roles()
+            all_roles = set(trans.user.all_roles())
+            role_ids = {r.id for r in all_roles}
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session, role_ids=role_ids)
             current_actions = history.default_permissions
-            for action_key, action in trans.app.model.Dataset.permitted_actions.items():
+            for action_key, action in Dataset.permitted_actions.items():
                 in_roles = set()
                 for a in current_actions:
-                    if a.action == action.action:
+                    if a.action == action.action and a.role is not None:
                         in_roles.add(a.role)
+
+                role_tuples = []
+                for role in all_roles:
+                    displayed_name = private_role_emails.get(role.id, role.name)
+                    role_tuples.append((displayed_name, trans.security.encode_id(role.id)))
+
                 inputs.append(
                     {
                         "type": "select",
@@ -145,24 +172,24 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                         "name": action_key,
                         "label": action.action,
                         "help": action.description,
-                        "options": [(role.name, trans.security.encode_id(role.id)) for role in set(all_roles)],
+                        "options": role_tuples,
                         "value": [trans.security.encode_id(role.id) for role in in_roles],
                     }
                 )
-            return {"title": "Change default dataset permissions for history '%s'" % history.name, "inputs": inputs}
+            return {"title": f"Change default dataset permissions for history '{history.name}'", "inputs": inputs}
         else:
             self.history_manager.error_unless_mutable(history)
             permissions = {}
-            for action_key, action in trans.app.model.Dataset.permitted_actions.items():
-                in_roles = payload.get(action_key) or []
-                in_roles = [trans.sa_session.get(Role, trans.security.decode_id(x)) for x in in_roles]
-                permissions[trans.app.security_agent.get_action(action.action)] = in_roles
+            for action_key, action in Dataset.permitted_actions.items():
+                role_ids_in = payload.get(action_key) or []
+                selected_roles = [trans.sa_session.get(Role, trans.security.decode_id(x)) for x in role_ids_in]
+                permissions[trans.app.security_agent.get_action(action.action)] = selected_roles
             trans.app.security_agent.history_set_default_permissions(history, permissions)
-            return {"message": "Default history '%s' dataset permissions have been changed." % history.name}
+            return {"message": f"Default history '{history.name}' dataset permissions have been changed."}
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_login("make datasets private")
-    def make_private(self, trans, history_id=None, all_histories=False, **kwd):
+    def make_private(self, trans: GalaxyWebTransaction, history_id=None, all_histories=False, **kwd):
         """
         Sets the datasets within a history to private.  Also sets the default
         permissions for the history to private, for future datasets.
@@ -178,36 +205,23 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             if history:
                 histories.append(history)
         if not histories:
-            return self.message_exception(trans, "Invalid history or histories specified.")
-        private_role = trans.app.security_agent.get_private_user_role(trans.user)
-        user_roles = trans.user.all_roles()
-        private_permissions = {
-            trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS: [private_role],
-            trans.app.security_agent.permitted_actions.DATASET_ACCESS: [private_role],
-        }
+            raise exceptions.RequestParameterMissingException("No history or histories specified.")
+        skipped_datasets = self.history_manager.make_private(trans, histories)
+        sharing_status_changed = False
         for history in histories:
-            self.history_manager.error_unless_mutable(history)
-            # Set default role for history to private
-            trans.app.security_agent.history_set_default_permissions(history, private_permissions)
-            # Set private role for all datasets
-            for hda in history.datasets:
-                if (
-                    not hda.dataset.library_associations
-                    and not trans.app.security_agent.dataset_is_private_to_user(trans, hda.dataset)
-                    and trans.app.security_agent.can_manage_dataset(user_roles, hda.dataset)
-                ):
-                    # If it's not private to me, and I can manage it, set fixed private permissions.
-                    trans.app.security_agent.set_all_dataset_permissions(hda.dataset, private_permissions)
-                    if not trans.app.security_agent.dataset_is_private_to_user(trans, hda.dataset):
-                        raise exceptions.InternalServerError("An error occurred and the dataset is NOT private.")
+            importable = history.importable
+            link_access = self.service.shareable_service.disable_link_access(trans, history.id)
+            sharing_status_changed = sharing_status_changed or importable != link_access.importable
         return {
-            "message": f"Success, requested permissions have been changed in {'all histories' if all_histories else history.name}."
+            "message": f"Success, requested permissions have been changed in {'all histories' if all_histories else history.name}.",
+            "sharing_status_changed": sharing_status_changed,
+            "skipped_datasets": skipped_datasets,
         }
 
     # ......................................................................... actions/orig. async
 
     @web.expose
-    def purge_deleted_datasets(self, trans):
+    def purge_deleted_datasets(self, trans: GalaxyWebTransaction):
         count = 0
         if trans.app.config.allow_user_dataset_purge and trans.history:
             for hda in trans.history.datasets:
@@ -217,11 +231,10 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 hda.purged = True
                 trans.sa_session.add(hda)
                 trans.log_event(f"HDA id {hda.id} has been purged")
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
                 if hda.dataset.user_can_purge:
                     try:
-                        hda.dataset.full_delete()
+                        hda.dataset.full_delete(user=hda.user)
                         trans.log_event(
                             f"Dataset id {hda.dataset.id} has been purged upon the purge of HDA id {hda.id}"
                         )
@@ -229,33 +242,27 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     except Exception:
                         log.exception(f"Unable to purge dataset ({hda.dataset.id}) on purge of hda ({hda.id}):")
                 count += 1
-            return trans.show_ok_message(
-                "%d datasets have been deleted permanently" % count, refresh_frames=["history"]
-            )
+            return trans.show_ok_message(f"{count} datasets have been deleted permanently", refresh_frames=["history"])
         return trans.show_error_message("Cannot purge deleted datasets from this session.")
 
-    @web.expose
-    def resume_paused_jobs(self, trans, current=False, ids=None, **kwargs):
-        """Resume paused jobs the active history -- this does not require a logged in user."""
+    @web.expose_api_anonymous
+    def resume_paused_jobs(self, trans: GalaxyWebTransaction, current=False, ids=None, **kwargs):
+        """Resume paused jobs for the active history -- this does not require a logged in user."""
         if not ids and string_as_bool(current):
-            histories = [trans.get_history()]
-            refresh_frames = ["history"]
-        else:
-            raise NotImplementedError("You can currently only resume all the datasets of the current history.")
-        for history in histories:
-            history.resume_paused_jobs()
-            trans.sa_session.add(history)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return trans.show_ok_message("Your jobs have been resumed.", refresh_frames=refresh_frames)
-        # TODO: used in index.mako
+            history = trans.get_history()
+            if history:
+                history.resume_paused_jobs()
+                return {"message": "Your jobs have been resumed.", "status": "success"}
+        raise exceptions.RequestParameterInvalidException(
+            "You can currently only resume all the datasets of the current history."
+        )
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_login("rename histories")
-    def rename(self, trans, payload=None, **kwd):
+    def rename(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         id = kwd.get("id")
         if not id:
-            return self.message_exception(trans, "No history id received for renaming.")
+            raise exceptions.RequestParameterMissingException("No history id received for renaming.")
         user = trans.get_user()
         id = listify(id)
         histories = []
@@ -269,7 +276,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             return {
                 "title": "Change history name(s)",
                 "inputs": [
-                    {"name": "name_%i" % i, "label": f"Current: {h.name}", "value": h.name}
+                    {"name": f"name_{i}", "label": f"Current: {h.name}", "value": h.name}
                     for i, h in enumerate(histories)
                 ],
             }
@@ -277,19 +284,18 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             messages = []
             for i, h in enumerate(histories):
                 cur_name = h.get_display_name()
-                new_name = payload.get("name_%i" % i)
+                new_name = payload.get(f"name_{i}")
                 # validate name is empty
                 if not isinstance(new_name, str) or not new_name.strip():
-                    messages.append("You must specify a valid name for History '%s'." % cur_name)
+                    messages.append(f"You must specify a valid name for History '{cur_name}'.")
                 # skip if not the owner
                 elif h.user_id != user.id:
-                    messages.append("History '%s' does not appear to belong to you." % cur_name)
+                    messages.append(f"History '{cur_name}' does not appear to belong to you.")
                 # skip if it wouldn't be a change
                 elif new_name != cur_name:
                     h.name = new_name
                     trans.sa_session.add(h)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
+                    trans.sa_session.commit()
                     trans.log_event(f"History renamed: id: {str(h.id)}, renamed to: {new_name}")
                     messages.append(f"History '{cur_name}' renamed to '{new_name}'.")
             message = sanitize_text(" ".join(messages)) if messages else "History names remain unchanged."
@@ -298,17 +304,17 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     # ------------------------------------------------------------------------- current history
     @web.expose
     @web.require_login("switch to a history")
-    def switch_to_history(self, trans, hist_id=None, **kwargs):
+    def switch_to_history(self, trans: GalaxyWebTransaction, hist_id=None, **kwargs):
         """Change the current user's current history to one with `hist_id`."""
         # remains for backwards compat
         self.set_as_current(trans, id=hist_id)
         return trans.response.send_redirect(url_for("/"))
 
-    def get_item(self, trans, id):
+    def get_item(self, trans: GalaxyWebTransaction, id):
         return self.history_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
         # TODO: override of base ui controller?
 
-    def history_data(self, trans, history):
+    def history_data(self, trans: GalaxyWebTransaction, history):
         """Return the given history in a serialized, dictionary form."""
         return self.history_serializer.serialize_to_view(history, view="dev-detailed", user=trans.user, trans=trans)
 
@@ -316,10 +322,10 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     # @web.require_login( "switch to a history" )
     @web.json
     @web.do_not_cache
-    def set_as_current(self, trans, id, **kwargs):
+    def set_as_current(self, trans: GalaxyWebTransaction, id, **kwargs):
         """Change the current user's current history to one with `id`."""
         try:
-            history = self.history_manager.get_mutable(self.decode_id(id), trans.user, current_history=trans.history)
+            history = self.history_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
             trans.set_history(history)
             return self.history_data(trans, history)
         except exceptions.MessageException as msg_exc:
@@ -328,17 +334,24 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
 
     @web.json
     @web.do_not_cache
-    def current_history_json(self, trans, since=None, **kwargs):
+    def current_history_json(self, trans: GalaxyWebTransaction, since=None, **kwargs):
         """Return the current user's current history in a serialized, dictionary form."""
         history = trans.get_history(most_recent=True, create=True)
-        if since and history.update_time <= isoparse(since):
-            # Should ideally be a 204 response, but would require changing web.json
-            # This endpoint should either give way to a proper API or a SSE loop
-            return
+        if since:
+            if not isinstance(since, str):
+                raise exceptions.RequestParameterInvalidException("'since' must be a date string")
+            try:
+                parsed_since = isoparse(since)
+            except (ValueError, TypeError):
+                raise exceptions.RequestParameterInvalidException(f"Invalid date format for 'since': {since!r}")
+            if history.update_time <= parsed_since:
+                # Should ideally be a 204 response, but would require changing web.json
+                # This endpoint should either give way to a proper API or a SSE loop
+                return
         return self.history_data(trans, history)
 
     @web.json
-    def create_new_current(self, trans, name=None, **kwargs):
+    def create_new_current(self, trans: GalaxyWebTransaction, name=None, **kwargs):
         """Create a new, current history for the current user"""
         new_history = trans.new_history(name)
         return self.history_data(trans, new_history)

@@ -1,9 +1,10 @@
 import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-    FrameWorkflowComment,
+    type FrameWorkflowComment,
     type FreehandWorkflowComment,
-    MarkdownWorkflowComment,
+    type MarkdownWorkflowComment,
     type TextWorkflowComment,
     useWorkflowCommentStore,
 } from "./workflowEditorCommentStore";
@@ -65,8 +66,8 @@ const frameCommentTwo: FrameWorkflowComment = {
     size: [180, 180],
 };
 
-jest.mock("@/stores/workflowStepStore", () => ({
-    useWorkflowStepStore: jest.fn(() => ({
+vi.mock("@/stores/workflowStepStore", () => ({
+    useWorkflowStepStore: vi.fn(() => ({
         steps: {
             0: {
                 id: 0,
@@ -80,8 +81,8 @@ jest.mock("@/stores/workflowStepStore", () => ({
     })),
 }));
 
-jest.mock("@/stores/workflowEditorStateStore", () => ({
-    useWorkflowStateStore: jest.fn(() => ({
+vi.mock("@/stores/workflowEditorStateStore", () => ({
+    useWorkflowStateStore: vi.fn(() => ({
         stepPosition: {
             0: {
                 width: 200,
@@ -202,5 +203,31 @@ describe("workflowEditorCommentStore", () => {
 
         expect(frame?.child_steps).not.toContain(1);
         expect(frameTwo?.child_steps).not.toContain(0);
+    });
+
+    it("keeps track of selected comments", () => {
+        const commentStore = useWorkflowCommentStore("mock-id");
+        commentStore.addComments([freehandComment, textComment, markdownComment, frameComment, frameCommentTwo]);
+
+        commentStore.setCommentMultiSelected(freehandComment.id, true);
+        commentStore.setCommentMultiSelected(markdownComment.id, true);
+
+        expect(commentStore.getCommentMultiSelected(freehandComment.id)).toBe(true);
+        expect(commentStore.getCommentMultiSelected(textComment.id)).toBe(false);
+        expect(commentStore.getCommentMultiSelected(markdownComment.id)).toBe(true);
+
+        expect(commentStore.multiSelectedCommentIds).toEqual([freehandComment.id, markdownComment.id]);
+
+        commentStore.setCommentMultiSelected(markdownComment.id, false);
+
+        expect(commentStore.getCommentMultiSelected(markdownComment.id)).toBe(false);
+        expect(commentStore.multiSelectedCommentIds).toEqual([freehandComment.id]);
+
+        commentStore.toggleCommentMultiSelected(textComment.id);
+        expect(commentStore.getCommentMultiSelected(textComment.id)).toBe(true);
+
+        commentStore.clearMultiSelectedComments();
+
+        expect(commentStore.multiSelectedCommentIds).toEqual([]);
     });
 });

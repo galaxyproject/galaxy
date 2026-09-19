@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import type { DirectiveMode } from "./directives";
+
 import DirectiveHelp from "./DirectiveHelp.vue";
 
 interface DirectiveHelpSectionProps {
     directives: string[];
-    mode: "page" | "report";
+    mode: DirectiveMode;
 }
 
 defineProps<DirectiveHelpSectionProps>();

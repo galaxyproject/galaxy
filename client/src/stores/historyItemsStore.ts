@@ -8,21 +8,22 @@ import { reverse } from "lodash";
 import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
-import type { DatasetSummary, HDCASummary } from "@/api";
+import type { HistoryItemSummary } from "@/api";
+import { getContentItemState, type State } from "@/components/History/Content/model/states";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
-import { mergeArray } from "@/store/historyStore/model/utilities";
+import { mergeArray } from "@/stores/utilities/history.utilities";
 import { ActionSkippedError, LastQueue } from "@/utils/lastQueue";
 import { urlData } from "@/utils/url";
 
-export type HistoryItem = DatasetSummary | HDCASummary;
+type ExtendedHistoryItem = HistoryItemSummary & { sub_items?: HistoryItemSummary[] };
 
 const limit = 100;
 
-type ExpectedReturn = { stats: { total_matches: number }; contents: HistoryItem[] };
+type ExpectedReturn = { stats: { total_matches: number }; contents: HistoryItemSummary[] };
 const queue = new LastQueue<typeof urlData>(1000, true);
 
 export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
-    const items = ref<Record<string, HistoryItem[]>>({});
+    const items = ref<Record<string, ExtendedHistoryItem[]>>({});
     const itemKey = ref("hid");
     const totalMatchesCount = ref<number | undefined>(undefined);
     const lastCheckedTime = ref(new Date());
@@ -34,15 +35,21 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
         return (historyId: string, filterText: string) => {
             const itemArray = items.value[historyId] || [];
             const filters = HistoryFilters.getFiltersForText(filterText).filter(
-                (filter: [string, string]) => !filter[0].includes("related")
+                (filter: [string, string]) => !filter[0].includes("related"),
             );
             const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
-            const filtered = itemArray.filter((item: HistoryItem) => {
+            const filtered = itemArray.filter((item: ExtendedHistoryItem) => {
                 if (!item) {
                     return false;
                 }
                 if (!HistoryFilters.testFilters(filters, item)) {
-                    return false;
+                    // filters don't pass on the item, but they might pass on any of its sub_items
+                    if (
+                        !item.sub_items ||
+                        !item.sub_items.some((subItem) => HistoryFilters.testFilters(filters, subItem))
+                    ) {
+                        return false;
+                    }
                 }
                 const relationKey = `${historyId}-${relatedHid}-${item.hid}`;
                 if (relatedHid && !relatedItems.value[relationKey]) {
@@ -51,6 +58,19 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
                 return true;
             });
             return reverse(filtered);
+        };
+    });
+
+    const getStatesForHids = computed(() => {
+        return (historyId: string, hids: number[]): Record<string, State> => {
+            const itemArray = items.value[historyId] || [];
+            const states: Record<string, State> = {};
+            itemArray.forEach((item: ExtendedHistoryItem) => {
+                if (hids.includes(item.hid)) {
+                    states[item.hid] = getContentItemState(item);
+                }
+            });
+            return states;
         };
     });
 
@@ -74,12 +94,12 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
         }
     }
 
-    function saveHistoryItems(historyId: string, payload: HistoryItem[], relatedHid = null) {
+    function saveHistoryItems(historyId: string, payload: HistoryItemSummary[], relatedHid = null) {
         // merges incoming payload into existing state
         mergeArray(historyId, payload, items.value, itemKey.value);
         // if related filter is included, set keys in state
         if (relatedHid) {
-            payload.forEach((item: HistoryItem) => {
+            payload.forEach((item: HistoryItemSummary) => {
                 // current `item.hid` is related to item with hid = `relatedHid`
                 const relationKey = `${historyId}-${relatedHid}-${item.hid}`;
                 set(relatedItems.value, relationKey, true);
@@ -97,6 +117,11 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
         lastUpdateTime,
         isWatching,
         getHistoryItems,
+        /**
+         * Returns history item states for the provided `historyId` and a list of `hids`.
+         * Is reactive to updates to the items in this store.
+         */
+        getStatesForHids,
         fetchHistoryItems,
         saveHistoryItems,
         setLastUpdateTime,

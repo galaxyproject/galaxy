@@ -1,10 +1,14 @@
 import { inject, onScopeDispose, provide, type Ref, ref, unref } from "vue";
 
+import { useUndoRedoStore } from "@/stores/undoRedoStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
+import { useWorkflowSearchStore } from "@/stores/workflowSearchStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+
+import { useTimeoutStoreDispose } from "./timeoutStoreDispose";
 
 /**
  * Creates stores scoped to a specific workflowId, and manages their lifetime.
@@ -27,13 +31,25 @@ export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
     const stepStore = useWorkflowStepStore(workflowId.value);
     const commentStore = useWorkflowCommentStore(workflowId.value);
     const toolbarStore = useWorkflowEditorToolbarStore(workflowId.value);
+    const undoRedoStore = useUndoRedoStore(workflowId.value);
+    const searchStore = useWorkflowSearchStore(workflowId.value);
+
+    const disposeConnectionStore = useTimeoutStoreDispose(connectionStore);
+    const disposeStateStore = useTimeoutStoreDispose(stateStore);
+    const disposeStepStore = useTimeoutStoreDispose(stepStore);
+    const disposeCommentStore = useTimeoutStoreDispose(commentStore);
+    const disposeToolbarStore = useTimeoutStoreDispose(toolbarStore);
+    const disposeUndoRedoStore = useTimeoutStoreDispose(undoRedoStore);
+    const disposeSearchStore = useTimeoutStoreDispose(searchStore);
 
     onScopeDispose(() => {
-        connectionStore.$dispose();
-        stateStore.$dispose();
-        stepStore.$dispose();
-        commentStore.$dispose();
-        toolbarStore.$dispose();
+        disposeConnectionStore();
+        disposeStateStore();
+        disposeStepStore();
+        disposeCommentStore();
+        disposeToolbarStore();
+        disposeUndoRedoStore();
+        disposeSearchStore();
     });
 
     return {
@@ -42,6 +58,8 @@ export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
         stepStore,
         commentStore,
         toolbarStore,
+        undoRedoStore,
+        searchStore,
     };
 }
 
@@ -54,13 +72,13 @@ export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
  *
  * @returns workflow stores
  */
-export function useWorkflowStores() {
-    const workflowId = inject("workflowId") as Ref<string> | string;
+export function useWorkflowStores(workflowId?: Ref<string> | string) {
+    workflowId = workflowId ?? (inject("workflowId") as Ref<string> | string);
     const id = unref(workflowId);
 
     if (typeof id !== "string") {
         throw new Error(
-            "Workflow ID not provided by parent component. Use `provideScopedWorkflowStores` on a parent component."
+            "Workflow ID not provided by parent component. Use `provideScopedWorkflowStores` on a parent component.",
         );
     }
 
@@ -69,12 +87,17 @@ export function useWorkflowStores() {
     const stepStore = useWorkflowStepStore(id);
     const commentStore = useWorkflowCommentStore(id);
     const toolbarStore = useWorkflowEditorToolbarStore(id);
+    const undoRedoStore = useUndoRedoStore(id);
+    const searchStore = useWorkflowSearchStore(id);
 
     return {
+        workflowId: id,
         connectionStore,
         stateStore,
         stepStore,
         commentStore,
         toolbarStore,
+        undoRedoStore,
+        searchStore,
     };
 }

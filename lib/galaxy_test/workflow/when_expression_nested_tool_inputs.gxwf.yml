@@ -1,0 +1,31 @@
+class: GalaxyWorkflow
+doc: |
+  Ensure workflow when expressions expose connected tool parameters only in
+  their tool-state shape while preserving genuine extra expression inputs.
+inputs:
+  optional_text:
+    type: text
+    optional: true
+  gate:
+    type: boolean
+    default: true
+  expected:
+    type: text
+    default: fdefault
+outputs:
+  out:
+    outputSource: inputs_as_json/out_file1
+steps:
+  inputs_as_json:
+    tool_id: inputs_as_json
+    state:
+      test_case: 0
+      cond:
+        cond_test: first
+    in:
+      cond|more_text: optional_text
+      booltest: gate
+      when: gate
+      probe: gate
+      expected: expected
+    when: $(inputs.when && inputs.probe && inputs.booltest === inputs["booltest"] && inputs.cond.more_text === inputs["cond"]["more_text"] && inputs.cond.more_text === inputs.expected && !("cond|more_text" in inputs))

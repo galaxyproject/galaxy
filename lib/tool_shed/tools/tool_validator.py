@@ -2,6 +2,7 @@ import filecmp
 import logging
 import os
 import tempfile
+from typing import TYPE_CHECKING
 
 from galaxy.tool_shed.tools.tool_validator import ToolValidator as GalaxyToolValidator
 from galaxy.tools import Tool
@@ -14,10 +15,18 @@ from tool_shed.util import (
     tool_util,
 )
 
+if TYPE_CHECKING:
+    from tool_shed.structured_app import ToolShedApp
+
 log = logging.getLogger(__name__)
 
 
 class ToolValidator(GalaxyToolValidator):
+    app: "ToolShedApp"
+
+    def __init__(self, app: "ToolShedApp"):
+        super().__init__(app)
+
     def can_use_tool_config_disk_file(self, repository, repo, file_path, changeset_revision):
         """
         Determine if repository's tool config file on disk can be used.  This method

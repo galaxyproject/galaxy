@@ -6,17 +6,11 @@ import logging
 import os.path
 import re
 from json import loads
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from galaxy.model import HistoryDatasetAssociation
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import (
     galaxy_directory,
     sanitize_lists_to_string,
@@ -26,11 +20,11 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 
-def read_dbnames(filename: Optional[str]) -> List[Tuple[str, str]]:
+def read_dbnames(filename: str | None) -> list[tuple[str, str]]:
     """Read build names from file"""
-    db_names: List[Tuple[str, str]] = []
+    db_names: list[tuple[str, str]] = []
     try:
-        ucsc_builds: Dict[str, List[Tuple[int, str, str]]] = {}
+        ucsc_builds: dict[str, list[tuple[int, str, str]]] = {}
         man_builds = []  # assume these are integers
         name_to_db_base = {}
         if filename is None:
@@ -166,6 +160,6 @@ class GenomeBuilds:
         return (chrom_info, db_dataset)
 
 
-def get_len_files_by_history(session: Session, history_id: int):
+def get_len_files_by_history(session: galaxy_scoped_session, history_id: int):
     stmt = select(HistoryDatasetAssociation).filter_by(history_id=history_id, extension="len", deleted=False)
     return session.scalars(stmt)

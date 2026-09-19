@@ -1,40 +1,29 @@
 <script setup lang="ts">
-import { computed } from "vue";
-
-import { type HDCADetailed } from "@/api";
-import { JobStateSummary } from "@/components/History/Content/Collection/JobStateSummary.js";
+import type { HDCASummary } from "@/api";
 
 import CollectionDescription from "@/components/History/Content/Collection/CollectionDescription.vue";
+import ContentExpirationIndicator from "@/components/History/Content/ContentExpirationIndicator.vue";
 import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
 
 interface Props {
-    dsc: HDCADetailed;
+    dsc: HDCASummary;
     writeable: boolean;
 }
 
-const props = defineProps<Props>();
-
-const jobState = computed(() => {
-    return new JobStateSummary(props.dsc);
-});
+defineProps<Props>();
 </script>
 
 <template>
     <DetailsLayout
-        :name="dsc.name"
+        :name="dsc.name ?? ''"
         :tags="dsc.tags"
         :writeable="writeable"
+        :renameable="writeable"
         :show-annotation="false"
         @save="$emit('update:dsc', $event)">
-        <template v-slot:name>
-            <!-- eslint-disable-next-line vuejs-accessibility/heading-has-content -->
-            <h2 v-short="dsc.name || 'Collection'" class="h-md" data-description="collection name display" />
-
-            <CollectionDescription
-                :job-state-summary="jobState"
-                :collection-type="dsc.collection_type"
-                :element-count="dsc.element_count"
-                :elements-datatypes="dsc.elements_datatypes" />
+        <template v-slot:description>
+            <CollectionDescription :hdca="dsc" />
+            <ContentExpirationIndicator :item="dsc" />
         </template>
     </DetailsLayout>
 </template>

@@ -1,26 +1,16 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { usePanels } from "@/composables/usePanels";
+import type { PublishedItem } from "./models/PublishedItem";
 
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
-interface Item {
-    name: string;
-    model_class?: string;
-    owner?: string;
-    username?: string;
-    email_hash?: string;
-    tags?: string[];
-    title?: string;
-}
-
 interface Props {
-    item?: Item;
+    item?: PublishedItem;
+    overridePath?: string;
 }
 
 const props = defineProps<Props>();
@@ -40,24 +30,24 @@ const plural = computed(() => {
     return `${modelTitle.value}s`;
 });
 
+const owner = computed(() => {
+    if (props.item?.author_deleted) {
+        return "Archived author";
+    }
+    return props.item?.owner ?? props.item?.username ?? "Unavailable";
+});
+
 const gravatarSource = computed(() => `https://secure.gravatar.com/avatar/${props.item?.email_hash}?d=identicon`);
-const owner = computed(() => props.item?.owner ?? props.item?.username ?? "Unavailable");
-const pluralPath = computed(() => plural.value.toLowerCase());
+const pluralPath = computed(() => props.overridePath ?? plural.value.toLowerCase());
 const publishedByUser = computed(() => `/${pluralPath.value}/list_published?f-username=${owner.value}`);
 const urlAll = computed(() => `/${pluralPath.value}/list_published`);
-
-const { showActivityBar, showToolbox } = usePanels();
 </script>
 
 <template>
     <div id="columns" class="d-flex">
-        <ActivityBar v-if="showActivityBar" />
+        <ActivityBar />
 
-        <FlexPanel v-if="showToolbox" side="left">
-            <ToolPanel />
-        </FlexPanel>
-
-        <div id="center" class="m-3 w-100 overflow-auto d-flex flex-column">
+        <div id="center" class="my-3 px-3 w-100 overflow-auto d-flex flex-column">
             <slot />
         </div>
 
@@ -82,11 +72,11 @@ const { showActivityBar, showToolbox } = usePanels();
                 <h2 class="h-sm">Related Pages</h2>
 
                 <div>
-                    <router-link :to="urlAll">All published {{ plural }}.</router-link>
+                    <router-link :to="urlAll">All published {{ plural }}</router-link>
                 </div>
 
-                <div>
-                    <router-link :to="publishedByUser"> Published {{ plural }} by {{ owner }}. </router-link>
+                <div v-if="!props.item?.author_deleted">
+                    <router-link :to="publishedByUser"> Published {{ plural }} by {{ owner }}</router-link>
                 </div>
             </div>
             <LoadingSpan v-else message="Loading item details" />

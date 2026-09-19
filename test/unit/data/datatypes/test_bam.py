@@ -1,6 +1,6 @@
 import json
 
-from pysam import (  # type: ignore[attr-defined]
+from pysam import (
     AlignmentFile,
     view,
 )
@@ -16,8 +16,12 @@ from .util import (
 def test_merge_bam():
     with get_input_files("1.bam", "1.bam") as input_files, get_tmp_path() as outpath:
         Bam.merge(input_files, outpath)
-        alignment_count_output = int(view("-c", outpath).strip())
-        alignment_count_input = int(view("-c", input_files[0]).strip()) * 2
+        ret = view("-c", outpath)
+        assert isinstance(ret, str)
+        alignment_count_output = int(ret.strip())
+        ret = view("-c", input_files[0])
+        assert isinstance(ret, str)
+        alignment_count_input = int(ret.strip()) * 2
         assert alignment_count_input == alignment_count_output
 
 

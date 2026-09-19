@@ -3,6 +3,7 @@ import json
 import os
 import sys
 
+from galaxy.exceptions import MessageException
 from galaxy.files import ConfiguredFileSources
 
 
@@ -29,10 +30,26 @@ def check_for_duplicate_name(files_to_export):
 def write_if_not_exists(file_sources, target_uri, real_data_path):
     file_source_path = file_sources.get_file_source_path(target_uri)
     if os.path.exists(file_source_path.path):
-        print(f'Error: File "{file_source_path.path}" already exists. Skipping.')
+        # stdout becomes the tool's output dataset; errors belong on stderr.
+        print(f'Error: File "{file_source_path.path}" already exists. Skipping.', file=sys.stderr)
         return 1
     file_source = file_source_path.file_source
-    file_source.write_from(file_source_path.path, real_data_path)
+    try:
+        file_source.write_from(file_source_path.path, real_data_path)
+    except MessageException as e:
+        # MessageException is already safe and actionable for users.
+        print(f'Error exporting to "{target_uri}": {e}', file=sys.stderr)
+        return 1
+
+
+def get_directory_uri(args):
+    directory_uri = args.directory_uri
+    if not directory_uri:
+        inputs = json.load(open(args.inputs))
+        directory_uri = inputs["d_uri"]
+    if not directory_uri.endswith("/"):
+        directory_uri = f"{directory_uri}/"
+    return directory_uri
 
 
 def main(argv=None):
@@ -41,9 +58,7 @@ def main(argv=None):
     args = _parser().parse_args(argv)
     exit_code = 0
     file_sources = get_file_sources(args.file_sources)
-    directory_uri = args.directory_uri
-    if not directory_uri.endswith("/"):
-        directory_uri = f"{directory_uri}/"
+    directory_uri = get_directory_uri(args)
     export_metadata_files = args.export_metadata_files
     with open(args.files_to_export) as f:
         files_to_export = json.load(f)
@@ -68,10 +83,12 @@ def main(argv=None):
 
 def _parser():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--inputs", type=str, help="galaxy inputs")
+    # post 2026.XX drop the directory-uri argument and just assume inputs always contains d_uri.
     parser.add_argument("--directory-uri", type=str, help="directory target URI")
     parser.add_argument("--file-sources", type=str, help="file sources json")
     parser.add_argument("--files-to-export", type=str, help="files to export")
-    parser.add_argument("--export-metadata-files", type=bool, help="export metadata files", default=True)
+    parser.add_argument("--export-metadata-files", type=bool, help="export metadata files", default=False)
     return parser
 
 

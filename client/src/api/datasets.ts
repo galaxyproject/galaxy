@@ -1,89 +1,185 @@
-import type { FetchArgType } from "openapi-typescript-fetch";
+import axios from "axios";
 
-import { DatasetDetails } from "@/api";
-import { components, fetcher } from "@/api/schema";
+import {
+    type components,
+    type DatasetTextContentDetails,
+    GalaxyApi,
+    type GalaxyApiPaths,
+    type HDADetailed,
+    type HDASummary,
+} from "@/api";
 import { withPrefix } from "@/utils/redirect";
+import { rethrowSimple, rethrowSimpleWithStatus } from "@/utils/simple-error";
 
-export const datasetsFetcher = fetcher.path("/api/datasets").method("get").create();
-
-type GetDatasetsApiOptions = FetchArgType<typeof datasetsFetcher>;
-type GetDatasetsQuery = Pick<GetDatasetsApiOptions, "limit" | "offset">;
-// custom interface for how we use getDatasets
-interface GetDatasetsOptions extends GetDatasetsQuery {
+export interface LoadDatasetsOptions {
+    limit?: number;
+    offset?: number;
     sortBy?: string;
-    sortDesc?: string;
-    query?: string;
+    sortDesc?: boolean;
+    search?: string;
 }
 
-/** Datasets request helper **/
-export async function getDatasets(options: GetDatasetsOptions = {}) {
-    const params: GetDatasetsApiOptions = {};
-    if (options.sortBy) {
-        const sortPrefix = options.sortDesc ? "-dsc" : "-asc";
-        params.order = `${options.sortBy}${sortPrefix}`;
-    }
-    if (options.limit) {
-        params.limit = options.limit;
-    }
-    if (options.offset) {
-        params.offset = options.offset;
-    }
-    if (options.query) {
-        params.q = ["name-contains"];
-        params.qv = [options.query];
-    }
-    const { data } = await datasetsFetcher(params);
-    return data;
+export interface LoadDatasetsResult {
+    data: HDASummary[];
+    totalMatches: number;
 }
 
-export const fetchDataset = fetcher.path("/api/datasets/{dataset_id}").method("get").create();
-
-export const fetchDatasetStorage = fetcher.path("/api/datasets/{dataset_id}/storage").method("get").create();
-
-export async function fetchDatasetDetails(params: { id: string }): Promise<DatasetDetails> {
-    const { data } = await fetchDataset({ dataset_id: params.id, view: "detailed" });
-    // We know that the server will return a DatasetDetails object because of the view parameter
-    // but the type system doesn't, so we have to cast it.
-    return data as unknown as DatasetDetails;
+interface CopyDatasetsResult {
+    copiedDatasets: Awaited<ReturnType<typeof copyDataset>>[];
+    failedDatasetIds: string[];
 }
 
-const updateHistoryDataset = fetcher.path("/api/histories/{history_id}/contents/{type}s/{id}").method("put").create();
+export async function loadDatasets(options: LoadDatasetsOptions): Promise<LoadDatasetsResult> {
+    const { limit = 24, offset = 0, sortBy = "update_time", sortDesc = true, search = "" } = options;
 
-export async function undeleteHistoryDataset(historyId: string, datasetId: string) {
-    const { data } = await updateHistoryDataset({
-        history_id: historyId,
-        id: datasetId,
-        type: "dataset",
-        deleted: false,
+    const {
+        response,
+        data: datasets,
+        error,
+    } = await GalaxyApi().GET("/api/datasets", {
+        params: {
+            query: {
+                q: search ? ["name-contains"] : undefined,
+                qv: search ? [search] : undefined,
+                limit,
+                offset,
+                order: `${sortBy}${sortDesc ? "-dsc" : "-asc"}`,
+                view: "summary",
+            },
+        },
     });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0", 10) || 0;
+    const data = datasets as unknown as HDASummary[];
+
+    return { data, totalMatches };
+}
+
+export async function fetchDatasetTextContentDetails(params: { id: string }): Promise<DatasetTextContentDetails> {
+    const { data, error, response } = await GalaxyApi().GET("/api/datasets/{dataset_id}/get_content_as_text", {
+        params: {
+            path: {
+                dataset_id: params.id,
+            },
+        },
+    });
+
+    if (error) {
+        rethrowSimpleWithStatus(error, response);
+    }
     return data;
 }
 
-const deleteHistoryDataset = fetcher
-    .path("/api/histories/{history_id}/contents/{type}s/{id}")
-    .method("delete")
-    .create();
+export async function fetchDatasetDetails(params: { id: string }, signal?: AbortSignal): Promise<HDADetailed> {
+    const { data, error, response } = await GalaxyApi().GET("/api/datasets/{dataset_id}", {
+        params: {
+            path: {
+                dataset_id: params.id,
+            },
+            query: { view: "detailed" },
+        },
+        signal,
+    });
 
-export async function purgeHistoryDataset(historyId: string, datasetId: string) {
-    const { data } = await deleteHistoryDataset({ history_id: historyId, id: datasetId, type: "dataset", purge: true });
+    if (error) {
+        rethrowSimpleWithStatus(error, response);
+    }
+    return data as HDADetailed;
+}
+
+export async function undeleteDataset(datasetId: string) {
+    const { data, error } = await GalaxyApi().PUT("/api/datasets/{dataset_id}", {
+        params: {
+            path: { dataset_id: datasetId },
+        },
+        body: {
+            deleted: false,
+        },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
     return data;
 }
 
-const datasetCopy = fetcher.path("/api/histories/{history_id}/contents/{type}s").method("post").create();
-type HistoryContentsArgs = FetchArgType<typeof datasetCopy>;
+export async function deleteDataset(datasetId: string, purge: boolean = false): Promise<void> {
+    const { error } = await GalaxyApi().DELETE("/api/datasets/{dataset_id}", {
+        params: {
+            path: { dataset_id: datasetId },
+            query: { purge },
+        },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
+}
+
+export async function purgeDataset(datasetId: string): Promise<void> {
+    return deleteDataset(datasetId, true);
+}
+
+type CopyDatasetParamsType = GalaxyApiPaths["/api/histories/{history_id}/contents/{type}s"]["post"]["parameters"];
+type CopyDatasetBodyType = components["schemas"]["CreateHistoryContentPayload"];
+
 export async function copyDataset(
-    datasetId: HistoryContentsArgs["content"],
-    historyId: HistoryContentsArgs["history_id"],
-    type: HistoryContentsArgs["type"] = "dataset",
-    source: HistoryContentsArgs["source"] = "hda"
+    datasetId: CopyDatasetBodyType["content"],
+    historyId: CopyDatasetParamsType["path"]["history_id"],
+    type: CopyDatasetParamsType["path"]["type"] = "dataset",
+    source: CopyDatasetBodyType["source"] = "hda",
+    signal?: AbortSignal,
 ) {
-    const response = await datasetCopy({
-        history_id: historyId,
-        type,
-        source: source,
-        content: datasetId,
+    const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents/{type}s", {
+        params: {
+            path: { history_id: historyId, type },
+        },
+        body: {
+            source,
+            content: datasetId,
+            type,
+            copy_elements: true,
+            // TODO: Investigate. These should be optional, but the API requires explicit null values?
+            fields: null,
+            hide_source_items: null,
+            instance_type: null,
+        },
+        signal,
     });
-    return response.data;
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+export async function copyDatasets(
+    datasetIds: string[],
+    historyId: CopyDatasetParamsType["path"]["history_id"],
+): Promise<CopyDatasetsResult> {
+    const BATCH_SIZE = 5;
+    const results: PromiseSettledResult<Awaited<ReturnType<typeof copyDataset>>>[] = [];
+
+    for (let i = 0; i < datasetIds.length; i += BATCH_SIZE) {
+        const batch = datasetIds.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.allSettled(batch.map((datasetId) => copyDataset(datasetId, historyId)));
+
+        results.push(...batchResults);
+    }
+
+    const copiedDatasets = [];
+    const failedDatasetIds = [];
+
+    for (const [index, result] of results.entries()) {
+        if (result.status === "fulfilled") {
+            copiedDatasets.push(result.value);
+        } else if (datasetIds[index] !== undefined) {
+            failedDatasetIds.push(datasetIds[index]);
+        }
+    }
+
+    return { copiedDatasets, failedDatasetIds };
 }
 
 export function getCompositeDatasetLink(historyDatasetId: string, path: string) {
@@ -91,4 +187,38 @@ export function getCompositeDatasetLink(historyDatasetId: string, path: string) 
 }
 
 export type DatasetExtraFiles = components["schemas"]["DatasetExtraFiles"];
-export const fetchDatasetExtraFiles = fetcher.path("/api/datasets/{dataset_id}/extra_files").method("get").create();
+
+export async function fetchDatasetAttributes(datasetId: string) {
+    const { data } = await axios.get(withPrefix(`/dataset/get_edit?dataset_id=${datasetId}`));
+
+    return data;
+}
+
+export type HistoryContentType = components["schemas"]["HistoryContentType"];
+export type HistoryContentSource = components["schemas"]["HistoryContentSource"];
+
+/** Dataset state constants */
+// Non-terminal dataset states (dataset is still being processed)
+export const NON_TERMINAL_DATASET_STATES = ["new", "upload", "queued", "running", "setting_metadata"];
+
+// Error dataset states (dataset failed processing)
+export const ERROR_DATASET_STATES = ["error", "failed_metadata"];
+
+// States a dataset may be in and still be offered as a tool/workflow input.
+// Mirrors ``Dataset.valid_input_states`` (all states bar error, discarded and
+// failed_metadata), which the server applies when it builds the first page of
+// a data parameter's options.
+export const VALID_INPUT_DATASET_STATES = [
+    "new",
+    "upload",
+    "queued",
+    "running",
+    "setting_metadata",
+    "ok",
+    "empty",
+    "paused",
+    "deferred",
+];
+
+// Terminal dataset states (dataset processing is complete)
+export const TERMINAL_DATASET_STATES = ["ok", "empty", "deferred", "discarded", "paused"].concat(ERROR_DATASET_STATES);

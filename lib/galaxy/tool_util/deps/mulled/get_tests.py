@@ -5,18 +5,18 @@ searches for tests for packages in the bioconda-recipes repo and on Anaconda, lo
 
 A shallow search (default for singularity and conda generation scripts) just checks once on Anaconda for the specified version.
 """
+
 import json
 import logging
-from glob import glob
+import os.path
+from pathlib import Path
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
 )
 
-import requests
 import yaml
+
+from galaxy.util import requests
 
 try:
     from jinja2 import Template
@@ -25,12 +25,18 @@ except ImportError:
     Template = None  # type: ignore[assignment,misc]
     UndefinedError = Exception  # type: ignore[assignment,misc]
 
+from galaxy.tool_util.deps.conda_util import (
+    best_search_result,
+    CondaTarget,
+)
 from galaxy.util import (
     check_github_api_response_rate_limit,
     unicodify,
 )
 from galaxy.util.commands import argv_to_str
+from .mulled_build import conda_platform
 from .util import (
+    CondaInDockerContext,
     get_files_from_conda_package,
     MULLED_SOCKET_TIMEOUT,
     split_container_name,
@@ -41,7 +47,7 @@ INSTALL_JINJA_EXCEPTION = (
 )
 
 
-def get_commands_from_yaml(yaml_content: bytes) -> Optional[Dict[str, Any]]:
+def get_commands_from_yaml(yaml_content: bytes) -> dict[str, Any] | None:
     """
     Parse tests from Conda's meta.yaml file contents
     """
@@ -85,7 +91,7 @@ def get_commands_from_yaml(yaml_content: bytes) -> Optional[Dict[str, Any]]:
     return package_tests
 
 
-def get_run_test(file: str) -> Dict[str, Any]:
+def get_run_test(file: str) -> dict[str, Any]:
     r"""
     Get tests from a run_test.sh file
     """
@@ -94,22 +100,17 @@ def get_run_test(file: str) -> Dict[str, Any]:
     return package_tests
 
 
-def get_anaconda_url(container, anaconda_channel="bioconda"):
+def get_anaconda_url(container: str, anaconda_channel: str = "bioconda", conda_platform_str: str | None = None) -> str:
     """
     Download tarball from anaconda for test
     """
-    name = split_container_name(container)  # list consisting of [name, version, (build, if present)]
-    return f"https://anaconda.org/{anaconda_channel}/{name[0]}/{name[1]}/download/linux-64/{'-'.join(name)}.tar.bz2"
+    if conda_platform_str is None:
+        conda_platform_str = conda_platform()
+    name = split_container_name(container)
+    return f"https://anaconda.org/{anaconda_channel}/{name[0]}/{name[1]}/download/{conda_platform_str}/{'-'.join(name)}.tar.bz2"
 
 
-def prepend_anaconda_url(url):
-    """
-    Take a partial url and prepend 'https://anaconda.org'
-    """
-    return f"https://anaconda.org{url}"
-
-
-def get_test_from_anaconda(url: str) -> Optional[Dict[str, Any]]:
+def get_test_from_anaconda(url: str) -> dict[str, Any] | None:
     """
     Given the URL of an anaconda tarball, return tests
     """
@@ -126,17 +127,32 @@ def get_test_from_anaconda(url: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def find_anaconda_versions(name, anaconda_channel="bioconda"):
+def find_anaconda_download_url(
+    name: str,
+    version: str,
+    build: str | None = None,
+    anaconda_channel: str = "bioconda",
+    conda_platform_str: str | None = None,
+) -> str | None:
     """
-    Find a list of available anaconda versions for a given container name
+    Find the anaconda download url for a given package.
     """
-    r = requests.get(f"https://anaconda.org/{anaconda_channel}/{name}/files", timeout=MULLED_SOCKET_TIMEOUT)
+    if conda_platform_str is None:
+        conda_platform_str = conda_platform()
+    r = requests.get(
+        f"https://api.anaconda.org/package/{anaconda_channel}/{name}/files",
+        timeout=MULLED_SOCKET_TIMEOUT,
+    )
     r.raise_for_status()
-    urls = []
-    for line in r.text.splitlines():
-        if "download/linux" in line:
-            urls.append(line.split('"')[1])
-    return urls
+    package_files = r.json()
+    for package_file in reversed(package_files):
+        if (
+            package_file["version"] == version
+            and (build is None or package_file["attrs"]["build"] == build)
+            and package_file["attrs"]["subdir"] in [conda_platform_str, "noarch"]
+        ):
+            return f"https:{package_file['download_url']}"
+    return None
 
 
 def open_recipe_file(file, recipes_path=None, github_repo="bioconda/bioconda-recipes"):
@@ -144,10 +160,11 @@ def open_recipe_file(file, recipes_path=None, github_repo="bioconda/bioconda-rec
     Open a file at a particular location and return contents as string
     """
     if recipes_path:
-        return open(f"{recipes_path}/{file}").read()
+        return open(os.path.join(recipes_path, file)).read()
     else:  # if no clone of the repo is available locally, download from GitHub
         r = requests.get(
-            f"https://raw.githubusercontent.com/{github_repo}/master/{file}", timeout=MULLED_SOCKET_TIMEOUT
+            f"https://raw.githubusercontent.com/{github_repo}/master/{file}",
+            timeout=MULLED_SOCKET_TIMEOUT,
         )
         if r.status_code == 404:
             raise OSError
@@ -160,10 +177,13 @@ def get_alternative_versions(filepath, filename, recipes_path=None, github_repo=
     Return files that match ``filepath/*/filename`` in the bioconda-recipes repository
     """
     if recipes_path:
-        return [n.replace(f"{recipes_path}/", "") for n in glob(f"{recipes_path}/{filepath}/*/{filename}")]
+        return [str(p.relative_to(recipes_path)) for p in Path(recipes_path).glob(f"{filepath}/*/{filename}")]
     # else use the GitHub API:
     versions = []
-    r = requests.get(f"https://api.github.com/repos/{github_repo}/contents/{filepath}", timeout=MULLED_SOCKET_TIMEOUT)
+    r = requests.get(
+        f"https://api.github.com/repos/{github_repo}/contents/{filepath}",
+        timeout=MULLED_SOCKET_TIMEOUT,
+    )
     check_github_api_response_rate_limit(r)
     r.raise_for_status()
     for subfile in json.loads(r.text):
@@ -193,76 +213,98 @@ def try_a_func(func1, func2, param, container):
 
 
 def deep_test_search(
-    container, recipes_path=None, anaconda_channel="bioconda", github_repo="bioconda/bioconda-recipes"
-):
+    container: str,
+    recipes_path: str | None = None,
+    anaconda_channel: str = "bioconda",
+    github_repo: str = "bioconda/bioconda-recipes",
+    conda_platform_str: str | None = None,
+) -> dict[str, Any]:
     """
     Look in bioconda-recipes repo as well as anaconda for the tests, checking in multiple possible locations. If no test is found for the specified version, search if other package versions have a test available.
     """
-    name = split_container_name(container)
+    if conda_platform_str is None:
+        conda_platform_str = conda_platform()
+    name_tuple = split_container_name(container)
+    assert len(name_tuple) in (2, 3)
+    name = name_tuple[0]
+    version = name_tuple[1]
+    build = name_tuple[2] if len(name_tuple) == 3 else None
     for f in [
         (
             get_commands_from_yaml,
             open_recipe_file,
-            (f"recipes/{name[0]}/{name[1]}/meta.yaml", recipes_path, github_repo),
+            (f"recipes/{name}/{version}/meta.yaml", recipes_path, github_repo),
             container,
         ),
         (
             get_run_test,
             open_recipe_file,
-            (f"recipes/{name[0]}/{name[1]}/run_test.sh", recipes_path, github_repo),
+            (f"recipes/{name}/{version}/run_test.sh", recipes_path, github_repo),
             container,
         ),
         (
             get_commands_from_yaml,
             open_recipe_file,
-            (f"recipes/{name[0]}/meta.yaml", recipes_path, github_repo),
+            (f"recipes/{name}/meta.yaml", recipes_path, github_repo),
             container,
         ),
-        (get_run_test, open_recipe_file, (f"recipes/{name[0]}/run_test.sh", recipes_path, github_repo), container),
-        (get_test_from_anaconda, get_anaconda_url, (container, anaconda_channel), container),
+        (get_run_test, open_recipe_file, (f"recipes/{name}/run_test.sh", recipes_path, github_repo), container),
+        (get_test_from_anaconda, get_anaconda_url, (container, anaconda_channel, conda_platform_str), container),
     ]:
         result = try_a_func(*f)
         if result:
             return result
 
-    versions = get_alternative_versions(f"recipes/{name[0]}", "meta.yaml", recipes_path, github_repo)
-    for version in versions:
-        result = try_a_func(get_commands_from_yaml, open_recipe_file, (version, recipes_path, github_repo), container)
+    alt_versions = get_alternative_versions(f"recipes/{name}", "meta.yaml", recipes_path, github_repo)
+    for alt_version in alt_versions:
+        result = try_a_func(
+            get_commands_from_yaml, open_recipe_file, (alt_version, recipes_path, github_repo), container
+        )
         if result:
             return result
 
-    versions = get_alternative_versions(f"recipes/{name[0]}", "run_test.sh", recipes_path, github_repo)
-    for version in versions:
-        result = try_a_func(get_run_test, open_recipe_file, (version, recipes_path, github_repo), container)
+    alt_versions = get_alternative_versions(f"recipes/{name}", "run_test.sh", recipes_path, github_repo)
+    for alt_version in alt_versions:
+        result = try_a_func(get_run_test, open_recipe_file, (alt_version, recipes_path, github_repo), container)
         if result:
             return result
 
-    versions = find_anaconda_versions(name[0], anaconda_channel)
-    for version in versions:
-        result = try_a_func(get_test_from_anaconda, prepend_anaconda_url, (version,), container)
-        if result:
-            return result
+    url = find_anaconda_download_url(
+        name, version, build=build, anaconda_channel=anaconda_channel, conda_platform_str=conda_platform_str
+    )
+    result = try_a_func(get_test_from_anaconda, lambda x: x, (url,), container)
+    if result:
+        return result
 
     # if everything fails
     return {"container": container}
 
 
 def main_test_search(
-    container, recipes_path=None, deep=False, anaconda_channel="bioconda", github_repo="bioconda/bioconda-recipes"
-):
+    container: str,
+    recipes_path: str | None = None,
+    deep: bool = False,
+    anaconda_channel: str = "bioconda",
+    github_repo: str = "bioconda/bioconda-recipes",
+    conda_platform_str: str | None = None,
+) -> dict[str, Any]:
     """
     Download tarball from anaconda for test
     """
+    if conda_platform_str is None:
+        conda_platform_str = conda_platform()
     if deep:  # do a deep search
-        return deep_test_search(container, recipes_path, anaconda_channel, github_repo)
+        return deep_test_search(container, recipes_path, anaconda_channel, github_repo, conda_platform_str)
     # else shallow
-    result = try_a_func(get_test_from_anaconda, get_anaconda_url, (container, anaconda_channel), container)
+    result = try_a_func(
+        get_test_from_anaconda, get_anaconda_url, (container, anaconda_channel, conda_platform_str), container
+    )
     if result:
         return result
     return {"container": container}
 
 
-def import_test_to_command_list(import_lang: str, import_: str) -> List[str]:
+def import_test_to_command_list(import_lang: str, import_: str) -> list[str]:
     if import_lang == "python -c":
         return ["python", "-c", f"import {import_}"]
     elif import_lang == "perl -e":
@@ -272,12 +314,19 @@ def import_test_to_command_list(import_lang: str, import_: str) -> List[str]:
 
 
 def hashed_test_search(
-    container: str, recipes_path=None, deep=False, anaconda_channel="bioconda", github_repo="bioconda/bioconda-recipes"
-) -> Dict[str, Any]:
+    container: str,
+    recipes_path: str | None = None,
+    deep: bool = False,
+    anaconda_channel: str = "bioconda",
+    github_repo: str = "bioconda/bioconda-recipes",
+    conda_platform_str: str | None = None,
+) -> dict[str, Any]:
     """
     Get test for hashed containers
     """
-    package_tests: Dict[str, Any] = {"commands": [], "imports": [], "container": container, "import_lang": "python -c"}
+    if conda_platform_str is None:
+        conda_platform_str = conda_platform()
+    package_tests: dict[str, Any] = {"commands": [], "imports": [], "container": container, "import_lang": "python -c"}
 
     response = requests.get(
         f"https://raw.githubusercontent.com/BioContainers/multi-package-containers/master/combinations/{container}.tsv",
@@ -291,23 +340,21 @@ def hashed_test_search(
     targets = concatenated_targets.split(",")
     packages = [target.split("=") for target in targets]
 
+    conda_context = CondaInDockerContext(ensure_channels=[anaconda_channel])
     containers = []
-    for package in packages:
-        r = requests.get(f"https://anaconda.org/bioconda/{package[0]}/files", timeout=MULLED_SOCKET_TIMEOUT)
-        r.raise_for_status()
-        p = "-".join(package)
-        for line in r.text.split("\n"):
-            # include only linux-64 builds since that is hardcoded in get_anaconda_url and the only target for container builds
-            if p in line and "linux-64" in line:
-                build = line.split(p)[1].split(".tar.bz2")[0]
-                if build == "":
-                    containers.append(f"{package[0]}:{package[1]}")
-                else:
-                    containers.append(f"{package[0]}:{package[1]}-{build}")
-                break
+    for package_name, package_version in packages:
+        conda_target = CondaTarget(package_name, package_version)
+        hit, exact = best_search_result(conda_target, conda_context, platform=conda_platform_str)
+        if not hit or not exact:
+            raise Exception(f"Could not find {conda_target}")
+        build = hit["build"]
+        if build:
+            containers.append(f"{package_name}:{package_version}--{build}")
+        else:
+            containers.append(f"{package_name}:{package_version}")
 
     for container in containers:
-        tests = main_test_search(container, recipes_path, deep, anaconda_channel, github_repo)
+        tests = main_test_search(container, recipes_path, deep, anaconda_channel, github_repo, conda_platform_str)
         package_tests["commands"] += tests.get("commands", [])  # not a very nice solution but probably the simplest
         # Given that this could be a mix of Python and Perl packages, translate imports to commands
         for imp in tests.get("imports", []):

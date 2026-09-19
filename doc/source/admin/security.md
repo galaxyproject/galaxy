@@ -12,7 +12,7 @@ Galaxy. Thus it is possible that a tool modifies data in Galaxy's ``file_path``.
 Examples of such potential changes are:
 
 - Creation of additional files, e.g. indices, which is a problem for cleaning up data, because Galaxy does not know about these files.
-- Removal of tool input or output files. This will create problems with other tools using these datasets (note that most tool repositories use CI tests to to avoid this, but the problem may still occur).
+- Removal of tool input or output files. This will create problems with other tools using these datasets (note that most tool repositories use CI tests to avoid this, but the problem may still occur).
 
 Note that a tool only knows the paths to its inputs and outputs, but if using the default configuration for other paths (e.g. the configuration directory) also these paths can be calculated and accessed.
 

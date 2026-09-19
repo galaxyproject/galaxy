@@ -1,4 +1,4 @@
-""" The class defines the stock Galaxy workflow scheduling plugin - currently
+"""The class defines the stock Galaxy workflow scheduling plugin - currently
 it simply schedules the whole workflow up front when offered.
 """
 

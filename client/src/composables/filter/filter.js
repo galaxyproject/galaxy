@@ -2,13 +2,19 @@ import { toValue } from "@vueuse/core";
 import { onScopeDispose, ref, watch } from "vue";
 
 export function useFilterObjectArray(array, filter, objectFields, asRegex = false) {
-    const worker = new Worker(new URL("./filter.worker.js", import.meta.url));
+    const worker = new Worker(new URL("./filter.worker.js", import.meta.url), { type: "module" });
 
     const filtered = ref([]);
     filtered.value = toValue(array);
 
+    // Track the latest request so consumers never act on an intermediate result.
+    const pending = ref(true);
+    let sentSeq = 0;
+
     const post = (message) => {
-        worker.postMessage(message);
+        sentSeq += 1;
+        pending.value = true;
+        worker.postMessage({ ...message, seq: sentSeq });
     };
 
     watch(
@@ -18,7 +24,7 @@ export function useFilterObjectArray(array, filter, objectFields, asRegex = fals
         },
         {
             immediate: true,
-        }
+        },
     );
 
     watch(
@@ -28,7 +34,7 @@ export function useFilterObjectArray(array, filter, objectFields, asRegex = fals
         },
         {
             immediate: true,
-        }
+        },
     );
 
     watch(
@@ -38,14 +44,15 @@ export function useFilterObjectArray(array, filter, objectFields, asRegex = fals
         },
         {
             immediate: true,
-        }
+        },
     );
 
     worker.onmessage = (e) => {
         const message = e.data;
 
-        if (message.type === "result") {
+        if (message.type === "result" && message.seq === sentSeq) {
             filtered.value = message.filtered;
+            pending.value = false;
         }
     };
 
@@ -53,5 +60,5 @@ export function useFilterObjectArray(array, filter, objectFields, asRegex = fals
         worker.terminate();
     });
 
-    return filtered;
+    return { filtered, pending };
 }

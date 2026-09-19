@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheckSquare, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faCheckSquare, faChevronCircleRight, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, type Ref, ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
 
-import { copyDataset } from "@/api/datasets";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { Toast } from "@/composables/toast";
@@ -14,10 +12,10 @@ import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import { useHistoryDragDrop } from "../../../composables/historyDragDrop";
+
 import HistoryDropZone from "../CurrentHistory/HistoryDropZone.vue";
 import MultipleViewItem from "./MultipleViewItem.vue";
-
-library.add(faCheckSquare, faPlus);
 
 const historyStore = useHistoryStore();
 
@@ -25,15 +23,17 @@ const props = withDefaults(
     defineProps<{
         selectedHistories: { id: string }[];
         filter?: string;
+        canLoadMore?: boolean;
     }>(),
     {
         filter: "",
-    }
+        canLoadMore: false,
+    },
 );
 
-// defineEmits below
 const emit = defineEmits<{
     (e: "update:show-modal", value: boolean): void;
+    (e: "load-more"): void;
 }>();
 
 const scrollContainer: Ref<HTMLElement | null> = ref(null);
@@ -63,53 +63,17 @@ async function createAndPin() {
     }
 }
 
-const showDropZone = ref(false);
-const processingDrop = ref(false);
-async function onDrop(evt: any) {
-    if (processingDrop.value) {
-        showDropZone.value = false;
-        return;
-    }
-    processingDrop.value = true;
-    showDropZone.value = false;
-    let data: any;
-    try {
-        data = JSON.parse(evt.dataTransfer.getData("text"))[0];
-    } catch (error) {
-        // this was not a valid object for this dropzone, ignore
-    }
-    if (data) {
-        const originalHistoryId = data.history_id;
-        await historyStore.createNewHistory();
-        const currentHistoryId = historyStore.currentHistoryId;
-        const dataSource = data.history_content_type === "dataset" ? "hda" : "hdca";
-        if (currentHistoryId) {
-            await copyDataset(data.id, currentHistoryId, data.history_content_type, dataSource)
-                .then(() => {
-                    if (data.history_content_type === "dataset") {
-                        Toast.info(localize("Dataset copied to new history"));
-                    } else {
-                        Toast.info(localize("Collection copied to new history"));
-                    }
-                })
-                .catch((error) => {
-                    Toast.error(errorMessageAsString(error));
-                });
-            // pin the newly created history via the drop
-            historyStore.pinHistory(currentHistoryId);
-            // also pin the original history where the item came from
-            historyStore.pinHistory(originalHistoryId);
-        }
-        processingDrop.value = false;
-    }
-}
+const { showDropZone, onDragEnter, onDragLeave, onDragOver, onDrop } = useHistoryDragDrop(undefined, true, true);
 
 async function onKeyDown(evt: KeyboardEvent) {
     if (evt.key === "Enter" || evt.key === " ") {
-        if ((evt.target as HTMLElement)?.classList?.contains("top-picker")) {
+        const target = evt.target as HTMLElement;
+        if (target?.classList?.contains("create-picker")) {
             await createAndPin();
-        } else if ((evt.target as HTMLElement)?.classList?.contains("bottom-picker")) {
+        } else if (target?.classList?.contains("select-picker")) {
             emit("update:show-modal", true);
+        } else if (target?.classList?.contains("load-more-picker")) {
+            emit("load-more");
         }
     }
 }
@@ -121,7 +85,7 @@ async function onKeyDown(evt: KeyboardEvent) {
         <div ref="scrollContainer" class="d-flex h-100 w-auto overflow-auto">
             <VirtualList
                 v-if="props.selectedHistories.length"
-                :estimate-size="props.selectedHistories.length"
+                :estimate-size="240"
                 :data-key="'id'"
                 :data-component="MultipleViewItem"
                 :data-sources="props.selectedHistories"
@@ -136,20 +100,29 @@ async function onKeyDown(evt: KeyboardEvent) {
             <div
                 class="history-picker"
                 @drop.prevent="onDrop"
-                @dragenter.prevent="showDropZone = true"
-                @dragover.prevent
-                @dragleave.prevent="showDropZone = false">
+                @dragenter.prevent="onDragEnter"
+                @dragover="onDragOver"
+                @dragleave.prevent="onDragLeave">
                 <span v-if="!showDropZone" class="d-flex flex-column h-100">
                     <div
-                        class="history-picker-box top-picker text-primary"
+                        v-if="props.canLoadMore"
+                        class="history-picker-box load-more-picker text-primary"
+                        tabindex="0"
+                        @keydown="onKeyDown"
+                        @click.stop="emit('load-more')">
+                        <FontAwesomeIcon :icon="faChevronCircleRight" class="mr-1" />
+                        {{ localize("Load more") }}
+                    </div>
+                    <div
+                        class="history-picker-box create-picker text-primary"
                         tabindex="0"
                         @keydown="onKeyDown"
                         @click.stop="createAndPin">
                         <FontAwesomeIcon :icon="faPlus" class="mr-1" />
-                        {{ localize("Create and pin new history") }}
+                        {{ localize("Create new history") }}
                     </div>
                     <div
-                        class="history-picker-box bottom-picker text-primary"
+                        class="history-picker-box select-picker text-primary"
                         tabindex="0"
                         @keydown="onKeyDown"
                         @click.stop="emit('update:show-modal', true)">
@@ -167,7 +140,7 @@ async function onKeyDown(evt: KeyboardEvent) {
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 .list-container {
     .history-picker {
         min-width: 15rem;
@@ -181,11 +154,14 @@ async function onKeyDown(evt: KeyboardEvent) {
             display: flex;
             align-items: center;
             text-wrap: none;
-            &.top-picker {
-                height: 20%;
+            &.load-more-picker {
+                flex: 1;
             }
-            &.bottom-picker {
-                height: 80%;
+            &.create-picker {
+                flex: 1;
+            }
+            &.select-picker {
+                flex: 2;
             }
             &:not(.history-picker-drop-zone) {
                 &:hover {

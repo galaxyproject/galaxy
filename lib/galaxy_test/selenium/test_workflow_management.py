@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from .framework import (
     EXAMPLE_WORKFLOW_URL_1,
     retry_assertion_during_transitions,
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
     TestsGalaxyPagers,
@@ -13,6 +14,7 @@ from .framework import (
 class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAssertions):
     ensure_registered = True
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_import_from_url(self):
         self.workflow_index_open()
@@ -21,22 +23,37 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         workflow_cards = self.workflow_card_elements()
         assert len(workflow_cards) == 1
 
-        first_workflow_card = workflow_cards[0].find_element(By.CSS_SELECTOR, ".workflow-name")
+        first_workflow_card = workflow_cards[0].find_element(By.CSS_SELECTOR, '[id^="g-card-title-"] a')
         assert "TestWorkflow1 (imported from URL)" in first_workflow_card.text, first_workflow_card.text
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_import_accessibility(self):
         self.workflow_index_open()
-        self.workflow_index_click_import()
         workflows = self.components.workflows
+
+        self.workflow_index_click_import()
+        # Clicking the method card auto-navigates to the upload step
+        workflows.import_file_link.wait_for_and_click()
         workflows.import_file.assert_no_axe_violations_with_impact_of_at_least("moderate")
+
+        self.navigate_to_workflows_import()
+        # Clicking the TRS card auto-navigates to the TRS method selection step
+        workflows.import_trs_link.wait_for_and_click()
+        # Clicking the search card auto-navigates to the TRS search form
         workflows.import_trs_search_link.wait_for_and_click()
         # moderate violation relating to header ordering
         workflows.import_trs_search.assert_no_axe_violations_with_impact_of_at_least("serious")
+
+        self.navigate_to_workflows_import()
+        # Clicking the TRS card auto-navigates to the TRS method selection step
+        workflows.import_trs_link.wait_for_and_click()
+        # Clicking the TRS ID card auto-navigates to the TRS ID form
         workflows.import_trs_id_link.wait_for_and_click()
         # ditto - moderate violation relating to header ordering
         workflows.import_trs_id.assert_no_axe_violations_with_impact_of_at_least("serious")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_view(self):
         self.workflow_index_open()
@@ -53,6 +70,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         workflow_preview = self.components.workflows.workflow_preview_container.wait_for_visible()
         assert "TestWorkflow1" in workflow_preview.text
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rename(self):
         self.workflow_index_open()
@@ -66,6 +84,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
 
         check_name()
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_workflow_index_accessibility(self):
         self.workflow_index_open()
@@ -74,6 +93,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         # this test will be more rigorous but test only a specific component.
         index_table.assert_no_axe_violations_with_impact_of_at_least("critical")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_download(self):
         self.workflow_index_open()
@@ -82,6 +102,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         # going through the motions though should catch a couple potential problems.
         self.components.workflows.download_button.wait_for_and_click()
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_tagging(self):
         self.workflow_index_open()
@@ -96,6 +117,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         check_tags()
         self.screenshot("workflow_manage_tags")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_tag_filtering(self):
         self.workflow_index_open()
@@ -127,6 +149,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self._assert_showing_n_workflows(4)
         self.workflow_index_search_for("MyTaG")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_index_search(self):
         self.workflow_index_open()
@@ -144,6 +167,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self.workflow_index_search_for("searchforthis")
         self._assert_showing_n_workflows(1)
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_index_search_filters(self):
         self.workflow_index_open()
@@ -170,6 +194,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self.components.workflows.workflow_not_found_message.wait_for_visible()
         self.screenshot("workflow_manage_search_name_alias")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_index_advanced_search(self):
         self.workflow_index_open()
@@ -183,7 +208,6 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self.components.workflows.advanced_search_name_input.wait_for_and_send_keys("searchforthis")
         self.components.workflows.advanced_search_tag_input.wait_for_and_click()
         self.tagging_add(["mytag"])
-        self.components.workflows.advanced_search_submit.wait_for_and_click()
         self._assert_showing_n_workflows(1)
         curr_value = self.workflow_index_get_current_filter()
         assert curr_value == "name:searchforthis tag:mytag", curr_value
@@ -193,15 +217,14 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         curr_value = self.workflow_index_get_current_filter()
         assert curr_value == "", curr_value
 
-        self.components.workflows.advanced_search_toggle.wait_for_and_click()
         # search by 2 tags, one of which is not present
         self.components.workflows.advanced_search_tag_input.wait_for_and_click()
         self.tagging_add(["'mytag'", "'DNEtag'"])
-        self.components.workflows.advanced_search_submit.wait_for_and_click()
         curr_value = self.workflow_index_get_current_filter()
         assert curr_value == "tag:'mytag' tag:'DNEtag'", curr_value
         self.components.workflows.workflow_not_found_message.wait_for_visible()
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_workflow_delete(self):
         self.workflow_index_open()
@@ -213,3 +236,26 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
 
         self.workflow_index_open()
         self.components.workflows.workflows_list_empty.wait_for_visible()
+
+    @selenium_only("Not yet migrated to support Playwright backend")
+    @selenium_test
+    def test_workflow_bookmark_filtering(self):
+        self.workflow_index_open()
+        # Import 2 workflows
+        self._workflow_import_from_url()
+        self._workflow_import_from_url()
+        self._assert_showing_n_workflows(2)
+        # Rename and bookmark one
+        self.workflow_rename("forbookmark")
+        self.workflow_bookmark_by_name("forbookmark")
+
+        # Filter by bookmark
+        self.workflow_index_search_for("is:bookmarked")
+        self._assert_showing_n_workflows(1)
+        self.screenshot("workflow_manage_bookmark_search")
+
+        # clear filter
+        self.components.workflows.clear_filter.wait_for_and_click()
+        curr_value = self.workflow_index_get_current_filter()
+        assert curr_value == "", curr_value
+        self._assert_showing_n_workflows(2)

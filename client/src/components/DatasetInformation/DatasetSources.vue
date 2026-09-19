@@ -1,3 +1,15 @@
+<script setup lang="ts">
+import type { DatasetSource as DatasetSourceModel } from "@/api";
+
+import DatasetSource from "@/components/DatasetInformation/DatasetSource.vue";
+
+interface Props {
+    sources: DatasetSourceModel[];
+}
+
+defineProps<Props>();
+</script>
+
 <template>
     <span class="dataset-sources">
         <ul class="dataset-sources-list">
@@ -5,22 +17,6 @@
         </ul>
     </span>
 </template>
-
-<script>
-import DatasetSource from "./DatasetSource";
-
-export default {
-    components: {
-        DatasetSource,
-    },
-    props: {
-        sources: {
-            type: Array,
-            required: true,
-        },
-    },
-};
-</script>
 
 <style scoped>
 .dataset-sources-list {

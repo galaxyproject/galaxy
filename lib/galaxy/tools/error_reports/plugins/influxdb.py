@@ -1,6 +1,5 @@
 """The module describes the ``influxdb`` error plugin plugin."""
 
-import datetime
 import logging
 
 try:
@@ -9,7 +8,10 @@ except ImportError:
     # This middleware will never be used without influxdb.
     influxdb = None
 
-from galaxy.util import unicodify
+from galaxy.util import (
+    now,
+    unicodify,
+)
 from . import ErrorPlugin
 
 log = logging.getLogger(__name__)
@@ -41,7 +43,7 @@ class InfluxDBPlugin(ErrorPlugin):
             [
                 {
                     "measurement": "galaxy_tool_error",
-                    "time": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "time": now().strftime("%Y-%m-%dT%H:%M:%SZ"),
                     "fields": {"value": 1},
                     "tags": {
                         "exit_code": job.exit_code,

@@ -1,7 +1,6 @@
 import configparser
 import os
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -29,7 +28,7 @@ def main():
             print(f"Warning section {entry.section_name} does not refer to existant files")
 
 
-def to_python_path(package_name: str) -> Optional[str]:
+def to_python_path(package_name: str) -> str | None:
     path = os.path.join("lib", package_name.replace(".", "/"))
     if os.path.exists(path + ".py"):
         path = f"{path}.py"

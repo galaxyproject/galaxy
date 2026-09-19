@@ -42,8 +42,12 @@ class TestAuthenticateApi(ApiTestCase):
         tool_runner_response = get(
             urljoin(self.url, "tool_runner?tool_id=test_data_source"),
             cookies={"galaxytoolrunnersession": tool_runner_session_cookie},
+            allow_redirects=False,
         )
-        tool_runner_response.raise_for_status()
+        # On success, the controller redirects back to the SPA so the
+        # frontend can surface a "tool-submitted" toast.
+        assert tool_runner_response.status_code == 302
+        assert "notification=tool-submitted" in tool_runner_response.headers["Location"]
         # Verify that we're not returning the sessioncookie
         assert "galaxysession" not in tool_runner_response.cookies
         # Make sure history for original session received job
@@ -53,3 +57,25 @@ class TestAuthenticateApi(ApiTestCase):
         current_history_json_response.raise_for_status()
         current_history = current_history_json_response.json()
         assert current_history["contents_active"]["active"] == 1
+
+    def test_anon_history_creation(self):
+        # First request:
+        # We don't create any histories, just return a session cookie
+        response = get(self.url)
+        cookie = {"galaxysession": response.cookies["galaxysession"]}
+        # Check that we don't have any histories (API doesn't auto-create new histories)
+        histories_response = get(
+            urljoin(
+                self.url,
+                "api/histories",
+            )
+        )
+        assert not histories_response.json()
+        # Second request, we know client follows conventions by including cookies,
+        # default history is created.
+        get(self.url, cookies=cookie)
+        second_histories_response = get(
+            urljoin(self.url, "history/current_history_json"),
+            cookies=cookie,
+        )
+        assert second_histories_response.json()

@@ -1,26 +1,21 @@
 import sqlite3
 from contextlib import contextmanager
+from functools import lru_cache
 from typing import (
     NewType,
-    Optional,
 )
 
-from sqlalchemy import (
-    create_engine,
-    select,
-    update,
-)
+from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.orm import object_session
 from sqlalchemy.sql.compiler import IdentifierPreparer
 from sqlalchemy.sql.expression import (
-    ClauseElement,
+    Executable,
     text,
 )
 
 from galaxy.exceptions import ConfigurationError
-from galaxy.model import Job
 
 DbUrl = NewType("DbUrl", str)
 
@@ -45,7 +40,7 @@ def create_database(db_url, database=None, encoding="utf8", template=None):
 
 @contextmanager
 def sqlalchemy_engine(url):
-    engine = create_engine(url, future=True)
+    engine = create_engine(url)
     try:
         yield engine
     finally:
@@ -136,7 +131,7 @@ class MySQLDatabaseManager(DatabaseManager):
                 conn.execute(stmt)
 
 
-def is_one_database(db1_url: str, db2_url: Optional[str]):
+def is_one_database(db1_url: str, db2_url: str | None):
     """
     Check if the arguments refer to one database. This will be true
     if only one argument is passed, or if the urls are the same.
@@ -147,23 +142,25 @@ def is_one_database(db1_url: str, db2_url: Optional[str]):
     return not (db1_url and db2_url and db1_url != db2_url)
 
 
+@lru_cache(maxsize=1)
 def supports_returning(engine: Engine) -> bool:
     """
     Return True if the database bound to `engine` supports the `RETURNING` SQL clause.
     """
-    stmt = update(Job).where(Job.id == -1).values(create_time=None).returning(Job.id)
+    stmt = text("UPDATE job SET tool_id=abc WHERE false RETURNING id")
     return _statement_executed_without_error(stmt, engine)
 
 
+@lru_cache(maxsize=1)
 def supports_skip_locked(engine: Engine) -> bool:
     """
     Return True if the database bound to `engine` supports the `SKIP_LOCKED` parameter.
     """
-    stmt = select(Job).where(Job.id == -1).with_for_update(skip_locked=True)
+    stmt = text("SELECT 1 FROM job WHERE false FOR UPDATE SKIP LOCKED")
     return _statement_executed_without_error(stmt, engine)
 
 
-def _statement_executed_without_error(statement: ClauseElement, engine: Engine) -> bool:
+def _statement_executed_without_error(statement: Executable, engine: Engine) -> bool:
     # Execute statement against database, then issue a rollback.
     try:
         with engine.connect() as conn, conn.begin() as trans:
@@ -192,6 +189,6 @@ def ensure_object_added_to_session(object_to_add, *, object_in_session=None, ses
         session.add(object_to_add)
         return True
     if object_in_session and object_session(object_in_session):
-        object_session(object_in_session).add(object_to_add)
+        object_session(object_in_session).add(object_to_add)  # type: ignore[union-attr]
         return True
     return False

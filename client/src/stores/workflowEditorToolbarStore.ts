@@ -1,13 +1,14 @@
-import { useMagicKeys } from "@vueuse/core";
-import { computed, onScopeDispose, reactive, ref, watch } from "vue";
+import { computed, getCurrentScope, onScopeDispose, reactive, ref, watch } from "vue";
 
+import { useMagicKeys } from "@/composables/useMagicKeys";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import type { Rectangle } from "@/utils/geometry";
 
 import { defineScopedStore } from "./scopedStore";
-import { WorkflowCommentColor } from "./workflowEditorCommentStore";
+import type { WorkflowCommentColor } from "./workflowEditorCommentStore";
 
 export type CommentTool = "textComment" | "markdownComment" | "frameComment" | "freehandComment" | "freehandEraser";
-export type EditorTool = "pointer" | CommentTool;
+export type EditorTool = "pointer" | "boxSelect" | CommentTool;
 export type InputCatcherEventType =
     | "pointerdown"
     | "pointerup"
@@ -34,6 +35,8 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
     const inputCatcherEventListeners = new Set<InputCatcherEventListener>();
     const snapDistance = ref<10 | 20 | 50 | 100 | 200>(10);
     const toolbarVisible = useUserLocalStorage("workflow-editor-toolbar-visible", true);
+    const boxSelectMode = ref<"add" | "remove">("add");
+    const boxSelectRect = ref<Rectangle>({ x: 0, y: 0, width: 0, height: 0 });
 
     const commentOptions = reactive({
         bold: false,
@@ -46,6 +49,15 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
 
     const inputCatcherPressed = ref(false);
 
+    function resetBoxSelect() {
+        boxSelectRect.value = {
+            x: 0,
+            y: 0,
+            width: 0,
+            height: 0,
+        };
+    }
+
     function onInputCatcherEvent(type: InputCatcherEventType, callback: InputCatcherEventListener["callback"]) {
         const listener = {
             type,
@@ -54,9 +66,11 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
 
         inputCatcherEventListeners.add(listener);
 
-        onScopeDispose(() => {
-            inputCatcherEventListeners.delete(listener);
-        });
+        if (getCurrentScope()) {
+            onScopeDispose(() => {
+                inputCatcherEventListeners.delete(listener);
+            });
+        }
     }
 
     onInputCatcherEvent("pointerdown", () => (inputCatcherPressed.value = true));
@@ -69,11 +83,14 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
             if (!inputCatcherActive.value) {
                 inputCatcherPressed.value = false;
             }
-        }
+        },
     );
 
     const { shift, space, alt, ctrl } = useMagicKeys();
-    const inputCatcherEnabled = computed(() => !(shift?.value || space?.value || alt?.value || ctrl?.value));
+    const modifierPressed = computed(() => shift?.value || space?.value || alt?.value || ctrl?.value);
+    const inputCatcherTemporarilyDisabled = ref(false);
+
+    const inputCatcherEnabled = computed(() => !modifierPressed.value && !inputCatcherTemporarilyDisabled.value);
 
     function emitInputCatcherEvent(type: InputCatcherEventType, event: InputCatcherEvent) {
         inputCatcherEventListeners.forEach((listener) => {
@@ -90,9 +107,13 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
         currentTool,
         inputCatcherActive,
         inputCatcherEnabled,
+        inputCatcherTemporarilyDisabled,
         commentOptions,
         inputCatcherPressed,
         onInputCatcherEvent,
         emitInputCatcherEvent,
+        boxSelectMode,
+        boxSelectRect,
+        resetBoxSelect,
     };
 });

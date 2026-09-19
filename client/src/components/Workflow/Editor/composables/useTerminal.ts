@@ -8,30 +8,24 @@ import type { Step, TerminalSource } from "@/stores/workflowStepStore";
 export function useTerminal(
     stepId: Ref<Step["id"]>,
     terminalSource: Ref<TerminalSource>,
-    datatypesMapper: Ref<DatatypesMapperModel>
+    datatypesMapper: Ref<DatatypesMapperModel>,
 ) {
     const terminal: Ref<ReturnType<typeof terminalFactory> | null> = ref(null);
-    const { connectionStore, stepStore } = useWorkflowStores();
-    const step = computed(() => stepStore.getStep(stepId.value));
-    const isMappedOver = computed(() => stepStore.stepMapOver[stepId.value]?.isCollection ?? false);
+    const stores = useWorkflowStores();
+    const step = computed(() => stores.stepStore.getStep(stepId.value));
+    const isMappedOver = computed(() => stores.stepStore.stepMapOver[stepId.value]?.isCollection ?? false);
 
     watch(
         [step, terminalSource, datatypesMapper],
         () => {
             // rebuild terminal if any of the tracked dependencies change
-            const newTerminal = terminalFactory(
-                stepId.value,
-                terminalSource.value,
-                datatypesMapper.value,
-                connectionStore,
-                stepStore
-            );
+            const newTerminal = terminalFactory(stepId.value, terminalSource.value, datatypesMapper.value, stores);
             newTerminal.getInvalidConnectedTerminals();
             terminal.value = newTerminal;
         },
         {
             immediate: true,
-        }
+        },
     );
     return { terminal: terminal as Ref<ReturnType<typeof terminalFactory>>, isMappedOver };
 }

@@ -1,0 +1,13 @@
+<tool id="gx_data_optional" name="gx_data_optional" version="1.0.0">
+    <command><![CDATA[
+cat '$parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <param name="parameter" type="data" ext="data" optional="true" />
+    </inputs>
+    <outputs>
+        <data name="output" format="data" />
+    </outputs>
+    <tests>
+    </tests>
+</tool>

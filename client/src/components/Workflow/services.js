@@ -1,7 +1,8 @@
-import { getGalaxyInstance } from "app";
 import axios from "axios";
-import { withPrefix } from "utils/redirect";
-import { rethrowSimple } from "utils/simple-error";
+
+import { getGalaxyInstance } from "@/app";
+import { withPrefix } from "@/utils/redirect";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import { toSimple } from "./Editor/modules/model";
 
@@ -32,7 +33,7 @@ export class Services {
     async createWorkflow(workflow) {
         const url = withPrefix("/api/workflows");
         try {
-            const { data } = await axios.post(url, { workflow: toSimple(workflow.id, workflow) });
+            const { data } = await axios.post(url, { workflow: toSimple(workflow.id, workflow), from_tool_form: true });
             return data;
         } catch (e) {
             rethrowSimple(e);

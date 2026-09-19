@@ -2,11 +2,11 @@
 import { useEventListener } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
 
-import { Transform } from "@/components/Workflow/Editor/modules/geometry";
 import { useWorkflowStores } from "@/composables/workflowStores";
+import { Transform, type WorkflowTransform } from "@/utils/geometry";
 
 const props = defineProps<{
-    transform: { x: number; y: number; k: number };
+    transform: WorkflowTransform;
 }>();
 
 const { toolbarStore } = useWorkflowStores();
@@ -18,11 +18,38 @@ const inverseCanvasTransform = computed(() =>
     new Transform()
         .translate([props.transform.x, props.transform.y])
         .scale([props.transform.k, props.transform.k])
-        .inverse()
+        .inverse(),
 );
+
+const zIndexLow = 0;
+const zIndexHigh = 1500;
+
+const zIndex = ref(zIndexHigh);
+
+watch(
+    () => toolbarStore.currentTool,
+    () => {
+        if (toolbarStore.currentTool === "boxSelect") {
+            zIndex.value = zIndexLow;
+        } else {
+            zIndex.value = zIndexHigh;
+        }
+    },
+);
+
+toolbarStore.onInputCatcherEvent("pointerdown", () => {
+    zIndex.value = zIndexHigh;
+});
+
+toolbarStore.onInputCatcherEvent("pointerup", () => {
+    if (toolbarStore.currentTool === "boxSelect") {
+        zIndex.value = zIndexLow;
+    }
+});
 
 const style = computed(() => ({
     transform: `matrix(${inverseCanvasTransform.value.matrix.join(",")})`,
+    "z-index": `${zIndex.value}`,
 }));
 
 let lastPosition = [0, 0] as [number, number];
@@ -48,7 +75,7 @@ watch(
                 position: lastPosition,
             });
         }
-    }
+    },
 );
 </script>
 
@@ -66,7 +93,6 @@ watch(
     top: 0;
     left: 0;
     transform-origin: top left;
-    z-index: 1500;
     width: 100%;
     height: 100%;
     cursor: crosshair;

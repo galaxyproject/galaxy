@@ -1,34 +1,33 @@
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DCESummary, HDCASummary } from "@/api";
-import { mockFetcher } from "@/api/schema/__mocks__";
-import { DCEEntry, useCollectionElementsStore } from "@/stores/collectionElementsStore";
+import { useServerMock } from "@/api/client/__mocks__";
+import { type DCEEntry, useCollectionElementsStore } from "@/stores/collectionElementsStore";
 
-jest.mock("@/api/schema");
+// The "should save collections" test moved to `datasetCollectionStore.test.ts`
+// when detail / summary caching was split out.
 
+const { server, http } = useServerMock();
+
+const fetchCollectionElementsSpy = vi.fn();
 describe("useCollectionElementsStore", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
-        mockFetcher
-            .path("/api/dataset_collections/{hdca_id}/contents/{parent_id}")
-            .method("get")
-            .mock(fetchCollectionElements);
-    });
-
-    it("should save collections", async () => {
-        const collection1: HDCASummary = mockCollection("1");
-        const collection2: HDCASummary = mockCollection("2");
-        const collections: HDCASummary[] = [collection1, collection2];
-        const store = useCollectionElementsStore();
-        expect(store.storedCollections).toEqual({});
-
-        store.saveCollections(collections);
-
-        expect(store.storedCollections).toEqual({
-            "1": collection1,
-            "2": collection2,
-        });
+        fetchCollectionElementsSpy.mockClear();
+        server.use(
+            http.get("/api/dataset_collections/{hdca_id}/contents/{parent_id}", ({ response, params, query }) => {
+                const elements: DCESummary[] = [];
+                const startIndex = Number(query.get("offset")) ?? 0;
+                const endIndex = startIndex + (Number(query.get("limit")) ?? 10);
+                for (let i = startIndex; i < endIndex; i++) {
+                    elements.push(mockElement(params.hdca_id, i));
+                }
+                fetchCollectionElementsSpy();
+                return response(200).json(elements);
+            }),
+        );
     });
 
     it("should fetch collection elements if they are not yet in the store", async () => {
@@ -38,14 +37,16 @@ describe("useCollectionElementsStore", () => {
         expect(store.storedCollectionElements).toEqual({});
         expect(store.isLoadingCollectionElements(collection)).toEqual(false);
 
-        const offset = 0;
-        const limit = 5;
-        // Getting collection elements should trigger a fetch and change the loading state
-        store.getCollectionElements(collection, offset, limit);
-        expect(store.isLoadingCollectionElements(collection)).toEqual(true);
-        await flushPromises();
+        // Getting collection elements should be side effect free
+        store.getCollectionElements(collection);
         expect(store.isLoadingCollectionElements(collection)).toEqual(false);
-        expect(fetchCollectionElements).toHaveBeenCalled();
+        await flushPromises();
+        expect(fetchCollectionElementsSpy).not.toHaveBeenCalled();
+
+        const limit = 5;
+        store.fetchMissingElements(collection, 0, limit);
+        await flushPromises();
+        expect(fetchCollectionElementsSpy).toHaveBeenCalled();
 
         const collectionKey = store.getCollectionKey(collection);
         const elements = store.storedCollectionElements[collectionKey];
@@ -70,20 +71,22 @@ describe("useCollectionElementsStore", () => {
         const offset = 0;
         const limit = storedCount;
         // Getting the same collection elements range should not trigger a fetch
-        store.getCollectionElements(collection, offset, limit);
+        store.fetchMissingElements(collection, offset, limit);
         expect(store.isLoadingCollectionElements(collection)).toEqual(false);
-        expect(fetchCollectionElements).not.toHaveBeenCalled();
+        expect(fetchCollectionElementsSpy).not.toHaveBeenCalled();
     });
 
     it("should fetch only missing elements if the requested range is not already stored", async () => {
+        vi.useFakeTimers();
+
         const totalElements = 10;
         const collection: HDCASummary = mockCollection("1", totalElements);
         const store = useCollectionElementsStore();
 
         const initialElements = 3;
-        store.getCollectionElements(collection, 0, initialElements);
+        store.fetchMissingElements(collection, 0, initialElements);
         await flushPromises();
-        expect(fetchCollectionElements).toHaveBeenCalled();
+        expect(fetchCollectionElementsSpy).toHaveBeenCalled();
         const collectionKey = store.getCollectionKey(collection);
         let elements = store.storedCollectionElements[collectionKey];
         // The first call will initialize the 10 placeholders and fetch the first 3 elements out of 10
@@ -92,12 +95,11 @@ describe("useCollectionElementsStore", () => {
 
         const offset = 2;
         const limit = 5;
-        // Getting collection elements should trigger a fetch in this case
-        store.getCollectionElements(collection, offset, limit);
-        expect(store.isLoadingCollectionElements(collection)).toEqual(true);
+        // Fetching collection elements should trigger a fetch in this case
+        store.fetchMissingElements(collection, offset, limit);
+        vi.runAllTimers();
         await flushPromises();
-        expect(store.isLoadingCollectionElements(collection)).toEqual(false);
-        expect(fetchCollectionElements).toHaveBeenCalled();
+        expect(fetchCollectionElementsSpy).toHaveBeenCalled();
 
         elements = store.storedCollectionElements[collectionKey];
         expect(elements).toBeDefined();
@@ -112,6 +114,9 @@ function mockCollection(id: string, numElements = 10): HDCASummary {
     return {
         id: id,
         element_count: numElements,
+        elements_datatypes: ["txt"],
+        elements_deleted: 0,
+        elements_states: {},
         collection_type: "list",
         populated_state: "ok",
         populated_state_message: "",
@@ -129,6 +134,8 @@ function mockCollection(id: string, numElements = 10): HDCASummary {
         update_time: "2021-05-25T14:00:00.000Z",
         type_id: "dataset_collection",
         url: "",
+        type: "collection",
+        store_times_summary: null,
     };
 }
 
@@ -147,28 +154,9 @@ function mockElement(collectionId: string, i: number): DCESummary {
             hda_ldda: "hda",
             history_id: "1",
             tags: [],
+            accessible: true,
+            purged: false,
         },
-    };
-}
-
-interface ApiRequest {
-    hdca_id: string;
-    parent_id: string;
-    offset: number;
-    limit: number;
-}
-
-const fetchCollectionElements = jest.fn(fakeCollectionElementsApiResponse);
-
-function fakeCollectionElementsApiResponse(params: ApiRequest) {
-    const elements: DCESummary[] = [];
-    const startIndex = params.offset ?? 0;
-    const endIndex = startIndex + (params.limit ?? 10);
-    for (let i = startIndex; i < endIndex; i++) {
-        elements.push(mockElement(params.hdca_id, i));
-    }
-    return {
-        data: elements,
     };
 }
 

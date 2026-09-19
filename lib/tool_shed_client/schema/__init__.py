@@ -1,11 +1,7 @@
 from typing import (
     Any,
-    cast,
-    Dict,
-    List,
+    Literal,
     Optional,
-    Tuple,
-    Union,
 )
 
 from pydantic import (
@@ -15,9 +11,10 @@ from pydantic import (
     RootModel,
 )
 from typing_extensions import (
-    Literal,
     TypedDict,
 )
+
+from galaxy.tool_util_models import ParsedTool
 
 
 class Repository(BaseModel):
@@ -26,8 +23,8 @@ class Repository(BaseModel):
     name: str
     owner: str
     type: str  # TODO: enum
-    remote_repository_url: Optional[str] = None
-    homepage_url: Optional[str] = None
+    remote_repository_url: str | None = None
+    homepage_url: str | None = None
     description: str
     user_id: str
     private: bool
@@ -39,17 +36,17 @@ class Repository(BaseModel):
 
 
 class DetailedRepository(Repository):
-    long_description: Optional[str]
+    long_description: str | None
 
 
 class RepositoryPermissions(BaseModel):
-    allow_push: List[str]
+    allow_push: list[str]
     can_manage: bool  # can the requesting user manage the repository
     can_push: bool
 
 
 class RepositoryRevisionReadmes(RootModel):
-    root: Dict[str, str]
+    root: dict[str, str]
 
 
 class CreateUserRequest(BaseModel):
@@ -77,7 +74,7 @@ class Category(BaseModel):
 
 class CreateCategoryRequest(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class ValidRepostiroyUpdateMessage(BaseModel):
@@ -94,7 +91,7 @@ class GetOrderedInstallableRevisionsRequest(BaseModel):
 
 
 class OrderedInstallableRevisions(RootModel):
-    root: List[str]
+    root: list[str]
 
 
 RepositoryType = Literal[
@@ -107,15 +104,15 @@ RepositoryType = Literal[
 class CreateRepositoryRequest(BaseModel):
     name: str
     synopsis: str
-    description: Optional[str] = None
-    remote_repository_url: Optional[str] = None
-    homepage_url: Optional[str] = None
+    description: str | None = None
+    remote_repository_url: str | None = None
+    homepage_url: str | None = None
     type_: RepositoryType = Field(
         "unrestricted",
         alias="type",
         title="Type",
     )
-    category_ids: Optional[Union[List[str], str]] = Field(
+    category_ids: list[str] | str | None = Field(
         ...,
         alias="category_ids[]",
         title="Category IDs",
@@ -123,12 +120,31 @@ class CreateRepositoryRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
+class UpdateRepositoryRequest(BaseModel):
+    name: str | None = None
+    synopsis: str | None = None
+    type_: RepositoryType | None = Field(
+        None,
+        alias="type",
+        title="Type",
+    )
+    description: str | None = None
+    remote_repository_url: str | None = None
+    homepage_url: str | None = None
+    category_ids: list[str] | None = Field(
+        None,
+        alias="category_ids",
+        title="Category IDs",
+    )
+    model_config = ConfigDict(populate_by_name=True)
+
+
 class RepositoryUpdateRequest(BaseModel):
-    commit_message: Optional[str] = None
+    commit_message: str | None = None
 
 
 class RepositoryUpdate(RootModel):
-    root: Union[ValidRepostiroyUpdateMessage, FailedRepositoryUpdateMessage]
+    root: ValidRepostiroyUpdateMessage | FailedRepositoryUpdateMessage
 
     @property
     def is_ok(self):
@@ -151,12 +167,17 @@ class RepositoryTool(BaseModel):
     # version_string_cmd: Optional[str]
 
 
+class InvalidTool(BaseModel):
+    tool_config: str
+    error_message: str
+
+
 class RepositoryRevisionMetadata(BaseModel):
     id: str
     repository: Repository
-    repository_dependencies: List["RepositoryDependency"]
-    tools: Optional[List["RepositoryTool"]] = None
-    invalid_tools: List[str]  # added for rendering list of invalid tools in 2.0 frontend
+    repository_dependencies: list["RepositoryDependency"]
+    tools: list["RepositoryTool"] | None = None
+    invalid_tools: list[InvalidTool]
     repository_id: str
     numeric_revision: int
     changeset_revision: str
@@ -166,10 +187,11 @@ class RepositoryRevisionMetadata(BaseModel):
     has_repository_dependencies: bool
     includes_tools: bool
     includes_tools_for_display_in_tool_panel: bool
+    create_time: str
     # Deprecate these...
-    includes_tool_dependencies: Optional[bool] = None
-    includes_datatypes: Optional[bool] = None
-    includes_workflows: Optional[bool] = None
+    includes_tool_dependencies: bool | None = None
+    includes_datatypes: bool | None = None
+    includes_workflows: bool | None = None
 
 
 class RepositoryDependency(RepositoryRevisionMetadata):
@@ -179,7 +201,7 @@ class RepositoryDependency(RepositoryRevisionMetadata):
 
 
 class RepositoryMetadata(RootModel):
-    root: Dict[str, RepositoryRevisionMetadata]
+    root: dict[str, RepositoryRevisionMetadata]
 
     @property
     def latest_revision(self) -> RepositoryRevisionMetadata:
@@ -197,21 +219,96 @@ class RepositoryMetadata(RootModel):
         return len(self.root) == 0
 
 
+class RepositoryRevisionMetadataPreview(BaseModel):
+    """Like RepositoryRevisionMetadata but with Optional fields for dry-run/preview scenarios.
+
+    During reset_metadata dry-run, metadata objects are created in-memory but not persisted,
+    so they lack database IDs. The numeric_revision may also be unavailable for newly-pushed
+    changesets that haven't been indexed yet.
+    """
+
+    id: str | None = None
+    repository: Repository
+    repository_dependencies: list["RepositoryDependency"]
+    tools: list["RepositoryTool"] | None = None
+    invalid_tools: list[InvalidTool] = []
+    repository_id: str | None = None
+    numeric_revision: int | None = None
+    changeset_revision: str
+    malicious: bool
+    downloadable: bool
+    missing_test_components: bool
+    has_repository_dependencies: bool
+    includes_tools: bool
+    includes_tools_for_display_in_tool_panel: bool
+    create_time: str | None = None
+    includes_tool_dependencies: bool | None = None
+    includes_datatypes: bool | None = None
+    includes_workflows: bool | None = None
+
+
+class RepositoryMetadataPreview(RootModel):
+    """Like RepositoryMetadata but uses RepositoryRevisionMetadataPreview for dry-run scenarios."""
+
+    root: dict[str, RepositoryRevisionMetadataPreview]
+
+
 class ResetMetadataOnRepositoryRequest(BaseModel):
     repository_id: str
+    dry_run: bool = False
+    verbose: bool = False
+
+
+class ChangesetMetadataStatus(BaseModel):
+    """Per-changeset detail during reset metadata operation."""
+
+    changeset_revision: str
+    numeric_revision: int
+    comparison_result: str | None = None  # "initial", "equal", "subset", "not_equal_and_not_subset", "no_metadata"
+    record_operation: Literal["created", "updated"] | None = None
+    has_tools: bool = False
+    has_repository_dependencies: bool = False
+    has_tool_dependencies: bool = False
+    error: str | None = None
 
 
 class ResetMetadataOnRepositoryResponse(BaseModel):
     status: str  # TODO: enum...
-    repository_status: List[str]
+    repository_status: list[str]
+    start_time: str
+    stop_time: str
+    dry_run: bool = False
+    changeset_details: list[ChangesetMetadataStatus] | None = None
+    # Full metadata snapshots for diffing (only when verbose=True)
+    # Uses Preview types since dry-run objects may lack IDs
+    repository_metadata_before: Optional["RepositoryMetadataPreview"] = None
+    repository_metadata_after: Optional["RepositoryMetadataPreview"] = None
+
+
+# Ugh - use with care - param descriptions scraped from older version of the API.
+class ResetMetadataOnRepositoriesRequest(BaseModel):
+    my_writable: bool = Field(
+        False,
+        description="""if the API key is associated with an admin user in the Tool Shed, setting this param value
+to True will restrict resetting metadata to only repositories that are writable by the user
+in addition to those repositories of type tool_dependency_definition.  This param is ignored
+if the current user is not an admin user, in which case this same restriction is automatic.""",
+    )
+    encoded_ids_to_skip: list[str] | None = Field(
+        None, description="a list of encoded repository ids for repositories that should not be processed"
+    )
+
+
+class ResetMetadataOnRepositoriesResponse(BaseModel):
+    repository_status: list[str]
     start_time: str
     stop_time: str
 
 
 class ToolSearchRequest(BaseModel):
     q: str
-    page: Optional[int] = None
-    page_size: Optional[int] = None
+    page: int | None = None
+    page_size: int | None = None
 
 
 class ToolSearchHitTool(BaseModel):
@@ -224,7 +321,7 @@ class ToolSearchHitTool(BaseModel):
 
 class ToolSearchHit(BaseModel):
     tool: ToolSearchHitTool
-    matched_terms: Dict[str, Any]
+    matched_terms: dict[str, Any]
     score: float
 
 
@@ -234,10 +331,10 @@ class ToolSearchResults(BaseModel):
     page: str
     page_size: str
     hostname: str
-    hits: List[ToolSearchHit]
+    hits: list[ToolSearchHit]
 
-    def find_search_hit(self, repository: Repository) -> Optional[ToolSearchHit]:
-        matching_hit: Optional[ToolSearchHit] = None
+    def find_search_hit(self, repository: Repository) -> ToolSearchHit | None:
+        matching_hit: ToolSearchHit | None = None
 
         for hit in self.hits:
             owner_matches = hit.tool.repo_owner_username == repository.owner
@@ -249,10 +346,22 @@ class ToolSearchResults(BaseModel):
         return matching_hit
 
 
+IndexSortByType = Literal["name", "create_time"]
+
+
 class RepositoryIndexRequest(BaseModel):
-    owner: Optional[str] = None
-    name: Optional[str] = None
+    filter: str | None = None
+    owner: str | None = None
+    name: str | None = None
     deleted: str = "false"
+    category_id: str | None = None
+    sort_by: IndexSortByType | None = "name"
+    sort_desc: bool | None = False
+
+
+class RepositoryPaginatedIndexRequest(RepositoryIndexRequest):
+    page: int = 1
+    page_size: int = 10
 
 
 class RepositoriesByCategory(BaseModel):
@@ -260,17 +369,17 @@ class RepositoriesByCategory(BaseModel):
     name: str
     description: str
     repository_count: int
-    repositories: List[Repository]
+    repositories: list[Repository]
 
 
 class RepositoryIndexResponse(RootModel):
-    root: List[Repository]
+    root: list[Repository]
 
 
 class RepositorySearchRequest(BaseModel):
     q: str
-    page: Optional[int] = None
-    page_size: Optional[int] = None
+    page: int | None = None
+    page_size: int | None = None
 
 
 class RepositorySearchResult(BaseModel):
@@ -278,10 +387,10 @@ class RepositorySearchResult(BaseModel):
     name: str
     repo_owner_username: str
     description: str
-    long_description: Optional[str] = None
-    remote_repository_url: Optional[str] = None
-    homepage_url: Optional[str] = None
-    last_update: Optional[str] = None
+    long_description: str | None = None
+    remote_repository_url: str | None = None
+    homepage_url: str | None = None
+    last_update: str | None = None
     full_last_updated: str
     repo_lineage: str
     approved: bool
@@ -299,7 +408,16 @@ class RepositorySearchResults(BaseModel):
     page: str
     page_size: str
     hostname: str
-    hits: List[RepositorySearchHit]
+    hits: list[RepositorySearchHit]
+
+
+# align with the search version of this to some degree but fix some things also
+class PaginatedRepositoryIndexResults(BaseModel):
+    total_results: int
+    page: int
+    page_size: int
+    hostname: str
+    hits: list[Repository]
 
 
 class GetInstallInfoRequest(BaseModel):
@@ -319,7 +437,7 @@ class ValidToolDict(TypedDict):
     tool_config: str
     tool_type: str
     version: str
-    version_string_cmd: Optional[str]
+    version_string_cmd: str | None
 
 
 class RepositoryMetadataInstallInfoDict(TypedDict):
@@ -336,12 +454,12 @@ class RepositoryMetadataInstallInfoDict(TypedDict):
     malicious: bool
     repository_id: str
     url: str
-    valid_tools: List[ValidToolDict]
+    valid_tools: list[ValidToolDict]
 
 
 # So hard to type this... the keys are repo names and the elements
 # are tuples that have been list-ified.
-ExtraRepoInfo = Dict[str, List]
+ExtraRepoInfo = dict[str, list]
 # {
 #     "add_column": [
 #         "add_column hello",
@@ -359,9 +477,7 @@ class EmptyDict(TypedDict):
     pass
 
 
-LegacyInstallInfoTuple = Tuple[
-    Optional[Dict], Union[RepositoryMetadataInstallInfoDict, EmptyDict], Union[ExtraRepoInfo, EmptyDict]
-]
+LegacyInstallInfoTuple = tuple[dict | None, RepositoryMetadataInstallInfoDict | EmptyDict, ExtraRepoInfo | EmptyDict]
 
 
 class RepositoryExtraInstallInfo(BaseModel):
@@ -371,7 +487,7 @@ class RepositoryExtraInstallInfo(BaseModel):
     changeset_revision: str
     ctx_rev: str
     repository_owner: str
-    repository_dependencies: Optional[Dict] = None
+    repository_dependencies: dict | None = None
     # tool dependencies not longer work so don't transmit them in v2?
     # tool_dependencies: Optional[Dict]
 
@@ -402,15 +518,15 @@ class ValidTool(BaseModel):
     tool_config: str
     tool_type: str
     version: str
-    version_string_cmd: Optional[str] = None
+    version_string_cmd: str | None = None
 
     @staticmethod
     def from_legacy_dict(as_dict: ValidToolDict) -> "ValidTool":
         return ValidTool(**as_dict)
 
     @staticmethod
-    def from_legacy_list(as_dicts: List[ValidToolDict]) -> List["ValidTool"]:
-        return list(ValidTool.from_legacy_dict(d) for d in as_dicts)
+    def from_legacy_list(as_dicts: list[ValidToolDict]) -> list["ValidTool"]:
+        return [ValidTool.from_legacy_dict(d) for d in as_dicts]
 
 
 class RepositoryMetadataInstallInfo(BaseModel):
@@ -423,7 +539,7 @@ class RepositoryMetadataInstallInfo(BaseModel):
     malicious: bool
     repository_id: str
     url: str
-    valid_tools: List[ValidTool]
+    valid_tools: list[ValidTool]
     # no longer used, don't transmit.
     # has_repository_dependencies_only_if_compiling_contained_td: bool
     # includes_datatypes: bool
@@ -447,18 +563,16 @@ class RepositoryMetadataInstallInfo(BaseModel):
 
 
 class InstallInfo(BaseModel):
-    metadata_info: Optional[RepositoryMetadataInstallInfo] = None
-    repo_info: Optional[RepositoryExtraInstallInfo] = None
+    metadata_info: RepositoryMetadataInstallInfo | None = None
+    repo_info: RepositoryExtraInstallInfo | None = None
 
 
 def from_legacy_install_info(legacy_install_info: LegacyInstallInfoTuple) -> InstallInfo:
-    repo_metadata_install_info: Union[RepositoryMetadataInstallInfoDict, EmptyDict]
-    extra_info: Union[ExtraRepoInfo, EmptyDict]
+    repo_metadata_install_info: RepositoryMetadataInstallInfoDict | EmptyDict
+    extra_info: ExtraRepoInfo | EmptyDict
     _, repo_metadata_install_info, extra_info = legacy_install_info
     if repo_metadata_install_info:
-        metadata_info = RepositoryMetadataInstallInfo.from_legacy_dict(
-            cast(RepositoryMetadataInstallInfoDict, repo_metadata_install_info)
-        )
+        metadata_info = RepositoryMetadataInstallInfo.from_legacy_dict(repo_metadata_install_info)
     else:
         metadata_info = None
     if extra_info:
@@ -480,3 +594,7 @@ class Version(BaseModel):
     version_major: str
     version: str
     api_version: str = "v1"
+
+
+class ShedParsedTool(ParsedTool):
+    repository_revision: RepositoryRevisionMetadata | None = None

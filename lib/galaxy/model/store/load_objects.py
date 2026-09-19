@@ -5,11 +5,11 @@ import os
 import sys
 from typing import (
     Any,
-    Dict,
 )
 
-import requests
 import yaml
+
+from galaxy.util import requests
 
 DESCRIPTION = """Load a Galaxy model store into a running Galaxy instance.
 
@@ -47,7 +47,7 @@ def main(argv=None):
         if store_path.endswith(json_ext):
             is_json = True
 
-    data: Dict[str, Any] = {}
+    data: dict[str, Any] = {}
     if is_json:
         with open(store_path) as f:
             store_dict = yaml.safe_load(f)

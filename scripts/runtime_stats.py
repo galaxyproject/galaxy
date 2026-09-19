@@ -31,13 +31,16 @@ Examples
 """
 
 import argparse
+import datetime
 import os
 import re
 import sys
 
 import numpy
-import psycopg2
-from sqlalchemy.engine import url
+from sqlalchemy import (
+    create_engine,
+    text,
+)
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.insert(1, os.path.join(galaxy_root, "lib"))
@@ -82,20 +85,20 @@ def parse_arguments():
         "--like",
         action="store_true",
         default=False,
-        help="Use SQL `LIKE` operator to find " "a shed-installed tool using the tool's " '"short" id',
+        help='Use SQL `LIKE` operator to find a shed-installed tool using the tool\'s "short" id',
     )
     populate_config_args(parser)
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="Print extra info")
     parser.add_argument("-m", "--min", type=int, default=-1, help="Ignore runtimes less than MIN seconds")
     parser.add_argument("-M", "--max", type=int, default=-1, help="Ignore runtimes greater than MAX seconds")
-    parser.add_argument("-u", "--user", help="Return stats for only this user (id, email, " "or username)")
+    parser.add_argument("-u", "--user", help="Return stats for only this user (id, email, or username)")
     parser.add_argument(
-        "-s", "--source", default="metrics", help="Runtime data source (SOURCES: %s)" % ", ".join(DATA_SOURCES)
+        "-s", "--source", default="metrics", help="Runtime data source (SOURCES: {})".format(", ".join(DATA_SOURCES))
     )
     args = parser.parse_args()
 
     if args.like and "/" in args.tool_id:
-        print("ERROR: Do not use --like with a tool shed tool id (the tool " "id should not contain `/` characters)")
+        print("ERROR: Do not use --like with a tool shed tool id (the tool id should not contain `/` characters)")
         sys.exit(2)
 
     args.source = args.source.lower()
@@ -106,8 +109,7 @@ def parse_arguments():
     config = galaxy.config.Configuration(**app_properties)
     uri = config.database_connection
 
-    names = {"database": "dbname", "username": "user"}
-    args.connect_args = url.make_url(uri).translate_connect_args(**names)
+    args.database_connection = uri
 
     if args.debug:
         print("Got options:")
@@ -118,107 +120,113 @@ def parse_arguments():
 
 
 def query(
-    tool_id=None, user=None, like=None, source="metrics", connect_args=None, debug=False, min=-1, max=-1, **kwargs
+    tool_id=None,
+    user=None,
+    like=None,
+    source="metrics",
+    database_connection=None,
+    debug=False,
+    min=-1,
+    max=-1,
+    **kwargs,
 ):
-    connect_arg_str = ""
-    for k, v in connect_args.items():
-        connect_arg_str += f"{k}={v}"
+    engine = create_engine(database_connection)
 
-    pc = psycopg2.connect(connect_arg_str)
-    cur = pc.cursor()
+    with engine.connect() as conn:
+        if user:
+            try:
+                user_id = int(user)
+            except ValueError:
+                if "@" not in user:
+                    field = "username"
+                else:
+                    field = "email"
+                stmt = text(f"SELECT id FROM galaxy_user WHERE {field} = :user_val")
+                result = conn.execute(stmt, {"user_val": user})
+                if debug:
+                    print("Executed:")
+                    print(stmt)
+                row = result.fetchone()
+                if row:
+                    user_id = row[0]
+                else:
+                    print(f"Invalid user: {user}")
+                    sys.exit(1)
 
-    if user:
-        try:
-            user_id = int(user)
-        except ValueError:
-            if "@" not in user:
-                field = "username"
+        if like:
+            query_tool_id = f"%/{tool_id}/%"
+        elif "/" in tool_id and not re.match(r"\d+\.\d+", tool_id.split("/")[-1]):
+            query_tool_id = f"{tool_id}%"
+            like = True
+        else:
+            query_tool_id = tool_id
+
+        sql_params = {"tool_id": query_tool_id}
+
+        if like:
+            tool_clause = "AND j.tool_id LIKE :tool_id"
+        else:
+            tool_clause = "AND j.tool_id = :tool_id"
+
+        if user:
+            user_clause = "AND j.user_id = :user_id"
+            sql_params["user_id"] = user_id
+        else:
+            user_clause = ""
+
+        if source == "metrics":
+            if min > 0 and max > 0:
+                time_clause = """AND metric_value > :min_val
+          AND metric_value < :max_val"""
+                sql_params["min_val"] = min
+                sql_params["max_val"] = max
+            elif min > 0:
+                time_clause = "AND metric_value > :min_val"
+                sql_params["min_val"] = min
+            elif max > 0:
+                time_clause = "AND metric_value < :max_val"
+                sql_params["max_val"] = max
             else:
-                field = "email"
-            sql = "SELECT id FROM galaxy_user WHERE {} = {}".format(field, "%s")
-            cur.execute(sql, (user,))
-            if debug:
-                print("Executed:")
-                print(cur.query)
-            row = cur.fetchone()
-            if row:
-                user_id = row[0]
+                time_clause = ""
+            sql_template = METRICS_SQL
+        elif source == "history":
+            if min > 0 and max > 0:
+                time_clause = """WHERE ctimes[1] - ctimes[2] > :min_val
+          AND ctimes[1] - ctimes[2] < :max_val"""
+                sql_params["min_val"] = datetime.timedelta(seconds=min)
+                sql_params["max_val"] = datetime.timedelta(seconds=max)
+            elif min > 0:
+                time_clause = "WHERE ctimes[1] - ctimes[2] > :min_val"
+                sql_params["min_val"] = datetime.timedelta(seconds=min)
+            elif max > 0:
+                time_clause = "WHERE ctimes[1] - ctimes[2] < :max_val"
+                sql_params["max_val"] = datetime.timedelta(seconds=max)
             else:
-                print("Invalid user: %s" % user)
-                sys.exit(1)
+                time_clause = ""
+            sql_template = HISTORY_SQL
 
-    if like:
-        query_tool_id = "%%/%s/%%" % tool_id
-    elif "/" in tool_id and not re.match(r"\d+\.\d+", tool_id.split("/")[-1]):
-        query_tool_id = "%s%%" % tool_id
-        like = True
-    else:
-        query_tool_id = tool_id
+        sql_str = sql_template.format(tool_clause=tool_clause, user_clause=user_clause, time_clause=time_clause)
+        stmt = text(sql_str)
+        result = conn.execute(stmt, sql_params)
+        if debug:
+            print("Executed:")
+            print(stmt)
+        rows = result.fetchall()
 
-    sql_args = [query_tool_id]
-
-    if like:
-        tool_clause = "AND j.tool_id LIKE %s"
-    else:
-        tool_clause = "AND j.tool_id = %s"
-
-    if user:
-        user_clause = "AND j.user_id = %s"
-        sql_args.append(user_id)
-    else:
-        user_clause = ""
+    print(f"Query returned {len(rows)} rows")
 
     if source == "metrics":
-        if min > 0 and max > 0:
-            time_clause = """AND metric_value > %s
-          AND metric_value < %s"""
-            sql_args.append(min)
-            sql_args.append(max)
-        elif min > 0:
-            time_clause = "AND metric_value > %s"
-            sql_args.append(min)
-        elif max > 0:
-            time_clause = "AND metric_value < %s"
-            sql_args.append(max)
-        else:
-            time_clause = ""
-        sql = METRICS_SQL
+        times = numpy.array([r[0] for r in rows if r[0]])
     elif source == "history":
-        if min > 0 and max > 0:
-            time_clause = """WHERE ctimes[1] - ctimes[2] > interval %s
-          AND ctimes[1] - ctimes[2] < interval %s"""
-            sql_args.append("%s seconds" % min)
-            sql_args.append("%s seconds" % max)
-        elif min > 0:
-            time_clause = "WHERE ctimes[1] - ctimes[2] > interval %s"
-            sql_args.append("%s seconds" % min)
-        elif max > 0:
-            time_clause = "WHERE ctimes[1] - ctimes[2] < interval %s"
-            sql_args.append("%s seconds" % max)
-        else:
-            time_clause = ""
-        sql = HISTORY_SQL
+        times = numpy.array([r[0].total_seconds() for r in rows if r[0]])
 
-    sql = sql.format(tool_clause=tool_clause, user_clause=user_clause, time_clause=time_clause)
-
-    cur.execute(sql, sql_args)
-    if debug:
-        print("Executed:")
-        print(cur.query)
-    print("Query returned %d rows" % cur.rowcount)
-
-    if source == "metrics":
-        times = numpy.array([r[0] for r in cur if r[0]])
-    elif source == "history":
-        times = numpy.array([r[0].total_seconds() for r in cur if r[0]])
-
-    print("Collected %d times" % times.size)
+    print(f"Collected {times.size} times")
 
     if times.size == 0:
         return
 
     if user:
-        print("Displaying statistics for user %s" % user)
+        print(f"Displaying statistics for user {user}")
 
     stats = (
         ("Mean runtime", numpy.mean(times)),
@@ -229,11 +237,11 @@ def query(
 
     for name, seconds in stats:
         hours, minutes = nice_times(seconds)
-        msg = name + " is %0.0f seconds" % seconds
+        msg = name + f" is {seconds:0.0f} seconds"
         if minutes:
-            msg += " (=%0.2f minutes)" % minutes
+            msg += f" (={minutes:0.2f} minutes)"
         if hours:
-            msg += " (=%0.2f hours)" % hours
+            msg += f" (={hours:0.2f} hours)"
         print(msg)
 
 

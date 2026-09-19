@@ -39,39 +39,16 @@
 
         <div v-if="items.length" class="external-subheading">
             <h2 class="h-md">Connected External Identities</h2>
-            <b-button
+            <GButton
                 v-for="item in items"
                 :key="item.email"
                 aria-label="Disconnect External Identity"
                 title="Disconnect External Identity"
                 class="d-block mt-3"
                 @click="onDisconnect(item)">
-                Disconnect {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
-            </b-button>
-
-            <b-modal
-                id="disconnectIDModal"
-                ref="deleteModal"
-                centered
-                title="Disconnect Identity?"
-                size="sm"
-                @ok="disconnectID"
-                @cancel="doomedItem = null"></b-modal>
-
-            <b-modal
-                id="disconnectAndResetModal"
-                ref="deleteAndResetModal"
-                centered
-                title="Deleting last external identity"
-                @ok="disconnectAndReset"
-                @cancel="doomedItem = null">
-                <p>
-                    This is your only defined external identity. If you delete this identity, you will be logged out. To
-                    log back in you will need to use a password associated with your account, or reconnect to this third
-                    party identity. If you don't know your Galaxy user password, you can reset it or contact an
-                    administrator for help.
-                </p>
-            </b-modal>
+                Disconnect {{ capitalizeAsTitle(item.provider_label) }} -
+                {{ item.email }}
+            </GButton>
 
             <b-alert
                 dismissible
@@ -85,28 +62,40 @@
 
         <div v-if="enable_oidc" class="external-subheading">
             <h2 class="h-md">Connect Other External Identities</h2>
-            <ExternalLogin :login_page="false" />
+            <hr class="my-4" />
+            <ExternalLogin />
         </div>
     </section>
 </template>
 
 <script>
-import { getGalaxyInstance } from "app";
 import BootstrapVue from "bootstrap-vue";
-import { Toast } from "composables/toast";
-import { sanitize } from "dompurify";
-import { userLogout } from "utils/logout";
+import purify from "dompurify";
 import Vue from "vue";
+
+import { getGalaxyInstance } from "@/app";
+import { useConfirmDialog } from "@/composables/confirmDialog";
+import { Toast } from "@/composables/toast";
+import { userLogout } from "@/utils/logout";
+import { capitalizeFirstLetter } from "@/utils/strings";
 
 import svc from "./service";
 
-import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         ExternalLogin,
+        GButton,
+    },
+    setup() {
+        const { confirm } = useConfirmDialog();
+        return {
+            confirm,
+        };
     },
     data() {
         const galaxy = getGalaxyInstance();
@@ -117,7 +106,6 @@ export default {
             doomedItem: null,
             errorMessage: null,
             enable_oidc: galaxy.config.enable_oidc,
-            cilogonOrCustos: null,
             userEmail: galaxy.user.get("email"),
         };
     },
@@ -152,10 +140,13 @@ export default {
     },
     mounted() {
         const params = new URLSearchParams(window.location.search);
-        const notificationMessage = sanitize(params.get("notification"));
+        const notificationMessage = purify.sanitize(params.get("notification"));
         Toast.success(notificationMessage);
     },
     methods: {
+        capitalizeAsTitle(str) {
+            return capitalizeFirstLetter(str);
+        },
         loadIdentities() {
             this.loading = true;
             svc.getIdentityProviders()
@@ -165,24 +156,48 @@ export default {
                 .catch(this.setError("Unable to load connected external identities."))
                 .finally(() => (this.loading = false));
         },
-        onDisconnect(doomed) {
+        async onDisconnect(doomed) {
             this.doomedItem = doomed;
             if (doomed.id) {
                 if (this.items.length > 1) {
                     // User must confirm that they want to disconnect the identity
-                    this.$refs.deleteModal.show();
+                    const confirmed = await this.confirm(
+                        `Are you sure you want to disconnect the external identity '${doomed.email}'?`,
+                        {
+                            title: "Disconnect Identity?",
+                            okText: "Disconnect",
+                            okColor: "red",
+                        },
+                    );
+                    if (confirmed) {
+                        this.disconnectID();
+                    } else {
+                        this.doomedItem = null;
+                    }
                 } else {
                     // User is notified to reset password to use regular Galaxy login and avoid lockout
-                    this.$refs.deleteAndResetModal.show();
+                    const confirmed = await this.confirm(
+                        "This is your only defined external identity. If you delete this identity, you will be logged out. To log back in you will need to use a password associated with your account, or reconnect to this third party identity. If you don't know your Galaxy user password, you can reset it or contact an administrator for help.",
+                        {
+                            title: "Deleting last external identity",
+                            okText: "Disconnect and Logout",
+                            okColor: "red",
+                        },
+                    );
+                    if (confirmed) {
+                        this.disconnectAndReset();
+                    } else {
+                        this.doomedItem = null;
+                    }
                     this.setError(
                         "Before disconnecting this identity, you need to set your account password, " +
-                            "in order to avoid being locked out of your account."
+                            "in order to avoid being locked out of your account.",
                     );
                 }
             } else {
                 this.setError(
                     "Before disconnecting this identity, you need to set your account password, " +
-                        "in order to avoid being locked out of your account."
+                        "in order to avoid being locked out of your account.",
                 );
             }
         },
@@ -223,12 +238,12 @@ export default {
 </script>
 
 <style lang="scss">
-@import "~bootstrap/scss/functions";
-@import "~bootstrap/scss/variables";
-@import "~bootstrap/scss/mixins";
-@import "~bootstrap/scss/utilities/spacing";
-@import "scss/theme/blue.scss";
-@import "scss/mixins";
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities/spacing";
+@import "@/style/scss/theme/blue.scss";
+@import "@/style/scss/mixins";
 
 .operations {
     margin-bottom: 0;
@@ -343,15 +358,5 @@ export default {
 .fade-enter,
 .fade-leave-to {
     opacity: 0;
-}
-
-// Delete modal
-#disconnectIDModal {
-    .modal-body {
-        display: none;
-    }
-    .modal-dialog {
-        max-width: 300px;
-    }
 }
 </style>

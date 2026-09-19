@@ -1,15 +1,50 @@
+import json
 import zipfile
 from io import BytesIO
-from typing import List
+from pathlib import Path
+from urllib.parse import quote
 
-from galaxy.util.unittest_utils import skip_if_github_down
-from galaxy_test.base.api_asserts import assert_object_id_error
+from galaxy.tool_util_models.sample_sheet import SampleSheetColumnDefinitions
+from galaxy.util import galaxy_root_path
+from galaxy_test.base.api_asserts import (
+    assert_error_message_contains,
+    assert_has_key,
+    assert_object_id_error,
+    assert_status_code_is,
+)
 from galaxy_test.base.decorators import requires_new_user
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    skip_without_tool,
 )
 from ._framework import ApiTestCase
+
+# copy of unit test definition in test_sample_sheet_workbook.py - maybe just serialize it as JSON?
+TEST_COLUMN_DEFINITIONS_1: SampleSheetColumnDefinitions = [
+    {
+        "name": "replicate number",
+        "type": "int",
+        "description": "The replicate number of this sample.",
+        "default_value": 0,
+        "optional": False,
+    },
+    {
+        "name": "treatment",
+        "type": "string",
+        "restrictions": ["treatment1", "treatment2", "none"],
+        "description": "The treatment code for this sample.",
+        "default_value": "none",
+        "optional": False,
+    },
+    {
+        "name": "is control?",
+        "type": "boolean",
+        "description": "Was this sample a control? If TRUE, please ensure treatment is set to none.",
+        "default_value": True,
+        "optional": False,
+    },
+]
 
 
 class TestDatasetCollectionsApi(ApiTestCase):
@@ -99,6 +134,539 @@ class TestDatasetCollectionsApi(ApiTestCase):
             pair_1_element_1 = pair_elements[0]
             assert pair_1_element_1["element_index"] == 0
 
+    def test_create_paried_or_unpaired(self, history_id):
+        collection_name = "a singleton in a paired_or_unpaired collection"
+        contents = [
+            ("unpaired", "1\t2\t3"),
+        ]
+        single_identifier = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name=collection_name,
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=single_identifier,
+            collection_type="paired_or_unpaired",
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        dataset_collection = self._check_create_response(create_response)
+        assert dataset_collection["collection_type"] == "paired_or_unpaired"
+        returned_collections = dataset_collection["elements"]
+        assert len(returned_collections) == 1, dataset_collection
+
+    def test_create_list_paired_or_unpaired_rejects_raw_hda_child(self, history_id):
+        element_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents=[("el1", "hi")])
+        payload = dict(
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=element_identifiers,
+            collection_type="list:paired_or_unpaired",
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        assert_status_code_is(create_response, 400)
+        assert_error_message_contains(create_response, "sub-collection of type 'paired_or_unpaired'")
+
+    def test_create_list_paired_rejects_raw_hda_child(self, history_id):
+        element_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents=[("el1", "hi")])
+        payload = dict(
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=element_identifiers,
+            collection_type="list:paired",
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        assert_status_code_is(create_response, 400)
+        assert_error_message_contains(create_response, "sub-collection of type 'paired'")
+
+    def test_create_record(self, history_id):
+        contents = [
+            ("condition", "1\t2\t3"),
+            ("control1", "4\t5\t6"),
+            ("control2", "7\t8\t9"),
+        ]
+        record_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        fields = [
+            {"name": "condition", "type": "File"},
+            {"name": "control1", "type": "File"},
+            {"name": "control2", "type": "File"},
+        ]
+        payload = dict(
+            name="a record",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=record_identifiers,
+            collection_type="record",
+            fields=fields,
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        dataset_collection = self._check_create_response(create_response)
+        assert dataset_collection["collection_type"] == "record"
+        assert dataset_collection["name"] == "a record"
+        returned_collections = dataset_collection["elements"]
+        assert len(returned_collections) == 3, dataset_collection
+        record_pos_0_element = returned_collections[0]
+        self._assert_has_keys(record_pos_0_element, "element_index")
+        record_pos_0_object = record_pos_0_element["object"]
+        self._assert_has_keys(record_pos_0_object, "name", "history_content_type")
+
+    def test_record_requires_fields(self, history_id):
+        contents = [
+            ("condition", "1\t2\t3"),
+            ("control1", "4\t5\t6"),
+            ("control2", "7\t8\t9"),
+        ]
+        record_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name="a record",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=json.dumps(record_identifiers),
+            collection_type="record",
+        )
+        create_response = self._post("dataset_collections", payload)
+        self._assert_status_code_is(create_response, 400)
+
+    def test_record_auto_fields(self, history_id):
+        contents = [
+            ("condition", "1\t2\t3"),
+            ("control1", "4\t5\t6"),
+            ("control2", "7\t8\t9"),
+        ]
+        record_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name="a record",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=record_identifiers,
+            collection_type="record",
+            fields="auto",
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        self._check_create_response(create_response)
+
+    def test_record_field_validation(self, history_id):
+        contents = [
+            ("condition", "1\t2\t3"),
+            ("control1", "4\t5\t6"),
+            ("control2", "7\t8\t9"),
+        ]
+        record_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        too_few_fields = [
+            {"name": "condition", "type": "File"},
+            {"name": "control1", "type": "File"},
+        ]
+        too_many_fields = [
+            {"name": "condition", "type": "File"},
+            {"name": "control1", "type": "File"},
+            {"name": "control2", "type": "File"},
+            {"name": "control3", "type": "File"},
+        ]
+        wrong_name_fields = [
+            {"name": "condition", "type": "File"},
+            {"name": "control1", "type": "File"},
+            {"name": "control3", "type": "File"},
+        ]
+        for fields in [too_few_fields, too_many_fields, wrong_name_fields]:
+            payload = dict(
+                name="a record",
+                instance_type="history",
+                history_id=history_id,
+                element_identifiers=json.dumps(record_identifiers),
+                collection_type="record",
+                fields=json.dumps(fields),
+            )
+            create_response = self._post("dataset_collections", payload)
+            self._assert_status_code_is(create_response, 400)
+
+    def test_sample_sheet_column_definition_problems(self, history_id):
+        contents = [
+            ("sample1", "1\t2\t3"),
+            ("sample2", "4\t5\t6"),
+        ]
+        sample_sheet_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name="my cool sample sheet",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=sample_sheet_identifiers,
+            collection_type="sample_sheet",
+            column_definitions=[{"type": "int", "name": "replicate", "optional": False}],
+            rows={"sample1": [42], "sample2": [45]},
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        self._check_create_response(create_response)
+        payload["column_definitions"] = [{"type": "intx"}]
+        create_response = self._post("dataset_collections", payload, json=True)
+        assert_status_code_is(create_response, 400)
+        payload["column_definitions"] = [{"typex": "int"}]
+        create_response = self._post("dataset_collections", payload, json=True)
+        assert_status_code_is(create_response, 400)
+        payload["column_definitions"] = [{"type": "int", "restrictions": "wrongtype", "name": "replicate"}]
+        create_response = self._post("dataset_collections", payload, json=True)
+        assert_status_code_is(create_response, 400)
+        payload["column_definitions"] = [
+            {"type": "int", "name": "replicate", "validators": [{"type": "expression", "expression": "False"}]}
+        ]
+        create_response = self._post("dataset_collections", payload, json=True)
+        assert_status_code_is(create_response, 400)
+
+    def test_sample_sheet_element_identifier_column_type(self, history_id):
+        contents = [
+            ("sample1", "1\t2\t3"),
+            ("sample2", "4\t5\t6"),
+        ]
+        sample_sheet_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name="my cool sample sheet",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=sample_sheet_identifiers,
+            collection_type="sample_sheet",
+            column_definitions=[{"type": "element_identifier", "name": "matched_element", "optional": False}],
+            rows={"sample1": ["sample2"], "sample2": ["sample1"]},
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        self._check_create_response(create_response)
+
+        # should not allow collection creation if element identifiers are not matching
+        payload["rows"] = {"sample1": ["noinsamplesheet"], "sample2": ["noinsamplesheet"]}
+        create_response = self._post("dataset_collections", payload, json=True)
+        assert_status_code_is(create_response, 400)
+
+    def test_sample_sheet_of_pairs_creation(self, history_id):
+        contents = [
+            "1\t2\t3",
+            "4\t5\t6",
+        ]
+        pair_identifiers = self.dataset_collection_populator.pair_identifiers(history_id, contents)
+        identifiers = [
+            {
+                "name": "sample1",
+                "collection_type": "paired",
+                "src": "new_collection",
+                "element_identifiers": pair_identifiers,
+            }
+        ]
+        payload = dict(
+            name="my cool sample sheet",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=identifiers,
+            collection_type="sample_sheet:paired",
+            column_definitions=[{"type": "int", "name": "replicate", "default_value": 0, "optional": False}],
+            rows={"sample1": [42]},
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        self._check_create_response(create_response)
+        dataset_collection = create_response.json()
+        assert dataset_collection["collection_type"] == "sample_sheet:paired"
+        assert dataset_collection["name"] == "my cool sample sheet"
+        returned_collections = dataset_collection["elements"]
+        assert len(returned_collections) == 1, dataset_collection
+        sheet_row_0_element = returned_collections[0]
+        self._assert_has_keys(sheet_row_0_element, "element_index", "columns")
+        columns = sheet_row_0_element["columns"]
+        assert len(columns) == 1
+        assert columns[0] == 42
+
+        hdca_id = dataset_collection["id"]
+        dataset_collection_url = f"/api/dataset_collections/{hdca_id}"
+        dataset_collection = self._get(dataset_collection_url).json()
+        assert dataset_collection["id"] == hdca_id
+        assert dataset_collection["collection_type"] == "sample_sheet:paired"
+        assert dataset_collection["column_definitions"] is not None
+
+    def test_sample_sheet_validating_against_column_definition(self, history_id):
+        contents = [
+            ("sample1", "1\t2\t3"),
+            ("sample2", "4\t5\t6"),
+        ]
+        sample_sheet_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name="my cool sample sheet",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=sample_sheet_identifiers,
+            collection_type="sample_sheet",
+            column_definitions=[{"type": "int", "name": "replicate", "default_value": 0, "optional": False}],
+            rows={"sample1": [42], "sample2": [45]},
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        print(create_response.json())
+        self._check_create_response(create_response)
+        # now the datatype of the row data is wrong....
+        payload["column_definitions"] = [
+            {"type": "string", "name": "replicate", "default_value": "", "optional": False}
+        ]
+        create_response = self._post("dataset_collections", payload, json=True)
+        assert_status_code_is(create_response, 400)
+        print(create_response.json())
+
+        # now the row values are too small for the supplied validator
+        payload["column_definitions"] = [
+            {"type": "int", "name": "replicate", "validators": [{"type": "in_range", "min": 60}]}
+        ]
+        create_response = self._post("dataset_collections", payload, json=True)
+        assert_status_code_is(create_response, 400)
+
+    def test_sample_sheet_requires_columns(self, history_id):
+        contents = [
+            ("sample1", "1\t2\t3"),
+            ("sample2", "4\t5\t6"),
+        ]
+        sample_sheet_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name="my cool sample sheet",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=sample_sheet_identifiers,
+            collection_type="sample_sheet",
+            column_definitions=[{"type": "int", "name": "replicate", "optional": False}],
+            rows={"sample1": [42], "sample2": [45]},
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        dataset_collection = self._check_create_response(create_response)
+
+        self._assert_has_keys(dataset_collection, "collection_type", "column_definitions")
+        column_definitions = dataset_collection["column_definitions"]
+        assert len(column_definitions) == 1
+        self._assert_has_keys(column_definitions[0], "type")
+        assert column_definitions[0]["type"] == "int"
+
+        # TODO: restore assertion and test before merging...
+        # assert something about column definition here....
+        assert dataset_collection["collection_type"] == "sample_sheet"
+        assert dataset_collection["name"] == "my cool sample sheet"
+        returned_collections = dataset_collection["elements"]
+        assert len(returned_collections) == 2, dataset_collection
+        sheet_row_0_element = returned_collections[0]
+        self._assert_has_keys(sheet_row_0_element, "element_index", "columns")
+        record_pos_0_object = sheet_row_0_element["object"]
+        self._assert_has_keys(record_pos_0_object, "name", "history_content_type")
+        row_0 = sheet_row_0_element["columns"]
+        assert row_0[0] == 42
+
+        sheet_row_1_element = returned_collections[1]
+        self._assert_has_keys(sheet_row_1_element, "element_index", "columns")
+        row_1 = sheet_row_1_element["columns"]
+        assert row_1[0] == 45
+        # TODO: test case where column definition does not match supplied data
+
+    @skip_without_tool("cat1")
+    def test_sample_sheet_map_over_preserves_columns(self, history_id):
+        """Test that mapping cat1 over a sample sheet preserves columns metadata."""
+        # Create a sample sheet collection with columns metadata
+        contents = [
+            ("sample1", "content1"),
+            ("sample2", "content2"),
+            ("sample3", "content3"),
+        ]
+        sample_sheet_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name="test sample sheet",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=sample_sheet_identifiers,
+            collection_type="sample_sheet",
+            column_definitions=[
+                {"type": "int", "name": "replicate", "optional": False},
+                {"type": "string", "name": "condition", "optional": False},
+            ],
+            rows={
+                "sample1": [1, "control"],
+                "sample2": [2, "treatment"],
+                "sample3": [3, "control"],
+            },
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        sample_sheet = self._check_create_response(create_response)
+        hdca_id = sample_sheet["id"]
+
+        # Verify the input sample sheet has columns metadata
+        input_elements = sample_sheet["elements"]
+        assert len(input_elements) == 3
+        assert input_elements[0]["columns"] == [1, "control"]
+        assert input_elements[1]["columns"] == [2, "treatment"]
+        assert input_elements[2]["columns"] == [3, "control"]
+
+        # Run cat1 on the sample sheet collection in batch mode (mapping over it)
+        inputs = {
+            "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
+        }
+        run = self.dataset_populator.run_tool("cat1", inputs=inputs, history_id=history_id)
+        self.dataset_populator.wait_for_history_jobs(history_id)
+
+        # Get the implicit output collection
+        implicit_collections = run["implicit_collections"]
+        assert len(implicit_collections) == 1, f"Expected 1 implicit collection, got {len(implicit_collections)}"
+        output_collection = implicit_collections[0]
+
+        # Fetch the full collection details including elements
+        collection_details = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=output_collection["id"]
+        )
+        assert collection_details["column_definitions"] == sample_sheet["column_definitions"]
+
+        # Verify that the output collection preserved the columns metadata
+        output_elements = collection_details["elements"]
+        assert len(output_elements) == 3, f"Expected 3 output elements, got {len(output_elements)}"
+
+        # Check that columns metadata was preserved for each element
+        self._assert_has_keys(output_elements[0], "columns")
+        assert output_elements[0]["columns"] == [
+            1,
+            "control",
+        ], f"Expected [1, 'control'], got {output_elements[0]['columns']}"
+        assert output_elements[0]["element_identifier"] == "sample1"
+
+        self._assert_has_keys(output_elements[1], "columns")
+        assert output_elements[1]["columns"] == [
+            2,
+            "treatment",
+        ], f"Expected [2, 'treatment'], got {output_elements[1]['columns']}"
+        assert output_elements[1]["element_identifier"] == "sample2"
+
+        self._assert_has_keys(output_elements[2], "columns")
+        assert output_elements[2]["columns"] == [
+            3,
+            "control",
+        ], f"Expected [3, 'control'], got {output_elements[2]['columns']}"
+        assert output_elements[2]["element_identifier"] == "sample3"
+
+    def test_copy_sample_sheet_collection(self, history_id):
+        """Test that copying a sample sheet collection preserves columns metadata."""
+        # Create a sample sheet collection with columns metadata
+        contents = [
+            ("sample1", "content1"),
+            ("sample2", "content2"),
+        ]
+        sample_sheet_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name="original sample sheet",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=sample_sheet_identifiers,
+            collection_type="sample_sheet",
+            column_definitions=[
+                {"type": "int", "name": "replicate", "optional": False},
+                {"type": "string", "name": "condition", "optional": False},
+            ],
+            rows={
+                "sample1": [1, "control"],
+                "sample2": [2, "treatment"],
+            },
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        original_collection = self._check_create_response(create_response)
+        original_hdca_id = original_collection["id"]
+
+        # Verify the original sample sheet has columns metadata
+        original_elements = original_collection["elements"]
+        assert len(original_elements) == 2
+        assert original_elements[0]["columns"] == [1, "control"]
+        assert original_elements[1]["columns"] == [2, "treatment"]
+
+        # Copy the collection using the new copy_collection method
+        copy_response = self.dataset_collection_populator.copy_collection(
+            history_id, original_hdca_id, copy_elements=True, wait=False
+        )
+        copied_collection = copy_response.json()
+
+        # Fetch the full details of the copied collection
+        copied_collection_details = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=copied_collection["id"]
+        )
+
+        # Verify the copied collection has the same columns metadata
+        copied_elements = copied_collection_details["elements"]
+        assert len(copied_elements) == 2, f"Expected 2 elements, got {len(copied_elements)}"
+
+        # Check that columns metadata was preserved for each element
+        self._assert_has_keys(copied_elements[0], "columns")
+        assert copied_elements[0]["columns"] == [
+            1,
+            "control",
+        ], f"Expected [1, 'control'], got {copied_elements[0]['columns']}"
+        assert copied_elements[0]["element_identifier"] == "sample1"
+
+        self._assert_has_keys(copied_elements[1], "columns")
+        assert copied_elements[1]["columns"] == [
+            2,
+            "treatment",
+        ], f"Expected [2, 'treatment'], got {copied_elements[1]['columns']}"
+        assert copied_elements[1]["element_identifier"] == "sample2"
+
+        # Verify column definitions are preserved
+        assert copied_collection_details["column_definitions"] == original_collection["column_definitions"]
+        assert copied_collection_details["collection_type"] == "sample_sheet"
+
+    def test_workbook_download(self):
+        xlsx_file = self.dataset_collection_populator.download_workbook(
+            "sample_sheet",
+            [
+                {"name": "condition", "type": "string", "default_value": "", "optional": False},
+                {"name": "replicate", "type": "int", "default_value": 0, "optional": False},
+            ],
+        )
+        self._assert_file_looks_like_xlsx(xlsx_file)
+
+    def test_workbook_download_for_collection(self):
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            hdca_id = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=[("sample1", "sample1 contents")], wait=True
+            ).json()["outputs"][0]["id"]
+
+            xlsx_file = self.dataset_collection_populator.download_workbook_for_collection(
+                hdca_id,
+                [
+                    {"name": "condition", "type": "string", "default_value": "", "optional": False},
+                    {"name": "replicate", "type": "int", "default_value": 0, "optional": False},
+                ],
+            )
+            self._assert_file_looks_like_xlsx(xlsx_file)
+
+    def _assert_file_looks_like_xlsx(self, xlsx_file: str):
+        # Check the file header
+        with open(xlsx_file, "rb") as file:
+            header = file.read(4)
+            # The ZIP file signature is 0x50 0x4B 0x03 0x04
+            return header == b"\x50\x4b\x03\x04"
+
+    def test_workbook_parse(self):
+        xlsx_path = Path(galaxy_root_path) / "lib" / "galaxy" / "model" / "unittest_utils" / "filled_in_workbook_1.xlsx"
+        example_as_bytes = xlsx_path.read_bytes()
+        response = self.dataset_collection_populator.parse_workbook(
+            example_as_bytes, "sample_sheet", TEST_COLUMN_DEFINITIONS_1
+        )
+        assert_has_key(response, "rows")
+        rows = response["rows"]
+        assert rows[0]["url"] == "https://zenodo.org/records/3263975/files/DRR000770.fastqsanger.gz"
+        assert rows[0]["replicate number"] == 1
+        assert rows[0]["treatment"] == "treatment1"
+        assert rows[0]["is control?"] is False
+        assert rows[1]["replicate number"] == 2
+        assert rows[1]["treatment"] == "treatment1"
+
+    def test_workbook_parse_for_collection(self):
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            hdca_id = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=[("sample1", "sample1 contents")], wait=True
+            ).json()["outputs"][0]["id"]
+
+            xlsx_path = (
+                Path(galaxy_root_path)
+                / "lib"
+                / "galaxy"
+                / "model"
+                / "unittest_utils"
+                / "filled_in_workbook_from_collection.xlsx"
+            )
+            example_as_bytes = xlsx_path.read_bytes()
+            response = self.dataset_collection_populator.parse_workflow_for_collection(
+                hdca_id, example_as_bytes, TEST_COLUMN_DEFINITIONS_1
+            )
+            assert_has_key(response, "rows")
+            assert_has_key(response, "elements")
+
     def test_list_download(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
             fetch_response = self.dataset_collection_populator.create_list_in_history(
@@ -181,6 +749,15 @@ class TestDatasetCollectionsApi(ApiTestCase):
             archive = zipfile.ZipFile(BytesIO(create_response.content))
             namelist = archive.namelist()
             assert len(namelist) == 3, f"Expected 3 elements in [{namelist}]"
+
+    def test_download_non_english_characters(self):
+        with self.dataset_populator.test_history() as history_id:
+            name = "دیتاست"
+            payload = self.dataset_collection_populator.create_list_payload(history_id, name=name)
+            hdca_id = self.dataset_populator.fetch(payload, wait=True).json()["outputs"][0]["id"]
+            create_response = self._download_dataset_collection(history_id=history_id, hdca_id=hdca_id)
+            self._assert_status_code_is(create_response, 200)
+            assert quote(name, safe="") in create_response.headers["Content-Disposition"]
 
     @requires_new_user
     def test_hda_security(self):
@@ -271,7 +848,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
                 "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
             }
             self.dataset_populator.fetch(payload)
-            hdca = self._assert_one_collection_created_in_history(history_id)
+            hdca = assert_one_collection_created_in_history(self.dataset_populator, history_id)
             assert hdca["name"] == "Test upload"
             hdca_tags = hdca["tags"]
             assert len(hdca_tags) == 1
@@ -301,19 +878,19 @@ class TestDatasetCollectionsApi(ApiTestCase):
                 "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
             }
             self.dataset_populator.fetch(payload)
-            hdca = self._assert_one_collection_created_in_history(history_id)
+            hdca = assert_one_collection_created_in_history(self.dataset_populator, history_id)
             assert hdca["name"] == "Test upload"
             assert len(hdca["elements"]) == 1, hdca
             element0 = hdca["elements"][0]
             assert element0["element_identifier"] == "samp1"
 
-    @skip_if_github_down
     def test_upload_collection_from_url(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
             elements = [
                 {
                     "src": "url",
-                    "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                    "url": self.dataset_populator.base64_url_for_string("hello world"),
+                    "name": "hello.txt",
                     "info": "my cool bed",
                 }
             ]
@@ -329,11 +906,11 @@ class TestDatasetCollectionsApi(ApiTestCase):
                 "targets": targets,
             }
             self.dataset_populator.fetch(payload)
-            hdca = self._assert_one_collection_created_in_history(history_id)
+            hdca = assert_one_collection_created_in_history(self.dataset_populator, history_id)
             assert len(hdca["elements"]) == 1, hdca
             element0 = hdca["elements"][0]
-            assert element0["element_identifier"] == "4.bed"
-            assert element0["object"]["file_size"] == 61
+            assert element0["element_identifier"] == "hello.txt"
+            assert element0["object"]["file_size"] == 11
 
     def test_upload_collection_deferred(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
@@ -357,23 +934,26 @@ class TestDatasetCollectionsApi(ApiTestCase):
                 "targets": targets,
             }
             self.dataset_populator.fetch(payload)
-            hdca = self._assert_one_collection_created_in_history(history_id)
+            hdca = assert_one_collection_created_in_history(self.dataset_populator, history_id)
             assert len(hdca["elements"]) == 1, hdca
             element0 = hdca["elements"][0]
             assert element0["element_identifier"] == "4.bed"
             object0 = element0["object"]
             assert object0["state"] == "deferred"
 
-    @skip_if_github_down
-    def test_upload_collection_failed_expansion_url(self):
+    def test_upload_collection_failed_expansion_url(self, mock_http_server):
         with self.dataset_populator.test_history(require_new=False) as history_id:
+            url = mock_http_server.get_url(
+                remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                file_path="test-data/4.bed",
+            )
             targets = [
                 {
                     "destination": {"type": "hdca"},
                     "elements_from": "bagit",
                     "collection_type": "list",
                     "src": "url",
-                    "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                    "url": url,
                 }
             ]
             payload = {
@@ -381,21 +961,62 @@ class TestDatasetCollectionsApi(ApiTestCase):
                 "targets": targets,
             }
             self.dataset_populator.fetch(payload, assert_ok=False, wait=True)
-            hdca = self._assert_one_collection_created_in_history(history_id)
+            hdca = assert_one_collection_created_in_history(self.dataset_populator, history_id)
             assert hdca["populated"] is False
             assert "bagit.txt" in hdca["populated_state_message"], hdca
 
+    def test_upload_flat_sample_sheet(self):
+        upload_flat_sample_sheet(self.dataset_populator)
+
+    def test_upload_sample_sheet_paired(self):
+        column_definitions = [{"type": "int", "name": "replicate", "optional": False, "default_value": 0}]
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            elements = [
+                {
+                    "name": "sample1",
+                    "row": [42],
+                    "elements": [
+                        {
+                            "src": "url",
+                            "url": self.dataset_populator.base64_url_for_string("hello world forward"),
+                            "info": "my cool hello world forward",
+                            "name": "forward",
+                        },
+                        {
+                            "src": "url",
+                            "url": self.dataset_populator.base64_url_for_string("hello world reverse"),
+                            "info": "my cool hello world reverse",
+                            "name": "forward",
+                        },
+                    ],
+                }
+            ]
+            targets = [
+                {
+                    "destination": {"type": "hdca"},
+                    "elements": elements,
+                    "collection_type": "sample_sheet:paired",
+                    "column_definitions": column_definitions,
+                }
+            ]
+            payload = {
+                "history_id": history_id,
+                "targets": targets,
+            }
+            self.dataset_populator.fetch(payload)
+            hdca = assert_one_collection_created_in_history(self.dataset_populator, history_id)
+            assert len(hdca["elements"]) == 1, hdca
+            element0 = hdca["elements"][0]
+            assert element0["element_identifier"] == "sample1"
+            assert element0["columns"][0] == 42
+
     def _assert_one_collection_created_in_history(self, history_id: str):
-        contents_response = self._get(f"histories/{history_id}/contents/dataset_collections")
-        self._assert_status_code_is(contents_response, 200)
-        contents = contents_response.json()
+        contents = self.dataset_populator.get_history_contents_of_type(history_id, "dataset_collections")
         assert len(contents) == 1
         hdca = contents[0]
         assert hdca["history_content_type"] == "dataset_collection"
         hdca_id = hdca["id"]
-        collection_response = self._get(f"histories/{history_id}/contents/dataset_collections/{hdca_id}")
-        self._assert_status_code_is(collection_response, 200)
-        return collection_response.json()
+        return self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)
 
     def _check_create_response(self, create_response):
         self._assert_status_code_is(create_response, 200)
@@ -455,7 +1076,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
         # Get contents_url from history contents, use it to show the first level
         # of collection contents in the created HDCA, then use it again to drill
         # down into the nested collection contents
-        hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json()
+        hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json()
         root_contents_url = self._get_contents_url_for_hdca(history_id, hdca)
 
         # check root contents for this collection
@@ -466,6 +1087,8 @@ class TestDatasetCollectionsApi(ApiTestCase):
         # drill down, retrieve nested collection contents
         assert "object" in root_contents[0]
         assert "contents_url" in root_contents[0]["object"]
+        assert root_contents[0]["object"]["element_count"] == 3
+        assert root_contents[0]["object"]["populated"]
         drill_contents_url = root_contents[0]["object"]["contents_url"]
         drill_contents = self._get(drill_contents_url).json()
         assert len(drill_contents) == len(hdca["elements"][0]["object"]["elements"])
@@ -596,7 +1219,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
         converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
-        actual: List[str] = []
+        actual: list[str] = []
         for converter in converters.json():
             actual.append(converter["tool_id"])
         assert actual == []
@@ -666,3 +1289,47 @@ class TestDatasetCollectionsApi(ApiTestCase):
         assert "contents_url" in matches[0]
 
         return matches[0]["contents_url"]
+
+
+def upload_flat_sample_sheet(dataset_populator: DatasetPopulator):
+    column_definitions = [{"type": "int", "name": "replicate", "optional": False, "default_value": 0}]
+    with dataset_populator.test_history(require_new=False) as history_id:
+        elements = [
+            {
+                "src": "url",
+                "url": dataset_populator.base64_url_for_string("hello world"),
+                "info": "my cool hello world",
+                "name": "sample1",
+                "row": [42],
+            }
+        ]
+        targets = [
+            {
+                "destination": {"type": "hdca"},
+                "elements": elements,
+                "collection_type": "sample_sheet",
+                "column_definitions": column_definitions,
+            }
+        ]
+        payload = {
+            "history_id": history_id,
+            "targets": targets,
+        }
+        dataset_populator.fetch(payload)
+        hdca = assert_one_collection_created_in_history(dataset_populator, history_id)
+        assert len(hdca["elements"]) == 1, hdca
+        element0 = hdca["elements"][0]
+        assert element0["element_identifier"] == "sample1"
+        assert element0["columns"][0] == 42
+        object0 = element0["object"]
+        assert object0["state"] == "ok"
+        assert hdca["column_definitions"] is not None
+
+
+def assert_one_collection_created_in_history(dataset_populator: DatasetPopulator, history_id: str):
+    contents = dataset_populator.get_history_contents_of_type(history_id, "dataset_collections")
+    assert len(contents) == 1
+    hdca = contents[0]
+    assert hdca["history_content_type"] == "dataset_collection"
+    hdca_id = hdca["id"]
+    return dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)

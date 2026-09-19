@@ -3,15 +3,11 @@ Manager and Serializer for Roles.
 """
 
 import logging
-from typing import List
 
-from sqlalchemy import (
-    false,
-    select,
-)
-from sqlalchemy.orm import (
-    exc as sqlalchemy_exceptions,
-    Session,
+from sqlalchemy import select
+from sqlalchemy.exc import (
+    MultipleResultsFound,
+    NoResultFound,
 )
 
 from galaxy import model
@@ -25,7 +21,7 @@ from galaxy.exceptions import (
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import Role
-from galaxy.model.base import transaction
+from galaxy.model.db.role import get_displayable_roles
 from galaxy.schema.schema import RoleDefinitionModel
 from galaxy.util import unicodify
 
@@ -58,9 +54,9 @@ class RoleManager(base.ModelManager[model.Role]):
         try:
             stmt = select(self.model_class).where(self.model_class.id == role_id)
             role = self.session().execute(stmt).scalar_one()
-        except sqlalchemy_exceptions.MultipleResultsFound:
+        except MultipleResultsFound:
             raise InconsistentDatabase("Multiple roles found with the same id.")
-        except sqlalchemy_exceptions.NoResultFound:
+        except NoResultFound:
             raise ObjectNotFound("No accessible role found with the id provided.")
         except Exception as e:
             raise InternalServerError(f"Error loading from the database.{unicodify(e)}")
@@ -70,13 +66,21 @@ class RoleManager(base.ModelManager[model.Role]):
 
         return role
 
-    def list_displayable_roles(self, trans: ProvidesUserContext) -> List[Role]:
-        roles = []
-        stmt = select(Role).where(Role.deleted == false())
-        for role in trans.sa_session.scalars(stmt):
-            if trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role):
-                roles.append(role)
-        return roles
+    def list_displayable_roles(
+        self,
+        trans: ProvidesUserContext,
+        search: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[Role]:
+        return get_displayable_roles(
+            trans.sa_session,
+            trans.user,
+            trans.user_is_admin,
+            search=search,
+            limit=limit,
+            offset=offset,
+        )
 
     def create_role(self, trans: ProvidesUserContext, role_definition_model: RoleDefinitionModel) -> model.Role:
         name = role_definition_model.name
@@ -88,7 +92,7 @@ class RoleManager(base.ModelManager[model.Role]):
         if trans.sa_session.scalars(stmt).first():
             raise Conflict(f"A role with that name already exists [{name}]")
 
-        role_type = Role.types.ADMIN  # TODO: allow non-admins to create roles
+        role_type = role_definition_model.role_type  # TODO: allow non-admins to create roles
 
         role = Role(name=name, description=description, type=role_type)
         trans.sa_session.add(role)
@@ -103,15 +107,13 @@ class RoleManager(base.ModelManager[model.Role]):
         for group in groups:
             trans.app.security_agent.associate_group_role(group, role)
 
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return role
 
     def delete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
         role.deleted = True
         trans.sa_session.add(role)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return role
 
     def purge(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
@@ -127,7 +129,8 @@ class RoleManager(base.ModelManager[model.Role]):
             raise RequestParameterInvalidException(f"Role '{role.name}' has not been deleted, so it cannot be purged.")
         # Delete UserRoleAssociations
         for ura in role.users:
-            user = sa_session.query(trans.app.model.User).get(ura.user_id)
+            user = sa_session.get(model.User, ura.user_id)
+            assert user
             # Delete DefaultUserPermissions for associated users
             for dup in user.default_permissions:
                 if role == dup.role:
@@ -146,8 +149,7 @@ class RoleManager(base.ModelManager[model.Role]):
             sa_session.delete(dp)
         # Delete the role
         sa_session.delete(role)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
         return role
 
     def undelete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
@@ -157,11 +159,5 @@ class RoleManager(base.ModelManager[model.Role]):
             )
         role.deleted = False
         trans.sa_session.add(role)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return role
-
-
-def get_roles_by_ids(session: Session, role_ids):
-    stmt = select(Role).where(Role.id.in_(role_ids))
-    return session.scalars(stmt).all()

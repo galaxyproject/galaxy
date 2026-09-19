@@ -29,3 +29,18 @@ class TestExtendedMetadataMappingIntegration(integration_util.IntegrationTestCas
             "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
         }
         self._run_and_check_simple_collection_mapping(history_id, inputs)
+
+    def _run_and_check_simple_collection_mapping(self, history_id, inputs):
+        create = self._run_cat(history_id, inputs=inputs, assert_ok=True)
+        outputs = create["outputs"]
+        jobs = create["jobs"]
+        implicit_collections = create["implicit_collections"]
+        assert len(jobs) == 2
+        assert len(outputs) == 2
+        assert len(implicit_collections) == 1
+        output1 = outputs[0]
+        output2 = outputs[1]
+        output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
+        output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
+        assert output1_content.strip() == "123"
+        assert output2_content.strip() == "456"

@@ -10,6 +10,7 @@ const createOptions = () => {
         unselectedDisplayCount: 1000,
         selectedDisplayCount: 1000,
         caseSensitive: false,
+        maintainSelectionOrder: false,
     };
 };
 
@@ -42,6 +43,7 @@ self.addEventListener("message", (e) => {
             options.unselectedDisplayCount = message.unselectedDisplayCount;
             options.selectedDisplayCount = message.selectedDisplayCount;
             options.caseSensitive = message.caseSensitive;
+            options.maintainSelectionOrder = message.maintainSelectionOrder;
             break;
 
         case "clear":

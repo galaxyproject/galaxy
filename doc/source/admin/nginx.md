@@ -27,7 +27,7 @@ Instructions for [proxying with Apache](apache.md) are also available.
 ```{include} _inc_proxy_prereq.md
 ```
 
-### NGINX Proxy Prerequisities
+### NGINX Proxy Prerequisites
 
 If you are **not** planning to use the recommended [tus.io method](#receiving-files-via-the-tus-protocol) to handle file uploads but want to use nginx to handle uploads, you will (most likely) not be able to use your package manager's version of nginx. The [Receiving Files With NGINX](#receiving-files-with-nginx-legacy) section explains this in detail and provides some options for installing *nginx + upload module* packages maintained by the Galaxy Committers Team.
 
@@ -189,7 +189,7 @@ previous section:
             # proxy all requests not matching other locations to Gunicorn
             location /galaxy {
                 proxy_set_header Host $http_host;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-For $remote_addr;
                 proxy_set_header X-Forwarded-Proto $scheme;
                 proxy_set_header Upgrade $http_upgrade;
                 proxy_pass http://unix:/srv/galaxy/var/gunicorn.sock:/galaxy;
@@ -233,6 +233,17 @@ previous section:
 
 ## Advanced Configuration Topics
 
+### Server-Sent Events (real-time updates)
+
+Galaxy can push history, entry-point and notification updates to the browser
+via a long-lived Server-Sent Events stream at ``/api/events/stream``. nginx
+will buffer that response by default, which breaks the stream — either rely
+on the ``X-Accel-Buffering: no`` header Galaxy already sets, or add an
+explicit ``location /api/events/stream`` block that disables buffering and
+raises the read/send timeouts. The full configuration block, monitoring
+guidance, and the architecture overview live in
+[Server-Sent Events for real-time updates](sse_updates.md#configuring-nginx).
+
 ### Sending Files With Nginx
 
 Galaxy sends files (e.g. dataset downloads) by opening the file and streaming it in chunks through the proxy server.
@@ -248,6 +259,9 @@ To enable it, add the following to your Galaxy's `server {}` block:
         location /_x_accel_redirect/ {
             internal;
             alias /;
+            # Add upstream response headers that would otherwise be omitted
+            add_header Access-Control-Allow-Origin $upstream_http_access_control_allow_origin;
+            add_header Access-Control-Allow-Methods $upstream_http_access_control_allow_methods;
         }
 ```
 
@@ -472,36 +486,6 @@ access arbitrary datasets in `/galaxy_root/database/files/` .
 
 Note that if you allow linking datasets from filesystem locations in your data libraries,
 these paths need to exposed in the same way.
-
-{#protect-reports}
-### Use Galaxy Authentication to Protect Custom Paths
-
-You may find it useful to require authentication for access to certain paths on your server.  For example, Galaxy can
-run a separate reports app which gives useful information about your Galaxy instance. See the [Reports Configuration
-documentation](./reports) and [Peter Briggs' blog post on the
-subject](https://galacticengineer.blogspot.com/2015/06/exposing-galaxy-reports-via-nginx-in.html) for more.
-
-After successfully following the blog post, Galaxy reports should be available at e.g. `https://galaxy.example.org/reports`.
-To secure this page to only Galaxy administrators, adjust your nginx config accordingly:
-
-```nginx
-        location /reports {
-            #...
-            satisfy any;            # only one auth method needs to succeed
-            deny all;               # host-based auth is not allowed
-            auth_request /_auth;    # forward authentication
-        }
-
-        location /_auth {
-            #internal; probably?
-            # The used galaxy api endpoint is only available to galaxy admins and thus limits the access
-            # to only logged in admins.
-            proxy_pass http://localhost/api/configuration/dynamic_tool_confs;
-            proxy_pass_request_body off;
-            proxy_set_header Content-Length "";
-            proxy_set_header X-Original-URI $request_uri;
-        }
-```
 
 ### External User Authentication
 

@@ -15,15 +15,15 @@ export const useDatatypesMapperStore = defineStore("datatypesMapperStore", {
         loading: false,
     }),
     actions: {
-        async createMapper(this: State) {
+        async createMapper() {
             if (!this.loading && !this.datatypesMapper) {
                 this.loading = true;
                 try {
                     this.datatypesMapper = await getDatatypesMapper(false);
-                    this.loading = false;
                 } catch (error) {
-                    this.loading = false;
                     rethrowSimple(error);
+                } finally {
+                    this.loading = false;
                 }
             }
         },

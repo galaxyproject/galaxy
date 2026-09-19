@@ -1,5 +1,3 @@
-import _ from "underscore";
-
 function get(key, queryString = null) {
     queryString = queryString || window.location.search.substr(1);
     var keyRegex = new RegExp(`${key}=([^&#$]+)`, "g");
@@ -7,7 +5,7 @@ function get(key, queryString = null) {
     if (!matches || !matches.length) {
         return undefined;
     }
-    matches = _.map(matches, (match) => decodeURIComponent(match.substr(key.length + 1).replace(/\+/g, " ")));
+    matches = matches.map((match) => decodeURIComponent(match.substr(key.length + 1).replace(/\+/g, " ")));
     if (matches.length === 1) {
         return matches[0];
     }

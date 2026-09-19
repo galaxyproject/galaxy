@@ -1,26 +1,25 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrashAlt } from "@fortawesome/free-regular-svg-icons";
 import { faCompressAlt, faObjectGroup, faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
-import { BButton, BButtonGroup } from "bootstrap-vue";
-import { sanitize } from "dompurify";
+import purify from "dompurify";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
-import { AxisAlignedBoundingBox, type Rectangle } from "@/components/Workflow/Editor/modules/geometry";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { FrameWorkflowComment, WorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 import type { Step } from "@/stores/workflowStepStore";
+import { AxisAlignedBoundingBox, type Rectangle } from "@/utils/geometry";
 
+import { LazyMoveMultipleAction } from "../Actions/workflowActions";
 import { brighterColors, darkenedColors } from "./colors";
 import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
 
 import ColorSelector from "./ColorSelector.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import DraggablePan from "@/components/Workflow/Editor/DraggablePan.vue";
-
-library.add(faObjectGroup, faTrashAlt, faPalette, faCompressAlt);
 
 const props = defineProps<{
     comment: FrameWorkflowComment;
@@ -45,11 +44,11 @@ useResizable(
     computed(() => props.comment.size),
     ([width, height]) => {
         emit("resize", [width, height]);
-    }
+    },
 );
 
 function escapeAndSanitize(text: string) {
-    return sanitize(text, { ALLOWED_TAGS: [] }).replace(/(?:^(\s|&nbsp;)+)|(?:(\s|&nbsp;)+$)/g, "");
+    return purify.sanitize(text, { ALLOWED_TAGS: [] }).replace(/(?:^(\s|&nbsp;)+)|(?:(\s|&nbsp;)+$)/g, "");
 }
 
 const editableElement = ref<HTMLSpanElement>();
@@ -66,7 +65,11 @@ function getInnerText() {
 }
 
 function saveText() {
-    emit("change", { ...props.comment.data, title: getInnerText() });
+    const text = getInnerText();
+
+    if (text !== props.comment.data.title) {
+        emit("change", { ...props.comment.data, title: text });
+    }
 }
 
 const showColorSelector = ref(false);
@@ -80,7 +83,7 @@ watch(
         if (!focused.value) {
             showColorSelector.value = false;
         }
-    }
+    },
 );
 
 function onClick() {
@@ -91,7 +94,8 @@ function onSetColor(color: WorkflowCommentColor) {
     emit("set-color", color);
 }
 
-const { stateStore, stepStore, commentStore } = useWorkflowStores();
+const { stateStore, stepStore, commentStore, undoRedoStore } = useWorkflowStores();
+type StepWithPosition = Step & { position: NonNullable<Step["position"]> };
 
 function getStepsInBounds(bounds: AxisAlignedBoundingBox) {
     const steps: StepWithPosition[] = [];
@@ -135,12 +139,7 @@ function getCommentsInBounds(bounds: AxisAlignedBoundingBox) {
     return comments;
 }
 
-type StepWithPosition = Step & { position: NonNullable<Step["position"]> };
-
-let stepsInBounds: StepWithPosition[] = [];
-let commentsInBounds: WorkflowComment[] = [];
-const stepStartOffsets = new Map<number, [number, number]>();
-const commentStartOffsets = new Map<number, [number, number]>();
+let lazyAction: LazyMoveMultipleAction | null = null;
 
 function getAABB() {
     const aabb = new AxisAlignedBoundingBox();
@@ -151,45 +150,37 @@ function getAABB() {
     return aabb;
 }
 
-function onDragStart() {
+let resampleNodes = true;
+let stepsInBounds = [] as StepWithPosition[];
+let commentsInBounds = [] as WorkflowComment[];
+
+function onDrag() {
     const aabb = getAABB();
 
-    stepsInBounds = getStepsInBounds(aabb);
-    commentsInBounds = getCommentsInBounds(aabb);
+    if (resampleNodes) {
+        stepsInBounds = getStepsInBounds(aabb);
+        commentsInBounds = getCommentsInBounds(aabb);
 
-    stepsInBounds.forEach((step) => {
-        stepStartOffsets.set(step.id, [step.position.left - aabb.x, step.position.top - aabb.y]);
-    });
+        commentsInBounds.push(props.comment);
+        resampleNodes = false;
+    }
 
-    commentsInBounds.forEach((comment) => {
-        commentStartOffsets.set(comment.id, [comment.position[0] - aabb.x, comment.position[1] - aabb.y]);
-    });
+    lazyAction = new LazyMoveMultipleAction(commentStore, stepStore, commentsInBounds, stepsInBounds, aabb);
+    undoRedoStore.applyLazyAction(lazyAction);
 }
 
 function onDragEnd() {
+    resampleNodes = true;
     saveText();
-    stepsInBounds = [];
-    commentsInBounds = [];
-    stepStartOffsets.clear();
-    commentStartOffsets.clear();
+    undoRedoStore.flushLazyAction();
 }
 
 function onMove(position: { x: number; y: number }) {
-    stepsInBounds.forEach((step) => {
-        const stepPosition = { left: 0, top: 0 };
-        const offset = stepStartOffsets.get(step.id) ?? [0, 0];
-        stepPosition.left = position.x + offset[0];
-        stepPosition.top = position.y + offset[1];
-        stepStore.updateStep({ ...step, position: stepPosition });
-    });
-
-    commentsInBounds.forEach((comment) => {
-        const offset = commentStartOffsets.get(comment.id) ?? [0, 0];
-        const commentPosition = [position.x + offset[0], position.y + offset[1]] as [number, number];
-        commentStore.changePosition(comment.id, commentPosition);
-    });
-
-    emit("move", [position.x, position.y]);
+    if (lazyAction && undoRedoStore.isQueued(lazyAction)) {
+        lazyAction.changePosition(position);
+    } else {
+        onDrag();
+    }
 }
 
 function onDoubleClick() {
@@ -201,8 +192,8 @@ function onDoubleClick() {
 function onFitToContent() {
     const aabb = getAABB();
 
-    stepsInBounds = getStepsInBounds(aabb);
-    commentsInBounds = getCommentsInBounds(aabb);
+    const stepsInBounds = getStepsInBounds(aabb);
+    const commentsInBounds = getCommentsInBounds(aabb);
 
     const targetAABB = new AxisAlignedBoundingBox();
 
@@ -255,6 +246,8 @@ onMounted(() => {
         selectAllText(editableElement.value);
     }
 });
+
+const position = computed(() => ({ x: props.comment.position[0], y: props.comment.position[1] }));
 </script>
 
 <template>
@@ -263,21 +256,26 @@ onMounted(() => {
         <div
             ref="resizeContainer"
             class="resize-container"
-            :class="{ resizable: !props.readonly, 'prevent-zoom': !props.readonly }"
+            :class="{
+                resizable: !props.readonly,
+                'prevent-zoom': !props.readonly,
+                'multi-selected': commentStore.getCommentMultiSelected(props.comment.id),
+            }"
             :style="cssVariables"
             @click="onClick">
             <DraggablePan
                 v-if="!props.readonly"
                 :root-offset="reactive(props.rootOffset)"
                 :scale="props.scale"
+                :position="position"
+                :selected="commentStore.getCommentMultiSelected(props.comment.id)"
                 class="draggable-pan"
                 @move="onMove"
                 @mouseup="onDragEnd"
-                @start="onDragStart"
                 @pan-by="(p) => emit('pan-by', p)" />
 
             <div class="frame-comment-header">
-                <FontAwesomeIcon icon="fas fa-object-group" />
+                <FontAwesomeIcon :icon="faObjectGroup" />
                 <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions vuejs-accessibility/click-events-have-key-events -->
                 <span
                     ref="editableElement"
@@ -292,26 +290,23 @@ onMounted(() => {
             </div>
         </div>
 
-        <BButtonGroup v-if="!props.readonly" class="style-buttons">
-            <BButton
+        <GButtonGroup v-if="!props.readonly" class="style-buttons">
+            <GButton class="button prevent-zoom" color="blue" outline title="Fit to content" @click="onFitToContent">
+                <FontAwesomeIcon :icon="faCompressAlt" class="prevent-zoom" />
+            </GButton>
+            <GButton
                 class="button prevent-zoom"
-                variant="outline-primary"
-                title="Fit to content"
-                @click="onFitToContent">
-                <FontAwesomeIcon icon="fa-compress-alt" class="prevent-zoom" />
-            </BButton>
-            <BButton
-                class="button prevent-zoom"
-                variant="outline-primary"
+                color="blue"
+                outline
                 title="Color"
                 :pressed="showColorSelector"
                 @click="() => (showColorSelector = !showColorSelector)">
-                <FontAwesomeIcon icon="fa-palette" class="prevent-zoom" />
-            </BButton>
-            <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
-                <FontAwesomeIcon icon="far fa-trash-alt" class="prevent-zoom" />
-            </BButton>
-        </BButtonGroup>
+                <FontAwesomeIcon :icon="faPalette" class="prevent-zoom" />
+            </GButton>
+            <GButton class="button prevent-zoom" transparent title="Delete comment" @click="() => emit('remove')">
+                <FontAwesomeIcon :icon="faTrashAlt" class="prevent-zoom" />
+            </GButton>
+        </GButtonGroup>
 
         <ColorSelector
             v-if="showColorSelector"
@@ -322,7 +317,7 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 @import "buttonGroup.scss";
 
 .frame-workflow-comment {
@@ -411,6 +406,12 @@ onMounted(() => {
         background-color: var(--secondary-color);
         flex: 1;
         position: relative;
+    }
+
+    &.multi-selected {
+        box-shadow:
+            0 0 0 2px $white,
+            0 0 0 4px lighten($brand-info, 20%);
     }
 }
 

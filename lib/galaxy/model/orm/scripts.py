@@ -28,6 +28,8 @@ DEFAULT_CONFIG_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.
 DEFAULT_CONFIG_NAMES = ["galaxy", "universe_wsgi"]
 DEFAULT_CONFIG_PREFIX = ""
 DEFAULT_DATABASE = "galaxy"
+ALEMBIC_CONFIG = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "migrations", "alembic.ini"))
+
 
 DATABASE = {
     "galaxy": {
@@ -162,6 +164,9 @@ def manage_db():
     gxy_config, tsi_config, _ = get_configuration(sys.argv, os.getcwd())
     _insert_x_argument("tsi_url", tsi_config.url)
     _insert_x_argument("gxy_url", gxy_config.url)
+
+    sys.argv.insert(1, "--config")
+    sys.argv.insert(2, ALEMBIC_CONFIG)
 
     if "heads" in sys.argv and "upgrade" in sys.argv:
         i = sys.argv.index("heads")

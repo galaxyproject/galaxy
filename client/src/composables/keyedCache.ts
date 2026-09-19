@@ -1,21 +1,22 @@
-import { MaybeRefOrGetter, toValue } from "@vueuse/core";
+import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
 import { computed, del, type Ref, ref, set, unref } from "vue";
 
-import type { ApiResponse } from "@/api/schema";
+import { LastQueue } from "@/utils/lastQueue";
+import { isRetryableApiError, MAX_RETRIES } from "@/utils/simple-error";
 
 /**
  * Parameters for fetching an item from the server.
  *
  * Minimally, this should include an id for indexing the item.
  */
-interface FetchParams {
+export interface FetchParams {
     id: string;
 }
 
 /**
  * A function that fetches an item from the server.
  */
-type FetchHandler<T> = (params: FetchParams) => Promise<ApiResponse<T>>;
+type FetchHandler<T> = (params: FetchParams, signal?: AbortSignal) => Promise<T>;
 
 /**
  * A function that returns true if the item should be fetched.
@@ -27,7 +28,7 @@ type ShouldFetchHandler<T> = (item?: T) => boolean;
  * Returns true if the item is not defined.
  * @param item The item to check.
  */
-const fetchIfAbsent = <T>(item?: T) => !item;
+const fetchIfAbsent = <T>(item?: T) => item === undefined;
 
 /**
  * A composable that provides a simple key-value cache for items fetched from the server.
@@ -41,15 +42,24 @@ const fetchIfAbsent = <T>(item?: T) => !item;
  */
 export function useKeyedCache<T>(
     fetchItemHandler: Ref<FetchHandler<T>> | FetchHandler<T>,
-    shouldFetchHandler?: MaybeRefOrGetter<ShouldFetchHandler<T>>
+    shouldFetchHandler?: MaybeRefOrGetter<ShouldFetchHandler<T>>,
 ) {
     const storedItems = ref<{ [key: string]: T }>({});
-    const loadingItem = ref<{ [key: string]: boolean }>({});
+    const loadingErrors = ref<{ [key: string]: Error }>({});
+
+    const loadingRequests = ref<{ [key: string]: Promise<T | undefined> }>({});
+
+    const retryCounts: { [key: string]: number } = {};
+
+    const fetchQueue = new LastQueue<FetchHandler<T>>();
 
     const getItemById = computed(() => {
         return (id: string) => {
             const item = storedItems.value[id];
-            if (shouldFetch(item)) {
+            const existingError = loadingErrors.value[id];
+            const canRetry =
+                existingError && isRetryableApiError(existingError) && (retryCounts[id] ?? 0) <= MAX_RETRIES;
+            if (shouldFetch(item) && (!existingError || canRetry)) {
                 fetchItemById({ id: id });
             }
             return item ?? null;
@@ -65,25 +75,41 @@ export function useKeyedCache<T>(
 
     const isLoadingItem = computed(() => {
         return (id: string) => {
-            return loadingItem.value[id] ?? false;
+            return Boolean(loadingRequests.value[id]);
         };
     });
 
-    async function fetchItemById(params: FetchParams) {
+    const getItemLoadError = computed(() => {
+        return (id: string) => {
+            return loadingErrors.value[id] ?? null;
+        };
+    });
+
+    async function fetchItemById(params: FetchParams): Promise<T | undefined> {
         const itemId = params.id;
-        const isAlreadyLoading = loadingItem.value[itemId] ?? false;
-        if (isAlreadyLoading) {
-            return;
+
+        if (loadingRequests.value[itemId]) {
+            return loadingRequests.value[itemId];
         }
-        set(loadingItem.value, itemId, true);
-        try {
-            const fetchItem = unref(fetchItemHandler);
-            const { data } = await fetchItem({ id: itemId });
-            set(storedItems.value, itemId, data);
-            return data;
-        } finally {
-            del(loadingItem.value, itemId);
-        }
+
+        const fetchPromise = (async () => {
+            try {
+                const fetchItem = unref(fetchItemHandler);
+                const item = await fetchQueue.enqueue(fetchItem, { id: itemId }, itemId);
+                set(storedItems.value, itemId, item);
+                del(loadingErrors.value, itemId);
+                delete retryCounts[itemId];
+                return item;
+            } catch (error) {
+                retryCounts[itemId] = (retryCounts[itemId] ?? 0) + 1;
+                set(loadingErrors.value, itemId, error as Error);
+            } finally {
+                del(loadingRequests.value, itemId);
+            }
+        })();
+
+        set(loadingRequests.value, itemId, fetchPromise);
+        return fetchPromise;
     }
 
     return {
@@ -97,6 +123,10 @@ export function useKeyedCache<T>(
          * And reactively updated when the fetch completes.
          */
         getItemById,
+        /**
+         * A computed function holding errors
+         */
+        getItemLoadError,
         /**
          * A computed function that returns true if the item with the given id is currently being fetched.
          */

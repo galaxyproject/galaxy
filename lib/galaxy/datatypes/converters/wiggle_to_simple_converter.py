@@ -20,7 +20,7 @@ def main():
     with open(sys.argv[1]) as in_file, open(sys.argv[2], "w") as out_file:
         try:
             for fields in bx.wiggle.IntervalReader(UCSCOutWrapper(in_file)):
-                out_file.write("%s\n" % "\t".join(map(str, fields)))
+                out_file.write("{}\n".format("\t".join(map(str, fields))))
         except UCSCLimitException:
             # Wiggle data was truncated, at the very least need to warn the user.
             sys.stderr.write(
