@@ -2,44 +2,114 @@
 
 set -ex
 
+PACKAGE_LIST_FILE=packages_by_dep_dag.txt
+FOR_PULSAR=0
+SKIP_PACKAGES=(
+    web_client
+    meta
+)
+
+should_skip_package() {
+    local pkg
+    for pkg in "${SKIP_PACKAGES[@]}"; do
+        [ "$1" = "$pkg" ] && return 0
+    done
+    return 1
+}
+
+for arg in "$@"; do
+    if [ "$arg" = "--for-pulsar" ]; then
+        PACKAGE_LIST_FILE=packages_for_pulsar_by_dep_dag.txt
+        FOR_PULSAR=1
+    fi
+done
+
 # Don't display the pip progress bar when running under CI
-[ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off
+if [ "$CI" = 'true' ]; then
+    export PIP_PROGRESS_BAR=off
+fi
 
 # Change to packages directory.
 cd "$(dirname "$0")"
 
-# Use a throw-away virtualenv
-TEST_PYTHON=${TEST_PYTHON:-"python"}
-TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
+TEST_PYTHON=${TEST_PYTHON:-"python3"}
 
-virtualenv -p "$TEST_PYTHON" "$TEST_ENV_DIR"
-. "${TEST_ENV_DIR}/bin/activate"
-pip install --upgrade pip setuptools wheel
-pip install -r../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
+if command -v uv >/dev/null; then
+    VENV_CMD="uv venv --python $TEST_PYTHON"
+    PIP_CMD="$(command -v uv) pip"
+    BUILD_WHEEL_CMD="$(command -v uv) build"
+    TWINE_CMD="$(command -v uvx) twine"
+    export UV_EXTRA_INDEX_URL=https://wheels.galaxyproject.org/simple
+    export UV_INDEX_STRATEGY=unsafe-best-match
+else
+    VENV_CMD="$TEST_PYTHON -m venv"
+    PIP_CMD='python -m pip'
+    BUILD_WHEEL_CMD='python -m build'
+    TWINE_CMD=twine
+    export PIP_EXTRA_INDEX_URL=https://wheels.galaxyproject.org/simple
+fi
 
-# ensure ordered by dependency DAG
-while read -r package_dir; do
-    printf "\n========= TESTING PACKAGE ${package_dir} =========\n\n"
+# Ensure ordered by dependency DAG
+while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.com/questions/12916352/shell-script-read-missing-last-line
+    # Ignore empty lines
+    if [ -z "$package_dir" ]; then
+        continue
+    fi
+    # Ignore lines beginning with `#`
+    if  [[ $package_dir =~ ^#.* ]]; then
+        continue
+    fi
+    if should_skip_package "$package_dir"; then
+        printf "\nSkipping package %s\n\n" "$package_dir"
+        continue
+    fi
+
+    printf "\n========= TESTING PACKAGE %s =========\n\n" "$package_dir"
 
     cd "$package_dir"
 
-    # Install extras (if needed)
-    if [ "$package_dir" = "util" ]; then
-        pip install -e '.[template,jstree]'
-    elif [ "$package_dir" = "tool_util" ]; then
-        pip install -e '.[cwl,mulled,edam]'
-    else
-        pip install -e '.'
+    # Use a throw-away virtualenv
+    TEST_ENV_DIR=$(mktemp -d -t gxpkgtestenvXXXXXX)
+    ${VENV_CMD} "${TEST_ENV_DIR}"
+    # shellcheck disable=SC1091
+    . "${TEST_ENV_DIR}/bin/activate"
+    if [ "${PIP_CMD}" = 'python -m pip' ]; then
+        ${PIP_CMD} install --upgrade build pip setuptools twine wheel
     fi
 
-    pip install -r test-requirements.txt
+    # Install extras (if needed)
+    if [ "$package_dir" = "util" ]; then
+        ${PIP_CMD} install '.[image-util,template,jstree,config-template,test]'
+    elif [ "$package_dir" = "tool_util" ]; then
+        ${PIP_CMD} install '.[cwl,mulled,edam,extended-assertions,test]'
+    elif grep -q '^test = \[' pyproject.toml 2>/dev/null; then
+        ${PIP_CMD} install '.[test]'
+    else
+        ${PIP_CMD} install .
+    fi
 
-    # Prevent execution of alembic/env.py at test collection stage (alembic.context not set)
-    # Also ignore functional tests (galaxy_test/ and tool_shed/test/).
-    unit_extra='--doctest-modules --ignore=galaxy/model/migrations/alembic/ --ignore=galaxy_test/
-		--ignore=tool_shed/test/ --ignore=tool_shed/webapp/model/migrations/alembic/'
+    if [ $FOR_PULSAR -eq 0 ]; then
+        marker_args=(-m 'not external_dependency_management')
+    else
+        marker_args=()
+    fi
     # Ignore exit code 5 (no tests ran)
-    pytest $unit_extra -m 'not external_dependency_management' . || test $? -eq 5
-    make mypy
+    pytest "${marker_args[@]}" . || test $? -eq 5
+    if [ $FOR_PULSAR -eq 0 ]; then
+        ${PIP_CMD} install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
+        # make mypy uses uv now and so this legacy code should just run mypy
+        # directly to use the venv we have already activated
+        cd src
+        mypy .
+        cd ..
+        if [ -d tests ]; then
+            mypy tests
+        fi
+
+        ${BUILD_WHEEL_CMD} -o dist
+        ${TWINE_CMD} check dist/*
+    fi
     cd ..
-done < packages_by_dep_dag.txt
+    deactivate
+    rm -rf "${TEST_ENV_DIR}"
+done < $PACKAGE_LIST_FILE

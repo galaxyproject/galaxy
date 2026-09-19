@@ -224,7 +224,7 @@ def __inject_api_timing_summary_test(test):
     internal_timings = {}
 
     def summarize_times(timings):
-        times = list(map(lambda t: t["time"], timings))
+        times = [t["time"] for t in timings]
         return __inject_statistics(
             {
                 "raw": times,
@@ -232,7 +232,7 @@ def __inject_api_timing_summary_test(test):
         )
 
     def summarize_counter(c):
-        counters = list(map(lambda t: t["n"], c))
+        counters = [t["n"] for t in c]
         return __inject_statistics(
             {
                 "raw": counters,
@@ -244,10 +244,10 @@ def __inject_api_timing_summary_test(test):
             continue
 
         endpoint_summary = {"total_time": summarize_times(timings), "label": endpoint[len("api.") :]}
-        sql_times = "sql.%s" % endpoint
+        sql_times = f"sql.{endpoint}"
         if sql_times in timing:
             endpoint_summary["sql_time"] = summarize_times(timing[sql_times])
-        sql_queries = "sqlqueries.%s" % endpoint
+        sql_queries = f"sqlqueries.{endpoint}"
         if sql_queries in counter:
             endpoint_summary["sql_queries"] = summarize_counter(counter[sql_queries])
         api_endpoints[endpoint] = endpoint_summary

@@ -165,8 +165,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
         except Exception:
             wrapped_class_name = value.__class__.__name__
             wrapped_class = value.__class__
-        value_mod = inspect.getmodule(value)
-        if value_mod:
+        if value_mod := inspect.getmodule(value):
             wrapped_class_name = f"{value_mod.__name__}.{wrapped_class_name}"
         wrapped_class_name = (
             f"SafeStringWrapper__{wrapped_class_name}__{'__'.join(sorted(c.__name__ for c in no_wrap_classes))}"
@@ -218,7 +217,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
         no_wrap_classes = list(no_wrap_classes) + list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper]
     else:
         no_wrap_classes = list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper]
-    no_wrap_classes = tuple(set(sorted(no_wrap_classes, key=str)))
+    no_wrap_classes = tuple(set(no_wrap_classes))
     return __do_wrap(value)
 
 

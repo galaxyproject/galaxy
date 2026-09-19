@@ -1,16 +1,22 @@
 import abc
+from collections.abc import Hashable
 from typing import (
-    List,
+    Any,
+    Literal,
     Optional,
+    TYPE_CHECKING,
 )
 
+from starlette.datastructures import URL
+
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.model import (
-    GalaxySession,
-    History,
-    Role,
-)
-from galaxy.model.base import transaction
+
+if TYPE_CHECKING:
+    from galaxy.model import (
+        GalaxySession,
+        History,
+        Role,
+    )
 
 
 class WorkRequestContext(ProvidesHistoryContext):
@@ -30,16 +36,23 @@ class WorkRequestContext(ProvidesHistoryContext):
         self,
         app,
         user=None,
-        history=None,
+        history: Optional["History"] = None,
         workflow_building_mode=False,
         url_builder=None,
-        galaxy_session: Optional[GalaxySession] = None,
+        galaxy_session: Optional["GalaxySession"] = None,
+        short_term_cache: dict[tuple[Hashable, ...], Any] | None = None,
     ):
         self._app = app
         self.__user = user
-        self.__user_current_roles: Optional[List[Role]] = None
+        self.__user_current_roles: list[Role] | None = None
         self.__history = history
         self._url_builder = url_builder
+        # When proxying an existing transaction (see ``proxy_work_context_for_history``)
+        # share its request-scoped cache so work done across proxies of the same
+        # request -- e.g. every step of a workflow Run form build -- is reused.
+        self._short_term_cache: dict[tuple[Hashable, ...], Any] = (
+            short_term_cache if short_term_cache is not None else {}
+        )
         self.workflow_building_mode = workflow_building_mode
         self.galaxy_session = galaxy_session
 
@@ -67,6 +80,9 @@ class WorkRequestContext(ProvidesHistoryContext):
             self.__user_current_roles = super().get_current_user_roles()
         return self.__user_current_roles
 
+    def get_galaxy_session(self):
+        return self.galaxy_session
+
     def set_user(self, user):
         """Set the current user."""
         raise NotImplementedError("Cannot change users from a work request context.")
@@ -77,19 +93,41 @@ class WorkRequestContext(ProvidesHistoryContext):
 class GalaxyAbstractRequest:
     """Abstract interface to provide access to some request properties."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def base(self) -> str:
         """Base URL of the request."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
+    def url_path(self) -> str:
+        """Base with optional prefix added."""
+
+    @property
+    @abc.abstractmethod
     def host(self) -> str:
         """The host address."""
+
+    @property
+    @abc.abstractmethod
+    def is_secure(self) -> bool:
+        """Was this a secure (https) request."""
+
+    @abc.abstractmethod
+    def get_cookie(self, name):
+        """Return cookie."""
+
+    @property
+    @abc.abstractmethod
+    def url(self) -> URL:
+        """Full URL of the request."""
 
 
 class GalaxyAbstractResponse:
     """Abstract interface to provide access to some response utilities."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def headers(self) -> dict:
         """The response headers."""
 
@@ -101,6 +139,21 @@ class GalaxyAbstractResponse:
 
     def get_content_type(self):
         return self.headers.get("content-type", None)
+
+    @abc.abstractmethod
+    def set_cookie(
+        self,
+        key: str,
+        value: str = "",
+        max_age: int | None = None,
+        expires: int | None = None,
+        path: str = "/",
+        domain: str | None = None,
+        secure: bool = False,
+        httponly: bool = False,
+        samesite: Literal["lax", "strict", "none"] | None = "lax",
+    ) -> None:
+        """Set a cookie."""
 
 
 class SessionRequestContext(WorkRequestContext):
@@ -127,16 +180,16 @@ class SessionRequestContext(WorkRequestContext):
         return self.galaxy_session
 
     def set_history(self, history):
-        if history and not history.deleted and self.galaxy_session:
-            self.galaxy_session.current_history = history
-        self.sa_session.add(self.galaxy_session)
-        with transaction(self.sa_session):
+        if self.galaxy_session:
+            if history and not history.deleted:
+                self.galaxy_session.current_history = history
+            self.sa_session.add(self.galaxy_session)
             self.sa_session.commit()
 
 
 def proxy_work_context_for_history(
-    trans: ProvidesHistoryContext, history: Optional[History] = None, workflow_building_mode=False
-):
+    trans: ProvidesHistoryContext, history: Optional["History"] = None, workflow_building_mode=False
+) -> WorkRequestContext:
     """Create a WorkContext for supplied context with potentially different history.
 
     This provides semi-structured access to a transaction/work context with a supplied target
@@ -150,4 +203,5 @@ def proxy_work_context_for_history(
         url_builder=trans.url_builder,
         workflow_building_mode=workflow_building_mode,
         galaxy_session=trans.galaxy_session,
+        short_term_cache=trans._short_term_cache,
     )

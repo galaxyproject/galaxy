@@ -1,0 +1,25 @@
+{
+    "steps": {
+        "0": {
+            "tool_id": "gx_section_boolean",
+            "label": "section_defaults",
+            "id": 0,
+            "position": {
+                "left": 0,
+                "top": 0
+            },
+            "type": "tool",
+            "name": "gx_section_boolean",
+            "post_job_actions": {},
+            "tool_version": null,
+            "annotation": "",
+            "input_connections": {},
+            "tool_state": "{\"__page__\": 0}"
+        }
+    },
+    "a_galaxy_workflow": "true",
+    "format-version": "0.1",
+    "name": "Test all-None section roundtrip artifact",
+    "uuid": "70258961-47d3-4c8d-9e54-f0b8dd6e961d",
+    "annotation": ""
+}

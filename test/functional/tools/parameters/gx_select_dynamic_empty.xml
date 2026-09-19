@@ -1,0 +1,15 @@
+<tool id="gx_select_dynamic_empty" name="gx_select_dynamic_empty" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter' >> '$output'
+    ]]></command>
+    <code file="gx_select_dynamic_empty.py"/>
+    <inputs>
+        <param name="parameter" type="select" dynamic_options="empty_list()">
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+</tool>

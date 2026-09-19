@@ -13,6 +13,7 @@ echo "hi" > output1.txt
                 <assert_contents>
                     <has_text text="hi" />
                 </assert_contents>
+                <metadata name="data_lines" value="1" />
                 <!-- This does not work with the default __copy_if_exists mechanism
                     <metadata name="created_from_basename" value="output1.txt" />
                 -->

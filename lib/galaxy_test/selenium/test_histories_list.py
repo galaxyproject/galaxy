@@ -1,23 +1,28 @@
+from selenium.webdriver.common.by import By
+
 from .framework import (
     retry_assertion_during_transitions,
+    selenium_only,
     selenium_test,
     SharedStateSeleniumTestCase,
 )
 
 
 class TestSavedHistories(SharedStateSeleniumTestCase):
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_histories_list(self):
         self._login()
         self.navigate_to_histories_page()
-        self.assert_histories_in_grid([self.history2_name, self.history3_name])
+        self.assert_histories_in_list([self.history2_name, self.history3_name])
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_history_switch(self):
         self._login()
         self.navigate_to_histories_page()
         self.screenshot("histories_saved_grid")
-        self.click_grid_popup_option(self.history2_name, "Switch")
+        self.select_history_card_operation(self.history2_name, '[id^="g-card-action-switch-history-"]')
         self.sleep_for(self.wait_types.UX_RENDER)
 
         @retry_assertion_during_transitions
@@ -26,128 +31,208 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         assert_history_name_switched()
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_history_view(self):
         self._login()
         self.navigate_to_histories_page()
-        self.click_grid_popup_option(self.history2_name, "View")
+        self.select_history_card_operation(self.history2_name, '[id^="g-card-action-view-history-"]')
         history_name = self.wait_for_selector("[data-description='name display']")
         assert history_name.text == self.history2_name
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_history_publish(self):
         self._login()
         self.navigate_to_histories_page()
 
         # Publish the history
-        self.click_grid_popup_option(self.history2_name, "Share or Publish")
+        self.select_history_card_operation(self.history2_name, '[id^="g-card-action-share-access-management-history-"]')
         self.make_accessible_and_publishable()
 
         self.navigate_to_histories_page()
-
-        self.histories_click_advanced_search()
-        self.select_filter("sharing", "published")
+        self.components.histories.advanced_search_toggle.wait_for_and_click()
+        self.check_advanced_search_filter("published")
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        self.assert_histories_in_grid([self.history2_name])
+        self.assert_histories_in_list([self.history2_name])
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rename_history(self):
         self._login()
         self.navigate_to_histories_page()
 
-        self.click_grid_popup_option("Unnamed history", "Rename")
+        self.select_history_card_operation("Unnamed history", '[id^="g-card-rename-history-"]')
 
-        # Rename the history
-        history_name_input = self.wait_for_selector(".ui-form-element input.ui-input")
-        history_name_input.clear()
-        history_name_input.send_keys(self.history1_name)
-
-        self.wait_for_and_click_selector("button#submit")
+        self.rename_modal_rename("history", self.history1_name)
 
         self.navigate_to_histories_page()
 
-        self.assert_histories_in_grid([self.history1_name, self.history2_name, self.history3_name])
+        self.assert_histories_in_list([self.history1_name, self.history2_name, self.history3_name])
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_delete_and_undelete_history(self):
         self._login()
         self.navigate_to_histories_page()
 
         # Delete the history
-        self.click_grid_popup_option(self.history2_name, "Delete")
+        self.select_history_card_operation(self.history2_name, '[id^="g-card-action-delete-history-"]', True)
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
 
-        self.assert_histories_in_grid([self.history2_name], False)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_histories_in_list([self.history2_name], False)
 
-        self.histories_click_advanced_search()
-        self.select_filter("status", "deleted")
+        self.components.histories.advanced_search_toggle.wait_for_and_click()
+        self.check_advanced_search_filter("deleted")
         self.sleep_for(self.wait_types.UX_RENDER)
 
         # Restore the history
-        self.click_grid_popup_option(self.history2_name, "Undelete")
+        self.select_history_card_operation(self.history2_name, '[id^="g-card-action-restore-history-"]')
 
-        self.assert_grid_histories_are([])
-        self.select_filter("status", "active")
+        self.assert_histories_sorted_in_list([])
+        self.components.histories.reset_input.wait_for_and_click()
 
-        self.assert_histories_in_grid([self.history2_name])
+        self.assert_histories_in_list([self.history2_name])
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_permanently_delete_history(self):
         self._login()
         self.create_history(self.history4_name)
 
         self.navigate_to_histories_page()
-        self.assert_histories_in_grid([self.history4_name])
+        self.assert_histories_in_list([self.history4_name])
 
-        self.click_grid_popup_option(self.history4_name, "Delete Permanently")
-        alert = self.driver.switch_to.alert
-        alert.accept()
+        self.select_history_card_operation(self.history4_name, '[id^="g-card-action-purge-history-"]', True)
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
 
-        self.assert_histories_in_grid([self.history4_name], False)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_histories_in_list([self.history4_name], False)
 
-        self.histories_click_advanced_search()
-        self.select_filter("status", "deleted")
+        self.components.histories.advanced_search_toggle.wait_for_and_click()
+        self.check_advanced_search_filter("purged")
+        self.sleep_for(self.wait_types.UX_RENDER)
 
-        self.assert_histories_in_grid([self.history4_name])
+        self.assert_histories_in_list([self.history4_name])
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_delete_and_undelete_multiple_histories(self):
         self._login()
         self.navigate_to_histories_page()
 
-        delete_button_selector = 'input[type="button"][value="Delete"]'
-        undelete_button_selector = 'input[type="button"][value="Undelete"]'
+        # Select multiple histories
+        self.toggle_card_selection_in_list("#history-list", [self.history2_name, self.history3_name])
 
         # Delete multiple histories
-        self.check_histories([self.history2_name, self.history3_name])
-        self.wait_for_and_click_selector(delete_button_selector)
+        self.components.histories.bulk_delete_button.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
 
-        self.assert_histories_in_grid([self.history2_name, self.history3_name], False)
+        # Display deleted histories
+        self.components.histories.advanced_search_toggle.wait_for_and_click()
+        self.check_advanced_search_filter("deleted")
 
-        self.histories_click_advanced_search()
-        self.select_filter("status", "deleted")
+        # Select multiple histories
         self.sleep_for(self.wait_types.UX_RENDER)
+        self.toggle_card_selection_in_list("#history-list", [self.history2_name, self.history3_name])
 
         # Restore multiple histories
-        self.check_histories([self.history2_name, self.history3_name])
-        self.wait_for_and_click_selector(undelete_button_selector)
+        self.components.histories.bulk_restore_button.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
 
-        self.assert_grid_histories_are([])
-        # Following msg popups but goes away and so can cause transient errors.
-        # self.wait_for_selector_visible('.donemessage')
-        self.select_filter("status", "active")
+        # Verify deleted histories have been restored
+        self.components.histories.reset_input.wait_for_and_click()
+        self.assert_histories_in_list([self.history2_name, self.history3_name])
 
-        self.assert_histories_in_grid([self.history2_name, self.history3_name])
+    @selenium_only("Not yet migrated to support Playwright backend")
+    @selenium_test
+    def test_bulk_open_in_multiview(self):
+        self._login()
+        self.navigate_to_histories_page()
 
+        # Select multiple histories
+        self.toggle_card_selection_in_list("#history-list", [self.history2_name, self.history3_name])
+
+        # Open selected histories in multiview
+        self.components.histories.bulk_open_multiview_button.wait_for_and_click()
+
+        # Wait for navigation to multiview page
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        # Verify we are on the multiview page
+        assert "/histories/view_multiple" in self.current_url
+
+        # Verify the selected histories are present in the multiview panel
+        present_histories = self.components.multi_history_panel.histories.all()
+        present_history_names = [self.get_history_name(history) for history in present_histories]
+        assert set(present_history_names) == {self.history2_name, self.history3_name}
+
+    @selenium_only("Not yet migrated to support Playwright backend")
+    @selenium_test
+    def test_bulk_open_in_multiview_limit_confirmation(self):
+        self._login()
+
+        # Create additional histories to exceed the limit (10 is the max)
+        additional_histories = []
+        for _i in range(10 + 1):
+            history_name = self._get_random_name()
+            self.create_history(history_name)
+            additional_histories.append(history_name)
+
+        self.navigate_to_histories_page()
+
+        # Select more than 10 histories (we'll select 11)
+        all_histories_to_select = additional_histories
+        self.toggle_card_selection_in_list("#history-list", all_histories_to_select)
+
+        # Click the bulk open multiview button
+        self.components.histories.bulk_open_multiview_button.wait_for_and_click()
+
+        # Wait for the confirmation dialog to appear
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        # Verify the confirmation dialog is displayed
+        confirm_dialog = self.components.confirm_dialog
+        confirm_dialog.message.wait_for_visible()
+
+        # Verify the dialog contains information about the limit
+        dialog_text = confirm_dialog.message.wait_for_text()
+        assert "10" in dialog_text  # The maximum number of histories
+        assert "11" in dialog_text  # The number of histories selected
+
+        # Click confirm to proceed despite the limit
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+
+        # Wait for dialog to close
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        # Verify we are on the multiview page
+        assert "/histories/view_multiple" in self.current_url
+
+        # Verify the maximum allowed histories are opened in multiview
+        present_histories = self.components.multi_history_panel.histories.all()
+        assert len(present_histories) == 10
+
+    def get_history_name(self, history):
+        history_name_element = history.find_element(By.CSS_SELECTOR, "[data-description='name display']")
+        return history_name_element.text
+
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_sort_by_name(self):
         self._login()
         self.navigate_to_histories_page()
 
-        self.wait_for_and_click_selector('.sort-link[sort_key="name"]')
-        actual_histories = self.get_histories()
+        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
+        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
+        self.sleep_for(self.wait_types.UX_RENDER)
 
         expected_histories = [self.history2_name, self.history3_name]
+
+        actual_histories = self.get_history_titles(len(expected_histories))
+
         if self.history1_name in actual_histories:
             expected_histories.append(self.history1_name)
         expected_histories = sorted(expected_histories)
@@ -157,110 +242,106 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         assert actual_histories == expected_histories
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_standard_search(self):
         self._login()
         self.navigate_to_histories_page()
+        self.components.histories.search_input.wait_for_and_send_keys(self.history2_name)
+        self.assert_histories_sorted_in_list([self.history2_name])
+        self.components.histories.reset_input.wait_for_and_click()
+        self.components.histories.search_input.wait_for_and_send_keys(self.history4_name)
+        self.assert_histories_sorted_in_list([])
 
-        search_input = self.components.grids.free_text_search.wait_for_visible()
-        search_input.send_keys(self.history2_name)
-        self.send_enter(search_input)
-
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-        self.assert_grid_histories_are([self.history2_name])
-
-        self.unset_filter("free-text-search", self.history2_name)
-        search_input = self.components.grids.free_text_search.wait_for_visible()
-        search_input.send_keys(self.history4_name)
-        self.send_enter(search_input)
-
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-        self.assert_grid_histories_are([])
-
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_advanced_search(self):
         self._login()
         self.navigate_to_histories_page()
+        # search by name
+        self.components.histories.advanced_search_toggle.wait_for_and_click()
+        self.components.histories.advanced_search_name_input.wait_for_and_send_keys(self.history3_name)
+        self.assert_histories_present([self.history3_name])
 
-        self.histories_click_advanced_search()
+        self.components.histories.reset_input.wait_for_and_click()
 
-        name_filter_selector = "#input-name-filter"
-        tags_filter_selector = "#input-tags-filter"
+        self.components.histories.advanced_search_name_input.wait_for_and_send_keys(self.history2_name)
+        self.assert_histories_present([self.history2_name])
 
-        # Search by name
-        self.set_filter(name_filter_selector, self.history2_name)
-        self.assert_grid_histories_are([self.history2_name])
-        self.unset_filter("name", self.history2_name)
+        self.components.histories.reset_input.wait_for_and_click()
 
-        self.set_filter(name_filter_selector, self.history4_name)
-        self.assert_grid_histories_are([])
-        self.unset_filter("name", self.history4_name)
+        self.components.histories.advanced_search_name_input.wait_for_and_send_keys(self.history4_name)
+        self.assert_histories_present([])
 
-        # Search by tags
-        self.set_filter(tags_filter_selector, self.history3_tags[0])
-        self.assert_grid_histories_are([self.history3_name])
-        self.unset_filter("tags", self.history3_tags[0])
+        self.components.histories.reset_input.wait_for_and_click()
 
-        self.set_filter(tags_filter_selector, self.history4_tags[0])
-        self.assert_grid_histories_are([])
-        self.unset_filter("tags", self.history4_tags[0])
+        # search by tags
+        self.components.histories.advanced_search_tag_area.wait_for_and_click()
+        input_element = self.components.histories.advanced_search_tag_input.wait_for_visible()
+        input_element.send_keys(self.history3_tags[0])
+        self.send_enter(input_element)
+        self.assert_histories_present([self.history3_name])
 
+    @retry_assertion_during_transitions
+    def assert_histories_present(self, expected_histories, sort_by_matters=False):
+        self.sleep_for(self.wait_types.UX_RENDER)
+        actual_histories = self.get_history_titles(len(expected_histories))
+        assert len(actual_histories) == len(expected_histories)
+
+        assert actual_histories == expected_histories
+
+    def get_present_histories(self):
+        self.sleep_for(self.wait_types.UX_RENDER)
+        return self.components.histories.history_cards.all()
+
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_tags(self):
         self._login()
         self.navigate_to_histories_page()
 
+        self.sleep_for(self.wait_types.UX_RENDER)
+
         # Insert a tag
-        tags_cell = self.get_history_tags_cell(self.history2_name)
-        tag_area = tags_cell.find_element(self.by.CSS_SELECTOR, ".ti-new-tag-input-wrapper input")
-        tag_area.click()
-        tag_area.send_keys(self.history2_tags[0])
-        self.send_enter(tag_area)
+        tags_cell = self.get_history_card(self.history2_name).find_element(By.CSS_SELECTOR, ".stateless-tags")
+        self.add_tag(tags_cell, self.history2_tags[0])
+
+        # Search by tag
+        tag = tags_cell.find_element(By.CSS_SELECTOR, ".tag")
+        tag.click()
 
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        # Search by tag
-        tags_cell = self.get_history_tags_cell(self.history2_name)
-        tag = tags_cell.find_element(self.by.CSS_SELECTOR, ".ti-tag-center")
-        tag.click()
-
-        self.assert_grid_histories_are([self.history2_name], False)
+        self.assert_histories_sorted_in_list([self.history2_name], False)
 
     def _login(self):
         self.home()
         self.submit_login(self.user_email, retries=3)
 
     @retry_assertion_during_transitions
-    def assert_grid_histories_are(self, expected_histories, sort_matters=True):
-        actual_histories = self.get_histories()
+    def assert_histories_sorted_in_list(self, expected_histories, sort_matters=True):
+        actual_histories = self.get_history_titles(len(expected_histories))
         if not sort_matters:
             actual_histories = set(actual_histories)
             expected_histories = set(expected_histories)
         assert actual_histories == expected_histories
 
     @retry_assertion_during_transitions
-    def assert_histories_in_grid(self, expected_histories, present=True):
-        actual_histories = self.get_histories()
+    def assert_histories_in_list(self, expected_histories, present=True):
+        actual_histories = self.get_history_titles(len(expected_histories))
         intersection = set(actual_histories).intersection(expected_histories)
         if present:
             assert intersection == set(expected_histories)
         else:
             assert intersection == set()
 
-    def get_histories(self):
-        return self.histories_get_history_names()
-
-    def set_filter(self, selector, value):
-        filter_input = self.wait_for_selector_clickable(selector)
-        filter_input.send_keys(value)
-        self.send_enter(filter_input)
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-    def unset_filter(self, filter_key, filter_value):
-        close_button_selector = f'a[filter_key="{filter_key}"][filter_val="{filter_value}"]'
-        self.wait_for_and_click_selector(close_button_selector)
+    def add_tag(self, tags_cell, tag):
+        tag_button = tags_cell.find_element(By.CSS_SELECTOR, ".stateless-tags button")
+        tag_button.click()
+        tag_input = tags_cell.find_element(By.CSS_SELECTOR, ".stateless-tags input")
+        tag_input.send_keys(tag)
+        self.send_enter(tag_input)
+        self.send_escape(tag_input)
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def setup_shared_state(self):
@@ -282,30 +363,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
     def create_history(self, name):
         self.home()
         self.history_panel_create_new_with_name(name)
-
-    def select_filter(self, filter_key, filter_value):
-        filter_selector = f'a[filter_key="{filter_key}"][filter_val="{filter_value}"]'
-        self.wait_for_and_click_selector(filter_selector)
-
-    def get_history_tags_cell(self, history_name):
-        tags_cell = None
-        grid = self.wait_for_selector("#grid-table-body")
-        for row in grid.find_elements(self.by.CSS_SELECTOR, "tr"):
-            td = row.find_elements(self.by.CSS_SELECTOR, "td")
-            if td[1].text == history_name:
-                tags_cell = td[4]
-                break
-
-        if tags_cell is None:
-            raise AssertionError(f"Failed to find history with name [{history_name}]")
-
-        return tags_cell
-
-    def check_histories(self, histories):
-        grid = self.wait_for_selector("#grid-table-body")
-        for row in grid.find_elements(self.by.CSS_SELECTOR, "tr"):
-            td = row.find_elements(self.by.CSS_SELECTOR, "td")
-            history_name = td[1].text
-            if history_name in histories:
-                checkbox = td[0].find_element(self.by.CSS_SELECTOR, "input")
-                checkbox.click()
+        # Wait for the panel label to reflect the new name, confirming the
+        # rename XHR has completed before any subsequent home() navigation
+        # that would otherwise cancel the still-in-flight request.
+        self.wait_for_selector(f'[data-description="name display"][title="{name}"]')

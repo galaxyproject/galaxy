@@ -1,29 +1,41 @@
-<script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
+<script setup lang="ts">
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import axios from "axios";
-import RuleCollectionBuilder from "components/RuleCollectionBuilder";
-import RulesDisplay from "components/RulesDisplay/RulesDisplay";
-import { getAppRoot } from "onload/loadConfig";
 import { computed, ref } from "vue";
 
-library.add(faEdit);
+import type { HDCADetailed } from "@/api";
+import { fetchCollectionDetails } from "@/api/datasetCollections";
+import { errorMessageAsString } from "@/utils/simple-error";
 
-const props = defineProps({
-    value: {
-        type: Object,
-    },
-    target: {
-        type: Object,
-        default: null,
-    },
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import RuleCollectionBuilder from "@/components/RuleCollectionBuilder.vue";
+import RulesDisplay from "@/components/RulesDisplay/RulesDisplay.vue";
+
+interface Rules {
+    rules: any[];
+    mapping: any[];
+}
+
+interface Props {
+    id: string;
+    value?: Rules;
+    target?: { id: string } | null;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    value: undefined,
+    target: null,
 });
 
-const modal = ref(null);
-const elements = ref(null);
+const elements = ref<HDCADetailed | null>(null);
+const showModal = ref(false);
+const loading = ref(false);
+const loadError = ref<string | undefined>(undefined);
 
-const initialRules = {
+const initialRules: Rules = {
     rules: [],
     mapping: [],
 };
@@ -32,46 +44,53 @@ const displayRules = computed(() => props.value ?? initialRules);
 
 async function onEdit() {
     if (props.target) {
-        const url = `${getAppRoot()}api/dataset_collections/${props.target.id}?instance_type=history`;
-
         try {
-            const response = await axios.get(url);
-            elements.value = response.data;
-            modal.value.show();
+            loading.value = true;
+            loadError.value = undefined;
+            const result = await fetchCollectionDetails({ hdca_id: props.target.id });
+            if (result.error) {
+                throw result.error;
+            }
+            elements.value = result.data;
+            showModal.value = true;
         } catch (e) {
-            console.error(e);
-            console.log("problem fetching collection");
+            loadError.value = errorMessageAsString(e);
+        } finally {
+            loading.value = false;
         }
     } else {
-        modal.value.show();
+        showModal.value = true;
     }
 }
 
 const emit = defineEmits(["input"]);
 
-function onSaveRules(rules) {
-    modal.value.hide();
+function onSaveRules(rules: Rules) {
+    showModal.value = false;
     emit("input", rules);
 }
 
 function onCancel() {
-    modal.value.hide();
+    showModal.value = false;
 }
 </script>
 
 <template>
     <div class="form-rules-edit">
         <RulesDisplay :input-rules="displayRules" />
-        <b-button title="Edit Rules" @click="onEdit">
-            <FontAwesomeIcon icon="fa-edit" />
+        <GButton :id="props.id" title="Edit Rules" @click="onEdit">
+            <FontAwesomeIcon :icon="faEdit" />
             <span>Edit</span>
-        </b-button>
-
-        <b-modal ref="modal" modal-class="ui-form-rules-edit-modal" hide-footer>
-            <template v-slot:modal-title>
-                <h2 class="mb-0">Build Rules for Applying to Existing Collection</h2>
-            </template>
+        </GButton>
+        <LoadingSpan v-if="loading" message="Loading collection details" />
+        <GAlert v-if="loadError" variant="danger" dismissible @dismissed="loadError = undefined">
+            {{ loadError }}
+        </GAlert>
+        <GModal :show.sync="showModal" title="Build Rules for Applying to Existing Collection" size="medium">
+            <!-- Note: We need the v-if="showModal" here because the rules do not appear inline with 
+            the table otherwise. -->
             <RuleCollectionBuilder
+                v-if="showModal"
                 elements-type="collection_contents"
                 import-type="collections"
                 :initial-elements="elements"
@@ -79,15 +98,6 @@ function onCancel() {
                 :save-rules-fn="onSaveRules"
                 :oncancel="onCancel"
                 :oncreate="() => {}" />
-        </b-modal>
+        </GModal>
     </div>
 </template>
-
-<style lang="scss">
-.ui-form-rules-edit-modal {
-    .modal-dialog {
-        width: 100%;
-        max-width: 85%;
-    }
-}
-</style>

@@ -1,9 +1,10 @@
-<tool id="Interval2Maf_pairwise1" name="Extract Pairwise MAF blocks" version="1.0.1">
+<tool id="Interval2Maf_pairwise1" name="Extract Pairwise MAF blocks" version="1.0.1" profile="24.2">
   <description>given a set of genomic intervals</description>
   <macros>
-      <import>macros.xml</import>
+    <import>macros.xml</import>
   </macros>
-  <command>python '$__tool_directory__/interval2maf.py' --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafType='$mafType' --interval_file='$input1' --output_file='$out_file1' --indexLocation='${GALAXY_DATA_INDEX_DIR}/maf_pairwise.loc'</command>
+  <expand macro="requirements" />
+  <command>python '$__tool_directory__/interval2maf.py' --dbkey='${input1.dbkey}' --chromCol='${input1.metadata.chromCol}' --startCol='${input1.metadata.startCol}' --endCol='${input1.metadata.endCol}' --strandCol='${input1.metadata.strandCol}' --mafType='$mafType' --interval_file='$input1' --output_file='$out_file1' --indexLocation='${GALAXY_DATA_INDEX_DIR}/maf_pairwise.loc'</command>
   <inputs>
     <param name="input1" type="data" format="interval" label="Interval File">
       <validator type="unspecified_build" />

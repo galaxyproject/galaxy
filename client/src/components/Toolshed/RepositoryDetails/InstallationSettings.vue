@@ -1,10 +1,12 @@
 <template>
-    <b-modal id="repo-install-settings" v-model="modalShow" :static="modalStatic" @ok="onOk" @hide="onHide">
-        <template v-slot:modal-header>
-            <h2 class="title m-0 h-sm">
-                {{ modalTitle }}
-            </h2>
-        </template>
+    <GModal
+        id="repo-install-settings"
+        :show.sync="modalShow"
+        size="small"
+        :title="modalTitle"
+        confirm
+        @ok="onOk"
+        @close="onHide">
         <div class="description mb-1">
             {{ repo.long_description || repo.description }}
         </div>
@@ -20,10 +22,15 @@
                 </option>
             </datalist>
         </b-form-group>
-        <b-link variant="primary" @click="onAdvanced"> {{ advancedTitle }} advanced settings. </b-link>
-        <b-collapse id="advanced-collapse" v-model="advancedShow" class="mt-2">
+        <Heading separator size="sm" :collapse="advancedShow ? 'open' : 'closed'" @click="onAdvanced">
+            {{ advancedTitle }} advanced settings
+        </Heading>
+        <GCollapse v-model="advancedShow" class="mt-2">
             <b-card>
-                <b-form-group v-if="showConfig" label="Tool Configuration:" description="Choose a tool configuration.">
+                <b-form-group
+                    v-if="toolConfigs.length > 1"
+                    label="Tool Configuration:"
+                    description="Choose a tool configuration.">
                     <b-form-radio
                         v-for="filename in toolConfigs"
                         :key="filename"
@@ -42,11 +49,19 @@
                     <b-form-checkbox v-model="installToolDependencies"> Install tool dependencies </b-form-checkbox>
                 </b-form-group>
             </b-card>
-        </b-collapse>
-    </b-modal>
+        </GCollapse>
+    </GModal>
 </template>
 <script>
+import { GalaxyApi } from "@/api";
+import { useConfig } from "@/composables/config";
+
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import Heading from "@/components/Common/Heading.vue";
+
 export default {
+    components: { GCollapse, GModal, Heading },
     props: {
         repo: {
             type: Object,
@@ -65,26 +80,23 @@ export default {
             required: true,
         },
         currentPanel: {
-            type: Array,
+            type: Object,
             default: null,
         },
-        toolDynamicConfigs: {
-            type: Array,
-            default: null,
-        },
-        modalStatic: {
-            type: Boolean,
-            default: false,
-        },
+    },
+    setup() {
+        const { config, isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     data() {
         return {
             modalShow: true,
             advancedShow: false,
-            installToolDependencies: true,
-            installRepositoryDependencies: true,
-            installResolverDependencies: true,
+            installToolDependencies: this.config.install_tool_dependencies,
+            installRepositoryDependencies: this.config.install_repository_dependencies,
+            installResolverDependencies: this.config.install_resolver_dependencies,
             toolConfig: null,
+            toolConfigs: [],
             toolSection: null,
         };
     },
@@ -95,23 +107,21 @@ export default {
         modalTitle() {
             return `Installing '${this.repo.name}'`;
         },
-        showConfig() {
-            return this.toolConfigs.length > 1;
-        },
         toolSections() {
-            const panel = this.currentPanel;
+            const panel = Object.values(this.currentPanel);
             if (panel) {
-                return panel.filter((x) => x.elems);
+                return panel.filter((x) => x.tools);
             } else {
                 return [];
             }
         },
-        toolConfigs() {
-            return this.toolDynamicConfigs || [];
-        },
     },
-    created() {
-        if (this.toolConfigs.length > 0) {
+    async created() {
+        const { data, error } = await GalaxyApi().GET("/api/configuration/dynamic_tool_confs");
+        if (error) {
+            console.error("Failed to collect dynamic tool confs", error.err_msg);
+        } else if (data.length > 0) {
+            this.toolConfigs = data.map((x) => x.config_filename);
             this.toolConfig = this.toolConfigs[0];
         }
     },

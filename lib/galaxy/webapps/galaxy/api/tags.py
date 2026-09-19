@@ -1,6 +1,7 @@
 """
 API Controller providing Galaxy Tags
 """
+
 import logging
 
 from fastapi import (

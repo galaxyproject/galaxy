@@ -16,7 +16,7 @@ import os
 import sys
 from xml import etree
 
-import requests
+from galaxy.util import requests
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 

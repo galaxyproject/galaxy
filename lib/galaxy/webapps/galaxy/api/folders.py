@@ -1,20 +1,18 @@
 """
 API operations on library folders.
 """
+
 import logging
 from typing import (
-    Optional,
-    Union,
+    Annotated,
 )
 
 from fastapi import (
     Body,
-    Path,
     Query,
 )
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import (
     CreateLibraryFolderPayload,
     LibraryAvailablePermissions,
@@ -30,19 +28,16 @@ from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import FolderIdPathParam
 from galaxy.webapps.galaxy.services.library_folders import LibraryFoldersService
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["data libraries folders"])
 
-FolderIdPathParam: LibraryFolderDatabaseIdField = Path(
-    ..., title="Folder ID", description="The encoded identifier of the library folder."
-)
-
-UndeleteQueryParam: Optional[bool] = Query(
-    default=None, title="Undelete", description="Whether to restore a deleted library folder."
-)
+UndeleteQueryParam = Annotated[
+    bool | None, Query(title="Undelete", description="Whether to restore a deleted library folder.")
+]
 
 
 @router.cbv
@@ -55,8 +50,8 @@ class FastAPILibraryFolders:
     )
     def show(
         self,
+        id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
     ) -> LibraryFolderDetails:
         """Returns detailed information about the library folder with the given ID."""
         return self.service.show(trans, id)
@@ -67,8 +62,8 @@ class FastAPILibraryFolders:
     )
     def create(
         self,
+        id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
         payload: CreateLibraryFolderPayload = Body(...),
     ) -> LibraryFolderDetails:
         """Returns detailed information about the newly created library folder."""
@@ -81,8 +76,8 @@ class FastAPILibraryFolders:
     @router.patch("/api/folders/{id}")
     def update(
         self,
+        id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
         payload: UpdateLibraryFolderPayload = Body(...),
     ) -> LibraryFolderDetails:
         """Updates the information of an existing library folder."""
@@ -94,9 +89,9 @@ class FastAPILibraryFolders:
     )
     def delete(
         self,
+        id: FolderIdPathParam,
+        undelete: UndeleteQueryParam = None,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
-        undelete: Optional[bool] = UndeleteQueryParam,
     ) -> LibraryFolderDetails:
         """Marks the specified library folder as deleted (or undeleted)."""
         return self.service.delete(trans, id, undelete)
@@ -107,9 +102,9 @@ class FastAPILibraryFolders:
     )
     def get_permissions(
         self,
+        id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
-        scope: Optional[LibraryPermissionScope] = Query(
+        scope: LibraryPermissionScope | None = Query(
             None,
             title="Scope",
             description="The scope of the permissions to retrieve. Either the `current` permissions or the `available`.",
@@ -120,10 +115,10 @@ class FastAPILibraryFolders:
         page_limit: int = Query(
             default=10, title="Page Limit", description="The maximum number of permissions per page when paginating."
         ),
-        q: Optional[str] = Query(
+        q: str | None = Query(
             None, title="Query", description="Optional search text to retrieve only the roles matching this query."
         ),
-    ) -> Union[LibraryFolderCurrentPermissions, LibraryAvailablePermissions]:
+    ) -> LibraryFolderCurrentPermissions | LibraryAvailablePermissions:
         """Gets the current or available permissions of a particular library.
         The results can be paginated and additionally filtered by a query."""
         return self.service.get_permissions(
@@ -141,9 +136,9 @@ class FastAPILibraryFolders:
     )
     def set_permissions(
         self,
+        id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
-        action: Optional[LibraryFolderPermissionAction] = Query(
+        action: LibraryFolderPermissionAction | None = Query(
             default=None,
             title="Action",
             description=(
@@ -154,7 +149,7 @@ class FastAPILibraryFolders:
         payload: LibraryFolderPermissionsPayload = Body(...),
     ) -> LibraryFolderCurrentPermissions:
         """Sets the permissions to manage a library folder."""
-        payload_dict = payload.dict(by_alias=True)
+        payload_dict = payload.model_dump(by_alias=True)
         if isinstance(payload, LibraryFolderPermissionsPayload) and action is not None:
             payload_dict["action"] = action
         return self.service.set_permissions(trans, id, payload_dict)

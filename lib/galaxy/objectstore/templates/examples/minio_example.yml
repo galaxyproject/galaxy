@@ -1,0 +1,48 @@
+- id: minio
+  version: 0
+  name: Institutional S3 Storage
+  description: Connect to our institutional MinIO storage service.
+  variables:
+    access_key:
+      type: string
+      help: A description of the user account used to connect to your storage.
+    bucket:
+      type: string
+      help: The bucket to connect to.
+  secrets:
+    secret_key:
+      help: The secret key used to connect to MinIO with for the given access key.
+  environment:
+    host:
+      type: variable
+      variable: GALAXY_MINIO_HOST
+      default: localhost
+    port:
+      type: variable
+      variable: GALAXY_MINIO_PORT
+      default: "9000"
+    secure:
+      type: variable
+      variable: GALAXY_MINIO_IS_SECURE
+      default: "true"
+    connection_path:
+      type: variable
+      variable: GALAXY_MINIO_CONNECTION_PATH
+      default: ""
+  configuration:
+    type: generic_s3
+    auth:
+      access_key: '{{ variables.access_key }}'
+      secret_key: '{{ secrets.secret_key }}'
+    bucket:
+      name: '{{ variables.bucket }}'
+      use_reduced_redundancy: false
+    connection:
+      host: '{{ environment.host }}'
+      port: '{{ environment.port | int  }}'
+      is_secure: '{{ environment.secure | asbool }}'
+      conn_path: '{{ environment.connection_path }}'
+    badges:
+    - type: slower
+    - type: less_secure
+    - type: less_stable

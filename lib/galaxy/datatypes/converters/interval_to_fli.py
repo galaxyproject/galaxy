@@ -13,6 +13,7 @@ where location is formatted as:
 
 and symbols are sorted in lexigraphical order.
 """
+
 import optparse
 
 from bx.tabular.io import (
@@ -31,7 +32,7 @@ def main():
     # Process arguments.
     parser = optparse.OptionParser()
     parser.add_option("-F", "--format", dest="input_format")
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
     in_fname, out_fname = args
     input_format = options.input_format.lower()
 
@@ -89,7 +90,7 @@ def main():
     entries = []
     for name in sorted(name_loc_dict.keys()):
         loc = name_loc_dict[name]
-        entry = "{}\t{}\t{}".format(name.lower(), name, "%s:%i-%i" % (loc["contig"], loc["start"], loc["end"]))
+        entry = "{}\t{}\t{}:{}-{}".format(name.lower(), name, loc["contig"], loc["start"], loc["end"])
         if len(entry) > max_len:
             max_len = len(entry)
         entries.append(entry)

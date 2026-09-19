@@ -1,15 +1,22 @@
 <script setup lang="ts">
-import { BAlert, BButton, BFormCheckbox, BModal } from "bootstrap-vue";
+import { BAlert, BFormCheckbox } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
+import type { HistorySummary } from "@/api";
+import { exportHistoryToFileSource, fetchHistoryExportRecords } from "@/api/histories.export";
 import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
-import { exportToFileSource, getExportRecords } from "@/components/History/Export/services";
 import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
 import { useTaskMonitor } from "@/composables/taskMonitor";
-import type { HistorySummary } from "@/stores/historyStore";
 
 import ExportRecordCard from "./ExportRecordCard.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import GTab from "@/components/BaseComponents/GTab.vue";
+import GTabs from "@/components/BaseComponents/GTabs.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
+import ExportToRDMRepositoryForm from "@/components/Common/ExportRDMForm.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const {
@@ -36,9 +43,13 @@ const isExportDialogOpen = ref(false);
 const isDeleteContentsConfirmed = ref(false);
 const exportErrorMessage = ref<string | null>(null);
 
+const historyName = computed(() => {
+    return props.history.name;
+});
+
 const mostUpToDateExport = computed(() => {
     return existingExports.value.find(
-        (exportRecord) => exportRecord.isPermanent && (exportRecord.isUpToDate || exportRecord.isPreparing)
+        (exportRecord) => exportRecord.isPermanent && (exportRecord.isUpToDate || exportRecord.isPreparing),
     );
 });
 
@@ -73,7 +84,7 @@ watch(isExportTaskRunning, (newValue, oldValue) => {
 async function updateExports() {
     exportErrorMessage.value = null;
     try {
-        existingExports.value = await getExportRecords(props.history.id);
+        existingExports.value = await fetchHistoryExportRecords(props.history.id);
         if (mostUpToDateExport.value) {
             const shouldWaitForTask =
                 mostUpToDateExport.value?.isPreparing &&
@@ -99,16 +110,19 @@ async function onCreateExportRecord() {
     isExportDialogOpen.value = true;
 }
 
+async function doExportToFileSourceWithPrefix(exportDirectory: string, fileName: string) {
+    // Avoid name collisions if multiple different histories are exported to the
+    // same destination with the same name
+    const fileNameCompatibleUpdateTime = props.history.update_time.replace(/:/g, "-");
+    const prefixedFileName = `${fileNameCompatibleUpdateTime}_${fileName}`;
+    doExportToFileSource(exportDirectory, prefixedFileName);
+}
+
 async function doExportToFileSource(exportDirectory: string, fileName: string) {
     isExportingRecord.value = true;
     isExportDialogOpen.value = false;
-
-    // Avoid name collisions if multiple different histories are exported to the
-    // same destination with the same name
-    const prefixedFileName = `${props.history.id}_${fileName}`;
-
     try {
-        await exportToFileSource(props.history.id, exportDirectory, prefixedFileName, DEFAULT_EXPORT_PARAMS);
+        await exportHistoryToFileSource(props.history.id, exportDirectory, fileName, DEFAULT_EXPORT_PARAMS);
     } catch (error) {
         exportErrorMessage.value = "The history export request failed. Please try again later.";
     }
@@ -165,13 +179,13 @@ function onArchiveHistoryWithExport() {
                     </b>
                 </p>
                 <p>Use the button below to create a new export record before archiving the history.</p>
-                <BButton
+                <GButton
                     id="create-export-record-btn"
                     :disabled="!canCreateExportRecord"
-                    variant="primary"
+                    color="blue"
                     @click="onCreateExportRecord">
                     Create export record
-                </BButton>
+                </GButton>
             </BAlert>
         </div>
         <p v-if="!isDeleteContentsConfirmed" class="mt-3 mb-0">
@@ -186,17 +200,46 @@ function onArchiveHistoryWithExport() {
             Remember that you cannot undo this action. Once you archive and delete the history, you can only recover it
             by importing it as a new copy from the export record.
         </BAlert>
-        <BButton
+        <GButton
             id="archive-history-btn"
             class="mt-3"
             :disabled="!canArchiveHistory"
-            variant="primary"
+            color="blue"
             @click="onArchiveHistoryWithExport">
             Archive (and purge) history
-        </BButton>
+        </GButton>
 
-        <BModal v-model="isExportDialogOpen" title="Export history to permanent storage" size="lg" hide-footer>
-            <ExportToFileSourceForm what="history" @export="doExportToFileSource" />
-        </BModal>
+        <GModal :show.sync="isExportDialogOpen" title="Export history to permanent storage" size="medium" fixed-height>
+            <GTabs card vertical lazy scrollable-content class="export-option-tabs">
+                <GTab id="to-remote-file-tab" title="To Repository" active>
+                    <p>
+                        <b>Exporting to a repository</b> will create a compressed archive of the history contents, copy
+                        it to a remote location (e.g. an FTP server) and create an export record with this information
+                        that will be associated with the archived history. You will be able to recreate the history
+                        later by importing it from the export record.
+                    </p>
+                    <ExportToFileSourceForm what="history" @export="doExportToFileSourceWithPrefix" />
+                </GTab>
+                <GTab id="to-rdm-repository-tab" title="To RDM Repository">
+                    <p>
+                        <b>Exporting to a RDM repository</b> (e.g. any
+                        <ExternalLink href="https://inveniosoftware.org/products/rdm/"> Invenio RDM </ExternalLink>
+                        compatible repository) will require to create or select an existing record in the repository
+                        where the history archive will be uploaded. The export record will be associated with the
+                        archived history and you will be able to recreate the history later by importing it from the
+                        export record.
+                    </p>
+                    <p>
+                        You may need to setup your credentials for the selected repository in your
+                        <GLink to="/user/information">settings page</GLink> to be able to export.
+                    </p>
+                    <ExportToRDMRepositoryForm
+                        what="history"
+                        :default-filename="historyName + ' (Galaxy History)'"
+                        :default-record-name="historyName"
+                        @export="doExportToFileSource" />
+                </GTab>
+            </GTabs>
+        </GModal>
     </div>
 </template>

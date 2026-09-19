@@ -238,6 +238,21 @@ return a container description that points to the image file in the
    yield the path (even if non existent, i.e. before the 1st tool run or the
    caching was triggered).
 
+The optional ``namespace`` parameter strips ``docker://quay.io/NAMESPACE/``
+from the image identifier when constructing the local cache path. This yields a
+flat filename (e.g. ``bwa:0.7.17--h7132678_9``) instead of a nested path, which
+is required when pointing ``cache_directory`` at a pre-populated flat cache such
+as ``/cvmfs/singularity.galaxyproject.org/all/``:
+
+.. code-block:: yaml
+
+   - type: cached_explicit_singularity
+     cache_directory: /cvmfs/singularity.galaxyproject.org/all
+     namespace: biocontainers
+
+Images whose identifier does not start with ``docker://quay.io/NAMESPACE/``
+(e.g. ``shub://`` URIs) are not affected by this setting.
+
 2. Mulled resolvers
 """""""""""""""""""
 
@@ -364,7 +379,7 @@ admins might want to control.
 
 .. note::
 
-   For the the execution of jobs Galaxy already implement the `support for using
+   For the execution of jobs Galaxy already implements the `support for using
    tarballs of container images
    <https://github.com/galaxyproject/galaxy/blob/c517e805771cc16807dfe675075a13fe6343f01f/lib/galaxy/tool_util/deps/container_classes.py#L319>`_.
    from ``container_image_cache_path`` (set in galaxy.yml) or the destination
@@ -379,7 +394,7 @@ Setting up Galaxy using docker / singularity on distributed compute resources
 (in particular in real user setups) requires careful planning.
 
 Other considerations
-====================
+--------------------
 
 Tools frequently use ``$TMP``, ``$TEMP``, or ``$TMPDIR`` (or simply use hardcoded
 ``/tmp``) for storing temporary data. In containerized environments ``/tmp``

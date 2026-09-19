@@ -33,11 +33,11 @@ def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
         lib_create_data = {"name": data_library}
         library = submit(api_key, api_url + "libraries", lib_create_data, return_formatted=False)
         library_id = library[0]["id"]
-    folders = display(api_key, api_url + "libraries/%s/contents" % library_id, return_formatted=False)
+    folders = display(api_key, api_url + f"libraries/{library_id}/contents", return_formatted=False)
     for f in folders:
         if f["name"] == "/":
             library_folder_id = f["id"]
-    workflow = display(api_key, api_url + "workflows/%s" % workflow, return_formatted=False)
+    workflow = display(api_key, api_url + f"workflows/{workflow}", return_formatted=False)
     if not workflow:
         print("Workflow %s not found, terminating.")
         sys.exit(1)
@@ -57,7 +57,7 @@ def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
                 data["upload_option"] = "upload_paths"
                 data["filesystem_paths"] = fullpath
                 data["create_type"] = "file"
-                libset = submit(api_key, api_url + "libraries/%s/contents" % library_id, data, return_formatted=False)
+                libset = submit(api_key, api_url + f"libraries/{library_id}/contents", data, return_formatted=False)
                 # TODO Handle this better, but the datatype isn't always
                 # set for the followup workflow execution without this
                 # pause.
@@ -88,6 +88,6 @@ if __name__ == "__main__":
         data_library = sys.argv[5]
         workflow = sys.argv[6]
     except IndexError:
-        print("usage: %s key url in_folder out_folder data_library workflow" % os.path.basename(sys.argv[0]))
+        print(f"usage: {os.path.basename(sys.argv[0])} key url in_folder out_folder data_library workflow")
         sys.exit(1)
     main(api_key, api_url, in_folder, out_folder, data_library, workflow)

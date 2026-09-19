@@ -2,7 +2,7 @@
 
 
 def literal_via_fence(content):
-    return "\n%s\n" % "\n".join(f"    {line}" for line in content.splitlines())
+    return "\n{}\n".format("\n".join(f"    {line}" for line in content.splitlines()))
 
 
 def indicate_data_truncated():

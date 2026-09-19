@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSquare } from "@fortawesome/free-regular-svg-icons";
 import {
     faCheckSquare,
@@ -11,31 +10,35 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
-import { computed, ComputedRef, nextTick, onBeforeUnmount, type Ref, ref, toRefs, type UnwrapRef, watch } from "vue";
+import {
+    computed,
+    type ComputedRef,
+    nextTick,
+    onBeforeUnmount,
+    type Ref,
+    ref,
+    toRefs,
+    type UnwrapRef,
+    watch,
+} from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { XYPosition } from "@/stores/workflowEditorStateStore";
-import {
-    type OutputTerminalSource,
-    type PostJobAction,
-    type PostJobActions,
-    type Step,
-} from "@/stores/workflowStepStore";
-import { assertDefined, ensureDefined } from "@/utils/assertions";
+import type { OutputTerminalSource, PostJobAction, PostJobActions, Step } from "@/stores/workflowStepStore";
+import { assertDefined } from "@/utils/assertions";
 
+import { UpdateStepAction } from "./Actions/stepActions";
 import { useRelativePosition } from "./composables/relativePosition";
 import { useTerminal } from "./composables/useTerminal";
 import { type CollectionTypeDescriptor, NULL_COLLECTION_TYPE_DESCRIPTION } from "./modules/collectionTypeDescription";
-import { OutputTerminals } from "./modules/terminals";
+import type { OutputTerminals } from "./modules/terminals";
 
 import DraggableWrapper from "./DraggablePan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import ConnectionMenu from "@/components/Workflow/Editor/ConnectionMenu.vue";
 
 type ElementBounding = UnwrapRef<UseElementBoundingReturn>;
-
-library.add(faSquare, faCheckSquare, faChevronCircleRight, faEye, faEyeSlash, faMinus, faPlus);
 
 const props = defineProps<{
     output: OutputTerminalSource;
@@ -50,10 +53,11 @@ const props = defineProps<{
     datatypesMapper: DatatypesMapperModel;
     parentNode: HTMLElement | null;
     readonly: boolean;
+    blank: boolean;
 }>();
 
 const emit = defineEmits(["pan-by", "stopDragging", "onDragConnector"]);
-const { stateStore, stepStore } = useWorkflowStores();
+const { stateStore, stepStore, undoRedoStore } = useWorkflowStores();
 const { rootOffset, output, stepId, datatypesMapper } = toRefs(props);
 
 const terminalComponent: Ref<InstanceType<typeof DraggableWrapper> | null> = ref(null);
@@ -61,7 +65,7 @@ const terminalElement = computed(() => (terminalComponent.value?.$el as HTMLElem
 
 const position = useRelativePosition(
     terminalElement,
-    computed(() => props.parentNode)
+    computed(() => props.parentNode),
 );
 
 const extensions = computed(() => {
@@ -94,7 +98,7 @@ const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, effectiveOutp
 };
 
 const workflowOutput = computed(() =>
-    props.workflowOutputs.find((workflowOutput) => workflowOutput.output_name == props.output.name)
+    props.workflowOutputs.find((workflowOutput) => workflowOutput.output_name == props.output.name),
 );
 
 const isVisible = computed(() => {
@@ -104,15 +108,28 @@ const isVisible = computed(() => {
 
 const visibleHint = computed(() => {
     if (isVisible.value) {
-        return `Output will be visible in history. Click to hide output.`;
+        return `Output will be visible in history.${!props.readonly ? " Click to hide output." : ""}`;
     } else {
-        return `Output will be hidden in history. Click to make output visible.`;
+        return `Output will be hidden in history.${!props.readonly ? " Click to make output visible." : ""}`;
     }
 });
-const label = computed(() => {
-    const activeLabel = workflowOutput.value?.label || props.output.name;
-    return `${activeLabel} (${extensions.value.join(", ")})`;
+
+const activeOutputHint = computed(() => {
+    if (!props.readonly) {
+        return "Checked outputs will become primary workflow outputs and are available as subworkflow outputs.";
+    } else {
+        return "Checked outputs are primary workflow outputs and are available as subworkflow outputs.";
+    }
 });
+
+const isOutput = computed(() => {
+    return Boolean(workflowOutput.value?.label);
+});
+
+const label = computed(() => {
+    return workflowOutput.value?.label ?? props.output.name;
+});
+
 const rowClass = computed(() => {
     const classes = ["form-row", "dataRow", "output-data-row"];
     if ("valid" in props.output && props.output?.valid === false) {
@@ -150,12 +167,20 @@ function onToggleActive() {
     let stepWorkflowOutputs = [...(step.workflow_outputs || [])];
     if (workflowOutput.value) {
         stepWorkflowOutputs = stepWorkflowOutputs.filter(
-            (workflowOutput) => workflowOutput.output_name !== output.value.name
+            (workflowOutput) => workflowOutput.output_name !== output.value.name,
         );
     } else {
-        stepWorkflowOutputs.push({ output_name: output.value.name });
+        stepWorkflowOutputs.push({ output_name: output.value.name, label: output.value.name });
     }
-    stepStore.updateStep({ ...step, workflow_outputs: stepWorkflowOutputs });
+
+    const action = new UpdateStepAction(
+        stepStore,
+        stateStore,
+        step.id,
+        { workflow_outputs: step.workflow_outputs },
+        { workflow_outputs: stepWorkflowOutputs },
+    );
+    undoRedoStore.applyAction(action);
 }
 
 function onToggleVisible() {
@@ -164,25 +189,36 @@ function onToggleVisible() {
     }
 
     const actionKey = `HideDatasetAction${props.output.name}`;
-    const step = { ...ensureDefined(stepStore.getStep(stepId.value)) };
+    const step = stepStore.getStep(stepId.value);
+    assertDefined(step);
+
+    const oldPostJobActions = structuredClone(step.post_job_actions) ?? {};
+    let newPostJobActions;
+
     if (isVisible.value) {
-        step.post_job_actions = {
-            ...step.post_job_actions,
-            [actionKey]: {
-                action_type: "HideDatasetAction",
-                output_name: props.output.name,
-                action_arguments: {},
-            },
+        newPostJobActions = structuredClone(step.post_job_actions) ?? {};
+        newPostJobActions[actionKey] = {
+            action_type: "HideDatasetAction",
+            output_name: props.output.name,
+            action_arguments: {},
         };
     } else {
         if (step.post_job_actions) {
-            const { [actionKey]: _unused, ...newPostJobActions } = step.post_job_actions;
-            step.post_job_actions = newPostJobActions;
+            const { [actionKey]: _unused, ...remainingPostJobActions } = step.post_job_actions;
+            newPostJobActions = structuredClone(remainingPostJobActions);
         } else {
-            step.post_job_actions = {};
+            newPostJobActions = {};
         }
     }
-    stepStore.updateStep(step);
+
+    const action = new UpdateStepAction(
+        stepStore,
+        stateStore,
+        step.id,
+        { post_job_actions: oldPostJobActions },
+        { post_job_actions: newPostJobActions },
+    );
+    undoRedoStore.applyAction(action);
 }
 
 function onPanBy(panBy: XYPosition) {
@@ -201,10 +237,10 @@ const dragY = ref(0);
 const isDragging = ref(false);
 
 const startX = computed(
-    () => position.value.offsetLeft + (props.stepPosition?.left ?? 0) + (terminalElement.value?.offsetWidth ?? 2) / 2
+    () => position.value.offsetLeft + (props.stepPosition?.left ?? 0) + (terminalElement.value?.offsetWidth ?? 2) / 2,
 );
 const startY = computed(
-    () => position.value.offsetTop + (props.stepPosition?.top ?? 0) + (terminalElement.value?.offsetHeight ?? 2) / 2
+    () => position.value.offsetTop + (props.stepPosition?.top ?? 0) + (terminalElement.value?.offsetHeight ?? 2) / 2,
 );
 const endX = computed(() => {
     return (dragX.value || startX.value) + props.scroll.x.value / props.scale;
@@ -234,7 +270,7 @@ watch(
     },
     {
         immediate: true,
-    }
+    },
 );
 
 function onMove(dragPosition: XYPosition) {
@@ -279,7 +315,7 @@ const outputDetails = computed(() => {
     const outputType =
         collectionType && collectionType.isCollection && collectionType.collectionType
             ? `output is ${collectionTypeToDescription(collectionType)}`
-            : `output is dataset`;
+            : `output is  ${terminal.value.optional ? "optional " : ""}${terminal.value.type || "dataset"}`;
     if (isMultiple.value) {
         if (!collectionType) {
             collectionType = NULL_COLLECTION_TYPE_DESCRIPTION;
@@ -288,6 +324,22 @@ const outputDetails = computed(() => {
         return `${outputType} and mapped-over to produce a ${collectionTypeToDescription(effectiveOutputType)} `;
     }
     return outputType;
+});
+
+const isDuplicateLabel = computed(() => {
+    const duplicateLabels = stepStore.duplicateLabels;
+    return isOutput.value && Boolean(label.value && duplicateLabels.has(label.value));
+});
+
+const labelClass = computed(() => {
+    if (isDuplicateLabel.value) {
+        return "alert-danger";
+    }
+    return null;
+});
+
+const labelToolTipTitle = computed(() => {
+    return `Output label '${workflowOutput.value?.label}' is not unique`;
 });
 
 onBeforeUnmount(() => {
@@ -305,48 +357,60 @@ const removeTagsAction = computed(() => {
 
 <template>
     <div class="node-output" :class="rowClass" :data-output-name="output.name">
-        <div class="d-flex flex-column w-100">
-            <div class="node-output-buttons">
+        <div v-if="!props.blank" class="d-flex flex-column w-100">
+            <div class="node-output-buttons align-items-start">
                 <button
                     v-if="showCalloutActiveOutput"
-                    v-b-tooltip
+                    v-g-tooltip
                     class="callout-terminal inline-icon-button mark-terminal"
-                    :class="{ 'mark-terminal-active': workflowOutput }"
-                    title="Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
+                    :class="{ 'mark-terminal-active': workflowOutput, 'readonly-button': readonly }"
+                    :title="activeOutputHint"
                     @click="onToggleActive">
-                    <FontAwesomeIcon v-if="workflowOutput" fixed-width icon="fa-check-square" />
-                    <FontAwesomeIcon v-else fixed-width icon="far fa-square" />
+                    <FontAwesomeIcon v-if="workflowOutput" fixed-width :icon="faCheckSquare" />
+                    <FontAwesomeIcon v-else fixed-width :icon="faSquare" />
                 </button>
                 <button
                     v-if="showCalloutVisible"
-                    v-b-tooltip
+                    v-g-tooltip
                     class="callout-terminal inline-icon-button mark-terminal"
-                    :class="{ 'mark-terminal-visible': isVisible, 'mark-terminal-hidden': !isVisible }"
+                    :class="{
+                        'mark-terminal-visible': isVisible,
+                        'mark-terminal-hidden': !isVisible,
+                        'readonly-button': readonly,
+                    }"
                     :title="visibleHint"
                     @click="onToggleVisible">
-                    <FontAwesomeIcon v-if="isVisible" fixed-width icon="fa-eye" />
-                    <FontAwesomeIcon v-else fixed-width icon="fa-eye-slash" />
+                    <FontAwesomeIcon v-if="isVisible" fixed-width :icon="faEye" />
+                    <FontAwesomeIcon v-else fixed-width :icon="faEyeSlash" />
                 </button>
-                <span class="ml-1">
-                    {{ label }}
+                <span>
+                    <span
+                        v-g-tooltip
+                        :title="labelToolTipTitle"
+                        class="d-inline-block rounded"
+                        :class="labelClass"
+                        :disabled="!isDuplicateLabel">
+                        {{ label }}
+                    </span>
+                    <span> ({{ extensions.join(", ") }}) </span>
                 </span>
             </div>
 
             <div
                 v-if="addTagsAction.length > 0"
-                v-b-tooltip.left
+                v-g-tooltip.left
                 class="d-flex align-items-center overflow-x-hidden"
                 title="These tags will be added to the output dataset">
-                <FontAwesomeIcon icon="fa-plus" class="mr-1" />
+                <FontAwesomeIcon :icon="faPlus" class="mr-1" />
                 <StatelessTags disabled no-padding :value="addTagsAction" />
             </div>
 
             <div
                 v-if="removeTagsAction.length > 0"
-                v-b-tooltip.left
+                v-g-tooltip.left
                 class="d-flex align-items-center overflow-x-hidden"
                 title="These tags will be removed from the output dataset">
-                <FontAwesomeIcon icon="fa-minus" class="mr-1" />
+                <FontAwesomeIcon :icon="faMinus" class="mr-1" />
                 <StatelessTags disabled no-padding :value="removeTagsAction" />
             </div>
         </div>
@@ -354,9 +418,9 @@ const removeTagsAction = computed(() => {
         <DraggableWrapper
             :id="id"
             ref="terminalComponent"
-            v-b-tooltip.hover="outputDetails"
+            v-g-tooltip.hover="!props.blank ? outputDetails : ''"
             class="output-terminal prevent-zoom"
-            :class="{ 'mapped-over': isMultiple }"
+            :class="{ 'mapped-over': isMultiple, 'blank-output': props.blank }"
             :output-name="output.name"
             :root-offset="rootOffset"
             :prevent-default="false"
@@ -364,6 +428,7 @@ const removeTagsAction = computed(() => {
             :drag-data="{ stepId: stepId, output: effectiveOutput }"
             :draggable="!readonly"
             :disabled="readonly"
+            :snappable="false"
             @pan-by="onPanBy"
             @start="isDragging = true"
             @stop="onStopDragging"
@@ -373,7 +438,7 @@ const removeTagsAction = computed(() => {
                 :aria-label="`Connect output ${output.name} to input. Press space to see a list of available inputs`"
                 @click="toggleChildComponent"></button>
 
-            <FontAwesomeIcon class="terminal-icon" icon="fa-chevron-circle-right" />
+            <FontAwesomeIcon class="terminal-icon" :icon="faChevronCircleRight" />
 
             <ConnectionMenu
                 v-if="showChildComponent"
@@ -385,9 +450,12 @@ const removeTagsAction = computed(() => {
 </template>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 @import "nodeTerminalStyle.scss";
 
+.node-output-buttons {
+    overflow-wrap: anywhere;
+}
 .node-output {
     display: flex;
     position: relative;
@@ -397,17 +465,31 @@ const removeTagsAction = computed(() => {
     display: flex;
     flex-direction: row;
     margin-left: -0.2rem;
+
+    .readonly-button {
+        cursor: default !important;
+
+        &:hover,
+        &:focus,
+        &:active,
+        &:focus-visible {
+            background-color: unset !important;
+            color: $brand-primary !important;
+        }
+    }
 }
 
 .output-terminal {
     @include node-terminal-style(right);
 
-    &:hover {
-        color: $brand-success;
-    }
+    &:not(.blank-output) {
+        &:hover {
+            color: $brand-success;
+        }
 
-    button:focus + .terminal-icon {
-        color: $brand-success;
+        button:focus + .terminal-icon {
+            color: $brand-success;
+        }
     }
 }
 

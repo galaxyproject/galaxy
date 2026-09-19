@@ -1,4 +1,4 @@
-<tool name="SRA" id="sra_source" tool_type="data_source" version="1.0.1" profile="16.04">
+<tool name="SRA" id="sra_source" tool_type="data_source" version="1.0.1" profile="20.09">
     <description>server</description>
     <edam_operations>
         <edam_operation>operation_0224</edam_operation>

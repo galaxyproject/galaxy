@@ -7,6 +7,7 @@ which are adjacent after the unwanted species have been dropped.
 
 usage: %prog input_maf output_maf species1,species2
 """
+
 # Dan Blankenberg
 from __future__ import print_function
 
@@ -14,10 +15,7 @@ import sys
 
 import bx.align.maf
 from bx.align.tools.fuse import FusingAlignmentWriter
-from bx.align.tools.thread import (
-    get_components_for_species,
-    remove_all_gap_columns,
-)
+from bx.align.tools.thread import get_components_for_species
 
 
 def main():
@@ -41,9 +39,9 @@ def main():
             if species != ["None"]:
                 new_components = get_components_for_species(m, species)
             if new_components:
-                remove_all_gap_columns(new_components)
                 m.components = new_components
                 m.score = 0.0
+                m.remove_all_gap_columns()
                 maf_writer.write(m)
     except Exception as e:
         print("Error steping through MAF File: %s" % e, file=sys.stderr)

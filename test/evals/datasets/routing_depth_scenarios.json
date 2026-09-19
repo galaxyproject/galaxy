@@ -1,0 +1,426 @@
+[
+  {
+    "name": "rnaseq-align-then-deg-tool",
+    "domain": "RNA-seq differential expression",
+    "prior_turns": [
+      {
+        "user": "I've got paired-end Illumina FASTQ files from a mouse RNA-seq experiment. What tool should I use to align the reads to the genome?",
+        "route": "tool_recommendation",
+        "assistant_answer": "For spliced alignment of RNA-seq reads against the mouse reference (mm10/mm39), HISAT2 and STAR are the two standard choices in Galaxy. HISAT2 is fast and memory-efficient, which makes it a good default; STAR tends to give slightly better junction sensitivity at the cost of more RAM. Both are available in the Galaxy Tool Shed and output sorted BAM files you can feed straight into counting."
+      },
+      {
+        "user": "My HISAT2 job stayed grey for a long time then turned red. The stderr mentions it couldn't find the genome index. What happened?",
+        "route": "error_analysis",
+        "assistant_answer": "That red state with a missing-index error usually means HISAT2 was pointed at a built-in reference that isn't installed on this server, or the custom index dataset in your history was deleted or in an error state. Check that the 'Source for the reference genome' is set correctly: if you selected a built-in genome, pick one actually listed in the dropdown; if you're using a history dataset, make sure that FASTA finished uploading green before you run. Re-running with a valid index should clear it."
+      },
+      {
+        "user": "Okay it ran. Now I have BAM files and a GTF annotation. What tool should I use to get a per-gene count matrix?",
+        "route": "tool_recommendation",
+        "assistant_answer": "featureCounts (from the Subread package) is the most widely used tool in Galaxy for summarizing aligned reads into per-gene counts using your GTF. Set it to count at the gene level and make sure the strandedness setting matches your library prep, since getting that wrong dramatically lowers your counts. The alternative is htseq-count, which is also available but slower; featureCounts conveniently outputs a single combined matrix when you give it all your BAMs at once."
+      }
+    ],
+    "final_query": "What tool should I use to run the differential expression analysis on my featureCounts count matrix?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "rnaseq-qc-trim-deg-viz-tool",
+    "domain": "RNA-seq differential expression",
+    "prior_turns": [
+      {
+        "user": "How do I upload several FASTQ files at once into a single Galaxy history as a collection?",
+        "route": "router",
+        "assistant_answer": "Use the Upload Data dialog from the top of the tool panel, switch to the 'Collection' tab, and drag in or select all your FASTQ files. Set the collection type to 'List' for single-end or 'List of Pairs' for paired-end data, and Galaxy will let you auto-pair by filename pattern. Once built, the whole collection moves through downstream tools as one item, which keeps your history tidy when you have many samples."
+      },
+      {
+        "user": "What tool should I use to check the quality of these raw reads before I do anything else?",
+        "route": "tool_recommendation",
+        "assistant_answer": "FastQC is the standard per-sample quality report in Galaxy, giving you per-base quality, adapter content, and duplication plots. When you have many samples, run FastQC across the collection and then aggregate everything into one report with MultiQC, which summarizes all the FastQC outputs side by side. That combination is the usual first QC step before trimming."
+      },
+      {
+        "user": "FastQC flagged adapter contamination and low-quality tails. What tool should I use to trim the reads?",
+        "route": "tool_recommendation",
+        "assistant_answer": "Trimmomatic and Cutadapt are both excellent for adapter and quality trimming in Galaxy, and Trim Galore wraps Cutadapt with sensible RNA-seq defaults if you want something simpler. For Illumina adapter removal plus quality trimming of the 3' tails, Trimmomatic with the ILLUMINACLIP and SLIDINGWINDOW steps is a reliable choice. Re-run FastQC afterward to confirm the adapters are gone before alignment."
+      }
+    ],
+    "final_query": "After DESeq2 gives me my results table, is there a tool to make a volcano plot and heatmap of the differentially expressed genes?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "rnaseq-pseudoalign-deg-enrichment-tool",
+    "domain": "RNA-seq differential expression",
+    "prior_turns": [
+      {
+        "user": "I want to skip full genome alignment and quantify transcripts directly from my human RNA-seq reads. What tool should I use?",
+        "route": "tool_recommendation",
+        "assistant_answer": "Salmon and kallisto are the two pseudo-alignment quantifiers available in Galaxy that map reads against a transcriptome index instead of the genome, which is much faster than STAR or HISAT2. Salmon also models GC and sequence bias, so it's a popular default; you'll need a transcript FASTA (for example GENCODE) to build the index. Both produce per-transcript abundance estimates in TPM and estimated counts."
+      },
+      {
+        "user": "Where do I find the GENCODE human transcriptome to use as the Salmon reference?",
+        "route": "router",
+        "assistant_answer": "You can paste the GENCODE transcript FASTA URL directly into the Upload Data dialog using the 'Paste/Fetch data' field, and Galaxy will download it into your history. GENCODE hosts the transcript sequences on their website under the human release downloads, and the 'transcripts' FASTA is the one Salmon expects. Once it's green in your history, select it as the reference when you run Salmon."
+      },
+      {
+        "user": "Salmon gives me per-transcript abundances, but I need gene-level counts for differential expression. What tool should I use to summarize transcripts to genes?",
+        "route": "tool_recommendation",
+        "assistant_answer": "tximport is the standard tool in Galaxy for aggregating Salmon or kallisto transcript-level estimates up to gene-level counts, using a transcript-to-gene mapping table. It produces a count matrix that plugs directly into DESeq2 or edgeR while correctly handling the offset from average transcript length. You'll need a tx2gene file mapping transcript IDs to gene IDs, which you can derive from the GENCODE annotation."
+      }
+    ],
+    "final_query": "I have my list of significant DE genes from DESeq2. What tool should I use to run GO term and pathway enrichment analysis on them?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "varcall-germline-gatk-tool",
+    "domain": "variant calling (DNA-seq / WGS)",
+    "prior_turns": [
+      {
+        "user": "I just got paired-end Illumina WGS reads for a human sample. What tool should I use to align them to GRCh38?",
+        "route": "tool_recommendation",
+        "assistant_answer": "For short-read WGS alignment against GRCh38, BWA-MEM2 is the standard choice on Galaxy and is what GATK best-practices pipelines assume; the older BWA-MEM tool is also available if you prefer. Both emit a BAM you can feed downstream, and you'll want to provide read group information (sample, library, platform) at the mapping step so later GATK tools behave correctly. After alignment, sort and index the BAM with Samtools before variant calling."
+      },
+      {
+        "user": "How do I set the read group fields when I run the mapper? I'm not sure what to put.",
+        "route": "router",
+        "assistant_answer": "In the BWA-MEM2 tool form, expand the read-group section and set ID to something unique per sequencing run, SM to your sample name (this is what GATK uses to label the sample in the VCF), LB to your library prep identifier, and PL to ILLUMINA. If you have one sample sequenced in one run, simple values like ID=rg1, SM=sample1, LB=lib1 are fine. These propagate into the BAM header and are required for the duplicate-marking and base-recalibration steps."
+      },
+      {
+        "user": "What tool should I use to mark PCR duplicates before calling variants?",
+        "route": "tool_recommendation",
+        "assistant_answer": "Use MarkDuplicates from the Picard suite, which is installed on most Galaxy servers and flags duplicate read pairs in your coordinate-sorted BAM without removing them by default. This is the standard pre-processing step in the GATK germline best-practices flow and feeds directly into base quality score recalibration. After MarkDuplicates, run Samtools index again so the marked BAM is ready for the recalibration and calling steps."
+      }
+    ],
+    "final_query": "Now that I have a recalibrated, duplicate-marked BAM, what tool should I use to call germline SNPs and indels from it?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "varcall-somatic-tumor-normal-workflow",
+    "domain": "variant calling (DNA-seq / WGS)",
+    "prior_turns": [
+      {
+        "user": "I'm doing a tumor/normal cancer WGS study. What tool should I use to align both the tumor and normal FASTQ files?",
+        "route": "tool_recommendation",
+        "assistant_answer": "BWA-MEM2 is the right aligner for both your tumor and normal short-read WGS samples against the reference genome, and you'd run it separately on each sample to produce two BAMs. Make sure the read groups carry distinct SM values (e.g. SM=tumor and SM=normal) so the downstream somatic caller can tell the two samples apart. Sort and index each BAM with Samtools afterward before any duplicate marking."
+      },
+      {
+        "user": "How do I upload these FASTQ files? They're sitting in a Zenodo record.",
+        "route": "router",
+        "assistant_answer": "Galaxy supports Zenodo as a file source, so you can pull the FASTQ files in directly rather than downloading them locally first. Configure a Zenodo connection under User Preferences -> File Sources using the Zenodo template, then in the upload dialog choose 'Choose remote files' and browse to your record to import the paired-end files into your history. From there they're regular datasets you can feed to the aligner."
+      },
+      {
+        "user": "What tool should I use to estimate cross-sample contamination before somatic calling?",
+        "route": "tool_recommendation",
+        "assistant_answer": "GATK's GetPileupSummaries followed by CalculateContamination is the standard pair for this, and both are available through the GATK4 tool wrappers on Galaxy. GetPileupSummaries tabulates allele counts at common germline variant sites and CalculateContamination turns that into a contamination fraction you pass to the somatic caller. This is recommended whenever you want Mutect2 to filter out artifacts driven by sample contamination."
+      }
+    ],
+    "final_query": "Is there an end-to-end IWC workflow for somatic variant calling from tumor/normal BAMs using Mutect2?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "varcall-bacterial-freebayes-tool",
+    "domain": "variant calling (DNA-seq / WGS)",
+    "prior_turns": [
+      {
+        "user": "I have bacterial isolate WGS reads and a reference assembly. What tool should I use to map the reads to the reference?",
+        "route": "tool_recommendation",
+        "assistant_answer": "For bacterial short-read mapping to a reference, BWA-MEM works well and is widely available on Galaxy; Bowtie2 is an equally good alternative if you prefer its tuning options. Either produces a BAM you can sort and index with Samtools before variant calling. Given the small genome size these jobs run quickly, so you don't need to worry much about resource tuning here."
+      },
+      {
+        "user": "My mapping job failed with this in the stderr: '[E::bwa_idx_load_from_disk] fail to locate the index files' and a non-zero exit code. What went wrong?",
+        "route": "error_analysis",
+        "assistant_answer": "That error means BWA couldn't find a built index for the reference you pointed it at -- it's trying to load .amb/.ann/.bwt/.pac/.sa files that don't exist for that dataset. This usually happens when the reference was selected as a plain FASTA history dataset but indexing didn't run, or a built-in index reference was mis-selected. Re-run the tool making sure you choose 'Use a genome from history and build index' with your FASTA, or pick a properly built-in reference, and the index will be generated before mapping."
+      },
+      {
+        "user": "After I get a sorted BAM, what tool should I use to check the mapping quality and coverage depth?",
+        "route": "tool_recommendation",
+        "assistant_answer": "Samtools flagstat gives you a quick summary of mapped/properly-paired read counts, and Samtools depth or the Qualimap BamQC tool will report per-base coverage depth across the reference. Qualimap in particular produces a nice HTML report with coverage histograms and mapping-quality distributions that's handy for QC on a bacterial genome. All three are commonly installed and take your sorted, indexed BAM directly."
+      }
+    ],
+    "final_query": "What's the best tool to call SNPs and small indels from my bacterial sorted BAM against the reference?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "chip-tf-peak-annotation",
+    "domain": "ChIP-seq / ATAC-seq peak analysis",
+    "prior_turns": [
+      {
+        "user": "I've got paired-end ChIP-seq FASTQ files for a CTCF pulldown in mouse. What should I use to align them to mm10?",
+        "route": "tool_recommendation",
+        "assistant_answer": "For aligning ChIP-seq reads to a reference genome, BWA-MEM is the standard choice and is well-suited to short reads from a CTCF pulldown. Bowtie2 is the other widely-used aligner for ChIP-seq and tends to be preferred when you want fine control over end-to-end vs local alignment. Both are installed on most Galaxy servers under the mapping tools; point either at the mm10 built-in index and feed in your paired-end reads. After alignment you'll typically filter the BAM for properly-paired, high-MAPQ reads before peak calling."
+      },
+      {
+        "user": "How do I tell which mm10 reference build is actually available in the alignment tool's dropdown?",
+        "route": "router",
+        "assistant_answer": "In the tool form, the reference genome dropdown is populated from the genomes your Galaxy admin has installed as built-in indexes, so you can just open the BWA-MEM or Bowtie2 form and scroll the 'Using reference genome' selector to see if mm10 is listed. If mm10 isn't there, you can switch the source to 'history' and supply your own FASTA, or ask your admin to install the cached mm10 index. The dropdown labels usually show both the dbkey (mm10) and a human-readable name."
+      },
+      {
+        "user": "Now that I have a filtered BAM, what tool should I use to call the CTCF binding peaks?",
+        "route": "tool_recommendation",
+        "assistant_answer": "MACS2 (callpeak) is the go-to peak caller for transcription-factor ChIP-seq like CTCF -- run it in narrow-peak mode since CTCF gives sharp, punctate binding sites rather than broad domains. Provide your ChIP BAM as the treatment and, ideally, an input/IgG control BAM to model background. Set the genome size to 'mm' for mouse and keep the default q-value cutoff of 0.05 to start. The main output is a narrowPeak BED file plus summit coordinates you can carry forward to annotation."
+      }
+    ],
+    "final_query": "What's the best tool to annotate these CTCF narrowPeak regions with the nearest genes and genomic features?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "atac-nucleosome-footprint-workflow",
+    "domain": "ChIP-seq / ATAC-seq peak analysis",
+    "prior_turns": [
+      {
+        "user": "I'm starting an ATAC-seq experiment on human PBMCs. Which tool should I use to trim the Nextera adapters off my paired-end reads?",
+        "route": "tool_recommendation",
+        "assistant_answer": "For ATAC-seq adapter trimming, Trim Galore! is a solid default because it auto-detects and removes the Nextera/Tn5 adapters and does quality trimming in one pass. Cutadapt is the more configurable alternative if you want to specify the CTGTCTCTTATA Nextera sequence explicitly and tune the overlap/error settings. Either is available in Galaxy under the FASTQ QC/manipulation tools; run it in paired mode so both mates stay in sync. Run FastQC before and after to confirm the adapter content drops."
+      },
+      {
+        "user": "My Trim Galore job stayed gray and then went red after a few minutes -- the stderr just says 'cutadapt: error: No input files given'. What went wrong?",
+        "route": "error_analysis",
+        "assistant_answer": "That error means the underlying cutadapt call received no FASTQ input, which almost always traces back to an empty or mis-assigned input dataset rather than a code bug. Check that the dataset you selected in the form is actually a fastqsanger file in the 'ok' (green) state and not a failed upload or an empty collection element. If you ran it on a paired collection, make sure both the forward and reverse elements are populated -- a collection with zero elements produces exactly this 'no input files' message. Re-pick the input and rerun once the dataset is green."
+      },
+      {
+        "user": "After alignment with Bowtie2 I want to shift the Tn5 cut sites and call accessible regions. What tool should I use for ATAC-seq peak calling?",
+        "route": "tool_recommendation",
+        "assistant_answer": "MACS2 callpeak is the most common peak caller for ATAC-seq -- many pipelines run it with the --nomodel and --shift/--extsize options to account for the Tn5 9-bp offset and to center signal on the cut sites. Genrich is a strong ATAC-specific alternative that has a dedicated ATAC-seq mode (-j) which performs the Tn5 shift internally and can handle multiple replicates jointly. Both should be available in your Galaxy tool panel; for human data set the effective genome size to 'hs'. The output is a BED/narrowPeak set of accessible chromatin regions."
+      }
+    ],
+    "final_query": "Is there an end-to-end IWC workflow for ATAC-seq that goes from raw FASTQ through nucleosome footprinting and TF motif analysis?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "chip-broad-histone-diffbind",
+    "domain": "ChIP-seq / ATAC-seq peak analysis",
+    "prior_turns": [
+      {
+        "user": "I have H3K27me3 ChIP-seq across two conditions, three replicates each. After mapping, what tool should I use to call peaks for this broad histone mark?",
+        "route": "tool_recommendation",
+        "assistant_answer": "For a broad repressive mark like H3K27me3 you want a peak caller tuned for diffuse domains rather than sharp summits. MACS2 callpeak in --broad mode works and is widely used, but SICER (or its epic2 reimplementation) was designed specifically for broad histone domains and often performs better on marks like H3K27me3 and H3K9me3. Run whichever you pick against matched input controls for each condition, and keep the per-replicate BAMs separate so you can assess reproducibility downstream. The output broadPeak/domain BED files become the input to differential binding analysis."
+      },
+      {
+        "user": "How do I group my six BAM datasets into a collection so the downstream tools treat the replicates together?",
+        "route": "router",
+        "assistant_answer": "Use the 'Create dataset collection' option from the history panel -- click the checkbox-select icon at the top of the history, tick your six BAMs, then choose 'Build Dataset List' (or 'Build List of Pairs' if you're keeping forward/reverse mates together). Give the collection a clear name and, if your tool expects condition grouping, you can build two lists (one per condition) or a nested list:list. Once built, the collection appears as a single selectable item in tool forms and the tool will map over each element automatically."
+      },
+      {
+        "user": "I want to quantify which H3K27me3 domains change between my two conditions across the replicates. What tool should I use for differential binding analysis?",
+        "route": "tool_recommendation",
+        "assistant_answer": "DiffBind is the standard tool for differential binding analysis of ChIP-seq across conditions and replicates -- it reads in your peak sets plus the aligned BAMs, builds a consensus peak/affinity matrix, and tests for differential occupancy. Under the hood it uses DESeq2 or edgeR for the statistics, so you get fold-changes and FDR-adjusted p-values per region. It's available in Galaxy and expects a sample sheet describing condition, replicate, peak file, and bam for each sample. The output is a ranked table of differentially-bound H3K27me3 domains plus diagnostic PCA and correlation plots."
+      }
+    ],
+    "final_query": "What tool should I use to compute a correlation matrix and PCA across all my ChIP-seq BAM coverage tracks for QC before differential binding?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "meta-16s-taxonomy-classifier-tool",
+    "domain": "metagenomics / 16S amplicon",
+    "prior_turns": [
+      {
+        "user": "I've got paired-end 16S rRNA amplicon reads (V3-V4 region) from an Illumina MiSeq run. They still have the primer sequences attached. What tool should I use to trim the primers off before processing?",
+        "route": "tool_recommendation",
+        "assistant_answer": "For removing primer sequences from amplicon reads, Cutadapt is the standard choice in Galaxy. It lets you specify your forward and reverse primer sequences (for V3-V4 that's typically the 341F/805R pair) and trim them from the 5' ends of R1 and R2 respectively. If you only need fixed-length trimming you could use Trimmomatic or Trim Galore!, but for primer-aware removal Cutadapt is the right tool because it does adapter/primer matching rather than blind positional trimming."
+      },
+      {
+        "user": "Cutadapt worked. Now I want to denoise the reads into amplicon sequence variants instead of clustering into OTUs. Which tool does that?",
+        "route": "tool_recommendation",
+        "assistant_answer": "For generating amplicon sequence variants (ASVs) rather than OTUs, DADA2 is the tool you want. In Galaxy the DADA2 suite walks you through quality filtering (dada2: filterAndTrim), learning the error model (dada2: learnErrors), the core denoising step (dada2: dada), merging pairs, and building the sequence table with chimera removal (dada2: removeBimeraDenovo). The whole QIIME2 ecosystem is also available if you prefer that wrapper, but the standalone DADA2 tools give you finer control over each step."
+      },
+      {
+        "user": "My DADA2 filterAndTrim job finished but almost all my reads were discarded -- the output shows only about 3% of reads passed. The reverse reads have low quality near the 3' end. What went wrong?",
+        "route": "error_analysis",
+        "assistant_answer": "This is almost always a truncation-length problem rather than a real failure. Your V3-V4 reverse reads degrade in quality toward the 3' end, and if your truncLen values are set too long, DADA2 keeps low-quality tails that fail the maxEE (expected errors) filter, so reads get thrown out. Inspect the quality profile plots, then shorten truncLenR (for example to ~200) while keeping enough overlap for merging -- your forward + reverse truncated lengths need to sum to more than the ~465 bp amplicon plus ~12 bp of overlap. Relaxing maxEE on the reverse read slightly can also help."
+      }
+    ],
+    "final_query": "Now that I have my ASV sequences, what tool should I use to assign taxonomy to them against SILVA or Greengenes?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "meta-shotgun-functional-profiling-tool",
+    "domain": "metagenomics / 16S amplicon",
+    "prior_turns": [
+      {
+        "user": "How do I upload a folder of gzipped fastq files for a whole-metagenome shotgun project? There are about 40 paired-end samples.",
+        "route": "router",
+        "assistant_answer": "For 40 paired-end samples the easiest route is the Upload dialog's 'Rule-based' tab, or better yet build a paired collection so each sample's R1/R2 stay linked. Click Upload Data, switch to 'Collection', choose 'List of Pairs', and drag in your gzipped fastqs -- Galaxy will auto-detect the _R1/_R2 (or _1/_2) naming and pair them. If the files are already on a remote server or in a data library, you can also paste a list of URLs or use the FTP import to avoid uploading through the browser."
+      },
+      {
+        "user": "Great, collection is built. Before profiling I want to remove human host contamination from these shotgun reads. What tool should I use for that?",
+        "route": "tool_recommendation",
+        "assistant_answer": "To strip human host reads from shotgun metagenomes, the usual approach in Galaxy is to map against the human reference with Bowtie2 and keep only the unmapped reads, then convert those back to fastq with Samtools fastx. There's also the dedicated 'Kraken2' + filtering path, but Bowtie2 against GRCh38 (or the masked hg38 host-removal index) is the most common decontamination step. If you want an all-in-one option, the BBMap/BBDuk tool can also do reference-based host filtering in a single step."
+      },
+      {
+        "user": "Host reads removed. Now I want taxonomic profiles of what organisms are present in each clean shotgun sample. Which tool is best for that?",
+        "route": "tool_recommendation",
+        "assistant_answer": "For taxonomic profiling of shotgun metagenomes, MetaPhlAn is the standard marker-gene-based profiler and gives you relative abundances down to species/strain level. If instead you want k-mer-based classification of every read against a full database, Kraken2 (paired with Bracken for abundance re-estimation) is the other major option. MetaPhlAn tends to be cleaner for relative-abundance community profiles, while Kraken2 + Bracken gives per-read assignments and is better when you care about absolute read counts."
+      }
+    ],
+    "final_query": "Is there a Galaxy tool that will give me the functional and metabolic pathway abundances from these shotgun samples?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "meta-amplicon-diversity-viz-tool",
+    "domain": "metagenomics / 16S amplicon",
+    "prior_turns": [
+      {
+        "user": "I imported a QIIME2-style feature table and taxonomy from my 16S run. Why does my history show the .qza files as 'qza' datatype that nothing seems to accept as input?",
+        "route": "router",
+        "assistant_answer": "That's expected -- QIIME2 artifacts (.qza) and visualizations (.qzv) are their own Galaxy datatypes, and only the QIIME2 tool suite in Galaxy accepts them as inputs, so generic tools won't list them. Make sure the datatype was detected correctly (qza for artifacts, qzv for visualizations); if a file came in as plain 'binary' or 'zip', use Edit Attributes > Datatypes to set it to qza. From there the qiime2 tools in the tool panel will pick them up, and you can open any .qzv directly in the embedded QIIME2 viewer."
+      },
+      {
+        "user": "Got it. I want to build a phylogenetic tree from my representative ASV sequences so I can compute UniFrac distances. What tool should I use to make that tree?",
+        "route": "tool_recommendation",
+        "assistant_answer": "To build a phylogeny from your representative sequences, the standard QIIME2 path in Galaxy is the 'qiime phylogeny align-to-tree-mafft-fasttree' pipeline -- it does a MAFFT alignment, masks highly variable positions, and builds the tree with FastTree, producing the rooted tree UniFrac needs. If you're working outside QIIME2, you can run MAFFT to align the ASV sequences and then FastTree (or IQ-TREE / RAxML for a more rigorous maximum-likelihood tree) as separate steps. For UniFrac you specifically need the rooted tree output, so the align-to-tree-mafft-fasttree wrapper is the convenient one-shot choice."
+      },
+      {
+        "user": "Tree is built. Now which tool runs the core alpha- and beta-diversity metrics (Shannon, Faith's PD, weighted UniFrac) all at once?",
+        "route": "tool_recommendation",
+        "assistant_answer": "The tool you want is 'qiime diversity core-metrics-phylogenetic'. You give it your feature table, the rooted tree, your sample metadata, and a rarefaction sampling depth, and it computes the full panel in one go -- alpha metrics like Shannon and Faith's phylogenetic diversity, plus beta-diversity distance matrices including weighted and unweighted UniFrac, Jaccard, and Bray-Curtis, along with PCoA results and Emperor plots. If you'd rather not phylogenetically-weight anything you can use the plain 'core-metrics' instead, but since you built a tree, the phylogenetic version is the right pick."
+      }
+    ],
+    "final_query": "What tool should I use to test whether the beta-diversity differences between my treatment groups are statistically significant?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "scrna-doublet-detection-tool",
+    "domain": "single-cell RNA-seq",
+    "prior_turns": [
+      {
+        "user": "I've got 10x Genomics droplet single-cell data. What tool should I use to align the reads and generate a count matrix in Galaxy?",
+        "route": "tool_recommendation",
+        "assistant_answer": "For 10x droplet data, the go-to tool on Galaxy is RNA STARsolo, which handles barcode demultiplexing, UMI deduplication, and alignment in one step to produce a cell-by-gene count matrix. An alternative is Salmon Alevin (via the alevin-fry / Alevin tools) if you prefer a lightweight pseudoalignment approach. STARsolo is the most common choice for 10x v2/v3 chemistry because it mirrors Cell Ranger's behavior closely while staying fully open."
+      },
+      {
+        "user": "How do I upload the R1 and R2 FASTQ files as a paired collection so STARsolo picks them up correctly?",
+        "route": "router",
+        "assistant_answer": "Use the Upload tool, switch to the Collection tab, and choose 'List of Pairs' as the collection type. Drop your R1/R2 FASTQs in, and Galaxy will pair them by the shared sample prefix; you can also use the 'Build List of Dataset Pairs' option in the history if the files are already uploaded. STARsolo's input expects the cDNA read (R2) and the barcode+UMI read (R1) in the right order, so double-check the pairing before you run it."
+      },
+      {
+        "user": "After STARsolo I loaded the matrix into an AnnData object and ran filtering. What tool should I use to normalize and find highly variable genes?",
+        "route": "tool_recommendation",
+        "assistant_answer": "The Scanpy suite in Galaxy covers this end-to-end. Use 'Scanpy NormaliseData' for library-size normalization plus log1p, then 'Scanpy FindVariableGenes' to flag highly variable genes before scaling and PCA. These operate directly on your AnnData (.h5ad) object so you can chain them together, and they map onto the standard scanpy.pp.normalize_total / highly_variable_genes calls."
+      },
+      {
+        "user": "My Scanpy RunPCA job failed with an error about the input not being scaled. Here's the traceback: ValueError: zero-centering a sparse array is not allowed.",
+        "route": "error_analysis",
+        "assistant_answer": "That error means PCA received a sparse matrix that wasn't scaled/densified first. Scanpy's ScaleData step zero-centers the data and converts it appropriately; running RunPCA before scaling leaves a sparse matrix that can't be zero-centered. Insert a 'Scanpy ScaleData' step (optionally with max_value=10 to clip) before RunPCA, and the matrix will be in the dense, centered form PCA expects."
+      }
+    ],
+    "final_query": "What tool should I use to detect and remove doublets from my single-cell AnnData object?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "scrna-trajectory-workflow",
+    "domain": "single-cell RNA-seq",
+    "prior_turns": [
+      {
+        "user": "I have a filtered cell-by-gene count matrix from scRNA-seq. Is there a tool to cluster the cells and assign them to groups?",
+        "route": "tool_recommendation",
+        "assistant_answer": "Yes -- on Galaxy the standard path is the Scanpy clustering tools. After PCA and 'Scanpy ComputeGraph' (neighbors), run 'Scanpy FindCluster' which wraps the Leiden and Louvain community-detection algorithms to partition cells into clusters. Leiden is the recommended default these days because it produces better-connected clusters than Louvain. The output annotates each cell with a cluster label in the AnnData obs table."
+      },
+      {
+        "user": "Can I rename my history so I can find this analysis again later?",
+        "route": "router",
+        "assistant_answer": "Yes -- click the history name at the top of the history panel (it says 'Unnamed history' by default) and type a new name, then press Enter. You can also add tags and an annotation from the history options menu (the pencil/edit icon) to make it easier to search for later. Renaming doesn't affect any datasets or jobs in the history."
+      },
+      {
+        "user": "Now I want to find marker genes that distinguish each cluster. What tool does that?",
+        "route": "tool_recommendation",
+        "assistant_answer": "Use 'Scanpy FindMarkers' (the rank_genes_groups wrapper) to compute differentially expressed marker genes for each cluster. It supports several statistical methods -- Wilcoxon rank-sum is the recommended default, with t-test and logistic regression also available. The output ranks genes per cluster so you can identify cell-type markers, and you can visualize them afterward with the Scanpy plotting tools (dotplot, heatmap, or violin)."
+      }
+    ],
+    "final_query": "Is there a workflow in Galaxy for inferring a single-cell pseudotime trajectory from my clustered AnnData?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "scrna-celltype-annotation-tool",
+    "domain": "single-cell RNA-seq",
+    "prior_turns": [
+      {
+        "user": "I'm processing 10x single-cell data and need to remove ambient RNA contamination before downstream analysis. What tool should I use for that?",
+        "route": "tool_recommendation",
+        "assistant_answer": "For ambient RNA correction on Galaxy, SoupX is the established choice -- it estimates the contamination fraction from empty droplets and subtracts the background expression profile from each cell. DropletUtils is the complementary tool you'd use first to distinguish real cells from empty droplets (emptyDrops) when you're starting from the raw, unfiltered matrix. Run DropletUtils for cell calling, then SoupX for decontamination before normalization."
+      },
+      {
+        "user": "How do I share this history with a collaborator so they can see the decontaminated matrix?",
+        "route": "router",
+        "assistant_answer": "Open the history options menu and choose 'Share or Publish'. You can share privately by entering your collaborator's Galaxy email/username, which gives them read access without making it public, or generate a shareable link. They'll be able to import a copy into their own account; sharing is read-only, so your original history stays intact."
+      },
+      {
+        "user": "I want to integrate three samples and correct for batch effects between them. Is there a tool for batch integration of scRNA-seq data?",
+        "route": "tool_recommendation",
+        "assistant_answer": "Yes -- a few options are available on Galaxy. 'Scanpy BBKNN' (batch-balanced KNN) integrates batches at the neighbor-graph step and is fast for moderate dataset sizes. For stronger correction, Harmony (via the harmonypy integration in the Scanpy tools) adjusts the PCA embedding across batches, and Scanpy's built-in scanpy.pp.combat handles linear batch correction on the expression matrix. Harmony is the common recommendation when batch effects are pronounced."
+      }
+    ],
+    "final_query": "What's the best tool to automatically annotate cell types in my integrated single-cell AnnData object?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "assembly-bacterial-longread-polish-tool",
+    "domain": "genome assembly and annotation",
+    "prior_turns": [
+      {
+        "user": "I have Oxford Nanopore long reads for a bacterial isolate. What tool should I use to assemble them de novo?",
+        "route": "tool_recommendation",
+        "assistant_answer": "For de novo assembly of bacterial Nanopore long reads, Flye is the standard choice on Galaxy -- it's designed for noisy long reads and handles bacterial genomes and plasmids well. If you also have Illumina short reads, Unicycler can produce a hybrid assembly that's often more accurate for bacteria. Both are installed here; Flye alone is a good starting point if you only have the Nanopore data."
+      },
+      {
+        "user": "How do I upload my FASTQ files? They're about 4 GB each.",
+        "route": "router",
+        "assistant_answer": "For files that large, don't use the basic browser upload. Open the Upload dialog and choose the 'Paste/Fetch data' tab to give Galaxy a direct URL, or better, use the FTP/Rule-based upload which is built for big files. If your reads are hosted somewhere with a URL, fetching by URL is the most reliable. You can also configure a remote file source under User Preferences -> File Sources and import directly from there."
+      },
+      {
+        "user": "Before assembling, what tool should I use to check the quality of the raw Nanopore reads?",
+        "route": "tool_recommendation",
+        "assistant_answer": "NanoPlot is the go-to QC tool for Nanopore reads -- it gives you read-length distributions, quality score plots, and yield summaries that are tailored to long reads. FastQC works too but it was built for short reads, so its per-base metrics are less meaningful here. After QC, you can trim adapters and filter by length/quality with Filtlong or Porechop before feeding reads to Flye."
+      },
+      {
+        "user": "My Flye job finished but the assembly graph shows the chromosome in several contigs instead of one. Is that a problem?",
+        "route": "router",
+        "assistant_answer": "Not necessarily a failure -- fragmentation usually means coverage was uneven or there were long repeats Flye couldn't resolve. Check the assembly_info.txt for coverage per contig; very low coverage on some contigs suggests you may need more reads or less aggressive length filtering. A few contigs is normal for a first pass and can often be improved with polishing and scaffolding rather than re-assembling."
+      }
+    ],
+    "final_query": "What tool should I use to polish my Flye assembly using the Nanopore reads?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "assembly-eukaryote-annotation-tool",
+    "domain": "genome assembly and annotation",
+    "prior_turns": [
+      {
+        "user": "I just finished a draft genome assembly of a fungal species. What tool should I use to assess how complete it is?",
+        "route": "tool_recommendation",
+        "assistant_answer": "BUSCO is the standard tool for assessing genome completeness -- it searches your assembly for a lineage-specific set of single-copy orthologs and reports how many are complete, fragmented, or missing. For a fungus, use the fungi_odb10 or a more specific lineage dataset. QUAST is a useful complement for contiguity stats like N50 and total length, so running both gives you a fuller picture of assembly quality."
+      },
+      {
+        "user": "How do I set the BUSCO lineage parameter? I don't see my exact species.",
+        "route": "router",
+        "assistant_answer": "You don't need an exact species match -- BUSCO lineages are clade-level. In the tool form, set the lineage mode to pick from the available ODB datasets and choose the closest clade above your organism (e.g. fungi_odb10, or ascomycota_odb10 if your species is an ascomycete). The narrower the lineage you can justify, the more informative the completeness score. Leave auto-lineage off if you already know the clade, since specifying it directly is faster."
+      },
+      {
+        "user": "Before annotation, what tool should I use to identify and mask the repetitive elements in the assembly?",
+        "route": "tool_recommendation",
+        "assistant_answer": "RepeatMasker is the classic choice for masking known repeats, and it pairs well with RepeatModeler, which builds a de novo repeat library from your assembly first. The usual flow is RepeatModeler to model species-specific repeats, then RepeatMasker using that custom library to soft-mask the genome. Soft-masking (lowercase) rather than hard-masking is what downstream gene predictors expect."
+      }
+    ],
+    "final_query": "Is there a tool I can use to predict protein-coding genes and annotate this masked fungal assembly?",
+    "expected": "tool_recommendation"
+  },
+  {
+    "name": "assembly-hybrid-scaffold-contamination-tool",
+    "domain": "genome assembly and annotation",
+    "prior_turns": [
+      {
+        "user": "I have both Illumina and PacBio HiFi reads for a plant genome. What tool should I use to build the assembly?",
+        "route": "tool_recommendation",
+        "assistant_answer": "For PacBio HiFi data, hifiasm is the leading assembler -- it's built specifically for accurate long reads and produces highly contiguous, often phased assemblies. Your Illumina reads are best used afterward for QC and base-level validation rather than as direct input to hifiasm. If you later add Hi-C data, hifiasm can use it for haplotype-resolved scaffolding, which is valuable for a heterozygous plant genome."
+      },
+      {
+        "user": "The hifiasm job failed almost immediately. Here's the end of the stderr: '[M::ha_analyze_count] failed to open the input file' and exit code 1.",
+        "route": "error_analysis",
+        "assistant_answer": "That error means hifiasm couldn't read the input file you pointed it at -- the path resolved but the file either isn't valid FASTQ/FASTA or is empty/corrupt. The most common cause is selecting a dataset that's still in a queued or error state, or accidentally passing a non-sequence dataset (like a stats file) as the reads input. Check that the input dataset is green/ok and is actually your HiFi FASTQ, then re-run; if it's a multi-file collection, make sure the collection elements are the reads themselves."
+      },
+      {
+        "user": "Assembly worked this time. What tool should I use to scaffold the contigs into chromosome-scale sequences with my Hi-C reads?",
+        "route": "tool_recommendation",
+        "assistant_answer": "YaHS is a fast, widely-used Hi-C scaffolder that takes your contigs plus a Hi-C alignment and joins them into chromosome-scale scaffolds. The typical pipeline aligns the Hi-C reads to the contigs first (with BWA-MEM or Chromap), then feeds those alignments to YaHS. SALSA2 is an older alternative that's also available, but YaHS is generally faster and more robust for large plant genomes."
+      }
+    ],
+    "final_query": "What tool should I use to screen the scaffolded assembly for contaminant and organellar sequences before I submit it?",
+    "expected": "tool_recommendation"
+  }
+]

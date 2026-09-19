@@ -2,37 +2,42 @@ name: History Introduction
 description: A detailed introduction to the Galaxy History
 title_default: "Galaxy History Introduction"
 tags:
-  - "core"
-  - "history"
+    - "core"
+    - "history"
 
 steps:
     - content: "This short tour will guide you through <b>Galaxy's History</b> and datasets."
 
-    - title: "Upload data"
-      component: upload.start
+    - title: "Open the Upload Activity"
+      component: upload_activity.activity
       intro: |
-            At first we upload some data into your Galaxy history.<br>
-            Use this button to upload your data.
+          At first we upload some data into your Galaxy history.<br>
+          Use this button to open the upload activity.
+      preclick:
+          - ".activity-bar-header-badge"
       postclick: true
 
-    - title: "Upload your data"
-      element: "#btn-new"
-      intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data."
-      postclick: true
+    - title: "Choose Paste Links"
+      component: upload_activity.method_card(method_id=paste-links)
+      intro: "Select the Paste Links method to upload data via URL."
+      preclick: true
 
     - title: "Insert URLs"
-      element: ".upload-text-content"
-      intro: "URLs separated by a line break are automatically downloaded by Galaxy."
+      component: upload_activity.paste_textarea
+      intro: "Paste one or more URLs, separated by line breaks."
       textinsert: |
-        https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta
-        https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
+          https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta
+          https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
+
+    - title: "Add URLs"
+      component: upload_activity.add_urls_button
+      intro: "Click Add URLs to stage the URLs for upload."
+      postclick: true
 
     - title: "Start the upload"
-      element: "#btn-start"
+      component: upload_activity.start_button
       intro: "Upload the data into your Galaxy <b>History</b>."
-      postclick:
-        - "#btn-start"
-        - "#btn-close"
+      postclick: true
 
     - title: "History"
       element: "#current-history-panel"
@@ -49,19 +54,19 @@ steps:
 
     - element: "#current-history-panel div.content-item .download-btn"
       title: "Download your dataset"
-      intro: "You can download every dataset by using the floppy disc symbol."
-
-    - element: "#current-history-panel div.content-item .params-btn"
-      title: "Even more information"
-      intro: "Get an overview of all metadata associated with your dataset by using the Information symbol."
-      preclick: true
+      intro: "You can download every dataset by using the floppy disk symbol."
 
     - element: "#current-history-panel div.content-item .display-btn"
       title: "Inspect your data"
       intro: "The eye symbol can be used to look at your data."
       preclick: true
 
-    - element: "#current-history-panel div.content-item .edit-btn"
+    - component: dataset_view.details_tab
+      title: "Even more information"
+      intro: "Get an overview of all metadata associated with your dataset by using the Information symbol."
+      preclick: true
+
+    - component: dataset_view.edit_tab
       title: "Edit metadata"
       intro: "With the pencil button you can edit metadata attributes of your dataset, like the associated filetype or the dataset name."
       preclick: true
@@ -71,7 +76,7 @@ steps:
       intro: "You can remove a dataset from the history with the trash can symbol."
       postclick: true
 
-    - element: "#current-history-panel input[data-description='filter text input']"
+    - element: "#current-history-panel .content-operations-filters input[data-description='filter text input']"
       title: "Filter your datasets"
       intro: "By default your history will hide all deleted datasets from you. You can visualize them by filtering."
       textinsert: "deleted:true"
@@ -79,11 +84,11 @@ steps:
     - element: "#current-history-panel div.content-item .undelete-btn"
       title: "Undeleting a dataset"
       intro: |
-            Galaxy datasets are only marked as deleted and can be recovered by clicking this link.
-            Please note that datasets marked as deleted can be purged by your administrator at any time.
+          Galaxy datasets are only marked as deleted and can be recovered by clicking this link.
+          Please note that datasets marked as deleted can be purged by your administrator at any time.
       postclick: true
 
-    - element: "#current-history-panel [data-description='filter text input']"
+    - element: "#current-history-panel .content-operations-filters input[data-description='filter text input']"
       title: "Search your History"
       intro: "You can filter your history by typing your search term in here. Galaxy supports more advanced filters that can be seen here."
       textinsert: ""

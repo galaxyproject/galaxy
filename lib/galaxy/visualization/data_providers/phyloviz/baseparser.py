@@ -1,8 +1,9 @@
 import json
 from typing import (
     Any,
-    Dict,
 )
+
+from galaxy.exceptions import MalformedContents
 
 
 class Node:
@@ -34,7 +35,7 @@ class Node:
     def __str__(self):
         return f"{self.name} id:{str(self.id)}, depth: {str(self.depth)}"
 
-    def toJson(self) -> Dict[str, Any]:
+    def toJson(self) -> dict[str, Any]:
         """Converts the data in the node to a dict representation of json"""
         thisJson = {"name": self.name, "id": self.id, "depth": self.depth, "dist": self.length}
         thisJson = self.addChildrenToJson(thisJson)
@@ -89,7 +90,7 @@ class PhyloTree:
     def generateJsonableDict(self):
         """Changes itself into a dictonary by recurssively calling the tojson on all its nodes. Think of it
         as a dict in an array of dict in an array of dict and so on..."""
-        jsonTree: Dict[str, Any]
+        jsonTree: dict[str, Any]
         if self.root:
             assert isinstance(self.root, Node)
             jsonTree = self.root.toJson()
@@ -97,7 +98,7 @@ class PhyloTree:
                 # transfer temporary stored attr to root
                 jsonTree[key] = value
         else:
-            raise Exception("Root is not assigned!")
+            raise MalformedContents("Phylogeny file has no root node assigned")
         return jsonTree
 
 

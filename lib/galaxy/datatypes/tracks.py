@@ -1,6 +1,7 @@
 """
 Datatype classes for tracks/track views within galaxy.
 """
+
 import logging
 
 from galaxy.datatypes.protocols import (
@@ -34,11 +35,8 @@ class UCSCTrackHub(Html):
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
         """
-        rval = [
-            "<html><head><title>Files for Composite Dataset (%s)</title></head><p/>\
-            This composite dataset is composed of the following files:<p/><ul>"
-            % (self.file_ext)
-        ]
+        rval = [f"<html><head><title>Files for Composite Dataset ({self.file_ext})</title></head><p/>\
+            This composite dataset is composed of the following files:<p/><ul>"]
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             opt_text = ""
             if composite_file.optional:

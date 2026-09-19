@@ -1,24 +1,26 @@
 import collections
 import gzip
+import io
+import math
 import tempfile
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
 )
 
+import numpy
 import pytest
+from PIL import Image
 
+from galaxy.tool_util.parser.interface import TestCollectionOutputDef
 from galaxy.tool_util.verify import (
     files_contains,
     files_delta,
     files_diff,
+    files_image_diff,
     files_re_match,
     files_re_match_multiline,
 )
+from galaxy.tool_util.verify.interactor import verify_collection
 
 F1 = b"A\nB\nC"
 F2 = b"A\nB\nD\nE" * 61
@@ -27,12 +29,89 @@ F4 = b"A\r\nB\nC"
 MULTILINE_MATCH = b".*"
 TestFile = collections.namedtuple("TestFile", "value path")
 
-TestDef = Tuple[bytes, bytes, Optional[Dict[str, Any]], Optional[Type[AssertionError]]]
+TestDef = tuple[bytes, bytes, dict[str, Any] | None, type[AssertionError] | None]
+
+
+def _encode_image(im, **kwargs):
+    buf = io.BytesIO()
+    pil_im = Image.fromarray(im)
+    pil_im.save(buf, **kwargs)
+    return buf.getvalue()
+
+
+F6 = _encode_image(
+    numpy.array(
+        [
+            [255, 255, 255],
+            [255, 200, 255],
+            [255, 255, 255],
+        ],
+        dtype=numpy.uint8,
+    ),
+    format="PNG",
+)
+F7 = _encode_image(
+    numpy.array(
+        [
+            [255, 255, 255],
+            [255, 100, 255],
+            [255, 255, 255],
+        ],
+        dtype=numpy.uint8,
+    ),
+    format="TIFF",
+)
+F8 = _encode_image(
+    numpy.array(
+        [
+            [255, 255, 255],
+            [255, 100, 255],
+            [255, 255, 255],
+        ],
+        dtype=float,
+    )
+    / 0xFF,
+    format="TIFF",
+)
+F9 = _encode_image(
+    numpy.array(
+        [
+            [200, 200, 200],
+            [200, 1, 200],
+            [200, 1, 2],
+        ],
+        dtype=numpy.uint8,
+    ),
+    format="PNG",
+)
+F10 = _encode_image(
+    numpy.array(
+        [
+            [True, True, True],
+            [True, False, True],
+            [True, True, True],
+        ],
+        dtype=bool,
+    ),
+    format="TIFF",
+)
 
 
 def _test_file_list():
     files = []
-    for b, ext in [(F1, ".txt"), (F2, ".txt"), (F3, ".pdf"), (F4, ".txt"), (MULTILINE_MATCH, ".txt"), (F1, ".txt.gz")]:
+    for b, ext in [
+        (F1, ".txt"),
+        (F2, ".txt"),
+        (F3, ".pdf"),
+        (F4, ".txt"),
+        (MULTILINE_MATCH, ".txt"),
+        (F1, ".txt.gz"),
+        (F6, ".png"),
+        (F7, ".tiff"),
+        (F8, ".tiff"),
+        (F9, ".png"),
+        (F10, ".tiff"),
+    ]:
         with tempfile.NamedTemporaryFile(mode="wb", suffix=ext, delete=False) as out:
             if ext == ".txt.gz":
                 b = gzip.compress(b)
@@ -42,8 +121,8 @@ def _test_file_list():
 
 
 def generate_tests(multiline=False):
-    f1, f2, f3, f4, multiline_match, f5 = _test_file_list()
-    tests: List[TestDef]
+    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9, f10 = _test_file_list()
+    tests: list[TestDef]
     if multiline:
         tests = [(multiline_match, f1, {"lines_diff": 0, "sort": True}, None)]
     else:
@@ -60,9 +139,9 @@ def generate_tests(multiline=False):
 
 
 def generate_tests_sim_size():
-    f1, f2, f3, f4, multiline_match, f5 = _test_file_list()
+    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9, f10 = _test_file_list()
     # tests for equal files
-    tests: List[TestDef] = [
+    tests: list[TestDef] = [
         (f1, f1, None, None),  # pass default values
         (f1, f1, {"delta": 0}, None),  # pass for values that should always pass
         (f1, f1, {"delta_frac": 0.0}, None),
@@ -81,6 +160,44 @@ def generate_tests_sim_size():
             AssertionError,
         ),  # test with combination where at least one leads to an assertion
         (f1, f2, {"delta": 421, "delta_frac": 84.4}, AssertionError),
+    ]
+    return tests
+
+
+def generate_tests_image_diff():
+    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9, f10 = _test_file_list()
+    metrics = ["mae", "mse", "rms", "fro", "iou"]
+    # tests for equal files (uint8, PNG)
+    tests: list[TestDef] = [(f6, f6, {"metric": metric}, None) for metric in metrics]
+    # tests for equal files (uint8, TIFF)
+    tests += [(f7, f7, {"metric": metric}, None) for metric in metrics]
+    # tests for equal files (float, TIFF)
+    tests += [(f8, f8, {"metric": metric}, None) for metric in metrics]
+    # tests for equal files (bool, TIFF)
+    tests += [(f10, f10, {"metric": metric}, None) for metric in metrics]
+    # tests for pairs of different files
+    tests += [(f6, f8, {"metric": metric}, AssertionError) for metric in metrics]  # uint8 vs float
+    tests += [(f7, f8, {"metric": metric}, AssertionError) for metric in metrics]  # uint8 vs float
+    tests += [
+        (f6, f7, {"metric": "iou"}, None),
+        (f6, f7, {"metric": "mae", "eps": 100 / 9 + 1e-4}, None),
+        (f6, f7, {"metric": "mae", "eps": 100 / 9 - 1e-4}, AssertionError),
+        (f6, f7, {"metric": "mse", "eps": (100**2) / 9 + 1e-4}, None),
+        (f6, f7, {"metric": "mse", "eps": (100**2) / 9 - 1e-4}, AssertionError),
+        (f6, f7, {"metric": "rms", "eps": math.sqrt((100**2) / 9) + 1e-4}, None),
+        (f6, f7, {"metric": "rms", "eps": math.sqrt((100**2) / 9) - 1e-4}, AssertionError),
+        (f6, f7, {"metric": "fro", "eps": 100 + 1e-4}, None),
+        (f6, f7, {"metric": "fro", "eps": 100 - 1e-4}, AssertionError),
+        (f6, f9, {"metric": "iou", "eps": (1 - 1 / 8) + 1e-4}, None),
+        (f6, f9, {"metric": "iou", "eps": (1 - 1 / 8) - 1e-4}, AssertionError),
+        # tests `pin_labels` with a label not present in any image
+        (f6, f9, {"metric": "iou", "eps": 0.999999, "pin_labels": "5"}, AssertionError),
+        # tests `pin_labels` with a label present in both images
+        (f6, f9, {"metric": "iou", "eps": 0.999999, "pin_labels": "200"}, AssertionError),
+        (f6, f9, {"metric": "iou", "eps": 1.0, "pin_labels": "200"}, None),
+        # tests `pin_labels` with a label only present in one image
+        (f6, f9, {"metric": "iou", "eps": 1.0, "pin_labels": "200, 1"}, AssertionError),
+        (f6, f9, {"metric": "iou", "eps": 1.0, "pin_labels": "200, 255"}, AssertionError),
     ]
     return tests
 
@@ -128,3 +245,65 @@ def test_files_re_match_multiline(file1, file2, attributes, expect):
             files_re_match_multiline(file1.path, file2.path, attributes)
     else:
         files_re_match_multiline(file1.path, file2.path, attributes)
+
+
+@pytest.mark.parametrize("file1,file2,attributes,expect", generate_tests_image_diff())
+def test_files_image_diff(file1, file2, attributes, expect):
+    if expect is not None:
+        with pytest.raises(expect):
+            files_image_diff(file1.path, file2.path, attributes)
+    else:
+        files_image_diff(file1.path, file2.path, attributes)
+
+
+def test_verify_collection_element_tests_on_single_dataset():
+    output_def = TestCollectionOutputDef.from_dict(
+        {
+            "name": "My Report",
+            "element_tests": {"sample1": {"asserts": {"has_text": {"text": "hello"}}}},
+        }
+    )
+    with pytest.raises(AssertionError) as exc_info:
+        verify_collection(output_def, {"path": "/tmp/whatever", "class": "File"}, lambda *a, **k: None)
+    assert "My Report" in str(exc_info.value)
+
+
+def _nested_data_collection():
+    return {
+        "collection_type": "list:list",
+        "elements": [
+            {
+                "element_identifier": "sample1",
+                "element_type": "dataset_collection",
+                "object": {
+                    "elements": [
+                        {"element_identifier": "dnacomp", "element_type": "hda", "_output_object": {}},
+                    ],
+                },
+            },
+        ],
+    }
+
+
+def test_verify_collection_nested_element_tests_are_checked():
+    output_def = TestCollectionOutputDef.from_dict(
+        {
+            "name": "mapDamage Visualisation",
+            "element_tests": {"sample1": {"element_tests": {"dnacomp": {"asserts": {"has_text": {"text": "x"}}}}}},
+        }
+    )
+    calls = []
+    verify_collection(output_def, _nested_data_collection(), lambda el, a, o: calls.append(el["element_identifier"]))
+    assert calls == ["dnacomp"]
+
+
+def test_verify_collection_nested_elements_alias_still_checked():
+    output_def = TestCollectionOutputDef.from_dict(
+        {
+            "name": "mapDamage Visualisation",
+            "element_tests": {"sample1": {"elements": {"dnacomp": {"asserts": {"has_text": {"text": "x"}}}}}},
+        }
+    )
+    calls = []
+    verify_collection(output_def, _nested_data_collection(), lambda el, a, o: calls.append(el["element_identifier"]))
+    assert calls == ["dnacomp"]

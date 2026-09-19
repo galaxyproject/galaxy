@@ -18,7 +18,7 @@ if __name__ == "__main__":
             if len_seq > 0:
                 if gi is None:
                     raise Exception("The first sequence does not have an header.")
-                print(">%s_%d" % (gi, len_seq))
+                print(f">{gi}_{len_seq}")
                 print("\n".join(seq))
             title = line
             fields = title.split("|")
@@ -33,10 +33,10 @@ if __name__ == "__main__":
             seq.append(line)
             len_seq += len(line)
     if len_seq > 0:
-        print(">%s_%d" % (gi, len_seq))
+        print(f">{gi}_{len_seq}")
         print("\n".join(seq))
 
     print(
-        "Unable to find gi number for %d sequences, the title is replaced as giunknown" % (invalid_lines),
+        f"Unable to find gi number for {invalid_lines} sequences, the title is replaced as giunknown",
         file=sys.stderr,
     )

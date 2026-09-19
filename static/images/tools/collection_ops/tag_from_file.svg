@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 210" width="620" height="210">
+  <defs>
+    <filter id="shadow" x="-4%" y="-4%" width="110%" height="110%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+      <feComponentTransfer in="blur">
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+    </marker>
+  </defs>
+
+  <!-- Left: input collection -->
+  <rect x="10" y="10" width="170" height="130" rx="8" ry="8" fill="#d9ead3" stroke="#888" stroke-width="1" filter="url(#shadow)"/>
+  <text x="95" y="28" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#333">List</text>
+
+  <rect x="22" y="38" width="146" height="26" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="95" y="56" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">sample1</text>
+
+  <rect x="22" y="70" width="146" height="26" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="95" y="88" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">sample2</text>
+
+  <rect x="22" y="102" width="146" height="26" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="95" y="120" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">sample3</text>
+
+  <!-- Tag file -->
+  <rect x="30" y="155" width="130" height="50" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="1"/>
+  <text x="95" y="172" text-anchor="middle" font-family="monospace" font-size="8" fill="#555">sample1  group:treat</text>
+  <text x="95" y="184" text-anchor="middle" font-family="monospace" font-size="8" fill="#555">sample2  group:ctrl</text>
+  <text x="95" y="196" text-anchor="middle" font-family="monospace" font-size="8" fill="#555">sample3  group:treat</text>
+
+  <!-- Arrow -->
+  <line x1="195" y1="85" x2="385" y2="85" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="290" y="75" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#555">Tag</text>
+
+  <!-- Right: tagged collection -->
+  <rect x="400" y="10" width="205" height="130" rx="8" ry="8" fill="#d9ead3" stroke="#888" stroke-width="1" filter="url(#shadow)"/>
+  <text x="503" y="28" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#333">List (tagged)</text>
+
+  <rect x="412" y="38" width="181" height="26" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="475" y="56" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">sample1</text>
+  <rect x="527" y="43" width="60" height="16" rx="8" ry="8" fill="#e8d5f5" stroke="#7b4fa0" stroke-width="0.7"/>
+  <text x="557" y="54" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#7b4fa0">treat</text>
+
+  <rect x="412" y="70" width="181" height="26" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="475" y="88" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">sample2</text>
+  <rect x="527" y="75" width="60" height="16" rx="8" ry="8" fill="#dce8f8" stroke="#2471a3" stroke-width="0.7"/>
+  <text x="557" y="86" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#2471a3">ctrl</text>
+
+  <rect x="412" y="102" width="181" height="26" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="475" y="120" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">sample3</text>
+  <rect x="527" y="107" width="60" height="16" rx="8" ry="8" fill="#e8d5f5" stroke="#7b4fa0" stroke-width="0.7"/>
+  <text x="557" y="118" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#7b4fa0">treat</text>
+
+</svg>

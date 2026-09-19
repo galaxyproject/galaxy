@@ -7,13 +7,13 @@ from __future__ import annotations
 from typing import List
 
 from pydantic import (
-    BaseModel,
     Field,
+    RootModel,
 )
 
 
-class UsabilityDomain(BaseModel):
-    __root__: List[str] = Field(
+class UsabilityDomain(RootModel):
+    root: List[str] = Field(
         ...,
         description="Author-defined usability domain of the IEEE-2791 Object. This field is to aid in search-ability and provide a specific description of the function of the object.",
         title="Usability Domain",

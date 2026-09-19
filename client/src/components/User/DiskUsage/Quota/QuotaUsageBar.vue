@@ -3,7 +3,7 @@ import { computed, ref } from "vue";
 
 import localize from "@/utils/localization";
 
-import { DEFAULT_QUOTA_SOURCE_LABEL, QuotaUsage } from "./model/QuotaUsage";
+import { DEFAULT_QUOTA_SOURCE_LABEL, type QuotaUsage } from "./model/QuotaUsage";
 
 interface QuotaUsageBarProps {
     quotaUsage: QuotaUsage;
@@ -27,7 +27,7 @@ const quotaHasLimit = computed(() => {
 });
 const progressVariant = computed(() => {
     const percent = props.quotaUsage.quotaPercent;
-    if (percent === undefined) {
+    if (percent === undefined || percent === null) {
         return "secondary";
     }
     if (percent < 50) {
@@ -55,7 +55,10 @@ defineExpose({
 </script>
 
 <template>
-    <div class="quota-usage-bar mx-auto" :class="{ 'w-75': !embedded, 'my-5': !embedded, 'my-1': embedded }">
+    <div
+        class="quota-usage-bar mx-auto"
+        :quota-source-label="quotaUsage.rawSourceLabel"
+        :class="{ 'w-75': !embedded, 'my-5': !embedded, 'my-1': embedded }">
         <component :is="sourceTag" v-if="!isDefaultQuota && !embedded" class="quota-storage-source">
             <span class="storage-source-label">
                 <b>{{ quotaUsage.sourceLabel }}</b>

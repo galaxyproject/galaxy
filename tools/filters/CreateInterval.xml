@@ -1,5 +1,8 @@
 <tool id="createInterval" name="Create single interval" version="1.0.0">
   <description>as a new dataset</description>
+  <requirements>
+    <requirement type="package" version="5.26">perl</requirement>
+  </requirements>
   <command>
 perl '$__tool_directory__/CreateInterval.pl' '$chrom' $start $end '$name' $strand '$out_file1'
   </command>

@@ -7,8 +7,6 @@ import bx.align.maf
 
 from galaxy.datatypes.util import maf_utilities
 
-assert sys.version_info[:2] >= (2, 6)
-
 
 def __main__():
     output_name = sys.argv.pop(1)
@@ -24,18 +22,12 @@ def __main__():
                     for c in maf_utilities.iter_components_by_src_start(block, species):
                         if c is not None:
                             out.write(
-                                "%s\t%i\t%i\t%s\n"
-                                % (
-                                    maf_utilities.src_split(c.src)[-1],
-                                    c.get_forward_strand_start(),
-                                    c.get_forward_strand_end(),
-                                    c.strand,
-                                )
+                                f"{maf_utilities.src_split(c.src)[-1]}\t{c.get_forward_strand_start()}\t{c.get_forward_strand_end()}\t{c.strand}\n"
                             )
                             count += 1
         except Exception as e:
             print(f"There was a problem processing your input: {e}", file=sys.stderr)
-    print("%i MAF blocks converted to Genomic Intervals for species %s." % (count, species))
+    print(f"{count} MAF blocks converted to Genomic Intervals for species {species}.")
 
 
 if __name__ == "__main__":

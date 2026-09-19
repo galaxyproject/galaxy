@@ -7,7 +7,7 @@
         <param type="boolean" label="Booelan input." name="bool_input" optional="true" />
     </inputs>
     <outputs>
-        <output type="bool" name="bool_out" from="bool_out" />
+        <output type="boolean" name="bool_out" from="bool_out" />
     </outputs>
     <tests>
         <test>

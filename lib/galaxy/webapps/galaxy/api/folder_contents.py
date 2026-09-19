@@ -1,17 +1,15 @@
 """
 API operations on the contents of a library folder.
 """
+
 import logging
-from typing import Optional
 
 from fastapi import (
     Body,
-    Path,
     Query,
 )
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import (
     CreateLibraryFilePayload,
     LibraryFolderContentsIndexQueryPayload,
@@ -23,31 +21,30 @@ from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import FolderIdPathParam
 from galaxy.webapps.galaxy.services.library_folder_contents import LibraryFolderContentsService
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["data libraries folders"])
 
-FolderIdPathParam: LibraryFolderDatabaseIdField = Path(
-    ..., title="Folder ID", description="The encoded identifier of the library folder."
-)
-
-LimitQueryParam: int = Query(default=10, title="Limit", description="Maximum number of contents to return.")
+LimitQueryParam: int = Query(default=10, ge=1, title="Limit", description="Maximum number of contents to return.")
 
 OffsetQueryParam: int = Query(
     default=0,
+    ge=0,
     title="Offset",
     description="Return contents from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, contents between position 200-299 will be returned.",
 )
 
-SearchQueryParam: Optional[str] = Query(
+SearchQueryParam: str | None = Query(
     default=None,
     title="Search Text",
     description="Used to filter the contents. Only the folders and files which name contains this text will be returned.",
 )
 
-IncludeDeletedQueryParam: Optional[bool] = Query(
+IncludeDeletedQueryParam: bool | None = Query(
     default=False,
     title="Include Deleted",
     description="Returns also deleted contents. Deleted contents can only be retrieved by Administrators or users with",
@@ -59,7 +56,7 @@ SortByQueryParam: LibraryFolderContentsIndexSortByEnum = Query(
     description="Sort results by specified field.",
 )
 
-SortDescQueryParam: Optional[bool] = Query(
+SortDescQueryParam: bool | None = Query(
     default=False,
     title="Sort Descending",
     description="Sort results in descending order.",
@@ -82,14 +79,14 @@ class FastAPILibraryFoldersContents:
     )
     def index(
         self,
+        folder_id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        folder_id: LibraryFolderDatabaseIdField = FolderIdPathParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
-        search_text: Optional[str] = SearchQueryParam,
-        include_deleted: Optional[bool] = IncludeDeletedQueryParam,
+        search_text: str | None = SearchQueryParam,
+        include_deleted: bool | None = IncludeDeletedQueryParam,
         order_by: LibraryFolderContentsIndexSortByEnum = SortByQueryParam,
-        sort_desc: Optional[bool] = SortDescQueryParam,
+        sort_desc: bool | None = SortDescQueryParam,
     ):
         """Returns a list of a folder's contents (files and sub-folders).
 
@@ -120,8 +117,8 @@ class FastAPILibraryFoldersContents:
     )
     def create(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        folder_id: LibraryFolderDatabaseIdField = FolderIdPathParam,
+        folder_id: FolderIdPathParam,
+        trans: SessionRequestContext = DependsOnTrans,
         payload: CreateLibraryFilePayload = Body(...),
     ):
         return self.service.create(trans, folder_id, payload)

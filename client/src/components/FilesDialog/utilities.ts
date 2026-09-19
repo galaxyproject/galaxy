@@ -1,3 +1,8 @@
+import type { BrowsableFilesSourcePlugin, RemoteEntry } from "@/api/remoteFiles";
+import { USER_FILE_PREFIX } from "@/utils/url";
+
+import type { SelectionItem } from "../SelectionDialog/selectionTypes";
+
 export const isSubPath = (originPath: string, destinationPath: string) => {
     return subPathCondition(ensureTrailingSlash(originPath), ensureTrailingSlash(destinationPath));
 };
@@ -8,4 +13,54 @@ function ensureTrailingSlash(path: string) {
 }
 function subPathCondition(originPath: string, destinationPath: string) {
     return originPath !== destinationPath && destinationPath.startsWith(originPath);
+}
+
+export function fileSourcePluginToItem(plugin: BrowsableFilesSourcePlugin): SelectionItem {
+    const result = {
+        id: plugin.id,
+        label: plugin.label,
+        details: plugin.doc || "",
+        isLeaf: false,
+        url: plugin.uri_root,
+        entry: plugin,
+    };
+    return result;
+}
+
+/**
+ * Maps a RemoteEntry (file or directory) to a SelectionItem for use in the file browser.
+ */
+export function entryToSelectionItem(entry: RemoteEntry): SelectionItem {
+    return {
+        id: entry.uri,
+        label: entry.name,
+        url: entry.uri,
+        isLeaf: entry.class === "File",
+        details: "",
+        entry: entry as unknown as Record<string, unknown>,
+    };
+}
+
+/**
+ * Comparator for sorting file sources.
+ * User-created sources come first, then alphabetical by label.
+ */
+export function sortFileSources(a: SelectionItem, b: SelectionItem): number {
+    const aIsUser = a.url.startsWith(USER_FILE_PREFIX);
+    const bIsUser = b.url.startsWith(USER_FILE_PREFIX);
+
+    if (aIsUser && !bIsUser) {
+        return -1;
+    }
+    if (!aIsUser && bIsUser) {
+        return 1;
+    }
+    return a.label.localeCompare(b.label);
+}
+
+/**
+ * Normalize SelectionDialog's Model.finalize() return value (single item or array) into an array.
+ */
+export function selectionToArray(selection: SelectionItem | SelectionItem[]): SelectionItem[] {
+    return Array.isArray(selection) ? selection : selection ? [selection] : [];
 }

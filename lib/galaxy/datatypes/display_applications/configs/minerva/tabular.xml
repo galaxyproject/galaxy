@@ -1,7 +1,7 @@
 <display id="minerva_tabular" version="1.0.0" name="display at Minerva">
 	<link id="covid19" name="SARS-CoV-2 Minerva Map">
 		<url>https://covid19map.elixir-luxembourg.org/minerva/?plugins=3ca603e96a3412d52201ab76d5377ae3&amp;datasource=${data.url}</url>
-		<filter>${ $dataset.dbkey == "wuhCor1" or $dataset.dbkey == "NC_045512" }</filter>
-		<param type="data" name="data" url="galaxy_${DATASET_HASH}.tsv" />
+		<filter>${ $dataset.dbkey == "hg38" or $dataset.dbkey == "hg19" }</filter>
+		<param type="data" name="data" url="galaxy_${DATASET_HASH}.tsv" allow_cors="true" />
 	</link>
 </display>

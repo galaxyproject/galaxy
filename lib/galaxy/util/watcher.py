@@ -13,9 +13,9 @@ try:
 
     can_watch = True
 except ImportError:
-    Observer = None
-    FileSystemEventHandler = object
-    PollingObserver = None
+    Observer = None  # type: ignore[assignment, unused-ignore]
+    FileSystemEventHandler = object  # type: ignore[assignment,misc, unused-ignore]
+    PollingObserver = None  # type: ignore[assignment, misc, unused-ignore]
     can_watch = False
 
 from galaxy.util.hash_util import md5_hash_file
@@ -130,12 +130,21 @@ class EventHandler(FileSystemEventHandler):
     def __init__(self, watcher):
         self.watcher = watcher
 
-    def on_any_event(self, event):
+    # this effectively excludes on_opened and on_closed
+    def on_moved(self, event):
+        self._handle(event)
+
+    def on_created(self, event):
+        self._handle(event)
+
+    def on_deleted(self, event):
+        self._handle(event)
+
+    def on_modified(self, event):
         self._handle(event)
 
     def _extension_check(self, key, path):
-        required_extensions = self.watcher.require_extensions.get(key)
-        if required_extensions:
+        if required_extensions := self.watcher.require_extensions.get(key):
             return any(filter(path.endswith, required_extensions))
         return not any(filter(path.endswith, self.watcher.ignore_extensions.get(key, [])))
 
@@ -152,15 +161,14 @@ class EventHandler(FileSystemEventHandler):
             ext_ok = self._extension_check(path, path)
         else:
             # reversed sort for getting the most specific dir first
-            for key in reversed(sorted(self.watcher.dir_callbacks.keys())):
+            for key in sorted(self.watcher.dir_callbacks.keys(), reverse=True):
                 if os.path.commonprefix([path, key]) == key:
                     callback = self.watcher.dir_callbacks[key]
                     ext_ok = self._extension_check(key, path)
                     break
         if not callback or not ext_ok:
             return
-        cur_hash = md5_hash_file(path)
-        if cur_hash:
+        if cur_hash := md5_hash_file(path):
             if self.watcher.path_hash.get(path) == cur_hash:
                 return
             else:

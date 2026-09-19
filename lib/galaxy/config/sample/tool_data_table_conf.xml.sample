@@ -110,6 +110,10 @@
         <columns>value, name, url</columns>
         <file path="tool-data/icn3d_simple_display.loc" />
     </table>
+    <table name="sift_db" comment_char="#" allow_duplicate_entries="False">
+        <columns>dbkey, value</columns>
+        <file path="tool-data/sift_db.loc" />
+    </table>
     <!-- Refgenie __dbkeys__ -->
     <table name="__dbkeys__" type="refgenie" asset="fasta" >
         <file from_config="refgenie_config_file" />

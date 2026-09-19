@@ -1,5 +1,8 @@
 from copy import deepcopy
 from json import dumps
+from typing import Any
+
+import yaml
 
 from galaxy.schema.fetch_data import (
     FetchDataPayload,
@@ -121,14 +124,51 @@ nested_element_regression_payload = {
     "auto_decompress": True,
 }
 
+library_payload = yaml.safe_load("""
+destination:
+  type: library
+  name: "Cool Training Library"
+  description: "A longer description."
+  synopsis: "Optional - does anyone ever set this?"
+items:
+  - name: "Test Folder 1"
+    description: "Description of what is in Test Folder 1"  # Only populated with new API.
+    items:
+      - url: https://raw.githubusercontent.com/eteriSokhoyan/test-data/master/cliques-high-representatives.fa
+        src: url
+        ext: fasta
+        info: "A cool longer description."  # Only populated with new API.
+        dbkey: "hg19"  # Only populated with new API.
+  - name: "Test data segmentation-fold"
+    items:
+      - url: https://raw.githubusercontent.com/yhoogstrate/segmentation-fold/55d0bb28b01e613844ca35cf21fa41379fd72770/scripts/energy-estimation-utility/tests/test-data/workflow-test_cd-box_kturns.xml
+        name: workflow-test_cd-box_kturns.xml  # Only populated with new API.
+        info: Downloaded from https://raw.githubusercontent.com/yhoogstrate/segmentation-fold/55d0bb28b01e613844ca35cf21fa41379fd72770/scripts/energy-estimation-utility/tests/test-data/workflow-test_cd-box_kturns.xml
+        src: url
+        ext: xml
+
+""")
+
 
 def test_fetch_data_schema():
     payload = FetchDataPayload(**example_payload)
-    elements = payload.targets[0].items  # type: ignore[union-attr]  # alias doesn't type check properly
+    elements = payload.targets[0].elements  # type: ignore[union-attr]  # alias doesn't type check properly
     assert len(elements) == 3
     assert isinstance(elements[0], PastedDataElement)
     assert isinstance(elements[1], UrlDataElement)
     assert isinstance(elements[2], FileDataElement)
+
+
+def test_fetch_schema_drops_extra_files_elements():
+    request: dict[str, Any] = deepcopy(example_payload)
+    request["targets"][0]["elements"][0]["extra_files"] = {
+        "src": "pasted",
+        "elements": [{"src": "pasted", "paste_content": "owned\n", "name": "../../escaped.txt"}],
+    }
+    payload = FetchDataPayload(**request)
+    extra_files = payload.model_dump()["targets"][0]["elements"][0]["extra_files"]
+    assert extra_files["src"] == "pasted"
+    assert "elements" not in extra_files
 
 
 def test_data_items():
@@ -137,9 +177,13 @@ def test_data_items():
 
 def test_nested_collection():
     payload = FetchDataPayload(**nested_collection_payload)
-    collection_element = payload.targets[0].items[0]  # type: ignore[union-attr]  # alias doesn't type check properly
+    collection_element = payload.targets[0].elements[0]  # type: ignore[union-attr]  # alias doesn't type check properly
     assert isinstance(collection_element, NestedElement)
-    assert isinstance(collection_element.items[0], FileDataElement)
+    items = collection_element.elements
+    assert items
+    assert len(items) == 1
+    item0 = items[0]
+    assert isinstance(item0, FileDataElement)
 
 
 def test_ftp_hdca_target():
@@ -156,5 +200,9 @@ def test_recursive_archive_form_like_data():
     FetchDataPayload(**payload)
 
 
-def test_nested_elemet_regression():
+def test_nested_element_regression():
     FetchDataPayload(**nested_element_regression_payload)
+
+
+def test_library_payload():
+    FetchDataPayload(targets=[library_payload], history_id=HISTORY_ID)

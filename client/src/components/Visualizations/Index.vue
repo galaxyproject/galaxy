@@ -1,23 +1,15 @@
 <template>
     <div>
         <DisplayApplications v-if="datasetId" :dataset-id="datasetId" />
-        <PluginList :dataset-id="datasetId" />
+        <VisualizationPanel :dataset-id="datasetId" />
     </div>
 </template>
-<script>
-import DisplayApplications from "./DisplayApplications";
-import PluginList from "./PluginList";
 
-export default {
-    components: {
-        PluginList,
-        DisplayApplications,
-    },
-    props: {
-        datasetId: {
-            type: String,
-            default: null,
-        },
-    },
-};
+<script setup lang="ts">
+import DisplayApplications from "./DisplayApplications.vue";
+import VisualizationPanel from "@/components/Visualizations/VisualizationPanel.vue";
+
+defineProps<{
+    datasetId: string;
+}>();
 </script>

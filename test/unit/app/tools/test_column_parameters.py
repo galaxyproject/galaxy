@@ -1,9 +1,9 @@
-""" Tests for tool parameters, more tests exist in test_data_parameters.py and
+"""Tests for tool parameters, more tests exist in test_data_parameters.py and
 test_select_parameters.py.
 """
+
 from galaxy import model
 from galaxy.app_unittest_utils.tools_support import datatypes_registry
-from galaxy.model.base import transaction
 from galaxy.util import bunch
 from .util import BaseParameterTestCase
 
@@ -57,13 +57,17 @@ class TestDataColumnParameter(BaseParameterTestCase):
         self.other_attributes = "value='c2'"
         assert "2" == self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()})
 
+    def test_get_options_hdca_with_usecolnames(self):
+        self.other_attributes = 'use_header_names="true"'
+        options = self.param.get_options(self.trans, {"input_tsv": self.build_ready_hdca()})
+        assert len(options) > 0
+
     def setUp(self):
         super().setUp()
         self.test_history = model.History()
-        self.app.model.context.add(self.test_history)
         session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.add(self.test_history)
+        session.commit()
         self.trans = bunch.Bunch(
             app=self.app,
             get_history=lambda: self.test_history,
@@ -87,8 +91,18 @@ class TestDataColumnParameter(BaseParameterTestCase):
                 extension="interval", create_dataset=True, sa_session=self.app.model.context
             )
         )
-        ready_hda.set_dataset_state("ok")
+        ready_hda.state = "ok"
         return ready_hda
+
+    def build_ready_hdca(self):
+        hda = self.build_ready_hda()
+        session = self.app.model.context
+        c1 = model.DatasetCollection(collection_type="list")
+        model.DatasetCollectionElement(collection=c1, element=hda, element_identifier="sample1", element_index=0)
+        hdca = model.HistoryDatasetCollectionAssociation(collection=c1, name="test_collection")
+        session.add(hdca)
+        session.commit()
+        return hdca
 
     @property
     def param(self):

@@ -1,26 +1,28 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 
-import { fetcher } from "@/schema";
+import { GalaxyApi } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
 
 const jobLock = ref(false);
 const jobLockUpdating = ref(true);
 
-const jobLockStatus = fetcher.path("/api/job_lock").method("get").create();
-const jobLockUpdate = fetcher.path("/api/job_lock").method("put").create();
-
-watch(jobLock, async (newVal) => {
+watch(jobLock, async (_newVal) => {
     jobLockUpdating.value = true;
-    const { data } = await jobLockUpdate({ active: jobLock.value });
+    const { data, error } = await GalaxyApi().PUT("/api/job_lock", { body: { active: jobLock.value } });
+    if (error) {
+        rethrowSimple(error);
+    }
     jobLock.value = data.active;
     jobLockUpdating.value = false;
 });
 
 onMounted(async () => {
-    // TODO: see if we can upstream an optional arg when no params are required?
-    // i.e. jobLockStatus() instead of jobLockStatus({})
-    const response = await jobLockStatus({});
-    jobLock.value = response.data.active;
+    const { data, error } = await GalaxyApi().GET("/api/job_lock");
+    if (error) {
+        rethrowSimple(error);
+    }
+    jobLock.value = data.active;
     jobLockUpdating.value = false;
 });
 </script>

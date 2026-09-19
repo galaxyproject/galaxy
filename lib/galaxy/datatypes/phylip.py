@@ -7,6 +7,7 @@ Created on January. 05, 2018
 @githuborganization: C3BI
 Phylip datatype sniffer
 """
+
 from typing import TYPE_CHECKING
 
 from galaxy import util
@@ -44,13 +45,13 @@ class Phylip(Text):
         """
         dataset.metadata.data_lines = self.count_data_lines(dataset)
         try:
-            dataset.metadata.sequences = int(open(dataset.file_name).readline().split()[0])
+            dataset.metadata.sequences = int(open(dataset.get_file_name()).readline().split()[0])
         except Exception:
             raise Exception("Header does not correspond to PHYLIP header.")
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             if dataset.metadata.sequences:
                 dataset.blurb = f"{util.commaify(str(dataset.metadata.sequences))} sequences"
             else:

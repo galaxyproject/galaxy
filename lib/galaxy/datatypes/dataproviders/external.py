@@ -2,6 +2,7 @@
 Data providers that iterate over a source that is not in memory
 or not in a file.
 """
+
 import gzip
 import logging
 import subprocess
@@ -12,7 +13,10 @@ from urllib.parse import (
 )
 from urllib.request import urlopen
 
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 from . import (
     base,
     line,
@@ -123,11 +127,36 @@ class URLDataProvider(base.DataProvider):
 
         if method == "GET":
             self.url += f"?{encoded_data}"
-            opened = urlopen(url, timeout=DEFAULT_SOCKET_TIMEOUT)
-        elif method == "POST":
-            opened = urlopen(url, encoded_data, timeout=DEFAULT_SOCKET_TIMEOUT)
-        else:
+        elif method != "POST":
             raise ValueError(f"Not a valid method: {method}")
+
+        self.response = None
+        self.session = None
+        if scheme == "ftp":
+            post_data = encoded_data.encode("utf-8") if method == "POST" else None
+            opened = urlopen(self.url, post_data, timeout=DEFAULT_SOCKET_TIMEOUT)
+        elif method == "GET":
+            self.session = requests.Session()
+            self.response = self.session.get(self.url, stream=True, timeout=DEFAULT_SOCKET_TIMEOUT)
+            try:
+                self.response.raise_for_status()
+            except requests.exceptions.HTTPError:
+                self.response.close()
+                self.session.close()
+                raise
+            self.response.raw.decode_content = True
+            opened = self.response.raw
+        else:
+            self.session = requests.Session()
+            self.response = self.session.post(url, data=self.data, stream=True, timeout=DEFAULT_SOCKET_TIMEOUT)
+            try:
+                self.response.raise_for_status()
+            except requests.exceptions.HTTPError:
+                self.response.close()
+                self.session.close()
+                raise
+            self.response.raw.decode_content = True
+            opened = self.response.raw
 
         super().__init__(opened, **kwargs)
         # NOTE: the request object is now accessible as self.source
@@ -136,7 +165,12 @@ class URLDataProvider(base.DataProvider):
         pass
 
     def __exit__(self, *args):
-        self.source.close()
+        if self.response is not None:
+            self.response.close()
+            assert self.session is not None
+            self.session.close()
+        else:
+            self.source.close()
 
 
 # ----------------------------------------------------------------------------- generic compression
@@ -158,7 +192,7 @@ class TempfileDataProvider(base.DataProvider):
     """
     Writes the data from the given source to a temp file, allowing
     it to be used as a source where a file_name is needed (e.g. as a parameter
-    to a command line tool: samtools view -t <this_provider.source.file_name>)
+    to a command line tool: samtools view -t <this_provider.source.get_file_name()>)
     """
 
     def __init__(self, source, **kwargs):

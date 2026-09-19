@@ -1,4 +1,4 @@
-import localeStrings from "i18n!nls/locale";
+import localeStrings from "@/nls/index.js";
 
 /**
  * @param {String} strToLocalize

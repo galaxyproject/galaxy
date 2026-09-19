@@ -1,22 +1,16 @@
 """The module describes the ``hostname`` job metrics plugin."""
+
 import logging
 
 from . import InstrumentPlugin
-from .. import formatting
 
 log = logging.getLogger(__name__)
-
-
-class HostnameFormatter(formatting.JobMetricFormatter):
-    def format(self, key, value):
-        return key, value
 
 
 class HostnamePlugin(InstrumentPlugin):
     """Gather hostname"""
 
     plugin_type = "hostname"
-    formatter = HostnameFormatter()
 
     def __init__(self, **kwargs):
         pass

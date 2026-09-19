@@ -33,14 +33,6 @@ tool\_shed.webapp.controllers.hg module
    :undoc-members:
    :show-inheritance:
 
-tool\_shed.webapp.controllers.repository module
------------------------------------------------
-
-.. automodule:: tool_shed.webapp.controllers.repository
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 tool\_shed.webapp.controllers.repository\_review module
 -------------------------------------------------------
 

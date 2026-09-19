@@ -18,13 +18,14 @@
 </template>
 
 <script>
-import LoadingSpan from "components/LoadingSpan";
-import _l from "utils/localization";
-
 import { useWorkflowStores } from "@/composables/workflowStores";
+import _l from "@/utils/localization";
+import { getShortToolId } from "@/utils/tool";
 
 import { getToolPredictions } from "./modules/services";
 import { getCompatibleRecommendations } from "./modules/utilities";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 export default {
     components: {
@@ -59,11 +60,7 @@ export default {
     },
     methods: {
         getToolId(toolId) {
-            if (toolId !== undefined && toolId !== null && toolId.indexOf("/") > -1) {
-                const toolIdSlash = toolId.split("/");
-                toolId = toolIdSlash[toolIdSlash.length - 2];
-            }
-            return toolId;
+            return getShortToolId(toolId ?? "");
         },
         getWorkflowPath(currentNodeId) {
             const steps = {};
@@ -122,7 +119,7 @@ export default {
                     this.compatibleTools = getCompatibleRecommendations(
                         predictedDataChildren,
                         outputDatatypes,
-                        this.datatypesMapper
+                        this.datatypesMapper,
                     );
                 }
                 this.showLoading = false;
@@ -133,7 +130,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .workflow-recommendations {
     display: block;

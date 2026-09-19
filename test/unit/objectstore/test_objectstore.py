@@ -1,24 +1,43 @@
 import os
+import shutil
 import time
+from functools import wraps
 from tempfile import (
     mkdtemp,
     mkstemp,
 )
-from unittest.mock import patch
+from unittest.mock import (
+    call,
+    MagicMock,
+    patch,
+)
 from uuid import uuid4
 
 import pytest
+from requests import get
 
 from galaxy.exceptions import ObjectInvalid
+from galaxy.objectstore import (
+    DeviceSourceMap,
+    ObjectStoreAuth,
+    persist_extra_files_for_dataset,
+)
+from galaxy.objectstore._caching_base import (
+    RemoteDataStream,
+    STREAM_CHUNK_SIZE,
+)
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
 from galaxy.objectstore.caching import (
     CacheTarget,
     check_cache,
     InProcessCacheMonitor,
+    reset_cache,
 )
 from galaxy.objectstore.cloud import Cloud
+from galaxy.objectstore.examples import get_example
 from galaxy.objectstore.pithos import PithosObjectStore
 from galaxy.objectstore.s3 import S3ObjectStore
+from galaxy.objectstore.s3_boto3 import S3ObjectStore as Boto3ObjectStore
 from galaxy.objectstore.unittest_utils import (
     Config as TestConfig,
     DISK_TEST_CONFIG,
@@ -28,6 +47,31 @@ from galaxy.util import (
     directory_hash_id,
     unlink,
 )
+from galaxy.util.unittest_utils import skip_unless_environ
+
+
+def test_persist_extra_files_skips_symlink_outside_source_directory(tmp_path):
+    extra_files_path = tmp_path / "extra"
+    extra_files_path.mkdir()
+    valid_path = extra_files_path / "valid.txt"
+    valid_path.write_text("valid")
+    outside_path = tmp_path / "outside.txt"
+    outside_path.write_text("outside")
+    (extra_files_path / "escaped.txt").symlink_to(outside_path)
+
+    with TestConfig(DISK_TEST_CONFIG) as (_directory, object_store):
+        dataset = MockDataset(1)
+        object_store.create(dataset)
+        persist_extra_files_for_dataset(
+            object_store,
+            extra_files_path,
+            dataset,  # type: ignore[arg-type,unused-ignore]
+            dataset._extra_files_rel_path,
+        )
+
+        persisted_extra_files = _extra_file_path(object_store, dataset)
+        assert open(os.path.join(persisted_extra_files, "valid.txt")).read() == "valid"
+        assert not os.path.lexists(os.path.join(persisted_extra_files, "escaped.txt"))
 
 
 # Unit testing the cloud and advanced infrastructure object stores is difficult, but
@@ -43,6 +87,11 @@ class UninitializedS3ObjectStore(S3ObjectStore):
         pass
 
 
+class UninitializedBoto3ObjectStore(Boto3ObjectStore):
+    def _initialize(self):
+        pass
+
+
 class UninitializedAzureBlobObjectStore(AzureBlobObjectStore):
     def _initialize(self):
         pass
@@ -51,6 +100,20 @@ class UninitializedAzureBlobObjectStore(AzureBlobObjectStore):
 class UninitializedCloudObjectStore(Cloud):
     def _initialize(self):
         pass
+
+
+def patch_object_stores_to_skip_initialize(f):
+
+    @wraps(f)
+    @patch("galaxy.objectstore.s3.S3ObjectStore", UninitializedS3ObjectStore)
+    @patch("galaxy.objectstore.s3_boto3.S3ObjectStore", UninitializedBoto3ObjectStore)
+    @patch("galaxy.objectstore.pithos.PithosObjectStore", UninitializedPithosObjectStore)
+    @patch("galaxy.objectstore.cloud.Cloud", UninitializedCloudObjectStore)
+    @patch("galaxy.objectstore.azure_blob.AzureBlobObjectStore", UninitializedAzureBlobObjectStore)
+    def wrapper(*args, **kwd):
+        f(*args, **kwd)
+
+    return wrapper
 
 
 def test_unlink_path():
@@ -182,7 +245,7 @@ def test_disk_store_by_uuid():
                 directory.temp_directory,
                 "files1",
                 output_dataset.rel_path_for_uuid_test(),
-                "dataset_%s.dat" % output_dataset.uuid,
+                f"dataset_{output_dataset.uuid}.dat",
             )
             assert not os.path.exists(output_real_path)
             output_working_path = directory.write("NEW CONTENTS", "job_working_directory1/example_output")
@@ -233,61 +296,8 @@ def test_disk_store_alt_name_abspath():
             pass
 
 
-HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
-<object_store type="hierarchical">
-    <backends>
-        <backend id="files1" type="disk" weight="1" order="0" name="Newer Cool Storage">
-            <description>
-              This is our new storage cluster, check out the storage
-              on our institute's system page for [Fancy New Storage](http://computecenter.example.com/systems/fancystorage).
-            </description>
-            <files_dir path="${temp_directory}/files1"/>
-            <extra_dir type="temp" path="${temp_directory}/tmp1"/>
-            <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
-        </backend>
-        <backend id="files2" type="disk" weight="1" order="1" name="Older Legacy Storage">
-            <description>
-              This is our older legacy storage cluster, check out the storage
-              on our institute's system page for [Legacy Storage](http://computecenter.example.com/systems/legacystorage).
-            </description>
-            <files_dir path="${temp_directory}/files2"/>
-            <extra_dir type="temp" path="${temp_directory}/tmp2"/>
-            <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
-        </backend>
-    </backends>
-</object_store>
-"""
-
-HIERARCHICAL_TEST_CONFIG_YAML = """
-type: hierarchical
-backends:
-   - id: files1
-     name: Newer Cool Storage
-     description: |
-      This is our new storage cluster, check out the storage
-      on our institute's system page for [Fancy New Storage](http://computecenter.example.com/systems/fancystorage).
-     type: disk
-     weight: 1
-     files_dir: "${temp_directory}/files1"
-     extra_dirs:
-     - type: temp
-       path: "${temp_directory}/tmp1"
-     - type: job_work
-       path: "${temp_directory}/job_working_directory1"
-   - id: files2
-     name: Older Legacy Storage
-     description: |
-      This is our older legacy storage cluster, check out the storage
-      on our institute's system page for [Legacy Storage](http://computecenter.example.com/systems/legacystorage).
-     type: disk
-     weight: 1
-     files_dir: "${temp_directory}/files2"
-     extra_dirs:
-     - type: temp
-       path: "${temp_directory}/tmp2"
-     - type: job_work
-       path: "${temp_directory}/job_working_directory2"
-"""
+HIERARCHICAL_TEST_CONFIG = get_example("hierarchical_simple.xml")
+HIERARCHICAL_TEST_CONFIG_YAML = get_example("hierarchical_simple.yml")
 
 
 def test_hierarchical_store():
@@ -389,7 +399,6 @@ def test_mixed_private():
     # Distributed object store can combine private and non-private concrete objectstores
     with TestConfig(MIXED_STORE_BY_DISTRIBUTED_TEST_CONFIG) as (directory, object_store):
         ids = object_store.object_store_ids()
-        print(ids)
         assert len(ids) == 2
 
         ids = object_store.object_store_ids(private=True)
@@ -421,40 +430,8 @@ def test_empty_cache_targets_for_disk_nested_stores():
         assert len(object_store.cache_targets()) == 0
 
 
-BADGES_TEST_1_CONFIG_XML = """<?xml version="1.0"?>
-<object_store type="disk">
-    <files_dir path="${temp_directory}/files1"/>
-    <extra_dir type="temp" path="${temp_directory}/tmp1"/>
-    <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
-    <badges>
-        <short_term />
-        <faster>Fast interconnects.</faster>
-        <less_stable />
-        <more_secure />
-        <backed_up>Storage is backed up to tape nightly.</backed_up>
-    </badges>
-</object_store>
-"""
-
-
-BADGES_TEST_1_CONFIG_YAML = """
-type: disk
-files_dir: "${temp_directory}/files1"
-store_by: uuid
-extra_dirs:
-  - type: temp
-    path: "${temp_directory}/tmp1"
-  - type: job_work
-    path: "${temp_directory}/job_working_directory1"
-badges:
-  - type: short_term
-  - type: faster
-    message: Fast interconnects.
-  - type: less_stable
-  - type: more_secure
-  - type: backed_up
-    message: Storage is backed up to tape nightly.
-"""
+BADGES_TEST_1_CONFIG_XML = get_example("disk_badges.xml")
+BADGES_TEST_1_CONFIG_YAML = get_example("disk_badges.yml")
 
 
 def test_badges_parsing():
@@ -521,52 +498,8 @@ def test_badges_parsing_conflicts():
         assert exception_raised
 
 
-DISTRIBUTED_TEST_CONFIG = """<?xml version="1.0"?>
-<object_store type="distributed">
-    <backends>
-        <backend id="files1" type="disk" weight="2">
-            <quota source="1files" />
-            <files_dir path="${temp_directory}/files1"/>
-            <extra_dir type="temp" path="${temp_directory}/tmp1"/>
-            <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
-        </backend>
-        <backend id="files2" type="disk" weight="1">
-            <quota source="2files" />
-            <files_dir path="${temp_directory}/files2"/>
-            <extra_dir type="temp" path="${temp_directory}/tmp2"/>
-            <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
-        </backend>
-    </backends>
-</object_store>
-"""
-
-
-DISTRIBUTED_TEST_CONFIG_YAML = """
-type: distributed
-backends:
-   - id: files1
-     quota:
-       source: 1files
-     type: disk
-     weight: 2
-     files_dir: "${temp_directory}/files1"
-     extra_dirs:
-     - type: temp
-       path: "${temp_directory}/tmp1"
-     - type: job_work
-       path: "${temp_directory}/job_working_directory1"
-   - id: files2
-     quota:
-       source: 2files
-     type: disk
-     weight: 1
-     files_dir: "${temp_directory}/files2"
-     extra_dirs:
-     - type: temp
-       path: "${temp_directory}/tmp2"
-     - type: job_work
-       path: "${temp_directory}/job_working_directory2"
-"""
+DISTRIBUTED_TEST_CONFIG = get_example("distributed_disk.xml")
+DISTRIBUTED_TEST_CONFIG_YAML = get_example("distributed_disk.yml")
 
 
 def test_distributed_store():
@@ -598,6 +531,21 @@ def test_distributed_store():
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
 
+            device_source_map = object_store.get_device_source_map()
+            assert device_source_map
+            assert device_source_map.get_device_id("files1") == "primary_disk"
+            assert device_source_map.get_device_id("files2") == "primary_disk"
+
+
+def test_device_source_map_user_object_store():
+    """User-defined object stores return their own ID as the device ID."""
+
+    device_map = DeviceSourceMap()
+    user_store_id = "user_objects://abc123"
+    assert device_map.get_device_id(user_store_id) == user_store_id
+    # A non-existent, non-user store still falls back to the default (None).
+    assert device_map.get_device_id("does_not_exist") is None
+
 
 def test_distributed_store_empty_cache_targets():
     for config_str in [DISTRIBUTED_TEST_CONFIG, DISTRIBUTED_TEST_CONFIG_YAML]:
@@ -605,49 +553,35 @@ def test_distributed_store_empty_cache_targets():
             assert len(object_store.cache_targets()) == 0
 
 
-DISTRIBUTED_TEST_S3_CONFIG_YAML = """
-type: distributed
-backends:
-  - id: files1
-    weight: 1
-    type: s3
-    auth:
-      access_key: access_moo
-      secret_key: secret_cow
-
-    bucket:
-      name: unique_bucket_name_all_lowercase
-      use_reduced_redundancy: false
-
-    extra_dirs:
-    - type: job_work
-      path: ${temp_directory}/job_working_directory_s3
-    - type: temp
-      path: ${temp_directory}/tmp_s3
-  - id: files2
-    weight: 1
-    type: s3
-    auth:
-      access_key: access_moo
-      secret_key: secret_cow
-
-    bucket:
-      name: unique_bucket_name_all_lowercase_2
-      use_reduced_redundancy: false
-
-    extra_dirs:
-    - type: job_work
-      path: ${temp_directory}/job_working_directory_s3_2
-    - type: temp
-      path: ${temp_directory}/tmp_s3_2
-"""
-
-
-@patch("galaxy.objectstore.s3.S3ObjectStore", UninitializedS3ObjectStore)
+@patch_object_stores_to_skip_initialize
 def test_distributed_store_with_cache_targets():
-    for config_str in [DISTRIBUTED_TEST_S3_CONFIG_YAML]:
-        with TestConfig(config_str) as (directory, object_store):
+    for config_str in [get_example("distributed_s3.yml")]:
+        with TestConfig(config_str) as (_, object_store):
             assert len(object_store.cache_targets()) == 2
+
+
+def test_distributed_store_start_propagates_to_backends():
+    with TestConfig(DISTRIBUTED_TEST_CONFIG) as (_, object_store):
+        for backend in object_store.backends.values():
+            backend.start = MagicMock()
+        object_store.start()
+        for backend in object_store.backends.values():
+            backend.start.assert_called_once()
+
+
+def test_distributed_store_get_filename_forwards_auth_to_backend():
+    auth = ObjectStoreAuth(user=None)
+    dataset = MockDataset(1)
+    dataset.object_store_id = "files1"
+    with TestConfig(DISTRIBUTED_TEST_CONFIG) as (directory, object_store):
+        directory.write("Hello World!", "files1/000/dataset_1.dat")
+        backend = object_store.backends["files1"]
+        backend._get_filename = MagicMock(wraps=backend._get_filename)
+
+        object_store.get_filename(dataset, auth=auth)
+
+        backend._get_filename.assert_called_once()
+        assert backend._get_filename.call_args.kwargs["auth"] is auth
 
 
 HIERARCHICAL_MUST_HAVE_UNIFIED_QUOTA_SOURCE = """<?xml version="1.0"?>
@@ -680,37 +614,24 @@ def test_hiercachical_backend_must_share_quota_source():
     assert the_exception is not None
 
 
-PITHOS_TEST_CONFIG = """<?xml version="1.0"?>
-<object_store type="pithos">
-    <auth url="http://example.org/" token="extoken123" />
-    <container name="foo" project="cow" />
-    <extra_dir type="temp" path="database/tmp_pithos"/>
-    <extra_dir type="job_work" path="database/working_pithos"/>
-</object_store>
-"""
+PITHOS_TEST_CONFIG = get_example("pithos_simple.xml")
+PITHOS_TEST_CONFIG_YAML = get_example("pithos_simple.yml")
 
 
-PITHOS_TEST_CONFIG_YAML = """
-type: pithos
-auth:
-  url: http://example.org/
-  token: extoken123
-
-container:
-  name: foo
-  project: cow
-
-extra_dirs:
-  - type: temp
-    path: database/tmp_pithos
-  - type: job_work
-    path: database/working_pithos
-"""
+@patch_object_stores_to_skip_initialize
+def test_pithos_caches_outside_the_dataset_directory():
+    # Pithos used to stage into config.file_path - the primary dataset directory -
+    # which puts cache files among datasets and points the cache monitor at them.
+    for config_str in [PITHOS_TEST_CONFIG, PITHOS_TEST_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.staging_path == directory.global_config.object_store_cache_path
+            assert object_store.staging_path != directory.global_config.file_path
 
 
+@patch_object_stores_to_skip_initialize
 def test_config_parse_pithos():
     for config_str in [PITHOS_TEST_CONFIG, PITHOS_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UninitializedPithosObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             configured_config_dict = object_store.config_dict
             _assert_has_keys(configured_config_dict, ["auth", "container", "extra_dirs"])
 
@@ -744,42 +665,14 @@ def test_config_parse_pithos():
             assert len(extra_dirs) == 2
 
 
-S3_TEST_CONFIG = """<object_store type="s3" private="true">
-     <auth access_key="access_moo" secret_key="secret_cow" />
-     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <cache path="database/object_store_cache" size="1000" />
-     <extra_dir type="job_work" path="database/job_working_directory_s3"/>
-     <extra_dir type="temp" path="database/tmp_s3"/>
-</object_store>
-"""
+S3_TEST_CONFIG = get_example("s3_simple.xml")
+S3_TEST_CONFIG_YAML = get_example("s3_simple.yml")
 
 
-S3_TEST_CONFIG_YAML = """
-type: s3
-private: true
-auth:
-  access_key: access_moo
-  secret_key: secret_cow
-
-bucket:
-  name: unique_bucket_name_all_lowercase
-  use_reduced_redundancy: false
-
-cache:
-  path: database/object_store_cache
-  size: 1000
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_s3
-- type: temp
-  path: database/tmp_s3
-"""
-
-
+@patch_object_stores_to_skip_initialize
 def test_config_parse_s3():
     for config_str in [S3_TEST_CONFIG, S3_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UninitializedS3ObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             assert object_store.private
             assert object_store.access_key == "access_moo"
             assert object_store.secret_key == "secret_cow"
@@ -827,140 +720,623 @@ def test_config_parse_s3():
             assert len(extra_dirs) == 2
 
 
-S3_DEFAULT_CACHE_TEST_CONFIG = """<object_store type="s3" private="true">
-     <auth access_key="access_moo" secret_key="secret_cow" />
-     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <extra_dir type="job_work" path="database/job_working_directory_s3"/>
-     <extra_dir type="temp" path="database/tmp_s3"/>
-</object_store>
-"""
+S3_DEFAULT_CACHE_TEST_CONFIG = get_example("s3_global_cache.xml")
+S3_DEFAULT_CACHE_TEST_CONFIG_YAML = get_example("s3_global_cache.yml")
 
 
-S3_DEFAULT_CACHE_TEST_CONFIG_YAML = """
-type: s3
-private: true
-auth:
-  access_key: access_moo
-  secret_key: secret_cow
-
-bucket:
-  name: unique_bucket_name_all_lowercase
-  use_reduced_redundancy: false
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_s3
-- type: temp
-  path: database/tmp_s3
-"""
-
-
+@patch_object_stores_to_skip_initialize
 def test_config_parse_s3_with_default_cache():
     for config_str in [S3_DEFAULT_CACHE_TEST_CONFIG, S3_DEFAULT_CACHE_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UninitializedS3ObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             assert object_store.cache_size == -1
             assert object_store.staging_path == directory.global_config.object_store_cache_path
 
 
-CLOUD_AWS_TEST_CONFIG = """<object_store type="cloud" provider="aws">
-     <auth access_key="access_moo" secret_key="secret_cow" />
-     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <cache path="database/object_store_cache" size="1000" />
-     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
-     <extra_dir type="temp" path="database/tmp_cloud"/>
-</object_store>
-"""
+@patch_object_stores_to_skip_initialize
+def test_config_parse_boto3():
+    for config_str in [get_example("boto3_simple.xml"), get_example("boto3_simple.yml")]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.access_key == "access_moo"
+            assert object_store.secret_key == "secret_cow"
+
+            assert object_store.bucket == "unique_bucket_name_all_lowercase"
+
+            # defaults to AWS
+            assert object_store.endpoint_url is None
+
+            # direct download (presigned URL redirects) is opt-in
+            assert object_store.enable_direct_download is False
+
+            cache_target = object_store.cache_target
+            assert cache_target.size == 1000
+            assert cache_target.path == "database/object_store_cache"
+            assert object_store.extra_dirs["job_work"] == "database/job_working_directory_s3"
+            assert object_store.extra_dirs["temp"] == "database/tmp_s3"
+
+            as_dict = object_store.to_dict()
+            _assert_has_keys(as_dict, ["auth", "bucket", "connection", "cache", "extra_dirs", "type"])
+
+            _assert_key_has_value(as_dict, "type", "boto3")
+
+            auth_dict = as_dict["auth"]
+            bucket_dict = as_dict["bucket"]
+            cache_dict = as_dict["cache"]
+
+            _assert_key_has_value(auth_dict, "access_key", "access_moo")
+            _assert_key_has_value(auth_dict, "secret_key", "secret_cow")
+
+            _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
+
+            _assert_key_has_value(cache_dict, "size", 1000)
+            _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
+
+            extra_dirs = as_dict["extra_dirs"]
+            assert len(extra_dirs) == 2
 
 
-CLOUD_AWS_TEST_CONFIG_YAML = """
-type: cloud
-provider: aws
+@patch_object_stores_to_skip_initialize
+def test_config_parse_enable_direct_download():
+    for config_str in [get_example("boto3_direct_download.xml"), get_example("boto3_direct_download.yml")]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.enable_direct_download is True
+
+            as_dict = object_store.to_dict()
+            _assert_key_has_value(as_dict, "enable_direct_download", True)
+
+            model = object_store.to_model("the_object_store_id")
+            assert model.enable_direct_download is True
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_direct_download_url_returns_presigned_url_when_enabled():
+    with TestConfig(get_example("boto3_direct_download.yml")) as (directory, object_store):
+        object_store._client = MagicMock()
+        object_store._client.generate_presigned_url.return_value = "https://s3.example.org/signed"
+        with patch.object(object_store, "_exists", return_value=True):
+            url = object_store.get_direct_download_url(MockDataset(1))
+        assert url == "https://s3.example.org/signed"
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_direct_download_url_returns_none_when_disabled():
+    with TestConfig(get_example("boto3_simple.yml")) as (directory, object_store):
+        object_store._client = MagicMock()
+        with patch.object(object_store, "_exists", return_value=True):
+            url = object_store.get_direct_download_url(MockDataset(1))
+        assert url is None
+        object_store._client.generate_presigned_url.assert_not_called()
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_direct_download_url_forwards_content_disposition():
+    with TestConfig(get_example("boto3_direct_download.yml")) as (directory, object_store):
+        object_store._client = MagicMock()
+        object_store._client.generate_presigned_url.return_value = "https://s3.example.org/signed"
+        with patch.object(object_store, "_exists", return_value=True):
+            object_store.get_direct_download_url(
+                MockDataset(1),
+                content_disposition='attachment; filename="Galaxy1-[data].txt"',
+                content_type="application/octet-stream",
+            )
+        _, call_kwargs = object_store._client.generate_presigned_url.call_args
+        params = call_kwargs["Params"]
+        assert params["ResponseContentDisposition"] == 'attachment; filename="Galaxy1-[data].txt"'
+        assert params["ResponseContentType"] == "application/octet-stream"
+
+
+def test_get_direct_download_url_disk_store_returns_none():
+    with TestConfig(DISK_TEST_CONFIG) as (directory, object_store):
+        url = object_store.get_direct_download_url(MockDataset(1))
+        assert url is None
+
+
+BOTO3_TEE_STREAMING_TEST_CONFIG_YAML = """
+type: boto3
 auth:
   access_key: access_moo
   secret_key: secret_cow
 
 bucket:
   name: unique_bucket_name_all_lowercase
-  use_reduced_redundancy: false
 
 cache:
-  path: database/object_store_cache
+  path: "${temp_directory}/object_store_cache"
   size: 1000
 
 extra_dirs:
 - type: job_work
-  path: database/job_working_directory_cloud
+  path: "${temp_directory}/job_working_directory_s3"
 - type: temp
-  path: database/tmp_cloud
+  path: "${temp_directory}/tmp_s3"
 """
 
 
-CLOUD_AZURE_TEST_CONFIG = """<object_store type="cloud" provider="azure">
-     <auth subscription_id="a_sub_id" client_id="and_a_client_id" secret="and_a_secret_key"
-     tenant="and_some_tenant_info" />
-     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <cache path="database/object_store_cache" size="1000" />
-     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
-     <extra_dir type="temp" path="database/tmp_cloud"/>
-</object_store>
-"""
-
-CLOUD_AZURE_TEST_CONFIG_YAML = """
-type: cloud
-provider: azure
-auth:
-  subscription_id: a_sub_id
-  client_id: and_a_client_id
-  secret: and_a_secret_key
-  tenant: and_some_tenant_info
-
-bucket:
-  name: unique_bucket_name_all_lowercase
-  use_reduced_redundancy: false
-
-cache:
-  path: database/object_store_cache
-  size: 1000
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_cloud
-- type: temp
-  path: database/tmp_cloud
-"""
+def _cache_path_for(object_store, dataset):
+    rel_path = object_store._construct_path(dataset)
+    return object_store._get_cache_path(rel_path, object_store._get_object_id(dataset))
 
 
-CLOUD_GOOGLE_TEST_CONFIG = """<object_store type="cloud" provider="google">
-     <auth credentials_file="gcp.config" />
-     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <cache path="database/object_store_cache" size="1000" />
-     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
-     <extra_dir type="temp" path="database/tmp_cloud"/>
-</object_store>
-"""
-
-CLOUD_GOOGLE_TEST_CONFIG_YAML = """
-type: cloud
-provider: google
-auth:
-  credentials_file: gcp.config
-
-bucket:
-  name: unique_bucket_name_all_lowercase
-  use_reduced_redundancy: false
-
-cache:
-  path: database/object_store_cache
-  size: 1000
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_cloud
-- type: temp
-  path: database/tmp_cloud
-"""
+def _leftover_temp_files(cache_path):
+    cache_dir = os.path.dirname(cache_path)
+    if not os.path.exists(cache_dir):
+        return []
+    return [name for name in os.listdir(cache_dir) if name.endswith(".tmp")]
 
 
+def _remote_stream(chunks, on_close=None):
+    """Build what `_stream_remote` returns: an open read, plus the call that releases it."""
+    return RemoteDataStream(iter(chunks), on_close or (lambda: None))
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_tees_remote_bytes_into_cache():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        with (
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"chunk1", b"chunk2"])),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(dataset)
+            assert stream is not None
+            assert b"".join(stream) == b"chunk1chunk2"
+
+        cache_path = _cache_path_for(object_store, dataset)
+        with open(cache_path, "rb") as f:
+            assert f.read() == b"chunk1chunk2"
+        assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_discards_partial_cache_when_client_disconnects():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        with (
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"chunk1", b"chunk2"])),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(dataset)
+            assert stream is not None
+            assert next(stream) == b"chunk1"
+            # A client disconnecting mid-download closes the generator.
+            stream.close()
+
+        cache_path = _cache_path_for(object_store, dataset)
+        assert not os.path.exists(cache_path)
+        assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_discards_partial_cache_when_remote_read_fails():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+
+        def failing_chunks():
+            yield b"chunk1"
+            raise OSError("connection reset by the object store")
+
+        with (
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream(failing_chunks())),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(dataset)
+            assert stream is not None
+            with pytest.raises(OSError):
+                b"".join(stream)
+
+        cache_path = _cache_path_for(object_store, dataset)
+        assert not os.path.exists(cache_path)
+        assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_bypasses_cache_when_object_is_bigger_than_cache():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        one_terabyte = 1024**4
+        with (
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"chunk1", b"chunk2"])),
+            patch.object(object_store, "_get_remote_size", return_value=one_terabyte),
+        ):
+            stream = object_store.get_data_stream(dataset)
+            assert stream is not None
+            assert b"".join(stream) == b"chunk1chunk2"
+
+        cache_path = _cache_path_for(object_store, dataset)
+        assert not os.path.exists(cache_path)
+        assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_does_not_cache_a_truncated_object():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        # The store says the object is 12 bytes but the stream ends after 6.
+        with (
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"chunk1"])),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(dataset)
+            assert stream is not None
+            with pytest.raises(OSError):
+                b"".join(stream)
+
+        cache_path = _cache_path_for(object_store, dataset)
+        # Publishing it would poison the cache: every later download would serve half an object.
+        assert not os.path.exists(cache_path)
+        assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_returns_none_when_remote_size_is_unknown():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        # Backends report an unknown size as a negative number; without a size there is nothing to
+        # check a streamed object against, so fall back to pulling it into the cache.
+        with (
+            patch.object(object_store, "_stream_remote") as stream_remote,
+            patch.object(object_store, "_get_remote_size", return_value=-1),
+        ):
+            assert object_store.get_data_stream(MockDataset(1)) is None
+            # Deciding against streaming after opening the read would strand the connection: nobody
+            # owns it once None is returned in its place.
+            stream_remote.assert_not_called()
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_does_not_open_a_read_it_cannot_hand_over():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        # Same reason, for the other way the decision can go wrong: a size lookup that raises.
+        with (
+            patch.object(object_store, "_stream_remote") as stream_remote,
+            patch.object(object_store, "_get_remote_size", side_effect=OSError("no such key")),
+        ):
+            assert object_store.get_data_stream(MockDataset(1)) is None
+            stream_remote.assert_not_called()
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_releases_the_remote_read_when_the_client_disconnects():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        closed = []
+        with (
+            patch.object(
+                object_store,
+                "_stream_remote",
+                return_value=_remote_stream([b"chunk1", b"chunk2"], on_close=lambda: closed.append(True)),
+            ),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(MockDataset(1))
+            assert stream is not None
+            assert next(stream) == b"chunk1"
+            stream.close()
+            # An abandoned read has to hand its connection back, or a cancelled download costs one
+            # from the pool for as long as the store keeps the response open.
+            assert closed == [True]
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_releases_the_remote_read_before_the_first_chunk():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        closed = []
+        with (
+            patch.object(
+                object_store,
+                "_stream_remote",
+                return_value=_remote_stream([b"chunk1", b"chunk2"], on_close=lambda: closed.append(True)),
+            ),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(MockDataset(1))
+            assert stream is not None
+            stream.close()
+            # A client can disappear while response headers are being sent, before Starlette asks
+            # the iterator for its first chunk. The already-open read must still be released.
+            assert closed == [True]
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_releases_the_remote_read_when_it_errors():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        closed = []
+
+        def failing_chunks():
+            yield b"chunk1"
+            raise OSError("connection reset by the object store")
+
+        with (
+            patch.object(
+                object_store,
+                "_stream_remote",
+                return_value=_remote_stream(failing_chunks(), on_close=lambda: closed.append(True)),
+            ),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(MockDataset(1))
+            assert stream is not None
+            with pytest.raises(OSError):
+                b"".join(stream)
+            assert closed == [True]
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_releases_the_remote_read_when_it_is_not_cached():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        closed = []
+        one_terabyte = 1024**4
+        with (
+            patch.object(
+                object_store,
+                "_stream_remote",
+                return_value=_remote_stream([b"chunk1", b"chunk2"], on_close=lambda: closed.append(True)),
+            ),
+            patch.object(object_store, "_get_remote_size", return_value=one_terabyte),
+        ):
+            stream = object_store.get_data_stream(MockDataset(1))
+            assert stream is not None
+            # The bigger-than-cache path skips the tee entirely; it still owns the read.
+            assert b"".join(stream) == b"chunk1chunk2"
+            assert closed == [True]
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_returns_none_when_already_cached():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        cache_path = _cache_path_for(object_store, dataset)
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+        with open(cache_path, "wb") as f:
+            f.write(b"already cached")
+
+        with patch.object(object_store, "_stream_remote") as stream_remote:
+            # Cached objects are served from disk so that ranges and X-Accel still work.
+            assert object_store.get_data_stream(dataset) is None
+            stream_remote.assert_not_called()
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_returns_none_when_backend_cannot_stream():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        with patch.object(object_store, "_stream_remote", return_value=None):
+            assert object_store.get_data_stream(MockDataset(1)) is None
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_returns_none_when_opening_remote_stream_fails():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        # Failing to open the stream must fall back to the pull path, not raise.
+        with patch.object(object_store, "_stream_remote", side_effect=OSError("no such key")):
+            assert object_store.get_data_stream(MockDataset(1)) is None
+
+
+def test_get_data_stream_disk_store_returns_none():
+    with TestConfig(DISK_TEST_CONFIG) as (directory, object_store):
+        assert object_store.get_data_stream(MockDataset(1)) is None
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_concurrent_streams_do_not_corrupt_cache():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        with (
+            patch.object(
+                object_store, "_stream_remote", side_effect=lambda rel_path: _remote_stream([b"chunk1", b"chunk2"])
+            ),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            first = object_store.get_data_stream(dataset)
+            second = object_store.get_data_stream(dataset)
+            assert first is not None and second is not None
+            # Interleave the two downloads of the same uncached object.
+            assert next(first) == b"chunk1"
+            assert next(second) == b"chunk1"
+            assert b"".join(first) == b"chunk2"
+            assert b"".join(second) == b"chunk2"
+
+        cache_path = _cache_path_for(object_store, dataset)
+        with open(cache_path, "rb") as f:
+            assert f.read() == b"chunk1chunk2"
+        assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
+def test_atomic_download_concurrent_downloads_do_not_share_a_temp_file():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        cache_path = _cache_path_for(object_store, dataset)
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+
+        # Two downloads of the same uncached object overlap: sharing one temp file lets the second
+        # truncate what the first is still writing, publishing a corrupt object into the cache.
+        with object_store._atomic_download(cache_path) as first_tmp:
+            with object_store._atomic_download(cache_path) as second_tmp:
+                assert first_tmp != second_tmp
+                with open(second_tmp, "wb") as f:
+                    f.write(b"a complete object")
+            with open(first_tmp, "wb") as f:
+                f.write(b"a complete object")
+
+        with open(cache_path, "rb") as f:
+            assert f.read() == b"a complete object"
+        assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
+def test_stream_remote_boto3_reads_object_body_in_chunks():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        body = MagicMock()
+        body.iter_chunks.return_value = iter([b"chunk1", b"chunk2"])
+        object_store._client = MagicMock()
+        object_store._client.get_object.return_value = {"Body": body}
+
+        with object_store._stream_remote("000/dataset_1.dat") as chunks:
+            assert list(chunks) == [b"chunk1", b"chunk2"]
+
+        _, call_kwargs = object_store._client.get_object.call_args
+        assert call_kwargs["Bucket"] == object_store.bucket
+        assert call_kwargs["Key"] == "000/dataset_1.dat"
+
+
+@patch_object_stores_to_skip_initialize
+def test_stream_remote_boto3_closes_the_response_body_not_just_the_chunk_iterator():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        body = MagicMock()
+        # botocore builds iter_chunks as a plain generator over StreamingBody.read, so closing it
+        # ends the loop and leaves the response -- and its pooled connection -- open.
+        body.iter_chunks.return_value = iter([b"chunk1", b"chunk2"])
+        object_store._client = MagicMock()
+        object_store._client.get_object.return_value = {"Body": body}
+
+        with object_store._stream_remote("000/dataset_1.dat") as chunks:
+            assert next(chunks) == b"chunk1"
+            body.close.assert_not_called()
+
+        body.close.assert_called_once_with()
+
+
+@patch_object_stores_to_skip_initialize
+def test_stream_remote_azure_reads_blob_in_chunks():
+    with TestConfig(get_example("azure_simple.yml")) as (directory, object_store):
+        blob_client = MagicMock()
+        blob_client.download_blob.return_value.chunks.return_value = iter([b"chunk1", b"chunk2"])
+        with patch.object(object_store, "_blob_client", return_value=blob_client) as blob_client_for:
+            with object_store._stream_remote("000/dataset_1.dat") as chunks:
+                assert list(chunks) == [b"chunk1", b"chunk2"]
+
+            blob_client_for.assert_called_once_with("000/dataset_1.dat")
+
+
+@patch_object_stores_to_skip_initialize
+def test_stream_remote_cloud_reads_object_content_in_chunks():
+    with TestConfig(get_example("cloud_aws_simple.yml")) as (directory, object_store):
+        key = MagicMock()
+        content = MagicMock()
+        content.__iter__.return_value = iter([b"chunk1", b"chunk2"])
+        key.iter_content.return_value = content
+        object_store.bucket = MagicMock()
+        object_store.bucket.objects.get.return_value = key
+
+        with object_store._stream_remote("000/dataset_1.dat") as chunks:
+            assert list(chunks) == [b"chunk1", b"chunk2"]
+
+        object_store.bucket.objects.get.assert_called_once_with("000/dataset_1.dat")
+        # Chunk size is the caller's to set (cloudbridge >= 4.4.0); left to the provider it was
+        # 4 KiB on AWS, which costs a threadpool hop per 4 KiB of a multi-GB download.
+        key.iter_content.assert_called_once_with(chunk_size=STREAM_CHUNK_SIZE)
+        content.close.assert_called_once_with()
+
+
+@patch_object_stores_to_skip_initialize
+def test_stream_remote_s3_reads_key_in_chunks():
+    # boto2 backs both aws_s3 and generic_s3; #19255 reports generic_s3 truncating 4GB downloads to
+    # 3GB, which the tee's size check turns into a failure instead of a corrupt file.
+    with TestConfig(S3_TEST_CONFIG_YAML) as (directory, object_store):
+        key = MagicMock()
+        key.read.side_effect = [b"chunk1", b"chunk2", b""]
+        object_store._bucket = MagicMock()
+        object_store._bucket.get_key.return_value = key
+
+        with object_store._stream_remote("000/dataset_1.dat") as chunks:
+            assert list(chunks) == [b"chunk1", b"chunk2"]
+
+        object_store._bucket.get_key.assert_called_once_with("000/dataset_1.dat")
+        assert key.read.call_args_list == [call(STREAM_CHUNK_SIZE)] * 3
+        # fast=True, or releasing an abandoned key would first read the rest of the object.
+        key.close.assert_called_once_with(fast=True)
+
+
+@patch_object_stores_to_skip_initialize
+def test_stream_remote_s3_returns_none_for_a_missing_key():
+    with TestConfig(S3_TEST_CONFIG_YAML) as (directory, object_store):
+        object_store._bucket = MagicMock()
+        object_store._bucket.get_key.return_value = None
+
+        assert object_store._stream_remote("000/dataset_1.dat") is None
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_boto3_custom_connection():
+    for config_str in [get_example("boto3_custom_connection.xml"), get_example("boto3_custom_connection.yml")]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.endpoint_url == "https://s3.example.org/"
+            assert object_store.region == "the_example_region"
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_boto3_merged_transfer_options():
+    for config_str in [
+        get_example("boto3_merged_transfer_options.xml"),
+        get_example("boto3_merged_transfer_options.yml"),
+    ]:
+        with TestConfig(config_str) as (directory, object_store):
+            as_dict = object_store.to_dict()
+            transfer_dict = as_dict["transfer"]
+            assert transfer_dict["multipart_threshold"] == 13
+            assert transfer_dict["max_concurrency"] == 13
+            assert transfer_dict["multipart_chunksize"] == 13
+            assert transfer_dict["num_download_attempts"] == 13
+            assert transfer_dict["max_io_queue"] == 13
+            assert transfer_dict["io_chunksize"] == 13
+            assert transfer_dict["use_threads"] is False
+            assert transfer_dict["max_bandwidth"] == 13
+
+            for transfer_type in ["upload", "download"]:
+                transfer_config = object_store._transfer_config(transfer_type)
+                assert transfer_config.multipart_threshold == 13
+                assert transfer_config.max_concurrency == 13
+                assert transfer_config.multipart_chunksize == 13
+                assert transfer_config.num_download_attempts == 13
+                assert transfer_config.max_io_queue == 13
+                assert transfer_config.io_chunksize == 13
+                assert transfer_config.use_threads is False
+                assert transfer_config.max_bandwidth == 13
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_boto3_separated_transfer_options():
+    for config_str in [
+        get_example("boto3_separated_transfer_options.xml"),
+        get_example("boto3_separated_transfer_options.yml"),
+    ]:
+        with TestConfig(config_str) as (directory, object_store):
+            transfer_config = object_store._transfer_config("upload")
+            assert transfer_config.multipart_threshold == 13
+            assert transfer_config.max_concurrency == 13
+            assert transfer_config.multipart_chunksize == 13
+            assert transfer_config.num_download_attempts == 13
+            assert transfer_config.max_io_queue == 13
+            assert transfer_config.io_chunksize == 13
+            assert transfer_config.use_threads is False
+            assert transfer_config.max_bandwidth == 13
+
+            transfer_config = object_store._transfer_config("download")
+            assert transfer_config.multipart_threshold == 14
+            assert transfer_config.max_concurrency == 14
+            assert transfer_config.multipart_chunksize == 14
+            assert transfer_config.num_download_attempts == 14
+            assert transfer_config.max_io_queue == 14
+            assert transfer_config.io_chunksize == 14
+            assert transfer_config.use_threads is True
+            assert transfer_config.max_bandwidth == 14
+
+
+CLOUD_AWS_TEST_CONFIG = get_example("cloud_aws_simple.xml")
+CLOUD_AWS_TEST_CONFIG_YAML = get_example("cloud_aws_simple.yml")
+CLOUD_AWS_CUSTOM_ENDPOINT = "http://127.0.0.1:9000"
+CLOUD_AWS_CUSTOM_ENDPOINT_TEST_CONFIG = CLOUD_AWS_TEST_CONFIG.replace(
+    "<bucket ", f'<connection endpoint_url="{CLOUD_AWS_CUSTOM_ENDPOINT}" />\n     <bucket ', 1
+)
+CLOUD_AWS_CUSTOM_ENDPOINT_TEST_CONFIG_YAML = CLOUD_AWS_TEST_CONFIG_YAML.replace(
+    "\nbucket:\n", f"\nconnection:\n  endpoint_url: {CLOUD_AWS_CUSTOM_ENDPOINT}\n\nbucket:\n", 1
+)
+
+CLOUD_AZURE_TEST_CONFIG = get_example("cloud_azure_simple.xml")
+CLOUD_AZURE_TEST_CONFIG_YAML = get_example("cloud_azure_simple.yml")
+
+CLOUD_GOOGLE_TEST_CONFIG = get_example("cloud_gcp_simple.xml")
+CLOUD_GOOGLE_TEST_CONFIG_YAML = get_example("cloud_gcp_simple.yml")
+
+
+@patch_object_stores_to_skip_initialize
 def test_config_parse_cloud():
     for config_str in [
         CLOUD_AWS_TEST_CONFIG,
@@ -977,15 +1353,9 @@ def test_config_parse_cloud():
             path = os.path.join(tmpdir, "gcp.config")
             open(path, "w").write("some_gcp_config")
             config_str = config_str.replace("gcp.config", path)
-        with TestConfig(config_str, clazz=UninitializedCloudObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
-
-            assert object_store.host is None
-            assert object_store.port == 6000
-            assert object_store.multipart is True
-            assert object_store.is_secure is True
-            assert object_store.conn_path == "/"
 
             cache_target = object_store.cache_target
             assert cache_target.size == 1000.0
@@ -994,13 +1364,12 @@ def test_config_parse_cloud():
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
             as_dict = object_store.to_dict()
-            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "connection", "cache", "extra_dirs", "type"])
+            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "cache", "extra_dirs", "type"])
 
             _assert_key_has_value(as_dict, "type", "cloud")
 
             auth_dict = as_dict["auth"]
             bucket_dict = as_dict["bucket"]
-            connection_dict = as_dict["connection"]
             cache_dict = as_dict["cache"]
 
             provider = as_dict["provider"]
@@ -1018,11 +1387,6 @@ def test_config_parse_cloud():
             _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
             _assert_key_has_value(bucket_dict, "use_reduced_redundancy", False)
 
-            _assert_key_has_value(connection_dict, "host", None)
-            _assert_key_has_value(connection_dict, "port", 6000)
-            _assert_key_has_value(connection_dict, "multipart", True)
-            _assert_key_has_value(connection_dict, "is_secure", True)
-
             _assert_key_has_value(cache_dict, "size", 1000.0)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
 
@@ -1030,27 +1394,41 @@ def test_config_parse_cloud():
             assert len(extra_dirs) == 2
 
 
-CLOUD_AWS_NO_AUTH_TEST_CONFIG = """<object_store type="cloud" provider="aws">
-     <auth />
-     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <cache path="database/object_store_cache" size="1000" />
-     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
-     <extra_dir type="temp" path="database/tmp_cloud"/>
-</object_store>
-"""
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_aws_custom_endpoint():
+    for config_str in [CLOUD_AWS_CUSTOM_ENDPOINT_TEST_CONFIG, CLOUD_AWS_CUSTOM_ENDPOINT_TEST_CONFIG_YAML]:
+        with TestConfig(config_str) as (_, object_store):
+            assert object_store.endpoint_url == CLOUD_AWS_CUSTOM_ENDPOINT
+            assert object_store.to_dict()["connection"]["endpoint_url"] == CLOUD_AWS_CUSTOM_ENDPOINT
+
+            with (
+                patch("galaxy.objectstore.cloud.CloudProviderFactory") as provider_factory,
+                patch("galaxy.objectstore.cloud.ProviderList") as providers,
+            ):
+                connection = object_store._get_connection(
+                    object_store.provider, object_store.credentials, object_store.endpoint_url
+                )
+
+            assert connection is provider_factory.return_value.create_provider.return_value
+            provider_factory.return_value.create_provider.assert_called_once_with(
+                providers.AWS,
+                {
+                    "aws_access_key": "access_moo",
+                    "aws_secret_key": "secret_cow",
+                    "s3_endpoint_url": CLOUD_AWS_CUSTOM_ENDPOINT,
+                },
+            )
 
 
+CLOUD_AWS_NO_AUTH_TEST_CONFIG = get_example("cloud_aws_no_auth.xml")
+
+
+@patch_object_stores_to_skip_initialize
 def test_config_parse_cloud_noauth_for_aws():
     for config_str in [CLOUD_AWS_NO_AUTH_TEST_CONFIG]:
-        with TestConfig(config_str, clazz=UninitializedCloudObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
-
-            assert object_store.host is None
-            assert object_store.port == 6000
-            assert object_store.multipart is True
-            assert object_store.is_secure is True
-            assert object_store.conn_path == "/"
 
             cache_target = object_store.cache_target
             assert cache_target.size == 1000.0
@@ -1059,28 +1437,21 @@ def test_config_parse_cloud_noauth_for_aws():
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
             as_dict = object_store.to_dict()
-            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "connection", "cache", "extra_dirs", "type"])
+            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "cache", "extra_dirs", "type"])
 
             _assert_key_has_value(as_dict, "type", "cloud")
 
             auth_dict = as_dict["auth"]
             bucket_dict = as_dict["bucket"]
-            connection_dict = as_dict["connection"]
             cache_dict = as_dict["cache"]
 
             provider = as_dict["provider"]
             assert provider == "aws"
-            print(auth_dict["access_key"])
             _assert_key_has_value(auth_dict, "access_key", None)
             _assert_key_has_value(auth_dict, "secret_key", None)
 
             _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
             _assert_key_has_value(bucket_dict, "use_reduced_redundancy", False)
-
-            _assert_key_has_value(connection_dict, "host", None)
-            _assert_key_has_value(connection_dict, "port", 6000)
-            _assert_key_has_value(connection_dict, "multipart", True)
-            _assert_key_has_value(connection_dict, "is_secure", True)
 
             _assert_key_has_value(cache_dict, "size", 1000.0)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
@@ -1089,62 +1460,29 @@ def test_config_parse_cloud_noauth_for_aws():
             assert len(extra_dirs) == 2
 
 
-CLOUD_AWS_NO_CACHE_TEST_CONFIG = """<object_store type="cloud" provider="aws">
-     <auth />
-     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
-     <extra_dir type="temp" path="database/tmp_cloud"/>
-</object_store>
-"""
+CLOUD_AWS_NO_CACHE_TEST_CONFIG = get_example("cloud_aws_default_cache.xml")
 
 
+@patch_object_stores_to_skip_initialize
 def test_config_parse_cloud_no_cache_for_aws():
     for config_str in [CLOUD_AWS_NO_CACHE_TEST_CONFIG]:
-        with TestConfig(config_str, clazz=UninitializedCloudObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             assert object_store.staging_path == directory.global_config.object_store_cache_path
             assert object_store.cache_size == -1
 
 
-AZURE_BLOB_TEST_CONFIG = """<object_store type="azure_blob">
-    <auth account_name="azureact" account_key="password123" />
-    <container name="unique_container_name" max_chunk_size="250"/>
-    <cache path="database/object_store_cache" size="100" />
-    <extra_dir type="job_work" path="database/job_working_directory_azure"/>
-    <extra_dir type="temp" path="database/tmp_azure"/>
-</object_store>
-"""
+AZURE_BLOB_TEST_CONFIG = get_example("azure_simple.xml")
+AZURE_BLOB_TEST_CONFIG_YAML = get_example("azure_simple.yml")
 
 
-AZURE_BLOB_TEST_CONFIG_YAML = """
-type: azure_blob
-auth:
-  account_name: azureact
-  account_key: password123
-
-container:
-  name: unique_container_name
-  max_chunk_size: 250
-
-cache:
-  path: database/object_store_cache
-  size: 100
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_azure
-- type: temp
-  path: database/tmp_azure
-"""
-
-
+@patch_object_stores_to_skip_initialize
 def test_config_parse_azure():
     for config_str in [AZURE_BLOB_TEST_CONFIG, AZURE_BLOB_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UninitializedAzureBlobObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             assert object_store.account_name == "azureact"
             assert object_store.account_key == "password123"
 
             assert object_store.container_name == "unique_container_name"
-            assert object_store.max_chunk_size == 250
 
             cache_target = object_store.cache_target
             assert cache_target.size == 100
@@ -1165,7 +1503,6 @@ def test_config_parse_azure():
             _assert_key_has_value(auth_dict, "account_key", "password123")
 
             _assert_key_has_value(container_dict, "name", "unique_container_name")
-            _assert_key_has_value(container_dict, "max_chunk_size", 250)
 
             _assert_key_has_value(cache_dict, "size", 100)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
@@ -1174,13 +1511,25 @@ def test_config_parse_azure():
             assert len(extra_dirs) == 2
 
 
+@patch_object_stores_to_skip_initialize
+def test_config_parse_azure_transfer():
+    for config_str in [get_example("azure_transfer.xml"), get_example("azure_transfer.yml")]:
+        with TestConfig(config_str) as (directory, object_store):
+            as_dict = object_store.to_dict()["transfer"]
+            assert as_dict["download_max_concurrency"] == 1
+            assert as_dict["upload_max_concurrency"] == 2
+            assert as_dict["max_single_put_size"] == 10
+            assert as_dict["max_single_get_size"] == 20
+            assert as_dict["max_block_size"] == 3
+
+
 def test_cache_monitor_thread(tmp_path):
     cache_dir = tmp_path
     path = cache_dir / "a_file_0"
     path.write_text("this is an example file")
 
     cache_target = CacheTarget(cache_dir, 1, 0.000000001)
-    monitor = InProcessCacheMonitor(cache_target, 30, 0)
+    monitor = InProcessCacheMonitor([cache_target], 30, 0)
 
     path_cleaned = False
     for _ in range(100):
@@ -1212,6 +1561,21 @@ def test_check_cache_sanity(tmp_path):
     assert not path.exists()
 
 
+def test_check_cache_treats_non_positive_size_as_unbounded(tmp_path):
+    # A non-positive cache size means "unbounded" everywhere else in this module
+    # (see CacheTarget.fits_in_cache), so the monitor must not treat it as a
+    # zero-byte budget and reap the whole directory.
+    cache_dir = tmp_path
+    path = cache_dir / "a_file_0"
+    path.write_text("this is an example file")
+
+    check_cache(CacheTarget(cache_dir, -1, 0.2))
+    assert path.exists()
+
+    check_cache(CacheTarget(cache_dir, 0, 0.2))
+    assert path.exists()
+
+
 def test_fits_in_cache_check(tmp_path):
     cache_dir = tmp_path
     big_cache_target = CacheTarget(cache_dir, 1, 0.2)
@@ -1222,38 +1586,320 @@ def test_fits_in_cache_check(tmp_path):
     assert noop_cache_target.fits_in_cache(1024 * 1024 * 1024 * 100)
 
 
-AZURE_BLOB_NO_CACHE_TEST_CONFIG = """<object_store type="azure_blob">
-    <auth account_name="azureact" account_key="password123" />
-    <container name="unique_container_name" max_chunk_size="250"/>
-    <extra_dir type="job_work" path="database/job_working_directory_azure"/>
-    <extra_dir type="temp" path="database/tmp_azure"/>
-</object_store>
-"""
+AZURE_BLOB_NO_CACHE_TEST_CONFIG = get_example("azure_default_cache.xml")
+AZURE_BLOB_NO_CACHE_TEST_CONFIG_YAML = get_example("azure_default_cache.yml")
 
 
-AZURE_BLOB_NO_CACHE_TEST_CONFIG_YAML = """
-type: azure_blob
-auth:
-  account_name: azureact
-  account_key: password123
-
-container:
-  name: unique_container_name
-  max_chunk_size: 250
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_azure
-- type: temp
-  path: database/tmp_azure
-"""
-
-
+@patch_object_stores_to_skip_initialize
 def test_config_parse_azure_no_cache():
     for config_str in [AZURE_BLOB_NO_CACHE_TEST_CONFIG, AZURE_BLOB_NO_CACHE_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UninitializedAzureBlobObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             assert object_store.cache_size == -1
             assert object_store.staging_path == directory.global_config.object_store_cache_path
+
+
+def verify_caching_object_store_functionality(tmp_path, object_store, check_get_url=True):
+    # Test no dataset with id 1 exists.
+    absent_dataset = MockDataset(1)
+    assert not object_store.exists(absent_dataset)
+
+    # Write empty dataset 2 in second backend, ensure it is empty and
+    # exists.
+    empty_dataset = MockDataset(2)
+    object_store.create(empty_dataset)
+    assert object_store.exists(empty_dataset)
+    assert object_store.empty(empty_dataset)
+
+    # Write non-empty dataset in backend 1, test it is not emtpy & exists.
+    # with cache...
+    hello_world_dataset = MockDataset(3)
+    hello_path = tmp_path / "hello.txt"
+    hello_path.write_text("Hello World!")
+    object_store.update_from_file(hello_world_dataset, file_name=hello_path, create=True)
+    assert object_store.exists(hello_world_dataset)
+    assert not object_store.empty(hello_world_dataset)
+
+    # Test get_data
+    data = object_store.get_data(hello_world_dataset)
+    assert data == "Hello World!"
+
+    data = object_store.get_data(hello_world_dataset, start=1, count=6)
+    assert data == "ello W"
+    path = object_store.get_filename(hello_world_dataset)
+    assert open(path).read() == "Hello World!"
+
+    # Write non-empty dataset in backend 1, test it is not emtpy & exists.
+    # without cache...
+    hello_world_dataset_2 = MockDataset(10)
+    object_store.update_from_file(hello_world_dataset_2, file_name=hello_path, create=True)
+    reset_cache(object_store.cache_target)
+    assert object_store.exists(hello_world_dataset_2)
+    reset_cache(object_store.cache_target)
+    assert not object_store.empty(hello_world_dataset_2)
+    reset_cache(object_store.cache_target)
+
+    data = object_store.get_data(hello_world_dataset_2)
+    assert data == "Hello World!"
+    reset_cache(object_store.cache_target)
+    data = object_store.get_data(hello_world_dataset_2, start=1, count=6)
+    assert data == "ello W"
+    reset_cache(object_store.cache_target)
+    path = object_store.get_filename(hello_world_dataset_2)
+    assert open(path).read() == "Hello World!"
+
+    # Test Size
+
+    # Test absent and empty datasets yield size of 0.
+    assert object_store.size(absent_dataset) == 0
+    assert object_store.size(empty_dataset) == 0
+    # Elsewise
+    assert object_store.size(hello_world_dataset) == 12
+
+    # Test percent used (to some degree)
+    percent_store_used = object_store.get_store_usage_percent()
+    assert percent_store_used >= 0.0
+    assert percent_store_used < 100.0
+
+    # Test delete
+    to_delete_dataset = MockDataset(5)
+    object_store.create(to_delete_dataset)
+    assert object_store.exists(to_delete_dataset)
+    assert object_store.delete(to_delete_dataset)
+    assert not object_store.exists(to_delete_dataset)
+
+    # Test delete no cache
+    to_delete_dataset = MockDataset(5)
+    object_store.create(to_delete_dataset)
+    assert object_store.exists(to_delete_dataset)
+    reset_cache(object_store.cache_target)
+    assert object_store.delete(to_delete_dataset)
+    reset_cache(object_store.cache_target)
+    assert not object_store.exists(to_delete_dataset)
+
+    # Test bigger file to force multi-process.
+    big_file_dataset = MockDataset(6)
+    size = 1024
+    path = tmp_path / "big_file.bytes"
+    with path.open("wb") as f:
+        f.write(os.urandom(size))
+    object_store.update_from_file(big_file_dataset, file_name=hello_path, create=True)
+
+    extra_files_dataset = MockDataset(7)
+    object_store.create(extra_files_dataset)
+    extra = tmp_path / "extra"
+    extra.mkdir()
+    extra_file = extra / "new_value.txt"
+    extra_file.write_text("My new value")
+
+    persist_extra_files_for_dataset(
+        object_store,
+        extra,
+        extra_files_dataset,  # type: ignore[arg-type,unused-ignore]
+        extra_files_dataset._extra_files_rel_path,
+    )
+
+    # The following checks used to exhibit different behavior depending
+    # on how the cache was cleaned - removing the whole directory vs
+    # just cleaning up files the way Galaxy's internal caching works with
+    # reset_cache. So we test both here.
+
+    # hard reset
+    shutil.rmtree(object_store.cache_target.path)
+    os.makedirs(object_store.cache_target.path)
+
+    extra_path = _extra_file_path(object_store, extra_files_dataset)
+    assert os.path.exists(extra_path)
+    expected_extra_file = os.path.join(extra_path, "new_value.txt")
+    assert os.path.exists(expected_extra_file)
+    assert open(expected_extra_file).read() == "My new value"
+
+    # Redo the above test with Galaxy's reset_cache which leaves empty directories
+    # around.
+    reset_cache(object_store.cache_target)
+    extra_path = _extra_file_path(object_store, extra_files_dataset)
+    assert os.path.exists(extra_path)
+    expected_extra_file = os.path.join(extra_path, "new_value.txt")
+    assert os.path.exists(expected_extra_file)
+    assert open(expected_extra_file).read() == "My new value"
+
+    # Test get_object_url returns a read-only URL
+    url = object_store.get_object_url(hello_world_dataset)
+    if check_get_url:
+        response = get(url)
+        response.raise_for_status()
+        assert response.text == "Hello World!"
+
+
+def _extra_file_path(object_store, dataset):
+    # invoke the magic calls the model layer would invoke here...
+    if object_store.exists(dataset, dir_only=True, extra_dir=dataset._extra_files_rel_path):
+        return object_store.get_filename(dataset, dir_only=True, extra_dir=dataset._extra_files_rel_path)
+    return object_store.construct_path(dataset, dir_only=True, extra_dir=dataset._extra_files_rel_path, in_cache=True)
+
+
+def verify_object_store_functionality(tmp_path, object_store, check_get_url=True):
+    # Test no dataset with id 1 exists.
+    absent_dataset = MockDataset(1)
+    assert not object_store.exists(absent_dataset)
+
+    # Write empty dataset 2 in second backend, ensure it is empty and
+    # exists.
+    empty_dataset = MockDataset(2)
+    object_store.create(empty_dataset)
+    assert object_store.exists(empty_dataset)
+    assert object_store.empty(empty_dataset)
+
+    # Write non-empty dataset in backend 1, test it is not emtpy & exists.
+    # with cache...
+    hello_world_dataset = MockDataset(3)
+    hello_path = tmp_path / "hello.txt"
+    hello_path.write_text("Hello World!")
+    object_store.update_from_file(hello_world_dataset, file_name=hello_path, create=True)
+    assert object_store.exists(hello_world_dataset)
+    assert not object_store.empty(hello_world_dataset)
+
+    # Test get_data
+    data = object_store.get_data(hello_world_dataset)
+    assert data == "Hello World!"
+
+    data = object_store.get_data(hello_world_dataset, start=1, count=6)
+    assert data == "ello W"
+    path = object_store.get_filename(hello_world_dataset)
+    assert open(path).read() == "Hello World!"
+
+    # Test Size
+
+    # Test absent and empty datasets yield size of 0.
+    assert object_store.size(absent_dataset) == 0
+    assert object_store.size(empty_dataset) == 0
+    # Elsewise
+    assert object_store.size(hello_world_dataset) == 12
+
+    # Test delete
+    to_delete_dataset = MockDataset(5)
+    object_store.create(to_delete_dataset)
+    assert object_store.exists(to_delete_dataset)
+    assert object_store.delete(to_delete_dataset)
+    assert not object_store.exists(to_delete_dataset)
+
+    # Test get_object_url returns a read-only URL
+    url = object_store.get_object_url(hello_world_dataset)
+    if check_get_url:
+        response = get(url)
+        response.raise_for_status()
+        assert response.text == "Hello World!"
+
+
+def integration_test_config(example_filename: str):
+    return TestConfig(get_example(example_filename), inject_galaxy_test_env=True)
+
+
+@skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_KEY")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_NAME")
+def test_real_azure_blob_store(tmp_path):
+    with integration_test_config("azure_integration_test.yml") as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+@skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_KEY")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_NAME")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_URL")
+def test_real_azure_blob_store_with_account_url(tmp_path):
+    with integration_test_config("azure_integration_test_with_account_url.yml") as (
+        _,
+        object_store,
+    ):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+@skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_KEY")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_NAME")
+def test_real_azure_blob_store_in_hierarchical(tmp_path):
+    with integration_test_config("azure_integration_test_distributed.yml") as (_, object_store):
+        verify_object_store_functionality(tmp_path, object_store)
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+@skip_unless_environ("GALAXY_TEST_AWS_REGION")
+def test_real_aws_s3_store(tmp_path):
+    with integration_test_config("aws_s3_integration_test.yml") as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+def test_real_aws_s3_store_boto3(tmp_path):
+    with integration_test_config("boto3_integration_test_aws.yml") as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+def test_real_aws_s3_store_boto3_multipart(tmp_path):
+    with integration_test_config("boto3_integration_test_multithreaded.yml") as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+def test_real_aws_s3_store_boto3_new_bucket(tmp_path):
+    with integration_test_config("boto3_integration_test_aws_new_bucket.yml") as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+# this test fails if you have axel installed because axel requires URLs to work and that requires
+# setting a region with the cloudbridge store.
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+def test_aws_via_cloudbridge_store(tmp_path):
+    with integration_test_config("cloud_integration_test_aws.yml") as (_, object_store):
+        # disabling get_object_url check - cloudbridge in this config assumes the region
+        # is us-east-1 and generates a URL for that region. This functionality works and can
+        # be tested if a region is specified in the configuration (see next config and test case).
+        verify_caching_object_store_functionality(tmp_path, object_store, check_get_url=False)
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+@skip_unless_environ("GALAXY_TEST_AWS_REGION")
+def test_aws_via_cloudbridge_store_with_region(tmp_path):
+    with integration_test_config("cloud_integration_test_aws_with_region.yml") as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+@skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_GOOGLE_BUCKET")
+def test_gcp_via_s3_interop(tmp_path):
+    with integration_test_config("gcp_s3_integration_test.yml") as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+@skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_GOOGLE_BUCKET")
+def test_gcp_via_s3_interop_and_boto3(tmp_path):
+    with integration_test_config("gcp_boto3_integration_test.yml") as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+# Ensure's boto3 will use legacy connection parameters that the generic_s3 object store
+# would consume.
+@skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_GOOGLE_BUCKET")
+def test_gcp_via_s3_interop_and_boto3_with_legacy_params(tmp_path):
+    with integration_test_config("gcp_boto3_integration_test_legacy_params.yml") as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
 
 
 class MockDataset:
@@ -1266,6 +1912,10 @@ class MockDataset:
     def rel_path_for_uuid_test(self):
         rel_path = os.path.join(*directory_hash_id(self.uuid))
         return rel_path
+
+    @property
+    def _extra_files_rel_path(self):
+        return f"dataset_{self.uuid}_files"
 
 
 def _assert_has_keys(the_dict, keys):

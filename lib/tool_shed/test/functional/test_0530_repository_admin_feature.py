@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +31,7 @@ category_description = "Verify the functionality of the code that handles the re
 """
 
 
-class TestRepositoryAdminRole(ShedTwillTestCase):
+class TestRepositoryAdminRole(ShedTestCase):
     """Verify that the code correctly handles the repository admin role."""
 
     def test_0000_initiate_users(self):
@@ -57,16 +55,10 @@ class TestRepositoryAdminRole(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="filtering/filtering_1.1.0.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "filtering/filtering_1.1.0.tar",
             commit_message="Uploaded filtering 1.1.0 tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0010_verify_repository_admin_role_exists(self):
@@ -104,22 +96,6 @@ class TestRepositoryAdminRole(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner("renamed_filtering_0530", common.test_user_1_name)
         assert repository.name == "renamed_filtering_0530", "Repository was not renamed to renamed_filtering_0530."
 
-    def test_0030_verify_access_denied(self):
-        """Make sure a non-admin user can't modify the repository.
-
-        This is step 6 - Log into the Tool Shed as a user that is not the repository owner (e.g., user2) and make sure the repository
-        name and description cannot be changed.
-        """
-        self.login(email=common.test_user_2_email, username=common.test_user_2_name)
-        repository = self._get_repository_by_name_and_owner("renamed_filtering_0530", common.test_user_1_name)
-        strings_not_displayed = ["Manage repository"]
-        strings_displayed = ["View repository"]
-        self.display_manage_repository_page(repository, strings_not_displayed=strings_not_displayed)
-        self.submit_form(form_no=0, button="edit_repository_button", description="This description has been modified.")
-        strings_displayed = ["You are not the owner of this repository, so you cannot administer it."]
-        strings_not_displayed = ["The repository information has been updated."]
-        self.check_for_strings(strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
-
     def test_0035_grant_admin_role(self):
         """Grant the repository admin role to user2.
 
@@ -128,7 +104,7 @@ class TestRepositoryAdminRole(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
         repository = self._get_repository_by_name_and_owner("renamed_filtering_0530", common.test_user_1_name)
-        self.assign_admin_role(repository, test_user_2)
+        self.assign_admin_role(repository, test_user_2, as_email=common.test_user_1_email)
 
     def test_0040_rename_repository_as_repository_admin(self):
         """Rename the repository as user2.

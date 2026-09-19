@@ -15,8 +15,6 @@ self.addEventListener("message", (e) => {
         filter = message.filter;
     }
 
-    if (array.length > 0 && fields.length > 0) {
-        const filtered = runFilter(filter, array, fields);
-        self.postMessage({ type: "result", filtered });
-    }
+    const filtered = runFilter(filter, array, fields);
+    self.postMessage({ type: "result", filtered, seq: message.seq });
 });

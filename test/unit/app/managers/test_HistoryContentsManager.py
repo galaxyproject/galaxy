@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 import datetime
 import random
 
@@ -17,7 +17,6 @@ from galaxy.managers import (
     history_contents,
 )
 from galaxy.managers.histories import HistoryManager
-from galaxy.model.base import transaction
 from .base import (
     BaseTestCase,
     CreatesCollectionsMixin,
@@ -73,19 +72,6 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
         all_contents = list(self.contents_manager.contents(history))
         assert all_contents == list(ordered_hda_contents) + [hdca]
 
-    def test_contained(self):
-        user2 = self.user_manager.create(**user2_data)
-        self.trans.set_user(user2)
-        history = self.history_manager.create(name="history", user=user2)
-
-        self.log("calling contained on an empty history should return an empty list")
-        assert [] == list(self.contents_manager.contained(history))
-
-        self.log("calling contained on an history with both hdas and collections should return only hdas")
-        hdas = [self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)]
-        self.add_list_collection_to_history(history, hdas)
-        assert list(self.contents_manager.contained(history)) == hdas
-
     def test_copy_elements_on_collection_creation(self):
         user2 = self.user_manager.create(**user2_data)
         self.trans.set_user(user2)
@@ -96,20 +82,6 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
         hdca = self.add_list_collection_to_history(history, hdas, copy_elements=True)
         assert hdas != hdca.dataset_instances
-
-    def test_subcontainers(self):
-        user2 = self.user_manager.create(**user2_data)
-        self.trans.set_user(user2)
-        history = self.history_manager.create(name="history", user=user2)
-
-        self.log("calling subcontainers on an empty history should return an empty list")
-        assert [] == list(self.contents_manager.subcontainers(history))
-
-        self.log("calling subcontainers on an history with both hdas and collections should return only collections")
-        hdas = [self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)]
-        hdca = self.add_list_collection_to_history(history, hdas)
-        subcontainers = list(self.contents_manager.subcontainers(history))
-        assert subcontainers == [hdca]
 
     def test_limit_and_offset(self):
         user2 = self.user_manager.create(**user2_data)
@@ -149,8 +121,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
         contents[6].deleted = True
         deleted = [contents[1], contents[4], contents[6]]
         session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         # TODO: cross db compat?
         filters = [parse_filter("deleted", "eq", "True")]
@@ -169,9 +140,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
         contents[5].visible = False
         contents[6].visible = False
         invisible = [contents[2], contents[5], contents[6]]
-        session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         filters = [parse_filter("visible", "eq", "False")]
         assert self.contents_manager.contents(history, filters=filters) == invisible
@@ -227,10 +196,6 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
         assert [contents[4]] == self.contents_manager.contents(
             history, filters=[parsed_filter("orm", HDA.name.like("%-4"))]
         )
-        # the collections added above have the default name 'test collection'
-        assert self.contents_manager.subcontainers(history) == self.contents_manager.contents(
-            history, filters=[parsed_filter("orm", HDA.name.like("%collect%"))]
-        )
 
     def test_order_by(self):
         user2 = self.user_manager.create(**user2_data)
@@ -263,8 +228,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
         # change the oldest created to update the update_time
         contents[0].name = "zany and/or wacky"
         session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
         results = self.contents_manager.contents(history, order_by=desc("update_time"))
         assert contents[0] == results[0]
 
@@ -282,8 +246,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
         # change the update_time by updating the name
         contents[3].name = "big ball of mud"
         session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
         update_time = contents[3].update_time
 
         def get_update_time(item):
@@ -313,15 +276,12 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
         self.hda_manager.delete(contents[4])
         contents[6].deleted = True
         session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         contents[2].visible = False
         contents[5].visible = False
         contents[6].visible = False
-        session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         HDA = self.hda_manager.model_class
         assert self.contents_manager.contents_count(history, filters=[parsed_filter("orm", HDA.deleted == true())]) == 3
@@ -360,14 +320,10 @@ class TestHistoryContentsFilterParser(HistoryAsContainerBaseTestCase):
     def test_date_parser(self):
         # -- seconds and milliseconds from epoch
         self.log("should be able to parse epoch seconds")
-        assert self.filter_parser.parse_date("1234567890") == datetime.datetime.fromtimestamp(1234567890).isoformat(
-            sep=" "
-        )
+        assert self.filter_parser.parse_date("1234567890") == datetime.datetime.fromtimestamp(1234567890)
 
         self.log("should be able to parse floating point epoch seconds.milliseconds")
-        assert self.filter_parser.parse_date("1234567890.123") == datetime.datetime.fromtimestamp(
-            1234567890.123
-        ).isoformat(sep=" ")
+        assert self.filter_parser.parse_date("1234567890.123") == datetime.datetime.fromtimestamp(1234567890.123)
 
         self.log("should error if bad epoch is used")
         with self.assertRaises(ValueError):
@@ -375,17 +331,23 @@ class TestHistoryContentsFilterParser(HistoryAsContainerBaseTestCase):
 
         # -- datetime strings
         self.log("should allow date alone")
-        assert self.filter_parser.parse_date("2009-02-13") == "2009-02-13"
+        assert self.filter_parser.parse_date("2009-02-13") == datetime.datetime(2009, 2, 13)
 
         self.log("should allow date and time")
-        assert self.filter_parser.parse_date("2009-02-13 18:13:00") == "2009-02-13 18:13:00"
-        assert self.filter_parser.parse_date("2009-02-13T18:13:00") == "2009-02-13 18:13:00"
-        assert self.filter_parser.parse_date("2009-02-13T18:13:00Z") == "2009-02-13 18:13:00"
+        assert self.filter_parser.parse_date("2009-02-13 18:13:00") == datetime.datetime(2009, 2, 13, 18, 13, 0)
+        assert self.filter_parser.parse_date("2009-02-13T18:13:00") == datetime.datetime(2009, 2, 13, 18, 13, 0)
+        assert self.filter_parser.parse_date("2009-02-13T18:13:00Z") == datetime.datetime(2009, 2, 13, 18, 13, 0)
 
         self.log("should allow date and time with milliseconds")
-        assert self.filter_parser.parse_date("2009-02-13 18:13:00.123") == "2009-02-13 18:13:00.123"
-        assert self.filter_parser.parse_date("2009-02-13T18:13:00.123") == "2009-02-13 18:13:00.123"
-        assert self.filter_parser.parse_date("2009-02-13T18:13:00.123Z") == "2009-02-13 18:13:00.123"
+        assert self.filter_parser.parse_date("2009-02-13 18:13:00.123") == datetime.datetime(
+            2009, 2, 13, 18, 13, 0, 123000
+        )
+        assert self.filter_parser.parse_date("2009-02-13T18:13:00.123") == datetime.datetime(
+            2009, 2, 13, 18, 13, 0, 123000
+        )
+        assert self.filter_parser.parse_date("2009-02-13T18:13:00.123Z") == datetime.datetime(
+            2009, 2, 13, 18, 13, 0, 123000
+        )
 
         self.log("should error if timezone is added")
         with self.assertRaises(ValueError):

@@ -1,11 +1,12 @@
 """Galaxy Quotas"""
-import logging
-from typing import Optional
 
+import logging
+
+from sqlalchemy import select
 from sqlalchemy.sql import text
 
 import galaxy.util
-from galaxy.model.base import transaction
+from galaxy.objectstore import is_user_object_store
 
 log = logging.getLogger(__name__)
 
@@ -24,11 +25,18 @@ class QuotaAgent:  # metaclass=abc.ABCMeta
     the quota in other apps (LDAP maybe?) or via configuration files.
     """
 
+    def relabel_quota_for_dataset(self, dataset, from_label: str | None, to_label: str | None):
+        """Update the quota source label for dataset and adjust relevant quotas.
+
+        Subtract quota for labels from users using old label and quota for new label
+        for these users.
+        """
+
     # TODO: make abstractmethod after they work better with mypy
-    def get_quota(self, user, quota_source_label=None) -> Optional[int]:
+    def get_quota(self, user, quota_source_label=None) -> int | None:
         """Return quota in bytes or None if no quota is set."""
 
-    def get_quota_nice_size(self, user, quota_source_label=None) -> Optional[str]:
+    def get_quota_nice_size(self, user, quota_source_label=None) -> str | None:
         """Return quota as a human-readable string or 'unlimited' if no quota is set."""
         quota_bytes = self.get_quota(user, quota_source_label=quota_source_label)
         if quota_bytes is not None:
@@ -40,10 +48,10 @@ class QuotaAgent:  # metaclass=abc.ABCMeta
     # TODO: make abstractmethod after they work better with mypy
     def get_percent(
         self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None
-    ) -> Optional[int]:
+    ) -> int | None:
         """Return the percentage of any storage quota applicable to the user/transaction."""
 
-    def get_usage(self, trans=None, user=False, history=False, quota_source_label=None) -> Optional[float]:
+    def get_usage(self, trans=None, user=False, history=False, quota_source_label=None) -> float | None:
         if trans:
             user = trans.user
             history = trans.history
@@ -62,13 +70,8 @@ class QuotaAgent:  # metaclass=abc.ABCMeta
                     usage = quota_source_usage.disk_usage
         return usage
 
-    def is_over_quota(self, app, job, job_destination):
-        """Return True if the user or history is over quota for specified job.
-
-        job_destination unused currently but an important future application will
-        be admins and/or users dynamically specifying which object stores to use
-        and that will likely come in through the job destination.
-        """
+    def is_over_quota(self, quota_source_map, job):
+        """Return True if the user or history is over quota for specified job."""
 
 
 class NoQuotaAgent(QuotaAgent):
@@ -77,7 +80,10 @@ class NoQuotaAgent(QuotaAgent):
     def __init__(self):
         pass
 
-    def get_quota(self, user, quota_source_label=None) -> Optional[int]:
+    def get_quota(self, user, quota_source_label=None) -> int | None:
+        return None
+
+    def relabel_quota_for_dataset(self, dataset, from_label: str | None, to_label: str | None):
         return None
 
     @property
@@ -86,10 +92,10 @@ class NoQuotaAgent(QuotaAgent):
 
     def get_percent(
         self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None
-    ) -> Optional[int]:
+    ) -> int | None:
         return None
 
-    def is_over_quota(self, app, job, job_destination):
+    def is_over_quota(self, quota_source_map, job):
         return False
 
 
@@ -100,7 +106,7 @@ class DatabaseQuotaAgent(QuotaAgent):
         self.model = model
         self.sa_session = model.context
 
-    def get_quota(self, user, quota_source_label=None) -> Optional[int]:
+    def get_quota(self, user, quota_source_label=None) -> int | None:
         """
         Calculated like so:
 
@@ -114,8 +120,7 @@ class DatabaseQuotaAgent(QuotaAgent):
         """
         if not user:
             return self._default_unregistered_quota(quota_source_label)
-        query = text(
-            """
+        query = text("""
 SELECT (
         COALESCE(MAX(CASE WHEN union_quota.operation = '='
                           THEN union_quota.bytes
@@ -160,39 +165,124 @@ FROM (
         AND group_quota.quota_source_label {label_cond}
         AND guser.id = :user_id
 ) as union_quota
-""".format(
-                label_cond="IS NULL" if quota_source_label is None else " = :label"
-            )
-        )
-        conn = self.sa_session.connection()
-        with conn.begin():
-            res = conn.execute(query, is_true=True, user_id=user.id, label=quota_source_label).fetchone()
+""".format(label_cond="IS NULL" if quota_source_label is None else " = :label"))
+        engine = self.sa_session.get_bind()
+        with engine.connect() as conn:
+            res = conn.execute(query, {"is_true": True, "user_id": user.id, "label": quota_source_label}).fetchone()
             if res:
                 return int(res[0]) if res[0] else None
             else:
                 return None
+
+    def relabel_quota_for_dataset(self, dataset, from_label: str | None, to_label: str | None):
+        adjust = dataset.get_total_size()
+        with_quota_affected_users = """WITH quota_affected_users AS
+(
+    SELECT DISTINCT user_id
+    FROM history
+        INNER JOIN
+            history_dataset_association on history_dataset_association.history_id = history.id
+        INNER JOIN
+            dataset on history_dataset_association.dataset_id = dataset.id
+    WHERE
+        dataset_id = :dataset_id
+)"""
+        engine = self.sa_session.get_bind()
+
+        # Hack for older sqlite, would work on newer sqlite - 3.24.0
+        for_sqlite = "sqlite" in engine.dialect.name
+
+        if to_label == from_label:
+            return
+        if to_label is None:
+            to_statement = f"""
+{with_quota_affected_users}
+UPDATE galaxy_user
+SET disk_usage = coalesce(disk_usage, 0) + :adjust
+WHERE id in (select user_id from quota_affected_users)
+"""
+        else:
+            if for_sqlite:
+                to_statement = f"""
+{with_quota_affected_users},
+new_quota_sources (user_id, disk_usage, quota_source_label) AS (
+    SELECT user_id, :adjust as disk_usage, :to_label as quota_source_label
+    FROM quota_affected_users
+)
+INSERT OR REPLACE INTO user_quota_source_usage (id, user_id, quota_source_label, disk_usage)
+SELECT old.id, new.user_id, new.quota_source_label, COALESCE(old.disk_usage + :adjust, :adjust)
+FROM new_quota_sources as new LEFT JOIN user_quota_source_usage AS old ON new.user_id = old.user_id AND NEW.quota_source_label = old.quota_source_label"""
+            else:
+                to_statement = f"""
+{with_quota_affected_users},
+new_quota_sources (user_id, disk_usage, quota_source_label) AS (
+    SELECT user_id, :adjust as disk_usage, :to_label as quota_source_label
+    FROM quota_affected_users
+)
+INSERT INTO user_quota_source_usage(user_id, disk_usage, quota_source_label)
+SELECT * FROM new_quota_sources
+ON CONFLICT
+    ON constraint uqsu_unique_label_per_user
+    DO UPDATE SET disk_usage = user_quota_source_usage.disk_usage + :adjust
+"""
+
+        if from_label is None:
+            from_statement = f"""
+{with_quota_affected_users}
+UPDATE galaxy_user
+SET disk_usage = coalesce(disk_usage - :adjust, 0)
+WHERE id in (select user_id from quota_affected_users)
+"""
+        else:
+            if for_sqlite:
+                from_statement = f"""
+{with_quota_affected_users},
+new_quota_sources (user_id, disk_usage, quota_source_label) AS (
+    SELECT user_id, :adjust as disk_usage, :from_label as quota_source_label
+    FROM quota_affected_users
+)
+INSERT OR REPLACE INTO user_quota_source_usage (id, user_id, quota_source_label, disk_usage)
+SELECT old.id, new.user_id, new.quota_source_label, COALESCE(old.disk_usage - :adjust, 0)
+FROM new_quota_sources as new LEFT JOIN user_quota_source_usage AS old ON new.user_id = old.user_id AND NEW.quota_source_label = old.quota_source_label"""
+            else:
+                from_statement = f"""
+{with_quota_affected_users},
+new_quota_sources (user_id, disk_usage, quota_source_label) AS (
+    SELECT user_id, 0 as disk_usage, :from_label as quota_source_label
+    FROM quota_affected_users
+)
+INSERT INTO user_quota_source_usage(user_id, disk_usage, quota_source_label)
+SELECT * FROM new_quota_sources
+ON CONFLICT
+    ON constraint uqsu_unique_label_per_user
+    DO UPDATE SET disk_usage = user_quota_source_usage.disk_usage - :adjust
+"""
+
+        bind = {"dataset_id": dataset.id, "adjust": int(adjust), "to_label": to_label, "from_label": from_label}
+        engine = self.sa_session.get_bind()
+        with engine.connect() as conn:
+            with conn.begin():
+                conn.execute(text(from_statement), bind)
+                conn.execute(text(to_statement), bind)
 
     def _default_unregistered_quota(self, quota_source_label):
         return self._default_quota(self.model.DefaultQuotaAssociation.types.UNREGISTERED, quota_source_label)
 
     def _default_quota(self, default_type, quota_source_label):
         label_condition = "IS NULL" if quota_source_label is None else "= :label"
-        query = text(
-            """
+        query = text(f"""
 SELECT bytes
 FROM quota as default_quota
 LEFT JOIN default_quota_association on default_quota.id = default_quota_association.quota_id
 WHERE default_quota_association.type = :default_type
     AND default_quota.deleted != :is_true
     AND default_quota.quota_source_label {label_condition}
-""".format(
-                label_condition=label_condition
-            )
-        )
-
-        conn = self.sa_session.connection()
-        with conn.begin():
-            res = conn.execute(query, is_true=True, label=quota_source_label, default_type=default_type).fetchone()
+""")
+        engine = self.sa_session.get_bind()
+        with engine.connect() as conn:
+            res = conn.execute(
+                query, {"is_true": True, "label": quota_source_label, "default_type": default_type}
+            ).fetchone()
             if res:
                 return res[0]
             else:
@@ -209,11 +299,10 @@ WHERE default_quota_association.type = :default_type
             self.sa_session.delete(gqa)
         # Find the old default, assign the new quota if it exists
         label = quota.quota_source_label
-        dqas = (
-            self.sa_session.query(self.model.DefaultQuotaAssociation)
-            .filter(self.model.DefaultQuotaAssociation.table.c.type == default_type)
-            .all()
+        stmt = select(self.model.DefaultQuotaAssociation).filter(
+            self.model.DefaultQuotaAssociation.type == default_type
         )
+        dqas = self.sa_session.scalars(stmt).all()
         target_default = None
         for dqa in dqas:
             if dqa.quota.quota_source_label == label and not dqa.quota.deleted:
@@ -224,12 +313,11 @@ WHERE default_quota_association.type = :default_type
         else:
             target_default = self.model.DefaultQuotaAssociation(default_type, quota)
         self.sa_session.add(target_default)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
     def get_percent(
         self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None
-    ) -> Optional[int]:
+    ) -> int | None:
         """
         Return the percentage of any storage quota applicable to the user/transaction.
         """
@@ -265,27 +353,21 @@ WHERE default_quota_association.type = :default_type
                     self.sa_session.delete(a)
                     flush_needed = True
                 if flush_needed:
-                    with transaction(self.sa_session):
-                        self.sa_session.commit()
+                    self.sa_session.commit()
             for user in users:
                 uqa = self.model.UserQuotaAssociation(user, quota)
                 self.sa_session.add(uqa)
             for group in groups:
                 gqa = self.model.GroupQuotaAssociation(group, quota)
                 self.sa_session.add(gqa)
-            with transaction(self.sa_session):
-                self.sa_session.commit()
+            self.sa_session.commit()
 
-    def is_over_quota(self, app, job, job_destination):
-        # Doesn't work because job.object_store_id until inside handler :_(
-        # quota_source_label = job.quota_source_label
-        if job_destination is not None:
-            object_store_id = job_destination.params.get("object_store_id", None)
-            object_store = app.object_store
-            quota_source_map = object_store.get_quota_source_map()
-            quota_source_label = quota_source_map.get_quota_source_info(object_store_id).label
-        else:
-            quota_source_label = None
+    def is_over_quota(self, quota_source_map, job):
+        if is_user_object_store(job.object_store_id):
+            return False  # User object stores are not subject to quotas
+
+        quota_source_label = quota_source_map.get_quota_source_info(job.object_store_id).label
+
         quota = self.get_quota(job.user, quota_source_label=quota_source_label)
         if quota is not None:
             try:

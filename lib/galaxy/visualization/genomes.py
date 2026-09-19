@@ -3,7 +3,6 @@ import os
 import re
 import sys
 from json import loads
-from typing import Dict
 
 from bx.seq.twobit import TwoBitFile
 
@@ -11,6 +10,15 @@ from galaxy.exceptions import (
     ObjectNotFound,
     ReferenceDataError,
 )
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
+from galaxy.model import (
+    HistoryDatasetAssociation,
+    User,
+)
+from galaxy.model.db.user import get_user_by_username
 from galaxy.structured_app import StructuredApp
 from galaxy.util.bunch import Bunch
 
@@ -196,7 +204,7 @@ class Genomes:
     def __init__(self, app: StructuredApp):
         self.app = app
         # Create list of genomes from app.genome_builds
-        self.genomes: Dict[str, Genome] = {}
+        self.genomes: dict[str, Genome] = {}
         # Store internal versions of data tables for twobit and __dbkey__
         self._table_versions = {"twobit": None, "__dbkeys__": None}
         self.reload_genomes()
@@ -254,14 +262,14 @@ class Genomes:
             rval = self.genomes[dbkey]
         return rval
 
-    def get_dbkeys(self, user, chrom_info=False):
+    def get_dbkeys(self, user: User | None, chrom_info=False):
         """Returns all known dbkeys. If chrom_info is True, only dbkeys with
         chromosome lengths are returned."""
         self.check_and_reload()
         dbkeys = []
 
         # Add user's custom keys to dbkeys.
-        if user and "dbkeys" in user.preferences:
+        if user and user.preferences and "dbkeys" in user.preferences:
             user_keys_dict = loads(user.preferences["dbkeys"])
             dbkeys.extend([(attributes["name"], key) for key, attributes in user_keys_dict.items()])
 
@@ -282,16 +290,17 @@ class Genomes:
 
         return dbkeys
 
-    def chroms(self, trans, dbkey=None, num=None, chrom=None, low=None):
+    def chroms(self, trans: ProvidesHistoryContext, dbkey=None, num=None, chrom=None, low=None):
         """
         Returns a naturally sorted list of chroms/contigs for a given dbkey.
         Use either chrom or low to specify the starting chrom in the return list.
         """
+        session = trans.sa_session
         self.check_and_reload()
         # If there is no dbkey owner, default to current user.
         dbkey_owner, dbkey = decode_dbkey(dbkey)
         if dbkey_owner:
-            dbkey_user = trans.sa_session.query(trans.app.model.User).filter_by(username=dbkey_owner).first()
+            dbkey_user = get_user_by_username(session, dbkey_owner)
         else:
             dbkey_user = trans.user
 
@@ -307,13 +316,10 @@ class Genomes:
             if dbkey in user_keys:
                 dbkey_attributes = user_keys[dbkey]
                 dbkey_name = dbkey_attributes["name"]
-
                 # If there's a fasta for genome, convert to 2bit for later use.
                 if "fasta" in dbkey_attributes:
-                    build_fasta = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(
-                        dbkey_attributes["fasta"]
-                    )
-                    len_file = build_fasta.get_converted_dataset(trans, "len").file_name
+                    build_fasta = session.get(HistoryDatasetAssociation, dbkey_attributes["fasta"])
+                    len_file = build_fasta.get_converted_dataset(trans, "len").get_file_name()
                     build_fasta.get_converted_dataset(trans, "twobit")
                     # HACK: set twobit_file to True rather than a file name because
                     # get_converted_dataset returns null during conversion even though
@@ -321,11 +327,7 @@ class Genomes:
                     twobit_file = True
                 # Backwards compatibility: look for len file directly.
                 elif "len" in dbkey_attributes:
-                    len_file = (
-                        trans.sa_session.query(trans.app.model.HistoryDatasetAssociation)
-                        .get(user_keys[dbkey]["len"])
-                        .file_name
-                    )
+                    len_file = session.get(HistoryDatasetAssociation, user_keys[dbkey]["len"]).get_file_name()
                 if len_file:
                     genome = Genome(dbkey, dbkey_name, len_file=len_file, twobit_file=twobit_file)
 
@@ -334,7 +336,7 @@ class Genomes:
             # Look in history for chromosome len file.
             len_ds = trans.db_dataset_for(dbkey)
             if len_ds:
-                genome = Genome(dbkey, dbkey_name, len_file=len_ds.file_name)
+                genome = Genome(dbkey, dbkey_name, len_file=len_ds.get_file_name())
             # Look in system builds.
             elif dbkey in self.genomes:
                 genome = self.genomes[dbkey]
@@ -366,7 +368,7 @@ class Genomes:
 
         return False
 
-    def reference(self, trans, dbkey, chrom, low, high):
+    def reference(self, trans: ProvidesUserContext, dbkey, chrom, low, high):
         """
         Return reference data for a build.
         """
@@ -374,7 +376,8 @@ class Genomes:
         # If there is no dbkey owner, default to current user.
         dbkey_owner, dbkey = decode_dbkey(dbkey)
         if dbkey_owner:
-            dbkey_user = trans.sa_session.query(trans.app.model.User).filter_by(username=dbkey_owner).first()
+            dbkey_user = get_user_by_username(trans.sa_session, dbkey_owner)
+            assert dbkey_user is not None
         else:
             dbkey_user = trans.user
 
@@ -391,15 +394,13 @@ class Genomes:
         else:
             user_keys = loads(dbkey_user.preferences["dbkeys"])
             dbkey_attributes = user_keys[dbkey]
-            fasta_dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(
-                dbkey_attributes["fasta"]
-            )
+            fasta_dataset = trans.sa_session.get(HistoryDatasetAssociation, dbkey_attributes["fasta"])
             msg = fasta_dataset.convert_dataset(trans, "twobit")
             if msg:
                 return msg
             else:
                 twobit_dataset = fasta_dataset.get_converted_dataset(trans, "twobit")
-                twobit_file_name = twobit_dataset.file_name
+                twobit_file_name = twobit_dataset.get_file_name()
 
         return self._get_reference_data(twobit_file_name, chrom, low, high)
 

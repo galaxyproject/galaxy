@@ -1,6 +1,7 @@
 """
 Condor helper utilities.
 """
+
 from subprocess import (
     CalledProcessError,
     check_call,

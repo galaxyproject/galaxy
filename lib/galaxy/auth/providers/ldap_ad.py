@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 from galaxy.exceptions import ConfigurationError
 from galaxy.security.validate_user_input import transform_publicname
 from galaxy.util import (
+    listify,
     string_as_bool,
     unicodify,
 )
@@ -89,7 +90,6 @@ def _parse_ldap_options(options_unparsed):
 
 
 class LDAP(AuthProvider):
-
     """
     Attempts to authenticate users against an LDAP server.
 
@@ -135,8 +135,8 @@ class LDAP(AuthProvider):
         self.role_search_attribute = options.get(self.role_search_option)
         if self.auto_create_roles_or_groups and self.role_search_attribute is None:
             raise ConfigurationError(
-                "If 'auto-create-roles' or 'auto-create-groups' is True, a '%s' attribute has to"
-                " be provided." % self.role_search_option
+                f"If 'auto-create-roles' or 'auto-create-groups' is True, a '{self.role_search_option}' attribute has to"
+                " be provided."
             )
 
         return ok, failure_mode
@@ -385,6 +385,8 @@ class LDAP3(LDAP):
                 dn = response[0]["dn"]
                 attrs = response[0]["attributes"]
                 log.debug("LDAP3 authenticate: dn is %s", dn)
+                for attr in attributes:
+                    attrs[attr] = listify(attrs[attr])
                 log.debug("LDAP3 authenticate: search attributes are %s", attrs)
                 for attr in attributes:
                     if self.role_search_attribute and attr == self.role_search_attribute[1:-1]:  # strip curly brackets

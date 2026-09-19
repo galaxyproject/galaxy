@@ -1,13 +1,14 @@
-<tool id="CONVERTER_bam_to_coodinate_sorted_bam" name="Convert BAM to coordinate-sorted BAM" version="1.0.0" hidden="true" profile="18.01">
+<tool id="CONVERTER_bam_to_coodinate_sorted_bam" name="Convert BAM to coordinate-sorted BAM" version="1.0.1" hidden="true" profile="18.01">
     <requirements>
-        <requirement type="package" version="1.6">samtools</requirement>
+        <requirement type="package" version="1.17">samtools</requirement>
     </requirements>
     <command><![CDATA[
          samtools sort
             -@ \${GALAXY_SLOTS:-1}
+            --no-PG
             -o '${output}'
             -O bam
-            -T dataset
+            -T "\${TMPDIR:-.}"
             '${input}'
     ]]>
     </command>
@@ -20,7 +21,8 @@
     <tests>
         <test>
             <param name="input" ftype="sam" value="bfast_out1.sam"/>
-            <output name="output" ftype="bam" value="bfast_out1.bam"/>
+            <!--lines diff due to @HD line which contained GO:none before-->
+            <output name="output" ftype="bam" value="bfast_out1.bam" lines_diff="2"/>
         </test>
     </tests>
     <help>

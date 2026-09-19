@@ -1,0 +1,36 @@
+<tool id="gx_select_dynamic" name="gx_select_dynamic" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter' >> '$output'
+    ]]></command>
+    <code file="gx_select_dynamic_options.py"/>
+    <inputs>
+        <param name="ref_parameter" type="data" ext="txt" >
+        </param>
+        <param name="parameter" type="select" dynamic_options="every_other_word(ref_parameter.dataset.get_file_name())">
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="ref_parameter" value="simple_line.txt" />
+            <param name="parameter" value="of" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="of" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <!-- Selects implicitly default to the first option as the default option.
+            -->
+            <param name="ref_parameter" value="simple_line.txt" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="This" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

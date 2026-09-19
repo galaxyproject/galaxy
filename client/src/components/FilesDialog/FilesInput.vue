@@ -1,27 +1,34 @@
 <script setup lang="ts">
 import { BFormInput } from "bootstrap-vue";
 import { computed } from "vue";
+import { useRouter } from "vue-router/composables";
 
-import { filesDialog } from "@/utils/data";
+import type { FileSourceBrowsingMode, FilterFileSourcesOptions } from "@/api/remoteFiles";
+import { filesDialog } from "@/utils/dataModals";
+
+import type { SelectionItem } from "../SelectionDialog/selectionTypes";
 
 interface Props {
     value: string;
-    mode?: "file" | "directory";
+    mode?: FileSourceBrowsingMode;
     requireWritable?: boolean;
-}
-
-interface SelectableFile {
-    url: string;
+    filterOptions?: FilterFileSourcesOptions;
+    selectedItem?: SelectionItem;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     mode: "file",
     requireWritable: false,
+    filterOptions: undefined,
+    selectedItem: undefined,
 });
 
 const emit = defineEmits<{
     (e: "input", value: string): void;
+    (e: "navigated"): void;
 }>();
+
+const router = useRouter();
 
 const currentValue = computed({
     get() {
@@ -36,10 +43,19 @@ const selectFile = () => {
     const dialogProps = {
         mode: props.mode,
         requireWritable: props.requireWritable,
+        filterOptions: props.filterOptions,
+        selectedItem: props.selectedItem,
     };
-    filesDialog((selected: SelectableFile) => {
-        currentValue.value = selected?.url;
-    }, dialogProps);
+    filesDialog(
+        (selected: SelectionItem) => {
+            currentValue.value = selected.url;
+        },
+        dialogProps,
+        (route: string) => {
+            router.push(route);
+            emit("navigated");
+        },
+    );
 };
 
 const placeholder = `Click to select ${props.mode}`;

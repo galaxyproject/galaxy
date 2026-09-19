@@ -1,7 +1,8 @@
-""" brew_exts defines generic extensions to Homebrew this file
+"""brew_exts defines generic extensions to Homebrew this file
 builds on those abstraction and provides Galaxy specific functionality
 not useful to the brew external commands.
 """
+
 from . import brew_exts
 
 DEFAULT_TAP = "homebrew/science"

@@ -1,7 +1,8 @@
-import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
+import { beforeEach, describe, expect, it } from "vitest";
 
-import SharingIndicators from "./SharingIndicators";
+import SharingIndicators from "./SharingIndicators.vue";
 
 const localVue = getLocalVue();
 
@@ -16,7 +17,7 @@ describe("SharingIndicators.vue", () => {
                     shared: false,
                 },
             };
-            wrapper = shallowMount(SharingIndicators, {
+            wrapper = mount(SharingIndicators, {
                 propsData,
                 localVue,
             });
@@ -39,7 +40,7 @@ describe("SharingIndicators.vue", () => {
                     shared: true,
                 },
             };
-            wrapper = shallowMount(SharingIndicators, {
+            wrapper = mount(SharingIndicators, {
                 propsData,
                 localVue,
             });
@@ -48,13 +49,13 @@ describe("SharingIndicators.vue", () => {
         it("should fire a is:published filter on published click", async () => {
             await wrapper.find(".sharing-indicator-published").trigger("click");
             const emitted = wrapper.emitted("filter");
-            expect(emitted[0][0]).toBe("is:published");
+            expect(emitted[0][0]).toBe("published");
         });
 
         it("should fire a is:shared_with_me filter on shared click", async () => {
             await wrapper.find(".sharing-indicator-shared").trigger("click");
             const emitted = wrapper.emitted("filter");
-            expect(emitted[0][0]).toBe("is:shared_with_me");
+            expect(emitted[0][0]).toBe("shared_with_me");
         });
     });
 });

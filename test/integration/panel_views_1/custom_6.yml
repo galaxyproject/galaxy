@@ -2,7 +2,7 @@ name: Custom Panel in a New Section
 type: generic
 items:
 - type: section
-  name: My Completely New Sectin
+  name: My Completely New Section
   items:
   - type: label
     text: The Start

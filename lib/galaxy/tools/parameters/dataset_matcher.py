@@ -1,19 +1,26 @@
 from logging import getLogger
+from typing import (
+    Any,
+    TYPE_CHECKING,
+)
 
 import galaxy.model
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesHistoryContext
 
 log = getLogger(__name__)
 
 
-def set_dataset_matcher_factory(trans, tool):
+def set_dataset_matcher_factory(trans: "ProvidesHistoryContext", tool):
     trans.dataset_matcher_factory = DatasetMatcherFactory(trans, tool)
 
 
-def unset_dataset_matcher_factory(trans):
+def unset_dataset_matcher_factory(trans: "ProvidesHistoryContext"):
     trans.dataset_matcher_factory = None
 
 
-def get_dataset_matcher_factory(trans):
+def get_dataset_matcher_factory(trans: "ProvidesHistoryContext"):
     dataset_matcher_factory = getattr(trans, "dataset_matcher_factory", None)
     return dataset_matcher_factory or DatasetMatcherFactory(trans)
 
@@ -21,11 +28,11 @@ def get_dataset_matcher_factory(trans):
 class DatasetMatcherFactory:
     """"""
 
-    def __init__(self, trans, tool=None):
+    def __init__(self, trans: "ProvidesHistoryContext", tool=None):
         self._trans = trans
         self._tool = tool
-        self._data_inputs = []
-        self._matches_format_cache = {}
+        self._data_inputs: list[Any] = []
+        self._matches_format_cache: dict[str, dict[str, bool]] = {}
         if tool:
             valid_input_states = tool.valid_input_states
         else:
@@ -96,7 +103,7 @@ class DatasetMatcher:
     and permission handling.
     """
 
-    def __init__(self, dataset_matcher_factory, trans, param, other_values):
+    def __init__(self, dataset_matcher_factory, trans: "ProvidesHistoryContext", param, other_values):
         self.dataset_matcher_factory = dataset_matcher_factory
         self.trans = trans
         self.param = param
@@ -188,6 +195,7 @@ class HdaImplicitMatch:
 
 class HdcaDirectMatch:
     implicit_conversion = False
+    requires_adapter = False
 
     def __init__(self):
         pass
@@ -201,7 +209,7 @@ class HdcaImplicitMatch:
 
 
 class SummaryDatasetCollectionMatcher:
-    def __init__(self, dataset_matcher_factory, trans, dataset_matcher):
+    def __init__(self, dataset_matcher_factory, trans: "ProvidesHistoryContext", dataset_matcher):
         self.dataset_matcher_factory = dataset_matcher_factory
         self._trans = trans
         self.dataset_matcher = dataset_matcher
@@ -212,8 +220,10 @@ class SummaryDatasetCollectionMatcher:
         if not dataset_collection.populated_optimized:
             return False
 
-        (states, extensions) = dataset_collection.dataset_states_and_extensions_summary
-        for state in states:
+        summary = dataset_collection.dataset_states_and_extensions_summary
+        states = summary.states
+        extensions = summary.extensions
+        for state in states.keys():
             if state not in self.dataset_matcher_factory.valid_input_states:
                 return False
 
@@ -235,7 +245,7 @@ class SummaryDatasetCollectionMatcher:
 
 
 class DatasetCollectionMatcher:
-    def __init__(self, trans, dataset_matcher):
+    def __init__(self, trans: "ProvidesHistoryContext", dataset_matcher):
         self.dataset_matcher = dataset_matcher
         self._trans = trans
 
@@ -246,8 +256,7 @@ class DatasetCollectionMatcher:
         if element.ldda:
             return False
 
-        child_collection = element.child_collection
-        if child_collection:
+        if child_collection := element.child_collection:
             return self.dataset_collection_match(child_collection)
 
         hda = element.hda
@@ -263,7 +272,7 @@ class DatasetCollectionMatcher:
     def dataset_collection_match(self, dataset_collection):
         # If dataset collection not yet populated, cannot determine if it
         # would be a valid match for this parameter.
-        if not dataset_collection.populated:
+        if not dataset_collection.populated_optimized:
             return False
 
         valid = True

@@ -1,17 +1,14 @@
 from enum import Enum
 from typing import (
+    Annotated,
     Any,
-    Dict,
-    List,
-    Optional,
-    Union,
+    Literal,
 )
 
 from pydantic import (
     BaseModel,
     Field,
 )
-from typing_extensions import Literal
 
 LABEL_DESCRIPTION = "The unique label of the step being referenced."
 INPUT_NAME_DESCRIPTION = "The input name as defined by the workflow module corresponding to the step being referenced. For Galaxy tool steps these inputs should be normalized using '|' (e.g. 'cond|repeat_0|input')."
@@ -33,7 +30,7 @@ class StepReferenceByLabel(BaseModel):
     label: str = Field(description=LABEL_DESCRIPTION)
 
 
-step_reference_union = Union[StepReferenceByOrderIndex, StepReferenceByLabel]
+step_reference_union = StepReferenceByOrderIndex | StepReferenceByLabel
 
 
 class InputReferenceByOrderIndex(StepReferenceByOrderIndex):
@@ -44,18 +41,18 @@ class InputReferenceByLabel(StepReferenceByLabel):
     input_name: str = input_name_field
 
 
-input_reference_union = Union[InputReferenceByOrderIndex, InputReferenceByLabel]
+input_reference_union = InputReferenceByOrderIndex | InputReferenceByLabel
 
 
 class OutputReferenceByOrderIndex(StepReferenceByOrderIndex):
-    output_name: Optional[str] = output_name_field
+    output_name: str | None = output_name_field
 
 
 class OutputReferenceByLabel(StepReferenceByLabel):
-    output_name: Optional[str] = output_name_field
+    output_name: str | None = output_name_field
 
 
-output_reference_union = Union[OutputReferenceByOrderIndex, OutputReferenceByLabel]
+output_reference_union = OutputReferenceByOrderIndex | OutputReferenceByLabel
 
 
 class Position(BaseModel):
@@ -115,11 +112,12 @@ class AddStepAction(BaseAction):
 
     action_type: Literal["add_step"]
     type: str = Field(description="Module type of the step to add, see galaxy.workflow.modules for available types.")
-    tool_state: Optional[Dict[str, Any]]
-    label: Optional[str] = Field(
-        description="A unique label for the step being added, must be distinct from the labels already present in the workflow."
+    tool_state: dict[str, Any] | None = None
+    label: str | None = Field(
+        None,
+        description="A unique label for the step being added, must be distinct from the labels already present in the workflow.",
     )
-    position: Optional[Position] = Field(description="The location of the step in the Galaxy workflow editor.")
+    position: Position | None = Field(None, description="The location of the step in the Galaxy workflow editor.")
 
 
 class ConnectAction(BaseAction):
@@ -137,28 +135,28 @@ class DisconnectAction(BaseAction):
 class AddInputAction(BaseAction):
     action_type: Literal["add_input"]
     type: str
-    label: Optional[str]
-    position: Optional[Position]
-    collection_type: Optional[str]
-    restrictions: Optional[List[str]]
-    restrict_on_connections: Optional[bool]
-    suggestions: Optional[List[str]]
-    optional: Optional[bool] = False
-    default: Optional[Any]  # this probably needs to be revisited when we have more complex field types
+    label: str | None = None
+    position: Position | None = None
+    collection_type: str | None = None
+    restrictions: list[str] | None = None
+    restrict_on_connections: bool | None = None
+    suggestions: list[str] | None = None
+    optional: bool | None = False
+    default: Any | None = None  # this probably needs to be revisited when we have more complex field types
 
 
 class ExtractInputAction(BaseAction):
     action_type: Literal["extract_input"]
     input: input_reference_union
-    label: Optional[str]
-    position: Optional[Position]
+    label: str | None = None
+    position: Position | None = None
 
 
 class ExtractUntypedParameter(BaseAction):
     action_type: Literal["extract_untyped_parameter"]
     name: str
-    label: Optional[str]  # defaults to name if unset
-    position: Optional[Position]
+    label: str | None = None  # defaults to name if unset
+    position: Position | None = None
 
 
 class RemoveUnlabeledWorkflowOutputs(BaseAction):
@@ -182,7 +180,7 @@ class UpdateLicenseAction(BaseAction):
 
 class UpdateCreatorAction(BaseAction):
     action_type: Literal["update_creator"]
-    creator: Any
+    creator: Any = None
 
 
 class Report(BaseModel):
@@ -214,46 +212,46 @@ class UpgradeSubworkflowAction(BaseAction):
     step: step_reference_union = step_target_field
     # Once we start storing these actions in the database, this needs to be decoded
     # before adding it into the database.
-    content_id: Optional[str]
+    content_id: str | None = None
 
 
 class UpgradeToolAction(BaseAction):
     action_type: Literal["upgrade_tool"]
     step: step_reference_union = step_target_field
-    tool_version: Optional[str]
+    tool_version: str | None = None
 
 
 class UpgradeAllStepsAction(BaseAction):
     action_type: Literal["upgrade_all_steps"]
 
 
-union_action_classes = Union[
-    AddInputAction,
-    AddStepAction,
-    ConnectAction,
-    DisconnectAction,
-    ExtractInputAction,
-    ExtractUntypedParameter,
-    FileDefaultsAction,
-    FillStepDefaultsAction,
-    UpdateAnnotationAction,
-    UpdateCreatorAction,
-    UpdateNameAction,
-    UpdateLicenseAction,
-    UpdateOutputLabelAction,
-    UpdateReportAction,
-    UpdateStepLabelAction,
-    UpdateStepPositionAction,
-    UpgradeSubworkflowAction,
-    UpgradeToolAction,
-    UpgradeAllStepsAction,
-    RemoveUnlabeledWorkflowOutputs,
-]
+union_action_classes = (
+    AddInputAction
+    | AddStepAction
+    | ConnectAction
+    | DisconnectAction
+    | ExtractInputAction
+    | ExtractUntypedParameter
+    | FileDefaultsAction
+    | FillStepDefaultsAction
+    | UpdateAnnotationAction
+    | UpdateCreatorAction
+    | UpdateNameAction
+    | UpdateLicenseAction
+    | UpdateOutputLabelAction
+    | UpdateReportAction
+    | UpdateStepLabelAction
+    | UpdateStepPositionAction
+    | UpgradeSubworkflowAction
+    | UpgradeToolAction
+    | UpgradeAllStepsAction
+    | RemoveUnlabeledWorkflowOutputs
+)
 
 
 ACTION_CLASSES_BY_TYPE = {}
-for action_class in union_action_classes.__args__:  # type: ignore[attr-defined]
-    action_type_def = action_class.schema()["properties"]["action_type"]
+for action_class in union_action_classes.__args__:
+    action_type_def = action_class.model_json_schema()["properties"]["action_type"]
     try:
         # pydantic 1.8
         action_type = action_type_def["enum"][0]
@@ -265,7 +263,7 @@ for action_class in union_action_classes.__args__:  # type: ignore[attr-defined]
 
 
 class RefactorActions(BaseModel):
-    actions: List[Action]
+    actions: list[Annotated[union_action_classes, Field(discriminator="action_type")]]
     dry_run: bool = False
 
 
@@ -290,34 +288,36 @@ step with the previously connected input.
 class RefactorActionExecutionMessage(BaseModel):
     message: str
     message_type: RefactorActionExecutionMessageTypeEnum
-    step_label: Optional[str] = Field(description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}")
-    order_index: Optional[int] = Field(description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}")
-    input_name: Optional[str] = Field(
+    step_label: str | None = Field(None, description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}")
+    order_index: int | None = Field(
+        None, description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}"
+    )
+    input_name: str | None = Field(
         None,
         description=f"""If this message is about an input to a step,
 this field describes the target input name. ${INPUT_NAME_DESCRIPTION}""",
     )
-    output_name: Optional[str] = Field(
+    output_name: str | None = Field(
         None,
         description="""If this message is about an output to a step,
 this field describes the target output name. The output name as defined by the workflow module corresponding to the step being referenced.
 """,
     )
-    from_step_label: Optional[str] = Field(
+    from_step_label: str | None = Field(
         None,
         description="""For dropped connections these optional attributes refer to the output
 side of the connection that was dropped.""",
     )
-    from_order_index: Optional[int] = Field(
+    from_order_index: int | None = Field(
         None,
         description="""For dropped connections these optional attributes refer to the output
 side of the connection that was dropped.""",
     )
-    output_label: Optional[str] = Field(
+    output_label: str | None = Field(
         None, description="If the message_type is workflow_output_drop_forced, this is the output label dropped."
     )
 
 
 class RefactorActionExecution(BaseModel):
-    action: Action
-    messages: List[RefactorActionExecutionMessage]
+    action: union_action_classes
+    messages: list[RefactorActionExecutionMessage]

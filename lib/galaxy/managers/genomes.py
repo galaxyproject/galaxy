@@ -1,18 +1,27 @@
 from typing import (
     Any,
-    List,
     TYPE_CHECKING,
 )
 
-from sqlalchemy import func
+from sqlalchemy import (
+    func,
+    text,
+)
 
-from galaxy import model as m
 from galaxy.exceptions import (
     ReferenceDataError,
     RequestParameterInvalidException,
 )
-from galaxy.managers.context import ProvidesUserContext
-from galaxy.structured_app import StructuredApp
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
+from galaxy.model import User
+from galaxy.model.database_utils import is_postgres
+from galaxy.structured_app import (
+    MinimalManagerApp,
+    StructuredApp,
+)
 from .base import raise_filter_err
 
 if TYPE_CHECKING:
@@ -24,10 +33,10 @@ class GenomesManager:
         self._app = app
         self.genomes = app.genomes
 
-    def get_dbkeys(self, user: m.User, chrom_info: bool) -> List[List[str]]:
+    def get_dbkeys(self, user: User | None, chrom_info: bool) -> list[list[str]]:
         return self.genomes.get_dbkeys(user, chrom_info)
 
-    def is_registered_dbkey(self, dbkey: str, user: m.User) -> bool:
+    def is_registered_dbkey(self, dbkey: str, user: User | None) -> bool:
         dbkeys = self.get_dbkeys(user, chrom_info=False)
         for _, key in dbkeys:
             if dbkey == key:
@@ -35,16 +44,20 @@ class GenomesManager:
         return False
 
     def get_genome(
-        self, trans: ProvidesUserContext, id: str, num: int, chrom: str, low: int, high: int, reference: bool
+        self, trans: ProvidesHistoryContext, id: str, num: int, chrom: str, low: int, high: int, reference: bool
     ) -> Any:
         if reference:
             region = self.genomes.reference(trans, dbkey=id, chrom=chrom, low=low, high=high)
+            if region is None:
+                raise ReferenceDataError(f"No reference data for {id}")
             return {"dataset_type": "refseq", "data": region.sequence}
         else:
             return self.genomes.chroms(trans, dbkey=id, num=num, chrom=chrom, low=low)
 
     def get_sequence(self, trans: ProvidesUserContext, id: str, chrom: str, low: int, high: int) -> Any:
         region = self.genomes.reference(trans, dbkey=id, chrom=chrom, low=low, high=high)
+        if region is None:
+            raise ReferenceDataError(f"No reference data for {id}")
         return region.sequence
 
     def get_indexes(self, id: str, index_type: str) -> Any:
@@ -68,12 +81,13 @@ class GenomesManager:
         except TypeError:
             raise ReferenceDataError(f"Data tables not found for {index_type}")
         except IndexError:
-            raise ReferenceDataError(f"Data tables not found for {index_type} for {id}")
+            raise RequestParameterInvalidException(f"Data tables not found for {index_type} for {id}")
         else:
             return f"{file_name}{ext}"
 
 
 class GenomeFilterMixin:
+    app: MinimalManagerApp
     orm_filter_parsers: "OrmFilterParsersType"
     valid_ops = ("eq", "contains", "has")
 
@@ -86,10 +100,14 @@ class GenomeFilterMixin:
             # Doesn't filter genome_build for collections
             if model_class.__name__ == "HistoryDatasetCollectionAssociation":
                 return False
-            column = func.json_extract(model_class.table.c._metadata, "$.dbkey")
+            if is_postgres(self.app.config.database_connection):
+                column = text("convert_from(metadata, 'UTF8')::json ->> 'dbkey'")
+            else:
+                column = func.json_extract(model_class.table.c._metadata, "$.dbkey")  # type: ignore[assignment]
             lower_val = val.lower()  # Ignore case
+            # dbkey can either be "hg38" or '["hg38"]', so we need to check both
             if op == "eq":
-                cond = func.lower(column) == lower_val
+                cond = func.lower(column) == lower_val or func.lower(column) == f'["{lower_val}"]'
             else:
                 cond = func.lower(column).contains(lower_val, autoescape=True)
             return cond

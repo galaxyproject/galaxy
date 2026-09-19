@@ -1,4 +1,4 @@
-import { FilesSourcePlugin } from "./services";
+import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 
 export const ftpId = "_ftp";
 export const rootId = "pdb-gzip";
@@ -26,7 +26,7 @@ export interface RemoteFile extends RemoteEntry {
 
 export type RemoteFilesList = (RemoteDirectory | RemoteFile)[];
 
-export const rootResponse: FilesSourcePlugin[] = [
+export const rootResponse: BrowsableFilesSourcePlugin[] = [
     {
         id: "_ftp",
         type: "gxftp",
@@ -34,6 +34,12 @@ export const rootResponse: FilesSourcePlugin[] = [
         label: "FTP Directory",
         doc: "Galaxy User's FTP Directory",
         writable: true,
+        browsable: true,
+        supports: {
+            pagination: false,
+            search: false,
+            sorting: false,
+        },
     },
     {
         id: "pdb-gzip",
@@ -42,6 +48,12 @@ export const rootResponse: FilesSourcePlugin[] = [
         label: "PDB",
         doc: "Protein Data Bank (PDB)",
         writable: true,
+        browsable: true,
+        supports: {
+            pagination: false,
+            search: false,
+            sorting: false,
+        },
     },
     {
         id: "empty-dir",
@@ -50,6 +62,26 @@ export const rootResponse: FilesSourcePlugin[] = [
         label: "Empty Directory",
         doc: "Empty Directory",
         writable: true,
+        browsable: true,
+        supports: {
+            pagination: false,
+            search: false,
+            sorting: false,
+        },
+    },
+    {
+        id: "c5504eb8-51cf-4b44-88f8-24347c031f52",
+        type: "ftp",
+        label: "My own FTP",
+        doc: "This FTP is accessible only by me",
+        browsable: true,
+        writable: true,
+        supports: {
+            pagination: true,
+            search: true,
+            sorting: false,
+        },
+        uri_root: "gxuserfiles://c5504eb8-51cf-4b44-88f8-24347c031f52",
     },
 ];
 

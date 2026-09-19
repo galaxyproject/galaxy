@@ -1,21 +1,22 @@
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getAppRoot } from "onload/loadConfig";
 import { createPinia } from "pinia";
-import { useUserStore } from "stores/userStore";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
-import { Services } from "../services";
-import LibraryDataset from "./LibraryDataset";
+import { useUserStore } from "@/stores/userStore";
+
 import cannotManageDatasetResponse from "./testData/cannotManageDataset.json";
 import cannotModifyDatasetResponse from "./testData/cannotModifyDataset.json";
 import restrictedDatasetResponse from "./testData/restrictedDataset.json";
 import unrestrictedDatasetResponse from "./testData/unrestrictedDataset.json";
 
-jest.mock("app");
-jest.mock("onload/loadConfig");
-getAppRoot.mockImplementation(() => "/");
-jest.mock("../services");
+import LibraryDataset from "./LibraryDataset.vue";
+
+vi.mock("app");
+vi.mock("onload/loadConfig", () => ({
+    getAppRoot: vi.fn(() => "/"),
+}));
 
 const FOLDER_ID = "test_folder_id";
 const UNRESTRICTED_DATASET_ID = "unrestricted_dataset_id";
@@ -41,22 +42,23 @@ const mockDbKeyProvider = {
     },
 };
 
-Services.mockImplementation(() => {
-    const responseMap = new Map([
-        [UNRESTRICTED_DATASET_ID, unrestrictedDatasetResponse],
-        [RESTRICTED_DATASET_ID, restrictedDatasetResponse],
-        [CANNOT_MODIFY_DATASET_ID, cannotModifyDatasetResponse],
-        [CANNOT_MANAGE_DATASET_ID, cannotManageDatasetResponse],
-    ]);
-    return {
+const responseMap = new Map([
+    [UNRESTRICTED_DATASET_ID, unrestrictedDatasetResponse],
+    [RESTRICTED_DATASET_ID, restrictedDatasetResponse],
+    [CANNOT_MODIFY_DATASET_ID, cannotModifyDatasetResponse],
+    [CANNOT_MANAGE_DATASET_ID, cannotManageDatasetResponse],
+]);
+
+vi.mock("../services", () => ({
+    Services: class Services {
         async getDataset(datasetID, onError) {
             return responseMap.get(datasetID);
-        },
+        }
         async updateDataset(datasetID, data, onSucess, onError) {
             return data;
-        },
-    };
-});
+        }
+    },
+}));
 
 const MODIFY_BUTTON = '[data-test-id="modify-btn"]';
 const AUTO_DETECT_BUTTON = '[data-test-id="auto-detect-btn"]';
@@ -65,7 +67,7 @@ const UNRESTRICTED_MESSAGE = '[data-test-id="unrestricted-msg"]';
 const DATASET_TABLE = '[data-test-id="dataset-table"]';
 const PEEK_VIEW = '[data-test-id="peek-view"]';
 
-async function mountLibraryDatasetWrapper(localVue, expectDatasetId, isAdmin = false) {
+async function mountLibraryDatasetWrapper(localVue, router, expectDatasetId, isAdmin = false) {
     const pinia = createPinia();
     const propsData = {
         dataset_id: expectDatasetId,
@@ -73,6 +75,7 @@ async function mountLibraryDatasetWrapper(localVue, expectDatasetId, isAdmin = f
     };
     const wrapper = mount(LibraryDataset, {
         localVue,
+        router,
         propsData,
         stubs: {
             DatatypesProvider: mockDatatypesProvider,
@@ -88,10 +91,11 @@ async function mountLibraryDatasetWrapper(localVue, expectDatasetId, isAdmin = f
 
 describe("Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue", () => {
     const localVue = getLocalVue();
+    const router = injectTestRouter(localVue);
 
     it("should display all buttons when user is Admin", async () => {
         const isAdmin = true;
-        const wrapper = await mountLibraryDatasetWrapper(localVue, UNRESTRICTED_DATASET_ID, isAdmin);
+        const wrapper = await mountLibraryDatasetWrapper(localVue, router, UNRESTRICTED_DATASET_ID, isAdmin);
 
         expect(wrapper.find(MODIFY_BUTTON).exists()).toBe(true);
         expect(wrapper.find(AUTO_DETECT_BUTTON).exists()).toBe(true);
@@ -99,7 +103,7 @@ describe("Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue", () =
     });
 
     it("should not display 'Modify' and 'Auto-detect datatype' buttons when user cannot modify dataset", async () => {
-        const wrapper = await mountLibraryDatasetWrapper(localVue, CANNOT_MODIFY_DATASET_ID);
+        const wrapper = await mountLibraryDatasetWrapper(localVue, router, CANNOT_MODIFY_DATASET_ID);
 
         expect(wrapper.find(MODIFY_BUTTON).exists()).toBe(false);
         expect(wrapper.find(AUTO_DETECT_BUTTON).exists()).toBe(false);
@@ -107,25 +111,25 @@ describe("Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue", () =
 
     it("should not display 'Permissions' button when user is not an administrator", async () => {
         const isAdmin = false;
-        const wrapper = await mountLibraryDatasetWrapper(localVue, CANNOT_MANAGE_DATASET_ID, isAdmin);
+        const wrapper = await mountLibraryDatasetWrapper(localVue, router, CANNOT_MANAGE_DATASET_ID, isAdmin);
 
         expect(wrapper.find(PERMISSIONS_BUTTON).exists()).toBe(false);
     });
 
     it("should display unrestricted dataset message when dataset is unrestricted", async () => {
-        const wrapper = await mountLibraryDatasetWrapper(localVue, UNRESTRICTED_DATASET_ID);
+        const wrapper = await mountLibraryDatasetWrapper(localVue, router, UNRESTRICTED_DATASET_ID);
 
         expect(wrapper.find(UNRESTRICTED_MESSAGE).exists()).toBe(true);
     });
 
     it("should not display unrestricted dataset message when dataset is restricted", async () => {
-        const wrapper = await mountLibraryDatasetWrapper(localVue, RESTRICTED_DATASET_ID);
+        const wrapper = await mountLibraryDatasetWrapper(localVue, router, RESTRICTED_DATASET_ID);
 
         expect(wrapper.find(UNRESTRICTED_MESSAGE).exists()).toBe(false);
     });
 
     it("should display dataset details in the table", async () => {
-        const wrapper = await mountLibraryDatasetWrapper(localVue, UNRESTRICTED_DATASET_ID);
+        const wrapper = await mountLibraryDatasetWrapper(localVue, router, UNRESTRICTED_DATASET_ID);
         const table = wrapper.find(DATASET_TABLE);
         const tableHtml = table.html();
 
@@ -142,14 +146,14 @@ describe("Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue", () =
     });
 
     it("should display dataset peek content", async () => {
-        const wrapper = await mountLibraryDatasetWrapper(localVue, UNRESTRICTED_DATASET_ID);
+        const wrapper = await mountLibraryDatasetWrapper(localVue, router, UNRESTRICTED_DATASET_ID);
         const peek = wrapper.find(PEEK_VIEW);
 
         expect(peek.text()).toBe(EXPECTED_DATASET_DATA.peek);
     });
 
     it("should display input fields when `Modify` button is clicked", async () => {
-        const wrapper = await mountLibraryDatasetWrapper(localVue, UNRESTRICTED_DATASET_ID);
+        const wrapper = await mountLibraryDatasetWrapper(localVue, router, UNRESTRICTED_DATASET_ID);
         const modify_button = wrapper.find(MODIFY_BUTTON);
 
         expect(wrapper.find(DATASET_TABLE).html()).not.toContain("<input");

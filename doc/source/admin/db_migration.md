@@ -146,7 +146,7 @@ Galaxy's data model includes the [galaxy model](https://github.com/galaxyproject
 These two models may be persisted in one combined database (which is the default) or two separate databases (which is enabled by setting the
 [`install_database_connection`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/webapps/galaxy/config_schema.yml#L157) configuration option). 
 
-These models are represented by migration [branches](https://alembic.sqlalchemy.org/en/latest/branches.html) (versioning lineages with a common base) labeled as *gxy* for the galaxy model and *tsi* for the install model. If both models are hosted in the same databases, the branches will share the same Alembic version table; otherwise, each database has its own version table. 
+These models are represented by migration [branches](https://alembic.sqlalchemy.org/en/latest/branches.html) (versioning lineages with a common base) labeled as *gxy* for the galaxy model and *tsi* for the install model. If both models are hosted in the same database, the branches will share the same Alembic version table; otherwise, each database has its own version table. 
 
 Each branch has its own version history, represented by revision scripts located in the branch version directory (`migrations/alembic/versions_gxy` for *gxy* and `migrations/alembic/versions_tsi` for *tsi*). 
 
@@ -542,6 +542,12 @@ After that, run the upgrade script: `./manage_db.sh upgrade`. And you're done!
 
 ## Troubleshooting
 
+### Deadlock detected
+
+If you see a deadlock error, that may have been caused by a migration script requiring exclusive access
+to a database object, such as a row or a table. To avoid this error, it is recommended to shut down
+all Galaxy processes during database migration.
+
 ### How to handle migrations.IncorrectVersionError
 
 If you see this error, you'll need to upgrade or downgrade your database *before* upgrading to
@@ -552,4 +558,3 @@ is 181. Please see [this issue](https://github.com/galaxyproject/galaxy/issues/1
 
 #### Please help us improve this page:
 If you encounter any migration-related errors or issues, please [open an issue](https://github.com/galaxyproject/galaxy/issues/new?assignees=&labels=&template=bug_report.md&title=), and we will add the solution with any relevant context to this page.
-
