@@ -68,10 +68,26 @@ function onCopyOut() {
                 @keyup.enter="onSubmit" />
         </span>
 
-        <GButton v-if="!editing" v-g-tooltip.hover class="inline-icon-button" title="Edit URL" @click="onEdit">
+        <GButton
+            v-if="!editing"
+            v-g-tooltip.hover
+            class="inline-icon-button"
+            transparent
+            icon-only
+            color="blue"
+            title="Edit URL"
+            @click="onEdit">
             <FontAwesomeIcon :icon="faEdit" fixed-width />
         </GButton>
-        <GButton v-else v-g-tooltip.hover class="inline-icon-button" title="Done" @click="onSubmit">
+        <GButton
+            v-else
+            v-g-tooltip.hover
+            class="inline-icon-button"
+            transparent
+            icon-only
+            color="blue"
+            title="Done"
+            @click="onSubmit">
             <FontAwesomeIcon :icon="faCheck" fixed-width />
         </GButton>
 
@@ -81,6 +97,9 @@ function onCopyOut() {
             v-g-tooltip.hover
             :disabled="editing"
             class="inline-icon-button"
+            transparent
+            icon-only
+            color="blue"
             :title="clipboardTitle"
             @click="onCopy"
             @mouseout="onCopyOut"
