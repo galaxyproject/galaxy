@@ -1,12 +1,15 @@
-<tool name="Parse parameter value" id="param_value_from_file" version="0.1.0" tool_type="expression">
+<tool name="Parse parameter value" id="param_value_from_file" version="0.1.1" tool_type="expression">
     <description>from dataset</description>
     <macros>
         <import>expression_macros.xml</import>
     </macros>
-    <expression type="ecma5.1">{
+    <expression type="ecma5.1"><![CDATA[{
 var output;
 if ($job.remove_newlines || $job.param_type != 'text') {
-   $job.input1.contents = $job.input1.contents.trim();
+    if($job.input1 && $job.input1.contents)
+    {
+        $job.input1.contents = $job.input1.contents.trim();
+    }
 }
 if ($job.param_type == 'integer') {
     output = parseInt($job.input1.contents);
@@ -25,12 +28,12 @@ if ($job.param_type == 'integer') {
         return 'NOT A BOOLEAN VALUE';
     }
 } else {
-    output = $job.input1.contents;
+    output = $job.input1?.contents;
 }
 return {'output': output};
-    }</expression>
+    }]]></expression>
     <inputs>
-        <param type="data" label="Input file containing parameter to parse out of" load_contents="64000" name="input1" />
+        <param type="data" label="Input file containing parameter to parse out of" load_contents="64000" name="input1"/>
         <param name="param_type" type="select" label="Select type of parameter to parse">
             <option value="text">Text</option>
             <option value="integer">Integer</option>
@@ -39,7 +42,7 @@ return {'output': output};
         </param>
         <param name="remove_newlines" checked="true" type="boolean" label="Remove newlines ?" help="Uncheck this only if newlines should be preserved in parameter"/>
     </inputs>
-    <expand macro="typed_outputs" />
+    <expand macro="typed_outputs"/>
     <tests>
         <test expect_num_outputs="1">
             <param name="input1" value="simple_line.txt"/>
@@ -92,5 +95,5 @@ return {'output': output};
             </output>
         </test>
     </tests>
-    <help></help>
+    <help/>
 </tool>
