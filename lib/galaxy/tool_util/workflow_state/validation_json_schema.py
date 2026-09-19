@@ -23,12 +23,17 @@ from typing import (
 from jsonschema import Draft202012Validator
 
 from ._inline_tool import resolve_for_step
-from ._state_merge import inject_connections_into_state
+from ._state_merge import (
+    inject_connections_into_state,
+    unmatched_connection_keys,
+    UNMATCHED_CONNECTION_MESSAGE,
+)
 from ._types import GetToolInfo
 from ._util import (
     step_input_connections,
     step_is_inline_tool,
     step_tool_state,
+    step_when,
 )
 
 log = logging.getLogger(__name__)
@@ -420,7 +425,15 @@ def validate_native_workflow_json_schema(
         connections: dict[str, object] = {
             key: (val if isinstance(val, list) else [val]) for key, val in input_connections.items()
         }
-        inject_connections_into_state(list(parsed_tool.inputs), state, connections)
+        remaining = inject_connections_into_state(list(parsed_tool.inputs), state, connections)
+        connection_errors = [
+            JsonSchemaValidationError(
+                path=key,
+                message=UNMATCHED_CONNECTION_MESSAGE.format(key=key),
+                schema_path="",
+            )
+            for key in unmatched_connection_keys(remaining, step_when(step_def))
+        ]
 
         # Build/cache validator
         if cache_key not in _validator_cache:
@@ -442,12 +455,17 @@ def validate_native_workflow_json_schema(
         validator = _validator_cache.get(cache_key)
         if validator is None:
             result.step_results.append(
-                JsonSchemaStepResult(step=step_key, tool_id=effective_tool_id, errors=[], status="skip")
+                JsonSchemaStepResult(
+                    step=step_key,
+                    tool_id=effective_tool_id,
+                    errors=connection_errors,
+                    status="fail" if connection_errors else "skip",
+                )
             )
             continue
 
         errors = sorted(validator.iter_errors(state), key=lambda e: list(e.absolute_path))
-        step_errors = _convert_errors(errors)
+        step_errors = connection_errors + _convert_errors(errors)
         result.step_results.append(
             JsonSchemaStepResult(
                 step=step_key,

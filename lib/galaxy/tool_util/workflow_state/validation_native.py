@@ -8,7 +8,10 @@ from galaxy.tool_util.parameters import (
 )
 from galaxy.tool_util_models import ParsedTool
 from ._inline_tool import resolve_for_step
-from ._state_merge import inject_connections_into_state
+from ._state_merge import (
+    inject_connections_into_state,
+    raise_for_unmatched_connections,
+)
 from ._types import (
     GetToolInfo,
     NativeWorkflowDict,
@@ -17,6 +20,7 @@ from ._types import (
 from ._util import (
     step_input_connections,
     step_tool_state,
+    step_when,
     StepLike,
 )
 from .legacy_parameters import (
@@ -35,6 +39,7 @@ def validate_native_state(
     tool_inputs: list,
     tool_state: dict,
     connections: dict[str, object],
+    when_expression: str | None = None,
 ) -> None:
     """Validate native-encoded tool_state against tool definitions.
 
@@ -43,7 +48,9 @@ def validate_native_state(
     encoding (double-encoded scalars, inline ConnectedValue/RuntimeValue
     markers) is identical regardless of the surrounding workflow format, so the
     same model validates both. *connections* maps flat parameter paths to their
-    connected sources.
+    connected sources; *when_expression* is the step's conditional-execution
+    expression, whose inputs connect to the step rather than to a tool
+    parameter.
     """
     # Skip validation entirely if replacement parameters are present —
     # these can't pass type validation (e.g., "${num}" for an integer field)
@@ -54,7 +61,8 @@ def validate_native_state(
     state = copy.deepcopy(tool_state)
 
     # Inject connection markers for connected params missing their marker
-    inject_connections_into_state(tool_inputs, state, connections)
+    remaining = inject_connections_into_state(tool_inputs, state, connections)
+    raise_for_unmatched_connections(remaining, when_expression)
 
     model = WorkflowStepNativeToolState.parameter_model_for(tool_inputs)
     model.model_validate(state)
@@ -66,7 +74,7 @@ def validate_native_step_against(step: StepLike, parsed_tool: ToolInputs):
     connections: dict[str, object] = {
         key: (val if isinstance(val, list) else [val]) for key, val in input_connections.items()
     }
-    validate_native_state(list(parsed_tool.inputs), tool_state, connections)
+    validate_native_state(list(parsed_tool.inputs), tool_state, connections, step_when(step))
 
 
 # -- Public utilities --

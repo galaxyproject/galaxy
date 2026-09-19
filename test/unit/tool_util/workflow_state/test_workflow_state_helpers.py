@@ -1,8 +1,13 @@
 from galaxy.tool_util.parameters import repeat_inputs_to_array
+from galaxy.tool_util.workflow_state._state_merge import (
+    step_level_connection_keys,
+    unmatched_connection_keys,
+)
 from galaxy.tool_util.workflow_state._util import (
     step_inline_tool_class,
     step_is_inline_tool,
     step_tool_representation,
+    step_when,
 )
 
 
@@ -72,3 +77,28 @@ def test_step_inline_tool_class_unknown_class_ignored():
     }
     assert step_inline_tool_class(step) is None
     assert step_is_inline_tool(step) is False
+
+
+def test_step_level_connection_keys_reserves_when():
+    assert step_level_connection_keys() == {"when"}
+    assert step_level_connection_keys(None) == {"when"}
+
+
+def test_step_level_connection_keys_from_expression():
+    assert step_level_connection_keys("$(inputs.when)") == {"when"}
+    assert step_level_connection_keys("$(inputs.should_run)") == {"when", "should_run"}
+    assert step_level_connection_keys("$(inputs['odd name'])") == {"when", "odd name"}
+    assert step_level_connection_keys('$(inputs["odd name"])') == {"when", "odd name"}
+    assert step_level_connection_keys("$(inputs.a && inputs.b)") == {"when", "a", "b"}
+
+
+def test_unmatched_connection_keys_filters_step_level():
+    remaining = {"when": [], "should_run": [], "not_a_real_port": []}
+    assert unmatched_connection_keys(remaining, "$(inputs.should_run)") == ["not_a_real_port"]
+    assert unmatched_connection_keys(remaining) == ["not_a_real_port", "should_run"]
+    assert unmatched_connection_keys({}) == []
+
+
+def test_step_when():
+    assert step_when({"tool_id": "cat"}) is None
+    assert step_when({"tool_id": "cat", "when": "$(inputs.when)"}) == "$(inputs.when)"
