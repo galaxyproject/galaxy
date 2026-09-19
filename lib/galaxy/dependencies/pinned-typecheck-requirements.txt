@@ -33,6 +33,7 @@ types-s3transfer==0.16.0
 types-setuptools==84.0.0.20260812
 types-six==1.17.0.20260724
 types-webencodings==0.6.0.20260907
+types-webob==1.8.11.20260827
 typing-extensions==4.16.0
 typing-inspection==0.4.4
 urllib3==2.8.0

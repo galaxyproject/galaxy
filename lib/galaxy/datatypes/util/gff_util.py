@@ -21,7 +21,7 @@ from galaxy.util import unicodify
 FASTA_DIRECTIVE = "##FASTA"
 
 
-class GFFInterval(GenomicInterval):
+class GFFInterval(GenomicInterval):  # type: ignore[misc]  # bx-python is untyped
     """
     A GFF interval, including attributes. If file is strictly a GFF file,
     only attribute is 'group.'
@@ -171,7 +171,7 @@ class GFFFeature(GFFInterval):
         return lines
 
 
-class GFFIntervalToBEDReaderWrapper(NiceReaderWrapper):
+class GFFIntervalToBEDReaderWrapper(NiceReaderWrapper):  # type: ignore[misc]  # bx-python is untyped
     """
     Reader wrapper that reads GFF intervals/lines and automatically converts
     them to BED format.
@@ -194,7 +194,7 @@ class GFFIntervalToBEDReaderWrapper(NiceReaderWrapper):
         return interval
 
 
-class GFFReaderWrapper(NiceReaderWrapper):
+class GFFReaderWrapper(NiceReaderWrapper):  # type: ignore[misc]  # bx-python is untyped
     """
     Reader wrapper for GFF files.
 

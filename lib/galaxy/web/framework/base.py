@@ -416,8 +416,8 @@ def _read_lines(self):
         self.read_lines_to_eof()
 
 
-webob.compat.cgi_FieldStorage.make_file = _make_file
-webob.compat.cgi_FieldStorage.read_lines = _read_lines
+webob.compat.cgi_FieldStorage.make_file = _make_file  # type: ignore[method-assign]
+webob.compat.cgi_FieldStorage.read_lines = _read_lines  # type: ignore[attr-defined]
 
 
 class Request(webob.Request):

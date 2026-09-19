@@ -88,7 +88,7 @@ class FakedNameIO:
 
 if RSpaceGalleryFilesystem is not None:
 
-    class PatchedRSpaceGalleryFilesystem(RSpaceGalleryFilesystem):
+    class PatchedRSpaceGalleryFilesystem(RSpaceGalleryFilesystem):  # type: ignore[misc]  # fsspec is untyped
         """
         Patch RSpaceGalleryFilesystem to keep a record of the RSpace global id of the most recently uploaded file.
         """

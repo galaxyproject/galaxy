@@ -56,7 +56,9 @@ def persist_uploads(params, trans: ProvidesAppContext):
         for upload_dataset in params["files"]:
             f = upload_dataset["file_data"]
             if isinstance(f, cgi_FieldStorage):
-                assert not isinstance(f.file, StringIO)
+                # types-webob types cgi_FieldStorage.file as IO[bytes], but cgi.FieldStorage
+                # can set it to a StringIO for non-file form fields; guard against that here.
+                assert not isinstance(f.file, StringIO)  # type: ignore[unreachable]
                 assert f.file.name != "<fdopen>"
                 local_filename = util.mkstemp_ln(f.file.name, "upload_file_data_")
                 f.file.close()
