@@ -1990,22 +1990,34 @@ export interface components {
              */
             type: "drill_down"
         }
-        /** EmptyFieldParameterValidatorModel */
+        /**
+         * EmptyFieldParameterValidatorModel
+         * @description Require a value that is neither an empty string nor null.
+         * @example {
+         *       "type": "empty_field"
+         *     }
+         */
         EmptyFieldParameterValidatorModel: {
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
             /**
              * Negate
+             * @description Require the value to be empty or null instead.
              * @default false
              */
             negate: boolean
             /**
              * Type
+             * @description Fails validation when the submitted value is an empty string or null.
              * @default empty_field
              * @constant
              */
@@ -2022,10 +2034,14 @@ export interface components {
             expression: string
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
             /**
              * Negate
@@ -2391,36 +2407,58 @@ export interface components {
          * @enum {string}
          */
         ImageType: "Docker" | "Singularity" | "Conda"
-        /** InRangeParameterValidatorModel */
+        /**
+         * InRangeParameterValidatorModel
+         * @description Require a numeric value to fall within optional lower and upper bounds.
+         * @example {
+         *       "max": 1,
+         *       "min": 0,
+         *       "type": "in_range"
+         *     }
+         */
         InRangeParameterValidatorModel: {
             /**
              * Exclude Max
+             * @description Whether a value equal to `max` is rejected.
              * @default false
              */
             exclude_max: boolean
             /**
              * Exclude Min
+             * @description Whether a value equal to `min` is rejected.
              * @default false
              */
             exclude_min: boolean
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
-            /** Max */
+            /**
+             * Max
+             * @description Rejects larger values; omit to leave the range without an upper bound.
+             */
             max?: number | null
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
-            /** Min */
+            /**
+             * Min
+             * @description Rejects smaller values; omit to leave the range without a lower bound.
+             */
             min?: number | null
             /**
              * Negate
+             * @description Reject values inside the configured range instead of values outside it.
              * @default false
              */
             negate: boolean
             /**
              * Type
+             * @description Enforces the numeric boundaries configured by `min` and `max`.
              * @default in_range
              * @constant
              */
@@ -2517,26 +2555,46 @@ export interface components {
             /** Value */
             value: string
         }
-        /** LengthParameterValidatorModel */
+        /**
+         * LengthParameterValidatorModel
+         * @description Require the number of characters in a text value to fall within optional bounds.
+         * @example {
+         *       "max": 20,
+         *       "min": 1,
+         *       "type": "length"
+         *     }
+         */
         LengthParameterValidatorModel: {
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
-            /** Max */
+            /**
+             * Max
+             * @description Rejects text with more characters; omit to leave the length without an upper bound.
+             */
             max?: number | null
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
-            /** Min */
+            /**
+             * Min
+             * @description Rejects text with fewer characters; omit to leave the length without a lower bound.
+             */
             min?: number | null
             /**
              * Negate
+             * @description Reject values whose length is inside the configured range instead of outside it.
              * @default false
              */
             negate: boolean
             /**
              * Type
+             * @description Enforces character-count boundaries on a submitted text value.
              * @default length
              * @constant
              */
@@ -2549,22 +2607,34 @@ export interface components {
             /** Err Msg */
             err_msg: string
         }
-        /** NoOptionsParameterValidatorModel */
+        /**
+         * NoOptionsParameterValidatorModel
+         * @description Require a select parameter to have at least one available option.
+         * @example {
+         *       "type": "no_options"
+         *     }
+         */
         NoOptionsParameterValidatorModel: {
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
             /**
              * Negate
+             * @description Require the select parameter to have no available options instead.
              * @default false
              */
             negate: boolean
             /**
              * Type
+             * @description Fails validation when a select input has no choices available.
              * @default no_options
              * @constant
              */
@@ -2613,29 +2683,41 @@ export interface components {
         }
         /**
          * RegexParameterValidatorModel
-         * @description Check if a regular expression **matches** the value, i.e. appears
-         *     at the beginning of the value. To enforce a match of the complete value use
-         *     ``$`` at the end of the expression. The expression is given is the content
-         *     of the validator tag. Note that for ``selects`` each option is checked
-         *     separately.
+         * @description Require a regular expression to match from the start of the value.
+         *
+         *     End the expression with ``$`` to require a full-value match. Each option of
+         *     a select parameter is checked separately.
+         * @example {
+         *       "expression": "^[ACGT]+$",
+         *       "type": "regex"
+         *     }
          */
         RegexParameterValidatorModel: {
-            /** Expression */
+            /**
+             * Expression
+             * @description Regular expression matched from the start of the value. Add `$` at the end to require a complete-value match.
+             */
             expression: string
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
             /**
              * Negate
+             * @description Reject matching values instead of values that do not match.
              * @default false
              */
             negate: boolean
             /**
              * Type
+             * @description Applies the regular expression in `expression` to each submitted text value.
              * @default regex
              * @constant
              */
@@ -3059,7 +3141,16 @@ export interface components {
             /** Stop Time */
             stop_time: string
         }
-        /** ResourceRequirement */
+        /**
+         * ResourceRequirement
+         * @description A tool's compute resource request.
+         *
+         *     Set the minimum resources needed to run the job and, when useful, an upper
+         *     limit. Galaxy exposes the allocated CPU count to the command as
+         *     ``$GALAXY_SLOTS``. Use numbers or numeric strings. Other strings are
+         *     reserved for expressions, which are not supported yet: a non-numeric value
+         *     fails the create-time lint check.
+         */
         ResourceRequirement: {
             /**
              * Cores Max
@@ -3076,15 +3167,30 @@ export interface components {
              * @default 1
              */
             cores_min: number | string | null
-            /** Cuda Compute Capability */
+            /**
+             * Cuda Compute Capability
+             * @description Minimum CUDA compute capability required, e.g. 7.5.
+             */
             cuda_compute_capability?: number | string | null
-            /** Cuda Device Count Max */
+            /**
+             * Cuda Device Count Max
+             * @description Maximum number of GPUs to reserve.
+             */
             cuda_device_count_max?: number | string | null
-            /** Cuda Device Count Min */
+            /**
+             * Cuda Device Count Min
+             * @description Minimum number of GPUs to reserve.
+             */
             cuda_device_count_min?: number | string | null
-            /** Cuda Version Min */
+            /**
+             * Cuda Version Min
+             * @description Minimum CUDA runtime version required, e.g. 11.2.
+             */
             cuda_version_min?: number | string | null
-            /** Gpu Memory Min */
+            /**
+             * Gpu Memory Min
+             * @description Minimum GPU memory required, in mebibytes (2**20).
+             */
             gpu_memory_min?: number | string | null
             /**
              * Ram Max
@@ -3099,16 +3205,25 @@ export interface components {
              * @default 256
              */
             ram_min: number | string | null
-            /** Shm Size */
+            /**
+             * Shm Size
+             * @description Size of /dev/shm to request, in bytes.
+             */
             shm_size?: number | string | null
             /**
              * Timelimit
              * @description Maximum time in seconds the tool is allowed to run. Job will be terminated if exceeded.
              */
             timelimit?: number | string | null
-            /** Tmpdir Max */
+            /**
+             * Tmpdir Max
+             * @description Maximum reserved temporary directory space, in mebibytes (2**20).
+             */
             tmpdir_max?: number | string | null
-            /** Tmpdir Min */
+            /**
+             * Tmpdir Min
+             * @description Minimum reserved temporary directory space, in mebibytes (2**20).
+             */
             tmpdir_min?: number | string | null
             /**
              * Type
@@ -3657,17 +3772,17 @@ export interface components {
         ToolOutputBoolean: {
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden: boolean
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string
             /**
@@ -3680,14 +3795,14 @@ export interface components {
         ToolOutputCollection: {
             /**
              * Collection Type
-             * @description Collection structure, such as `list`, `paired`, or a nested type such as `list:paired`.
+             * @description Fixed structure Galaxy creates for this output, such as `list`, `paired`, or a nested type such as `list:paired`.
              */
             collection_type?: string | null
             /** Collection Type From Rules */
             collection_type_from_rules?: string | null
             /**
              * Collection Type Source
-             * @description Input collection whose structure determines this output collection's type.
+             * @description Declared data-collection input whose runtime structure determines this output's collection type.
              */
             collection_type_source?: string | null
             /**
@@ -3712,12 +3827,12 @@ export interface components {
             format_source?: string | null
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden: boolean
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
@@ -3727,16 +3842,16 @@ export interface components {
             metadata_source?: string | null
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string
             /**
              * Structured Like
-             * @description Input collection whose element identifiers and nesting this output mirrors.
+             * @description Declared input whose element count, identifiers, and nesting this output mirrors. Use this when each produced element corresponds to an input element.
              */
             structured_like?: string | null
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Creates one history dataset collection populated from files produced by the command. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "collection"
@@ -3755,48 +3870,47 @@ export interface components {
                 | null
             /**
              * Format
-             * @description The short name for the output datatype.
+             * @description Galaxy datatype extension assigned when the command always produces a fixed representation. Use `format_source` instead when the datatype depends on an input.
              */
             format: string
             /**
              * Format Source
              * @description Data or collection input whose datatype extension this output inherits. Use this when the command preserves the input representation, such as filtering reads without changing their format.
-             * @example reads
              */
             format_source?: string | null
             /**
              * from_work_dir
-             * @description Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.
+             * @description Relative path, inside the job working directory, that the command writes for this output. Galaxy claims that file after the command finishes.
              */
             from_work_dir?: string | null
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden: boolean
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
              * Metadata Source
-             * @description Dataset input whose datatype-specific metadata this output copies as defaults. Use this when the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments.
-             * @example intervals
+             * @description Data input whose datatype-specific metadata this output copies as defaults. Use this when the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments.
              */
             metadata_source?: string | null
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string
             /**
              * Precreate Directory
+             * @description Set true when `from_work_dir` names a produced directory for a composite datatype. Galaxy copies the directory contents into the output dataset's extra-files area.
              * @default false
              */
             precreate_directory: boolean | null
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Creates one history dataset from a file produced by the command. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "data"
@@ -3805,17 +3919,17 @@ export interface components {
         ToolOutputFloat: {
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden: boolean
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string
             /**
@@ -3828,17 +3942,17 @@ export interface components {
         ToolOutputInteger: {
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden: boolean
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string
             /**
@@ -3851,17 +3965,17 @@ export interface components {
         ToolOutputText: {
             /**
              * Hidden
-             * @description If true, the output will not be shown in the history.
+             * @description Set true to keep the output available to workflows without showing it in the history.
              */
             hidden: boolean
             /**
              * Label
-             * @description Output label. Will be used as dataset name in history.
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
              * Name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string
             /**
