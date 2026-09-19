@@ -2,12 +2,7 @@ import abc
 import logging
 import os
 import re
-from typing import (
-    Callable,
-    Dict,
-    List,
-    Optional,
-)
+from collections.abc import Callable
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
@@ -206,7 +201,7 @@ class Stockholm_1_0(Text):
         )
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """
 
         Split the input files by model records.
@@ -221,7 +216,7 @@ class Stockholm_1_0(Text):
         chunk_size = None
         if split_params["split_mode"] == "number_of_parts":
             raise Exception(
-                f"Split mode \"{split_params['split_mode']}\" is currently not implemented for STOCKHOLM-files."
+                f'Split mode "{split_params["split_mode"]}" is currently not implemented for STOCKHOLM-files.'
             )
         elif split_params["split_mode"] == "to_size":
             chunk_size = int(split_params["split_size"])

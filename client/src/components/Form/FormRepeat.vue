@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown, faCaretUp, faPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { defineAsyncComponent, nextTick, type PropType } from "vue";
 import { computed } from "vue";
@@ -9,6 +8,8 @@ import { useKeyedObjects } from "@/composables/keyedObjects";
 import localize from "@/utils/localization";
 
 import FormCard from "./FormCard.vue";
+import FormListElementOperations from "./FormListElementOperations.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const FormNode = defineAsyncComponent(() => import("./FormInputs.vue"));
 
@@ -42,6 +43,12 @@ const deleteTooltip = computed(() => {
         : localize(`Click to delete ${props.input.title || "Repeat"} fields`);
 });
 
+const cloneTooltip = computed(() => {
+    return maxRepeats.value
+        ? localize(`Maximum number of ${props.input.title || "Repeat"} fields reached`)
+        : localize(`Click to clone ${props.input.title || "Repeat"} fields`);
+});
+
 const props = defineProps({
     input: {
         type: Object as PropType<Input>,
@@ -64,11 +71,9 @@ const props = defineProps({
 const emit = defineEmits<{
     (e: "insert"): void;
     (e: "delete", index: number): void;
+    (e: "clone", index: number): void;
     (e: "swap", a: number, b: number): void;
 }>();
-
-// @ts-ignore: bad library types
-library.add(faPlus, faTrashAlt, faCaretUp, faCaretDown);
 
 function onInsert() {
     emit("insert");
@@ -76,6 +81,10 @@ function onInsert() {
 
 function onDelete(index: number) {
     emit("delete", index);
+}
+
+function onClone(index: number) {
+    emit("clone", index);
 }
 
 function getPrefix(index: number) {
@@ -104,8 +113,8 @@ async function swap(index: number, swapWith: number, direction: "up" | "down") {
     }
 }
 
-/** get a uid for the up/down button */
-function getButtonId(index: number, direction: "up" | "down") {
+/** get a uid for the up/down/clone button */
+function getButtonId(index: number, direction: "up" | "down" | "clone") {
     const prefix = getPrefix(index);
     return `${prefix}_${direction}`;
 }
@@ -116,8 +125,10 @@ const { keyObject } = useKeyedObjects();
 <template>
     <div>
         <div v-if="!props.sustainRepeats || props.input.cache?.length > 0">
-            <div class="font-weight-bold mb-2">{{ props.input.title }}</div>
-            <div v-if="props.input.help" class="mb-2" data-description="repeat help">{{ props.input.help }}</div>
+            <div class="font-weight-bold mb-2">{{ localize(props.input.title) }}</div>
+            <div v-if="props.input.help" class="mb-2" data-description="repeat help">
+                {{ localize(props.input.help) }}
+            </div>
         </div>
 
         <FormCard
@@ -127,45 +138,21 @@ const { keyObject } = useKeyedObjects();
             class="card"
             :title="getTitle(cacheId)">
             <template v-slot:operations>
-                <span v-if="!props.sustainRepeats" class="float-right">
-                    <b-button-group>
-                        <b-button
-                            :id="getButtonId(cacheId, 'up')"
-                            v-b-tooltip.hover.bottom
-                            title="move up"
-                            role="button"
-                            variant="link"
-                            size="sm"
-                            class="ml-0"
-                            @click="() => swap(cacheId, cacheId - 1, 'up')">
-                            <FontAwesomeIcon icon="caret-up" />
-                        </b-button>
-                        <b-button
-                            :id="getButtonId(cacheId, 'down')"
-                            v-b-tooltip.hover.bottom
-                            title="move down"
-                            role="button"
-                            variant="link"
-                            size="sm"
-                            class="ml-0"
-                            @click="() => swap(cacheId, cacheId + 1, 'down')">
-                            <FontAwesomeIcon icon="caret-down" />
-                        </b-button>
-                    </b-button-group>
-
-                    <span v-b-tooltip.hover.bottom :title="deleteTooltip">
-                        <b-button
-                            :disabled="!minRepeats"
-                            title="delete"
-                            role="button"
-                            variant="link"
-                            size="sm"
-                            class="ml-0"
-                            @click="() => onDelete(cacheId)">
-                            <FontAwesomeIcon icon="trash-alt" />
-                        </b-button>
-                    </span>
-                </span>
+                <FormListElementOperations
+                    v-if="!props.sustainRepeats"
+                    :index="cacheId"
+                    :num-elements="props.input.cache?.length || 0"
+                    :up-button-id="getButtonId(cacheId, 'up')"
+                    :down-button-id="getButtonId(cacheId, 'down')"
+                    :clone-button-id="getButtonId(cacheId, 'clone')"
+                    :delete-tooltip="deleteTooltip"
+                    :clone-tooltip="cloneTooltip"
+                    :can-delete="minRepeats"
+                    :can-clone="!maxRepeats"
+                    @swap-up="() => swap(cacheId, cacheId - 1, 'up')"
+                    @swap-down="() => swap(cacheId, cacheId + 1, 'down')"
+                    @clone="() => onClone(cacheId)"
+                    @delete="() => onDelete(cacheId)" />
             </template>
 
             <template v-slot:body>
@@ -173,11 +160,11 @@ const { keyObject } = useKeyedObjects();
             </template>
         </FormCard>
 
-        <span v-b-tooltip.hover :title="buttonTooltip">
-            <b-button v-if="!props.sustainRepeats" :disabled="maxRepeats" @click="onInsert">
-                <FontAwesomeIcon icon="plus" class="mr-1" />
-                <span data-description="repeat insert">Insert {{ props.input.title || "Repeat" }}</span>
-            </b-button>
-        </span>
+        <GButton v-if="!props.sustainRepeats" tooltip :title="buttonTooltip" :disabled="maxRepeats" @click="onInsert">
+            <FontAwesomeIcon :icon="faPlus" class="mr-1" />
+            <span data-description="repeat insert" :data-repeat-name="props.input.name">
+                Insert {{ props.input.title || "Repeat" }}
+            </span>
+        </GButton>
     </div>
 </template>

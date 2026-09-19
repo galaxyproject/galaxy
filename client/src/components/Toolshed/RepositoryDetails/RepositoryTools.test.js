@@ -1,7 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
-import RepositoryTools from "./RepositoryTools";
+import RepositoryTools from "./RepositoryTools.vue";
 
 const localVue = getLocalVue();
 

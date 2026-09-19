@@ -1,0 +1,75 @@
+<tool id="markdown_report_simple" name="markdown_report_simple" version="1.0">
+    <command><![CDATA[
+        echo "Some contents for standard output";
+        echo "Hello World" > '$output_text';
+        cp '$__tool_directory__/data/1.bed' '$output_table';
+        cp '$__tool_directory__/data/rgWebLogo3_test.jpg' '$output_image';
+        cp '${tool_markdown}' '${output_report}';
+    ]]></command>
+    <configfiles>
+        <configfile name="tool_markdown"><![CDATA[
+# ${title}
+
+Here is a peek of the exciting stuff we did:
+
+```galaxy
+history_dataset_peek(output=output_text)
+```
+
+The tool produced the following image image:
+
+```galaxy
+history_dataset_as_image(output=output_image)
+```
+
+We produced a table that looks like this:
+
+```galaxy
+history_dataset_as_table(output=output_table, header="Table Header", footer="A description of the table", compact=true)
+```
+
+The same table as embedded and using the full dataset display:
+
+(embed)
+
+```galaxy
+history_dataset_embedded(output=output_table)
+```
+
+(display)
+
+```galaxy
+history_dataset_display(output=output_table)
+```
+
+The standard output for this tool execution is:
+
+```galaxy
+tool_stdout()
+```
+
+This is my document and I have populated the title from a parameter.
+]]></configfile>
+    </configfiles>
+    <inputs>
+        <param name="title" type="text" label="Title"/>
+    </inputs>
+    <outputs>
+        <data name="output_text" format="txt"/>
+        <data name="output_image" format="jpg"/>
+        <data name="output_table" format="tsv"/>
+        <data name="output_report" format="tool_markdown"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="title" value="foobar" />
+            <output name="output_report" ftype="tool_markdown">
+                <assert_contents>
+                    <has_line line="# foobar" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

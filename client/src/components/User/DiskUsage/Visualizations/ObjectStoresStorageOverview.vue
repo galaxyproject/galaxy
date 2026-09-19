@@ -2,8 +2,10 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { fetchObjectStoreUsages } from "@/api/users";
+import { GalaxyApi } from "@/api";
+import { useObjectStoreStore } from "@/stores/objectStoreStore";
 import localize from "@/utils/localization";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import type { DataValuePoint } from "./Charts";
 import { byteFormattingForChart, useDataLoading } from "./util";
@@ -11,7 +13,6 @@ import { byteFormattingForChart, useDataLoading } from "./util";
 import BarChart from "./Charts/BarChart.vue";
 import ObjectStoreActions from "./ObjectStoreActions.vue";
 import OverviewPage from "./OverviewPage.vue";
-import ShowObjectStore from "./ShowObjectStore.vue";
 import WarnDeletedHistories from "./WarnDeletedHistories.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -19,14 +20,24 @@ const router = useRouter();
 
 const objectStoresBySizeData = ref<DataValuePoint[] | null>(null);
 
+const { getObjectStoreNameById } = useObjectStoreStore();
+
 const { isLoading, loadDataOnMount } = useDataLoading();
 
 loadDataOnMount(async () => {
-    const { data } = await fetchObjectStoreUsages({ user_id: "current" });
+    const { data, error } = await GalaxyApi().GET("/api/users/{user_id}/objectstore_usage", {
+        params: { path: { user_id: "current" } },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+        return;
+    }
+
     const objectStoresBySize = data.sort((a, b) => b.total_disk_usage - a.total_disk_usage);
     objectStoresBySizeData.value = objectStoresBySize.map((objectStore) => ({
         id: objectStore.object_store_id,
-        label: objectStore.object_store_id,
+        label: getObjectStoreNameById(objectStore.object_store_id) ?? objectStore.object_store_id,
         value: objectStore.total_disk_usage,
     }));
 });
@@ -36,10 +47,10 @@ function onViewObjectStore(objectStoreId: string) {
 }
 </script>
 <template>
-    <OverviewPage title="Object Stores Storage Overview">
+    <OverviewPage title="Storage overview by location">
         <p class="text-justify">
-            Here you can find various graphs displaying the storage size taken by all your histories grouped by object
-            store.
+            Here you can find various graphs displaying the storage size taken by all your histories grouped by where
+            they are physically stored.
         </p>
         <WarnDeletedHistories />
         <div v-if="isLoading" class="text-center">
@@ -50,17 +61,14 @@ function onViewObjectStore(objectStoreId: string) {
                 v-if="objectStoresBySizeData"
                 :description="
                     localize(
-                        `This graph displays how your Galaxy data is stored sorted into the object store is stored in. Click on a bar to see more information about the object store.`
+                        `This graph displays how your Galaxy data is stored sorted into the location is stored in. Click on a bar to see more information about the Galaxy storage.`,
                     )
                 "
                 :data="objectStoresBySizeData"
                 :enable-selection="true"
                 v-bind="byteFormattingForChart">
                 <template v-slot:title>
-                    <b>{{ localize(`Object Stores by Usage`) }}</b>
-                </template>
-                <template v-slot:tooltip="{ data }">
-                    <ShowObjectStore v-if="data" :object-store-id="data.id" />
+                    <b>{{ localize(`Galaxy Storage by Usage`) }}</b>
                 </template>
                 <template v-slot:selection="{ data }">
                     <ObjectStoreActions :data="data" @view-item="onViewObjectStore" />

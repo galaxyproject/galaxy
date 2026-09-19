@@ -1,4 +1,4 @@
-""" Unit test logic related to finding externally referenced files in tool
+"""Unit test logic related to finding externally referenced files in tool
 descriptions.
 """
 

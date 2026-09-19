@@ -2,7 +2,7 @@ import logging
 import time
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ category_description = "Functional test suite to test the update manager."
 """
 
 
-class TestUpdateManager(ShedTwillTestCase):
+class TestUpdateManager(ShedTestCase):
     """Test the Galaxy update manager."""
 
     requires_galaxy = True

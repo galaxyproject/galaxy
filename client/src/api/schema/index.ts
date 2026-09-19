@@ -1,2 +1,1 @@
-export { type ApiResponse, fetcher } from "./fetcher";
-export type { components, operations, paths } from "./schema";
+export { type components, type GalaxyApiPaths } from "@galaxyproject/galaxy-api-client";

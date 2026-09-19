@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useUndoRedoStore } from "@/stores/undoRedoStore";
@@ -6,9 +7,17 @@ import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
-import { DataOutput, Step, Steps, type TerminalSource, useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { useWorkflowSearchStore } from "@/stores/workflowSearchStore";
+import {
+    type DataOutput,
+    type Step,
+    type Steps,
+    type TerminalSource,
+    useWorkflowStepStore,
+} from "@/stores/workflowStepStore";
 
-import { advancedSteps, simpleSteps } from "../test_fixtures";
+import advancedStepsJson from "../test-data/parameter_steps.json";
+import simpleStepsJson from "../test-data/simple_steps.json";
 import {
     ANY_COLLECTION_TYPE_DESCRIPTION,
     CollectionTypeDescription,
@@ -19,12 +28,16 @@ import {
     InputParameterTerminal,
     InputTerminal,
     InvalidOutputTerminal,
+    NO_COLLECTION_TYPE_INFORMATION_MESSAGE,
     OutputCollectionTerminal,
     OutputParameterTerminal,
     OutputTerminal,
     producesAcceptableDatatype,
     terminalFactory,
 } from "./terminals";
+
+const advancedSteps = advancedStepsJson as Steps;
+const simpleSteps = simpleStepsJson as Steps;
 
 function useStores(id = "mock-workflow") {
     const connectionStore = useConnectionStore(id);
@@ -33,16 +46,30 @@ function useStores(id = "mock-workflow") {
     const commentStore = useWorkflowCommentStore(id);
     const toolbarStore = useWorkflowEditorToolbarStore(id);
     const undoRedoStore = useUndoRedoStore(id);
+    const searchStore = useWorkflowSearchStore(id);
 
     return {
+        workflowId: id,
         connectionStore,
         stateStore,
         stepStore,
         commentStore,
         toolbarStore,
         undoRedoStore,
+        searchStore,
     };
 }
+
+// Suppress debug messages about node configurations, we're testing esoteric things here -
+// we might want these messages at runtime to help debug complex things but we don't need it
+// during unit testing.
+vi.spyOn(console, "debug").mockImplementation(
+    vi.fn((msg) => {
+        if (msg != NO_COLLECTION_TYPE_INFORMATION_MESSAGE) {
+            console.debug(msg);
+        }
+    }),
+);
 
 function setupAdvanced() {
     const terminals: { [index: string]: { [index: string]: ReturnType<typeof terminalFactory> } } = {};
@@ -97,6 +124,7 @@ describe("terminalFactory", () => {
         expect(terminals["optional data input"]?.["output"]).toBeInstanceOf(OutputTerminal);
         expect(terminals["list input"]?.["output"]).toBeInstanceOf(OutputCollectionTerminal);
         expect(terminals["list:list input"]?.["output"]).toBeInstanceOf(OutputCollectionTerminal);
+        expect(terminals["list:list:paired input"]?.["output"]).toBeInstanceOf(OutputCollectionTerminal);
         expect(terminals["paired input"]?.["output"]).toBeInstanceOf(OutputCollectionTerminal);
         expect(terminals["multi data"]?.["f1"]).toBeInstanceOf(InputTerminal);
         expect(terminals["multi data"]?.["f2"]).toBeInstanceOf(InputTerminal);
@@ -107,6 +135,9 @@ describe("terminalFactory", () => {
         expect(terminals["any collection"]?.["output"]).toBeInstanceOf(OutputCollectionTerminal);
         expect(terminals["multi data"]?.["advanced|advanced_threshold"]).toBeInstanceOf(InputParameterTerminal);
         expect(terminals["list collection input"]?.["input1"]).toBeInstanceOf(InputCollectionTerminal);
+        expect(terminals["paired collection input"]?.["f1"]).toBeInstanceOf(InputCollectionTerminal);
+        expect(terminals["paired_or_unpaired collection input"]?.["f1"]).toBeInstanceOf(InputCollectionTerminal);
+        expect(terminals["list:paired_or_unpaired collection input"]?.["f1"]).toBeInstanceOf(InputCollectionTerminal);
         expect(terminals["filter_failed"]?.["input"]).toBeInstanceOf(InputCollectionTerminal);
         expect(terminals["filter_failed"]?.["output"]).toBeInstanceOf(OutputCollectionTerminal);
     });
@@ -150,7 +181,22 @@ describe("canAccept", () => {
         expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(dataIn.canAccept(collectionOut).reason).toBe(
-            "Input already filled with another connection, delete it before connecting another output."
+            "Input already filled with another connection, delete it before connecting another output.",
+        );
+        dataIn.disconnect(collectionOut);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts paired data -> data connection", () => {
+        const collectionOut = terminals["paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["simple data"]!["input"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "paired", isCollection: true, rank: 1 });
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(collectionOut).reason).toBe(
+            "Input already filled with another connection, delete it before connecting another output.",
         );
         dataIn.disconnect(collectionOut);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
@@ -174,6 +220,193 @@ describe("canAccept", () => {
         dataIn.disconnect(collectionOut);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
         expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts paired_or_unpaired data -> data connection", () => {
+        const collectionOut = terminals["paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["simple data"]!["input"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "paired_or_unpaired", isCollection: true, rank: 1 });
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        dataIn.disconnect(collectionOut);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts list:paired_or_unpaired data -> data connection", () => {
+        const collectionOut = terminals["list:paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["simple data"]!["input"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "list:paired_or_unpaired", isCollection: true, rank: 2 });
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        dataIn.disconnect(collectionOut);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts list:paired_or_unpaired data -> list:paired_or_unpaired connection", () => {
+        const collectionOut = terminals["list:paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["list:paired_or_unpaired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+    });
+    it("accepts paired_or_unpaired data -> paired_or_unpaired connection", () => {
+        const collectionOut = terminals["paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired_or_unpaired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        dataIn.disconnect(collectionOut);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts list:paired -> paired connection", () => {
+        const collectionOut = terminals["list:paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+    });
+    it("accepts list:paired -> paired_or_unpaired connection", () => {
+        const collectionOut = terminals["list:paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired_or_unpaired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+    });
+    it("accepts list -> paired_or_unpaired connection", () => {
+        const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired_or_unpaired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(collectionOut).reason).toBe(
+            "Input already filled with another connection, delete it before connecting another output.",
+        );
+        dataIn.disconnect(collectionOut);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts list:list:paired -> paired_or_unpaired connection", () => {
+        const collectionOut = terminals["list:list:paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired_or_unpaired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "list:list", isCollection: true, rank: 2 });
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+    });
+    it("accepts list:list:paired -> list:paired_or_unpaired connection", () => {
+        const collectionOut = terminals["list:list:paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["list:paired_or_unpaired collection input"]!["f1"] as InputCollectionTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+    });
+    it("accepts list:list -> paired_or_unpaired connection", () => {
+        const collectionOut = terminals["list:list input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired_or_unpaired collection input"]!["f1"] as InputCollectionTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "list:list", isCollection: true, rank: 2 });
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+    });
+    it("accepts list:list -> list:paired_or_unpaired connection", () => {
+        const collectionOut = terminals["list:list input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["list:paired_or_unpaired collection input"]!["f1"] as InputCollectionTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+    });
+    it("accepts paired -> paired_or_unpaired connection", () => {
+        const collectionOut = terminals["paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired_or_unpaired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(collectionOut).reason).toBe(
+            "Input already filled with another connection, delete it before connecting another output.",
+        );
+        dataIn.disconnect(collectionOut);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts paired -> paired connection", () => {
+        const collectionOut = terminals["paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts list -> list connection", () => {
+        const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["list collection input"]!["input1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts list:paired -> list:paired connection", () => {
+        const collectionOut = terminals["list:paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["list:paired collection input"]!["input1"] as InputCollectionTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("rejects paired:paired -> list:paired connection", () => {
+        const collectionOut = terminals["paired:paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["list:paired collection input"]!["input1"] as InputCollectionTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+    });
+    it("rejects paired:paired -> list:paired_or_unpaired connection", () => {
+        const collectionOut = terminals["paired:paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["list:paired_or_unpaired collection input"]!["f1"] as InputCollectionTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+    });
+    it("rejects paired_or_unpaired -> paired connection", () => {
+        const collectionOut = terminals["paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(collectionOut).reason).toBe(
+            "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' tool to extract just the pairs out from this output.",
+        );
+    });
+    it("rejects list:paired_or_unpaired -> paired connection", () => {
+        const collectionOut = terminals["list:paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(collectionOut).reason).toBe(
+            "Cannot attach optionally paired outputs to inputs requiring pairing, consider using the 'Split Paired and Unpaired' tool to extract just the pairs out from this output.",
+        );
+    });
+    it("rejects list:paired_or_unpaired -> list connection", () => {
+        const collectionOut = terminals["list:paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["list collection input"]!["input1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
     });
     it("treats multi data input as list input", () => {
         const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
@@ -202,7 +435,7 @@ describe("canAccept", () => {
         expect(step.input_connections["f1"]).toStrictEqual([{ id: dataOutOne.stepId, output_name: dataOutOne.name }]);
         multiDataIn.disconnect(dataOutOne);
         step = stepStore.getStep(multiDataIn.stepId)!;
-        expect(step.input_connections["f1"]).toStrictEqual([]);
+        expect(step.input_connections["f1"]).toBeUndefined();
         multiDataIn.connect(dataOutOne);
         multiDataIn.connect(dataOutTwo);
         step = stepStore.getStep(multiDataIn.stepId)!;
@@ -232,7 +465,31 @@ describe("canAccept", () => {
         const pairedOut = terminals["paired input"]!["output"] as OutputCollectionTerminal;
         expect(multiDataIn.canAccept(pairedOut).canAccept).toBe(false);
         expect(multiDataIn.canAccept(pairedOut).reason).toBe(
-            "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way."
+            "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way.",
+        );
+    });
+    it("rejects paired_or_unpaired input on multi-data input", () => {
+        const multiDataIn = terminals["multi data"]!["f1"] as InputTerminal;
+        const pairedOut = terminals["paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
+        expect(multiDataIn.canAccept(pairedOut).canAccept).toBe(false);
+        expect(multiDataIn.canAccept(pairedOut).reason).toBe(
+            "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way.",
+        );
+    });
+    it("rejects list:paired input on multi-data input", () => {
+        const multiDataIn = terminals["multi data"]!["f1"] as InputTerminal;
+        const pairedOut = terminals["list:paired input"]!["output"] as OutputCollectionTerminal;
+        expect(multiDataIn.canAccept(pairedOut).canAccept).toBe(false);
+        expect(multiDataIn.canAccept(pairedOut).reason).toBe(
+            "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way.",
+        );
+    });
+    it("rejects list:paired_or_unpaired input on multi-data input", () => {
+        const multiDataIn = terminals["multi data"]!["f1"] as InputTerminal;
+        const pairedOut = terminals["list:paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
+        expect(multiDataIn.canAccept(pairedOut).canAccept).toBe(false);
+        expect(multiDataIn.canAccept(pairedOut).reason).toBe(
+            "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way.",
         );
     });
     it("rejects collections on multi data inputs if non-collection already connected", () => {
@@ -242,7 +499,7 @@ describe("canAccept", () => {
         multiDataIn.connect(dataOut);
         expect(multiDataIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(multiDataIn.canAccept(collectionOut).reason).toBe(
-            "Cannot attach collections to data parameters with individual data inputs already attached."
+            "Cannot attach collections to data parameters with individual data inputs already attached.",
         );
     });
     it("maps list:list over multi data input", () => {
@@ -259,7 +516,7 @@ describe("canAccept", () => {
         multiDataIn.connect(collectionOut);
         expect(multiDataIn.canAccept(otherCollectionOut).canAccept).toBe(false);
         expect(multiDataIn.canAccept(otherCollectionOut).reason).toBe(
-            "Input already filled with another connection, delete it before connecting another output."
+            "Input already filled with another connection, delete it before connecting another output.",
         );
     });
     it("rejects data -> collection connection", () => {
@@ -273,7 +530,7 @@ describe("canAccept", () => {
         const dataIn = terminals["simple data"]!["input"] as InputTerminal;
         expect(dataIn.canAccept(optionalDataOut).canAccept).toBe(false);
         expect(dataIn.canAccept(optionalDataOut).reason).toBe(
-            "Cannot connect an optional output to a non-optional input"
+            "Cannot connect an optional output to a non-optional input",
         );
     });
     it("rejects parameter to data connection", () => {
@@ -295,7 +552,17 @@ describe("canAccept", () => {
         const textOutputParam = terminals["text parameter input"]!["output"] as OutputParameterTerminal;
         expect(integerInputParam.canAccept(textOutputParam).canAccept).toBe(false);
         expect(integerInputParam.canAccept(textOutputParam).reason).toBe(
-            "Cannot attach a text parameter to a integer input"
+            "Cannot attach a text parameter to a integer input",
+        );
+    });
+    it("rejects optional integer to required parameter connection", () => {
+        const integerInputParam = terminals["multi data"]!["advanced|advanced_threshold"] as InputParameterTerminal;
+        const optionalIntegerOutputParam = terminals["optional integer parameter input"]![
+            "output"
+        ] as OutputParameterTerminal;
+        expect(integerInputParam.canAccept(optionalIntegerOutputParam).canAccept).toBe(false);
+        expect(integerInputParam.canAccept(optionalIntegerOutputParam).reason).toBe(
+            "Cannot attach an optional output to a required parameter",
         );
     });
     it("rejects data to parameter connection", () => {
@@ -314,7 +581,7 @@ describe("canAccept", () => {
         // now we can't connect a collection out to the data input of simple data
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(dataIn.canAccept(collectionOut).reason).toBe(
-            "Can't map over this input with output collection type - an output of this tool is mapped over constraining this input. Disconnect output(s) and retry."
+            "Can't map over this input with output collection type - an output of this tool is mapped over constraining this input. Disconnect output(s) and retry.",
         );
     });
     it("rejects increasing map over to list:list if data is mapped over a list input", () => {
@@ -333,7 +600,7 @@ describe("canAccept", () => {
         expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         expect(dataIn.canAccept(listListOut).canAccept).toBe(false);
         expect(dataIn.canAccept(listListOut).reason).toBe(
-            "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
+            "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry.",
         );
     });
     it("rejects attaching non-collection outputs to mapped-over inputs", () => {
@@ -355,7 +622,7 @@ describe("canAccept", () => {
         expect(dataIn.localMapOver.isCollection).toBe(true);
         expect(dataIn.canAccept(simpleDataOut).canAccept).toBe(false);
         expect(dataIn.canAccept(simpleDataOut).reason).toBe(
-            "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping."
+            "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping.",
         );
         dataInTwo.disconnect(dataOut);
         // terminal isn't a reactive class in any way (worth a thought doing, but difficult!), the following happens when a new terminal is built
@@ -383,14 +650,14 @@ describe("canAccept", () => {
         const listListOut = terminals["list:list input"]?.["output"] as OutputCollectionTerminal;
         expect(multiSimpleInputTwo.canAccept(listListOut).canAccept).toBe(false);
         expect(multiSimpleInputTwo.canAccept(listListOut).reason).toBe(
-            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
+            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry.",
         );
         // disconnect, map over should be maintained
         multiSimpleInputOne.disconnect(collectionOut);
         expect(multiSimpleInputOne.localMapOver.isCollection).toBe(true);
         expect(multiSimpleInputOne.canAccept(simpleDataOut).canAccept).toBe(false);
         expect(multiSimpleInputOne.canAccept(simpleDataOut).reason).toBe(
-            "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping."
+            "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping.",
         );
     });
     // TODO: test mapOver reset when constraint removed
@@ -422,9 +689,89 @@ describe("canAccept", () => {
         dataIn.disconnect(filterFailedOutput);
         expect(stepStore.stepMapOver[filterFailedOutput.stepId]?.isCollection).toBe(true);
     });
-    it("rejects connecting incompatible connection types", () => {
+    it("accepts sample_sheet data -> data connection (maps like list)", () => {
+        const collectionOut = terminals["sample_sheet input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["simple data"]!["input"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "sample_sheet", isCollection: true, rank: 1 });
+        dataIn.disconnect(collectionOut);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts sample_sheet -> list connection (accepts)", () => {
+        const collectionOut = terminals["sample_sheet input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["list collection input"]!["input1"] as InputCollectionTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts sample_sheet:paired -> paired connection (maps over like list:paired)", () => {
+        const collectionOut = terminals["sample_sheet:paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "sample_sheet", isCollection: true, rank: 1 });
+    });
+    it("accepts sample_sheet:paired -> list:paired connection (accepts)", () => {
+        const collectionOut = terminals["sample_sheet:paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["list:paired collection input"]!["input1"] as InputCollectionTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts sample_sheet -> paired_or_unpaired connection", () => {
+        const collectionOut = terminals["sample_sheet input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired_or_unpaired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "sample_sheet", isCollection: true, rank: 1 });
+    });
+    it("accepts sample_sheet:paired -> paired_or_unpaired connection", () => {
+        const collectionOut = terminals["sample_sheet:paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired_or_unpaired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "sample_sheet", isCollection: true, rank: 1 });
+    });
+    it("accepts sample_sheet:paired_or_unpaired -> list:paired_or_unpaired connection (accepts)", () => {
+        const collectionOut = terminals["sample_sheet:paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["list:paired_or_unpaired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("rejects list -> sample_sheet connection (asymmetry)", () => {
+        const listOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
+        const collectionIn = terminals["sample_sheet collection input"]!["input1"] as InputCollectionTerminal;
+        expect(collectionIn.canAccept(listOut).canAccept).toBe(false);
+    });
+    it("rejects list:paired -> sample_sheet:paired connection (asymmetry)", () => {
+        const listPairedOut = terminals["list:paired input"]!["output"] as OutputCollectionTerminal;
+        const collectionIn = terminals["sample_sheet:paired collection input"]!["input1"] as InputCollectionTerminal;
+        expect(collectionIn.canAccept(listPairedOut).canAccept).toBe(false);
+    });
+    it("accepts sample_sheet -> sample_sheet connection", () => {
+        const sampleSheetOut = terminals["sample_sheet input"]!["output"] as OutputCollectionTerminal;
+        const collectionIn = terminals["sample_sheet collection input"]!["input1"] as InputCollectionTerminal;
+        expect(collectionIn.canAccept(sampleSheetOut).canAccept).toBe(true);
+    });
+    it("rejects connecting paired -> list", () => {
         const pairedOut = terminals["paired input"]!["output"] as OutputCollectionTerminal;
         const collectionIn = terminals["list collection input"]!["input1"] as InputCollectionTerminal;
+        expect(collectionIn.canAccept(pairedOut).canAccept).toBe(false);
+        expect(collectionIn.canAccept(pairedOut).reason).toBe("Incompatible collection type(s) for attachment.");
+    });
+    it("rejects connecting list -> paired", () => {
+        const pairedOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
+        const collectionIn = terminals["paired collection input"]!["f1"] as InputCollectionTerminal;
         expect(collectionIn.canAccept(pairedOut).canAccept).toBe(false);
         expect(collectionIn.canAccept(pairedOut).reason).toBe("Incompatible collection type(s) for attachment.");
     });
@@ -453,7 +800,7 @@ describe("canAccept", () => {
         // but cannot accept on the constrained input
         expect(listOneIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(listOneIn.canAccept(collectionOut).reason).toBe(
-            "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
+            "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry.",
         );
     });
     it("tracks transitive map over", () => {
@@ -471,7 +818,7 @@ describe("canAccept", () => {
         expect(otherDataInTwo.canAccept(collectionOut).canAccept).toBe(true);
         expect(otherDataInTwo.canAccept(listListListOut).canAccept).toBe(false);
         expect(otherDataInTwo.canAccept(listListListOut).reason).toBe(
-            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
+            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry.",
         );
     });
     it("tracks transitive map over through collection inputs", () => {
@@ -502,7 +849,7 @@ describe("canAccept", () => {
         // Can't connect list:list because output acts like "list""
         expect(collectionIn.canAccept(listListOut).canAccept).toBe(false);
         expect(collectionIn.canAccept(listListOut).reason).toBe(
-            "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
+            "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry.",
         );
     });
     it("rejects connections to input collection constrained by other input", () => {
@@ -518,7 +865,7 @@ describe("canAccept", () => {
         // Can't connect list as output acts like "list:list"
         expect(listTwoIn.canAccept(listListListOut).canAccept).toBe(false);
         expect(listTwoIn.canAccept(listListListOut).reason).toBe(
-            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
+            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry.",
         );
     });
     it("disconnects invalid input terminals", () => {
@@ -534,7 +881,7 @@ describe("canAccept", () => {
         // disconnects and connection will be invalid
         expect(dataIn.canAccept(dataOut).canAccept).toBe(false);
         expect(dataIn.canAccept(dataOut).reason).toBe(
-            "Effective output data type(s) [ab1] do not appear to match input type(s) [txt]."
+            "Effective output data type(s) [ab1] do not appear to match input type(s) [txt].",
         );
     });
     it("disconnects invalid output terminals", () => {
@@ -547,7 +894,7 @@ describe("canAccept", () => {
         // disconnects and connection will be invalid
         expect(dataIn.canAccept(dataOut).canAccept).toBe(false);
         expect(dataIn.canAccept(dataOut).reason).toBe(
-            "Effective output data type(s) [tabular] do not appear to match input type(s) [ab1]."
+            "Effective output data type(s) [tabular] do not appear to match input type(s) [ab1].",
         );
     });
     it("resolves collection type source", () => {
@@ -561,7 +908,7 @@ describe("canAccept", () => {
         const listPairedOutput = terminals["list:paired input"]?.["output"] as OutputCollectionTerminal;
         filterFailedInput.connect(listPairedOutput);
         expect(rebuildTerminal(filterFailedOutput).collectionType).toStrictEqual(
-            new CollectionTypeDescription("list:paired")
+            new CollectionTypeDescription("list:paired"),
         );
     });
 });
@@ -603,7 +950,7 @@ describe("Input terminal", () => {
         const canAccept = firstInputTerminal.canAccept(dataInputOutputTerminal);
         expect(canAccept.canAccept).toBe(false);
         expect(canAccept.reason).toBe(
-            "Input already filled with another connection, delete it before connecting another output."
+            "Input already filled with another connection, delete it before connecting another output.",
         );
         // bypasses _inputFilled check
         expect(firstInputTerminal.attachable(dataInputOutputTerminal).canAccept).toBe(true);
@@ -639,16 +986,16 @@ describe("producesAcceptableDatatype", () => {
     });
     it("rejects connections for unknown output datatypes", () => {
         expect(producesAcceptableDatatype(testDatatypesMapper, ["txt"], ["i am not an extension"]).canAccept).toBe(
-            false
+            false,
         );
         expect(producesAcceptableDatatype(testDatatypesMapper, ["txt"], ["i am not an extension"]).reason).toBe(
-            "Effective output data type(s) [i am not an extension] unknown. This tool cannot be run on this Galaxy Server at this moment, please contact the Administrator."
+            "Effective output data type(s) [i am not an extension] unknown. This tool cannot be run on this Galaxy Server at this moment, please contact the Administrator.",
         );
     });
     it("rejects incompatible datatypes", () => {
         expect(producesAcceptableDatatype(testDatatypesMapper, ["txt"], ["ab1"]).canAccept).toBe(false);
         expect(producesAcceptableDatatype(testDatatypesMapper, ["txt"], ["ab1"]).reason).toBe(
-            "Effective output data type(s) [ab1] do not appear to match input type(s) [txt]."
+            "Effective output data type(s) [ab1] do not appear to match input type(s) [txt].",
         );
     });
 });

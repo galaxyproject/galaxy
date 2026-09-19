@@ -1,10 +1,6 @@
 import abc
 import logging
 import os
-from typing import (
-    Set,
-    Union,
-)
 
 from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
@@ -177,7 +173,7 @@ class AGPFile:
                 if not all(fields):
                     raise AGPError(self.fname, line_number, "detected an empty field")
 
-                agp_line: Union[AGPGapLine, AGPSeqLine]
+                agp_line: AGPGapLine | AGPSeqLine
                 # Instantiate all the AGPLine objects. These will do line-specific validations.
                 if fields[4] == "N" or fields[4] == "U":
                     agp_line = AGPGapLine(self.fname, line_number, *fields)
@@ -312,7 +308,7 @@ class AGPLine(metaclass=abc.ABCMeta):
     checks that involve multiple lines should not be considered.
     """
 
-    allowed_comp_types: Set[str] = set()
+    allowed_comp_types: set[str] = set()
 
     def __init__(self, fname, line_number, obj, obj_beg, obj_end, pid, comp_type):
         self.is_gap = None

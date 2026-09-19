@@ -1,5 +1,6 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
 import InstanceDropdown from "./InstanceDropdown.vue";
 
@@ -7,7 +8,7 @@ const localVue = getLocalVue(true);
 
 describe("InstanceDropdown", () => {
     it("should render a drop down without upgrade if upgrade unavailable as an option", async () => {
-        const wrapper = shallowMount(InstanceDropdown, {
+        const wrapper = shallowMount(InstanceDropdown as object, {
             propsData: {
                 prefix: "file-source",
                 name: "my cool instance",
@@ -19,11 +20,11 @@ describe("InstanceDropdown", () => {
         });
         const menu = wrapper.find(".dropdown-menu");
         const links = menu.findAll("button.dropdown-item");
-        expect(links.length).toBe(2);
+        expect(links.length).toBe(3);
     });
 
     it("should render a drop down with upgrade if upgrade available as an option", async () => {
-        const wrapper = shallowMount(InstanceDropdown, {
+        const wrapper = shallowMount(InstanceDropdown as object, {
             propsData: {
                 prefix: "file-source",
                 name: "my cool instance",
@@ -35,6 +36,6 @@ describe("InstanceDropdown", () => {
         });
         const menu = wrapper.find(".dropdown-menu");
         const links = menu.findAll("button.dropdown-item");
-        expect(links.length).toBe(3);
+        expect(links.length).toBe(4);
     });
 });

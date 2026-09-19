@@ -1,32 +1,27 @@
 <template>
-    <div class="unified-panel">
-        <div class="unified-panel-header" unselectable="on">
-            <div class="unified-panel-header-inner">
-                <div class="panel-header-text">Insert Objects</div>
-            </div>
-        </div>
-        <div class="unified-panel-body">
-            <div class="toolMenuContainer">
-                <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
-                    {{ error }}
-                </b-alert>
-                <ToolSection v-if="isWorkflow" :category="historyInEditorSection" :expanded="true" @onClick="onClick" />
-                <ToolSection v-else :category="historySection" :expanded="true" @onClick="onClick" />
-                <ToolSection :category="jobSection" :expanded="true" @onClick="onClick" />
-                <ToolSection
-                    v-if="isWorkflow"
-                    :category="workflowInEditorSection"
-                    :expanded="true"
-                    @onClick="onClick" />
-                <ToolSection v-else :category="workflowSection" :expanded="true" @onClick="onClick" />
-                <ToolSection :category="linksSection" :expanded="false" @onClick="onClick" />
-                <ToolSection :category="otherSection" :expanded="true" @onClick="onClick" />
-                <ToolSection
-                    v-if="hasVisualizations"
-                    :category="visualizationSection"
-                    :expanded="true"
-                    @onClick="onClick" />
-            </div>
+    <ActivityPanel title="Insert Markdown Objects">
+        <template v-slot:activity-panel-header-top>
+            <GButton size="small" transparent @click="onClosePanel">
+                <FontAwesomeIcon fixed-width :icon="faChevronLeft" />
+                <h2 v-localize class="activity-panel-heading h-sm mb-0">Insert Markdown Objects</h2>
+            </GButton>
+        </template>
+        <div class="toolMenuContainer">
+            <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
+                {{ error }}
+            </b-alert>
+            <ToolSection v-if="isWorkflow" :category="historyInEditorSection" :expanded="true" @onClick="onClick" />
+            <ToolSection v-else :category="historySection" :expanded="true" @onClick="onClick" />
+            <ToolSection :category="jobSection" :expanded="true" @onClick="onClick" />
+            <ToolSection v-if="isWorkflow" :category="workflowInEditorSection" :expanded="true" @onClick="onClick" />
+            <ToolSection v-else :category="workflowSection" :expanded="true" @onClick="onClick" />
+            <ToolSection :category="linksSection" :expanded="false" @onClick="onClick" />
+            <ToolSection :category="otherSection" :expanded="true" @onClick="onClick" />
+            <ToolSection
+                v-if="hasVisualizations"
+                :category="visualizationSection"
+                :expanded="true"
+                @onClick="onClick" />
         </div>
         <MarkdownDialog
             v-if="selectedShow"
@@ -37,19 +32,25 @@
             :use-labels="isWorkflow"
             @onInsert="onInsert"
             @onCancel="onCancel" />
-    </div>
+    </ActivityPanel>
 </template>
 
 <script>
+import { faChevronLeft } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import ToolSection from "components/Panels/Common/ToolSection";
-import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
+import { fromSteps } from "@/components/Workflow/Editor/modules/labels";
+import { getAppRoot } from "@/onload/loadConfig";
+
 import { directiveEntry } from "./directives.ts";
-import { fromSteps } from "./labels.ts";
-import MarkdownDialog from "./MarkdownDialog";
+
+import GButton from "../BaseComponents/GButton.vue";
+import MarkdownDialog from "./MarkdownDialog.vue";
+import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
+import ToolSection from "@/components/Panels/Common/ToolSection.vue";
 
 Vue.use(BootstrapVue);
 
@@ -93,8 +94,11 @@ function historySharedElements(mode) {
 
 export default {
     components: {
+        GButton,
+        FontAwesomeIcon,
         MarkdownDialog,
         ToolSection,
+        ActivityPanel,
     },
     props: {
         steps: {
@@ -104,6 +108,7 @@ export default {
     },
     data() {
         return {
+            faChevronLeft,
             selectedArgumentName: null,
             selectedType: null,
             selectedShow: false,
@@ -209,7 +214,10 @@ export default {
             return !!this.steps;
         },
         mode() {
-            return this.isWorkflow ? "report" : "page";
+            if (this.isWorkflow) {
+                return "report";
+            }
+            return "page";
         },
         hasVisualizations() {
             return this.visualizationSection.elems.length > 0;
@@ -245,7 +253,7 @@ export default {
             };
         },
         workflowLabels() {
-            return fromSteps(this.steps);
+            return this.isWorkflow ? fromSteps(this.steps) : undefined;
         },
     },
     created() {
@@ -266,19 +274,21 @@ export default {
             const outputLabels = [];
             this.steps &&
                 Object.values(this.steps).forEach((step) => {
-                    step.workflow_outputs.forEach((workflowOutput) => {
-                        if (workflowOutput.label) {
-                            if (!filterByType || this.stepOutputMatchesType(step, workflowOutput, filterByType)) {
-                                outputLabels.push(workflowOutput.label);
+                    if (step.workflow_outputs) {
+                        step.workflow_outputs.forEach((workflowOutput) => {
+                            if (workflowOutput.label) {
+                                if (!filterByType || this.stepOutputMatchesType(step, workflowOutput, filterByType)) {
+                                    outputLabels.push(workflowOutput.label);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 });
             return outputLabels;
         },
         stepOutputMatchesType(step, workflowOutput, type) {
             return Boolean(
-                step.outputs.find((output) => output.name === workflowOutput.output_name && output.type === type)
+                step.outputs.find((output) => output.name === workflowOutput.output_name && output.type === type),
             );
         },
         getArgumentTitle(argumentName) {
@@ -317,7 +327,7 @@ export default {
             }
         },
         onInsert(markdownBlock) {
-            this.$emit("onInsert", markdownBlock);
+            this.$emit("insert", markdownBlock);
             this.selectedShow = false;
         },
         onCancel() {
@@ -325,6 +335,10 @@ export default {
         },
         onNoParameter(argumentName) {
             this.onInsert(`${argumentName}()`);
+        },
+        onClosePanel() {
+            this.selectedShow = false;
+            this.$emit("close-panel");
         },
         onVisualizationId(argumentName) {
             this.selectedArgumentName = argumentName;

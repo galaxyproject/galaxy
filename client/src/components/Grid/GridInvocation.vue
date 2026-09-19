@@ -2,7 +2,9 @@
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
+import type { WorkflowInvocation } from "@/api/invocations";
 import invocationsGridConfig from "@/components/Grid/configs/invocations";
+import invocationsBatchConfig from "@/components/Grid/configs/invocationsBatch";
 import invocationsHistoryGridConfig from "@/components/Grid/configs/invocationsHistory";
 import invocationsWorkflowGridConfig from "@/components/Grid/configs/invocationsWorkflow";
 import { useUserStore } from "@/stores/userStore";
@@ -19,6 +21,8 @@ interface Props {
     headerMessage?: string;
     ownerGrid?: boolean;
     filteredFor?: { type: "History" | "StoredWorkflow"; id: string; name: string };
+    invocationsList?: WorkflowInvocation[];
+    hideHeading?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -26,12 +30,15 @@ const props = withDefaults(defineProps<Props>(), {
     headerMessage: "",
     ownerGrid: true,
     filteredFor: undefined,
+    invocationsList: undefined,
+    hideHeading: false,
 });
 
 const { currentUser } = storeToRefs(useUserStore());
 
 const forStoredWorkflow = computed(() => props.filteredFor?.type === "StoredWorkflow");
 const forHistory = computed(() => props.filteredFor?.type === "History");
+const forBatch = computed(() => !!props.invocationsList?.length);
 
 const effectiveNoInvocationsMessage = computed(() => {
     let message = props.noInvocationsMessage;
@@ -51,6 +58,12 @@ const effectiveTitle = computed(() => {
 });
 
 const extraProps = computed(() => {
+    if (forBatch.value) {
+        return Object.fromEntries(
+            // invocationsList is possibly undefined
+            (props.invocationsList ?? []).map((invocation) => [invocation.id, invocation]),
+        );
+    }
     const params: {
         workflow_id?: string;
         history_id?: string;
@@ -72,7 +85,9 @@ const extraProps = computed(() => {
 });
 
 let gridConfig: GridConfig;
-if (forStoredWorkflow.value) {
+if (forBatch.value) {
+    gridConfig = invocationsBatchConfig;
+} else if (forStoredWorkflow.value) {
     gridConfig = invocationsWorkflowGridConfig;
 } else if (forHistory.value) {
     gridConfig = invocationsHistoryGridConfig;
@@ -87,8 +102,8 @@ function refreshTable() {
 
 <template>
     <div class="d-flex flex-column">
-        <div v-if="forStoredWorkflow || forHistory" class="d-flex">
-            <Heading h1 separator inline truncate size="xl" class="flex-grow-1 mb-2">{{ effectiveTitle }}</Heading>
+        <div v-if="!hideHeading && (forStoredWorkflow || forHistory)" class="d-flex">
+            <Heading h1 separator inline truncate size="lg" class="flex-grow-1 mb-2">{{ effectiveTitle }}</Heading>
         </div>
         <GridList
             v-if="!currentUser?.isAnonymous && currentUser?.id"
@@ -97,9 +112,9 @@ function refreshTable() {
             :grid-message="props.headerMessage"
             :no-data-message="effectiveNoInvocationsMessage"
             :extra-props="extraProps"
-            :embedded="forStoredWorkflow || forHistory">
+            :embedded="forStoredWorkflow || forHistory || forBatch">
             <template v-slot:expanded="{ rowData }">
-                <span class="float-right position-absolute mr-4" style="right: 0" :data-invocation-id="rowData.id">
+                <span class="mb-2" :data-invocation-id="rowData.id">
                     <small>
                         <b>Last updated: <UtcDate :date="rowData.update_time" mode="elapsed" />; Invocation ID:</b>
                     </small>

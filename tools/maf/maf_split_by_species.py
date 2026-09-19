@@ -2,6 +2,7 @@
 """
 Read a maf and split blocks by unique species combinations
 """
+
 from __future__ import print_function
 
 import sys

@@ -8,6 +8,21 @@ from abc import (
     abstractmethod,
 )
 
+from galaxy.model import (
+    DatasetCollectionElement,
+    DatasetInstance,
+    HistoryDatasetCollectionAssociation,
+)
+
+DeferrableObjectsT = (
+    DatasetInstance
+    | HistoryDatasetCollectionAssociation
+    | DatasetCollectionElement
+    | list[DatasetInstance]
+    | list[HistoryDatasetCollectionAssociation | DatasetCollectionElement]
+    | list[DatasetInstance | HistoryDatasetCollectionAssociation | DatasetCollectionElement]
+)
+
 
 def dataset_path_rewrites(dataset_paths):
     dataset_paths_with_rewrites = [path for path in dataset_paths if getattr(path, "false_path", None)]

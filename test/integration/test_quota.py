@@ -85,6 +85,26 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
         json_response = show_response.json()
         assert json_response["name"] == new_quota_name
 
+    def test_update_description(self):
+        quota_name = "test-update-quota-description"
+        quota = self._create_quota_with_name(quota_name)
+        quota_id = quota["id"]
+
+        # update description (one needs to specify a name even if should not be changed)
+        quota_description = "description of test-updated-quota-name"
+        update_payload = {
+            "name": quota_name,
+            "description": quota_description,
+        }
+        put_response = self._put(f"quotas/{quota_id}", data=update_payload, json=True)
+        put_response.raise_for_status()
+
+        show_response = self._get(f"quotas/{quota_id}")
+        show_response.raise_for_status()
+        json_response = show_response.json()
+        assert json_response["name"] == quota_name
+        assert json_response["description"] == quota_description
+
     def test_delete(self):
         quota_name = "test-delete-quota"
         quota = self._create_quota_with_name(quota_name)

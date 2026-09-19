@@ -1,7 +1,5 @@
 import os
 from typing import (
-    List,
-    Optional,
     Protocol,
 )
 
@@ -21,14 +19,15 @@ from .models import (
     FileSourceTemplate,
     FileSourceTemplateCatalog,
     FileSourceTemplateSummaries,
+    get_oauth2_config_or_none,
 )
 
 SECRETS_NEED_VAULT_MESSAGE = "The file source templates configuration can not be used - a Galaxy vault must be configured for templates that use secrets - please set the vault_config_file configuration option to point at a valid vault configuration."
 
 
 class AppConfigProtocol(Protocol):
-    file_source_templates: Optional[List[RawTemplateConfig]]
-    file_source_templates_config_file: Optional[str]
+    file_source_templates: list[RawTemplateConfig] | None
+    file_source_templates_config_file: str | None
 
 
 class ConfiguredFileSourceTemplates:
@@ -66,6 +65,7 @@ class ConfiguredFileSourceTemplates:
             template_dict.pop("environment")
             object_store_type = configuration["type"]
             template_dict["type"] = object_store_type
+            template_dict["requires_oauth2_authorization"] = get_oauth2_config_or_none(template) is not None
             summaries.append(template_dict)
         return FileSourceTemplateSummaries.model_validate(summaries)
 
@@ -81,6 +81,6 @@ class ConfiguredFileSourceTemplates:
         validate_secrets_and_variables(instance, template)
 
 
-def raw_config_to_catalog(raw_config: List[RawTemplateConfig]) -> FileSourceTemplateCatalog:
+def raw_config_to_catalog(raw_config: list[RawTemplateConfig]) -> FileSourceTemplateCatalog:
     effective_root = apply_syntactic_sugar(raw_config)
     return FileSourceTemplateCatalog.model_validate(effective_root)

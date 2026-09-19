@@ -1,8 +1,4 @@
 import os
-from typing import (
-    List,
-    Optional,
-)
 
 from typing_extensions import Protocol
 from yaml import safe_load
@@ -26,8 +22,8 @@ from .models import (
 
 
 class AppConfigProtocol(Protocol):
-    object_store_templates: Optional[List[RawTemplateConfig]]
-    object_store_templates_config_file: Optional[str]
+    object_store_templates: list[RawTemplateConfig] | None
+    object_store_templates_config_file: str | None
 
 
 SECRETS_NEED_VAULT_MESSAGE = "The object store templates configuration can not be used - a Galaxy vault must be configured for templates that use secrets - please set the vault_config_file configuration option to point at a valid vault configuration."
@@ -86,6 +82,6 @@ class ConfiguredObjectStoreTemplates:
         validate_secrets_and_variables(instance, template)
 
 
-def raw_config_to_catalog(raw_config: List[RawTemplateConfig]) -> ObjectStoreTemplateCatalog:
+def raw_config_to_catalog(raw_config: list[RawTemplateConfig]) -> ObjectStoreTemplateCatalog:
     effective_root = apply_syntactic_sugar(raw_config)
     return ObjectStoreTemplateCatalog.model_validate(effective_root)

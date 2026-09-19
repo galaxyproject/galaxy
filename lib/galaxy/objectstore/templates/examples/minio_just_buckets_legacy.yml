@@ -1,4 +1,5 @@
 - id: lab_minio_storage_legacy
+  version: 0
   name: Lab Storage (Legacy)
   description: Connect to our lab's local MinIO storage service.
   variables:

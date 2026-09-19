@@ -1,10 +1,14 @@
 import inspect
 import logging
 import os
+import sys
 import threading
 import time
 from multiprocessing.util import register_after_fork
-from typing import Dict
+from typing import (
+    Any,
+    TYPE_CHECKING,
+)
 
 from sqlalchemy import (
     create_engine,
@@ -13,6 +17,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import NullPool
+
+if TYPE_CHECKING:
+    from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
 
 log = logging.getLogger(__name__)
 
@@ -43,21 +50,18 @@ def stripwd(s):
 
 
 def pretty_stack():
-    rval = []
-    for _, fname, line, funcname, _, _ in inspect.stack()[2:]:
-        rval.append("%s:%s@%d" % (stripwd(fname), funcname, line))
-    return rval
+    return [f"{stripwd(fname)}:{funcname}@{line}" for _, fname, line, funcname, _, _ in inspect.stack()[2:]]
 
 
 def build_engine(
     url: str,
-    engine_options=None,
+    engine_options: dict[str, Any] | None = None,
     database_query_profiling_proxy=False,
-    trace_logger=None,
+    trace_logger: "FluentTraceLogger | None" = None,
     slow_query_log_threshold=0,
     thread_local_log=None,
     log_query_counts=False,
-):
+) -> Engine:
     if database_query_profiling_proxy or slow_query_log_threshold or thread_local_log or log_query_counts:
 
         @event.listens_for(Engine, "before_cursor_execute")
@@ -104,6 +108,8 @@ def build_engine(
     engine_options = engine_options or {}
     if url.startswith("sqlite://"):
         set_sqlite_connect_args(engine_options, url)
+    elif url.startswith("postgresql://") or url.startswith("postgresql+psycopg2://"):
+        set_postgres_connect_args(engine_options, url)
 
     if url.startswith("sqlite://") and url not in ("sqlite:///:memory:", "sqlite://"):
         engine = create_engine(url, **engine_options, poolclass=NullPool)
@@ -129,7 +135,7 @@ def build_engine(
     return engine
 
 
-def set_sqlite_connect_args(engine_options: Dict, url: str) -> None:
+def set_sqlite_connect_args(engine_options: dict, url: str) -> None:
     """
     Add or update `connect_args` in `engine_options` if db is sqlite.
     Set check_same_thread to False for sqlite, handled by request-specific session.
@@ -137,3 +143,16 @@ def set_sqlite_connect_args(engine_options: Dict, url: str) -> None:
     """
     connect_args = engine_options.setdefault("connect_args", {})
     connect_args["check_same_thread"] = False
+
+
+def set_postgres_connect_args(engine_options: dict, url: str) -> None:
+    """
+    Add or update `connect_args` in `engine_options` if db is postgres.
+    Set gssencmode to disable for postgres on OSX to prevent worker segfaults when using gunicorn with preload.
+    """
+    if sys.platform == "darwin" and "PGGSSENCMODE" not in os.environ:
+        connect_args = engine_options.setdefault("connect_args", {})
+        # New default in psycopg 3.3.0, see https://github.com/psycopg/psycopg/issues/1136.
+        # We disable gssencmode with psycopg2 as well.
+        # Fixes worker segfaults when using gunicorn with preload on OSX.
+        connect_args["gssencmode"] = connect_args.get("gssencmode", "disable")

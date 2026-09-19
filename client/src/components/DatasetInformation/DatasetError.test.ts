@@ -1,9 +1,12 @@
+import { getFakeRegisteredUser } from "@tests/test-data";
+import { expectConfigurationRequest, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import type { components } from "@/api/schema";
 import { useUserStore } from "@/stores/userStore";
 
 import DatasetError from "./DatasetError.vue";
@@ -12,41 +15,70 @@ const localVue = getLocalVue();
 
 const DATASET_ID = "dataset_id";
 
+vi.mock("@/composables/config");
+
+const { server, http } = useServerMock();
+
+type RegexJobMessage = components["schemas"]["RegexJobMessage"];
+
 async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = true, user_email = "") {
     const pinia = createPinia();
+    const error1: RegexJobMessage = {
+        desc: "message_1",
+        code_desc: null,
+        stream: null,
+        match: null,
+        type: "regex",
+        error_level: 1,
+    };
+    const error2: RegexJobMessage = {
+        desc: "message_2",
+        code_desc: null,
+        stream: null,
+        match: null,
+        type: "regex",
+        error_level: 1,
+    };
 
-    mockFetcher
-        .path("/api/datasets/{dataset_id}")
-        .method("get")
-        .mock({
-            data: {
-                id: DATASET_ID,
-                creating_job: "creating_job",
-            },
-        });
+    server.use(
+        expectConfigurationRequest(http, {}),
+        http.get("/api/datasets/{dataset_id}", ({ response }) => {
+            // We need to use untyped here because this endpoint is not
+            // described in the OpenAPI spec due to its complexity for now.
+            return response.untyped(
+                HttpResponse.json({
+                    id: DATASET_ID,
+                    creating_job: "creating_job",
+                }),
+            );
+        }),
 
-    mockFetcher
-        .path("/api/jobs/{job_id}")
-        .method("get")
-        .mock({
-            data: {
+        http.get("/api/jobs/{job_id}", ({ response }) => {
+            return response(200).json({
                 tool_id: "tool_id",
                 tool_stderr: "tool_stderr",
                 job_stderr: "job_stderr",
-                job_messages: [{ desc: "message_1" }, { desc: "message_2" }],
-                user_email: user_email,
-            },
-        });
+                job_messages: [error1, error2],
+                user_email,
+                create_time: "2021-01-01T00:00:00",
+                update_time: "2021-01-01T00:00:00",
+                id: "job_id",
+                model_class: "Job",
+                state: "ok",
+                inputs: {},
+                outputs: {},
+                params: {},
+                output_collections: {},
+            });
+        }),
 
-    mockFetcher
-        .path("/api/jobs/{job_id}/common_problems")
-        .method("get")
-        .mock({
-            data: {
+        http.get("/api/jobs/{job_id}/common_problems", ({ response }) => {
+            return response(200).json({
                 has_duplicate_inputs: has_duplicate_inputs,
                 has_empty_inputs: has_empty_inputs,
-            },
-        });
+            });
+        }),
+    );
 
     const wrapper = mount(DatasetError as object, {
         propsData: {
@@ -57,13 +89,7 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
     });
 
     const userStore = useUserStore();
-    userStore.currentUser = {
-        email: user_email || "email",
-        id: "user_id",
-        tags_used: [],
-        isAnonymous: false,
-        total_disk_usage: 0,
-    };
+    userStore.currentUser = getFakeRegisteredUser({ email: user_email });
 
     await flushPromises();
 
@@ -101,19 +127,18 @@ describe("DatasetError", () => {
     it("hides form fields and button on success", async () => {
         const wrapper = await montDatasetError();
 
-        mockFetcher
-            .path("/api/jobs/{job_id}/error")
-            .method("post")
-            .mock({
-                data: {
-                    messages: ["message", "success"],
-                },
-            });
+        server.use(
+            http.post("/api/jobs/{job_id}/error", ({ response }) => {
+                return response(200).json({
+                    messages: [["message"], ["success"]],
+                });
+            }),
+        );
 
-        const FormAndSubmitButton = "#dataset-error-form";
+        const FormAndSubmitButton = "#email-report-form";
         expect(wrapper.find(FormAndSubmitButton).exists()).toBe(true);
 
-        const submitButton = "#dataset-error-submit";
+        const submitButton = "#email-report-submit";
         expect(wrapper.find(submitButton).exists()).toBe(true);
 
         await wrapper.find(submitButton).trigger("click");

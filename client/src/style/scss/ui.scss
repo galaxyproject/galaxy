@@ -1,4 +1,4 @@
-@import "~@fortawesome/fontawesome-free/scss/_variables";
+@import "@fortawesome/fontawesome-free/scss/_variables";
 
 // util class to make pointer cursor
 .cursor-pointer {
@@ -44,6 +44,13 @@
     overflow-y: auto !important;
 }
 
+// utility class to wrap words or break if necessary
+.word-wrap-break {
+    overflow-wrap: break-word;
+    white-space: normal;
+    word-break: break-word;
+}
+
 // utility class to set word wrap to normal
 .word-wrap-normal {
     word-wrap: normal;
@@ -71,6 +78,9 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .ui-modal {
     display: none;
     overflow: auto;
+    .title {
+        width: 100%;
+    }
     .modal-header.no-separator {
         border: none !important;
         padding-bottom: 0px !important;
@@ -141,11 +151,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
             }
         }
         .portlet-operations {
-            button {
-                margin-left: 0.25rem;
-                padding-top: 0;
-                padding-bottom: 0;
-            }
+            float: right;
         }
     }
     .portlet-buttons {
@@ -192,6 +198,17 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
+.ui-form-header-underlay::after {
+    content: "";
+    display: block;
+    position: absolute;
+    top: -$margin-h;
+    left: -0.5rem;
+    right: -0.5rem;
+    height: 50px;
+    background: linear-gradient($white 75%, change-color($white, $alpha: 0));
+}
+
 // popovers
 .popover {
     max-width: 70%;
@@ -224,7 +241,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
 
 .ui-textarea {
     @extend .ui-input;
-    height: 100px !important;
+    min-height: 100px;
 }
 
 .ui-switch {
@@ -429,6 +446,15 @@ $ui-margin-horizontal-large: $margin-v * 2;
     &:hover {
         background-color: $brand-primary !important;
         color: white !important;
+    }
+
+    &.badge-warning {
+        border-color: $brand-warning;
+        color: $brand-warning;
+
+        &:hover {
+            background-color: $brand-warning !important;
+        }
     }
 }
 

@@ -1,0 +1,15 @@
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: list:paired_or_unpaired
+outputs:
+  output_unpaired:
+    outputSource: split/output_unpaired
+  output_paired:
+    outputSource: split/output_paired
+steps:
+  split:
+    tool_id: '__SPLIT_PAIRED_AND_UNPAIRED__'
+    in:
+      input: input_collection

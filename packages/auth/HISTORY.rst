@@ -4,10 +4,158 @@ History
 .. to_doc
 
 ---------
-24.1.dev0
+26.2.dev0
 ---------
 
 
+
+-------------------
+26.1.1 (2026-08-04)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+26.1.0 (2026-08-02)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Migrate Python packages to \`src\` layout and pure namespace packages by `@mr-c <https://github.com/mr-c>`_ in `#21977 <https://github.com/galaxyproject/galaxy/pull/21977>`_
+
+-------------------
+26.0.1 (2026-06-04)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+26.0.0 (2026-04-08)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Apply 2026 black style by `@galaxybot <https://github.com/galaxybot>`_ in `#21618 <https://github.com/galaxyproject/galaxy/pull/21618>`_
+
+-------------------
+25.1.2 (2026-03-09)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+25.1.1 (2026-02-03)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+25.1.0 (2025-12-12)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+25.0.4 (2025-11-18)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+25.0.3 (2025-09-23)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+25.0.2 (2025-08-13)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+25.0.1 (2025-06-20)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+25.0.0 (2025-06-18)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.4 (2025-06-17)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.3 (2025-03-16)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.2 (2025-03-08)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.1 (2025-02-28)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.2.0 (2025-02-11)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.1.4 (2024-12-11)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.1.3 (2024-10-25)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.1.2 (2024-09-25)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.1.1 (2024-07-02)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Code cleanups from ruff and pyupgrade by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17654 <https://github.com/galaxyproject/galaxy/pull/17654>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#18063 <https://github.com/galaxyproject/galaxy/pull/18063>`_
+
+-------------------
+24.0.3 (2024-06-28)
+-------------------
+
+No recorded changes since last release
 
 -------------------
 24.0.2 (2024-05-07)

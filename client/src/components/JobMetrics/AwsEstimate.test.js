@@ -1,9 +1,11 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
 import { ec2Instances } from "./awsEc2ReferenceData.js";
-import AwsEstimate from "./AwsEstimate";
+
+import AwsEstimate from "./AwsEstimate.vue";
 
 const localVue = getLocalVue();
 
@@ -74,7 +76,7 @@ describe("JobMetrics/AwsEstimate.vue", () => {
         const estimates_not_available = await deriveRenderedAwsEstimate(
             "99999.0000000",
             "18000.0000000",
-            "99999.0000000"
+            "99999.0000000",
         );
         expect(estimates_not_available).toEqual({});
     });

@@ -2,13 +2,9 @@ export const SELECTION_STATES = {
     SELECTED: "success",
     UNSELECTED: "default",
     MIXED: "secondary",
-};
+} as const;
 
-export interface FieldEntry {
-    key: string;
-    label?: string;
-    sortable?: boolean;
-}
+export type SelectionState = (typeof SELECTION_STATES)[keyof typeof SELECTION_STATES];
 
 export interface SelectionItem {
     id: string;
@@ -16,6 +12,8 @@ export interface SelectionItem {
     details: string;
     isLeaf: boolean;
     url: string;
+    entry: Record<string, unknown>;
+    selectionState?: SelectionState;
 }
 
 export interface ItemsProviderContext {

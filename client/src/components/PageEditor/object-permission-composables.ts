@@ -1,4 +1,4 @@
-import { computed, Ref, ref } from "vue";
+import { computed, type Ref, ref } from "vue";
 
 import { referencedObjects } from "@/components/Markdown/parse";
 

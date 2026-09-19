@@ -1,11 +1,6 @@
 """Provides utilities for working with image files."""
 
-import imghdr
 import logging
-from typing import (
-    List,
-    Optional,
-)
 
 try:
     from PIL import Image
@@ -15,25 +10,27 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 
-def image_type(filename: str) -> Optional[str]:
+def image_type(filename: str) -> str | None:
     fmt = None
     if Image is not None:
         try:
             with Image.open(filename) as im:
                 fmt = im.format
+                mode = im.mode
         except Exception:
-            # We continue to try with imghdr, so this is a rare case of an
-            # exception we expect to happen frequently, so we're not logging
             pass
-    if not fmt:
-        fmt = imghdr.what(filename)
     if fmt:
+        if fmt == "PPM":
+            if mode in ["I", "L"]:
+                return "PGM"
+            if mode == "1":
+                return "PBM"
         return fmt.upper()
     else:
         return None
 
 
-def check_image_type(filename: str, types: List[str]) -> bool:
+def check_image_type(filename: str, types: list[str]) -> bool:
     fmt = image_type(filename)
     if fmt in types:
         return True

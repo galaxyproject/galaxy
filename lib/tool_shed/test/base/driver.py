@@ -1,13 +1,10 @@
 #!/usr/bin/env python
-"""Test driver for tool shed functional tests.
-"""
+"""Test driver for tool shed functional tests."""
 
 import os
 import string
 import tempfile
 
-# This is for the tool shed application.
-from galaxy.webapps.galaxy.buildapp import app_factory as galaxy_app_factory
 from galaxy_test.driver import driver_util
 from tool_shed.test.base.api_util import get_admin_api_key
 from tool_shed.webapp import buildapp as toolshedbuildapp
@@ -38,8 +35,8 @@ shed_data_manager_conf_xml_template = """<?xml version="1.0"?>
 <data_managers>
 </data_managers>
 """
-# Global variable to pass database contexts around - only needed for older
-# Tool Shed twill tests that didn't utilize the API for such interactions.
+# Global variable to pass database contexts around - only needed for the numbered
+# Tool Shed tests that assert against the database instead of the API.
 tool_shed_context = None
 
 
@@ -63,10 +60,24 @@ def build_shed_app(simple_kwargs):
     return app
 
 
+def build_shed_web_app(simple_kwargs, init_fast_app=init_tool_shed_fast_app) -> driver_util.WebAppBundle:
+    """Build the tool shed application objects for an embedded test server."""
+    app = build_shed_app(simple_kwargs)
+    # build_shed_app records the global_conf it handed the application here.
+    wsgi_webapp = toolshedbuildapp.app_factory(
+        simple_kwargs["global_conf"],
+        app=app,
+        use_translogger=False,
+        static_enabled=True,
+        register_shutdown_at_exit=False,
+    )
+    return driver_util.WebAppBundle(app=app, asgi_app=init_fast_app(wsgi_webapp, app))
+
+
 class ToolShedTestDriver(driver_util.TestDriver):
     """Instantiate a Galaxy-style TestDriver for testing the tool shed."""
 
-    def setup(self):
+    def setup(self) -> None:
         """Entry point for test driver script."""
         self.external_shed = bool(os.environ.get("TOOL_SHED_TEST_EXTERNAL", None))
         if not self.external_shed:
@@ -77,6 +88,10 @@ class ToolShedTestDriver(driver_util.TestDriver):
 
     def _setup_local(self):
         # ---- Configuration ------------------------------------------------------
+
+        # disable sensitive request limiting for the test suite
+        os.environ["TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT"] = "10000/second"
+
         tool_shed_test_tmp_dir = driver_util.setup_tool_shed_tmp_dir()
         if not os.path.isdir(tool_shed_test_tmp_dir):
             os.mkdir(tool_shed_test_tmp_dir)
@@ -116,8 +131,9 @@ class ToolShedTestDriver(driver_util.TestDriver):
         kwargs = dict(
             admin_users="test@bx.psu.edu",
             bootstrap_admin_api_key=get_admin_api_key(),
-            allow_user_creation=True,
+            allow_local_account_creation=True,
             allow_user_deletion=True,
+            config_hg_for_dev=True,  # Allow hg push without authentication for tests
             datatype_converters_config_file="datatype_converters_conf.xml.sample",
             file_path=shed_file_path,
             hgweb_config_dir=hgweb_config_dir,
@@ -142,18 +158,16 @@ class ToolShedTestDriver(driver_util.TestDriver):
         # ---- Run tool shed webserver ------------------------------------------------------
         # TODO: Needed for hg middleware ('lib/galaxy/webapps/tool_shed/framework/middleware/hg.py')
         tool_shed_server_wrapper = driver_util.launch_server(
-            app_factory=lambda: build_shed_app(kwargs),
-            webapp_factory=toolshedbuildapp.app_factory,
+            lambda: build_shed_web_app(kwargs),
             galaxy_config=kwargs,
             prefix="TOOL_SHED",
-            init_fast_app=init_tool_shed_fast_app,
         )
         self.server_wrappers.append(tool_shed_server_wrapper)
         tool_shed_test_host = tool_shed_server_wrapper.host
         tool_shed_test_port = tool_shed_server_wrapper.port
         log.info(f"Functional tests will be run against {tool_shed_test_host}:{tool_shed_test_port}")
 
-        # Used by get_filename in tool shed's twilltestcase
+        # Used by get_filename in tool shed's testcase
         if "TOOL_SHED_TEST_FILE_DIR" not in os.environ:
             os.environ["TOOL_SHED_TEST_FILE_DIR"] = driver_util.TOOL_SHED_TEST_DATA
 
@@ -205,8 +219,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
 
             # ---- Run galaxy webserver ------------------------------------------------------
             galaxy_server_wrapper = driver_util.launch_server(
-                app_factory=lambda: driver_util.build_galaxy_app(kwargs),
-                webapp_factory=galaxy_app_factory,
+                lambda: driver_util.WebAppBundle.from_galaxy_web_app(driver_util.build_galaxy_web_app(kwargs)),
                 galaxy_config=kwargs,
             )
             log.info(f"Galaxy tests will be run against {galaxy_server_wrapper.host}:{galaxy_server_wrapper.port}")

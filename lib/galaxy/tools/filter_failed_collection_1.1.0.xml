@@ -1,0 +1,108 @@
+<tool id="__FILTER_FAILED_DATASETS__"
+      name="Filter failed datasets"
+      version="1.1.0"
+      tool_type="filter_failed_datasets_collection">
+    <description>from a collection</description>
+    <type class="FilterFailedDatasetsTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3695</edam_operation>
+    </edam_operations>
+    <inputs>
+        <param type="data_collection" collection_type="list,list:paired" name="input" label="Input Collection" />
+        <param type="data" name="replacement" optional="true" label="Replace failed elements with this dataset" help="If provided, failed elements will be replaced with this dataset"/>
+    </inputs>
+    <outputs>
+        <collection name="output" format_source="input" type_source="input" label="${on_string} (filtered failed datasets)" >
+        </collection>
+    </outputs>
+    <tests>
+        <!-- Test framework has no way of creating a collection with
+             failed elements, so best we can do is verify identity on
+             an okay collection. API tests verify this tool works
+             though.
+        -->
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="e1" value="simple_line.txt" />
+                </collection>
+            </param>
+            <output_collection name="output" type="list">
+                <element name="e1">
+                  <assert_contents>
+                      <has_text_matching expression="^This is a line of text.\n$" />
+                  </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+========
+Synopsis
+========
+
+Removes datasets in the error (red) state from a collection.
+
+===========
+Description
+===========
+
+This tool takes a dataset collection and filters out elements whose datasets are in the failed (red) state. A dataset enters this state when the tool that created it encountered an error during execution.
+
+This is useful when running a multi-sample analysis and one or more samples fail at some step. Rather than restarting the entire analysis, you can remove the failed elements and continue with the samples that succeeded.
+
+Optionally, you can provide a **replacement dataset**. When specified, failed elements are replaced with that dataset instead of being removed. This preserves the collection size, which is important when element-wise pairing with another collection is needed.
+
+========
+Examples
+========
+
+**Remove failed elements**
+
+Given a list collection where one sample's alignment failed::
+
+ List: "Aligned reads"
+
+   sample1  →  aligned.bam  (ok)
+   sample2  →  aligned.bam  (error)
+   sample3  →  aligned.bam  (ok)
+
+The output keeps only successful elements::
+
+ List: "Aligned reads (filtered failed datasets)"
+
+   sample1  →  aligned.bam
+   sample3  →  aligned.bam
+
+-------
+
+**Replace instead of remove**
+
+If a replacement dataset is provided, failed elements are swapped rather than dropped, preserving the collection structure::
+
+ List: "Aligned reads (filtered failed datasets)"
+
+   sample1  →  aligned.bam
+   sample2  →  replacement.bam
+   sample3  →  aligned.bam
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/filter_error.svg
+  :alt: Filter failed datasets from collection
+  :width: 500
+
+-------
+
+.. class:: infomark
+
+@QUOTA_USAGE_NOTE@
+
+      ]]></help>
+</tool>

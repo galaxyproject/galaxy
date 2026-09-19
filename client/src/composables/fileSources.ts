@@ -1,7 +1,8 @@
 import { onMounted, readonly, ref } from "vue";
 
-import { BrowsableFilesSourcePlugin, FilterFileSourcesOptions } from "@/api/remoteFiles";
+import type { BrowsableFilesSourcePlugin, FilterFileSourcesOptions } from "@/api/remoteFiles";
 import { useFileSourcesStore } from "@/stores/fileSourcesStore";
+import { USER_FILE_PREFIX } from "@/utils/url";
 
 /**
  * Composable for accessing and working with file sources.
@@ -25,9 +26,49 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
         return fileSources.value.find((fs) => fs.id === id);
     }
 
+    function getFileSourcesByType(type: string) {
+        return fileSources.value.filter((fs) => fs.type === type);
+    }
+
+    function isPrivateFileSource(fs: BrowsableFilesSourcePlugin) {
+        return fs.uri_root.startsWith(USER_FILE_PREFIX);
+    }
+
     function getFileSourceByUri(uri: string) {
+        const sourceId = getFileSourceIdFromUri(uri);
+        let matchedFileSource = getFileSourceById(sourceId);
+        if (matchedFileSource) {
+            return matchedFileSource;
+        }
+
+        // Match by URI root if the source ID is not found.
+        matchedFileSource = fileSources.value.find((fs) => uri.startsWith(fs.uri_root));
+        return matchedFileSource;
+    }
+
+    function getFileSourceIdFromUri(uri: string) {
         const sourceId = uri.split("://")[1]?.split("/")[0] ?? "";
-        return getFileSourceById(sourceId);
+        return sourceId;
+    }
+
+    function supportsFeature(uri: string | null | undefined, feature: "pagination" | "search" | "sorting"): boolean {
+        if (!uri) {
+            return false;
+        }
+        const fileSource = getFileSourceByUri(uri);
+        return Boolean(fileSource?.supports?.[feature]);
+    }
+
+    function supportsPagination(uri: string | null | undefined): boolean {
+        return supportsFeature(uri, "pagination");
+    }
+
+    function supportsSearch(uri: string | null | undefined): boolean {
+        return supportsFeature(uri, "search");
+    }
+
+    function supportsSorting(uri: string | null | undefined): boolean {
+        return supportsFeature(uri, "sorting");
     }
 
     return {
@@ -57,5 +98,40 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
          * @returns The file source that matches the given URI, if found.
          */
         getFileSourceByUri,
+        /**
+         * Get the file sources that match the given type.
+         *
+         * @param type - The type to match.
+         * @returns The file sources that match the given type.
+         */
+        getFileSourcesByType,
+        /**
+         * Check if the given file source is a private file source provided by the user.
+         *
+         * @param fs - The file source to check.
+         * @returns Whether the file source is a private file source.
+         */
+        isPrivateFileSource,
+        /**
+         * Check if the file source at the given URI supports pagination.
+         *
+         * @param uri - The URI of the file source.
+         * @returns Whether the file source supports pagination.
+         */
+        supportsPagination,
+        /**
+         * Check if the file source at the given URI supports search.
+         *
+         * @param uri - The URI of the file source.
+         * @returns Whether the file source supports search.
+         */
+        supportsSearch,
+        /**
+         * Check if the file source at the given URI supports sorting.
+         *
+         * @param uri - The URI of the file source.
+         * @returns Whether the file source supports sorting.
+         */
+        supportsSorting,
     };
 }

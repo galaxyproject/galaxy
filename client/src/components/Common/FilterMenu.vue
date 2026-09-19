@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDoubleUp, faQuestion, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BModal, BPopover } from "bootstrap-vue";
+import { BPopover } from "bootstrap-vue";
 import { kebabCase } from "lodash";
 import { computed, ref, set } from "vue";
 
 import type Filtering from "@/utils/filtering";
 import { type Alias, type ErrorType, getOperatorForAlias, type ValidFilter } from "@/utils/filtering";
+import { capitalizeFirstLetter } from "@/utils/strings";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import FilterMenuBoolean from "@/components/Common/FilterMenuBoolean.vue";
 import FilterMenuDropdown from "@/components/Common/FilterMenuDropdown.vue";
@@ -16,8 +18,6 @@ import FilterMenuInput from "@/components/Common/FilterMenuInput.vue";
 import FilterMenuMultiTags from "@/components/Common/FilterMenuMultiTags.vue";
 import FilterMenuObjectStore from "@/components/Common/FilterMenuObjectStore.vue";
 import FilterMenuRanged from "@/components/Common/FilterMenuRanged.vue";
-
-library.add(faAngleDoubleUp, faQuestion, faSearch);
 
 interface BackendFilterError {
     err_msg: string;
@@ -48,6 +48,10 @@ interface Props {
     hasClearBtn?: boolean;
     /** Triggers the loading icon */
     loading?: boolean;
+    /** Optional values to offer as inline autocomplete suggestions in the main search field */
+    autocompleteValues?: string[];
+    /** Prefix that activates inline autocomplete suggestions */
+    autocompletePrefix?: string;
     /** Default `linked`: filters react to current `filterText` */
     menuType?: "linked" | "separate" | "standalone";
     /** A `BackendFilterError` if provided */
@@ -63,6 +67,8 @@ const props = withDefaults(defineProps<Props>(), {
     placeholder: "search for items",
     debounceDelay: 500,
     filterText: "",
+    autocompleteValues: () => [],
+    autocompletePrefix: "",
     menuType: "linked",
     showAdvanced: false,
     searchError: undefined,
@@ -207,27 +213,31 @@ function updateFilterText(newFilterText: string) {
             v-if="props.menuType !== 'standalone'"
             v-show="props.menuType == 'linked' || (props.menuType == 'separate' && !props.showAdvanced)"
             ref="delayedInputField"
-            :query="props.filterText"
+            :value="props.filterText"
             :delay="props.debounceDelay"
             :loading="props.loading"
             :show-advanced="props.showAdvanced"
+            :autocomplete-values="props.autocompleteValues"
+            :autocomplete-prefix="props.autocompletePrefix"
             enable-advanced
             :placeholder="props.placeholder"
             @change="updateFilterText"
             @onToggle="onToggle" />
 
-        <BButton
+        <GButton
             v-if="props.menuType == 'separate' && props.showAdvanced"
-            v-b-tooltip.hover.bottom.noninteractive
+            tooltip
+            tooltip-placement="bottom"
             class="w-100"
             aria-haspopup="true"
-            size="sm"
+            size="small"
+            outline
             :pressed="props.showAdvanced"
             title="Toggle Advanced Search"
             data-description="wide toggle advanced search"
             @click="onToggle">
             <FontAwesomeIcon fixed-width :icon="faAngleDoubleUp" />
-        </BButton>
+        </GButton>
 
         <component
             :is="props.view !== 'popover' ? 'div' : BPopover"
@@ -324,27 +334,32 @@ function updateFilterText(newFilterText: string) {
 
             <!-- Perform search or cancel out (or open help modal for whole Menu if exists) -->
             <div class="mt-2">
-                <BButton
+                <GButton
                     v-if="props.view !== 'compact'"
                     :id="`${identifier}-advanced-filter-submit`"
                     class="mr-1"
-                    size="sm"
-                    variant="primary"
+                    size="small"
+                    color="blue"
                     data-description="apply filters"
                     @click="onSearch">
                     <FontAwesomeIcon :icon="faSearch" />
 
                     <span v-localize>Search</span>
-                </BButton>
+                </GButton>
 
-                <BButton v-if="props.hasHelp" title="Search Help" size="sm" @click="showHelp = true">
+                <GButton v-if="props.hasHelp" title="Search Help" size="small" @click="showHelp = true">
                     <FontAwesomeIcon :icon="faQuestion" />
-                </BButton>
+                </GButton>
 
-                <BModal v-if="props.hasHelp" v-model="showHelp" :title="`${props.name} Advanced Search Help`" ok-only>
+                <GModal
+                    v-if="props.hasHelp"
+                    fixed-height
+                    size="small"
+                    :show.sync="showHelp"
+                    :title="`${capitalizeFirstLetter(props.name)} Advanced Search Help`">
                     <!-- Slot for Menu help section -->
                     <slot name="menu-help-text"></slot>
-                </BModal>
+                </GModal>
             </div>
             <hr v-if="props.showAdvanced" class="w-100" />
         </component>

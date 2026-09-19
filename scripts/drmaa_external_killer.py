@@ -12,7 +12,7 @@ import sys
 import drmaa
 
 
-def validate_paramters():
+def validate_parameters():
     if len(sys.argv) < 3:
         sys.stderr.write(f"usage: {sys.argv[0]} [job ID] [user uid]\n")
         exit(1)
@@ -22,7 +22,7 @@ def validate_paramters():
     return jobID, uid
 
 
-def set_user(uid):
+def set_user(uid: int):
     try:
         gid = pwd.getpwuid(uid).pw_gid
         os.setgid(gid)
@@ -30,7 +30,7 @@ def set_user(uid):
     except OSError as e:
         if e.errno == errno.EPERM:
             sys.stderr.write(
-                "error: setuid(%d) failed: permission denied. Did you setup 'sudo' correctly for this script?\n" % uid
+                f"error: setuid({uid}) failed: permission denied. Did you setup 'sudo' correctly for this script?\n"
             )
             exit(1)
         else:
@@ -48,7 +48,7 @@ def set_user(uid):
 
 
 def main():
-    jobID, uid = validate_paramters()
+    jobID, uid = validate_parameters()
     set_user(uid)
     s = drmaa.Session()
     s.initialize()

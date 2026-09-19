@@ -1,4 +1,5 @@
 - id: minio
+  version: 0
   name: Institutional S3 Storage
   description: Connect to our institutional MinIO storage service.
   variables:

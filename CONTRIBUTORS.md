@@ -35,7 +35,7 @@ The following individuals have contributed code to Galaxy:
 * Richard Burhans <burhans@bx.psu.edu>
 * Jennifer Cabral <jencabral@gmail.com>
 * Martin Čech <marten@bx.psu.edu>
-* Eli Chadwick <eli.chadwick@stfc.ac.uk>
+* Eli Chadwick <eli.chadwick@manchester.ac.uk>
 * Ramkrishna Chakrabarty <rc@bx.psu.edu>
 * Matt Chambers <matt.chambers42@gmail.com>
 * Brad Chapman <chapmanb@50mail.com>

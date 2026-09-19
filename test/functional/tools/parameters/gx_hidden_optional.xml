@@ -1,0 +1,21 @@
+<tool id="gx_hidden_optional" name="gx_hidden_optional" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <param name="parameter" type="hidden" optional="true" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="parameter" value="12456" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="12456" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
 import { keyedColorScheme } from "@/utils/color";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface TagProps {
     option: string;
@@ -19,8 +20,6 @@ const emit = defineEmits<{
     (e: "click", tag: string): void;
     (e: "deleted", tag: string): void;
 }>();
-
-library.add(faTimes);
 
 const color = computed(() => keyedColorScheme(props.option));
 
@@ -47,20 +46,22 @@ const searched = computed(() => props.option?.toLowerCase() === props.search?.to
         <span :class="{ 'font-weight-bold': named }">
             {{ props.option }}
         </span>
-        <b-button
+        <GButton
             v-if="editable"
-            size="sm"
-            variant="link"
+            size="small"
+            transparent
+            inline
+            icon-only
             class="px-1 py-0 tag-delete-button"
             tabindex="-1"
             @click.prevent.stop="onDelete">
-            <FontAwesomeIcon icon="fa-times"></FontAwesomeIcon>
-        </b-button>
+            <FontAwesomeIcon :icon="faTimes"></FontAwesomeIcon>
+        </GButton>
     </div>
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .tag {
     display: inline-flex;

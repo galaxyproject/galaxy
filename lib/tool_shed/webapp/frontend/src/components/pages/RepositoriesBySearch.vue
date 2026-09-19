@@ -1,56 +1,53 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { ref, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
 import PageContainer from "@/components/PageContainer.vue"
-import RepositoryGrid from "@/components/RepositoriesGrid.vue"
-import { type RepositoryGridItem, type OnScroll } from "@/components/RepositoriesGridInterface"
-import { fetcher, components } from "@/schema"
-const searchFetcher = fetcher.path("/api/repositories").method("get").create()
+import PaginatedRepositoriesGrid from "@/components/PaginatedRepositoriesGrid.vue"
+import {
+    emptyQueryResults,
+    type RepositoryGridItem,
+    type Query,
+    type QueryResults,
+} from "@/components/RepositoriesGridInterface"
+import { type components } from "@/schema"
+import { repositorySearch } from "@/api"
+import { notifyOnCatch, queryParamToString } from "@/util"
 
-const query = ref("")
-const page = ref(1)
-const fetchedLastPage = ref(false)
-const hits = ref([] as Array<RepositorySearchHit>)
+const route = useRoute()
+const router = useRouter()
+const searchQuery = ref(queryParamToString(route.query.q) ?? "")
+let currentSearchId = 0
 
 type RepositorySearchHit = components["schemas"]["RepositorySearchHit"]
 
-async function doQuery() {
-    const queryValue = query.value
-    const { data } = await searchFetcher({ q: queryValue, page: page.value, page_size: 10 })
-    if (query.value != queryValue) {
-        console.log("query changed.... not using these results...")
-        return
+async function onRequest(query: Query): Promise<QueryResults> {
+    const queryValue = searchQuery.value
+    if (!queryValue) {
+        return emptyQueryResults()
     }
-    if ("hits" in data) {
-        if (page.value == 1) {
-            hits.value = data.hits
-        } else {
-            data.hits.forEach((h) => hits.value.push(h))
+    const thisSearchId = ++currentSearchId
+    try {
+        const data = await repositorySearch({
+            q: queryValue,
+            page: query.page,
+            page_size: query.rowsPerPage,
+        })
+        // Discard results if a newer search has been initiated
+        if (thisSearchId !== currentSearchId) {
+            return emptyQueryResults()
         }
-        if (hits.value.length >= parseInt(data.total_results)) {
-            fetchedLastPage.value = true
+        return {
+            items: data.hits.map(adaptHit),
+            rowsNumber: Number.parseInt(data.total_results),
         }
-        page.value = page.value + 1
-    } else {
-        throw Error("Server response structure error.")
+    } catch (e) {
+        // Only report errors for current search
+        if (thisSearchId === currentSearchId) {
+            notifyOnCatch(e)
+        }
+        return emptyQueryResults()
     }
 }
-
-watch(query, (oldQuery, newQuery) => {
-    if (newQuery && oldQuery != newQuery && newQuery.length > 1) {
-        page.value = 1
-        fetchedLastPage.value = false
-        hits.value = []
-        doQuery()
-    }
-})
-
-async function onScrollImpl(): Promise<void> {
-    if (!fetchedLastPage.value) {
-        doQuery()
-    }
-}
-
-const OnScrollImpl: OnScroll = onScrollImpl
 
 function adaptHit(hit: RepositorySearchHit, index: number): RepositoryGridItem {
     const repository = hit.repository
@@ -65,24 +62,39 @@ function adaptHit(hit: RepositorySearchHit, index: number): RepositoryGridItem {
         remote_repository_url: repository.remote_repository_url,
     }
 }
+const grid = ref()
 
-const realRows = computed(() => hits?.value.map(adaptHit))
-
-/*
-function rowsFunc() {
-    const rows: RepositoryGridItem[] = []
-    for (let i = 0; i < page.value; i++) {
-        realRows.value.forEach((x, innerIndex) => rows.push({ index: innerIndex + i * realRows.value.length, ...x }))
+watch(searchQuery, (newValue) => {
+    const query: Record<string, string> = {}
+    if (newValue) query.q = newValue
+    // Reset to page 1 on new search
+    router.replace({ query })
+    if (grid.value) {
+        grid.value.makeRequest()
     }
-    return rows
-}*/
+})
 
-const rows = realRows
+// Handle browser back/forward navigation
+watch(
+    () => route.query.q,
+    (newQ) => {
+        const queryValue = queryParamToString(newQ) ?? ""
+        if (queryValue !== searchQuery.value) {
+            searchQuery.value = queryValue
+        }
+    }
+)
 </script>
 <template>
     <page-container>
-        <q-input debounce="20" filled v-model="query" label="Search Repositories" />
-        <repository-grid v-if="query && query.length > 1" :rows="rows" title="Search Results" :on-scroll="OnScrollImpl">
-        </repository-grid>
+        <q-input debounce="1000" filled v-model="searchQuery" label="Search Repositories" />
+        <PaginatedRepositoriesGrid
+            ref="grid"
+            v-if="searchQuery && searchQuery.length > 1"
+            title="Search Results"
+            :on-request="onRequest"
+            :sync-page-to-url="true"
+        >
+        </PaginatedRepositoriesGrid>
     </page-container>
 </template>

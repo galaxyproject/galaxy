@@ -2,6 +2,7 @@
 """
 Script to encode/decode the IDs that galaxy exposes to users and admins.
 """
+
 import argparse
 import logging
 import os

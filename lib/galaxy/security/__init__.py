@@ -4,13 +4,17 @@ Galaxy Security
 """
 
 from typing import (
-    List,
-    Optional,
+    Literal,
+    TYPE_CHECKING,
 )
 
-from typing_extensions import Literal
-
 from galaxy.util.bunch import Bunch
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import (
+        ProvidesAppContext,
+        ProvidesUserContext,
+    )
 
 ActionModel = Literal["grant", "restrict"]
 
@@ -56,14 +60,14 @@ class RBACAgent:
         ),
     )
 
-    def get_action(self, name: str, default: Optional[Action] = None) -> Optional[Action]:
+    def get_action(self, name: str, default: Action | None = None) -> Action | None:
         """Get a permitted action by its dict key or action name"""
         for k, v in self.permitted_actions.items():
             if k == name or v.action == name:
                 return v
         return default
 
-    def get_actions(self) -> List[Action]:
+    def get_actions(self) -> list[Action]:
         """Get all permitted actions as a list of Action objects"""
         return list(self.permitted_actions.__dict__.values())
 
@@ -95,9 +99,6 @@ class RBACAgent:
     def can_manage_library_item(self, roles, item):
         raise Exception("Unimplemented Method")
 
-    def associate_components(self, **kwd):
-        raise Exception(f"No valid method of associating provided components: {kwd}")
-
     def create_private_user_role(self, user):
         raise Exception("Unimplemented Method")
 
@@ -117,7 +118,7 @@ class RBACAgent:
     def set_dataset_permission(self, dataset, permission):
         raise Exception("Unimplemented Method")
 
-    def set_all_library_permissions(self, trans, dataset, permissions):
+    def set_all_library_permissions(self, trans: "ProvidesAppContext", dataset, permissions):
         raise Exception("Unimplemented Method")
 
     def set_library_item_permission(self, library_item, permission):
@@ -129,10 +130,10 @@ class RBACAgent:
     def make_library_public(self, library):
         raise Exception("Unimplemented Method")
 
-    def get_accessible_libraries(self, trans, user):
+    def get_accessible_libraries(self, trans: "ProvidesAppContext", user):
         raise Exception("Unimplemented Method")
 
-    def get_permitted_libraries(self, trans, user, actions):
+    def get_permitted_libraries(self, trans: "ProvidesAppContext", user, actions):
         raise Exception("Unimplemented Method")
 
     def folder_is_public(self, library):
@@ -150,13 +151,13 @@ class RBACAgent:
     def get_permissions(self, library_dataset):
         raise Exception("Unimplemented Method")
 
-    def get_all_roles(self, trans, cntrller):
+    def get_all_roles(self, trans: "ProvidesUserContext", cntrller):
         raise Exception("Unimplemented Method")
 
-    def get_legitimate_roles(self, trans, item, cntrller):
+    def get_legitimate_roles(self, trans: "ProvidesUserContext", item, cntrller):
         raise Exception("Unimplemented Method")
 
-    def derive_roles_from_access(self, trans, item_id, cntrller, library=False, **kwd):
+    def derive_roles_from_access(self, trans: "ProvidesUserContext", item_id, cntrller, library=False, **kwd):
         raise Exception("Unimplemented Method")
 
     def get_component_associations(self, **kwd):

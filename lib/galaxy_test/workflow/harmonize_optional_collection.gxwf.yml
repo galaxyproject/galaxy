@@ -1,0 +1,33 @@
+class: GalaxyWorkflow
+doc: |
+  Test harmonize tool with optional second collection input.
+  When the optional input is not provided, output2 should contain
+  expression.json null datasets mirroring input1's structure.
+inputs:
+  required_collection:
+    type: data_collection
+    collection_type: list
+  optional_collection:
+    type: data_collection
+    collection_type: list
+    optional: true
+outputs:
+  nested_output1:
+    outputSource: nest_output1/output
+  nested_output2:
+    outputSource: nest_output2/output
+steps:
+  harmonize:
+    tool_id: '__HARMONIZELISTS__'
+    tool_version: '1.1.0'
+    in:
+      input1: required_collection
+      input2: optional_collection
+  nest_output1:
+    tool_id: '__NEST__'
+    in:
+      input: harmonize/output1
+  nest_output2:
+    tool_id: '__NEST__'
+    in:
+      input: harmonize/output2

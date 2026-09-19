@@ -9,8 +9,10 @@ import RepositoriesByOwners from "@/components/pages/RepositoriesByOwners.vue"
 import RepositoriesByOwner from "@/components/pages/RepositoriesByOwner.vue"
 import RepositoriesBySearch from "@/components/pages/RepositoriesBySearch.vue"
 import RepositoriesByCategory from "@/components/pages/RepositoriesByCategory.vue"
+import ToolVersionPage from "@/components/pages/ToolVersionPage.vue"
 import ComponentsShowcase from "@/components/pages/ComponentsShowcase.vue"
 import RepositoryPage from "@/components/pages/RepositoryPage.vue"
+import MetadataInspectorPage from "@/components/pages/MetadataInspectorPage.vue"
 import ManageApiKey from "@/components/pages/ManageApiKey.vue"
 import ChangePassword from "@/components/pages/ChangePassword.vue"
 import CitableRepositoryPage from "@/components/pages/CitableRepositoryPage.vue"
@@ -29,6 +31,11 @@ const routes: Array<RouteRecordRaw> = [
     {
         path: "/login",
         component: LoginPage,
+    },
+    {
+        path: "/user/change_password_success",
+        component: LandingPage,
+        props: { message: "Password successfully changed!" },
     },
     {
         path: "/registration_success",
@@ -74,8 +81,22 @@ const routes: Array<RouteRecordRaw> = [
         props: true,
     },
     {
+        path: "/tools/:trsToolId/versions/:version",
+        component: ToolVersionPage,
+        props: (route) => ({
+            trsToolId: route.params.trsToolId,
+            version: route.params.version,
+            fromChangesetRevision: route.query.from_changeset_revision,
+        }),
+    },
+    {
         path: "/repositories_by_category/:categoryId",
         component: RepositoriesByCategory,
+        props: true,
+    },
+    {
+        path: "/repositories/:repositoryId/metadata-inspector",
+        component: MetadataInspectorPage,
         props: true,
     },
     {

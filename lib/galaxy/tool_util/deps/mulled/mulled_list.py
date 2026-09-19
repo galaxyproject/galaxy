@@ -2,8 +2,8 @@
 
 import argparse
 import logging
-from glob import glob
 from html.parser import HTMLParser
+from pathlib import Path
 
 from galaxy.util import requests
 from .util import MULLED_SOCKET_TIMEOUT
@@ -61,7 +61,7 @@ def get_conda_envs(filepath):
     """
     Get list of already existing envs
     """
-    return [n.split("__")[-1].replace("@", ":") for n in glob(f"{filepath}/*")]
+    return [p.name.split("__")[-1].replace("@", ":") for p in Path(filepath).iterdir()]
 
 
 def get_missing_containers(quay_list, singularity_list, blocklist_file=None):

@@ -1,0 +1,4 @@
+input:
+  class: Collection
+  collection_type: banana
+  elements: []

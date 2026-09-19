@@ -2,8 +2,7 @@ import { useEventListener } from "@vueuse/core";
 import { type Ref, watch } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
-
-import { vecSnap } from "../modules/geometry";
+import { vecSnap } from "@/utils/geometry";
 
 /**
  * Common functionality required for handling a user resizable element.
@@ -17,7 +16,7 @@ import { vecSnap } from "../modules/geometry";
 export function useResizable(
     target: Ref<HTMLElement | undefined | null>,
     sizeControl: Ref<[number, number]>,
-    onResized: (size: [number, number]) => void
+    onResized: (size: [number, number]) => void,
 ) {
     // override user resize if size changes externally
     watch(
@@ -29,7 +28,7 @@ export function useResizable(
                 element.style.width = `${width}px`;
                 element.style.height = `${height}px`;
             }
-        }
+        },
     );
 
     let prevWidth = sizeControl.value[0];

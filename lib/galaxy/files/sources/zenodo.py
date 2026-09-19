@@ -13,9 +13,7 @@ class ZenodoRDMFilesSource(InvenioRDMFilesSource):
     """
 
     plugin_type = "zenodo"
-
-    def get_scheme(self) -> str:
-        return "zenodo"
+    rdm_scheme = "zenodo"
 
 
 __all__ = ("ZenodoRDMFilesSource",)

@@ -3,10 +3,6 @@ API operations on Notification objects.
 """
 
 import logging
-from typing import (
-    Optional,
-    Union,
-)
 
 from fastapi import (
     Body,
@@ -108,8 +104,8 @@ class FastAPINotifications:
     def get_user_notifications(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        limit: Optional[int] = 20,
-        offset: Optional[int] = None,
+        limit: int | None = 20,
+        offset: int | None = None,
     ) -> UserNotificationListResponse:
         """Anonymous users cannot receive personal notifications, only broadcasted notifications.
 
@@ -234,7 +230,7 @@ class FastAPINotifications:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: NotificationCreateRequestBody = Body(),
-    ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
+    ) -> NotificationCreatedResponse | AsyncTaskResultSummary:
         """Sends a notification to a list of recipients (users, groups or roles)."""
         return self.service.send_notification(sender_context=trans, payload=payload)
 

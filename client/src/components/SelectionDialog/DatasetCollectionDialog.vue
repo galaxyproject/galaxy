@@ -2,7 +2,7 @@
 import axios from "axios";
 import { onMounted, ref } from "vue";
 
-import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -12,17 +12,18 @@ interface HistoryItem {
     id: string;
     name: string;
     created_time: string;
+    hid: number;
+    collection_type?: string;
 }
 
 interface Props {
     callback?: (results: SelectionItem) => void;
     history: string;
-    modalStatic?: boolean;
+    collectionTypes?: string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
     callback: () => {},
-    modalStatic: false,
 });
 
 const emit = defineEmits<{
@@ -55,7 +56,14 @@ function load() {
     axios
         .get(url)
         .then((response) => {
-            items.value = response.data.map((item: HistoryItem) => {
+            let collection_instances = response.data.sort((a: HistoryItem, b: HistoryItem) => b.hid - a.hid);
+            if (props.collectionTypes?.length) {
+                collection_instances = collection_instances.filter(
+                    (item: HistoryItem) =>
+                        item.collection_type && props.collectionTypes!.includes(item.collection_type),
+                );
+            }
+            items.value = collection_instances.map((item: HistoryItem) => {
                 return {
                     id: item.id,
                     label: item.name,
@@ -80,7 +88,6 @@ onMounted(() => {
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :modal-static="modalStatic"
         leaf-icon="fa fa-folder"
         :items="items"
         @onCancel="onCancel"

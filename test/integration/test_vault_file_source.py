@@ -1,5 +1,4 @@
 import os
-import tempfile
 
 from galaxy.model.db.user import get_user_by_email
 from galaxy.security.vault import UserVaultWrapper
@@ -21,7 +20,7 @@ class TestVaultFileSourceIntegration(integration_util.IntegrationTestCase, integ
         super().handle_galaxy_config_kwds(config)
         cls._configure_database_vault(config)
         config["file_sources_config_file"] = FILE_SOURCES_VAULT_CONF
-        config["user_library_import_symlink_allowlist"] = os.path.realpath(tempfile.mkdtemp())
+        config["user_library_import_symlink_allowlist"] = os.path.realpath(cls._test_driver.mkdtemp())
 
     def setUp(self):
         super().setUp()

@@ -2,28 +2,32 @@ import logging
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     Literal,
-    Optional,
-    Set,
-    Tuple,
 )
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 from pydantic import (
     BaseModel,
+    Field,
+    UUID4,
     ValidationError,
 )
 
 from galaxy.exceptions import (
+    Conflict,
+    InternalServerError,
     ItemOwnershipException,
+    MessageException,
+    ObjectNotFound,
     RequestParameterInvalidException,
+    RequestParameterMissingException,
 )
 from galaxy.files import (
     FileSourceScore,
     FileSourcesUserContext,
     ProvidesFileSourcesUserContext,
+    USER_FILE_SOURCES_SCHEME,
     UserDefinedFileSources,
 )
 from galaxy.files.plugins import (
@@ -33,7 +37,6 @@ from galaxy.files.plugins import (
 from galaxy.files.sources import (
     BaseFilesSource,
     file_source_type_is_browsable,
-    FilesSourceProperties,
     PluginKind,
     SupportsBrowsing,
 )
@@ -43,62 +46,116 @@ from galaxy.files.templates import (
     FileSourceTemplate,
     FileSourceTemplateSummaries,
     FileSourceTemplateType,
+    get_oauth2_config_or_none,
     template_to_configuration,
+)
+from galaxy.files.templates.capabilities import (
+    capability_for,
+    TemplateFormMessage,
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
+    get_uuid,
     User,
     UserFileSource,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.schema import OAuth2State
 from galaxy.security.vault import Vault
+from galaxy.util import config_templates  # defer acess to a couple methods to allow monkeypatching in testing
 from galaxy.util.config_templates import (
     connection_exception_to_status,
+    get_authorize_url,
+    OAuth2Info,
     PluginAspectStatus,
     PluginStatus,
+    read_oauth2_info_from_configuration,
     settings_exception_to_status,
     status_template_definition,
+    TemplateReference,
     TemplateVariableValueType,
     validate_no_extra_secrets_defined,
     validate_no_extra_variables_defined,
 )
 from galaxy.util.plugin_config import plugin_source_from_dict
+from galaxy.work.context import SessionRequestContext
 from ._config_templates import (
+    access_token_for_uuid,
+    CanTestPluginStatus,
     CreateInstancePayload,
+    CreateTestTarget,
+    implicit_parameters_for_instance,
     ModifyInstancePayload,
+    oauth2_redirect_uri,
+    oauth2_refresh_token_status,
     prepare_environment,
     prepare_environment_from_root,
+    prepare_template_parameters_for_testing,
     purge_template_instance,
     recover_secrets,
     save_template_instance,
     sort_templates,
+    TemplateParameters,
+    TemplateServerConfiguration,
+    TestModifyInstancePayload,
+    TestUpdateInstancePayload,
+    TestUpgradeInstancePayload,
+    to_template_reference,
     update_instance_secret,
     update_template_instance,
     updated_template_variables,
     UpdateInstancePayload,
     UpdateInstanceSecretPayload,
+    UpdateTestTarget,
     upgrade_secrets,
     UpgradeInstancePayload,
+    UpgradeTestTarget,
 )
 
 log = logging.getLogger(__name__)
 
-USER_FILE_SOURCES_SCHEME = "gxuserfiles"
+
+def referenced_user_file_source_ids(referenced_uris: set[str]) -> set[str]:
+    """Return canonical UUID hex strings addressed by ``gxuserfiles`` URIs."""
+    ids: set[str] = set()
+    for uri in referenced_uris:
+        if not uri.startswith(f"{USER_FILE_SOURCES_SCHEME}://"):
+            continue
+        try:
+            split = urlsplit(uri)
+            if not split.netloc:
+                raise ValueError("URI has no authority")
+            ids.add(get_uuid(split.netloc).hex)
+        except ValueError as exc:
+            raise RequestParameterInvalidException(f"Invalid user file source URI [{uri}]") from exc
+    return ids
 
 
 class UserFileSourceModel(BaseModel):
-    uuid: str
+    uuid: UUID4
     uri_root: str
     name: str
-    description: Optional[str]
+    description: str | None
     hidden: bool
     active: bool
     purged: bool
     type: FileSourceTemplateType
     template_id: str
     template_version: int
-    variables: Optional[Dict[str, TemplateVariableValueType]]
-    secrets: List[str]
+    variables: dict[str, TemplateVariableValueType] | None
+    secrets: list[str]
+
+
+class TemplateFormDataRequest(BaseModel):
+    """Values available while rendering a post-authorization template form."""
+
+    uuid: str
+    variables: dict[str, TemplateVariableValueType] = Field(default_factory=dict)
+
+
+class TemplateFormDataResponse(BaseModel):
+    dynamic_options: dict[str, list[tuple[str, str]]] = Field(default_factory=dict)
+    messages: list[TemplateFormMessage] = Field(default_factory=list)
 
 
 class UserDefinedFileSourcesConfig(BaseModel):
@@ -138,20 +195,130 @@ class FileSourceInstancesManager:
     def summaries(self) -> FileSourceTemplateSummaries:
         return self._catalog.summaries
 
-    def index(self, trans: ProvidesUserContext) -> List[UserFileSourceModel]:
+    def template_oauth2(self, trans: SessionRequestContext, template_id: str, template_version: int) -> OAuth2Info:
+        redirect_uri = oauth2_redirect_uri(trans)
+        template_server_configuration = self._resolver.template_server_configuration(
+            trans.user, template_id, template_version
+        )
+        if template_server_configuration.oauth2_client_pair is None:
+            raise ObjectNotFound(f"Could not find oauth2 configuration for specified plugin template id {template_id}")
+
+        oauth2_configuration = template_server_configuration.oauth2_configuration
+        if not oauth2_configuration:
+            raise Exception(
+                "Configuration error - attempting to template an oauth2 configuration but not configuration found."
+            )
+
+        state = OAuth2State(
+            route=f"file_source_instances/{template_id}/{template_version}",
+            nonce="TODO",
+        ).encode()
+        return OAuth2Info(
+            authorize_url=get_authorize_url(
+                template_server_configuration.oauth2_client_pair,
+                oauth2_configuration,
+                redirect_uri=redirect_uri,
+                state=state,
+                scope=template_server_configuration.oauth2_scope,
+            )
+        )
+
+    def handle_authorization_code(self, trans: SessionRequestContext, code: str, state: OAuth2State) -> str:
+        route = state.route
+        _, template_id, template_version = route.split("/", 3)
+        redirect_uri = oauth2_redirect_uri(trans)
+        template_server_configuration = self._resolver.template_server_configuration(
+            trans.user, template_id, int(template_version)
+        )
+        if template_server_configuration.oauth2_client_pair is None:
+            raise ObjectNotFound(f"Could not find oauth2 configuration for specified plugin template id {template_id}")
+
+        oauth2_configuration = template_server_configuration.oauth2_configuration
+        if not oauth2_configuration:
+            raise Exception(
+                "Configuration error - attempting to template an oauth2 configuration but not configuration found."
+            )
+
+        response = config_templates.get_token_from_code_raw(
+            code,
+            template_server_configuration.oauth2_client_pair,
+            oauth2_configuration,
+            redirect_uri,
+        )
+        response.raise_for_status()  # DO BETTER!
+        user_vault = trans.user_vault
+        new_object_uuid = str(uuid4().hex)
+        refresh_token = response.json()["refresh_token"]
+        refresh_token_vault_key = UserFileSource.vault_key_from_uuid(
+            new_object_uuid, "_oauth2_refresh_token", self._app_config
+        )
+        if not refresh_token:
+            raise RequestParameterMissingException("Missing refresh_token in response from remote resource")
+        user_vault.write_secret(refresh_token_vault_key, refresh_token)
+        return f"file_source_templates/{template_id}/new?uuid={new_object_uuid}"
+
+    def _redirect_uri(self, trans: SessionRequestContext) -> str:
+        galaxy_root = trans.request.url_path
+        redirect_uri = f"{galaxy_root}/oauth2_callback"
+        return redirect_uri
+
+    def _access_token_for_template(self, trans: ProvidesUserContext, template: FileSourceTemplate, uuid: str) -> str:
+        """Mint an OAuth token for a capability without exposing provider behavior here."""
+        template_server_configuration = self._resolver.template_server_configuration(
+            trans.user, template.id, template.version
+        )
+        if not template_server_configuration.uses_oauth2:
+            raise RequestParameterInvalidException(
+                f"The file source template {template.id} is not configured for OAuth2 authorization."
+            )
+        return access_token_for_uuid(trans, template_server_configuration, uuid, UserFileSource, self._app_config)
+
+    def template_form_data(
+        self,
+        trans: ProvidesUserContext,
+        template_id: str,
+        template_version: int,
+        payload: TemplateFormDataRequest,
+    ) -> TemplateFormDataResponse:
+        """Return form data supplied by the template's provider capability."""
+        template = self._catalog.find_template_by(template_id, template_version)
+        capability = capability_for(template)
+        if capability is None:
+            return TemplateFormDataResponse()
+        form_data = capability.form_data(
+            template,
+            payload.variables,
+            lambda: self._access_token_for_template(trans, template, payload.uuid),
+        )
+        return TemplateFormDataResponse(dynamic_options=form_data.dynamic_options, messages=form_data.messages)
+
+    def _validate_provider_creation(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> None:
+        """Run provider-specific authorization checks for a create/test payload."""
+        template = self._catalog.find_template(payload)
+        if not template or not payload.uuid:
+            return
+        capability = capability_for(template)
+        if capability is not None:
+            capability.validate_creation(
+                template,
+                payload.variables,
+                lambda: self._access_token_for_template(trans, template, str(payload.uuid)),
+            )
+
+    def index(self, trans: ProvidesUserContext) -> list[UserFileSourceModel]:
         stores = self._sa_session.query(UserFileSource).filter(UserFileSource.user_id == trans.user.id).all()
         return [self._to_model(trans, s) for s in stores]
 
-    def show(self, trans: ProvidesUserContext, uuid: str) -> UserFileSourceModel:
+    def show(self, trans: ProvidesUserContext, uuid: UUID4) -> UserFileSourceModel:
         user_file_source = self._get(trans, uuid)
         return self._to_model(trans, user_file_source)
 
-    def purge_instance(self, trans: ProvidesUserContext, uuid: str) -> None:
+    def purge_instance(self, trans: ProvidesUserContext, uuid: UUID4) -> None:
         persisted_file_source = self._get(trans, uuid)
         purge_template_instance(trans, persisted_file_source, self._app_config)
 
     def modify_instance(
-        self, trans: ProvidesUserContext, id: str, payload: ModifyInstancePayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: ModifyInstancePayload
     ) -> UserFileSourceModel:
         if isinstance(payload, UpgradeInstancePayload):
             return self._upgrade_instance(trans, id, payload)
@@ -162,12 +329,10 @@ class FileSourceInstancesManager:
             return self._update_instance(trans, id, payload)
 
     def _upgrade_instance(
-        self, trans: ProvidesUserContext, id: str, payload: UpgradeInstancePayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: UpgradeInstancePayload
     ) -> UserFileSourceModel:
         persisted_file_source = self._get(trans, id)
-        template = self._get_template(persisted_file_source, payload.template_version)
-        validate_no_extra_variables_defined(payload.variables, template)
-        validate_no_extra_secrets_defined(payload.secrets, template)
+        template = self._get_and_validate_target_upgrade_template(persisted_file_source, payload)
         persisted_file_source.template_version = template.version
         persisted_file_source.template_definition = template.model_dump()
         actual_variables = updated_template_variables(
@@ -180,8 +345,16 @@ class FileSourceInstancesManager:
         self._save(persisted_file_source)
         return self._to_model(trans, persisted_file_source)
 
+    def _get_and_validate_target_upgrade_template(
+        self, persisted_file_source: UserFileSource, payload: UpgradeInstancePayload | TestUpgradeInstancePayload
+    ) -> FileSourceTemplate:
+        template = self._get_template(persisted_file_source, payload.template_version)
+        validate_no_extra_variables_defined(payload.variables, template)
+        validate_no_extra_secrets_defined(payload.secrets, template)
+        return template
+
     def _update_instance(
-        self, trans: ProvidesUserContext, id: str, payload: UpdateInstancePayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: UpdateInstancePayload
     ) -> UserFileSourceModel:
         persisted_file_source = self._get(trans, id)
         template = self._get_template(persisted_file_source)
@@ -189,7 +362,7 @@ class FileSourceInstancesManager:
         return self._to_model(trans, persisted_file_source)
 
     def _update_instance_secret(
-        self, trans: ProvidesUserContext, id: str, payload: UpdateInstanceSecretPayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: UpdateInstanceSecretPayload
     ) -> UserFileSourceModel:
         persisted_file_source = self._get(trans, id)
         template = self._get_template(persisted_file_source)
@@ -201,11 +374,17 @@ class FileSourceInstancesManager:
         catalog.validate(payload)
         template = catalog.find_template(payload)
         assert template
+        self._validate_provider_creation(trans, payload)
         user_vault = trans.user_vault
         persisted_file_source = UserFileSource()
         persisted_file_source.user_id = trans.user.id
         assert persisted_file_source.user_id
-        persisted_file_source.uuid = uuid4().hex
+        if payload.uuid:
+            # created a UUID during oauth2 callback to save refresh token
+            self._ensure_no_object_with_uuid(payload.uuid)
+            persisted_file_source.uuid = payload.uuid
+        else:
+            persisted_file_source.uuid = uuid4().hex
         persisted_file_source.template_definition = template.model_dump()
         persisted_file_source.template_id = template.id
         persisted_file_source.template_version = template.version
@@ -229,14 +408,65 @@ class FileSourceInstancesManager:
         self._save(persisted_file_source)
         return self._to_model(trans, persisted_file_source)
 
+    def test_modify_instance(
+        self, trans: ProvidesUserContext, id: UUID4, payload: TestModifyInstancePayload
+    ) -> PluginStatus:
+        persisted_file_source = self._get(trans, id)
+        if isinstance(payload, TestUpgradeInstancePayload):
+            return self._plugin_status_for_upgrade(trans, payload, persisted_file_source)
+        else:
+            assert isinstance(payload, TestUpdateInstancePayload)
+            return self._plugin_status_for_update(trans, payload, persisted_file_source)
+
+    def _plugin_status_for_update(
+        self, trans: ProvidesUserContext, payload: TestUpdateInstancePayload, persisted_file_source: UserFileSource
+    ) -> PluginStatus:
+        template = self._get_template(persisted_file_source)
+        target = UpdateTestTarget(persisted_file_source, payload)
+        return self._plugin_status_for_template(trans, target, template)
+
+    def _plugin_status_for_upgrade(
+        self, trans: ProvidesUserContext, payload: TestUpgradeInstancePayload, persisted_file_source: UserFileSource
+    ) -> PluginStatus:
+        template = self._get_and_validate_target_upgrade_template(persisted_file_source, payload)
+        target = UpgradeTestTarget(persisted_file_source, payload)
+        return self._plugin_status_for_template(trans, target, template)
+
+    def plugin_status_for_instance(self, trans: ProvidesUserContext, id: UUID4):
+        persisted_file_source = self._get(trans, id)
+        return self._plugin_status(trans, persisted_file_source, to_template_reference(persisted_file_source))
+
     def plugin_status(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> PluginStatus:
-        template = self._catalog.find_template(payload)
+        target = CreateTestTarget(payload, UserFileSource)
+        self._validate_provider_creation(trans, payload)
+        return self._plugin_status(trans, target, payload)
+
+    def _plugin_status(
+        self, trans: ProvidesUserContext, target: CanTestPluginStatus, template_reference: TemplateReference
+    ):
+        template = self._catalog.find_template(template_reference)
+        return self._plugin_status_for_template(trans, target, template)
+
+    def _plugin_status_for_template(
+        self, trans: ProvidesUserContext, payload: CanTestPluginStatus, template: FileSourceTemplate
+    ):
         template_definition_status = status_template_definition(template)
         status_kwds = {"template_definition": template_definition_status}
         if template_definition_status.is_not_ok:
             return PluginStatus(**status_kwds)
         assert template
-        configuration, template_settings_status = self._template_settings_status(trans, payload, template)
+        template_parameters, oauth2_access_token_generation_status = self._template_parameter_generation(
+            trans, payload, template
+        )
+        if oauth2_access_token_generation_status is not None:
+            status_kwds["oauth2_access_token_generation"] = oauth2_access_token_generation_status
+        if not template_parameters or (
+            oauth2_access_token_generation_status and oauth2_access_token_generation_status.is_not_ok
+        ):
+            return PluginStatus(**status_kwds)
+        configuration, template_settings_status = self._template_settings_status(
+            trans, payload, template, template_parameters
+        )
         status_kwds["template_settings"] = template_settings_status
         if template_settings_status.is_not_ok:
             return PluginStatus(**status_kwds)
@@ -251,41 +481,62 @@ class FileSourceInstancesManager:
         # locally.
         return PluginStatus(**status_kwds)
 
+    def _template_parameter_generation(
+        self,
+        trans: ProvidesUserContext,
+        payload: CanTestPluginStatus,
+        template: FileSourceTemplate,
+    ) -> tuple[TemplateParameters | None, PluginAspectStatus | None]:
+        template_server_configuration = self._resolver.template_server_configuration(
+            trans.user, template.id, template.version
+        )
+        template_parameters = None
+        exception = None
+        try:
+            template_parameters = prepare_template_parameters_for_testing(
+                trans, template, template_server_configuration, payload, self._app_vault, self._app_config
+            )
+        except Exception as e:
+            if template_server_configuration.uses_oauth2:
+                exception = e
+            else:
+                raise
+        return template_parameters, oauth2_refresh_token_status(template_server_configuration, exception)
+
     def _template_settings_status(
         self,
         trans: ProvidesUserContext,
-        payload: CreateInstancePayload,
+        payload: CanTestPluginStatus,
         template: FileSourceTemplate,
-    ) -> Tuple[Optional[FileSourceConfiguration], PluginAspectStatus]:
-        secrets = payload.secrets
-        variables = payload.variables
-        environment = prepare_environment_from_root(template.environment, self._app_vault, self._app_config)
-        user_details = trans.user.config_template_details()
-
+        template_parameters: TemplateParameters,
+    ) -> tuple[FileSourceConfiguration | None, PluginAspectStatus]:
         configuration = None
         exception = None
         try:
-            configuration = template_to_configuration(
-                template,
-                variables=variables,
-                secrets=secrets,
-                user_details=user_details,
-                environment=environment,
-            )
+            configuration = template_to_configuration(template, **template_parameters)
         except Exception as e:
             exception = e
         return configuration, settings_exception_to_status(exception)
 
     def _connection_status(
-        self, trans: ProvidesUserContext, payload: CreateInstancePayload, configuration: FileSourceConfiguration
-    ) -> Tuple[Optional[BaseFilesSource], PluginAspectStatus]:
+        self, trans: ProvidesUserContext, target: CanTestPluginStatus, configuration: FileSourceConfiguration
+    ) -> tuple[BaseFilesSource | None, PluginAspectStatus]:
         file_source = None
         exception = None
+        if isinstance(target, UpgradeTestTarget | UpdateTestTarget):
+            label = target.instance.name
+            doc = target.instance.description
+        elif isinstance(target, CreateTestTarget):
+            label = target.payload.name
+            doc = target.payload.description
+        else:
+            label = target.name
+            doc = target.description
         try:
             file_source_properties = configuration_to_file_source_properties(
                 configuration,
-                label=payload.name,
-                doc=payload.description,
+                label=label,
+                doc=doc,
                 id=uuid4().hex,
             )
             file_source = self._resolver._file_source(file_source_properties)
@@ -300,10 +551,16 @@ class FileSourceInstancesManager:
             exception = e
         return file_source, connection_exception_to_status("file source", exception)
 
-    def _index_filter(self, uuid: str):
+    def _index_filter(self, uuid: UUID4):
         return UserFileSource.__table__.c.uuid == uuid
 
-    def _get(self, trans: ProvidesUserContext, uuid: str) -> UserFileSource:
+    def _ensure_no_object_with_uuid(self, uuid: UUID4):
+        filter = UserFileSource.__table__.c.uuid == uuid
+        user_file_source = self._sa_session.query(UserFileSource).filter(filter).one_or_none()
+        if user_file_source is not None:
+            raise Conflict()
+
+    def _get(self, trans: ProvidesUserContext, uuid: UUID4) -> UserFileSource:
         filter = self._index_filter(uuid)
         user_file_source = self._sa_session.query(UserFileSource).filter(filter).one_or_none()
         if user_file_source is None:
@@ -313,7 +570,7 @@ class FileSourceInstancesManager:
         return user_file_source
 
     def _get_template(
-        self, persisted_object_store: UserFileSource, template_version: Optional[int] = None
+        self, persisted_object_store: UserFileSource, template_version: int | None = None
     ) -> FileSourceTemplate:
         catalog = self._catalog
         target_template_version = template_version or persisted_object_store.template_version
@@ -323,7 +580,7 @@ class FileSourceInstancesManager:
     def _save(self, user_file_source: UserFileSource) -> None:
         save_template_instance(self._sa_session, user_file_source)
 
-    def _to_model(self, trans, persisted_file_source: UserFileSource) -> UserFileSourceModel:
+    def _to_model(self, trans: ProvidesUserContext, persisted_file_source: UserFileSource) -> UserFileSourceModel:
         file_source_type = persisted_file_source.template.configuration.type
         secrets = persisted_file_source.template_secrets or []
         uuid = str(persisted_file_source.uuid)
@@ -367,7 +624,7 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         self._app_vault = vault
         self._catalog = catalog
 
-    def _user_file_source(self, uri: str) -> Optional[UserFileSource]:
+    def _user_file_source(self, uri: str) -> UserFileSource | None:
         if "://" not in uri:
             return None
         uri_scheme, uri_rest = uri.split("://", 1)
@@ -381,7 +638,7 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         user_object_store: UserFileSource = self._sa_session.query(UserFileSource).filter(index_filter).one()
         return user_object_store
 
-    def _file_source_properties_from_uri(self, uri: str) -> Optional[FilesSourceProperties]:
+    def _file_source_properties_from_uri(self, uri: str) -> dict[str, Any] | None:
         user_file_source = self._user_file_source(uri)
         if not user_file_source:
             return None
@@ -389,16 +646,22 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
             return None
         return self._file_source_properties(user_file_source)
 
-    def _file_source_properties(self, user_file_source: UserFileSource) -> FilesSourceProperties:
+    def _file_source_properties(self, user_file_source: UserFileSource) -> dict[str, Any]:
         secrets = recover_secrets(user_file_source, self._app_vault, self._app_config)
         environment = prepare_environment(user_file_source, self._app_vault, self._app_config)
+        template_server_configuration = self.template_server_configuration(
+            user_file_source.user, user_file_source.template_id, user_file_source.template_version
+        )
+        implicit = implicit_parameters_for_instance(
+            user_file_source, template_server_configuration, self._app_vault, self._app_config
+        )
         templates = sort_templates(
             self._app_config,
             self._catalog.catalog.root,
             user_file_source,
         )
         file_source_configuration: FileSourceConfiguration = user_file_source.file_source_configuration(
-            secrets=secrets, environment=environment, templates=templates
+            secrets=secrets, environment=environment, implicit=implicit, templates=templates
         )
         return configuration_to_file_source_properties(
             file_source_configuration,
@@ -414,59 +677,109 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         if user_object_store.user.username != user_context.username:
             raise ItemOwnershipException("Your Galaxy user does not have access to the requested resource.")
 
-    def find_best_match(self, url: str) -> Optional[FileSourceScore]:
+    def find_best_match(self, url: str) -> FileSourceScore | None:
         files_source_properties = self._file_source_properties_from_uri(url)
         if files_source_properties is None:
             return None
         file_source = self._file_source(files_source_properties)
         return FileSourceScore(file_source, len(url))
 
-    def _file_source(self, files_source_properties: FilesSourceProperties) -> BaseFilesSource:
-        plugin_source = plugin_source_from_dict([cast(Dict[str, Any], files_source_properties)])
+    def _file_source(self, files_source_properties: dict[str, Any]) -> BaseFilesSource:
+        plugin_source = plugin_source_from_dict([files_source_properties])
         file_source = self._plugin_loader.load_plugins(
             plugin_source,
             self._file_sources_config,
         )[0]
         return file_source
 
-    def _all_user_file_source_properties(self, user_context: FileSourcesUserContext) -> List[FilesSourceProperties]:
+    def _all_user_file_source_properties(
+        self,
+        user_context: FileSourcesUserContext,
+        referenced_uris: set[str] | None = None,
+    ) -> list[dict[str, Any]]:
         username_filter = User.__table__.c.username == user_context.username
-        user: Optional[User] = self._sa_session.query(User).filter(username_filter).one_or_none()
+        user: User | None = self._sa_session.query(User).filter(username_filter).one_or_none()
         if user is None:
             return []
-        all_file_source_properties: List[FilesSourceProperties] = []
+        referenced_ids = None if referenced_uris is None else referenced_user_file_source_ids(referenced_uris)
+        all_file_source_properties: list[dict[str, Any]] = []
         for user_file_source in user.file_sources:
             if user_file_source.hidden:
+                continue
+            # Filter before resolving properties because resolution can access the vault or mint
+            # an OAuth access token.
+            if referenced_ids is not None and get_uuid(user_file_source.uuid).hex not in referenced_ids:
                 continue
             try:
                 files_source_properties = self._file_source_properties(user_file_source)
             except ValidationError:
                 log.warning(f"Problem validating user_file_source {user_file_source.uuid}, skipping load.")
                 continue
+            except Exception:
+                log.exception(
+                    f"Problem loading user_file_source {user_file_source.uuid}, skipping load and deactivating file source."
+                )
+                user_file_source.active = False
+                continue
             all_file_source_properties.append(files_source_properties)
         return all_file_source_properties
+
+    def template_server_configuration(
+        self, user, template_id: str, template_version: int
+    ) -> TemplateServerConfiguration:
+        catalog = self._catalog
+        template = catalog.find_template_by(template_id, template_version)
+        oauth2_configuration = get_oauth2_config_or_none(template)
+        oauth2_scope = None
+        if oauth2_configuration is not None:
+            try:
+                environment = prepare_environment_from_root(template.environment, self._app_vault, self._app_config)
+            except InternalServerError as e:
+                log.exception(
+                    f"Problem preparing environment for template {template_id} version {template_version} - Reason: {str(e)}"
+                )
+                raise MessageException("Problem with template configuration - Please contact your administrator.")
+            user_details = user.config_template_details()
+            oauth2_client_pair_obj, oauth2_scope = read_oauth2_info_from_configuration(
+                template.configuration, user_details, environment
+            )
+            # most configuration definitions won't include this, the default for the
+            # plugin type is the fallback and the typical case here
+            if oauth2_scope is None:
+                oauth2_scope = oauth2_configuration.scope
+        else:
+            oauth2_client_pair_obj = None
+        return TemplateServerConfiguration(
+            oauth2_client_pair=oauth2_client_pair_obj,
+            oauth2_configuration=oauth2_configuration,
+            oauth2_scope=oauth2_scope,
+        )
 
     def user_file_sources_to_dicts(
         self,
         for_serialization: bool,
         user_context: FileSourcesUserContext,
-        browsable_only: Optional[bool] = False,
-        include_kind: Optional[Set[PluginKind]] = None,
-        exclude_kind: Optional[Set[PluginKind]] = None,
-    ) -> List[FilesSourceProperties]:
+        browsable_only: bool | None = False,
+        include_kind: set[PluginKind] | None = None,
+        exclude_kind: set[PluginKind] | None = None,
+        referenced_uris: set[str] | None = None,
+    ) -> list[dict[str, Any]]:
         """Write out user file sources as list of config dictionaries."""
         if user_context.anonymous:
             return []
 
         as_dicts = []
-        for files_source_properties in self._all_user_file_source_properties(user_context):
-            plugin_kind = PluginKind.rfs
+        for files_source_properties in self._all_user_file_source_properties(
+            user_context, referenced_uris=referenced_uris
+        ):
+            files_source_type = files_source_properties["type"]
+            plugin_type_class = self._plugin_loader.get_plugin_type_class(files_source_type)
+            plugin_kind = plugin_type_class.plugin_kind
             if include_kind and plugin_kind not in include_kind:
                 continue
             if exclude_kind and plugin_kind in exclude_kind:
                 continue
-            files_source_type = files_source_properties["type"]
-            is_browsable = file_source_type_is_browsable(self._plugin_loader.get_plugin_type_class(files_source_type))
+            is_browsable = file_source_type_is_browsable(plugin_type_class)
             if browsable_only and not is_browsable:
                 continue
             file_source = self._file_source(files_source_properties)
@@ -479,10 +792,10 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
 def configuration_to_file_source_properties(
     file_source_configuration: FileSourceConfiguration,
     label: str,
-    doc: Optional[str],
+    doc: str | None,
     id: str,
-) -> FilesSourceProperties:
-    file_source_properties = cast(FilesSourceProperties, file_source_configuration.model_dump())
+) -> dict[str, Any]:
+    file_source_properties = file_source_configuration.model_dump()
     file_source_properties["label"] = label
     file_source_properties["doc"] = doc
     file_source_properties["id"] = id
@@ -503,6 +816,9 @@ __all__ = (
     "CreateInstancePayload",
     "FileSourceInstancesManager",
     "ModifyInstancePayload",
+    "TestModifyInstancePayload",
+    "TestUpgradeInstancePayload",
+    "TestUpdateInstancePayload",
     "UpdateInstancePayload",
     "UpdateInstanceSecretPayload",
     "UpgradeInstancePayload",

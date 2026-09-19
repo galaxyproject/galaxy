@@ -1,51 +1,15 @@
 import axios from "axios";
 
-import { fetcher } from "@/api/schema";
+import type { WorkflowSummary } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
 import { withPrefix } from "@/utils/redirect";
 
-type SortBy = "create_time" | "update_time" | "name";
-
-type Workflow = Record<string, never>;
-
-interface LoadWorkflowsOptions {
-    sortBy: SortBy;
-    sortDesc: boolean;
-    limit: number;
-    offset: number;
-    filterText: string;
-    showPublished: boolean;
-    skipStepCounts: boolean;
-}
-
-const getWorkflows = fetcher.path("/api/workflows").method("get").create();
-export async function loadWorkflows({
-    sortBy = "update_time",
-    sortDesc = true,
-    limit = 20,
-    offset = 0,
-    filterText = "",
-    showPublished = false,
-    skipStepCounts = true,
-}: LoadWorkflowsOptions): Promise<{ data: Workflow[]; headers: Headers }> {
-    const { data, headers } = await getWorkflows({
-        sort_by: sortBy,
-        sort_desc: sortDesc,
-        limit,
-        offset,
-        search: filterText,
-        show_published: showPublished,
-        skip_step_counts: skipStepCounts,
-    });
-    return { data, headers };
-}
-
-export async function updateWorkflow(id: string, changes: object): Promise<Workflow> {
+export async function updateWorkflow(id: string, changes: object): Promise<WorkflowSummary> {
     const { data } = await axios.put(withPrefix(`/api/workflows/${id}`), changes);
     return data;
 }
 
-export async function copyWorkflow(id: string, currentOwner: string, version?: string): Promise<Workflow> {
+export async function copyWorkflow(id: string, currentOwner?: string, version?: string): Promise<WorkflowSummary> {
     let path = `/api/workflows/${id}/download`;
     if (version) {
         path += `?version=${version}`;
@@ -53,9 +17,9 @@ export async function copyWorkflow(id: string, currentOwner: string, version?: s
     const { data: workflowData } = await axios.get(withPrefix(path));
 
     workflowData.name = `Copy of ${workflowData.name}`;
-    const currentUsername = useUserStore().currentUser?.username;
+    const userStore = useUserStore();
 
-    if (currentUsername !== currentOwner) {
+    if (!userStore.matchesCurrentUsername(currentOwner)) {
         workflowData.name += ` shared by user ${currentOwner}`;
     }
 
@@ -63,34 +27,16 @@ export async function copyWorkflow(id: string, currentOwner: string, version?: s
     return data;
 }
 
-export async function deleteWorkflow(id: string): Promise<Workflow> {
+export async function deleteWorkflow(id: string): Promise<WorkflowSummary> {
     const { data } = await axios.delete(withPrefix(`/api/workflows/${id}`));
     return data;
 }
 
-export async function undeleteWorkflow(id: string): Promise<Workflow> {
-    const { data } = await axios.post(withPrefix(`/api/workflows/${id}/undelete`));
-    return data;
-}
-
-export async function createWorkflow(workflowName: string, workflowAnnotation: string) {
-    const { data } = await axios.put(withPrefix("/workflow/create"), {
-        workflow_name: workflowName,
-        workflow_annotation: workflowAnnotation,
-    });
-    return data;
-}
-
 export async function getWorkflowFull(workflowId: string, version?: number) {
-    let url = `/workflow/load_workflow?_=true&id=${workflowId}`;
-    if (version !== undefined) {
-        url += `&version=${version}`;
+    const params: { style: string; version?: number } = { style: "editor" };
+    if (Number.isInteger(version)) {
+        params.version = version;
     }
-    const { data } = await axios.get(withPrefix(url));
-    return data;
-}
-
-export async function getWorkflowInfo(workflowId: string) {
-    const { data } = await axios.get(withPrefix(`/api/workflows/${workflowId}`));
+    const { data } = await axios.get(withPrefix(`/api/workflows/${workflowId}/download`), { params });
     return data;
 }

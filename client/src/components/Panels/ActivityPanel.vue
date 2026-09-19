@@ -1,51 +1,53 @@
 <script setup lang="ts">
-import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
-import { useRoute } from "vue-router/composables";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 
 interface Props {
     title: string;
     goToAllTitle?: string;
     href?: string;
-    /** Show GoTo button when on `href`? */
-    goToOnHref?: boolean;
+    goToAllDataDescription?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     goToAllTitle: undefined,
     href: undefined,
-    goToOnHref: true,
+    goToAllDataDescription: undefined,
 });
-
-const route = useRoute();
 
 const emit = defineEmits(["goToAll"]);
 
-const hasGoToAll = computed(
-    () => props.goToAllTitle && props.href && (props.goToOnHref || (!props.goToOnHref && route.path !== props.href))
-);
+const hasGoToAll = computed(() => props.goToAllTitle && props.href);
 </script>
 
 <template>
     <div class="activity-panel" :data-description="props.title" aria-labelledby="activity-panel-heading">
         <div class="activity-panel-header">
             <nav unselectable="on" class="activity-panel-header-top">
-                <h2 id="activity-panel-heading" v-localize class="activity-panel-heading h-sm">{{ props.title }}</h2>
+                <slot name="activity-panel-header-top">
+                    <h2 id="activity-panel-heading" v-localize class="activity-panel-heading h-sm">
+                        {{ props.title }}
+                    </h2>
+                </slot>
 
-                <slot name="header-buttons" />
+                <GButtonGroup>
+                    <slot name="header-buttons" />
+                </GButtonGroup>
             </nav>
 
             <slot name="header" class="activity-panel-header-description" />
-            <BButton
+            <GButton
                 v-if="hasGoToAll"
                 class="activity-panel-footer"
-                variant="primary"
-                :data-description="`props.mainButtonText button`"
+                color="blue"
+                :data-description="goToAllDataDescription"
                 :to="props.href"
-                size="sm"
+                size="small"
                 @click="emit('goToAll')">
                 {{ props.goToAllTitle }}
-            </BButton>
+            </GButton>
         </div>
 
         <div class="activity-panel-body">
@@ -55,7 +57,7 @@ const hasGoToAll = computed(
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .activity-panel {
     height: 100%;
@@ -83,18 +85,8 @@ const hasGoToAll = computed(
         display: flex;
         flex-direction: column;
         flex-grow: 1;
-        overflow-y: hidden;
-        button:first-child {
-            background: none;
-            border: none;
-            text-align: left;
-            transition: none;
-            width: 100%;
-            border-color: transparent;
-        }
-        button:first-child:hover {
-            background: $gray-200;
-        }
+        overflow-y: auto;
+        position: relative;
     }
 
     .activity-panel-footer {

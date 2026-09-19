@@ -4,7 +4,6 @@ import logging
 import uuid
 from typing import (
     Any,
-    Dict,
 )
 
 from galaxy.util import (
@@ -17,7 +16,7 @@ log = logging.getLogger(__name__)
 
 
 class SlackPlugin(BaseGitPlugin):
-    """Send error report to Sentry."""
+    """Send error report to Slack."""
 
     plugin_type = "slack"
 
@@ -43,7 +42,7 @@ class SlackPlugin(BaseGitPlugin):
         error_report_id = str(uuid.uuid4())[0:13]
         title = self._generate_error_title(job)
 
-        blocks: Dict[str, Any] = {
+        blocks: dict[str, Any] = {
             "blocks": [
                 {
                     "type": "section",

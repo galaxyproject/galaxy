@@ -1,10 +1,6 @@
 import os
 import tempfile
-from typing import (
-    Any,
-    Dict,
-    Tuple,
-)
+from typing import Any
 
 import pytest
 
@@ -25,6 +21,7 @@ from galaxy.files.unittest_utils import (
 from ._util import (
     assert_realizes_as,
     assert_realizes_throws_exception,
+    configured_file_sources,
     find,
     find_file_a,
     list_dir,
@@ -49,29 +46,32 @@ def test_posix():
     res = list_root(file_sources, "gxfiles://test1", recursive=False)
     file_a = find_file_a(res)
     assert file_a
-    assert file_a["uri"] == "gxfiles://test1/a"
-    assert file_a["name"] == "a"
+    assert file_a.uri == "gxfiles://test1/a"
+    assert file_a.name == "a"
 
     subdir1 = find(res, name="subdir1")
-    assert subdir1["class"] == "Directory"
-    assert subdir1["uri"] == "gxfiles://test1/subdir1"
+    assert subdir1
+    assert subdir1.class_ == "Directory"
+    assert subdir1.uri == "gxfiles://test1/subdir1"
 
     res = list_dir(file_sources, "gxfiles://test1/subdir1", recursive=False)
     subdir2 = find(res, name="subdir2")
     assert subdir2, res
-    assert subdir2["uri"] == "gxfiles://test1/subdir1/subdir2"
+    assert subdir2.uri == "gxfiles://test1/subdir1/subdir2"
 
     file_c = find(res, name="c")
     assert file_c, res
-    assert file_c["uri"] == "gxfiles://test1/subdir1/c"
+    assert file_c.uri == "gxfiles://test1/subdir1/c"
 
     res = list_root(file_sources, "gxfiles://test1", recursive=True)
     subdir1 = find(res, name="subdir1")
     subdir2 = find(res, name="subdir2")
-    assert subdir1["class"] == "Directory"
-    assert subdir1["uri"] == "gxfiles://test1/subdir1"
-    assert subdir2["uri"] == "gxfiles://test1/subdir1/subdir2"
-    assert subdir2["class"] == "Directory"
+    assert subdir1
+    assert subdir1.class_ == "Directory"
+    assert subdir1.uri == "gxfiles://test1/subdir1"
+    assert subdir2
+    assert subdir2.uri == "gxfiles://test1/subdir1/subdir2"
+    assert subdir2.class_ == "Directory"
 
 
 def test_posix_link_security():
@@ -98,6 +98,7 @@ def test_posix_link_security_allowlist():
 def test_posix_link_security_allowlist_write():
     file_sources = _configured_file_sources(include_allowlist=True, writable=True)
     write_from(file_sources, "gxfiles://test1/unsafe_dir/foo", "my test content")
+    assert file_sources.test_root
     with open(os.path.join(file_sources.test_root, "subdir1", "foo")) as f:
         assert f.read() == "my test content"
 
@@ -159,6 +160,7 @@ def test_user_ftp_explicit_config():
         ftp_upload_purge=False,
     )
     plugin = {
+        "id": "_ftp",
         "type": "gxftp",
     }
     tmp, root = setup_root()
@@ -233,6 +235,7 @@ def test_import_dir_explicit_config():
         library_import_dir=root,
     )
     plugin = {
+        "id": "test-gximport",
         "type": "gximport",
     }
     file_sources = ConfiguredFileSources(file_sources_config, ConfiguredFileSourcesConf(conf_dict=[plugin]))
@@ -438,7 +441,7 @@ def test_posix_file_url_allowed_root():
 
 
 def test_posix_file_url_disallowed_root():
-    file_sources, root = _configured_file_sources_with_root(plugin_extra_config={"enforce_symlink_security": False})
+    file_sources, _ = _configured_file_sources_with_root(plugin_extra_config={"enforce_symlink_security": False})
     with tempfile.NamedTemporaryFile(mode="w") as tf:
         tf.write("some content")
         tf.flush()
@@ -478,7 +481,7 @@ def _configured_file_sources_with_root(
     writable=None,
     allow_subdir_creation=True,
     empty_root=False,
-) -> Tuple[TestConfiguredFileSources, str]:
+):
     if empty_root:
         tmp, root = "/", None
     else:
@@ -487,7 +490,7 @@ def _configured_file_sources_with_root(
     if include_allowlist:
         config_kwd["symlink_allowlist"] = [tmp]
     file_sources_config = FileSourcePluginsConfig(**config_kwd)
-    plugin: Dict[str, Any] = {
+    plugin: dict[str, Any] = {
         "type": "posix",
     }
     if writable is not None:
@@ -532,3 +535,55 @@ def _download_and_check_file(file_sources):
 def _assert_access_prohibited(e):
     assert e is not None
     assert "Operation not allowed" in str(e)
+
+
+def test_score_url_match_requires_prefix():
+    """Ensure score_url_match uses prefix matching, not substring matching.
+
+    A malicious URI like gxfiles://test1http://evil.com should NOT match
+    the file source with uri_root gxfiles://test1.
+    """
+    file_sources = _configured_file_sources()
+    file_source = file_sources.get_file_source_path("gxfiles://test1/a").file_source
+    # Normal prefix match works
+    assert file_source.score_url_match("gxfiles://test1/a") > 0
+    # Embedded scheme must not match
+    assert file_source.score_url_match("gxfiles://test1http://evil.com/foo") == 0
+    assert file_source.score_url_match("http://evil.com/gxfiles://test1/a") == 0
+
+
+def test_get_file_source_path_strips_whitespace():
+    file_sources = _configured_file_sources()
+    resolved = file_sources.get_file_source_path("\ngxfiles://test1/a\n")
+    assert resolved.file_source is not None
+    assert resolved.path == "/a"
+
+
+def _two_posix_file_sources(tmp_path):
+    root_good = tmp_path / "good"
+    root_other = tmp_path / "other"
+    root_good.mkdir()
+    root_other.mkdir()
+    return configured_file_sources(
+        [
+            {"type": "posix", "id": "good", "root": str(root_good)},
+            {"type": "posix", "id": "other", "root": str(root_other)},
+        ]
+    )
+
+
+def test_plugins_to_dict_serializes_only_referenced_sources(tmp_path):
+    file_sources = _two_posix_file_sources(tmp_path)
+    plugins = file_sources.plugins_to_dict(for_serialization=True, referenced_uris={"gxfiles://good/some/file"})
+    assert [p["id"] for p in plugins] == ["good"]
+
+
+def test_plugins_to_dict_serializes_nothing_when_no_uris_referenced(tmp_path):
+    file_sources = _two_posix_file_sources(tmp_path)
+    assert file_sources.plugins_to_dict(for_serialization=True, referenced_uris=set()) == []
+
+
+def test_plugins_to_dict_serializes_all_when_referenced_uris_none(tmp_path):
+    file_sources = _two_posix_file_sources(tmp_path)
+    plugins = file_sources.plugins_to_dict(for_serialization=True)
+    assert {p["id"] for p in plugins} == {"good", "other"}

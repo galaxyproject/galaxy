@@ -10,7 +10,12 @@ export interface Citation {
                 format: string;
                 template: string;
                 lang: string;
-            }
+            },
         ) => string;
     };
+}
+
+export interface CitationsResult {
+    citations: Citation[];
+    warnings: string[];
 }

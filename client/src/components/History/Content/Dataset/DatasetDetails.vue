@@ -6,7 +6,7 @@ import { hasDetails } from "@/api";
 import { STATES } from "@/components/History/Content/model/states";
 import { useDatasetStore } from "@/stores/datasetStore";
 
-import { type ItemUrls } from ".";
+import type { ItemUrls } from ".";
 
 import DatasetActions from "./DatasetActions.vue";
 import DatasetMiscInfo from "./DatasetMiscInfo.vue";
@@ -59,7 +59,10 @@ function toggleHighlights() {
                             result.genome_build
                         }}</BLink>
                     </span>
-                    <DatasetMiscInfo v-if="result.misc_info" :misc-info="result.misc_info" />
+                    <DatasetMiscInfo
+                        v-if="result.misc_info"
+                        :misc-info="result.misc_info"
+                        :history-id="result.history_id" />
                 </div>
                 <DatasetActions
                     :item="result"

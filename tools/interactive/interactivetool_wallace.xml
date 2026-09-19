@@ -1,4 +1,5 @@
 <tool id="interactive_tool_wallace" tool_type="interactive" name="Wallace" version="0.1">
+    <icon src="wallace.png" />
     <description>Webbased Interactive modeling of species niches and distributions</description>
     <requirements>
         <container type="docker">ylebras/wallace-docker</container>

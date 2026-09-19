@@ -2,11 +2,11 @@
 import { useEventListener } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
 
-import { Transform } from "@/components/Workflow/Editor/modules/geometry";
 import { useWorkflowStores } from "@/composables/workflowStores";
+import { Transform, type WorkflowTransform } from "@/utils/geometry";
 
 const props = defineProps<{
-    transform: { x: number; y: number; k: number };
+    transform: WorkflowTransform;
 }>();
 
 const { toolbarStore } = useWorkflowStores();
@@ -18,7 +18,7 @@ const inverseCanvasTransform = computed(() =>
     new Transform()
         .translate([props.transform.x, props.transform.y])
         .scale([props.transform.k, props.transform.k])
-        .inverse()
+        .inverse(),
 );
 
 const zIndexLow = 0;
@@ -34,7 +34,7 @@ watch(
         } else {
             zIndex.value = zIndexHigh;
         }
-    }
+    },
 );
 
 toolbarStore.onInputCatcherEvent("pointerdown", () => {
@@ -75,7 +75,7 @@ watch(
                 position: lastPosition,
             });
         }
-    }
+    },
 );
 </script>
 

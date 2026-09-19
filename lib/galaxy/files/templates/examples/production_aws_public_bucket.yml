@@ -1,6 +1,7 @@
 - id: aws_public
+  version: 0
   name: Amazon Web Services Public Bucket
-  description: Setup anonymous access to a public AWS bucket. 
+  description: Setup anonymous access to a public AWS bucket.
   configuration:
     type: s3fs
     bucket: "{{ variables.bucket }}"

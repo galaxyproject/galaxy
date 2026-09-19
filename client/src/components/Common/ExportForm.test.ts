@@ -1,5 +1,6 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import ExportForm from "./ExportForm.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
@@ -10,7 +11,7 @@ describe("ExportForm.vue", () => {
     let wrapper: any;
 
     beforeEach(async () => {
-        wrapper = mount(ExportForm, {
+        wrapper = mount(ExportForm as object, {
             propsData: {},
             localVue,
         });
@@ -43,9 +44,7 @@ describe("ExportForm.vue", () => {
 
     it("should localize button text", async () => {
         const newLocal = wrapper.find(".export-button").text();
-        // TODO: fix typing, this is a jest matcher with a custom expect
-        // extension, or, just use vanilla javascript in test harness if there
-        // isn't significant value in typing here?
+        // Type assertion needed: custom matcher types not recognized with explicit vitest imports
         (expect(newLocal) as any).toBeLocalizationOf("Export");
     });
 
@@ -75,12 +74,12 @@ describe("ExportForm.vue", () => {
 
     function expectExportButtonDisabled() {
         expect(wrapper.find(".export-button").exists()).toBeTruthy();
-        expect(wrapper.find(".export-button").attributes("disabled")).toBeTruthy();
+        expect(wrapper.find(".export-button").attributes("aria-disabled")).toBeTruthy();
     }
 
     function expectExportButtonEnabled() {
         expect(wrapper.find(".export-button").exists()).toBeTruthy();
-        expect(wrapper.find(".export-button").attributes("disabled")).toBeFalsy();
+        expect(wrapper.find(".export-button").attributes("aria-disabled")).toBeFalsy();
     }
 
     async function setNameInput(newValue: string) {

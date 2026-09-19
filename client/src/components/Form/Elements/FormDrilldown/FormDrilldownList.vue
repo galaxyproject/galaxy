@@ -7,6 +7,7 @@ defineProps<{
     currentValue: string[];
     handleClick: Function;
     multiple: boolean;
+    showIcons?: boolean;
     options: Array<Option>;
 }>();
 </script>
@@ -15,6 +16,7 @@ defineProps<{
     <div class="ui-drilldown">
         <div v-for="option in options" :key="option.name" class="descendant-lines">
             <FormDrilldownOption
+                :show-icons="showIcons"
                 :current-value="currentValue"
                 :handle-click="handleClick"
                 :multiple="multiple"
@@ -24,7 +26,7 @@ defineProps<{
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 .ui-drilldown {
     $ui-drilldown-border: 0.5px solid $gray-500;
 

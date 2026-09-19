@@ -26,7 +26,7 @@ export function useCleanupCategories() {
                     description: localize(
                         "When you delete a dataset it's not immediately removed from the disk (so you can recover it later)." +
                             " But this means it's still taking space until you permanently delete it." +
-                            " Here you can quickly find and remove those datasets to free up some space"
+                            " Here you can quickly find and remove those datasets to free up some space",
                     ),
                     fetchSummary: fetchDiscardedDatasetsSummary,
                     fetchItems: fetchDiscardedDatasets,
@@ -38,7 +38,7 @@ export function useCleanupCategories() {
                     description: localize(
                         "When you delete a history it's not immediately removed from the disk (so you can recover it later)." +
                             " But this means it's still taking space until you permanently delete it." +
-                            " Here you can quickly find and remove those histories to free up some space"
+                            " Here you can quickly find and remove those histories to free up some space",
                     ),
                     fetchSummary: fetchDiscardedHistoriesSummary,
                     fetchItems: fetchDiscardedHistories,
@@ -56,7 +56,7 @@ export function useCleanupCategories() {
                     description: localize(
                         "Archived histories are a good way to keep some of your important but not frequently used histories out of the way." +
                             " But they can still take up space on the disk." +
-                            " Here you can quickly find and permanently remove those histories to free up some space"
+                            " Here you can quickly find and permanently remove those histories to free up some space",
                     ),
                     fetchSummary: fetchArchivedHistoriesSummary,
                     fetchItems: fetchArchivedHistories,

@@ -3,9 +3,11 @@
 // the same plugins and events.
 
 import BootstrapVue from "bootstrap-vue";
-import { iconPlugin, localizationPlugin, vueRxShortcutPlugin } from "components/plugins";
 import { createPinia, getActivePinia, PiniaVuePlugin } from "pinia";
 import Vue from "vue";
+
+import { localizationPlugin, vueRxShortcutPlugin } from "@/components/plugins";
+import { vGTooltip } from "@/directives/vGTooltip";
 
 // Load Pinia
 Vue.use(PiniaVuePlugin);
@@ -13,14 +15,14 @@ Vue.use(PiniaVuePlugin);
 // Bootstrap components
 Vue.use(BootstrapVue);
 
+// Custom tooltip directive
+Vue.directive("g-tooltip", vGTooltip);
+
 // localization filters and directives
 Vue.use(localizationPlugin);
 
 // rxjs utilities
 Vue.use(vueRxShortcutPlugin);
-
-// font-awesome svg icon registration/loading
-Vue.use(iconPlugin);
 
 function getOrCreatePinia() {
     // We sometimes use this utility mounting function in a context where there
@@ -29,6 +31,15 @@ function getOrCreatePinia() {
     // To support both use cases, we will create a new pinia store and attach it
     // to the vue application that is created for the component if missing.
     return getActivePinia() || createPinia();
+}
+
+export function appendVueComponent(ComponentDefinition, options) {
+    const instance = Vue.extend(ComponentDefinition);
+    const vm = document.createElement("div");
+    document.body.appendChild(vm);
+    new instance({
+        propsData: options,
+    }).$mount(vm);
 }
 
 export function mountVueComponent(ComponentDefinition) {

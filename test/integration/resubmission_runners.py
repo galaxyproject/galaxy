@@ -1,10 +1,10 @@
+import subprocess
 import time
-from typing import List
 
 from galaxy import model
 from galaxy.jobs.runners import JobState
 from galaxy.jobs.runners.local import LocalJobRunner
-from galaxy.model.orm.now import now
+from galaxy.util import now
 
 
 class FailsJobRunner(LocalJobRunner):
@@ -13,7 +13,8 @@ class FailsJobRunner(LocalJobRunner):
     def queue_job(self, job_wrapper):
         if not self._prepare_job_local(job_wrapper):
             return
-
+        command_line, _ = self._command_line(job_wrapper)
+        subprocess.run([command_line])
         resource_parameters = job_wrapper.get_resource_parameters()
         failure_state = resource_parameters.get("failure_state", None)
 
@@ -62,7 +63,7 @@ class AssertionJobRunner(LocalJobRunner):
 class FailOnlyFirstJobRunner(LocalJobRunner):
     """Job runner that knows about test cases and checks final state assumptions."""
 
-    tests_seen: List[str] = []
+    tests_seen: list[str] = []
 
     def queue_job(self, job_wrapper):
         resource_parameters = job_wrapper.get_resource_parameters()

@@ -1,8 +1,3 @@
-from typing import (
-    List,
-    Optional,
-)
-
 from fastapi import Body
 
 from tool_shed.context import SessionRequestContext
@@ -48,7 +43,7 @@ class FastAPICategories:
         description="index category",
         operation_id="categories__index",
     )
-    def index(self, trans: SessionRequestContext = DependsOnTrans) -> List[CategoryResponse]:
+    def index(self, trans: SessionRequestContext = DependsOnTrans) -> list[CategoryResponse]:
         """
         Return a list of dictionaries that contain information about each Category.
         """
@@ -80,7 +75,7 @@ class FastAPICategories:
         installable: bool = CategoryRepositoriesInstallableQueryParam,
         sort_key: str = CategoryRepositoriesSortKeyQueryParam,
         sort_order: str = CategoryRepositoriesSortOrderQueryParam,
-        page: Optional[int] = CategoryRepositoriesPageQueryParam,
+        page: int | None = CategoryRepositoriesPageQueryParam,
     ) -> RepositoriesByCategory:
         return repositories_by_category(
             trans.app,

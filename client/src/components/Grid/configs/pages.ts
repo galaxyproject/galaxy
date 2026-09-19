@@ -1,7 +1,19 @@
-import { faEdit, faEye, faPen, faPlus, faShareAlt, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
+import {
+    faEdit,
+    faExternalLinkAlt,
+    faEye,
+    faPen,
+    faPlus,
+    faShareAlt,
+    faTrash,
+    faTrashRestore,
+} from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { fetcher } from "@/api/schema";
+import { GalaxyApi } from "@/api";
+import { loadPages, type PageSortBy } from "@/api/pages";
+import { getGalaxyInstance } from "@/app";
+import { GRID_LABELS } from "@/components/Page/constants";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -11,33 +23,25 @@ import type { ActionArray, FieldArray, GridConfig } from "./types";
 const { emit } = useEventBus<string>("grid-router-push");
 
 /**
- * Api endpoint handlers
- */
-const getPages = fetcher.path("/api/pages").method("get").create();
-const deletePage = fetcher.path("/api/pages/{id}").method("delete").create();
-const undeletePage = fetcher.path("/api/pages/{id}/undelete").method("put").create();
-
-/**
  * Local types
  */
-type SortKeyLiteral = "create_time" | "title" | "update_time" | "username" | undefined;
 type PageEntry = Record<string, unknown>;
 
 /**
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { data, headers } = await getPages({
+    const { data, totalMatches } = await loadPages({
         limit,
         offset,
         search,
-        sort_by: sort_by as SortKeyLiteral,
-        sort_desc,
-        show_published: false,
-        show_own: true,
-        show_shared: false,
+        sortBy: sort_by as PageSortBy,
+        sortDesc: sort_desc,
+        showOwn: true,
+        showShared: false,
+        showPublished: false,
     });
-    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
+
     return [data, totalMatches];
 }
 
@@ -72,6 +76,21 @@ const fields: FieldArray = [
                 },
             },
             {
+                title: "View in Window",
+                icon: faExternalLinkAlt,
+                condition: (data: PageEntry) => {
+                    const Galaxy = getGalaxyInstance();
+                    return !data.deleted && !!Galaxy?.frame?.active;
+                },
+                handler: (data: PageEntry) => {
+                    const Galaxy = getGalaxyInstance();
+                    Galaxy?.frame?.add({
+                        url: `/published/page?id=${data.id}&embed=true`,
+                        title: GRID_LABELS.windowTitle(data.title),
+                    });
+                },
+            },
+            {
                 title: "Edit Attributes",
                 icon: faEdit,
                 condition: (data: PageEntry) => !data.deleted,
@@ -100,19 +119,24 @@ const fields: FieldArray = [
                 icon: faTrash,
                 condition: (data: PageEntry) => !data.deleted,
                 handler: async (data: PageEntry) => {
-                    if (confirm(_l(`Are you sure that you want to delete the selected page?`))) {
-                        try {
-                            await deletePage({ id: String(data.id) });
-                            return {
-                                status: "success",
-                                message: `'${data.title}' has been deleted.`,
-                            };
-                        } catch (e) {
+                    if (confirm(_l(GRID_LABELS.deleteConfirm))) {
+                        const { error } = await GalaxyApi().DELETE("/api/pages/{id}", {
+                            params: {
+                                path: { id: String(data.id) },
+                            },
+                        });
+
+                        if (error) {
                             return {
                                 status: "danger",
-                                message: `Failed to delete '${data.title}': ${errorMessageAsString(e)}.`,
+                                message: `Failed to delete '${data.title}': ${errorMessageAsString(error)}.`,
                             };
                         }
+
+                        return {
+                            status: "success",
+                            message: `'${data.title}' has been deleted.`,
+                        };
                     }
                 },
             },
@@ -121,19 +145,24 @@ const fields: FieldArray = [
                 icon: faTrashRestore,
                 condition: (data: PageEntry) => !!data.deleted,
                 handler: async (data: PageEntry) => {
-                    if (confirm(_l(`Are you sure that you want to restore the selected page?`))) {
-                        try {
-                            await undeletePage({ id: String(data.id) });
-                            return {
-                                status: "success",
-                                message: `'${data.title}' has been restored.`,
-                            };
-                        } catch (e) {
+                    if (confirm(_l(GRID_LABELS.restoreConfirm))) {
+                        const { error } = await GalaxyApi().PUT("/api/pages/{id}/undelete", {
+                            params: {
+                                path: { id: String(data.id) },
+                            },
+                        });
+
+                        if (error) {
                             return {
                                 status: "danger",
-                                message: `Failed to restore '${data.title}': ${errorMessageAsString(e)}.`,
+                                message: `Failed to restore '${data.title}': ${errorMessageAsString(error)}.`,
                             };
                         }
+
+                        return {
+                            status: "success",
+                            message: `'${data.title}' has been restored.`,
+                        };
                     }
                 },
             },
@@ -153,6 +182,11 @@ const fields: FieldArray = [
         key: "sharing",
         title: "Status",
         type: "sharing",
+    },
+    {
+        key: "history_id",
+        title: "History",
+        type: "history",
     },
 ];
 
@@ -183,6 +217,13 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
         handler: equals("deleted", "deleted", toBool),
         menuItem: true,
     },
+    standalone: {
+        placeholder: "Only standalone",
+        type: Boolean,
+        boolType: "is",
+        handler: equals("standalone", "type", toBool),
+        menuItem: true,
+    },
 };
 
 /**
@@ -194,11 +235,11 @@ const gridConfig: GridConfig = {
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
     getData: getData,
-    plural: "Pages",
+    plural: GRID_LABELS.gridPlural,
     sortBy: "update_time",
     sortDesc: true,
     sortKeys: ["create_time", "title", "update_time"],
-    title: "Saved Pages",
+    title: GRID_LABELS.savedTitle,
 };
 
 export default gridConfig;

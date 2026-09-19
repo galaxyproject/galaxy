@@ -39,7 +39,7 @@ def test_driver():
 @pytest.mark.parametrize("tool_id", TEST_TOOL_IDS)
 def test_tool_datasets(tool_id, test_driver):
     test_driver.run_tool_test(tool_id)
-    session = test_driver.app.model.context.current
+    session = test_driver.app.model.context
     job = session.scalars(select(model.Job).order_by(model.Job.id.desc()).limit(1)).first()
     datasets = session.scalars(select(model.Dataset).filter(model.Dataset.job_id == job.id)).all()
 

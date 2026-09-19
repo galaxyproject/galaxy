@@ -1,8 +1,5 @@
 from typing import (
     Any,
-    List,
-    Optional,
-    Tuple,
 )
 
 from galaxy_test.base.decorators import requires_new_library
@@ -207,8 +204,8 @@ class TestFolderContentsApi(ApiTestCase):
         folder_id = self._create_folder_in_library(folder_name)
 
         num_subfolders = 5
-        subfolder_ids: List[str] = []
-        deleted_subfolder_ids: List[str] = []
+        subfolder_ids: list[str] = []
+        deleted_subfolder_ids: list[str] = []
         for index in range(num_subfolders):
             ldda_id = self._create_subfolder_in(folder_id, name=f"Folder_{index}")
             subfolder_ids.append(ldda_id)
@@ -219,8 +216,8 @@ class TestFolderContentsApi(ApiTestCase):
                 deleted_subfolder_ids.append(subfolder_id)
 
         num_datasets = 5
-        ldda_ids: List[str] = []
-        deleted_ldda_ids: List[str] = []
+        ldda_ids: list[str] = []
+        deleted_ldda_ids: list[str] = []
         for _ in range(num_datasets):
             ldda_id, _ = self._create_dataset_in_folder(history_id, folder_id)
             ldda_ids.append(ldda_id)
@@ -328,7 +325,7 @@ class TestFolderContentsApi(ApiTestCase):
         self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
 
     def _assert_folder_order_by_is_expected(
-        self, folder_id: str, order_by: str, sort_desc: str, expected_order_by_name: List[str]
+        self, folder_id: str, order_by: str, sort_desc: str, expected_order_by_name: list[str]
     ):
         response = self._get(f"folders/{folder_id}/contents?order_by={order_by}&sort_desc={sort_desc}")
         index_response = self._assert_index_count_is_correct(
@@ -338,7 +335,7 @@ class TestFolderContentsApi(ApiTestCase):
             assert item["name"] == expected_order_by_name[index]
 
     def _assert_index_count_is_correct(
-        self, raw_response, expected_contents_count: int, expected_total_count: Optional[int] = None
+        self, raw_response, expected_contents_count: int, expected_total_count: int | None = None
     ) -> dict:
         self._assert_status_code_is(raw_response, 200)
         if expected_total_count is None:
@@ -354,9 +351,7 @@ class TestFolderContentsApi(ApiTestCase):
         root_folder_id = self.library["root_folder_id"]
         return self._create_subfolder_in(root_folder_id, name)
 
-    def _create_subfolder_in(
-        self, folder_id: str, name: Optional[str] = None, description: Optional[str] = None
-    ) -> str:
+    def _create_subfolder_in(self, folder_id: str, name: str | None = None, description: str | None = None) -> str:
         data = {
             "name": name or "Test Folder",
             "description": description or f"The description of {name}",
@@ -370,11 +365,11 @@ class TestFolderContentsApi(ApiTestCase):
         self,
         history_id: str,
         folder_id: str,
-        name: Optional[str] = None,
-        content: Optional[str] = None,
-        ldda_message: Optional[str] = None,
+        name: str | None = None,
+        content: str | None = None,
+        ldda_message: str | None = None,
         **kwds,
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """Returns a tuple with the LDDA ID and the underlying HDA ID"""
         hda_id = self._create_hda(history_id, name, content, **kwds)
         data = {
@@ -389,12 +384,12 @@ class TestFolderContentsApi(ApiTestCase):
         self._assert_status_code_is(create_response, 200)
         return create_response.json()
 
-    def _create_hda(self, history_id: str, name: Optional[str] = None, content: Optional[str] = None, **kwds) -> str:
+    def _create_hda(self, history_id: str, name: str | None = None, content: str | None = None, **kwds) -> str:
         hda = self.dataset_populator.new_dataset(history_id, name=name, content=content, **kwds)
         hda_id = hda["id"]
         return hda_id
 
-    def _create_hdca_with_contents(self, history_id: str, contents: List[str]) -> str:
+    def _create_hdca_with_contents(self, history_id: str, contents: list[str]) -> str:
         hdca = self.dataset_collection_populator.create_list_in_history(
             history_id, contents=contents, direct_upload=True, wait=True
         ).json()["outputs"][0]

@@ -1,0 +1,12 @@
+- doc: |
+    Omitting the optional parameter_input connected to a conditional inner
+    parameter must use that parameter's own default ("p1used") and must NOT
+    leak a ConnectedValue sentinel into the command line.
+  job: {}
+  outputs:
+    out:
+      asserts:
+        has_text:
+          text: "p1used"
+        not_has_text:
+          text: "ConnectedValue"

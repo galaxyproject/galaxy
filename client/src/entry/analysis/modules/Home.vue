@@ -8,10 +8,13 @@
 </template>
 
 <script>
-import ToolForm from "components/Tool/ToolForm";
-import WorkflowRun from "components/Workflow/Run/WorkflowRun";
 import decodeUriComponent from "decode-uri-component";
-import CenterFrame from "entry/analysis/modules/CenterFrame";
+
+import { Toast } from "@/composables/toast";
+
+import ToolForm from "@/components/Tool/ToolForm.vue";
+import WorkflowRun from "@/components/Workflow/Run/WorkflowRun.vue";
+import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
 
 export default {
     components: {
@@ -34,7 +37,7 @@ export default {
             return this.query.m_c && this.query.m_a;
         },
         isTool() {
-            return this.query.tool_id || this.query.job_id;
+            return this.query.tool_id || this.query.tool_uuid || this.query.job_id;
         },
         isUpload() {
             return this.query.tool_id === "upload1";
@@ -46,7 +49,9 @@ export default {
             return `${this.query.m_c}/${this.query.m_a}`;
         },
         toolParams() {
-            const result = { ...this.query };
+            const result = {};
+            result.uuid = this.query.tool_uuid;
+            result.jobId = this.query.job_id;
             const tool_id = this.query.tool_id;
             if (tool_id) {
                 result.id = tool_id.indexOf("+") >= 0 ? tool_id : decodeUriComponent(tool_id);
@@ -75,6 +80,23 @@ export default {
                 simpleFormUseJobCache,
             };
         },
+    },
+    mounted() {
+        // Data source tools redirect back to the SPA after a server-side
+        // import; surface a toast and strip the param so a reload doesn't
+        // re-fire it.
+        if (this.query.notification === "tool-submitted") {
+            this.$nextTick(() => {
+                Toast.addToast("Check your history panel for progress.", {
+                    title: "Data import queued",
+                    variant: "info",
+                    duration: 0,
+                });
+            });
+            const newQuery = { ...this.$route.query };
+            delete newQuery.notification;
+            this.$router.replace({ query: newQuery });
+        }
     },
 };
 </script>

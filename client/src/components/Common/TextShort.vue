@@ -10,7 +10,7 @@ const props = withDefaults(defineProps<Props>(), {
     maxLength: 24,
 });
 
-const text = computed(() => {
+const trimmedText = computed(() => {
     if (props.text.length > props.maxLength) {
         const partialText = props.text.slice(0, props.maxLength);
         return `${partialText}...`;
@@ -21,7 +21,14 @@ const text = computed(() => {
 </script>
 
 <template>
-    <span class="text-break text-center">
-        {{ text }}
+    <span class="text-short-component">
+        {{ trimmedText }}
     </span>
 </template>
+
+<style scoped>
+.text-short-component {
+    text-align: center;
+    word-wrap: break-word;
+}
+</style>

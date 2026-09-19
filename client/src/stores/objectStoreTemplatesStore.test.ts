@@ -1,10 +1,13 @@
-import { type ObjectStoreTemplateType } from "@/api/objectStores";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import type { ObjectStoreTemplateType } from "@/api/objectStores";
+import type { ObjectStoreTemplateSummaries } from "@/api/objectStores.templates";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 
 import { setupTestPinia } from "./testUtils";
 
 const s3 = "aws_s3" as ObjectStoreTemplateType;
-const TEMPLATES_BASIC = [
+const TEMPLATES_BASIC: ObjectStoreTemplateSummaries = [
     {
         type: s3,
         name: "moo",
@@ -14,10 +17,11 @@ const TEMPLATES_BASIC = [
         id: "moo",
         version: 0,
         badges: [],
+        hidden: false,
     },
 ];
 
-const TEMPLATES_EXPANDED = [
+const TEMPLATES_EXPANDED: ObjectStoreTemplateSummaries = [
     {
         type: s3,
         name: "Testing S3",
@@ -27,6 +31,7 @@ const TEMPLATES_EXPANDED = [
         id: "bucket_s3",
         version: 0,
         badges: [],
+        hidden: false,
     },
     {
         type: s3,
@@ -37,6 +42,7 @@ const TEMPLATES_EXPANDED = [
         id: "bucket_s3",
         version: 1,
         badges: [],
+        hidden: false,
     },
     {
         type: s3,
@@ -47,6 +53,7 @@ const TEMPLATES_EXPANDED = [
         id: "bucket_s3",
         version: 2,
         badges: [],
+        hidden: false,
     },
 ];
 

@@ -26,7 +26,7 @@ to interact with each other.
         </Listing>
     </CurrentHistory>
 
-    <!-- When a collection is selected for viewing, send in a 
+    <!-- When a collection is selected for viewing, send in a
     breadcrumbs list of collections the user has selected -->
     <CurrentCollection :selected-collections="breadcrumbs">
         <CollectionNavigation />

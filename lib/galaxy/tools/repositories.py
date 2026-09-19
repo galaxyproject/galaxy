@@ -4,7 +4,6 @@ import os
 import shutil
 import tempfile
 from contextlib import contextmanager
-from typing import Optional
 
 from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.tools.data import ToolDataTableManager
@@ -12,13 +11,13 @@ from galaxy.util.bunch import Bunch
 
 
 class ValidationContextConfig:
-    tool_data_path: Optional[str]
-    shed_tool_data_path: Optional[str]
+    tool_data_path: str | None
+    shed_tool_data_path: str | None
     tool_data_table_config: str
     shed_tool_data_table_config: str
     interactivetools_enable: bool
     len_file_path: str
-    builds_file_path: Optional[str]
+    builds_file_path: str | None
 
 
 class ValidationContext:

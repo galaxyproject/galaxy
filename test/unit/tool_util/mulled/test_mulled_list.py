@@ -1,3 +1,4 @@
+import os.path
 import shutil
 import tempfile
 
@@ -25,7 +26,7 @@ def test_get_singularity_containers():
 def test_get_missing_containers():
     test_dir = tempfile.mkdtemp()
     try:
-        exclude_list = f"{test_dir}/blocklist.txt"
+        exclude_list = os.path.join(test_dir, "blocklist.txt")
         with open(exclude_list, "w") as f:
             f.write("a\n\nb\nc\nd")
         containers = get_missing_containers(
@@ -39,7 +40,7 @@ def test_get_missing_containers():
 def test_get_missing_envs():
     test_dir = tempfile.mkdtemp()
     try:
-        exclude_list = f"{test_dir}/blocklist.txt"
+        exclude_list = os.path.join(test_dir, "blocklist.txt")
         with open(exclude_list, "w") as f:
             f.write("a\n\nb\nc\nd")
         envs = get_missing_envs(

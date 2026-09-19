@@ -1,8 +1,5 @@
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
     Union,
 )
 
@@ -12,26 +9,26 @@ from galaxy.tool_util.deps.requirements import (
     ToolRequirements,
 )
 from galaxy.util import bunch
-from .mulled.mulled_build import DEFAULT_CHANNELS
+from .mulled.util import DEFAULT_CHANNELS
 
 
 class AppInfo:
     def __init__(
         self,
-        galaxy_root_dir: Optional[str] = None,
-        default_file_path: Optional[str] = None,
-        tool_data_path: Optional[str] = None,
-        galaxy_data_manager_data_path: Optional[str] = None,
-        shed_tool_data_path: Optional[str] = None,
+        galaxy_root_dir: str | None = None,
+        default_file_path: str | None = None,
+        tool_data_path: str | None = None,
+        galaxy_data_manager_data_path: str | None = None,
+        shed_tool_data_path: str | None = None,
         outputs_to_working_directory: bool = False,
-        container_image_cache_path: Optional[str] = None,
-        library_import_dir: Optional[str] = None,
+        container_image_cache_path: str | None = None,
+        library_import_dir: str | None = None,
         enable_mulled_containers: bool = False,
-        container_resolvers_config_file: Optional[str] = None,
-        container_resolvers_config_dict: Optional[Dict[str, Any]] = None,
-        involucro_path: Optional[str] = None,
+        container_resolvers_config_file: str | None = None,
+        container_resolvers_config_dict: list[Any] | None = None,
+        involucro_path: str | None = None,
         involucro_auto_init: bool = True,
-        mulled_channels: List[str] = DEFAULT_CHANNELS,
+        mulled_channels: list[str] = DEFAULT_CHANNELS,
     ) -> None:
         self.galaxy_root_dir = galaxy_root_dir
         self.default_file_path = default_file_path
@@ -57,17 +54,23 @@ class ToolInfo:
 
     def __init__(
         self,
-        container_descriptions: Optional[List["ContainerDescription"]] = None,
-        requirements: Optional[Union["ToolRequirements", List["ToolRequirement"]]] = None,
+        container_descriptions: list["ContainerDescription"] | None = None,
+        requirements: Union["ToolRequirements", list["ToolRequirement"]] | None = None,
         requires_galaxy_python_environment: bool = False,
         env_pass_through=None,
         guest_ports=None,
-        tool_id: Optional[str] = None,
-        tool_version: Optional[str] = None,
+        tool_id: str | None = None,
+        tool_version: str | None = None,
         profile: float = -1,
     ):
         if env_pass_through is None:
-            env_pass_through = ["GALAXY_SLOTS", "GALAXY_MEMORY_MB", "GALAXY_MEMORY_MB_PER_SLOT"]
+            env_pass_through = [
+                "GALAXY_SLOTS",
+                "GALAXY_MEMORY_MB",
+                "GALAXY_MEMORY_MB_PER_SLOT",
+                "GALAXY_MEMORY_GB",
+                "GALAXY_MEMORY_GB_PER_SLOT",
+            ]
         if container_descriptions is None:
             container_descriptions = []
         if requirements is None:
