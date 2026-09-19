@@ -1,28 +1,65 @@
-name: OSX
-on: [push, pull_request]
+name: macOS startup
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions: {}
 jobs:
-
+  build-client:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
+    uses: ./.github/workflows/build_client.yaml
   test:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     name: Startup test
     runs-on: macos-latest
+    needs: build-client
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.14']
+    defaults:
+      run:
+        shell: bash -l {0}
     steps:
-    - uses: actions/checkout@v2
-      with:
-        path: 'galaxy root'
-    - name: Cache pip dir
-      uses: actions/cache@v1
-      id: pip-cache
-      with:
-        path: ~/Library/Caches/pip
-        # scripts/common_startup.sh creates a conda env for Galaxy containing Python 3.6
-        key: pip-cache-3.6-${{ hashFiles('galaxy root/requirements.txt') }}
-    - name: Install tox
-      run: pip install tox
-    - name: Install and activate miniconda  # use this job to test using Python from a conda environment
-      uses: goanpeca/setup-miniconda@v1
-      with:
-        activate-environment: ''
-    - name: run tests
-      run: tox -e first_startup
-      shell: bash -l {0}  # need this to have CONDA_EXE set
-      working-directory: 'galaxy root'
+      - uses: actions/checkout@v7.0.1
+        with:
+          path: 'galaxy root'
+          persist-credentials: false
+      - name: Install miniforge  # use this job to test using Python from a conda environment
+        uses: conda-incubator/setup-miniconda@v4
+        with:
+          miniforge-version: latest
+          activate-environment: ''
+      - name: Restore client cache
+        uses: actions/cache@v6.1.0
+        with:
+          fail-on-cache-miss: true
+          key: galaxy-static-${{ needs.build-client.outputs.commit-id }}
+          path: 'galaxy root/static'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.1.0
+      - name: Install tox
+        run: uv tool install tox --with tox-uv
+      - name: Run tests
+        run: tox -e first_startup
+        working-directory: 'galaxy root'
+        env:
+          GALAXY_CONDA_PYTHON_VERSION: "${{ matrix.python-version }}"

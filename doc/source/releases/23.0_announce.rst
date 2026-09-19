@@ -1,0 +1,175 @@
+
+===========================================================
+23.0 Galaxy Release (April 2023)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+This release includes significant user interface changes enhancing accessibility
+and usability.  This includes a new tool search, modernized multi-history view,
+new tag displays, theme support, and better drag and drop handling across the
+application.  There are also brand new 'Datatypes' and 'About This Galaxy'
+interfaces.  Interactive Tools are more seamlessly integrated into the user
+interface and Galaxy also comes with a new MGnify Notebook IT. The workflow
+editor has been completely overhauled with significant improvements to usability
+and extensibility, including new conditional workflow step functionality.
+
+Check out the `23.0 user release notes <23.0_announce_user.html>`__ for all the
+details. Are you an admin? See the Administration Notes below, and check out
+`some admin relevant PRs
+<https://github.com/galaxyproject/galaxy/pulls?q=label%3Ahighlight%2Fadmin+milestone%3A23.0+is%3Aclosed++is%3Apr+>`__.
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_23.0 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_23.0 && git pull --ff-only origin release_23.0
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+Administration Notes
+====================
+
+Dependencies for various built-in converter tools have been changed from pysam
+to samtools. Please make sure you install these dependencies through the admin
+panel or manually.  See more details `on the PR here
+<https://github.com/galaxyproject/galaxy/pull/13411>`__.
+
+Configuration default values are no longer read from the sample files -- they
+now come directly from the config schema.  If you are relying on local changes
+to sample files, be aware that you will need to adjust your configuration.  See
+more details on configuration changes `on the PR here
+<https://github.com/galaxyproject/galaxy/pull/14755>`__.
+
+Configuration Changes
+=====================
+
+Added
+-----
+
+The following configuration options are new
+
+config/galaxy.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  gravity
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.tool_shed.mapping.bootstrap_admin_api_key
+-  mapping.tool_shed.mapping.sentry_traces_sample_rate
+
+
+Changed
+-------
+
+The following configuration options have been changed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+-  mapping.galaxy.mapping.job_config_file.default has changed from
+
+   ::
+
+    job_conf.xml
+
+   to
+
+   ::
+
+    job_conf.yml
+
+
+
+-  mapping.galaxy.mapping.logo_src.default has changed from
+
+   ::
+
+    /static/favicon.png
+
+   to
+
+   ::
+
+    /static/favicon.svg
+
+
+
+-  mapping.galaxy.mapping.tool_recommendation_model_path.default has changed from
+
+   ::
+
+    https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5
+
+   to
+
+   ::
+
+    https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model_v_0.2.hdf5
+
+
+-  mapping.galaxy.mapping.topk_recommendations.default has changed from
+
+   ::
+
+    10
+
+   to
+
+   ::
+
+    20
+
+
+
+
+Removed
+-------
+
+The following configuration options have been completely removed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.reports.mapping.debug
+-  mapping.reports.mapping.use_lint
+-  mapping.reports.mapping.use_profile
+
+
+New Configuration Files
+-----------------------
+
+The following files are new, or recently converted to yaml
+
+-  ``config/themes_conf.yml.sample``
+
+
+Deprecation Notices
+===========================================================
+
+Trackster is deprecated and will be removed in the next release.  This functionality will be provided by other visualization plugins (IGV.js, JBrowse).
+
+Workflow exports to myexperiment.org are deprecated and will be removed in the next release.
+
+Release Notes
+===========================================================
+
+.. include:: 23.0.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

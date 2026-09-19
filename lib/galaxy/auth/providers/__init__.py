@@ -3,23 +3,28 @@ Created on 15/07/2014
 
 @author: Andrew Robinson
 """
+
 import abc
 
-import six
 
-
-@six.add_metaclass(abc.ABCMeta)
-class AuthProvider(object):
+class AuthProvider(metaclass=abc.ABCMeta):
     """A base class for all Auth Providers."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def plugin_type(self):
-        """ Short string providing labelling this plugin """
+        """Short string providing labelling this plugin"""
 
     @abc.abstractmethod
-    def authenticate(self, email, username, password, options):
+    def authenticate(self, email, username, password, options, request):
         """
         Check that the user credentials are correct.
+
+        Besides checking password, it is possible to perform custom checks
+        like filtering client remote IP address using the request argument. We can
+        get the remote IP address of the client using request.remote_addr and
+        check if the IP is in whitelisted IPs and deny the authentication if
+        it is not.
 
         NOTE: Used within auto-registration to check it is ok to register this
         user.
@@ -32,6 +37,8 @@ class AuthProvider(object):
         :type   password: str
         :param  options: options provided in auth_config_file
         :type   options: dict
+        :param  request: HTTP request object
+        :type   request: GalaxyWebTransaction.request
         :returns:   True: accept user, False: reject user and None: reject user
             and don't try any other providers.  str, str are the email and
             username to register with if accepting. The optional dict may
@@ -40,10 +47,16 @@ class AuthProvider(object):
         """
 
     @abc.abstractmethod
-    def authenticate_user(self, user, password, options):
+    def authenticate_user(self, user, password, options, request):
         """
         Same as authenticate() method, except an User object is provided instead
         of a username.
+
+        Besides checking password, it is possible to perform custom checks
+        like filtering client remote IP address using the request argument. We can
+        get the remote IP address of the client using request.remote_addr and
+        check if the IP is in whitelisted IPs and deny the authentication if
+        it is not.
 
         NOTE: used on normal login to check authentication and update user
         details if required.
@@ -54,6 +67,8 @@ class AuthProvider(object):
         :type   password: str
         :param  options: options provided in auth_config_file
         :type   options: dict
+        :param  request: HTTP request object
+        :type   request: GalaxyWebTransaction.request
         :returns:   True: accept user, False: reject user and None: reject user
             and don't try any other providers
         :rtype:     bool

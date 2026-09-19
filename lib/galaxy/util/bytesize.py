@@ -1,20 +1,20 @@
 SUFFIX_TO_BYTES = {
-    'KI': 1024,
-    'MI': 1024**2,
-    'GI': 1024**3,
-    'TI': 1024**4,
-    'PI': 1024**5,
-    'EI': 1024**6,
-    'K': 1000,
-    'M': 1000**2,
-    'G': 1000**3,
-    'T': 1000**4,
-    'P': 1000**5,
-    'E': 1000**6,
+    "KI": 1024,
+    "MI": 1024**2,
+    "GI": 1024**3,
+    "TI": 1024**4,
+    "PI": 1024**5,
+    "EI": 1024**6,
+    "K": 1000,
+    "M": 1000**2,
+    "G": 1000**3,
+    "T": 1000**4,
+    "P": 1000**5,
+    "E": 1000**6,
 }
 
 
-class ByteSize(object):
+class ByteSize:
     """Convert multiples of bytes to various units."""
 
     def __init__(self, value):
@@ -41,7 +41,7 @@ class ByteSize(object):
         new_value = int(self.value / SUFFIX_TO_BYTES[unit])
         if not as_string:
             return new_value
-        return "{value}{suffix}".format(value=new_value, suffix=unit)
+        return f"{new_value}{unit}"
 
 
 def parse_bytesize(value):
@@ -55,14 +55,14 @@ def parse_bytesize(value):
             found_suffix = suffix
             break
     if found_suffix:
-        value = value[:-len(found_suffix)]
+        value = value[: -len(found_suffix)]
     try:
         value = int(value)
     except ValueError:
         try:
             value = float(value)
         except ValueError:
-            raise ValueError("{value} is not a valid integer or float value".format(value=value))
+            raise ValueError(f"{value} is not a valid integer or float value")
     if found_suffix:
         value = value * SUFFIX_TO_BYTES[found_suffix]
     return value

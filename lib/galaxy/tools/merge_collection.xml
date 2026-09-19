@@ -1,14 +1,18 @@
 <tool id="__MERGE_COLLECTION__"
-      name="Merge Collections"
+      name="Merge collections"
       version="1.0.0"
       tool_type="merge_collection">
-  <description>into single list of datasets</description>
+  <description>into a single collection</description>
   <type class="MergeCollectionTool" module="galaxy.tools" />
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
+  <edam_operations>
+    <edam_operation>operation_2409</edam_operation>
+  </edam_operations>
   <macros>
+      <import>model_operation_macros.xml</import>
       <xml name="suffix_param">
-          <param name="suffix_pattern" label="Use the follow suffix pattern:" help="Describe the suffix pattern to use when joing element name and data copy number. For instance, the default is '_#', which will produce _1 as the first suffix used." value="_#" type="text">
+          <param name="suffix_pattern" label="Use the following suffix pattern:" help="Describe the suffix pattern to use when joining element name and data copy number. For instance, the default is '_#', which will produce _1 as the first suffix used." value="_#" type="text">
               <sanitizer invalid_char="">
                   <valid initial="string.ascii_letters,string.digits">
                       <add value="_" />
@@ -56,14 +60,14 @@
     <section name="advanced" title="Advanced Options">
         <conditional name="conflict">
           <param name="duplicate_options" type="select" label="How should conflicts (or potential conflicts) be handled?"
-                 help="Collection elements must have unique element identifiers, when appending how should unique identifiers be assured.">
-            <option value="suffix_conflict">Append suffix to conflicted element identifers</option>
-            <option value="suffix_conflict_rest">Append suffix to conflicted element identifers after first one encountered</option>
-            <option value="suffix_every">Append suffix to every element identifer</option>
+                 help="Collection elements must have unique element identifiers, when appending how should unique identifiers be assured. See Help section below for examples.">
+            <option value="suffix_conflict">Append suffix to conflicted element identifiers</option>
+            <option value="suffix_conflict_rest">Append suffix to conflicted element identifiers after first one encountered</option>
+            <option value="suffix_every">Append suffix to every element identifier</option>
             <option value="keep_first" selected="true">Keep first instance</option>
             <option value="keep_last">Keep last instance</option>
             <option value="fail">Fail collection creation</option>
-          </param>      
+          </param>
           <when value="suffix_conflict">
             <expand macro="suffix_param" />
           </when>
@@ -93,7 +97,7 @@
                 <element name="forward" value="simple_line.txt" />
                 <element name="reverse" value="simple_line_alternative.txt" />
               </collection>
-            </element>          
+            </element>
           </collection>
         </param>
       </repeat>
@@ -105,7 +109,7 @@
                 <element name="forward" value="simple_line.txt" />
                 <element name="reverse" value="simple_line_alternative.txt" />
               </collection>
-            </element>           
+            </element>
           </collection>
         </param>
       </repeat>
@@ -125,7 +129,7 @@
           <element name="reverse">
             <expand macro="assert_is_simple_line_alternative" />
           </element>
-        </element>        
+        </element>
       </output_collection>
     </test>
     <test>
@@ -137,7 +141,7 @@
       <repeat name="inputs">
         <param name="input">
           <expand macro="test_collecton_simple_then_alternative" />
-        </param>      
+        </param>
       </repeat>
       <expand macro="advanced_section" duplicate_handling="suffix_every" suffix_pattern="__#" />
       <output_collection name="output" type="list">
@@ -160,7 +164,7 @@
           <assert_contents>
             <has_text_matching expression="^This is a different line of text.\n$"/>
           </assert_contents>
-        </element>                
+        </element>
       </output_collection>
     </test>
     <test>
@@ -175,7 +179,7 @@
             <element name="sample3" value ="simple_line.txt"/>
             <element name="sample4" value ="simple_line_alternative.txt"/>
           </collection>
-        </param>      
+        </param>
       </repeat>
       <expand macro="advanced_section" duplicate_handling="suffix_every" suffix_pattern="__#" />
       <output_collection name="output" type="list">
@@ -190,7 +194,7 @@
         </element>
         <element name="sample4__2">
             <expand macro="assert_is_simple_line_alternative" />
-        </element>                
+        </element>
       </output_collection>
     </test>
     <test>
@@ -203,7 +207,7 @@
       <repeat name="inputs">
         <param name="input">
           <expand macro="test_collecton_simple_then_alternative" />
-        </param>      
+        </param>
       </repeat>
       <output_collection name="output" type="list">
         <element name="sample1">
@@ -217,7 +221,7 @@
         </element>
         <element name="sample2-2">
             <expand macro="assert_is_simple_line_alternative" />
-        </element>                
+        </element>
       </output_collection>
     </test>
     <test>
@@ -229,7 +233,7 @@
       <repeat name="inputs">
         <param name="input">
           <expand macro="test_collection_alternative_then_simple" />
-        </param>      
+        </param>
       </repeat>
       <output_collection name="output" type="list">
         <element name="sample1">
@@ -245,7 +249,11 @@
       </output_collection>
     </test>
     <test>
-      <expand macro="advanced_section" duplicate_handling="keep_last" suffix_pattern="__#" />
+      <section name="advanced">
+        <conditional name="conflict">
+          <param name="duplicate_options" value="keep_last" />
+        </conditional>
+      </section>
       <repeat name="inputs">
         <param name="input">
           <expand macro="test_collecton_simple_then_alternative" />
@@ -272,11 +280,108 @@
   </tests>
   <help><![CDATA[
 
-This tool takes two lists and creates a single unified list.
-    
+========
+Synopsis
+========
+
+Concatenates two or more collections into a single collection.
+
+===========
+Description
+===========
+
+This tool takes two or more collections and combines their elements into one output collection. The elements from the first collection appear first, followed by the elements from the second, and so on.
+
+When the input collections contain elements with the same identifier (name), the tool must decide how to handle the duplicates. The default behavior (``keep first``) retains only the first occurrence and silently drops later duplicates. You can change this under **Advanced Options**.
+
+========
+Examples
+========
+
+**Basic merge (no duplicates)**
+
+Two collections with unique identifiers::
+
+ Collection 1:  sampleA, sampleB
+ Collection 2:  sampleC, sampleD
+
+Output::
+
+ Merged:  sampleA, sampleB, sampleC, sampleD
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/merge.svg
+  :alt: Merge two collections into one
+  :width: 620
+
+-------
+
+==================================
+Handling duplicate identifiers
+==================================
+
+When two collections share element identifiers, the **Advanced Options** control what happens. All examples below use::
+
+ Collection 1: [Dataset A]
+               [Dataset B]
+               [Dataset X]
+ Collection 2: [Dataset A]
+               [Dataset B]
+               [Dataset Y]
+
+**Keep first instance** (default)
+
+Duplicates are silently dropped — only the copy from the first collection is kept::
+
+ Merged: [Dataset A]  [Dataset B]  [Dataset X]  [Dataset Y]
+
+-------
+
+**Keep last instance**
+
+The opposite — the copy from the last collection wins::
+
+ Merged: [Dataset A]  [Dataset B]  [Dataset X]  [Dataset Y]
+
+-------
+
+**Append suffix to conflicted element identifiers**
+
+All copies of a duplicated name get a numbered suffix (``_1``, ``_2``, …). Unique names are left unchanged::
+
+ Merged: [Dataset A_1]  [Dataset B_1]  [Dataset X]
+         [Dataset A_2]  [Dataset B_2]  [Dataset Y]
+
+-------
+
+**Append suffix to conflicted identifiers after first one encountered**
+
+The first copy keeps its original name; later copies get a suffix::
+
+ Merged: [Dataset A]  [Dataset B]  [Dataset X]
+         [Dataset A_2]  [Dataset B_2]  [Dataset Y]
+
+-------
+
+**Append suffix to every element identifier**
+
+Every element — even unique ones — gets a suffix indicating which input collection it came from::
+
+ Merged: [Dataset A_1]  [Dataset B_1]  [Dataset X_1]
+         [Dataset A_2]  [Dataset B_2]  [Dataset Y_2]
+
+-------
+
+**Fail collection creation**
+
+The tool raises an error if any duplicate identifiers are found.
+
+-------
+
 .. class:: infomark
 
-This tool will create new history datasets for your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
   ]]></help>
 </tool>

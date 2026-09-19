@@ -1,0 +1,41 @@
+<tool id="test_CONVERTER_biom" name="Test Convert Biom files" version="0.1">
+    <!-- test if setting $__target_datatype__ works for converters -->
+    <command><![CDATA[
+#if $biom1:
+    cp '$biom1' '$output_biom1' &&
+#end if
+#if $biom2:
+    cp '$biom2' '$output_biom2' &&
+#end if
+exit 0
+    ]]></command>
+    <inputs>
+        <!-- inputs are optional, because supplying both at the same time triggers 
+             the biom converter 2x which results in parallel conda executions which
+             creates problems -->
+        <param name="biom1" type="data" format="biom1" optional="true" label="Biom1 file"/>
+        <param name="biom2" type="data" format="biom2" optional="true" label="Biom2 file"/>
+    </inputs>
+    <outputs>
+        <data name="output_biom1" format="biom1"/>
+        <data name="output_biom2" format="biom2"/>
+    </outputs>
+    <tests>
+        <!-- supplying a biom2 file for the biom1 input: triggers biom2 to biom1 conversion -->
+        <test>
+            <param name="biom1" ftype="biom2" value="input_taxonomy.biom2"/>
+            <output name="output_biom1" ftype="biom1">
+                <assert_contents>
+                    <has_text text="Biological Observation Matrix 1.0.0"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- supplying a biom1 file for the biom2 input: triggers biom1 to biom2 conversion -->
+        <test>
+            <param name="biom2" ftype="biom1" value="input_taxonomy.biom1"/>
+            <output name="output_biom2" ftype="biom2" value="input_taxonomy.biom2" compare="sim_size"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

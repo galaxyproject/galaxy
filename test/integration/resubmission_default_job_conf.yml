@@ -15,7 +15,7 @@ execution:
     initial_destination:
       runner: dynamic
       type: python
-      function: initial_destination
+      function: initial_target_environment
 
     fail_first_try:
       runner: first_failure_runner
@@ -29,6 +29,6 @@ resources:
     test: [test_name,failure_state,initial_target_environment,run_for]
 
 tools:
-  - id: upload1
+  - class: local
     environment: local
     resources: upload

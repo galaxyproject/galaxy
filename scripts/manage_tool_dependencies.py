@@ -1,7 +1,7 @@
 import os.path
 import sys
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 from galaxy.config import configure_logging
 from galaxy.tool_util.deps import build_dependency_manager
@@ -23,10 +23,14 @@ def _build_dependency_manager_no_config(kwargs):
     which we do not have available in this script (an optimization).
     """
     configure_logging(kwargs)
-    base, ext = os.path.splitext(kwargs.get('dependency_resolvers_config_file', 'dependency_resolvers_conf.xml'))
-    dependency_resolvers_config_file = find_config_file(base, exts=[ext.lstrip('.')])
+    base, ext = os.path.splitext(kwargs.get("dependency_resolvers_config_file", "dependency_resolvers_conf.xml"))
+    dependency_resolvers_config_file = find_config_file(base, exts=[ext.lstrip(".")])
     # FIXME: default is wrong for installed Galaxy
-    dependency_manager = build_dependency_manager(app_config_dict=kwargs, conf_file=dependency_resolvers_config_file, default_tool_dependency_dir="database/dependencies")
+    dependency_manager = build_dependency_manager(
+        app_config_dict=kwargs,
+        conf_file=dependency_resolvers_config_file,
+        default_tool_dependency_dir="database/dependencies",
+    )
     return dependency_manager
 
 
@@ -35,6 +39,6 @@ ACTIONS = {
 }
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main = main_factory(description=DESCRIPTION, actions=ACTIONS)
     main()

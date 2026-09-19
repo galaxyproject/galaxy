@@ -1,0 +1,238 @@
+<template>
+    <div>
+        <BBreadcrumb v-if="dataManager && !loading" id="breadcrumb" :items="breadcrumbItems" />
+
+        <Alert :message="message" :variant="status" />
+
+        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
+        <Alert v-else-if="loading" message="Waiting for data" variant="info" />
+        <Alert v-else-if="jobs && !jobs.length" message="There are no jobs for this data manager." variant="primary" />
+        <div v-else-if="jobs">
+            <BContainer fluid class="mb-3">
+                <BRow>
+                    <BCol md="6">
+                        <BFormGroup description="Search for strings or regular expressions">
+                            <BInputGroup>
+                                <BFormInput
+                                    v-model="filter"
+                                    placeholder="Type to Search"
+                                    @keyup.esc.native="filter = ''" />
+
+                                <BInputGroupAppend>
+                                    <GButton :disabled="!filter" @click="filter = ''">Clear (esc)</GButton>
+                                </BInputGroupAppend>
+                            </BInputGroup>
+                        </BFormGroup>
+                    </BCol>
+                </BRow>
+
+                <BRow>
+                    <BCol>
+                        <GButton :pressed.sync="showCommandLine" outline>
+                            {{ showCommandLine ? "Hide" : "Show" }} Command Line
+                        </GButton>
+                    </BCol>
+                </BRow>
+            </BContainer>
+
+            <GTable id="jobs-table" hover striped :fields="tableFields" :items="tableItems" :filter="filter">
+                <template v-slot:cell(actions)="row">
+                    <GButtonGroup>
+                        <GButton tooltip title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
+                            <FontAwesomeIcon :icon="faRedo" />
+                        </GButton>
+
+                        <GButton
+                            :id="'job-' + jobs[row.index]['encId']"
+                            tooltip
+                            title="View Info"
+                            :to="{ name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] } }">
+                            <FontAwesomeIcon :icon="faInfoCircle" />
+                        </GButton>
+
+                        <GButton
+                            v-if="!showCommandLine"
+                            outline
+                            :pressed.sync="row.detailsShowing"
+                            @click.stop="row.toggleDetails()">
+                            {{ row.detailsShowing ? "Hide" : "Show" }} Command Line
+                        </GButton>
+                    </GButtonGroup>
+                </template>
+
+                <template v-slot:row-details="row">
+                    <BCard>
+                        <h2 class="h-text">Command Line</h2>
+
+                        <pre class="code"><code class="command-line">{{ row.item.commandLine }}</code></pre>
+
+                        <template v-slot:footer>
+                            <GButton class="mt-3" @click="row.toggleDetails"> Hide Info </GButton>
+                        </template>
+                    </BCard>
+                </template>
+            </GTable>
+        </div>
+    </div>
+</template>
+
+<script>
+import { faInfoCircle, faRedo } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
+import {
+    BBreadcrumb,
+    BCard,
+    BCol,
+    BContainer,
+    BFormGroup,
+    BFormInput,
+    BInputGroup,
+    BInputGroupAppend,
+    BRow,
+} from "bootstrap-vue";
+
+import { getAppRoot } from "@/onload/loadConfig";
+
+import Alert from "@/components/Alert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GTable from "@/components/Common/GTable.vue";
+
+export default {
+    components: {
+        Alert,
+        BBreadcrumb,
+        BCard,
+        BCol,
+        BContainer,
+        BFormGroup,
+        BFormInput,
+        BInputGroup,
+        BInputGroupAppend,
+        BRow,
+        FontAwesomeIcon,
+        GButton,
+        GButtonGroup,
+        GTable,
+    },
+    props: {
+        id: {
+            type: String,
+            required: true,
+        },
+    },
+    data() {
+        return {
+            faInfoCircle,
+            faRedo,
+            dataManager: [],
+            jobs: [],
+            fields: [
+                { key: "id", label: "Job ID", sortable: true },
+                { key: "user" },
+                { key: "updateTime", label: "Last Update", sortable: true },
+                { key: "state" },
+                { key: "actions" },
+                { key: "jobRunnerName", label: "Job Runner" },
+                { key: "jobRunnerExternalId", label: "PID/Cluster ID", sortable: true },
+            ],
+            showCommandLine: true,
+            filter: "",
+            viewOnly: false,
+            message: "",
+            status: "",
+            loading: true,
+        };
+    },
+    computed: {
+        breadcrumbItems() {
+            return [
+                {
+                    text: "Data Managers",
+                    to: { name: "DataManager" },
+                },
+                {
+                    text: this.dataManager["name"] + " ( " + this.dataManager["description"] + " )",
+                    href: this.dataManager["toolUrl"],
+                    target: "_blank",
+                },
+                {
+                    text: "Jobs",
+                    active: true,
+                },
+            ];
+        },
+        tableFields() {
+            const tableFields = this.fields.slice(0);
+            if (this.showCommandLine) {
+                tableFields.splice(5, 0, {
+                    key: "commandLine",
+                    tdClass: ["code", "command-line"],
+                });
+            }
+            return tableFields;
+        },
+        tableItems() {
+            const tableItems = this.jobs.slice(0);
+
+            for (const item of tableItems) {
+                // Nicer time formatting
+                item["updateTime"] = item["updateTime"].replace("T", "\n");
+
+                // Color state cells accordingly
+                switch (item["state"]) {
+                    case "ok":
+                        item["_cellVariants"] = { state: "success" };
+                        break;
+                    case "error":
+                        item["_cellVariants"] = { state: "danger" };
+                        break;
+                    case "deleted":
+                        item["_cellVariants"] = { state: "warning" };
+                        break;
+                    case "running":
+                        item["_cellVariants"] = { state: "info" };
+                        break;
+                    case "waiting":
+                    case "queued":
+                        item["_cellVariants"] = { state: "primary" };
+                        break;
+                    case "paused":
+                        item["_cellVariants"] = { state: "secondary" };
+                        break;
+                }
+            }
+            return tableItems;
+        },
+    },
+    created() {
+        axios
+            .get(`${getAppRoot()}data_manager/jobs_list?id=${decodeURIComponent(this.id)}`)
+            .then((response) => {
+                this.dataManager = response.data.dataManager;
+                this.jobs = response.data.jobs;
+                this.viewOnly = response.data.viewOnly;
+                this.message = response.data.message;
+                this.status = response.data.status;
+                this.loading = false;
+            })
+            .catch((error) => {
+                console.error(error);
+            });
+    },
+};
+</script>
+
+<style>
+/* Can not be scoped because of command line tdClass */
+.code {
+    background: black;
+    color: white;
+    padding: 1em;
+}
+.command-line {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+</style>

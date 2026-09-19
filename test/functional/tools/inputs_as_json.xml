@@ -27,8 +27,8 @@ if test_case == "1":
     assert_equals(as_dict["inttest"], 12456)
     assert_equals(as_dict["floattest"], 6.789)
     assert_equals(as_dict["radio_select"], "a_radio")
-    assert_equals(as_dict["optional_select"], None)
-    assert_equals(as_dict["optional_multiple_select"], [])
+    assert_equals(as_dict["optional_select"], "None")
+    assert_equals(as_dict["optional_multiple_select"], "None")
     assert_equals(as_dict["repeat"][0]["r"], "000000")
     assert_equals(as_dict["repeat"][1]["r"], "FFFFFF")
     assert_equals(as_dict["cond"]["more_text"], "fdefault")
@@ -43,7 +43,7 @@ elif test_case == "2":
     assert_equals(as_dict["floattest"], 1.0)
     assert_equals(as_dict["radio_select"], "a_radio")
     assert_equals(as_dict["optional_select"], "a")
-    assert_equals(as_dict["optional_multiple_select"], ['a', 'b'])
+    assert_equals(as_dict["optional_multiple_select"], 'a,b')
     assert_equals(as_dict["repeat"][0]["r"], "000000")
     assert_equals(as_dict["cond"]["cond_test"], "second")
     assert_equals(as_dict["cond"]["more_text"], "sdefault")
@@ -104,7 +104,7 @@ with open("output", "w") as f:
             <param name="test_case" value="1" />
             <param name="text_test" value="foo" />
             <param name="booltest" value="true" />
-            <param name="booltest2" value="booltrue" />
+            <param name="booltest2" value="true" />
             <param name="inttest" value="12456" />
             <param name="floattest" value="6.789" />
             <repeat name="repeat">
@@ -126,13 +126,15 @@ with open("output", "w") as f:
             <param name="test_case" value="2" />
             <param name="text_test" value="bar" />
             <param name="booltest" value="false" />
-            <param name="booltest2" value="boolfalse" />
+            <param name="booltest2" value="false" />
             <param name="data_input" value="simple_line.txt" />
             <param name="optional_select" value="a"/>
             <param name="optional_multiple_select" value="a,b"/>
             <!-- Testing null integers -->
             <!-- <param name="inttest" value="12456" /> -->
-            <param name="r" value="000000" />
+            <repeat name="repeat">
+                <param name="r" value="000000"/>
+            </repeat>
             <conditional name="cond">
                 <param name="cond_test" value="second" />
             </conditional>

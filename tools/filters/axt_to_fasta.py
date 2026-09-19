@@ -2,6 +2,7 @@
 """
 Adapted from bx/scripts/axt_to_fasta.py
 """
+
 from __future__ import print_function
 
 import sys
@@ -26,11 +27,10 @@ def main():
 
     # convert the alignment blocks
 
-    reader = bx.align.axt.Reader(sys.stdin, support_ids=True,
-                                 species1=species1, species2=species2)
+    reader = bx.align.axt.Reader(sys.stdin, support_ids=True, species1=species1, species2=species2)
 
     for a in reader:
-        if ("id" in a.attributes):
+        if "id" in a.attributes:
             id = a.attributes["id"]
         else:
             id = None

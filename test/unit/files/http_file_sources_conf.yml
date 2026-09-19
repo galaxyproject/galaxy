@@ -1,0 +1,17 @@
+- type: http
+  id: test1
+  doc: A specific http url handler
+  url_regex: "^https?://www.usegalaxy.org/"
+  http_headers:
+    Authorization: "Bearer ${user.preferences['oidc|bearer_token']}"
+
+- type: http
+  id: test2
+  doc: Another specific http url handler
+  url_regex: "^https?://www.galaxyproject.org/"
+  http_headers:
+    Another_header: "found"
+
+- type: http
+  id: test3
+  doc: A default http handler, built-in and not needed other than for tests

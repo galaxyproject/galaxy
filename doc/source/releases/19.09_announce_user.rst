@@ -95,7 +95,7 @@ Builtin Tool Updates
 Release Notes
 ===========================================================
 
-Please see the `full release notes <19.09_announce.html>`_ for more details.
+Please see the :doc:`full release notes <19.09_announce>` for more details.
 
 .. include:: 19.09_prs.rst
 

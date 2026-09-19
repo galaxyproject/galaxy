@@ -1,0 +1,40 @@
+<script setup lang="ts">
+import { faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+
+interface Props {
+    offset: number;
+}
+const props = withDefaults(defineProps<Props>(), {
+    offset: 0,
+});
+</script>
+
+<template>
+    <GButton
+        v-g-tooltip.hover
+        class="back-to-top"
+        :class="{ show: props.offset > 100 }"
+        :title="props.offset > 100 ? 'Scroll To Top' : ''"
+        color="blue"
+        @click="$emit('click')">
+        <FontAwesomeIcon :icon="faChevronUp" />
+    </GButton>
+</template>
+
+<style lang="scss" scoped>
+.back-to-top {
+    bottom: 0.25rem;
+    right: 0.25rem;
+    position: absolute;
+    opacity: 0;
+    transition: opacity 0.4s;
+    z-index: 1000;
+
+    &.show {
+        opacity: 1;
+    }
+}
+</style>

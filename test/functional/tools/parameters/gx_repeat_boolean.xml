@@ -1,0 +1,25 @@
+<tool id="gx_repeat_boolean" name="gx_repeat_boolean" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter[0].boolean_parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <repeat name="parameter" title="Repeat Parameter">
+            <param name="boolean_parameter" type="boolean" />
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <repeat name="parameter">
+                <param name="boolean_parameter" value="true" />
+            </repeat>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="true" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

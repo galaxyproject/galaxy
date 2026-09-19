@@ -1,0 +1,385 @@
+{
+    "a_galaxy_workflow": "true",
+    "annotation": "",
+    "format-version": "0.1",
+    "name": "outer bug",
+    "steps": {
+        "0": {
+            "annotation": "",
+            "content_id": null,
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [
+                {
+                    "description": "",
+                    "name": "input_dataset"
+                }
+            ],
+            "label": "input_dataset",
+            "name": "Input dataset",
+            "outputs": [],
+            "position": {
+                "bottom": 576.4346580505371,
+                "height": 60.96590805053711,
+                "left": 1244.9715576171875,
+                "right": 1444.9715576171875,
+                "top": 515.46875,
+                "width": 200,
+                "x": 1244.9715576171875,
+                "y": 515.46875
+            },
+            "tool_id": null,
+            "tool_state": "{\"optional\": false}",
+            "tool_version": null,
+            "type": "data_input",
+            "uuid": "163dffc5-3724-493d-9a54-a383d75a3896",
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "e30db94f-a653-4b00-b012-f5bcc6ab020d"
+                }
+            ]
+        },
+        "1": {
+            "annotation": "",
+            "content_id": null,
+            "errors": null,
+            "id": 1,
+            "input_connections": {},
+            "inputs": [
+                {
+                    "description": "",
+                    "name": "int_parameter"
+                }
+            ],
+            "label": "int_parameter",
+            "name": "Input parameter",
+            "outputs": [],
+            "position": {
+                "bottom": 681.4346580505371,
+                "height": 60.96590805053711,
+                "left": 1257.9403076171875,
+                "right": 1457.9403076171875,
+                "top": 620.46875,
+                "width": 200,
+                "x": 1257.9403076171875,
+                "y": 620.46875
+            },
+            "tool_id": null,
+            "tool_state": "{\"parameter_type\": \"integer\", \"optional\": false}",
+            "tool_version": null,
+            "type": "parameter_input",
+            "uuid": "722e708c-177b-4851-8a11-85928ed36b75",
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "output",
+                    "uuid": "1e363c0b-ef8b-433e-9f61-4ed3a81218f2"
+                }
+            ]
+        },
+        "2": {
+            "annotation": "",
+            "id": 2,
+            "input_connections": {
+                "0:Input dataset": {
+                    "id": 0,
+                    "input_subworkflow_step_id": 0,
+                    "output_name": "output"
+                },
+                "1:Input parameter": {
+                    "id": 1,
+                    "input_subworkflow_step_id": 1,
+                    "output_name": "output"
+                }
+            },
+            "inputs": [],
+            "label": null,
+            "name": "inner bug",
+            "outputs": [],
+            "position": {
+                "bottom": 893.9346313476562,
+                "height": 301.960205078125,
+                "left": 1477.9544677734375,
+                "right": 1677.9544677734375,
+                "top": 591.9744262695312,
+                "width": 200,
+                "x": 1477.9544677734375,
+                "y": 591.9744262695312
+            },
+            "subworkflow": {
+                "a_galaxy_workflow": "true",
+                "annotation": "",
+                "format-version": "0.1",
+                "name": "inner bug",
+                "steps": {
+                    "0": {
+                        "annotation": "",
+                        "content_id": null,
+                        "errors": null,
+                        "id": 0,
+                        "input_connections": {},
+                        "inputs": [],
+                        "label": null,
+                        "name": "Input dataset",
+                        "outputs": [],
+                        "position": {
+                            "bottom": 419.41759872436523,
+                            "height": 60.96590805053711,
+                            "left": 393.9488525390625,
+                            "right": 593.9488525390625,
+                            "top": 358.4516906738281,
+                            "width": 200,
+                            "x": 393.9488525390625,
+                            "y": 358.4516906738281
+                        },
+                        "tool_id": null,
+                        "tool_state": "{\"optional\": false}",
+                        "tool_version": null,
+                        "type": "data_input",
+                        "uuid": "cfc0f8dd-e773-4860-a876-a2923b3cebc0",
+                        "workflow_outputs": [
+                            {
+                                "label": null,
+                                "output_name": "output",
+                                "uuid": "09da0e5b-37db-46f8-92dd-190d1e117882"
+                            }
+                        ]
+                    },
+                    "1": {
+                        "annotation": "",
+                        "content_id": null,
+                        "errors": null,
+                        "id": 1,
+                        "input_connections": {},
+                        "inputs": [],
+                        "label": null,
+                        "name": "Input parameter",
+                        "outputs": [],
+                        "position": {
+                            "bottom": 509.41759872436523,
+                            "height": 60.96590805053711,
+                            "left": 394.94317626953125,
+                            "right": 594.9431762695312,
+                            "top": 448.4516906738281,
+                            "width": 200,
+                            "x": 394.94317626953125,
+                            "y": 448.4516906738281
+                        },
+                        "tool_id": null,
+                        "tool_state": "{\"parameter_type\": \"integer\", \"optional\": false}",
+                        "tool_version": null,
+                        "type": "parameter_input",
+                        "uuid": "5d56b639-e98c-4546-873c-1b18d6754ca9",
+                        "workflow_outputs": [
+                            {
+                                "label": null,
+                                "output_name": "output",
+                                "uuid": "4cb798b4-d58e-4c33-b0fb-9b1a6b7f3665"
+                            }
+                        ]
+                    },
+                    "2": {
+                        "annotation": "",
+                        "content_id": "__BUILD_LIST__",
+                        "errors": null,
+                        "id": 2,
+                        "input_connections": {
+                            "datasets_0|input": {
+                                "id": 0,
+                                "output_name": "output"
+                            }
+                        },
+                        "inputs": [],
+                        "label": null,
+                        "name": "Build List",
+                        "outputs": [
+                            {
+                                "name": "output",
+                                "type": "input"
+                            }
+                        ],
+                        "position": {
+                            "bottom": 498.43748474121094,
+                            "height": 111.96022033691406,
+                            "left": 960.9232788085938,
+                            "right": 1160.9232788085938,
+                            "top": 386.4772644042969,
+                            "width": 200,
+                            "x": 960.9232788085938,
+                            "y": 386.4772644042969
+                        },
+                        "post_job_actions": {},
+                        "tool_id": "__BUILD_LIST__",
+                        "tool_state": "{\"datasets\": [{\"__index__\": 0, \"input\": {\"__class__\": \"ConnectedValue\"}}], \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+                        "tool_version": "1.0.0",
+                        "type": "tool",
+                        "uuid": "a20e88c1-dbe0-4b38-90e0-7d5e02d928c0",
+                        "workflow_outputs": [
+                            {
+                                "label": "input dataset(s) (as list)",
+                                "output_name": "output",
+                                "uuid": "71858489-97b1-49bc-8106-9e6edcb3ce31"
+                            }
+                        ]
+                    },
+                    "3": {
+                        "annotation": "",
+                        "content_id": "__FILTER_FROM_FILE__",
+                        "errors": null,
+                        "id": 3,
+                        "input_connections": {
+                            "how|filter_source": {
+                                "id": 0,
+                                "output_name": "output"
+                            },
+                            "input": {
+                                "id": 2,
+                                "output_name": "output"
+                            }
+                        },
+                        "inputs": [],
+                        "label": null,
+                        "name": "Filter List",
+                        "outputs": [
+                            {
+                                "name": "output_filtered",
+                                "type": "input"
+                            },
+                            {
+                                "name": "output_discarded",
+                                "type": "input"
+                            }
+                        ],
+                        "position": {
+                            "bottom": 917.4289703369141,
+                            "height": 211.96022033691406,
+                            "left": 830.9801025390625,
+                            "right": 1030.9801025390625,
+                            "top": 705.46875,
+                            "width": 200,
+                            "x": 830.9801025390625,
+                            "y": 705.46875
+                        },
+                        "post_job_actions": {},
+                        "tool_id": "__FILTER_FROM_FILE__",
+                        "tool_state": "{\"how\": {\"how_filter\": \"remove_if_absent\", \"__current_case__\": 0, \"filter_source\": {\"__class__\": \"ConnectedValue\"}}, \"input\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+                        "tool_version": "1.0.0",
+                        "type": "tool",
+                        "uuid": "2670fcba-32af-4268-9f00-d4d60b7150b8",
+                        "workflow_outputs": [
+                            {
+                                "label": "input dataset(s) (filtered)",
+                                "output_name": "output_filtered",
+                                "uuid": "36cb949d-f43c-4214-a8a1-3ce3099612e8"
+                            },
+                            {
+                                "label": "input dataset(s) (discarded)",
+                                "output_name": "output_discarded",
+                                "uuid": "b36f2b34-b5f8-436b-b15e-b49a43551a8a"
+                            }
+                        ]
+                    },
+                    "4": {
+                        "annotation": "",
+                        "content_id": "multi_data_param",
+                        "errors": null,
+                        "id": 4,
+                        "input_connections": {
+                            "advanced|advanced_threshold": {
+                                "id": 1,
+                                "output_name": "output"
+                            },
+                            "f1": {
+                                "id": 0,
+                                "output_name": "output"
+                            },
+                            "f2": {
+                                "id": 3,
+                                "output_name": "output_filtered"
+                            }
+                        },
+                        "inputs": [],
+                        "label": null,
+                        "name": "multi_data_param",
+                        "outputs": [
+                            {
+                                "name": "out1",
+                                "type": "txt"
+                            },
+                            {
+                                "name": "out2",
+                                "type": "txt"
+                            }
+                        ],
+                        "position": {
+                            "bottom": 738.4516754150391,
+                            "height": 201.96022033691406,
+                            "left": 1209.9857177734375,
+                            "right": 1409.9857177734375,
+                            "top": 536.491455078125,
+                            "width": 200,
+                            "x": 1209.9857177734375,
+                            "y": 536.491455078125
+                        },
+                        "post_job_actions": {},
+                        "tool_id": "multi_data_param",
+                        "tool_state": "{\"advanced\": {\"full\": \"yes\", \"__current_case__\": 0, \"advanced_threshold\": {\"__class__\": \"ConnectedValue\"}}, \"f1\": {\"__class__\": \"ConnectedValue\"}, \"f2\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+                        "tool_version": "0.1.0",
+                        "type": "tool",
+                        "uuid": "00d02c31-8413-4491-a16a-a8219bba03e4",
+                        "workflow_outputs": [
+                            {
+                                "label": null,
+                                "output_name": "out1",
+                                "uuid": "0e55f31f-535f-4620-bb54-3044e9737999"
+                            },
+                            {
+                                "label": null,
+                                "output_name": "out2",
+                                "uuid": "ed683f71-2a06-4a2e-b93e-ddaa1565d90e"
+                            }
+                        ]
+                    }
+                },
+                "tags": "",
+                "uuid": "c60614b2-2073-4647-999a-e9921492023e"
+            },
+            "tool_id": "d9a5d0c5e4341ba9",
+            "type": "subworkflow",
+            "uuid": "9bc50971-26a6-4f8e-8a95-fb44faa2456e",
+            "workflow_outputs": [
+                {
+                    "label": "input dataset(s) (as list)",
+                    "output_name": "input dataset(s) (as list)",
+                    "uuid": "dd76b375-b67a-4832-825a-31c8536a7bd6"
+                },
+                {
+                    "label": "input dataset(s) (filtered)",
+                    "output_name": "input dataset(s) (filtered)",
+                    "uuid": "d79d4ff0-430e-43c1-bf5d-db7e7bb75d52"
+                },
+                {
+                    "label": "input dataset(s) (discarded)",
+                    "output_name": "input dataset(s) (discarded)",
+                    "uuid": "26c77ac5-2b2d-42d7-8738-8497df80ce53"
+                },
+                {
+                    "label": null,
+                    "output_name": "4:out1",
+                    "uuid": "4a48245c-3561-4d18-b01d-0f23b0e8250a"
+                },
+                {
+                    "label": null,
+                    "output_name": "4:out2",
+                    "uuid": "14c75af9-d870-44eb-9c1e-39c75b97dcd5"
+                }
+            ]
+        }
+    },
+    "tags": [],
+    "uuid": "b498808d-21cf-4cba-90f2-207560080244",
+    "version": 3
+}

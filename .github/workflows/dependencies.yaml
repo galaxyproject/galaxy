@@ -1,0 +1,38 @@
+name: Update dependencies
+on:
+  schedule:
+    - cron: '0 3 * * 6'  # Run every saturday at 3 am.
+  workflow_dispatch:
+permissions: {}
+jobs:
+  update_dependencies:
+    name: Update dependencies
+    if: github.repository_owner == 'galaxyproject'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          python-version: '3.10'
+      - name: Update dependencies
+        run: make update-dependencies
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          author: galaxybot <galaxybot@users.noreply.github.com>
+          token: ${{ secrets.GALAXYBOT_PAT }}
+          commit-message: |
+            Update Python dependencies
+
+            by running `make update-dependencies`.
+          branch: dev_auto_update_dependencies
+          delete-branch: true
+          push-to-fork: galaxybot/galaxy
+          title: Update Python dependencies
+          body: by running `make update-dependencies`.
+          labels: |
+            area/dependencies
+            kind/enhancement

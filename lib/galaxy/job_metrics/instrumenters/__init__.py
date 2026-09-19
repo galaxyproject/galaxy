@@ -2,56 +2,98 @@
 
 These are responsible for collecting and formatting a coherent set of metrics.
 """
+
 import os.path
 from abc import (
     ABCMeta,
-    abstractmethod
+    abstractmethod,
+)
+from typing import (
+    Any,
+    Protocol,
 )
 
-import six
-
 from .. import formatting
+from ..safety import (
+    DEFAULT_SAFETY,
+    Safety,
+)
 
 INSTRUMENT_FILE_PREFIX = "__instrument"
+InstrumentableT = str | list[str] | None
 
 
-@six.add_metaclass(ABCMeta)
-class InstrumentPlugin(object):
+class ProvidesJobMetricsContext(Protocol):
+    """The slice of a Galaxy job that plugins may read when metrics are collected.
+
+    Declared structurally instead of importing ``galaxy.model``: this package ships to
+    Pulsar compute nodes (see ``packages/packages_for_pulsar_by_dep_dag.txt``) and so
+    depends on ``galaxy-util`` alone. The app passes something Job-shaped in; nothing
+    here needs to know it is a Job.
+    """
+
+    @property
+    def id(self) -> int: ...
+
+    @property
+    def resubmission_count(self) -> int: ...
+
+
+class InstrumentPlugin(metaclass=ABCMeta):
     """Describes how to instrument job scripts and retrieve collected metrics."""
-    formatter = formatting.JobMetricFormatter()
+
+    formatter: formatting.JobMetricFormatter | None = formatting.JobMetricFormatter()
+    default_safety = DEFAULT_SAFETY
 
     @property
     @abstractmethod
     def plugin_type(self):
-        """ Short string providing labelling this plugin """
+        """Short string providing labelling this plugin"""
 
-    def pre_execute_instrument(self, job_directory):
-        """ Optionally return one or more commands to instrument job. These
+    def pre_execute_instrument(self, job_directory: str) -> InstrumentableT:
+        """Optionally return one or more commands to instrument job. These
         commands will be executed on the compute server prior to the job
         running.
         """
         return None
 
-    def post_execute_instrument(self, job_directory):
-        """ Optionally return one or more commands to instrument job. These
+    def post_execute_instrument(self, job_directory: str) -> InstrumentableT:
+        """Optionally return one or more commands to instrument job. These
         commands will be executed on the compute server after the tool defined
         command is ran.
         """
         return None
 
     @abstractmethod
-    def job_properties(self, job_id, job_directory):
-        """ Collect properties for this plugin from specified job directory.
+    def job_properties(self, job_id, job_directory: str) -> dict[str, Any]:
+        """Collect properties for this plugin from specified job directory.
         This method will run on the Galaxy server and can assume files created
         in job_directory with pre_execute_instrument and
         post_execute_instrument are available.
         """
 
-    def _instrument_file_name(self, name):
-        """ Provide a common pattern for naming files used by instrumentation
+    def collect(self, job: ProvidesJobMetricsContext, job_directory: str) -> dict[str, Any]:
+        """Collect properties for this plugin, given the job they belong to.
+
+        The framework calls this rather than job_properties directly. Override it to read
+        the job itself; the default keeps plugins that only need the directory working
+        unchanged.
+        """
+        return self.job_properties(job.id, job_directory)
+
+    def safety(self, metric_name: str) -> Safety:
+        """Return safety level of metric."""
+        # None of the plugins override this to dispatch on metric_name but on next
+        # iteration it would make sense to allow admins to expose particular env vars
+        # or to have cgroup keys we know are about runtime or memeory to be exposed
+        # at a safer level.
+        return self.default_safety
+
+    def _instrument_file_name(self, name: str) -> str:
+        """Provide a common pattern for naming files used by instrumentation
         plugins - to ease their staging out of remote job directories.
         """
-        return "%s_%s_%s" % (INSTRUMENT_FILE_PREFIX, self.plugin_type, name)
+        return f"{INSTRUMENT_FILE_PREFIX}_{self.plugin_type}_{name}"
 
-    def _instrument_file_path(self, job_directory, name):
+    def _instrument_file_path(self, job_directory: str, name: str) -> str:
         return os.path.join(job_directory, self._instrument_file_name(name))

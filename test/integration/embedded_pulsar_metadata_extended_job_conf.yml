@@ -1,0 +1,28 @@
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+  pulsar_embed:
+    load: galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner
+    pulsar_app_config:
+      tool_dependency_dir: none
+      conda_auto_init: false
+      conda_auto_install: false
+
+execution:
+  default: pulsar_embed
+  environments:
+    local:
+      runner: local
+    pulsar_embed:
+      runner: pulsar_embed
+      remote_metadata: true
+      default_file_action: copy
+      # don't copy outputs, not needed.
+      file_actions:
+        paths:
+          - path_types: output
+            action: none
+
+tools:
+- class: local
+  environment: local

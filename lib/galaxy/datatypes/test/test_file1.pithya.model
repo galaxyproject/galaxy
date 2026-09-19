@@ -1,0 +1,13 @@
+VARS: pRB, E2F1
+
+PARAMS: y_pRB,0.001,1; y_E2F1,0.001,1
+
+CONSTS: a,0.04; kp,0.05; k2,1; k1,1
+
+VAR_POINTS: pRB: 1500, 20; E2F1: 1500, 20
+
+EQ: pRB = k1*Hillp(E2F1,0.5,1,0,1)*Hillm(pRB,0.5,1,1,0) - y_pRB*pRB
+EQ: E2F1 = kp + k2*a*a*0.0625*Hillm(E2F1,4,2,1,0)*Hillm(pRB,5,1,1,0) + k2*Hillp(E2F1,4,2,0,1)*Hillm(pRB,5,1,1,0) - y_E2F1*E2F1
+
+THRES: pRB:  0, 15
+THRES: E2F1: 0, 3, 15

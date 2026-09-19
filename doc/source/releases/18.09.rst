@@ -220,7 +220,7 @@ Enhancements
   `Pull Request 6480`_
 * Use bootstrap vue classes for workflow import form
   `Pull Request 6489`_
-* Small improvement to the tool xsd docs regarding ``discovered_datasets``
+* Small improvement to the tool xsd docs regarding ``discovered_dataset``
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 6490`_
 * Implement ``group:`` tags (toward multi-factor analysis with group tagging)

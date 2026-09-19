@@ -6,14 +6,17 @@ Convert from GFF file to interval index file.
 usage:
     python gff_to_interval_index_converter.py [input] [output]
 """
-from __future__ import division
 
 import fileinput
 import sys
 
 from bx.interval_index_file import Indexes
+from bx.intervals.io import GenomicInterval
 
-from galaxy.datatypes.util.gff_util import convert_gff_coords_to_bed, GenomicInterval, GFFReaderWrapper
+from galaxy.datatypes.util.gff_util import (
+    convert_gff_coords_to_bed,
+    GFFReaderWrapper,
+)
 
 
 def main():

@@ -14,5 +14,5 @@ execution:
     upload_dest:
       runner: local
 tools:
-  - id: upload1
+  - class: local
     destination: upload_dest

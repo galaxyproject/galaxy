@@ -1,11 +1,10 @@
+import subprocess
 import time
 
 from galaxy import model
-from galaxy.jobs.runners import (
-    JobState
-)
+from galaxy.jobs.runners import JobState
 from galaxy.jobs.runners.local import LocalJobRunner
-from galaxy.model.orm.now import now
+from galaxy.util import now
 
 
 class FailsJobRunner(LocalJobRunner):
@@ -14,7 +13,8 @@ class FailsJobRunner(LocalJobRunner):
     def queue_job(self, job_wrapper):
         if not self._prepare_job_local(job_wrapper):
             return
-
+        command_line, _ = self._command_line(job_wrapper)
+        subprocess.run([command_line])
         resource_parameters = job_wrapper.get_resource_parameters()
         failure_state = resource_parameters.get("failure_state", None)
 
@@ -24,10 +24,7 @@ class FailsJobRunner(LocalJobRunner):
             if run_for > 0:
                 time.sleep(run_for)
 
-        job_state = JobState(
-            job_wrapper,
-            job_wrapper.job_destination
-        )
+        job_state = JobState(job_wrapper, job_wrapper.job_destination)
         if failure_state is not None:
             job_state.runner_state = failure_state
         job_state.stop_job = False
@@ -60,13 +57,13 @@ class AssertionJobRunner(LocalJobRunner):
                 self._fail_job_local(job_wrapper, "Job completed too quickly")
                 return
 
-        super(AssertionJobRunner, self).queue_job(job_wrapper)
+        super().queue_job(job_wrapper)
 
 
 class FailOnlyFirstJobRunner(LocalJobRunner):
     """Job runner that knows about test cases and checks final state assumptions."""
 
-    tests_seen = []
+    tests_seen: list[str] = []
 
     def queue_job(self, job_wrapper):
         resource_parameters = job_wrapper.get_resource_parameters()
@@ -77,10 +74,10 @@ class FailOnlyFirstJobRunner(LocalJobRunner):
             return
 
         if test_name in self.tests_seen:
-            super(FailOnlyFirstJobRunner, self).queue_job(job_wrapper)
+            super().queue_job(job_wrapper)
         else:
             self.tests_seen.append(test_name)
             self._fail_job_local(job_wrapper, "Failing first attempt")
 
 
-__all__ = ('FailsJobRunner', 'AssertionJobRunner')
+__all__ = ("FailsJobRunner", "AssertionJobRunner")

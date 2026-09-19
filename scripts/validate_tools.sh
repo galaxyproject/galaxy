@@ -20,7 +20,7 @@ for p in "$@"; do
     echo "$path"
     PYTHONPATH=lib:$PYTHONPATH
     export PYTHONPATH
-    python -c "import galaxy.tool_util.loader; import xml.etree; xml.etree.ElementTree.dump(galaxy.tool_util.loader.load_tool('$path').getroot())" | xmllint --nowarning --noout --schema "$xsd_path" - 2> "$err_tmp"
+    python -c "import galaxy.tool_util.loader; import lxml.etree; lxml.etree.dump(galaxy.tool_util.loader.load_tool('$path').getroot())" | xmllint --nowarning --noout --schema "$xsd_path" - 2> "$err_tmp"
     if [ $? -eq 0 ]; then
         echo "ok $count";
     else

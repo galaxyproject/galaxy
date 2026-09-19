@@ -1,0 +1,117 @@
+import logging
+import re
+import urllib.request
+from contextlib import ExitStack
+from urllib.parse import urlparse
+
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
+)
+from galaxy.files.uris import validate_non_local
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    get_charset_from_http_headers,
+    requests,
+    stream_to_path,
+)
+from galaxy.util.config_parsers import IpAllowedListEntryT
+from galaxy.util.config_templates import TemplateExpansion
+from . import (
+    BaseFilesSource,
+    PluginKind,
+)
+
+log = logging.getLogger(__name__)
+
+# ASCII control characters, space, and DEL must be percent-encoded in a URL;
+# same character set http.client refuses in a request line.
+_DISALLOWED_URL_CHARACTERS = re.compile(r"[\x00-\x20\x7f]")
+
+
+class HTTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    # `url_regex` is not templated because it needs to be set at initialization with no RuntimeContext available.
+    url_regex: str = r"^https?://|^ftp://"
+    http_headers: dict[str, str] | TemplateExpansion = {}
+    fetch_url_allowlist: list[IpAllowedListEntryT] | TemplateExpansion = []
+
+
+class HTTPFileSourceConfiguration(BaseFileSourceConfiguration):
+    url_regex: str = r"^https?://|^ftp://"
+    http_headers: dict[str, str] = {}
+    fetch_url_allowlist: list[IpAllowedListEntryT] = []
+
+
+class HTTPFilesSource(BaseFilesSource[HTTPFileSourceTemplateConfiguration, HTTPFileSourceConfiguration]):
+    plugin_type = "http"
+    plugin_kind = PluginKind.stock
+
+    template_config_class = HTTPFileSourceTemplateConfiguration
+    resolved_config_class = HTTPFileSourceConfiguration
+
+    def __init__(self, template_config: HTTPFileSourceTemplateConfiguration):
+        defaults = dict(
+            id="_http",
+            label="HTTP File",
+            doc="Default HTTP file handler",
+            writable=False,
+        )
+        template_config = self._apply_defaults_to_template(defaults, template_config)
+        super().__init__(template_config)
+        assert self.template_config.url_regex, "HTTPFilesSource requires a url_regex to be set in the configuration"
+        self._compiled_url_regex = re.compile(self.template_config.url_regex)
+
+    @property
+    def _allowlist(self):
+        return self._file_sources_config.fetch_url_allowlist
+
+    def _realize_to(
+        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[HTTPFileSourceConfiguration]
+    ):
+        config = context.config
+        scheme = urlparse(source_path).scheme.lower()
+        if scheme in ("http", "https") and _DISALLOWED_URL_CHARACTERS.search(source_path):
+            raise ValueError(
+                f"URL contains unencoded characters (e.g. spaces): {source_path}. "
+                "The URL source should properly percent-encode the path."
+            )
+
+        with ExitStack() as stack:
+            if scheme == "ftp":
+                req = urllib.request.Request(source_path, headers=config.http_headers)
+                page = stack.enter_context(urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT))
+            else:
+                session = stack.enter_context(requests.Session())
+                page = stack.enter_context(
+                    session.get(
+                        source_path,
+                        headers=config.http_headers,
+                        stream=True,
+                        timeout=DEFAULT_SOCKET_TIMEOUT,
+                    )
+                )
+                page.raise_for_status()
+                page.raw.decode_content = True
+            # Verify url post-redirects is still allowlisted
+            final_url = page.geturl() if scheme == "ftp" else page.url
+            validate_non_local(final_url, self._allowlist or config.fetch_url_allowlist)
+            return stream_to_path(
+                page if scheme == "ftp" else page.raw,
+                native_path,
+                source_encoding=get_charset_from_http_headers(page.headers),
+            )
+
+    def _write_from(
+        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[HTTPFileSourceConfiguration]
+    ):
+        raise NotImplementedError()
+
+    def score_url_match(self, url: str):
+        if match := self._compiled_url_regex.match(url):
+            return match.span()[1]
+        else:
+            return 0
+
+
+__all__ = ("HTTPFilesSource",)

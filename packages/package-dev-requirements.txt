@@ -1,9 +1,3 @@
-# For testing
-pytest
-
-# For dev
-sphinx
-
 # For release
-wheel
-twine
+build
+twine==6.2.0

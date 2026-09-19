@@ -1,13 +1,20 @@
 <tool id="__ZIP_COLLECTION__"
-      name="Zip Collection"
+      name="Zip collections"
       version="1.0.0"
       tool_type="zip_collection">
+  <description>into a paired collection</description>
   <type class="ZipCollectionTool" module="galaxy.tools" />
+  <macros>
+    <import>model_operation_macros.xml</import>
+  </macros>
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
+  <edam_operations>
+    <edam_operation>operation_3436</edam_operation>
+  </edam_operations>
   <inputs>
-    <param type="data" name="input_forward" label="Input Dataset (Forward)" />
-    <param type="data" name="input_reverse" label="Input Dataset (Reverse)" />
+    <param type="data" name="input_forward" label="Input 1" help="Example: dataset or collection containing forward read(s)"/>
+    <param type="data" name="input_reverse" label="Input 2" help="Example: dataset or collection containing reverse read(s)"/>
   </inputs>
   <outputs>
     <collection name="output" type="paired" label="${on_string} (zipped)">
@@ -17,17 +24,49 @@
   </outputs>
   <help><![CDATA[
 
-This tool takes two datasets and creates a dataset pair from them. Mapping over two lists, this tool can be used to build a list of dataset pairs from two individual lists of datasets.
+========
+Synopsis
+========
 
-----
+Combines two datasets into a single paired collection (forward + reverse).
 
-**Example**
+===========
+Description
+===========
 
-If you have one collection containing only forward reads and one containing only reverse, this tools will "zip" them together into a simple paired collection.
-    
+This tool takes two individual datasets and packages them into a ``paired`` collection, labeling the first as **forward** and the second as **reverse**.
+
+This is the inverse of **Unzip collection**, which splits a pair back into two separate datasets.
+
+========
+Examples
+========
+
+**Zip two datasets into a pair**
+
+Inputs::
+
+ Input 1 (forward):  reads_R1.fastq
+ Input 2 (reverse):  reads_R2.fastq
+
+Output ``paired`` collection::
+
+ Paired: "reads (zipped)"
+
+   forward  →  reads_R1.fastq
+   reverse  →  reads_R2.fastq
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/zip.svg
+  :alt: Zip two datasets into a paired collection
+  :width: 500
+
+-------
+
 .. class:: infomark
 
-This tool will create new history datasets for your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
   ]]></help>
 </tool>

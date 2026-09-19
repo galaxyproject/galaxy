@@ -11,8 +11,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="fastqsolexa" value="2.fastqsolexa"/>
-            <output name="output1" format="qualsolexa" value="2.qualsolexa"/>
+            <param name="input1" ftype="fastqsolexa" value="2.fastqsolexa"/>
+            <output name="output1" ftype="qualsolexa" value="2.qualsolexa"/>
         </test>
     </tests>
     <help>

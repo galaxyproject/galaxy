@@ -1,0 +1,431 @@
+<template>
+    <div>
+        <div class="form-inline d-flex align-items-center mb-2">
+            <GButton class="mr-1" title="go to first page" @click="gotoFirstPage">
+                <FontAwesomeIcon :icon="faHome" />
+            </GButton>
+
+            <GButton
+                v-if="currentUser && currentUser.is_admin"
+                id="create-new-lib"
+                title="Create new folder"
+                class="mr-1"
+                @click="isNewLibFormVisible = !isNewLibFormVisible">
+                <FontAwesomeIcon :icon="faPlus" />
+                {{ titleLibrary }}
+            </GButton>
+
+            <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
+
+            <BFormCheckbox
+                v-if="currentUser && currentUser.is_admin"
+                v-localize
+                class="mr-1"
+                @input="toggle_include_deleted($event)">
+                include deleted
+            </BFormCheckbox>
+
+            <BFormCheckbox v-localize class="mr-1" @input="toggle_exclude_restricted($event)">
+                exclude restricted
+            </BFormCheckbox>
+        </div>
+
+        <GCollapse v-model="isNewLibFormVisible">
+            <BCard>
+                <BForm @submit.prevent="newLibrary">
+                    <BInputGroup class="mb-2 new-row">
+                        <BFormInput v-model="newLibraryForm.name" required :placeholder="titleName" />
+
+                        <BFormInput v-model="newLibraryForm.description" required :placeholder="titleDescription" />
+
+                        <BFormInput v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
+
+                        <template v-slot:append>
+                            <GButton id="save_new_library" type="submit" :title="titleSave">
+                                <FontAwesomeIcon :icon="faSave" />
+                                {{ titleSave }}
+                            </GButton>
+                        </template>
+                    </BInputGroup>
+                </BForm>
+            </BCard>
+        </GCollapse>
+
+        <GTable
+            id="libraries_list"
+            ref="libraryTable"
+            class="mb-4"
+            striped
+            hover
+            show-empty
+            :fields="fields"
+            :items="librariesList"
+            :sort-by="sortBy"
+            :sort-desc="sortDesc"
+            :per-page="perPage"
+            :current-page="currentPage"
+            :filter="filter"
+            @sort-changed="onSortChanged"
+            @filtered="onFiltered">
+            <template v-slot:cell(name)="row">
+                <textarea
+                    v-if="row.item.editMode"
+                    v-model="row.item.name"
+                    aria-label="Library name"
+                    class="form-control input_library_name"
+                    rows="3" />
+                <div v-else-if="row.item.deleted && includeDeleted" class="deleted-item">
+                    {{ row.item.name }}
+                </div>
+                <GLink v-else :to="`/libraries/folders/${row.item.root_folder_id}`">
+                    {{ row.item.name }}
+                </GLink>
+            </template>
+
+            <template v-slot:cell(description)="{ item }">
+                <LibraryEditField
+                    :ref="`description-${item.id}`"
+                    :is-expanded="item.isExpanded"
+                    :is-edit-mode="item.editMode"
+                    :text="item.description"
+                    :changed-value.sync="item[newDescriptionProperty]"
+                    @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
+            </template>
+
+            <template v-slot:cell(synopsis)="{ item }">
+                <LibraryEditField
+                    :ref="`synopsis-${item.id}`"
+                    :is-expanded="item.isExpanded"
+                    :is-edit-mode="item.editMode"
+                    :text="item.synopsis"
+                    :changed-value.sync="item[newSynopsisProperty]"
+                    @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
+            </template>
+
+            <template v-slot:cell(is_unrestricted)="row">
+                <FontAwesomeIcon v-if="row.item.public && !row.item.deleted" title="Public library" :icon="faGlobe" />
+            </template>
+
+            <template v-slot:cell(buttons)="row">
+                <GButton
+                    v-if="row.item.deleted"
+                    size="small"
+                    :title="'Undelete ' + row.item.name"
+                    @click="undelete(row.item)">
+                    <FontAwesomeIcon :icon="faUnlock" />
+                    {{ titleUndelete }}
+                </GButton>
+
+                <GButton
+                    v-if="row.item.can_user_modify && row.item.editMode"
+                    size="small"
+                    class="lib-btn save_changes_btn"
+                    :title="'Save changes to ' + row.item.name"
+                    @click="saveChanges(row.item)">
+                    <FontAwesomeIcon :icon="faSave" />
+                    {{ titleSave }}
+                </GButton>
+
+                <GButton
+                    v-if="row.item.can_user_modify && !row.item.deleted"
+                    size="small"
+                    class="lib-btn edit_library_btn save_library_btn"
+                    :title="`Edit ${row.item.name}`"
+                    @click="toggleEditMode(row.item)">
+                    <div v-if="!row.item.editMode">
+                        <FontAwesomeIcon :icon="faPencilAlt" />
+                        {{ titleEdit }}
+                    </div>
+                    <div v-else>
+                        <FontAwesomeIcon :icon="faTimes" />
+                        {{ titleCancel }}
+                    </div>
+                </GButton>
+
+                <GButton
+                    v-if="currentUser && currentUser.is_admin && !row.item.deleted"
+                    size="small"
+                    class="lib-btn permission_library_btn"
+                    :title="'Permissions of ' + row.item.name"
+                    :to="`/libraries/${row.item.id}/permissions`">
+                    <FontAwesomeIcon :icon="faUsers" />
+                    Manage
+                </GButton>
+
+                <GButton
+                    v-if="currentUser && currentUser.is_admin && row.item.editMode && !row.item.deleted"
+                    size="small"
+                    class="lib-btn delete-lib-btn"
+                    :title="`Delete ${row.item.name}`"
+                    @click="deleteLibrary(row.item)">
+                    <FontAwesomeIcon :icon="faTrash" />
+                    {{ titleDelete }}
+                </GButton>
+            </template>
+        </GTable>
+
+        <BContainer>
+            <BRow class="justify-content-md-center">
+                <BCol md="auto">
+                    <BPagination v-model="currentPage" :total-rows="totalRows" :per-page="perPage" />
+                </BCol>
+
+                <BCol cols="1.5">
+                    <table>
+                        <tr>
+                            <td class="m-0 p-0">
+                                <BFormInput
+                                    id="paginationPerPage"
+                                    v-model="perPage"
+                                    class="pagination-input-field"
+                                    autocomplete="off"
+                                    type="number"
+                                    onkeyup="
+                                        this.value |= 0;
+                                        if (this.value < 1) this.value = 1;
+                                    " />
+                            </td>
+
+                            <td class="text-muted ml-1 paginator-text">
+                                <span class="pagination-total-pages-text">
+                                    {{ titlePerPage }}, {{ totalRows }} {{ titleTotal }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </BCol>
+            </BRow>
+        </BContainer>
+    </div>
+</template>
+
+<script>
+import { faSave } from "@fortawesome/free-regular-svg-icons";
+import {
+    faGlobe,
+    faHome,
+    faPencilAlt,
+    faPlus,
+    faTimes,
+    faTrash,
+    faUnlock,
+    faUsers,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import {
+    BCard,
+    BCol,
+    BContainer,
+    BForm,
+    BFormCheckbox,
+    BFormInput,
+    BInputGroup,
+    BPagination,
+    BRow,
+} from "bootstrap-vue";
+import { mapState } from "pinia";
+
+import { DEFAULT_PER_PAGE, onError } from "@/components/Libraries/library-utils";
+import { Toast } from "@/composables/toast";
+import { getAppRoot } from "@/onload/loadConfig";
+import { useUserStore } from "@/stores/userStore";
+import _l from "@/utils/localization";
+
+import { Services } from "./services";
+import { fields } from "./table-fields";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GTable from "@/components/Common/GTable.vue";
+import LibraryEditField from "@/components/Libraries/LibraryEditField.vue";
+import SearchField from "@/components/Libraries/LibraryFolder/SearchField.vue";
+
+export default {
+    components: {
+        BCard,
+        BCol,
+        BContainer,
+        BForm,
+        BFormCheckbox,
+        BFormInput,
+        BInputGroup,
+        BPagination,
+        BRow,
+        FontAwesomeIcon,
+        GButton,
+        GCollapse,
+        GLink,
+        GTable,
+        LibraryEditField,
+        SearchField,
+    },
+    data() {
+        return {
+            // Icons
+            faGlobe,
+            faHome,
+            faPencilAlt,
+            faPlus,
+            faSave,
+            faTimes,
+            faTrash,
+            faUnlock,
+            faUsers,
+            // Data
+            newDescriptionProperty: "newDescription",
+            newSynopsisProperty: "newSynopsis",
+            isNewLibFormVisible: false,
+            currentPage: 1,
+            fields: fields,
+            perPage: DEFAULT_PER_PAGE,
+            librariesList: [],
+            totalRows: 0,
+            includeDeleted: false,
+            exclude_restricted: false,
+            filter: null,
+            newLibraryForm: {
+                name: "",
+                description: "",
+                synopsis: "",
+            },
+            titleLibrary: _l("Library"),
+            titleName: _l("Name"),
+            titleDescription: _l("Description"),
+            titleSynopsis: _l("Synopsis"),
+            titleSave: _l("Save"),
+            titleUndelete: _l("Undelete"),
+            titleEdit: _l("Edit"),
+            titleCancel: _l("Cancel"),
+            titleDelete: _l("Delete"),
+            titlePerPage: _l("per page"),
+            titleTotal: _l("total"),
+            sortDesc: false,
+            sortBy: "name",
+        };
+    },
+    computed: {
+        ...mapState(useUserStore, ["currentUser"]),
+    },
+    created() {
+        this.root = getAppRoot();
+        this.services = new Services({ root: this.root });
+        this.loadLibraries();
+    },
+    methods: {
+        refreshTable() {
+            this.$refs.libraryTable.refresh();
+        },
+        loadLibraries() {
+            const active = this.services.getLibraries(false);
+            const deleted = this.includeDeleted ? this.services.getLibraries(true) : Promise.resolve([]);
+            Promise.all([active, deleted]).then(([activeLibs, deletedLibs]) => {
+                let result = [...activeLibs, ...deletedLibs];
+                if (this.exclude_restricted) {
+                    result = result.filter((lib) => lib.public);
+                }
+                this.librariesList = result;
+                this.totalRows = result.length;
+            });
+        },
+        toggleEditMode(item) {
+            item.editMode = !item.editMode;
+            this.refreshTable();
+        },
+        toggleDescriptionExpand(item) {
+            item.isExpanded = !item.isExpanded;
+            this.refreshTable();
+        },
+        onSortChanged(sortBy, sortDesc) {
+            this.sortBy = sortBy;
+            this.sortDesc = sortDesc;
+        },
+        saveChanges(item) {
+            const description = item[this.newDescriptionProperty];
+            const synopsis = item[this.newSynopsisProperty];
+            if (description) {
+                item.description = description;
+            }
+            if (synopsis) {
+                item.synopsis = synopsis;
+            }
+            this.services.saveChanges(
+                item,
+                () => {
+                    Toast.success("Changes to library saved");
+                },
+                (error) => onError(error),
+            );
+            this.toggleEditMode(item);
+        },
+        deleteLibrary(deletedLib) {
+            this.services.deleteLibrary(
+                deletedLib,
+                () => {
+                    Toast.success("Library has been marked deleted.");
+                    deletedLib.deleted = true;
+                    this.toggleEditMode(deletedLib);
+                    if (!this.includeDeleted) {
+                        this.librariesList = this.librariesList.filter((lib) => !lib.deleted);
+                        this.totalRows = this.librariesList.length;
+                    }
+                },
+                (error) => onError(error),
+            );
+        },
+        gotoFirstPage() {
+            this.currentPage = 1;
+        },
+        onFiltered(filteredItems) {
+            this.totalRows = filteredItems.length;
+            this.currentPage = 1;
+        },
+        searchValue(value) {
+            this.filter = value;
+        },
+        toggle_include_deleted(isDeletedIncluded) {
+            this.includeDeleted = isDeletedIncluded;
+            this.loadLibraries();
+        },
+        toggle_exclude_restricted(isRestrictedExcluded) {
+            this.exclude_restricted = isRestrictedExcluded;
+            this.loadLibraries();
+        },
+        undelete(item) {
+            this.services.deleteLibrary(
+                item,
+                () => {
+                    item.deleted = false;
+                    Toast.success("Library has been undeleted.");
+                    this.refreshTable();
+                },
+                (error) => onError(error),
+                true,
+            );
+        },
+        newLibrary() {
+            this.services.createNewLibrary(
+                this.newLibraryForm.name,
+                this.newLibraryForm.description,
+                this.newLibraryForm.synopsis,
+                (newLib) => {
+                    this.librariesList.push(newLib);
+                    this.totalRows = this.librariesList.length;
+                    this.newLibraryForm.name = "";
+                    this.newLibraryForm.description = "";
+                    this.newLibraryForm.synopsis = "";
+                    this.isNewLibFormVisible = false;
+                    Toast.success("Library created.");
+                },
+                (error) => onError(error),
+            );
+        },
+    },
+};
+</script>
+<style scoped>
+.deleted-item {
+    cursor: not-allowed;
+    color: gray;
+}
+</style>

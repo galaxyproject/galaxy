@@ -1,47 +1,47 @@
-<tool id="disambiguate_cond" name="disambiguate_cond">
-    <command>
-        echo "$p1.p1v $p2.p2v $p3.p3v" > $out_file1;
-        #if $files.attach_files
-        cat "$files.p4.file" >> $out_file1;
-        #else
-        echo "no file specified" >> $out_file1;
-        #end if
-    </command>
+<tool id="disambiguate_cond" name="disambiguate_cond" version="1.0.0">
+    <command><![CDATA[
+echo "$p1.p1v $p2.p2v $p3.p3v" > '$out_file1' &&
+#if $files.attach_files
+    cat '$files.p4.file' >> '$out_file1'
+#else
+    echo 'no file specified' >> '$out_file1'
+#end if
+    ]]></command>
     <inputs>
         <conditional name="p1">
-            <param type="boolean" name="use" />
+            <param name="use" type="boolean" />
             <when value="true">
-                <param name="p1v" value="4" type="integer" />
+                <param name="p1v" type="integer" value="4" />
             </when>
             <when value="false">
-                <param name="p1v" value="7" type="integer" />
+                <param name="p1v" type="integer" value="7" />
             </when>
         </conditional>
         <conditional name="p2">
-            <param type="boolean" name="use" />
+            <param name="use" type="boolean" />
             <when value="true">
-                <param name="p2v" value="4" type="integer" />
+                <param name="p2v" type="integer" value="4" />
             </when>
             <when value="false">
-                <param name="p2v" value="7" type="integer" />
+                <param name="p2v" type="integer" value="7" />
             </when>            
         </conditional>
         <conditional name="p3">
-            <param type="boolean" name="use" />
+            <param name="use" type="boolean" />
             <when value="true">
-                <param name="p3v" value="4" type="integer" />
+                <param name="p3v" type="integer" value="4" />
             </when>
             <when value="false">
-                <param name="p3v" value="7" type="integer" />
+                <param name="p3v" type="integer" value="7" />
             </when>            
         </conditional>
         <conditional name="files">
             <param name="attach_files" type="boolean" checked="true" />
             <when value="true">
                 <conditional name="p4">
-                    <param type="boolean" name="use" />
+                    <param name="use" type="boolean" />
                     <when value="true">
-                        <param type="data" name="file" />
+                        <param name="file" type="data" />
                     </when>
                     <when value="false" />
                 </conditional>

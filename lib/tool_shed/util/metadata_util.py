@@ -1,85 +1,122 @@
 import logging
 from operator import itemgetter
+from typing import (
+    TYPE_CHECKING,
+)
 
-from sqlalchemy import and_
+from sqlalchemy import select
 
 from galaxy.tool_shed.util.hg_util import (
     INITIAL_CHANGELOG_HASH,
     reversed_lower_upper_bounded_changelog,
 )
-from galaxy.tool_shed.util.repository_util import get_repository_by_name_and_owner
-from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
 from tool_shed.util.hg_util import changeset2rev
+from tool_shed.webapp.model import (
+    Repository,
+    RepositoryMetadata,
+)
+from tool_shed.webapp.model.db import get_repository_by_name_and_owner
+
+if TYPE_CHECKING:
+    from tool_shed.structured_app import ToolShedApp
+    from tool_shed.webapp.model.mapping import ToolShedModelMapping
+
 
 log = logging.getLogger(__name__)
 
 
-def get_all_dependencies(app, metadata_entry, processed_dependency_links=[]):
+def build_invalid_tools(metadata: dict) -> list:
+    """Transform raw invalid_tools metadata into a list of dicts with tool_config and error_message."""
+    raw_invalid_tools = metadata.get("invalid_tools", [])
+    invalid_tool_errors = metadata.get("invalid_tool_errors", {})
+    invalid_tools = []
+    for item in raw_invalid_tools:
+        if isinstance(item, str):
+            invalid_tools.append(
+                {
+                    "tool_config": item,
+                    "error_message": invalid_tool_errors.get(item, ""),
+                }
+            )
+        elif isinstance(item, dict):
+            invalid_tools.append(item)
+    return invalid_tools
+
+
+def get_all_dependencies(app: "ToolShedApp", metadata_entry, processed_dependency_links=None):
+    processed_dependency_links = processed_dependency_links or []
     encoder = app.security.encode_id
-    value_mapper = {'repository_id': encoder, 'id': encoder, 'user_id': encoder}
-    metadata = metadata_entry.to_dict(value_mapper=value_mapper, view='element')
-    db = app.model.context.current
+    value_mapper = {"repository_id": encoder, "id": encoder, "user_id": encoder}
+    metadata = metadata_entry.to_dict(value_mapper=value_mapper, view="element")
     returned_dependencies = []
     required_metadata = get_dependencies_for_metadata_revision(app, metadata)
     if required_metadata is None:
         return metadata
     for dependency_metadata in required_metadata:
-        dependency_dict = dependency_metadata.to_dict(value_mapper=value_mapper, view='element')
-        dependency_link = (metadata['id'], dependency_dict['id'])
+        dependency_dict = dependency_metadata.to_dict(value_mapper=value_mapper, view="element")
+        dependency_link = (metadata["id"], dependency_dict["id"])
         if dependency_link in processed_dependency_links:
             continue
         processed_dependency_links.append(dependency_link)
-        repository = db.query(app.model.Repository).get(app.security.decode_id(dependency_dict['repository_id']))
-        dependency_dict['repository'] = repository.to_dict(value_mapper=value_mapper)
+        repository = app.model.session.get(Repository, app.security.decode_id(dependency_dict["repository_id"]))
+        assert repository
+        dependency_dict["repository"] = repository.to_dict(value_mapper=value_mapper)
         if dependency_metadata.includes_tools:
-            dependency_dict['tools'] = dependency_metadata.metadata['tools']
-        dependency_dict['repository_dependencies'] = []
-        if dependency_dict['includes_tool_dependencies']:
-            dependency_dict['tool_dependencies'] = repository.get_tool_dependencies(app, dependency_dict['changeset_revision'])
-        if dependency_dict['has_repository_dependencies']:
-            dependency_dict['repository_dependencies'] = get_all_dependencies(app, dependency_metadata, processed_dependency_links)
+            dependency_dict["tools"] = dependency_metadata.metadata["tools"]
+        dependency_dict["invalid_tools"] = build_invalid_tools(dependency_metadata.metadata)
+        dependency_dict["repository_dependencies"] = []
+        if dependency_dict["includes_tool_dependencies"]:
+            dependency_dict["tool_dependencies"] = repository.get_tool_dependencies(
+                app, dependency_dict["changeset_revision"]
+            )
+        if dependency_dict["has_repository_dependencies"]:
+            dependency_dict["repository_dependencies"] = get_all_dependencies(
+                app, dependency_metadata, processed_dependency_links
+            )
         else:
-            dependency_dict['repository_dependencies'] = []
+            dependency_dict["repository_dependencies"] = []
         returned_dependencies.append(dependency_dict)
     return returned_dependencies
 
 
 def get_current_repository_metadata_for_changeset_revision(app, repository, changeset_revision):
     encoded_repository_id = app.security.encode_id(repository.id)
-    repository_metadata = get_repository_metadata_by_changeset_revision(app,
-                                                                        encoded_repository_id,
-                                                                        changeset_revision)
+    repository_metadata = get_repository_metadata_by_changeset_revision(app, encoded_repository_id, changeset_revision)
     if repository_metadata:
         return repository_metadata
     # The installable changeset_revision may have been changed because it was "moved ahead"
     # in the repository changelog.
-    updated_changeset_revision = get_next_downloadable_changeset_revision(app, repository, after_changeset_revision=changeset_revision)
+    updated_changeset_revision = get_next_downloadable_changeset_revision(
+        app, repository, after_changeset_revision=changeset_revision
+    )
     if updated_changeset_revision and updated_changeset_revision != changeset_revision:
-        repository_metadata = get_repository_metadata_by_changeset_revision(app,
-                                                                            encoded_repository_id,
-                                                                            updated_changeset_revision)
+        repository_metadata = get_repository_metadata_by_changeset_revision(
+            app, encoded_repository_id, updated_changeset_revision
+        )
         if repository_metadata:
             return repository_metadata
     return None
 
 
-def get_dependencies_for_metadata_revision(app, metadata):
+def get_dependencies_for_metadata_revision(app: "ToolShedApp", metadata):
     dependencies = []
-    for shed, name, owner, changeset, prior, _ in metadata['repository_dependencies']:
-        required_repository = get_repository_by_name_and_owner(app, name, owner)
+    for _shed, name, owner, changeset, _prior, _ in metadata["repository_dependencies"]:
+        required_repository = get_repository_by_name_and_owner(app.model.context, name, owner)
         updated_changeset = get_next_downloadable_changeset_revision(app, required_repository, changeset)
         if updated_changeset is None:
             continue
-        metadata_entry = get_repository_metadata_by_changeset_revision(app, app.security.encode_id(required_repository.id), updated_changeset)
+        metadata_entry = get_repository_metadata_by_changeset_revision(
+            app, app.security.encode_id(required_repository.id), updated_changeset
+        )
         dependencies.append(metadata_entry)
     return dependencies
 
 
 def get_latest_changeset_revision(app, repository):
     repository_tip = repository.tip()
-    repository_metadata = get_repository_metadata_by_changeset_revision(app,
-                                                                        app.security.encode_id(repository.id),
-                                                                        repository_tip)
+    repository_metadata = get_repository_metadata_by_changeset_revision(
+        app, app.security.encode_id(repository.id), repository_tip
+    )
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
     changeset_revisions = [revision[1] for revision in get_metadata_revisions(app, repository)]
@@ -90,7 +127,9 @@ def get_latest_changeset_revision(app, repository):
 
 def get_latest_downloadable_changeset_revision(app, repository):
     repository_tip = repository.tip()
-    repository_metadata = get_repository_metadata_by_changeset_revision(app, app.security.encode_id(repository.id), repository_tip)
+    repository_metadata = get_repository_metadata_by_changeset_revision(
+        app, app.security.encode_id(repository.id), repository_tip
+    )
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
     changeset_revisions = [revision[1] for revision in get_metadata_revisions(app, repository)]
@@ -99,37 +138,36 @@ def get_latest_downloadable_changeset_revision(app, repository):
     return INITIAL_CHANGELOG_HASH
 
 
-def get_latest_repository_metadata(app, decoded_repository_id, downloadable=False):
+def get_latest_repository_metadata(app: "ToolShedApp", decoded_repository_id, downloadable: bool = False):
     """Get last metadata defined for a specified repository from the database."""
-    sa_session = app.model.context.current
-    repository = sa_session.query(app.model.Repository).get(decoded_repository_id)
+    sa_session = app.model.session
+    repository = sa_session.get(Repository, decoded_repository_id)
+    assert repository
     if downloadable:
         changeset_revision = get_latest_downloadable_changeset_revision(app, repository)
     else:
         changeset_revision = get_latest_changeset_revision(app, repository)
-    return get_repository_metadata_by_changeset_revision(app,
-                                                         app.security.encode_id(repository.id),
-                                                         changeset_revision)
+    return get_repository_metadata_by_changeset_revision(app, app.security.encode_id(repository.id), changeset_revision)
 
 
 def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, downloadable=True):
     """
     Return a list of changesets for the provided repository.
     """
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     if downloadable:
         metadata_revisions = repository.downloadable_revisions
     else:
         metadata_revisions = repository.metadata_revisions
-    repo_path = repository.repo_path(app)
     changeset_tups = []
     for repository_metadata in metadata_revisions:
         if repository_metadata.numeric_revision == -1 or repository_metadata.numeric_revision is None:
             try:
-                rev = changeset2rev(repo_path, repository_metadata.changeset_revision)
+                rev = changeset2rev(repository.hg_repo, repository_metadata.changeset_revision)
                 repository_metadata.numeric_revision = rev
                 sa_session.add(repository_metadata)
-                sa_session.flush()
+                session = sa_session()
+                session.commit()
             except Exception:
                 rev = -1
         else:
@@ -188,62 +226,33 @@ def get_previous_metadata_changeset_revision(app, repository, before_changeset_r
             previous_changeset_revision = changeset_revision
 
 
-def get_repository_dependency_tups_from_repository_metadata(app, repository_metadata, deprecated_only=False):
-    """
-    Return a list of of tuples defining repository objects required by the received repository.  The returned
-    list defines the entire repository dependency tree.  This method is called only from the Tool Shed.
-    """
-    dependency_tups = []
-    if repository_metadata is not None:
-        metadata = repository_metadata.metadata
-        if metadata:
-            repository_dependencies_dict = metadata.get('repository_dependencies', None)
-            if repository_dependencies_dict is not None:
-                repository_dependency_tups = repository_dependencies_dict.get('repository_dependencies', None)
-                if repository_dependency_tups is not None:
-                    # The value of repository_dependency_tups is a list of repository dependency tuples like this:
-                    # ['http://localhost:9009', 'package_samtools_0_1_18', 'devteam', 'ef37fc635cb9', 'False', 'False']
-                    for repository_dependency_tup in repository_dependency_tups:
-                        toolshed, name, owner, changeset_revision, pir, oicct = \
-                            parse_repository_dependency_tuple(repository_dependency_tup)
-                        repository = get_repository_by_name_and_owner(app, name, owner)
-                        if repository:
-                            if deprecated_only:
-                                if repository.deprecated:
-                                    dependency_tups.append(repository_dependency_tup)
-                            else:
-                                dependency_tups.append(repository_dependency_tup)
-                        else:
-                            log.debug("Cannot locate repository %s owned by %s for inclusion in repository dependency tups." %
-                                (name, owner))
-    return dependency_tups
-
-
-def get_repository_metadata_by_changeset_revision(app, id, changeset_revision):
+def get_repository_metadata_by_changeset_revision(
+    app: "ToolShedApp", id: str, changeset_revision: str
+) -> RepositoryMetadata | None:
     """Get metadata for a specified repository change set from the database."""
+    decoded_id = app.security.decode_id(id)
+    return repository_metadata_by_changeset_revision(app.model, decoded_id, changeset_revision)
+
+
+def repository_metadata_by_changeset_revision(
+    model_mapping: "ToolShedModelMapping", id: int, changeset_revision: str
+) -> RepositoryMetadata | None:
     # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.
     # Duplicate records were somehow created in the past.  The cause of this issue has been resolved, but we'll
     # leave this method as is for a while longer to ensure all duplicate records are removed.
-    sa_session = app.model.context.current
-    all_metadata_records = sa_session.query(app.model.RepositoryMetadata) \
-                                     .filter(and_(app.model.RepositoryMetadata.table.c.repository_id == app.security.decode_id(id),
-                                                  app.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision)) \
-                                     .all()
+
+    sa_session = model_mapping.context
+    all_metadata_records = get_metadata_by_changeset(sa_session, id, changeset_revision, RepositoryMetadata)
     if len(all_metadata_records) > 1:
         # Delete all records older than the last one updated.
         for repository_metadata in all_metadata_records[1:]:
             sa_session.delete(repository_metadata)
-            sa_session.flush()
+            session = sa_session()
+            session.commit()
         return all_metadata_records[0]
     elif all_metadata_records:
         return all_metadata_records[0]
     return None
-
-
-def get_repository_metadata_by_id(app, id):
-    """Get repository metadata from the database"""
-    sa_session = app.model.context.current
-    return sa_session.query(app.model.RepositoryMetadata).get(app.security.decode_id(id))
 
 
 def get_repository_metadata_by_repository_id_changeset_revision(app, id, changeset_revision, metadata_only=False):
@@ -256,33 +265,12 @@ def get_repository_metadata_by_repository_id_changeset_revision(app, id, changes
     return get_repository_metadata_by_changeset_revision(app, id, changeset_revision)
 
 
-def get_repository_metadata_revisions_for_review(repository, reviewed=True):
-    repository_metadata_revisions = []
-    metadata_changeset_revision_hashes = []
-    if reviewed:
-        for metadata_revision in repository.metadata_revisions:
-            metadata_changeset_revision_hashes.append(metadata_revision.changeset_revision)
-        for review in repository.reviews:
-            if review.changeset_revision in metadata_changeset_revision_hashes:
-                rmcr_hashes = [rmr.changeset_revision for rmr in repository_metadata_revisions]
-                if review.changeset_revision not in rmcr_hashes:
-                    repository_metadata_revisions.append(review.repository_metadata)
-    else:
-        for review in repository.reviews:
-            if review.changeset_revision not in metadata_changeset_revision_hashes:
-                metadata_changeset_revision_hashes.append(review.changeset_revision)
-        for metadata_revision in repository.metadata_revisions:
-            if metadata_revision.changeset_revision not in metadata_changeset_revision_hashes:
-                repository_metadata_revisions.append(metadata_revision)
-    return repository_metadata_revisions
-
-
-def get_updated_changeset_revisions(app, name, owner, changeset_revision):
+def get_updated_changeset_revisions(app: "ToolShedApp", name, owner, changeset_revision):
     """
     Return a string of comma-separated changeset revision hashes for all available updates to the received changeset
     revision for the repository defined by the received name and owner.
     """
-    repository = get_repository_by_name_and_owner(app, name, owner)
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
     # Get the upper bound changeset revision.
     upper_bound_changeset_revision = get_next_downloadable_changeset_revision(app, repository, changeset_revision)
     # Build the list of changeset revision hashes defining each available update up to, but excluding
@@ -294,36 +282,37 @@ def get_updated_changeset_revisions(app, name, owner, changeset_revision):
         if changeset != upper_bound_changeset_revision:
             changeset_hashes.append(str(repo[changeset]))
     if changeset_hashes:
-        changeset_hashes_str = ','.join(changeset_hashes)
+        changeset_hashes_str = ",".join(changeset_hashes)
         return changeset_hashes_str
-    return ''
+    return ""
 
 
 def is_downloadable(metadata_dict):
     # NOTE: although repository README files are considered Galaxy utilities, they have no
     # effect on determining if a revision is installable.  See the comments in the
     # compare_readme_files() method.
-    if 'datatypes' in metadata_dict:
+    if "datatypes" in metadata_dict:
         # We have proprietary datatypes.
         return True
-    if 'repository_dependencies' in metadata_dict:
+    if "repository_dependencies" in metadata_dict:
         # We have repository_dependencies.
         return True
-    if 'tools' in metadata_dict:
+    if "tools" in metadata_dict:
         # We have tools.
         return True
-    if 'tool_dependencies' in metadata_dict:
+    if "tool_dependencies" in metadata_dict:
         # We have tool dependencies, and perhaps only tool dependencies!
         return True
-    if 'workflows' in metadata_dict:
+    if "workflows" in metadata_dict:
         # We have exported workflows.
         return True
     return False
 
 
-def is_malicious(app, id, changeset_revision, **kwd):
-    """Check the malicious flag in repository metadata for a specified change set revision."""
-    repository_metadata = get_repository_metadata_by_changeset_revision(app, id, changeset_revision)
-    if repository_metadata:
-        return repository_metadata.malicious
-    return False
+def get_metadata_by_changeset(session, repository_id, changeset_revision, repository_metadata_model):
+    stmt = (
+        select(repository_metadata_model)
+        .where(repository_metadata_model.repository_id == repository_id)
+        .where(repository_metadata_model.changeset_revision == changeset_revision)
+    )
+    return session.scalars(stmt).all()

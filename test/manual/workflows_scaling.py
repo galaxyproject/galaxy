@@ -5,6 +5,7 @@
 $ .venv/bin/python scripts/summarize_timings.py --file /tmp/<work_dir>/handler1.log --pattern 'Workflow step'
 $ .venv/bin/python scripts/summarize_timings.py --file /tmp/<work_dir>/handler1.log --pattern 'Created step'
 """
+
 import functools
 import json
 import os
@@ -51,7 +52,7 @@ def main(argv=None):
     uuid = str(uuid4())
     workflow_struct = _workflow_struct(args, uuid)
 
-    has_input = any([s.get("type", "tool") == "input_collection" for s in workflow_struct])
+    has_input = any(s.get("type", "tool") == "input_collection" for s in workflow_struct)
     if not has_input:
         uuid = None
 
@@ -63,7 +64,7 @@ def main(argv=None):
 
     target = functools.partial(_run, args, gi, workflow_id, uuid)
     threads = []
-    for i in range(args.workflow_count):
+    for _ in range(args.workflow_count):
         t = Thread(target=target)
         t.daemon = True
         t.start()
@@ -81,7 +82,7 @@ def _run(args, gi, workflow_id, uuid):
     if uuid is not None:
         contents = []
         for i in range(args.collection_size):
-            contents.append("random dataset number #%d" % i)
+            contents.append(f"random dataset number #{i}")
         hdca = dataset_collection_populator.create_list_in_history(history_id, contents=contents).json()
         label_map = {
             uuid: {"src": "hdca", "id": hdca["id"]},
@@ -90,10 +91,10 @@ def _run(args, gi, workflow_id, uuid):
         label_map = {}
 
     workflow_request = dict(
-        history="hist_id=%s" % history_id,
+        history=f"hist_id={history_id}",
     )
     workflow_request["inputs"] = json.dumps(label_map)
-    url = "workflows/%s/usage" % (workflow_id)
+    url = f"workflows/{workflow_id}/usage"
     invoke_response = dataset_populator._post(url, data=workflow_request).json()
     invocation_id = invoke_response["id"]
     workflow_populator = GiWorkflowPopulator(gi)
@@ -124,38 +125,34 @@ def _workflow_struct(args, input_uuid):
 def _workflow_struct_simple(args, input_uuid):
     workflow_struct = [
         {"tool_id": "create_input_collection", "state": {"collection_size": args.collection_size}},
-        {"tool_id": "cat", "state": {"input1": _link(0, "output")}}
+        {"tool_id": "cat", "state": {"input1": _link(0, "output")}},
     ]
 
     workflow_depth = args.workflow_depth
     for i in range(workflow_depth):
         link = str(i + 1) + "#out_file1"
-        workflow_struct.append(
-            {"tool_id": "cat", "state": {"input1": _link(link)}}
-        )
+        workflow_struct.append({"tool_id": "cat", "state": {"input1": _link(link)}})
     return workflow_struct
 
 
 def _workflow_struct_two_outputs(args, input_uuid):
     workflow_struct = [
         {"type": "input_collection", "uuid": input_uuid},
-        {"tool_id": "cat", "state": {"input1": _link(0), "input2": _link(0)}}
+        {"tool_id": "cat", "state": {"input1": _link(0), "input2": _link(0)}},
     ]
 
     workflow_depth = args.workflow_depth
     for i in range(workflow_depth):
         link1 = str(i + 1) + "#out_file1"
         link2 = str(i + 1) + "#out_file2"
-        workflow_struct.append(
-            {"tool_id": "cat", "state": {"input1": _link(link1), "input2": _link(link2)}}
-        )
+        workflow_struct.append({"tool_id": "cat", "state": {"input1": _link(link1), "input2": _link(link2)}})
     return workflow_struct
 
 
 def _workflow_struct_wave(args, input_uuid):
     workflow_struct = [
         {"tool_id": "create_input_collection", "state": {"collection_size": args.collection_size}},
-        {"tool_id": "cat_list", "state": {"input1": _link(0, "output")}}
+        {"tool_id": "cat_list", "state": {"input1": _link(0, "output")}},
     ]
 
     workflow_depth = args.workflow_depth
@@ -176,9 +173,9 @@ def _link(link, output_name=None):
 
 def _gi(args):
     gi = galaxy.GalaxyInstance(args.host, key=args.api_key)
-    name = "wftest-user-%d" % random.randint(0, 1000000)
+    name = f"wftest-user-{random.randint(0, 1000000)}"
 
-    user = gi.users.create_local_user(name, "%s@galaxytesting.dev" % name, "pass123")
+    user = gi.users.create_local_user(name, f"{name}@galaxytesting.dev", "pass123")
     user_id = user["id"]
     api_key = gi.users.create_user_apikey(user_id)
     user_gi = galaxy.GalaxyInstance(args.host, api_key)

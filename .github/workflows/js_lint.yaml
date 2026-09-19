@@ -1,0 +1,51 @@
+name: Client linting
+on:
+  push:
+    paths:
+      - 'client/**'
+      - '.github/workflows/js_lint.yaml'
+  pull_request:
+    paths:
+      - 'client/**'
+      - '.github/workflows/js_lint.yaml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions: {}
+jobs:
+  client-unit-test:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Read Node.js version
+        id: node-version
+        run: echo "version=$(cat 'client/.node_version')" >> $GITHUB_OUTPUT
+      - name: Setup node
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: client/package.json
+      - run: pnpm install --frozen-lockfile
+        working-directory: client
+      - name: Run ESLint
+        run: pnpm run eslint
+        working-directory: client
+      - name: Run prettier checks
+        run: pnpm run format-check
+        working-directory: client
+      - name: Run vue-tsc
+        working-directory: client
+        run: pnpm type-check
+      - name: Run vue-tsc (galaxy-ui package)
+        working-directory: client
+        run: pnpm --filter @galaxyproject/galaxy-ui type-check

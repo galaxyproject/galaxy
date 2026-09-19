@@ -2,9 +2,16 @@
 
 ...using common defaults and configuration mechanisms.
 """
-import os
 
-from six.moves import shlex_quote
+import os
+import shlex
+import sys
+from typing import (
+    TYPE_CHECKING,
+)
+
+if TYPE_CHECKING:
+    from .container_volumes import DockerVolume
 
 from galaxy.util.commands import argv_to_str
 
@@ -18,117 +25,99 @@ DEFAULT_NET = None
 DEFAULT_MEMORY = None
 DEFAULT_VOLUMES_FROM = None
 DEFAULT_AUTO_REMOVE = True
-DEFAULT_SET_USER = "$UID"
+DEFAULT_SET_USER = None if sys.platform == "darwin" else "$UID"
 DEFAULT_RUN_EXTRA_ARGUMENTS = None
 
 
-def kill_command(
-    container,
-    signal=None,
-    **kwds
-):
+def kill_command(container: str, signal: str | None = None, **kwds) -> list[str]:
     args = (["-s", signal] if signal else []) + [container]
     return command_list("kill", args, **kwds)
 
 
-def logs_command(
-    container,
-    **kwds
-):
+def logs_command(container: str, **kwds) -> list[str]:
     return command_list("logs", [container], **kwds)
 
 
-def build_command(
-    image,
-    docker_build_path,
-    **kwds
-):
+def build_command(image: str, docker_build_path: str, **kwds) -> list[str]:
     if os.path.isfile(docker_build_path):
         docker_build_path = os.path.dirname(os.path.abspath(docker_build_path))
     return command_list("build", ["-t", image, docker_build_path], **kwds)
 
 
-def build_save_image_command(
-    image,
-    destination,
-    **kwds
-):
+def build_save_image_command(image: str, destination: str, **kwds) -> list[str]:
     return command_list("save", ["-o", destination, image], **kwds)
 
 
-def build_pull_command(
-    tag,
-    **kwds
-):
+def build_pull_command(tag: str, **kwds) -> list[str]:
     return command_list("pull", [tag], **kwds)
 
 
-def build_docker_cache_command(
-    image,
-    **kwds
-):
+def build_docker_cache_command(image: str, **kwds) -> str:
+    assert kwds.get("to_str", True)
     inspect_image_command = command_shell("inspect", [image], **kwds)
     pull_image_command = command_shell("pull", [image], **kwds)
-    cache_command = "%s > /dev/null 2>&1\n[ $? -ne 0 ] && %s > /dev/null 2>&1\n" % (inspect_image_command, pull_image_command)
+    cache_command = f"{inspect_image_command} > /dev/null 2>&1\n[ $? -ne 0 ] && {pull_image_command} > /dev/null 2>&1\n"
     return cache_command
 
 
-def build_docker_images_command(truncate=True, **kwds):
-    args = ["--no-trunc"] if not truncate else[]
+def build_docker_images_command(truncate=True, format: str | None = None, **kwds) -> str | list[str]:
+    args = []
+    if not truncate:
+        args.append("--no-trunc")
+    if format:
+        args.extend(["--format", format])
     return command_shell("images", args, **kwds)
 
 
-def build_docker_load_command(**kwds):
+def build_docker_load_command(**kwds) -> str | list[str]:
     return command_shell("load", [])
 
 
 def build_docker_simple_command(
-    command,
-    docker_cmd=DEFAULT_DOCKER_COMMAND,
-    sudo=DEFAULT_SUDO,
-    sudo_cmd=DEFAULT_SUDO_COMMAND,
-    container_name=None,
-    **kwd
-):
+    command: str,
+    docker_cmd: str = DEFAULT_DOCKER_COMMAND,
+    sudo: bool = DEFAULT_SUDO,
+    sudo_cmd: str = DEFAULT_SUDO_COMMAND,
+    container_name: str | None = None,
+    **kwd,
+) -> str:
     command_parts = _docker_prefix(
         docker_cmd=docker_cmd,
         sudo=sudo,
         sudo_cmd=sudo_cmd,
     )
     command_parts.append(command)
-    command_parts.append(container_name or '{CONTAINER_NAME}')
+    command_parts.append(container_name or "{CONTAINER_NAME}")
     return " ".join(command_parts)
 
 
 def build_docker_run_command(
-    container_command,
-    image,
-    interactive=False,
-    terminal=False,
-    tag=None,
-    volumes=[],
-    volumes_from=DEFAULT_VOLUMES_FROM,
-    memory=DEFAULT_MEMORY,
-    env_directives=[],
-    working_directory=DEFAULT_WORKING_DIRECTORY,
-    name=None,
-    net=DEFAULT_NET,
-    run_extra_arguments=DEFAULT_RUN_EXTRA_ARGUMENTS,
-    docker_cmd=DEFAULT_DOCKER_COMMAND,
-    sudo=DEFAULT_SUDO,
-    sudo_cmd=DEFAULT_SUDO_COMMAND,
-    auto_rm=DEFAULT_AUTO_REMOVE,
-    set_user=DEFAULT_SET_USER,
-    host=DEFAULT_HOST,
-    guest_ports=False,
-    container_name=None
-):
-    command_parts = _docker_prefix(
-        docker_cmd=docker_cmd,
-        sudo=sudo,
-        sudo_cmd=sudo_cmd,
-        host=host
-    )
+    container_command: str,
+    image: str,
+    interactive: bool = False,
+    terminal: bool = False,
+    tag: str | None = None,
+    volumes: list["DockerVolume"] | None = None,
+    volumes_from: str | None = DEFAULT_VOLUMES_FROM,
+    memory: str | None = DEFAULT_MEMORY,
+    env_directives: list[str] | None = None,
+    working_directory: str | None = DEFAULT_WORKING_DIRECTORY,
+    name: str | None = None,
+    net: str | None = DEFAULT_NET,
+    run_extra_arguments: str | None = DEFAULT_RUN_EXTRA_ARGUMENTS,
+    docker_cmd: str = DEFAULT_DOCKER_COMMAND,
+    sudo: bool = DEFAULT_SUDO,
+    sudo_cmd: str = DEFAULT_SUDO_COMMAND,
+    auto_rm: bool = DEFAULT_AUTO_REMOVE,
+    set_user: str | None = DEFAULT_SET_USER,
+    host: str | None = DEFAULT_HOST,
+    guest_ports: bool | str | list[str] = False,
+    host_port_cmd: str | None = None,
+    container_name: str | None = None,
+) -> str:
+    env_directives = env_directives or []
+    volumes = volumes or []
+    command_parts = _docker_prefix(docker_cmd=docker_cmd, sudo=sudo, sudo_cmd=sudo_cmd, host=host)
     command_parts.append("run")
     if interactive:
         command_parts.append("-i")
@@ -142,24 +131,29 @@ def build_docker_run_command(
         # When is True, expose all ports
         command_parts.append("-P")
     elif guest_ports:
+        if host_port_cmd:
+            host_port_cmd = f"$({host_port_cmd}):"
+        else:
+            host_port_cmd = ""
         if not isinstance(guest_ports, list):
             guest_ports = [guest_ports]
         for guest_port in guest_ports:
-            command_parts.extend(["-p", guest_port])
+            command_parts.extend(["-p", f"{host_port_cmd}{guest_port}"])
     if container_name:
         command_parts.extend(["--name", container_name])
     for volume in volumes:
         command_parts.extend(["-v", str(volume)])
     if volumes_from:
-        command_parts.extend(["--volumes-from", shlex_quote(str(volumes_from))])
+        command_parts.extend(["--volumes-from", shlex.quote(str(volumes_from))])
     if memory:
-        command_parts.extend(["-m", shlex_quote(memory)])
+        command_parts.extend(["-m", shlex.quote(memory)])
+    command_parts.extend(["--cpus", "${GALAXY_SLOTS:-1}"])
     if name:
-        command_parts.extend(["--name", shlex_quote(name)])
+        command_parts.extend(["--name", shlex.quote(name)])
     if working_directory:
-        command_parts.extend(["-w", shlex_quote(working_directory)])
+        command_parts.extend(["-w", shlex.quote(working_directory)])
     if net:
-        command_parts.extend(["--net", shlex_quote(net)])
+        command_parts.extend(["--net", shlex.quote(net)])
     if auto_rm:
         command_parts.append("--rm")
     if run_extra_arguments:
@@ -172,26 +166,28 @@ def build_docker_run_command(
             euid = os.geteuid()
             egid = os.getgid()
 
-            user = "%d:%d" % (euid, egid)
+            user = f"{euid}:{egid}"
         command_parts.extend(["--user", user])
     full_image = image
     if tag:
-        full_image = "%s:%s" % (full_image, tag)
-    command_parts.append(shlex_quote(full_image))
+        full_image = f"{full_image}:{tag}"
+    command_parts.append(shlex.quote(full_image))
     command_parts.append(container_command)
     return " ".join(command_parts)
 
 
-def command_list(command, command_args=[], **kwds):
+def command_list(command: str, command_args: list[str] | None = None, **kwds) -> list[str]:
     """Return Docker command as an argv list."""
+    command_args = command_args or []
     command_parts = _docker_prefix(**kwds)
     command_parts.append(command)
     command_parts.extend(command_args)
     return command_parts
 
 
-def command_shell(command, command_args=[], **kwds):
+def command_shell(command: str, command_args: list[str] | None = None, **kwds) -> str | list[str]:
     """Return Docker command as a string for a shell or command-list."""
+    command_args = command_args or []
     cmd = command_list(command, command_args, **kwds)
     to_str = kwds.get("to_str", True)
     if to_str:
@@ -201,12 +197,12 @@ def command_shell(command, command_args=[], **kwds):
 
 
 def _docker_prefix(
-    docker_cmd=DEFAULT_DOCKER_COMMAND,
-    sudo=DEFAULT_SUDO,
-    sudo_cmd=DEFAULT_SUDO_COMMAND,
-    host=DEFAULT_HOST,
-    **kwds
-):
+    docker_cmd: str = DEFAULT_DOCKER_COMMAND,
+    sudo: bool = DEFAULT_SUDO,
+    sudo_cmd: str = DEFAULT_SUDO_COMMAND,
+    host: str | None = DEFAULT_HOST,
+    **kwds,
+) -> list[str]:
     """Prefix to issue a docker command."""
     command_parts = []
     if sudo:
@@ -223,15 +219,25 @@ def parse_port_text(port_text):
     >>> slurm_ports = parse_port_text("8888/tcp -> 0.0.0.0:32769")
     >>> slurm_ports[8888]['host']
     '0.0.0.0'
+    >>> ports = parse_port_text("5432/tcp -> :::5432")
+    >>> len(ports)
+    0
+    >>> ports_new = parse_port_text("5432/tcp -> [::]:5432")
+    >>> len(ports_new)
+    0
     """
     ports = None
     if port_text is not None:
         ports = {}
-        for line in port_text.strip().split('\n'):
+        for line in port_text.strip().split("\n"):
             if " -> " not in line:
-                raise Exception("Cannot parse host and port from line [%s]" % line)
+                raise Exception(f"Cannot parse host and port from line [{line}]")
             tool, host = line.split(" -> ", 1)
-            hostname, port = host.split(':')
+            hostname, port = host.rsplit(":", 1)
+            if hostname in ["::", "[::]"]:
+                # Skip unspecified IPv6 address, which is also specified as 0:0:0:0 in another line.
+                # This is brittle of course, but so is parsing the container ports like this.
+                continue
             port = int(port)
             tool_p, tool_prot = tool.split("/")
             tool_p = int(tool_p)

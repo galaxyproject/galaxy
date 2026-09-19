@@ -1,0 +1,166 @@
+<template>
+    <div v-if="hasContent" class="tool-footer">
+        <div v-if="hasCitations" class="mt-2 mb-4">
+            <Heading h2 separator bold size="sm">
+                <span v-localize>References</span>
+                <GButton
+                    v-g-tooltip.hover
+                    title="Copy all references as BibTeX"
+                    transparent
+                    size="small"
+                    icon-only
+                    @click="copyBibtex">
+                    <FontAwesomeIcon :icon="faCopy" />
+                </GButton>
+            </Heading>
+            <CitationItem
+                v-for="(citation, index) in citations"
+                :key="index"
+                class="formatted-reference"
+                :citation="citation"
+                prefix="-" />
+        </div>
+        <div v-if="hasRequirements" class="mt-2 mb-4">
+            <Heading v-localize h2 separator bold size="sm">Requirements</Heading>
+            <div v-for="(requirement, index) in requirements" :key="index">
+                - {{ requirement.name }}
+                <span v-if="requirement.version"> (Version {{ requirement.version }}) </span>
+            </div>
+        </div>
+        <div v-if="hasLicense" class="mt-2 mb-4">
+            <Heading v-localize h2 separator bold size="sm">License</Heading>
+            <License :license-id="license" />
+        </div>
+        <div v-if="hasReferences" class="mt-2 mb-4">
+            <Heading v-localize h2 separator bold size="sm">External links</Heading>
+            <div v-for="(xref, index) in xrefs" :key="index">
+                -
+                <template v-if="xref.type == 'bio.tools'">
+                    bio.tools: {{ xref.value }} (<a :href="`https://bio.tools/${xref.value}`" target="_blank"
+                        >bio.tools
+                        <FontAwesomeIcon v-g-tooltip.hover title="Visit bio.tools page" :icon="faExternalLinkAlt" /> </a
+                    >) (<a :href="`https://openebench.bsc.es/tool/${xref.value}`" target="_blank"
+                        >OpenEBench
+                        <FontAwesomeIcon
+                            v-g-tooltip.hover
+                            title="Visit OpenEBench page"
+                            :icon="faExternalLinkAlt" /> </a
+                    >)
+                </template>
+                <template v-else-if="xref.type == 'bioconductor'">
+                    Bioconductor Package:
+                    <a :href="`https://bioconductor.org/packages/${xref.value}/`" target="_blank"
+                        >{{ xref.value }} (doi:10.18129/B9.bioc.{{ xref.value }})</a
+                    >
+                </template>
+                <template v-else> {{ xref.type }}: {{ xref.value }} </template>
+            </div>
+        </div>
+        <div v-if="hasCreators" class="mt-2 mb-4">
+            <Heading v-localize h2 separator bold size="sm">Creators</Heading>
+            <Creators :creators="creators" />
+        </div>
+    </div>
+</template>
+
+<script>
+import { faCopy, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+import { getCitations } from "@/components/Citation/services";
+import { copy } from "@/utils/clipboard";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import CitationItem from "@/components/Citation/CitationItem.vue";
+import Heading from "@/components/Common/Heading.vue";
+import License from "@/components/License/License.vue";
+import Creators from "@/components/SchemaOrg/Creators.vue";
+
+export default {
+    components: {
+        CitationItem,
+        Heading,
+        License,
+        Creators,
+        FontAwesomeIcon,
+        GButton,
+    },
+    props: {
+        id: {
+            type: String,
+        },
+        hasCitations: {
+            type: Boolean,
+            default: false,
+        },
+        xrefs: {
+            type: Array,
+        },
+        license: {
+            type: String,
+        },
+        creators: {
+            type: Array,
+        },
+        requirements: {
+            type: Array,
+        },
+    },
+    data() {
+        return {
+            citations: [],
+            faCopy,
+            faExternalLinkAlt,
+        };
+    },
+    computed: {
+        hasRequirements() {
+            return this.requirements && this.requirements.length > 0;
+        },
+        hasReferences() {
+            return this.xrefs && this.xrefs.length > 0;
+        },
+        hasCreators() {
+            return this.creators && this.creators.length > 0;
+        },
+        hasLicense() {
+            return !!this.license;
+        },
+        hasContent() {
+            return (
+                this.hasRequirements || this.hasReferences || this.hasCreators || this.hasCitations || this.hasLicense
+            );
+        },
+    },
+    watch: {
+        id() {
+            this.loadCitations();
+        },
+    },
+    created() {
+        this.loadCitations();
+    },
+    methods: {
+        loadCitations() {
+            if (this.hasCitations) {
+                getCitations("tools", this.id)
+                    .then((result) => {
+                        this.citations = result.citations;
+                    })
+                    .catch((e) => {
+                        console.error(e);
+                    });
+            }
+        },
+        copyBibtex() {
+            var text = "";
+            this.citations.forEach((citation) => {
+                const cite = citation.cite;
+                const bibtex = cite.format("bibtex", {});
+                text += bibtex;
+            });
+            copy(text, "References copied to your clipboard as BibTeX");
+        },
+    },
+};
+</script>

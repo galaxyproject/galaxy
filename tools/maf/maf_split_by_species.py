@@ -2,6 +2,7 @@
 """
 Read a maf and split blocks by unique species combinations
 """
+
 from __future__ import print_function
 
 import sys
@@ -28,7 +29,7 @@ def __main__():
 
     start_count = 0
     end_count = 0
-    for start_count, start_block in enumerate(maf_reader):
+    for start_count, start_block in enumerate(maf_reader):  # noqa: B007
         for block in maf_utilities.iter_blocks_split_by_species(start_block):
             if collapse_columns:
                 block.remove_all_gap_columns()

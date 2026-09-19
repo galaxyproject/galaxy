@@ -1,0 +1,715 @@
+import logging
+import time
+from typing import (
+    TYPE_CHECKING,
+)
+from unittest.mock import MagicMock
+from uuid import (
+    UUID,
+    uuid4,
+)
+
+import pytest
+import routes
+
+from galaxy import model
+from galaxy.app import UniverseApplication
+from galaxy.app_unittest_utils.toolbox_support import BaseToolBoxTestCase
+from galaxy.managers.tools import DynamicToolManager
+from galaxy.tool_util.ontologies import ontology_data
+from galaxy.tool_util.unittest_utils import mock_trans
+from galaxy.tool_util.unittest_utils.sample_data import (
+    SIMPLE_MACRO,
+    SIMPLE_TOOL_WITH_MACRO,
+)
+
+if TYPE_CHECKING:
+    from galaxy.tools import Tool
+
+log = logging.getLogger(__name__)
+
+
+class TestToolBox(BaseToolBoxTestCase):
+    def test_load_file(self):
+        self._init_tool()
+        self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")
+
+        toolbox = self.toolbox
+        assert toolbox.get_tool("test_tool") is not None
+        assert toolbox.get_tool("not_a_test_tool") is None
+
+    def test_record_macros(self):
+        self._init_tool()
+        self._init_tool(
+            filename="tool_with_macro.xml",
+            tool_contents=SIMPLE_TOOL_WITH_MACRO,
+            extra_file_contents=SIMPLE_MACRO.substitute(tool_version="2.0"),
+            extra_file_path="external.xml",
+        )
+        self._add_config("""<toolbox><tool file="tool_with_macro.xml"/><tool file="tool.xml" /></toolbox>""")
+        toolbox = self.toolbox
+        tool = toolbox.get_tool("test_tool")
+        assert tool is not None
+        assert len(tool._macro_paths) == 0
+        tool = toolbox.get_tool("tool_with_macro")
+        assert tool is not None
+        assert len(tool._macro_paths) == 1
+
+    def test_wait_for_toolbox_reload_times_out_without_reload(self, caplog, monkeypatch):
+        self._init_tool()
+        self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")
+        toolbox = self.toolbox
+
+        monkeypatch.setattr("galaxy.app.INSTALLATION_RELOAD_TIMEOUT", 0.01)
+        with caplog.at_level(logging.WARNING, logger="galaxy.app"):
+            UniverseApplication.wait_for_toolbox_reload(self.app, toolbox)
+
+        assert "Waiting for toolbox reload timed out" in caplog.text
+
+    @pytest.mark.xfail(raises=AssertionError)
+    def test_tool_reload_when_macro_is_altered(self):
+        self._init_tool(
+            filename="tool_with_macro.xml",
+            tool_contents=SIMPLE_TOOL_WITH_MACRO,
+            extra_file_contents=SIMPLE_MACRO.substitute(tool_version="2.0"),
+            extra_file_path="external.xml",
+        )
+        self._add_config("""<toolbox><tool file="tool_with_macro.xml"/></toolbox>""")
+        toolbox = self.toolbox
+        tool = toolbox.get_tool("tool_with_macro")
+        assert tool is not None
+        assert len(tool._macro_paths) == 1
+        macro_path = tool._macro_paths[0]
+        with open(macro_path, "w") as macro_out:
+            macro_out.write(SIMPLE_MACRO.substitute(tool_version="3.0"))
+
+        def check_tool_macro():
+            tool = self.toolbox.get_tool("tool_with_macro")
+            assert tool.version == "3.0"
+
+        self._try_until_no_errors(check_tool_macro)
+
+    @pytest.mark.xfail(raises=AssertionError)
+    def test_tool_reload_for_broken_tool(self):
+        self._init_tool(filename="simple_tool.xml", version="1.0")
+        self._add_config("""<toolbox><tool file="simple_tool.xml"/></toolbox>""")
+        toolbox = self.toolbox
+        tool = toolbox.get_tool("test_tool")
+        assert tool is not None
+        assert tool.version == "1.0"
+        assert tool.tool_errors is None
+        # Tool is loaded, now let's break it
+        tool_path = tool.config_file
+        with open(tool.config_file, "w") as out:
+            out.write("certainly not a valid tool")
+
+        def check_tool_errors():
+            tool = self.toolbox.get_tool("test_tool")
+            assert tool is not None
+            assert tool.version == "1.0"
+            assert tool.tool_errors == "Current on-disk tool is not valid"
+
+        self._try_until_no_errors(check_tool_errors)
+
+        # Tool is still loaded, lets restore it with a new version
+        self._init_tool(filename="simple_tool.xml", version="2.0")
+
+        def check_no_tool_errors():
+            tool = self.toolbox.get_tool("test_tool")
+            assert tool is not None
+            assert tool.version == "2.0"
+            assert tool.tool_errors is None
+            assert tool_path == tool.config_file, "config file"
+
+        self._try_until_no_errors(check_no_tool_errors)
+
+    def _try_until_no_errors(self, f):
+        e = None
+        for _ in range(40):
+            try:
+                f()
+                return
+            except AssertionError as error:
+                e = error
+                time.sleep(0.25)
+
+        if e:
+            raise e
+
+    def test_enforce_tool_profile(self):
+        self._init_tool(filename="old_tool.xml", version="1.0", profile="17.01", tool_id="test_old_tool_profile")
+        with self.assertRaisesRegex(Exception, r"The tool \[test_new_tool_profile\] targets version 37\.01 of Galaxy"):
+            # This will write the file but fail to load the tool
+            self._init_tool(filename="new_tool.xml", version="2.0", profile="37.01", tool_id="test_new_tool_profile")
+        self._add_config("""<toolbox><tool file="old_tool.xml"/><tool file="new_tool.xml"/></toolbox>""")
+        toolbox = self.toolbox
+        assert toolbox.get_tool("test_old_tool_profile") is not None
+        assert toolbox.get_tool("test_new_tool_profile") is None
+
+    def test_to_dict_in_panel(self):
+        for json_conf in [True, False]:
+            self._init_tool_in_section(json=json_conf)
+            mapper = routes.Mapper()
+            mapper.connect("tool_runner", "/test/tool_runner")
+            as_dict = self.toolbox.to_dict(mock_trans())
+            test_section = self._find_section(as_dict, "t")
+            assert len(test_section["elems"]) == 1
+            assert test_section["elems"][0]["id"] == "test_tool"
+
+    def test_panel_entry_matches_to_dict(self):
+        self._init_tool_in_section()
+        mapper = routes.Mapper()
+        mapper.connect("tool_runner", "/test/tool_runner")
+        tool = self.toolbox.get_tool("test_tool")
+        for is_admin in (False, True):
+            trans = mock_trans(is_admin=is_admin)
+            assert tool.to_panel_entry(trans) == tool.to_dict(trans)
+            assert ("config_file" in tool.to_panel_entry(trans)) is is_admin
+
+    def test_to_dict_out_of_panel(self):
+        for json_conf in [True, False]:
+            self._init_tool_in_section(json=json_conf)
+            mapper = routes.Mapper()
+            mapper.connect("tool_runner", "/test/tool_runner")
+            as_dict = self.toolbox.to_dict(mock_trans(), in_panel=False)
+            assert as_dict[0]["id"] == "test_tool"
+
+    def test_to_dict_omits_tool_tags(self):
+        self._init_tool_in_section()
+        mapper = routes.Mapper()
+        mapper.connect("tool_runner", "/test/tool_runner")
+
+        tool = self.toolbox.get_tool("test_tool")
+        tool.tool_tags = ["curated_tag"]
+
+        # The bulk /api/tools payload never carries `tool_tags`; clients pull
+        # them from /api/tags/tool_tags (served by ToolsService).
+        as_dict = self.toolbox.to_dict(mock_trans(), in_panel=False)
+        assert as_dict[0]["id"] == "test_tool"
+        assert "tool_tags" not in as_dict[0]
+
+    def test_curated_id_caches_invalidate_on_tool_change(self):
+        self._init_tool_in_section()
+        mapper = routes.Mapper()
+        mapper.connect("tool_runner", "/test/tool_runner")
+
+        tool = self.toolbox.get_tool("test_tool")
+        # First access populates the cached id sets.
+        assert "curated_tag" not in self.toolbox.curated_tool_tags
+
+        tool.tool_tags = ["curated_tag"]
+        tool.edam_operations = ["operation_0224"]
+        tool.edam_topics = ["topic_3173"]
+        # Re-registering the tool must drop the stale id-set caches; otherwise the
+        # favorite-validation API rejects newly-introduced curated tags / EDAM ids.
+        self.toolbox.register_tool(tool)
+
+        assert "curated_tag" in self.toolbox.curated_tool_tags
+        assert "operation_0224" in self.toolbox.tool_edam_operations
+        assert "topic_3173" in self.toolbox.tool_edam_topics
+
+    def test_to_dict_omits_removed_tool(self):
+        self._init_tool_in_section()
+        mapper = routes.Mapper()
+        mapper.connect("tool_runner", "/test/tool_runner")
+
+        # Populate the to_dict payload (and its cache).
+        before = self.toolbox.to_dict(mock_trans(), in_panel=False)
+        assert any(entry["id"] == "test_tool" for entry in before)
+
+        # Removing the tool must reflect in the next payload — proving the
+        # cache is invalidated through observable behavior, not by poking
+        # `_tool_to_dict_cache` directly.
+        self.toolbox.remove_tool_by_id("test_tool")
+        after = self.toolbox.to_dict(mock_trans(), in_panel=False)
+        assert not any(entry["id"] == "test_tool" for entry in after)
+
+    def test_my_tools_panel_view_is_registered(self):
+        self._init_tool_in_section()
+        mapper = routes.Mapper()
+        mapper.connect("tool_runner", "/test/tool_runner")
+
+        panel_views = self.toolbox.panel_view_dicts()
+        assert "my_panel" in panel_views
+        assert panel_views["my_panel"]["name"] == "My Tools"
+        assert panel_views["my_panel"]["view_type"] == "favorites"
+
+        my_tools_panel = self.toolbox.to_panel_view(mock_trans(), view="my_panel")
+        assert list(my_tools_panel.keys()) == ["favorites"]
+        favorites_section = my_tools_panel["favorites"]
+        assert favorites_section["model_class"] == "ToolSection"
+        assert favorites_section["name"] == "Favorites"
+        assert favorites_section["tools"] == []
+
+    def test_panel_view_referencing_tool_by_old_id_loads_while_toolbox_is_built(self):
+        # Panel views are rendered from within ToolBox.__init__, before any
+        # toolbox is registered on the app.
+        self._init_tool()
+        self._setup_two_versions_in_config()
+        self._setup_two_versions()
+        self.app.config.panel_views = [
+            {
+                "id": "old_id_view",
+                "name": "Old Id View",
+                "type": "generic",
+                "items": [{"type": "tool", "id": "test_tool"}],
+            }
+        ]
+
+        assert "old_id_view" in self.toolbox.panel_view_dicts()
+
+    def test_lineage_for_tool_registered_outside_of_panel_load(self):
+        # `register_tool` is how built-in converters and hidden tools enter the
+        # toolbox, and it registers no lineage. Resolving one must not depend on
+        # the toolbox already being the one registered on the app.
+        self._init_tool()
+        self._add_config("""<toolbox></toolbox>""")
+        toolbox = self.toolbox
+        hidden_tool = toolbox.load_hidden_tool(self._tool_path())
+        self.app._toolbox = None
+
+        lineage = toolbox._lineage_map.get("test_tool")
+        assert lineage is not None
+        assert hidden_tool.version in lineage.tool_versions
+
+    def test_out_of_panel_filtering(self):
+        self._init_tool_in_section()
+
+        mapper = routes.Mapper()
+        mapper.connect("tool_runner", "/test/tool_runner")
+        as_dict = self.toolbox.to_dict(mock_trans(), in_panel=False)
+        assert len(as_dict) == 1
+
+        def allow_user_access(user, attempting_access):
+            assert not attempting_access
+            return False
+
+        # Disable access to the tool, make sure it is filtered out.
+        self.toolbox.get_tool("test_tool").allow_user_access = allow_user_access
+        as_dict = self.toolbox.to_dict(mock_trans(), in_panel=False)
+        assert len(as_dict) == 0, as_dict
+
+    def _setup_dynamic_tool_test(self) -> "Tool":
+        self._init_tool()
+        self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")
+        tool = self.toolbox.get_tool("test_tool")
+        tool.app.dynamic_tool_manager = DynamicToolManager(self.app)
+        return tool
+
+    def _persist_user(self, with_user_tool_execute_role: bool = False) -> model.User:
+        session = self.app.model.context
+        user = model.User(email=f"u_{uuid4().hex}@example.com", password="pw")
+        session.add(user)
+        if with_user_tool_execute_role:
+            role = model.Role(
+                name=f"udt_exec_{uuid4().hex[:8]}",
+                description="user tool execute",
+                type=model.Role.types.USER_TOOL_EXECUTE,
+                deleted=False,
+            )
+            session.add(role)
+            session.add(model.UserRoleAssociation(user, role))
+        session.commit()
+        return user
+
+    def _persist_dynamic_tool(
+        self, public: bool, active: bool = True, owner: model.User | None = None
+    ) -> model.DynamicTool:
+        session = self.app.model.context
+        dyn = model.DynamicTool(
+            tool_format="GalaxyUserTool",
+            tool_id=f"udt_{uuid4().hex[:8]}",
+            tool_version="0.1",
+            uuid=uuid4(),
+            value={"name": "test", "class": "GalaxyUserTool", "version": "0.1"},
+            public=public,
+            active=active,
+        )
+        session.add(dyn)
+        session.flush()
+        if owner is not None:
+            session.add(model.UserDynamicToolAssociation(user_id=owner.id, dynamic_tool_id=dyn.id))
+        session.commit()
+        return dyn
+
+    def _snapshot(self, tool: "Tool", dyn: model.DynamicTool) -> None:
+        tool.dynamic_tool_id = dyn.id
+        tool.dynamic_tool_uuid = dyn.uuid if isinstance(dyn.uuid, UUID) else None
+        tool.is_unprivileged_tool = not bool(dyn.public)
+        tool.dynamic_tool_active = bool(dyn.active)
+
+    def test_allow_user_access_non_dynamic_tool(self):
+        tool = self._setup_dynamic_tool_test()
+        some_user = self._persist_user()
+        assert tool.allow_user_access(None) is True
+        assert tool.allow_user_access(some_user) is True
+
+    def test_allow_user_access_for_non_unprivileged_tool(self):
+        tool = self._setup_dynamic_tool_test()
+        dyn = self._persist_dynamic_tool(public=True)
+        self._snapshot(tool, dyn)
+        some_user = self._persist_user()
+
+        assert tool.is_unprivileged_tool is False
+        assert tool.allow_user_access(None) is True
+        assert tool.allow_user_access(some_user) is True
+
+    def test_allow_user_access_denies_anonymous_for_unprivileged_tool(self):
+        tool = self._setup_dynamic_tool_test()
+        dyn = self._persist_dynamic_tool(public=False)
+        self._snapshot(tool, dyn)
+
+        assert tool.is_unprivileged_tool is True
+        assert tool.allow_user_access(None) is False
+
+    def test_allow_user_access_unprivileged_tool_grants_only_to_owner_with_role(self):
+        tool = self._setup_dynamic_tool_test()
+        owner = self._persist_user(with_user_tool_execute_role=True)
+        dyn = self._persist_dynamic_tool(public=False, owner=owner)
+        self._snapshot(tool, dyn)
+
+        assert tool.allow_user_access(owner) is True
+
+        other_with_role = self._persist_user(with_user_tool_execute_role=True)
+        assert tool.allow_user_access(other_with_role) is False
+
+        other_no_role = self._persist_user(with_user_tool_execute_role=False)
+        assert tool.allow_user_access(other_no_role) is False
+
+        tool.dynamic_tool_active = False
+        assert tool.allow_user_access(owner) is False
+
+    def test_allow_user_access_with_detached_dynamic_tool_does_not_raise(self):
+        """Regression: booby-trap the ORM row so any read raises; allow_user_access
+        must rely on the snapshot only."""
+        tool = self._setup_dynamic_tool_test()
+
+        detached = MagicMock()
+        type(detached).public = property(lambda self: (_ for _ in ()).throw(Exception("not bound")))
+        type(detached).active = property(lambda self: (_ for _ in ()).throw(Exception("not bound")))
+        tool.dynamic_tool = detached
+
+        dyn = self._persist_dynamic_tool(public=False)
+        self._snapshot(tool, dyn)
+
+        assert tool.allow_user_access(None) is False
+        some_user = self._persist_user(with_user_tool_execute_role=True)
+        assert tool.allow_user_access(some_user) is False
+
+    def _find_section(self, as_dict, section_id):
+        for elem in as_dict:
+            if elem.get("id") == section_id:
+                assert elem["model_class"] == "ToolSection"
+                return elem
+        raise AssertionError(f"Failed to find section with id [{section_id}]")
+
+    def test_tool_shed_properties(self):
+        self._init_tool()
+        self._setup_two_versions_in_config(section=False)
+        self._setup_two_versions()
+
+        test_tool = self.toolbox.get_tool("test_tool")
+        assert test_tool.tool_shed == "github.com"
+        assert test_tool.repository_owner == "galaxyproject"
+        assert test_tool.repository_name == "example"
+        # TODO: Not deterministc, probably should be?
+        assert test_tool.installed_changeset_revision in ["1", "2"]
+
+    def test_tool_shed_properties_only_on_installed_tools(self):
+        self._init_tool()
+        self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")
+        toolbox = self.toolbox
+        test_tool = toolbox.get_tool("test_tool")
+        assert test_tool.tool_shed is None
+        assert test_tool.repository_name is None
+        assert test_tool.repository_owner is None
+        assert test_tool.installed_changeset_revision is None
+
+    def test_tool_shed_request_version(self):
+        self._init_tool()
+        self._setup_two_versions_in_config(section=False)
+        self._setup_two_versions()
+
+        test_tool = self.toolbox.get_tool("test_tool", tool_version="0.1")
+        assert test_tool.version == "0.1"
+
+        test_tool = self.toolbox.get_tool("test_tool", tool_version="0.2")
+        assert test_tool.version == "0.2"
+
+        # there is no version 3, return newest version
+        test_tool = self.toolbox.get_tool("test_tool", tool_version="3")
+        assert test_tool.version == "0.2"
+
+    def test_load_file_in_section(self):
+        self._init_tool_in_section()
+
+        toolbox = self.toolbox
+        assert toolbox.get_tool("test_tool") is not None
+        assert toolbox.get_tool("not_a_test_tool") is None
+
+    def test_writes_integrate_tool_panel(self):
+        self._init_tool()
+        self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")
+
+        self.assert_integerated_tool_panel(exists=False)
+        self.toolbox  # noqa: B018
+        self.assert_integerated_tool_panel(exists=True)
+
+    def test_groups_tools_in_section(self):
+        self._init_tool()
+        self._setup_two_versions_in_config(section=True)
+        self._setup_two_versions()
+        self.toolbox  # noqa: B018
+        self.__verify_two_test_tools()
+
+        # Assert only newer version of the tool loaded into the panel.
+        section = self.toolbox._tool_panel["tid"]
+        assert len(section.elems) == 1
+        assert next(iter(section.elems.values())).id == "github.com/galaxyproject/example/test_tool/0.2"
+
+        test_tool = self.toolbox.get_tool("test_tool", tool_version="0.1")
+        section_pair = self.toolbox.get_section_for_tool(test_tool)
+        assert section_pair == ("tid", "TID")
+
+    def test_group_tools_out_of_section(self):
+        self._init_tool()
+        self._setup_two_versions_in_config(section=False)
+        self._setup_two_versions()
+        self.__verify_two_test_tools()
+
+        # Assert tools merged in tool panel.
+        assert len(self.toolbox._tool_panel) == 2  # 1 tool (w 2 versions) + built-in converters
+
+    def test_curated_tool_tags_merge_all_ids_in_order(self, monkeypatch):
+        self._init_tool()
+        self._setup_two_versions_in_config(section=False)
+        self._setup_two_versions()
+        monkeypatch.setattr(
+            ontology_data,
+            "_TOOL_TAG_MAPPING_OVERRIDE",
+            {
+                "github.com/galaxyproject/example/test_tool/0.2": ["version_specific", "shared"],
+                "github.com/galaxyproject/example/test_tool": ["toolshed_family", "shared"],
+                "test_tool": ["short_id", "shared"],
+            },
+        )
+
+        tool = self.toolbox.get_tool("test_tool", tool_version="0.2")
+        assert tool.all_ids == [
+            "github.com/galaxyproject/example/test_tool/0.2",
+            "github.com/galaxyproject/example/test_tool",
+            "test_tool",
+        ]
+        assert tool.tool_tags == ["version_specific", "shared", "toolshed_family", "short_id"]
+
+    def test_curated_tool_tags_support_tool_ids_with_spaces(self, monkeypatch):
+        monkeypatch.setattr(
+            ontology_data,
+            "_TOOL_TAG_MAPPING_OVERRIDE",
+            {
+                "Remove beginning1": ["Text Manipulation"],
+            },
+        )
+
+        assert ontology_data.curated_tool_tags(["Remove beginning1"]) == ["Text Manipulation"]
+
+    def test_get_section_by_label(self):
+        self._add_config(
+            """<toolbox><section id="tid" name="Completely unrelated"><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></section></toolbox>"""
+        )
+        print(self.toolbox._tool_panel)
+        assert len(self.toolbox._tool_panel) == 2  # section + built-in converters
+        section = self.toolbox._tool_panel["tid"]
+        tool_panel_section_key, section_by_label = self.toolbox.get_section(
+            section_id="nope", new_label="Completely unrelated", create_if_needed=True
+        )
+        assert section_by_label is section
+        assert tool_panel_section_key == "tid"
+
+    def test_get_tool(self):
+        self._init_tool()
+        self._setup_two_versions_in_config()
+        self._setup_two_versions()
+        assert self.toolbox.get_tool("test_tool").id in [
+            "github.com/galaxyproject/example/test_tool/0.1",
+            "github.com/galaxyproject/example/test_tool/0.2",
+        ]
+        assert (
+            self.toolbox.get_tool("github.com/galaxyproject/example/test_tool/0.1").id
+            == "github.com/galaxyproject/example/test_tool/0.1"
+        )
+        assert (
+            self.toolbox.get_tool("github.com/galaxyproject/example/test_tool/0.2").id
+            == "github.com/galaxyproject/example/test_tool/0.2"
+        )
+        assert (
+            self.toolbox.get_tool("github.com/galaxyproject/example/test_tool/0.3").id
+            != "github.com/galaxyproject/example/test_tool/0.3"
+        )
+
+    def test_tool_dir(self):
+        self._init_tool()
+        self._add_config(f"""<toolbox><tool_dir dir="{self.test_directory}" /></toolbox>""")
+
+        toolbox = self.toolbox
+        assert toolbox.get_tool("test_tool") is not None
+
+    def test_tool_dir_json(self):
+        self._init_tool()
+        self._add_config({"items": [{"type": "tool_dir", "dir": self.test_directory}]}, name="tool_conf.json")
+
+        toolbox = self.toolbox
+        assert toolbox.get_tool("test_tool") is not None
+
+    def test_workflow_in_panel(self):
+        stored_workflow = self.__test_workflow()
+        encoded_id = self.app.security.encode_id(stored_workflow.id)
+        self._add_config(f"""<toolbox><workflow id="{encoded_id}" /></toolbox>""")
+        assert len(self.toolbox._tool_panel) == 2  # workflow + built-in converters section
+        panel_workflow = next(iter(self.toolbox._tool_panel.values()))
+        assert panel_workflow == stored_workflow.latest_workflow
+        # TODO: test to_dict with workflows
+
+    def test_workflow_in_section(self):
+        stored_workflow = self.__test_workflow()
+        encoded_id = self.app.security.encode_id(stored_workflow.id)
+        self._add_config(
+            f"""<toolbox><section id="tid" name="TID"><workflow id="{encoded_id}" /></section></toolbox>"""
+        )
+        assert len(self.toolbox._tool_panel) == 2  # workflow + built-in converters section
+        section = self.toolbox._tool_panel["tid"]
+        assert len(section.elems) == 1
+        panel_workflow = next(iter(section.elems.values()))
+        assert panel_workflow == stored_workflow.latest_workflow
+
+    def test_label_in_panel(self):
+        self._add_config("""<toolbox><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></toolbox>""")
+        assert len(self.toolbox._tool_panel) == 3  # 2 labels + built-in converters section
+        self.__check_test_labels(self.toolbox._tool_panel)
+
+    def test_label_in_section(self):
+        self._add_config(
+            """<toolbox><section id="tid" name="TID"><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></section></toolbox>"""
+        )
+        assert len(self.toolbox._tool_panel) == 2  # section + built-in converters section
+        section = self.toolbox._tool_panel["tid"]
+        self.__check_test_labels(section.elems)
+
+    def _init_tool_in_section(self, json=False):
+        self._init_tool()
+        if not json:
+            self._add_config("""<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""")
+        else:
+            section = {
+                "type": "section",
+                "id": "t",
+                "name": "test",
+                "items": [{"type": "tool", "file": "tool.xml"}],
+            }
+            self._add_config({"items": [section]}, name="tool_conf.json")
+
+    def __check_test_labels(self, panel_dict):
+        # if panel_dict is the complete panel it will contain builtin_converters
+        # if its a section then not
+        assert list(panel_dict.keys()) in (
+            ["label_lab1", "label_lab2", "builtin_converters"],
+            ["label_lab1", "label_lab2"],
+        )
+        label1 = next(iter(panel_dict.values()))
+        assert label1.id == "lab1"
+        assert label1.text == "Label 1"
+
+        label2 = panel_dict["label_lab2"]
+        assert label2.id == "lab2"
+        assert label2.text == "Label 2"
+
+    def __test_workflow(self):
+        stored_workflow = model.StoredWorkflow()
+        workflow = model.Workflow()
+        workflow.stored_workflow = stored_workflow
+        stored_workflow.latest_workflow = workflow
+        user = model.User()
+        user.email = "test@example.com"
+        user.password = "passw0rD1"
+        stored_workflow.user = user
+        session = self.app.model.context
+        session.add(workflow)
+        session.add(stored_workflow)
+        session.commit()
+        return stored_workflow
+
+    def __verify_two_test_tools(self):
+        # Assert tool versions of the tool with simple id 'test_tool'
+        all_versions = self.toolbox.get_tool("test_tool", get_all_versions=True)
+        assert len(all_versions) == 2
+
+        # Verify lineage_ids on both tools is correctly ordered.
+        for version in ["0.1", "0.2"]:
+            guid = "github.com/galaxyproject/example/test_tool/" + version
+            lineage_ids = self.toolbox.get_tool(guid).lineage.get_version_ids()
+            assert lineage_ids[0] == "github.com/galaxyproject/example/test_tool/0.1"
+            assert lineage_ids[1] == "github.com/galaxyproject/example/test_tool/0.2"
+
+        # Test tool_version attribute.
+        assert (
+            self.toolbox.get_tool("test_tool", tool_version="0.1").guid
+            == "github.com/galaxyproject/example/test_tool/0.1"
+        )
+        assert (
+            self.toolbox.get_tool("test_tool", tool_version="0.2").guid
+            == "github.com/galaxyproject/example/test_tool/0.2"
+        )
+
+    def test_builtin_converters_in_integrated_panel(self):
+        self._init_tool()
+        self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")
+        toolbox = self.toolbox
+        assert "builtin_converters" in toolbox._tool_panel
+        assert "builtin_converters" in toolbox._integrated_tool_panel
+
+    def test_default_lineage(self):
+        self.__init_versioned_tools()
+        self._add_config("""<toolbox><tool file="tool_v01.xml" /><tool file="tool_v02.xml" /></toolbox>""")
+        self.__verify_get_tool_for_default_lineage()
+
+    def test_default_lineage_reversed(self):
+        # Run same test as above but with entries in tool_conf reversed to
+        # ensure versioning is at work and not order effects.
+        self.__init_versioned_tools()
+        self._add_config("""<toolbox><tool file="tool_v02.xml" /><tool file="tool_v01.xml" /></toolbox>""")
+        self.__verify_get_tool_for_default_lineage()
+
+    def test_grouping_with_default_lineage(self):
+        self.__init_versioned_tools()
+        self._add_config("""<toolbox><tool file="tool_v01.xml" /><tool file="tool_v02.xml" /></toolbox>""")
+        self.__verify_tool_panel_for_default_lineage()
+
+    def test_grouping_with_default_lineage_reversed(self):
+        # Run same test as above but with entries in tool_conf reversed to
+        # ensure versioning is at work and not order effects.
+        self.__init_versioned_tools()
+        self._add_config("""<toolbox><tool file="tool_v02.xml" /><tool file="tool_v02.xml" /></toolbox>""")
+        self.__verify_tool_panel_for_default_lineage()
+
+    def __init_versioned_tools(self):
+        self._init_tool(filename="tool_v01.xml", version="0.1")
+        self._init_tool(filename="tool_v02.xml", version="0.2")
+
+    def __verify_tool_panel_for_default_lineage(self):
+        assert len(self.toolbox._tool_panel) == 2  # tool + built-in-converters section
+        tool = self.toolbox._tool_panel["tool_test_tool"]
+        assert tool.version == "0.2", tool.version
+        assert tool.id == "test_tool"
+
+    def __verify_get_tool_for_default_lineage(self):
+        tool_v01 = self.toolbox.get_tool("test_tool", tool_version="0.1")
+        tool_v02 = self.toolbox.get_tool("test_tool", tool_version="0.2")
+        assert tool_v02.id == "test_tool"
+        assert tool_v02.version == "0.2", tool_v02.version
+        assert tool_v01.id == "test_tool"
+        assert tool_v01.version == "0.1"
+
+        # Newer variant gets to be default for that id.
+        default_tool = self.toolbox.get_tool("test_tool")
+        assert default_tool.id == "test_tool"
+        assert default_tool.version == "0.2"

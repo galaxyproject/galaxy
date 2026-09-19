@@ -3,13 +3,14 @@ This dependency resolver resolves tool shed dependencies (those defined
 tool_dependencies.xml) installed using Platform Homebrew and converted
 via shed2tap (e.g. https://github.com/jmchilton/homebrew-toolshed).
 """
+
 import logging
 import os
-from xml.etree import ElementTree as ET
 
+from galaxy.util import parse_xml
 from . import (
     DependencyResolver,
-    NullDependency
+    NullDependency,
 )
 from .resolver_mixins import (
     UsesHomebrewMixin,
@@ -68,7 +69,7 @@ class HomebrewToolShedDependencyResolver(
         try:
             raw_dependencies = RawDependencies(tool_dependencies_path)
         except Exception:
-            log.debug("Failed to parse dependencies in file %s" % tool_dependencies_path)
+            log.debug(f"Failed to parse dependencies in file {tool_dependencies_path}")
             return NullDependency(version=version, name=name)
 
         raw_dependency = raw_dependencies.find(name, version)
@@ -79,16 +80,15 @@ class HomebrewToolShedDependencyResolver(
             package_name=name,
             package_version=version,
             repository_owner=raw_dependency.repository_owner,
-            repository_name=raw_dependency.repository_name
+            repository_name=raw_dependency.repository_name,
         )
         dep = self._find_dep_default(recipe_name, None)
         return dep
 
 
-class RawDependencies(object):
-
+class RawDependencies:
     def __init__(self, dependencies_file):
-        self.root = ET.parse(dependencies_file).getroot()
+        self.root = parse_xml(dependencies_file).getroot()
         dependencies = []
         package_els = self.root.findall("package") or []
         for package_el in package_els:
@@ -109,8 +109,7 @@ class RawDependencies(object):
         return target_dependency
 
 
-class RawDependency(object):
-
+class RawDependency:
     def __init__(self, dependencies, package_el, repository_el):
         self.dependencies = dependencies
         self.package_el = package_el
@@ -121,7 +120,7 @@ class RawDependency(object):
         return temp % (
             self.package_el.attrib["name"],
             self.package_el.attrib["version"],
-            self.repository_el.attrib["name"]
+            self.repository_el.attrib["name"],
         )
 
     @property
@@ -146,8 +145,8 @@ def build_recipe_name(package_name, package_version, repository_owner, repositor
     owner = repository_owner.replace("-", "")
     name = repository_name
     name = name.replace("_", "").replace("-", "")
-    base = "%s_%s" % (owner, name)
+    base = f"{owner}_{name}"
     return base
 
 
-__all__ = ('HomebrewToolShedDependencyResolver', )
+__all__ = ("HomebrewToolShedDependencyResolver",)

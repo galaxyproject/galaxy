@@ -1,0 +1,227 @@
+<script setup lang="ts">
+import { faUpload } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { onMounted, type Ref, ref, watch } from "vue";
+import Vue from "vue";
+
+import type { TableField } from "@/components/Common/GTable.types";
+import type { DataOption } from "@/components/Form/Elements/FormData/types";
+import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
+import { useUrlTracker } from "@/composables/urlTracker";
+import { getAppRoot } from "@/onload/loadConfig";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import { Model } from "./model";
+import { Services } from "./services";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
+
+type Record = SelectionItem;
+
+interface Props {
+    allowUpload?: boolean;
+    callback?: (results: Record[] | DataOption[]) => void;
+    filterOkState?: boolean;
+    filterByTypeIds?: string[];
+    format?: string;
+    library?: boolean;
+    multiple?: boolean;
+    title?: string;
+    history: string;
+    /** Optional formats to constrain the upload modal */
+    uploadModalFormats?: string[];
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    allowUpload: true,
+    callback: () => {},
+    filterOkState: false,
+    filterByTypeIds: undefined,
+    format: "download",
+    library: true,
+    multiple: false,
+    title: "",
+    uploadModalFormats: undefined,
+});
+
+const emit = defineEmits<{
+    (e: "onCancel"): void;
+    (e: "onOk", results: unknown): void;
+    (e: "onUpload"): void;
+}>();
+
+const { openUploadModal } = useUploadMethodModal();
+
+const errorMessage = ref("");
+const filter = ref("");
+const items: Ref<Array<Record>> = ref([]);
+const hasValue = ref(false);
+const modalShow = ref(true);
+const optionsShow = ref(true);
+const undoShow = ref(false);
+
+const services = new Services();
+const model = new Model({ multiple: props.multiple, format: props.format });
+const urlTracker = useUrlTracker<string>({ root: getHistoryUrl() });
+
+/** Specifies data columns to be shown in the dialog's table */
+const fields: TableField[] = [
+    {
+        key: "label",
+        label: "Name",
+    },
+    {
+        key: "extension",
+        label: "Extension",
+    },
+    {
+        key: "tags",
+        label: "Tags",
+    },
+    {
+        key: "update_time",
+        label: "Update Time",
+    },
+];
+
+/** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
+function formatRows() {
+    for (const item of items.value) {
+        let _rowVariant = "active";
+        if (item.isLeaf) {
+            _rowVariant = model.exists(item.id) ? "success" : "default";
+        }
+        Vue.set(item, "_rowVariant", _rowVariant);
+    }
+}
+
+/** Returns the default url i.e. the url of the current history **/
+function getHistoryUrl() {
+    let queryString = "&q=deleted&qv=false";
+    if (props.filterOkState) {
+        queryString += "&q=state-eq&qv=ok";
+    }
+    if (props.filterByTypeIds && props.filterByTypeIds.length > 0) {
+        queryString += `&q=type_id-in&qv=${props.filterByTypeIds.join(",")}`;
+    }
+    return `${getAppRoot()}api/histories/${props.history}/contents?v=dev${queryString}`;
+}
+
+/** Called when the modal is hidden */
+function onCancel() {
+    modalShow.value = false;
+    emit("onCancel");
+}
+
+/** Collects selected datasets in value array **/
+function onClick(record: Record) {
+    if (record.isLeaf) {
+        model.add(record);
+        hasValue.value = model.count() > 0;
+        if (props.multiple) {
+            formatRows();
+        } else {
+            onOk();
+        }
+    } else {
+        load(record.url);
+    }
+}
+
+/** Called when selection is complete, values are formatted and parsed to external callback **/
+function onOk() {
+    const results = model.finalize();
+    modalShow.value = false;
+    props.callback?.(results);
+    emit("onOk", results);
+}
+
+/** On clicking folder name div: overloader for the @click.stop in DataDialogTable **/
+function onOpen(record: Record) {
+    load(record.url);
+}
+
+/** Called when user decides to upload new data */
+async function onUpload() {
+    const result = await openUploadModal({
+        formats: props.uploadModalFormats,
+        multiple: props.multiple,
+        hideTips: true,
+    });
+    modalShow.value = false;
+    if (!result.cancelled) {
+        const uploadedOptions = result.toDataOptions();
+        props.callback?.(uploadedOptions);
+        emit("onOk", uploadedOptions);
+    }
+    emit("onUpload");
+}
+
+/** Performs server request to retrieve data records **/
+function load(url?: string) {
+    if (url) {
+        urlTracker.forward(url);
+    }
+    const currentUrl = urlTracker.current.value;
+    filter.value = "";
+    optionsShow.value = false;
+    undoShow.value = !urlTracker.isAtRoot.value;
+    services
+        .get(currentUrl)
+        .then((incoming) => {
+            if (props.library && urlTracker.isAtRoot.value) {
+                incoming.unshift({
+                    label: "Data Libraries",
+                    url: `${getAppRoot()}api/libraries`,
+                });
+            }
+            items.value = incoming;
+            formatRows();
+            optionsShow.value = true;
+        })
+        .catch((error) => {
+            errorMessage.value = errorMessageAsString(error);
+        });
+}
+
+onMounted(() => {
+    if (props.history) {
+        load();
+    }
+});
+
+watch(
+    () => history,
+    () => {
+        urlTracker.reset(getHistoryUrl());
+        load();
+    },
+);
+</script>
+
+<template>
+    <SelectionDialog
+        :error-message="errorMessage"
+        :disable-ok="!hasValue"
+        :fields="fields"
+        :items="items"
+        :total-items="items.length"
+        :modal-show="modalShow"
+        :multiple="multiple"
+        :options-show="optionsShow"
+        :undo-show="undoShow"
+        @onCancel="onCancel"
+        @onClick="onClick"
+        @onOk="onOk"
+        @onOpen="onOpen"
+        @onUndo="load()">
+        <template v-slot:buttons>
+            <GButton v-if="allowUpload" size="small" class="mr-1" @click="onUpload">
+                <FontAwesomeIcon :icon="faUpload" />
+                Upload
+            </GButton>
+        </template>
+    </SelectionDialog>
+</template>

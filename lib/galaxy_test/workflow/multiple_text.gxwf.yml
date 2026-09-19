@@ -1,0 +1,15 @@
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: [string]
+outputs:
+  output:
+    outputSource: multi_select/output
+steps:
+  multi_select:
+    tool_id: multi_select
+    tool_version: "0.1"
+    in:
+      select_ex: input
+    tool_state:
+      select_optional: null

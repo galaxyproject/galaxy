@@ -1,0 +1,82 @@
+
+===========================================================
+January 2021 Galaxy Release (v 21.01)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**New History Panel (Beta)**
+  This release includes a preview of the new History Panel. The new history menu can be enabled and disabled in the options menu of the History Panel. For more details check out the `21.01 user release notes <21.01_announce_user.html>`__.
+
+**Performance Improvements**
+  This release includes many performance improvements for browsing and searching Data libraries (Many thanks to `Oleg Zharkov <https://github.com/OlegZharkov>`__, `Pull Request 10204`_, `Pull Request 11099`_, `Pull Request 10557`_, `Pull Request 10558`_, `Pull Request 10807`_),
+  and improved job creation performance for certain classes of tools and copying Histories, Datasets and Dataset Collections (`Pull Request 10539`_, `Pull Request 10549`_).
+  The performance of reading tool wrappers when starting Galaxy has been much improved. We have therefore decided to disable the tool document cache by default,
+  since it only provides negligible speedups (`Pull Request 10804`_, `Pull Request 11447`_). The tool document cache can be re-enabled with the `enable_tool_document_cache <https://github.com/galaxyproject/galaxy/blob/283ec1772fcc0e574997dc2c5ad12dc86e3e1d37/lib/galaxy/config/sample/galaxy.yml.sample#L626>`_ setting.
+
+**Offload Zip Archive Creation to NGINX**
+  Galaxy can now utilize the NGINX module `mod_zip <https://www.nginx.com/resources/wiki/modules/zip/>`__ to assemble and compress dataset collection and library dataset archives on the fly.
+  This method is more efficient and can create large archives without affecting the Galaxy server process. The required setup is described in the admin documentation for `proxying Galaxy with NGINX <https://docs.galaxyproject.org/en/release_21.01/admin/nginx.html#creating-archives-with-mod-zip>`__.
+
+**Workflow Enhancements and Fixes**
+  This release contains many new features, enhancements and bug fixes for creating, running and reporting workflows described in greater detail in the `21.01 user release notes <21.01_announce_user.html>`__
+
+**History Import and Export**
+  Histories can now be imported from and exported to the pluggable file source architecture introduced in the 20.09 release of Galaxy.
+  This includes the users' FTP folder, S3, Dropbox, ownCloud etc. In addition the History Export and Import dialogues have been rewritten
+  to provide access to these new options and to provide more feedback during Import and Export process.
+
+Also check out the `21.01 user release notes <21.01_announce_user.html>`__
+
+Deprecation Notices
+===========================================================
+
+**Deprecation of support for Python 3.5**
+  Galaxy requires Python 3.6 or newer. Instructions for updating Python can be found in the `Supported Python versions <https://docs.galaxyproject.org/en/release_21.01/admin/python.html#supported-python-versions>`__ section of the documentation.
+  Note that if you update to Python 3.7.2 or newer you need to set py-call-osafterfork to ``false`` in the uwsgi section of galaxy.yml.
+
+**Removal of IUC conda channel from default configuration**
+  The IUC conda channel has been removed from the default configuration. This channel was used for installing dependencies that were old and not available in bioconda or conda-forge. These dependencies are now available in bioconda. By removing this channel Conda can work more efficiently and ignore outdated dependencies.
+  If you have specified alternative channels in your Galaxy configuration we recommend removing the iuc channel from the `conda_ensure_channels <https://github.com/galaxyproject/galaxy/blob/283ec1772fcc0e574997dc2c5ad12dc86e3e1d37/lib/galaxy/config/sample/galaxy.yml.sample#L324>`__ variable.
+
+**Removal of the communication server**
+  This feature has not seen greater adoption and has been removed. Most communication has moved to Gitter or other chat services.
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_21.01 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_21.01 && git pull --ff-only origin release_21.01
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Release Testing Team
+===========================================================
+
+A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+
+- `Assunta DeSanto <https://github.com/assuntad23>`_
+- `David López <https://github.com/davelopez>`_
+- `John Chilton <https://github.com/jmchilton>`_
+- `Keith Suderman <https://github.com/ksuderman>`_
+- `John Davis <https://github.com/jdavcs>`_
+
+Release Notes
+===========================================================
+
+.. include:: 21.01.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

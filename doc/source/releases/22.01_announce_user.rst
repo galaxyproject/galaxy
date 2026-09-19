@@ -1,0 +1,147 @@
+
+===========================================================
+January 2022 Galaxy Release (v 22.01)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**New Colour Selector**
+
+Do you use tools which require colour inputs, like Circos? Previously we had a restricted colour input which gave you a very limited palette. Now, you have complete freedom of choice with the modern colour selector.
+
+.. raw:: html
+
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/DSnFa5012RE" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Gif of the colour selector in action, a mouse clicks on the colour selector and gone is the restricted 20 colour palette, now there is a colour field and you can select any possible RGB colour."></iframe>
+
+
+**Improved File Export**
+
+If you've been exporting files from Galaxy lately, you've probably seen the amazing new remote file source export, which allows you to export files to FTP, Dropbox, and other locations.
+
+.. raw:: html
+
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/KBFrgWGlPus" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of a user exporting a file using the new file export, selecting a folder, creating some subdirectories, before changing their mind and choosing another location to export their file to."></iframe>
+
+**Improved File Uploads**
+
+Previously, Galaxy servers used a variety of methods to let you upload large files easily, including some servers which required FTP for large files. We have replaced this with a new upload method, which will be enabled on all usegalaxy servers soon. This will make file uploads significantly smoother, and will be more tolerant of network failures and interruptions! You do not need to make any changes. See `Pull Request 12656`_ for more information.
+
+**Beta History: Collection Improvements**
+
+If you've been trying out the beta history (which will be the default history next release!), it has been updated to indicate whether collections are homogeneous or heterogeneous. This will help you see more easily if you've accidentally included an incorrect dataset.
+
+.. figure:: https://user-images.githubusercontent.com/46503462/146426341-d16d07d8-164b-40ef-976a-52e73d94bfc9.png
+   :alt: Screenshot of a history named collection tests history using the new beta history panel. Several collections are shown below, some labelled "A list of 6 txt datasets" and some labelled "a list of 3 datasets", without a datatype shown.
+
+
+New Visualizations
+===========================================================
+
+Thanks to `@neoformit <https://github.com/neoformit>`__, a new R shiny app "iSEE" has been added, which provides a UI for visualization of single-cell RNA datasets. See `Pull Request 12650`_ for more information
+
+.. figure:: https://user-images.githubusercontent.com/42562517/136135157-40a46a31-3553-49b3-a975-b518db1374b2.png
+   :alt: screenshot of the iSEE app, on the left is a colourful scatterplot with dots grouped, labelled reduced dimension plot. On the right is a plot labelled feature assay plot with a number of violin plots. Both plots feature controls at the bottom for modifying the visualisation's parameters.
+
+New Datatypes
+===========================================================
+
+* Add datatype iml_dataset subclassing html
+  (thanks to `@knutwa-ext <https://github.com/knutwa-ext>`__).
+  `Pull Request 12099`_
+* Create sniffer for GRO file type
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 12885`_
+* Agp datatype
+  `Pull Request 12891`_
+* Add ludwig model datatype
+  (thanks to `@qiagu <https://github.com/qiagu>`__).
+  `Pull Request 13073`_
+* Add ampvis2 datatype
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 13083`_
+* Add Neper and Gmsh datatypes
+  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
+  `Pull Request 13087`_
+* Add new datatype GRIB
+  (thanks to `@annefou <https://github.com/annefou>`__).
+  `Pull Request 13175`_
+* Show yaml files in preview
+  `Pull Request 13176`_
+* Enable display of BAM data without sequence info
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 13219`_
+* Add gz as datatype
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 13271`_
+* Add phyloseq datatype
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 13462`_
+
+Builtin Tool Updates
+===========================================================
+
+* New interactive tool - iSEE
+  (thanks to `@neoformit <https://github.com/neoformit>`__).
+  `Pull Request 12650`_
+* Ignore type in unused function
+  `Pull Request 12694`_
+* Merge 21.09 -> dev
+  `Pull Request 12747`_
+* Set profile version of ncbi_datasets so it can run containerized
+  `Pull Request 12819`_
+* Downgrade bowtie requirement for CONVERTER_fasta_to_bowtie_color_index
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 12851`_
+* Fix containerized NCBI Datasets Genomes data source tool
+  `Pull Request 12915`_
+* Tighten type ignores
+  (thanks to `@common-workflow-lab <https://github.com/common-workflow-lab>`__).
+  `Pull Request 12965`_
+* Update interactivetool_pyiron.xml
+  (thanks to `@gmauro <https://github.com/gmauro>`__).
+  `Pull Request 12990`_
+* Don't use triple-quoted strings as comments
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 13007`_
+* Add parquet to csv datatype converter
+  `Pull Request 13078`_
+* Drop tool migration scripts and related code
+  `Pull Request 13099`_
+* Allow any format in export tool
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 13151`_
+* Add dynamic step to FormNumber range slider
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 13233`_
+* FormNumber: notify value change on slider change
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 13260`_
+* Add bioconductor as valid xref for tools
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 13268`_
+
+Release Testing Team
+===========================================================
+
+A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+
+- `Keith Suderman <https://github.com/ksuderman>`_
+- `Delphine Lariviere <https://github.com/Delphine-L>`_
+- `Jennifer Hillman-Jackson <https://github.com/jennaj>`_
+- `Natalie Kucher <https://github.com/nakucher>`_
+- `Alex Ostrovsky <https://github.com/astrovsky01>`_
+- `Enis Afgan <https://github.com/afgane>`_
+
+Release Notes
+===========================================================
+
+User facing release notes compiled by `Helena Rasche <https://github.com/hexylena>`_.
+
+Please see the :doc:`full release notes <22.01_announce>` for more details.
+
+.. include:: 22.01_prs.rst
+
+.. include:: _thanks.rst

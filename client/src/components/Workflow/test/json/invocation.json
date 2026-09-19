@@ -1,0 +1,59 @@
+{
+    "model_class": "WorkflowInvocation",
+    "id": "5f1915bcf9f35612",
+    "update_time": "2021-01-04T17:40:58.604118",
+    "create_time": "2021-01-04T17:40:58.407793",
+    "workflow_id": "c563253a01738670",
+    "history_id": "78ea7964263eadc1",
+    "uuid": "01127b40-4eb4-11eb-baba-acde48001122",
+    "state": "scheduled",
+    "steps": [
+        {
+            "model_class": "WorkflowInvocationStep",
+            "id": "17aa5eb1e678661b",
+            "update_time": "2021-01-04T17:40:58.605592",
+            "job_id": null,
+            "workflow_step_id": "84e9a019416adb3d",
+            "subworkflow_invocation_id": null,
+            "state": "scheduled",
+            "action": null,
+            "order_index": 0,
+            "workflow_step_label": "input dataset",
+            "jobs": [],
+            "workflow_step_uuid": "161efd0b-9cdb-42eb-bc9a-fc529b1bb638",
+            "outputs": {},
+            "output_collections": {}
+        }
+    ],
+    "inputs": {
+        "0": {
+            "id": "06f257d480656689",
+            "src": "hda",
+            "label": "input dataset",
+            "workflow_step_id": "84e9a019416adb3d"
+        }
+    },
+    "input_step_parameters": {
+        "Workflow Input Parameter": {
+            "parameter_value": true,
+            "label": "Workflow Input Parameter",
+            "workflow_step_id": "22bdbe9d6e0775fe" 
+        }
+    },
+    "outputs": {
+        "Workflow Output Dataset": {
+            "id": "4f352876a933b584",
+            "workflow_step_id": "05f39d2a289deb5a",
+            "src": "hda"
+        }
+    },
+    "output_collections": {
+        "Workflow Output Collection": {
+            "id": "ecbc86ac41da8f7b",
+            "workflow_step_id": "c486c1d29a0743d3",
+            "src": "hdca"
+        }
+    },
+    "output_values": {},
+    "messages": []
+}

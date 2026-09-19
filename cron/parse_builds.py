@@ -4,12 +4,11 @@ Connects to the URL specified and outputs builds available at that
 DSN in tabular format.  UCSC Main gateway is used as default.
 build   description
 """
-from __future__ import print_function
 
 import sys
 import xml.etree.ElementTree as ElementTree
 
-import requests
+from galaxy.util import requests
 
 
 def getbuilds(url):
@@ -30,7 +29,7 @@ def getbuilds(url):
     print("#Harvested from " + url)
     print("?\tunspecified (?)")
     for dsn in tree:
-        build = dsn.find("SOURCE").attrib['id']
+        build = dsn.find("SOURCE").attrib["id"]
         description = dsn.find("DESCRIPTION").text.replace(" - Genome at UCSC", "").replace(" Genome at UCSC", "")
 
         fields = description.split(" ")

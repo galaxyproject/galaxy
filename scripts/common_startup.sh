@@ -4,50 +4,41 @@ set -e
 # The caller may do this as well, but since common_startup.sh can be called independently, we need to do it here
 . ./scripts/common_startup_functions.sh
 
+DEV_WHEELS=0
+FETCH_WHEELS=1
+CREATE_VENV=1
+COPY_SAMPLE_FILES=1
 SET_VENV=1
+SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
+INSTALL_PREBUILT_CLIENT=${GALAXY_INSTALL_PREBUILT_CLIENT:-0}
+: "${PNPM_INSTALL_OPTS:=--frozen-lockfile}"
+: "${GALAXY_CONDA_PYTHON_VERSION:=3.10}"
+
 for arg in "$@"; do
     if [ "$arg" = "--skip-venv" ]; then
         SET_VENV=0
         skip_venv=1  # for common startup functions
     fi
-done
-
-DEV_WHEELS=0
-FETCH_WHEELS=1
-CREATE_VENV=1
-REPLACE_PIP=$SET_VENV
-COPY_SAMPLE_FILES=1
-SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
-CLIENT_DEV_SERVER=${GALAXY_CLIENT_DEV_SERVER:-0}
-NODE_VERSION=${GALAXY_NODE_VERSION:-"$(cat client/.node_version)"}
-
-for arg in "$@"; do
     [ "$arg" = "--skip-eggs" ] && FETCH_WHEELS=0
     [ "$arg" = "--skip-wheels" ] && FETCH_WHEELS=0
     [ "$arg" = "--dev-wheels" ] && DEV_WHEELS=1
     [ "$arg" = "--no-create-venv" ] && CREATE_VENV=0
-    [ "$arg" = "--no-replace-pip" ] && REPLACE_PIP=0
-    [ "$arg" = "--replace-pip" ] && REPLACE_PIP=1
     [ "$arg" = "--stop-daemon" ] && FETCH_WHEELS=0
     [ "$arg" = "--skip-samples" ] && COPY_SAMPLE_FILES=0
     [ "$arg" = "--skip-client-build" ] && SKIP_CLIENT_BUILD=1
 done
 
-# If a client dev server is being configured, skip the client build.
-if [ $CLIENT_DEV_SERVER -ne 0 ]; then
-    SKIP_CLIENT_BUILD=1
-fi
-
 SAMPLES="
-    lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml.sample
     tool-data/shared/ucsc/builds.txt.sample
     tool-data/shared/ucsc/manual_builds.txt.sample
-    static/welcome.html.sample
 "
 
 RMFILES="
     lib/pkg_resources.pyc
 "
+
+MIN_PYTHON_VERSION=3.10
+MIN_PIP_VERSION=20.3
 
 # return true if $1 is in $2 else false
 in_dir() {
@@ -104,7 +95,7 @@ else
     GIT_BRANCH=0
 fi
 
-: ${GALAXY_VIRTUAL_ENV:=.venv}
+: "${GALAXY_VIRTUAL_ENV:=.venv}"
 # GALAXY_CONDA_ENV is not set here because we don't want to execute the Galaxy version check if we don't need to
 
 if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
@@ -113,66 +104,77 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
         # as well, but in this case we need it done beforehand.
         set_conda_exe
         if [ -n "$CONDA_EXE" ]; then
-            echo "Found Conda, will set up a virtualenv using conda."
-            echo "To use a virtualenv instead, create one with a non-Conda Python at $GALAXY_VIRTUAL_ENV"
-            : ${GALAXY_CONDA_ENV:="_galaxy_"}
+            echo "Found Conda, will set up a virtualenv using a Python installed from Conda."
+            echo "To use a non-Conda Python for the virtualenv, pre-create the virtualenv at $GALAXY_VIRTUAL_ENV"
+            : "${GALAXY_CONDA_ENV:=_galaxy_}"
             if [ "$CONDA_DEFAULT_ENV" != "$GALAXY_CONDA_ENV" ]; then
                 if ! check_conda_env "$GALAXY_CONDA_ENV"; then
                     echo "Creating Conda environment for Galaxy: $GALAXY_CONDA_ENV"
                     echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_CONDA_ENV to an"
                     echo "existing environment before starting Galaxy."
-                    $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=3.6' 'pip>=9' 'virtualenv>=16'
+                    $CONDA_EXE create --yes --override-channels --channel conda-forge --name "$GALAXY_CONDA_ENV" "python=${GALAXY_CONDA_PYTHON_VERSION}" "pip>=${MIN_PIP_VERSION}" uv
                     unset __CONDA_INFO
                 fi
                 conda_activate
             fi
-            virtualenv "$GALAXY_VIRTUAL_ENV"
+            if command -v uv >/dev/null; then
+                # Ensure uv uses the active conda python to avoid picking a different uv-managed interpreter.
+                uv venv --python "${CONDA_PREFIX}/bin/python" "$GALAXY_VIRTUAL_ENV"
+            else
+                python3 -m venv "$GALAXY_VIRTUAL_ENV"
+            fi
         else
             # If $GALAXY_VIRTUAL_ENV does not exist, and there is no conda available, attempt to create it.
-            if [ -z "$GALAXY_PYTHON" ]; then
-                if command -v python3 >/dev/null; then
-                    GALAXY_PYTHON=python3
-                else
-                    GALAXY_PYTHON=python
-                fi
-            fi
+
             # Ensure Python is a supported version before creating $GALAXY_VIRTUAL_ENV
+            find_python_command
             "$GALAXY_PYTHON" ./scripts/check_python.py || exit 1
             echo "Creating Python virtual environment for Galaxy: $GALAXY_VIRTUAL_ENV"
             echo "using Python: $GALAXY_PYTHON"
             echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_VIRTUAL_ENV to an"
             echo "existing environment before starting Galaxy."
-            if command -v virtualenv >/dev/null; then
-                virtualenv -p "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
+            if command -v uv >/dev/null; then
+                uv venv --python "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
             else
-                vvers=16.7.9
-                vurl="https://files.pythonhosted.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
-                vsha=0d62c70883c0342d59c11d0ddac0d954d0431321a41ab20851facf2b222598f3
-                vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
-                vsrc="$vtmp/$(basename $vurl)"
-                # SSL certificates are not checked to prevent problems with messed
-                # up client cert environments. We verify the download using a known
-                # good sha256 sum instead.
-                echo "Fetching $vurl"
-                if command -v curl >/dev/null; then
-                    curl --insecure -L -o "$vsrc" "$vurl"
-                elif command -v wget >/dev/null; then
-                    wget --no-check-certificate -O "$vsrc" "$vurl"
-                else
-                    "$GALAXY_PYTHON" -c "try:
-    from urllib import urlretrieve
-except:
-    from urllib.request import urlretrieve
-urlretrieve('$vurl', '$vsrc')"
+                # First try to use the venv standard library module, although it is
+                # not always installed by default on Linux distributions.
+                if ! "$GALAXY_PYTHON" -m venv "$GALAXY_VIRTUAL_ENV"; then
+                    echo "Creating the Python virtual environment using the venv standard library module failed."
+                    echo "Trying with virtualenv now."
+                    if command -v virtualenv >/dev/null; then
+                        virtualenv -p "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
+                    else
+                        # Download virtualenv zipapp
+                        vurl="https://bootstrap.pypa.io/virtualenv/${MIN_PYTHON_VERSION}/virtualenv.pyz"
+                        vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
+                        vsrc="$vtmp/$(basename $vurl)"
+                        echo "Fetching $vurl"
+                        if command -v curl >/dev/null; then
+                            curl -L -o "$vsrc" "$vurl"
+                        elif command -v wget >/dev/null; then
+                            wget -O "$vsrc" "$vurl"
+                        else
+                            "$GALAXY_PYTHON" -c "try:
+            from urllib import urlretrieve
+        except:
+            from urllib.request import urlretrieve
+        urlretrieve('$vurl', '$vsrc')"
+                        fi
+                        "$GALAXY_PYTHON" "$vsrc" "$GALAXY_VIRTUAL_ENV"
+                        rm -rf "$vtmp"
+                    fi
                 fi
-                echo "Verifying $vsrc checksum is $vsha"
-                "$GALAXY_PYTHON" -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
-                tar zxf "$vsrc" -C "$vtmp"
-                "$GALAXY_PYTHON" "$vtmp/virtualenv-$vvers/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
-                rm -rf "$vtmp"
             fi
         fi
     fi
+fi
+
+if command -v uv >/dev/null; then
+    PIP_CMD="$(command -v uv) pip"
+    UNINSTALL_OPTIONS=''
+else
+    PIP_CMD='python -m pip'
+    UNINSTALL_OPTIONS='--yes'
 fi
 
 # activate virtualenv or conda env, sets $GALAXY_VIRTUAL_ENV and $GALAXY_CONDA_ENV
@@ -183,12 +185,11 @@ if [ $SET_VENV -eq 1 ] && [ -z "$VIRTUAL_ENV" ]; then
     exit 1
 fi
 
-: ${GALAXY_WHEELS_INDEX_URL:="https://wheels.galaxyproject.org/simple"}
-: ${PYPI_INDEX_URL:="https://pypi.python.org/simple"}
-: ${GALAXY_DEV_REQUIREMENTS:="./lib/galaxy/dependencies/dev-requirements.txt"}
-if [ $REPLACE_PIP -eq 1 ]; then
-    python -m pip install 'pip>=8.1'
-fi
+: "${GALAXY_WHEELS_INDEX_URL:=https://wheels.galaxyproject.org/simple}"
+: "${GALAXY_DEV_REQUIREMENTS:=./lib/galaxy/dependencies/dev-requirements.txt}"
+# Which app's config decides the conditional dependencies to install. Set by the
+# launcher (run_tool_shed.sh exports tool_shed) since this script is shared.
+: "${GALAXY_CONDITIONAL_DEPENDENCIES_APP:=galaxy}"
 
 requirement_args="-r requirements.txt"
 if [ $DEV_WHEELS -eq 1 ]; then
@@ -198,20 +199,36 @@ fi
 [ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off
 
 if [ $FETCH_WHEELS -eq 1 ]; then
-    pip install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
-    GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
-    if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
-        if pip list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
-            echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
-            pip uninstall -y psycopg2 psycopg2-binary
+    if [ "${PIP_CMD}" = 'python -m pip' ]; then
+        if ! python -m pip --version >/dev/null; then
+            python -m ensurepip
         fi
-        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+        ${PIP_CMD} install "pip>=${MIN_PIP_VERSION}" wheel
+    fi
+    # shellcheck disable=SC2086
+    ${PIP_CMD} install $requirement_args --extra-index-url "${GALAXY_WHEELS_INDEX_URL}"
+    if [ "$GALAXY_CONDITIONAL_DEPENDENCIES_APP" = "tool_shed" ]; then
+        set_tool_shed_config_file_var
+        conditional_dependencies_config_file="$TOOL_SHED_CONFIG_FILE"
+    else
+        set_galaxy_config_file_var
+        conditional_dependencies_config_file="$GALAXY_CONFIG_FILE"
+    fi
+    GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$conditional_dependencies_config_file', app='$GALAXY_CONDITIONAL_DEPENDENCIES_APP')))")
+    if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
+        if ${PIP_CMD} list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
+            echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
+            ${PIP_CMD} uninstall ${UNINSTALL_OPTIONS} psycopg2 psycopg2-binary
+        fi
+        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --extra-index-url "${GALAXY_WHEELS_INDEX_URL}" --constraint lib/galaxy/dependencies/conditional-constraints.txt
     fi
 fi
 
 # Check client build state.
-if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
-    if [ -f static/client_build_hash.txt ]; then
+if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
+    if [ "$INSTALL_PREBUILT_CLIENT" -ne 0 ]; then
+        echo "The Galaxy prebuilt client will be installed from PyPI."
+    elif [ -f static/client_build_hash.txt ]; then
         # If git is not used and static/client_build_hash.txt is present, next
         # client rebuilds must be done manually by the admin
         if [ "$GIT_BRANCH" = "0" ]; then
@@ -233,45 +250,69 @@ else
     echo "The Galaxy client build is being skipped due to the SKIP_CLIENT_BUILD environment variable."
 fi
 
-# Install node if not installed
-if [ -n "$VIRTUAL_ENV" ]; then
-    if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v${NODE_VERSION}" ]; then
-        echo "Installing node into $VIRTUAL_ENV with nodeenv."
-        nodeenv -n "$NODE_VERSION" -p
-    fi
-elif [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
-    if ! in_conda_env "$(command -v node)"; then
-        echo "Installing node into '$CONDA_DEFAULT_ENV' Conda environment with conda."
-        $CONDA_EXE install --yes --override-channels --channel conda-forge --channel defaults --name "$CONDA_DEFAULT_ENV" nodejs="$NODE_VERSION"
-    fi
-fi
-
-# Build client if necessary.
-if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
-    # Ensure dependencies are installed
-    if [ -n "$VIRTUAL_ENV" ]; then
-        if ! in_venv "$(command -v yarn)"; then
-            echo "Installing yarn into $VIRTUAL_ENV with npm."
-            npm install --global yarn
-        fi
-    elif [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
-        if ! in_conda_env "$(command -v yarn)"; then
-            echo "Installing yarn into '$CONDA_DEFAULT_ENV' Conda environment with conda."
-            $CONDA_EXE install --yes --override-channels --channel conda-forge --channel defaults --name "$CONDA_DEFAULT_ENV" yarn
-        fi
-    else
-        echo "WARNING: Galaxy client build needed but there is no virtualenv enabled. Build may fail."
-    fi
-    # Build client
-    cd client
-    if yarn install --network-timeout 300000 --check-files; then
-        if ! yarn run build-production-maps; then
-            echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
+# Build or install client if necessary.
+if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
+    if [ "$INSTALL_PREBUILT_CLIENT" -ne 0 ]; then
+        # Prebuilt install: pull the matching galaxy-web-client wheel from PyPI.
+        # webapp.py picks it up via `import galaxy.web_client` and serves its
+        # bundled dist/ directly -- no pnpm or staging required.
+        GALAXY_WEB_CLIENT_VERSION=$(PYTHONPATH=lib python -c "from galaxy.version import VERSION; print(VERSION)")
+        GALAXY_WEB_CLIENT_REQUIREMENT="galaxy-web-client==${GALAXY_WEB_CLIENT_VERSION}"
+        case "$GALAXY_WEB_CLIENT_VERSION" in
+            *dev*|*rc*)
+                # Only tagged releases are published, so ask the resolver for the
+                # most recent one below this version instead of pinning exactly.
+                # Bound on the version with the .dev/rc suffix stripped: a bound
+                # that is itself a prerelease would let pip match the stray
+                # prerelease wheels on PyPI.
+                GALAXY_WEB_CLIENT_RELEASE_VERSION=${GALAXY_WEB_CLIENT_VERSION%%.dev*}
+                GALAXY_WEB_CLIENT_RELEASE_VERSION=${GALAXY_WEB_CLIENT_RELEASE_VERSION%%rc*}
+                GALAXY_WEB_CLIENT_RELEASE_VERSION=${GALAXY_WEB_CLIENT_RELEASE_VERSION%.}
+                echo "WARNING: Galaxy is at untagged version ${GALAXY_WEB_CLIENT_VERSION}, for which no galaxy-web-client wheel is published to PyPI."
+                echo "Installing the most recent galaxy-web-client release below ${GALAXY_WEB_CLIENT_RELEASE_VERSION}, which may differ slightly from this version of Galaxy."
+                GALAXY_WEB_CLIENT_REQUIREMENT="galaxy-web-client<${GALAXY_WEB_CLIENT_RELEASE_VERSION}"
+                ;;
+        esac
+        # shellcheck disable=SC2086
+        if ! ${PIP_CMD} install "$GALAXY_WEB_CLIENT_REQUIREMENT"; then
+            echo "ERROR: Galaxy prebuilt client install failed.  See ./client/README.md for more information, including how to get help."
             exit 1
         fi
     else
-        echo "ERROR: Galaxy client dependency installation failed. See ./client/README.md for more information, including how to get help."
-        exit 1
+        # Dev build: use pnpm to build client from source.
+        # Ensure pnpm is installed.
+        INSTALL_PNPM=0
+        if ! command -v pnpm >/dev/null; then
+            INSTALL_PNPM=1
+        fi
+        if [ $INSTALL_PNPM -eq 1 ]; then
+            if [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
+                echo "Installing pnpm into '$CONDA_DEFAULT_ENV' Conda environment with conda."
+                $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" pnpm
+            elif [ -n "$VIRTUAL_ENV" ] && in_venv "$(command -v npm)"; then
+                echo "Installing pnpm into $VIRTUAL_ENV with corepack."
+                corepack enable pnpm
+            else
+                echo "Installing pnpm locally with npm."
+                npm install -g pnpm
+            fi
+        fi
+        # We need GALAXY_CONFIG_FILE here, ensure it's set.
+        set_galaxy_config_file_var
+        # Set plugin path
+        GALAXY_PLUGIN_PATH=$(python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
+
+        cd client
+        # shellcheck disable=SC2086
+        if pnpm install $PNPM_INSTALL_OPTS; then
+            if ! (export GALAXY_PLUGIN_PATH="$GALAXY_PLUGIN_PATH"; pnpm run build-production-maps;) then
+                echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
+                exit 1
+            fi
+        else
+            echo "ERROR: Galaxy client dependency installation failed. See ./client/README.md for more information, including how to get help."
+            exit 1
+        fi
+        cd -
     fi
-    cd -
 fi

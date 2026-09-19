@@ -1,27 +1,30 @@
 """
 API operations allowing clients to manage container resolution.
 """
+
 import logging
 
+from galaxy.structured_app import StructuredApp
 from galaxy.tool_util.deps import views
+from galaxy.util import requests
 from galaxy.web import (
     expose_api,
-    require_admin
+    require_admin,
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class ContainerResolutionAPIController(BaseAPIController):
-
-    def __init__(self, app):
-        super(ContainerResolutionAPIController, self).__init__(app)
+class ContainerResolutionAPIController(BaseGalaxyAPIController):
+    def __init__(self, app: StructuredApp):
+        super().__init__(app)
         self._view = views.ContainerResolutionView(app)
 
     @expose_api
     @require_admin
-    def index(self, trans, **kwd):
+    def index(self, trans: GalaxyWebTransaction, **kwd):
         """
         GET /api/container_resolvers
         """
@@ -29,15 +32,15 @@ class ContainerResolutionAPIController(BaseAPIController):
 
     @expose_api
     @require_admin
-    def show(self, trans, id):
+    def show(self, trans: GalaxyWebTransaction, index):
         """
         GET /api/container_resolvers/<id>
         """
-        return self._view.show(id)
+        return self._view.show(index)
 
     @expose_api
     @require_admin
-    def resolve(self, trans, index=None, **kwds):
+    def resolve(self, trans: GalaxyWebTransaction, index=None, **kwds):
         """
         GET /api/container_resolvers/resolve
         GET /api/container_resolvers/{index}/resolve
@@ -62,11 +65,12 @@ class ContainerResolutionAPIController(BaseAPIController):
         :returns:   a dictified description of the container dependency, with attribute
                     ``dependency_type: None`` if no match was found.
         """
+        kwds["session"] = requests.Session()
         return self._view.resolve(index=index, **kwds)
 
     @expose_api
     @require_admin
-    def resolve_toolbox(self, trans, **kwds):
+    def resolve_toolbox(self, trans: GalaxyWebTransaction, **kwds):
         """
         GET /api/container_resolvers/toolbox
         GET /api/container_resolvers/{index}/toolbox
@@ -81,11 +85,12 @@ class ContainerResolutionAPIController(BaseAPIController):
         :rtype:     list
         :returns:   list of items returned from resolve()
         """
+        kwds["session"] = requests.Session()
         return self._view.resolve_toolbox(**kwds)
 
     @expose_api
     @require_admin
-    def resolve_toolbox_with_install(self, trans, payload, **kwds):
+    def resolve_toolbox_with_install(self, trans: GalaxyWebTransaction, payload, **kwds):
         """
         POST /api/container_resolvers/toolbox/install
         POST /api/container_resolvers/{index}/toolbox/install
@@ -99,11 +104,12 @@ class ContainerResolutionAPIController(BaseAPIController):
         """
         kwds.update(payload)
         kwds["install"] = True
+        kwds["session"] = requests.Session()
         return self._view.resolve_toolbox(**kwds)
 
     @expose_api
     @require_admin
-    def resolve_with_install(self, trans, payload, **kwds):
+    def resolve_with_install(self, trans: GalaxyWebTransaction, payload, **kwds):
         """
         POST /api/container_resolvers/resolve/install
         POST /api/container_resolvers/{index}/resolve/install

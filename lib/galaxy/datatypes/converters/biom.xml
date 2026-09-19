@@ -1,0 +1,55 @@
+<tool id="CONVERTER_biom" name="Convert Biom datasets" version="@TOOL_VERSION@" profile="20.05">
+    <macros>
+        <token name="@TOOL_VERSION@">2.1.5</token>
+    </macros>
+    <requirements>
+        <requirement type="package" version="@TOOL_VERSION@">biom-format</requirement>
+    </requirements>
+    <command><![CDATA[
+        biom convert -i '$input' -o '$output'
+        #if $__target_datatype__ == 'biom2'
+            --to-hdf5
+        #elif $__target_datatype__ == 'biom1'
+            --to-json
+        #end if
+        && cp '$ext_config' 'galaxy.json'
+    ]]></command>
+    <configfiles>
+        <configfile name="ext_config">{"output": {
+  "name": "$input.name converted to $__target_datatype__",
+  "ext": "$__target_datatype__"
+}}</configfile>
+    </configfiles>
+    <inputs>
+        <param name="input" type="data" format="biom1,biom2" label="Biom file"/>
+        <param name="__target_datatype__" type="select" label="Target data type">
+            <option value="biom1">biom1</option>
+            <option value="biom2">biom2</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="auto"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="biom2" value="input_taxonomy.biom2"/>
+            <param name="__target_datatype__" value="biom1"/>
+            <output name="output" ftype="biom1">
+                <assert_contents>
+                    <has_text text="Biological Observation Matrix 1.0.0"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="biom1" value="input_taxonomy.biom1"/>
+            <param name="__target_datatype__" value="biom2"/>
+            <output name="output" ftype="biom2" value="input_taxonomy.biom2" compare="sim_size"/>
+        </test>
+    </tests>
+    <help>
+    Convert biom1 and biom2 datasets.
+    </help>
+    <citations>
+        <citation type="doi">10.1186/2047-217X-1-7</citation>
+    </citations>
+</tool>

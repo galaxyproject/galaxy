@@ -1,0 +1,15 @@
+- doc: |
+    Test that omitting an optional text parameter from the invocation does not
+    leak sentinel values into output renames. The rename template uses
+    ${optional_text} which should remain unexpanded (kept as-is) when the
+    parameter is not provided, rather than being replaced with a stringified
+    NO_REPLACEMENT sentinel.
+  job:
+    required_input:
+      class: File
+      path: 1.fasta
+  outputs:
+    out:
+      class: File
+      metadata:
+        name: "prefix_${optional_text}_suffix"

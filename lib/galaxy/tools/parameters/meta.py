@@ -1,104 +1,216 @@
-from __future__ import print_function
-
 import copy
 import itertools
 import logging
-from collections import OrderedDict
+from collections import namedtuple
+from typing import (
+    Any,
+)
 
 from galaxy import (
     exceptions,
-    model,
-    util
+    util,
 )
-from galaxy.model.dataset_collections import matching, subcollections
-from galaxy.util import permutations
+from galaxy.model import (
+    DatasetCollectionElement,
+    DatasetInstance,
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
+    LibraryDatasetDatasetAssociation,
+)
+from galaxy.model.dataset_collections import (
+    matching,
+    subcollections,
+)
+from galaxy.model.dataset_collections.adapters import (
+    CollectionAdapter,
+    PromoteCollectionElementToCollectionAdapter,
+)
+from galaxy.tool_util.parameters import RequestInternalDereferencedToolState
+from galaxy.util.permutations import (
+    build_combos,
+    input_classification,
+    is_in_state,
+    state_copy,
+    state_get_value,
+    state_remove_value,
+    state_set_value,
+)
+from galaxy.work.context import WorkRequestContext
 from . import visit_input_values
+from .workflow_utils import (
+    runtime_to_json,
+    RuntimeValue,
+)
+from .wrapped import process_key
+from .._types import (
+    InputFormatT,
+    ToolRequestT,
+    ToolStateDumpedToJsonInternalT,
+    ToolStateJobInstanceT,
+)
 
 log = logging.getLogger(__name__)
 
+WorkflowParameterExpansion = namedtuple(
+    "WorkflowParameterExpansion", ["param_combinations", "param_keys", "input_combinations"]
+)
 
-def expand_workflow_inputs(inputs):
+
+class ParamKey:
+    def __init__(self, step_id, key):
+        self.step_id = step_id
+        self.key = key
+
+
+class InputKey:
+    def __init__(self, input_id):
+        self.input_id = input_id
+
+
+def expand_workflow_inputs(param_inputs, inputs=None):
     """
     Expands incoming encoded multiple payloads, into the set of all individual payload combinations
-    >>> params, param_keys = expand_workflow_inputs({'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}})
-    >>> print(["%s" % (p['1']['input']['hid']) for p in params])
+    >>> expansion = expand_workflow_inputs({'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}})
+    >>> print(["%s" % (p['1']['input']['hid']) for p in expansion.param_combinations])
     ['1', '2']
-    >>> params, param_keys = expand_workflow_inputs({'1': {'input': {'batch': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}})
-    >>> print(["%s" % (p['1']['input']['hid']) for p in params])
+    >>> expansion = expand_workflow_inputs({'1': {'input': {'batch': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}})
+    >>> print(["%s" % (p['1']['input']['hid']) for p in expansion.param_combinations])
     ['1', '2']
-    >>> params, param_keys = expand_workflow_inputs({'1': {'input': {'batch': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'values': [{'hid': '3'}, {'hid': '4'}] }}})
-    >>> print(["%s%s" % (p['1']['input']['hid'], p['2']['input']['hid']) for p in params])
+    >>> expansion = expand_workflow_inputs({'1': {'input': {'batch': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'values': [{'hid': '3'}, {'hid': '4'}] }}})
+    >>> print(["%s%s" % (p['1']['input']['hid'], p['2']['input']['hid']) for p in expansion.param_combinations])
     ['13', '24']
-    >>> params, param_keys = expand_workflow_inputs({'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'values': [{'hid': '3'}, {'hid': '4'}, {'hid': '5'}] }}})
-    >>> print(["%s%s" % (p['1']['input']['hid'], p['2']['input']['hid']) for p in params])
+    >>> expansion = expand_workflow_inputs({'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'values': [{'hid': '3'}, {'hid': '4'}, {'hid': '5'}] }}})
+    >>> print(["%s%s" % (p['1']['input']['hid'], p['2']['input']['hid']) for p in expansion.param_combinations])
     ['13', '23', '14', '24', '15', '25']
-    >>> params, param_keys = expand_workflow_inputs({'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'product': True, 'values': [{'hid': '3'}, {'hid': '4'}, {'hid': '5'}] }}, '3': {'input': {'batch': True, 'product': True, 'values': [{'hid': '6'}, {'hid': '7'}, {'hid': '8'}] }}})
-    >>> print(["%s%s%s" % (p['1']['input']['hid'], p['2']['input']['hid'], p['3']['input']['hid']) for p in params])
+    >>> expansion = expand_workflow_inputs({'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'product': True, 'values': [{'hid': '3'}, {'hid': '4'}, {'hid': '5'}] }}, '3': {'input': {'batch': True, 'product': True, 'values': [{'hid': '6'}, {'hid': '7'}, {'hid': '8'}] }}})
+    >>> print(["%s%s%s" % (p['1']['input']['hid'], p['2']['input']['hid'], p['3']['input']['hid']) for p in expansion.param_combinations])
     ['136', '137', '138', '146', '147', '148', '156', '157', '158', '236', '237', '238', '246', '247', '248', '256', '257', '258']
+    >>> expansion = expand_workflow_inputs(None, inputs={'myinput': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }})
+    >>> print(["%s" % (p['myinput']['hid']) for p in expansion.input_combinations])
+    ['1', '2']
     """
+    param_inputs = param_inputs or {}
+    inputs = inputs or {}
+
     linked_n = None
     linked = []
     product = []
     linked_keys = []
     product_keys = []
-    for step_id, step in sorted(inputs.items()):
+
+    def is_batch(value):
+        return (
+            isinstance(value, dict)
+            and "batch" in value
+            and value["batch"] is True
+            and "values" in value
+            and isinstance(value["values"], list)
+        )
+
+    for step_id, step in sorted(param_inputs.items()):
         for key, value in sorted(step.items()):
-            if isinstance(value, dict) and 'batch' in value and value['batch'] is True and 'values' in value and isinstance(value['values'], list):
-                nval = len(value['values'])
-                if 'product' in value and value['product'] is True:
-                    product.append(value['values'])
-                    product_keys.append((step_id, key))
+            if is_batch(value):
+                nval = len(value["values"])
+                if "product" in value and value["product"] is True:
+                    product.append(value["values"])
+                    product_keys.append(ParamKey(step_id, key))
                 else:
                     if linked_n is None:
                         linked_n = nval
                     elif linked_n != nval or nval == 0:
-                        raise exceptions.RequestParameterInvalidException('Failed to match linked batch selections. Please select equal number of data files.')
-                    linked.append(value['values'])
-                    linked_keys.append((step_id, key))
-    params = []
+                        raise exceptions.RequestParameterInvalidException(
+                            "Failed to match linked batch selections. Please select equal number of data files."
+                        )
+                    linked.append(value["values"])
+                    linked_keys.append(ParamKey(step_id, key))
+
+    # Force it to a list to allow modification...
+    input_items = list(inputs.items())
+    for input_id, value in input_items:
+        if is_batch(value):
+            nval = len(value["values"])
+            if "product" in value and value["product"] is True:
+                product.append(value["values"])
+                product_keys.append(InputKey(input_id))
+            else:
+                if linked_n is None:
+                    linked_n = nval
+                elif linked_n != nval or nval == 0:
+                    raise exceptions.RequestParameterInvalidException(
+                        "Failed to match linked batch selections. Please select equal number of data files."
+                    )
+                linked.append(value["values"])
+                linked_keys.append(InputKey(input_id))
+        elif isinstance(value, dict) and "batch" in value:
+            # remove batch wrapper and render simplified input form rest of workflow
+            # code expects
+            inputs[input_id] = value["values"][0]
+
+    param_combinations = []
+    input_combinations = []
     params_keys = []
     linked = linked or [[None]]
     product = product or [[None]]
-    linked_keys = linked_keys or [(None, None)]
-    product_keys = product_keys or [(None, None)]
+    linked_keys = linked_keys or [None]
+    product_keys = product_keys or [None]
     for linked_values, product_values in itertools.product(zip(*linked), itertools.product(*product)):
-        new_params = copy.deepcopy(inputs)
+        new_params = copy.deepcopy(param_inputs)
+        new_inputs = copy.deepcopy(inputs)
         new_keys = []
-        for (step_id, key), value in list(zip(linked_keys, linked_values)) + list(zip(product_keys, product_values)):
-            if step_id is not None:
-                new_params[step_id][key] = value
-                new_keys.append(str(value['hid']))
+        for input_key, value in list(zip(linked_keys, linked_values)) + list(zip(product_keys, product_values)):
+            if input_key:
+                if isinstance(input_key, ParamKey):
+                    step_id = input_key.step_id
+                    key = input_key.key
+                    assert step_id is not None
+                    new_params[step_id][key] = value
+                    if "hid" in value:
+                        new_keys.append(str(value["hid"]))
+                else:
+                    input_id = input_key.input_id
+                    assert input_id is not None
+                    new_inputs[input_id] = value
+                    if "hid" in value:
+                        new_keys.append(str(value["hid"]))
+
         params_keys.append(new_keys)
-        params.append(new_params)
-    return params, params_keys
+        param_combinations.append(new_params)
+        input_combinations.append(new_inputs)
+
+    return WorkflowParameterExpansion(param_combinations, params_keys, input_combinations)
 
 
-def process_key(incoming_key, incoming_value, d):
-    key_parts = incoming_key.split('|')
-    if len(key_parts) == 1:
-        # Regular parameter
-        if incoming_key in d and not incoming_value:
-            # In case we get an empty repeat after we already filled in a repeat element
-            return
-        d[incoming_key] = incoming_value
-    elif key_parts[0].rsplit('_', 1)[-1].isdigit():
-        # Repeat
-        input_name, index = key_parts[0].rsplit('_', 1)
-        index = int(index)
-        d.setdefault(input_name, [])
-        newlist = [{} for _ in range(index + 1)]
-        d[input_name].extend(newlist[len(d[input_name]):])
-        subdict = d[input_name][index]
-        process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
-    else:
-        # Section / Conditional
-        input_name = key_parts[0]
-        subdict = {}
-        d[input_name] = subdict
-        process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
+ExpandedT = tuple[list[ToolStateJobInstanceT], matching.MatchingCollections | None]
 
 
-def expand_meta_parameters(trans, tool, incoming):
+def expand_flat_parameters_to_nested(incoming_copy: ToolRequestT) -> dict[str, Any]:
+    nested_dict: dict[str, Any] = {}
+    for incoming_key, incoming_value in incoming_copy.items():
+        if not incoming_key.startswith("__"):
+            process_key(incoming_key, incoming_value=incoming_value, d=nested_dict)
+    return nested_dict
+
+
+def _remove_internal_state_keys(state: Any) -> None:
+    """Remove ``__``-prefixed keys from every dict in the nested state.
+
+    ``visit_input_values`` injects internal book-keeping entries such as
+    ``__current_case__`` and ``__index__`` as side-effects.  These must not
+    reach the job-internal Pydantic validation layer, which uses ``extra='forbid'``.
+    """
+    if isinstance(state, dict):
+        for key in [k for k in state if k.startswith("__")]:
+            del state[key]
+        for v in state.values():
+            _remove_internal_state_keys(v)
+    elif isinstance(state, list):
+        for item in state:
+            _remove_internal_state_keys(item)
+
+
+def expand_meta_parameters(
+    trans: WorkRequestContext, tool, incoming: ToolRequestT, input_format: InputFormatT
+) -> ExpandedT:
     """
     Take in a dictionary of raw incoming parameters and expand to a list
     of expanded incoming parameters (one set of parameters per tool
@@ -113,58 +225,227 @@ def expand_meta_parameters(trans, tool, incoming):
     # order matters, so the following reorders incoming
     # according to tool.inputs (which is ordered).
     incoming_copy = incoming.copy()
-    nested_dict = {}
-    for incoming_key, incoming_value in incoming_copy.items():
-        if not incoming_key.startswith('__'):
-            process_key(incoming_key, incoming_value=incoming_value, d=nested_dict)
-
-    reordered_incoming = OrderedDict()
-
-    def visitor(input, value, prefix, prefixed_name, prefixed_label, error, **kwargs):
-        if prefixed_name in incoming_copy:
-            reordered_incoming[prefixed_name] = incoming_copy[prefixed_name]
-            del incoming_copy[prefixed_name]
-
-    visit_input_values(inputs=tool.inputs, input_values=nested_dict, callback=visitor)
-    reordered_incoming.update(incoming_copy)
-
-    def classifier(input_key):
-        value = incoming[input_key]
-        if isinstance(value, dict) and 'values' in value:
-            # Explicit meta wrapper for inputs...
-            is_batch = value.get('batch', False)
-            is_linked = value.get('linked', True)
-            if is_batch and is_linked:
-                classification = permutations.input_classification.MATCHED
-            elif is_batch:
-                classification = permutations.input_classification.MULTIPLIED
-            else:
-                classification = permutations.input_classification.SINGLE
-            if __collection_multirun_parameter(value):
-                collection_value = value['values'][0]
-                values = __expand_collection_parameter(trans, input_key, collection_value, collections_to_match, linked=is_linked)
-            else:
-                values = value['values']
-        else:
-            classification = permutations.input_classification.SINGLE
-            values = value
-        return classification, values
+    if input_format == "legacy":
+        nested_dict = expand_flat_parameters_to_nested(incoming_copy)
+    else:
+        nested_dict = incoming_copy
 
     collections_to_match = matching.CollectionsToMatch()
 
-    # Stick an unexpanded version of multirun keys so they can be replaced,
-    # by expand_mult_inputs.
-    incoming_template = reordered_incoming
+    def classifier_from_value(value, input_key):
+        if isinstance(value, dict) and "values" in value:
+            # Explicit meta wrapper for inputs...
+            is_batch = value.get("batch", False)
+            is_linked = value.get("linked", True)
+            if is_batch and is_linked:
+                classification = input_classification.MATCHED
+            elif is_batch:
+                classification = input_classification.MULTIPLIED
+            else:
+                classification = input_classification.SINGLE
+            if __collection_multirun_parameter(value):
+                collection_value = value["values"][0]
+                values = __expand_collection_parameter(
+                    trans, input_key, collection_value, collections_to_match, linked=is_linked
+                )
+            else:
+                values = value["values"]
+        else:
+            classification = input_classification.SINGLE
+            values = value
+        return classification, values
 
-    expanded_incomings = permutations.expand_multi_inputs(incoming_template, classifier)
+    nested = input_format != "legacy"
+    if not nested:
+        reordered_incoming = reorder_parameters(tool, incoming_copy, nested_dict, nested)
+        incoming_template = reordered_incoming
+
+        def classifier_flat(input_key):
+            return classifier_from_value(incoming[input_key], input_key)
+
+        single_inputs, matched_multi_inputs, multiplied_multi_inputs = split_inputs_flat(
+            incoming_template, classifier_flat
+        )
+    else:
+        reordered_incoming = reorder_parameters(tool, incoming_copy, nested_dict, nested)
+        incoming_template = reordered_incoming
+        single_inputs, matched_multi_inputs, multiplied_multi_inputs = split_inputs_nested(
+            tool.inputs, incoming_template, classifier_from_value
+        )
+
+    expanded_incomings = build_combos(single_inputs, matched_multi_inputs, multiplied_multi_inputs, nested=nested)
     if collections_to_match.has_collections():
-        collection_info = trans.app.dataset_collections_service.match_collections(collections_to_match)
+        collection_info = trans.app.dataset_collection_manager.match_collections(collections_to_match)
     else:
         collection_info = None
     return expanded_incomings, collection_info
 
 
-def __expand_collection_parameter(trans, input_key, incoming_val, collections_to_match, linked=False):
+def reorder_parameters(tool, incoming, nested_dict, nested):
+    # If we're going to multiply input dataset combinations
+    # order matters, so the following reorders incoming
+    # according to tool.inputs (which is ordered).
+    incoming_copy = state_copy(incoming, nested)
+
+    reordered_incoming = {}
+
+    def visitor(input, value, prefix, prefixed_name, prefixed_label, error, **kwargs):
+        if is_in_state(incoming_copy, prefixed_name, nested):
+            value_to_copy_over = state_get_value(incoming_copy, prefixed_name, nested)
+            state_set_value(reordered_incoming, prefixed_name, value_to_copy_over, nested)
+            state_remove_value(incoming_copy, prefixed_name, nested)
+
+    visit_input_values(inputs=tool.inputs, input_values=nested_dict, callback=visitor)
+
+    def merge_into(from_object, into_object):
+        if isinstance(from_object, dict):
+            for key, value in from_object.items():
+                if key not in into_object:
+                    into_object[key] = value
+                else:
+                    into_target = into_object[key]
+                    merge_into(value, into_target)
+        elif isinstance(from_object, list):
+            for index in from_object:
+                if len(into_object) <= index:
+                    into_object.append(from_object[index])
+                else:
+                    merge_into(from_object[index], into_object[index])
+
+    merge_into(incoming_copy, reordered_incoming)
+    return reordered_incoming
+
+
+def split_inputs_flat(inputs: dict[str, Any], classifier):
+    single_inputs: dict[str, Any] = {}
+    matched_multi_inputs: dict[str, Any] = {}
+    multiplied_multi_inputs: dict[str, Any] = {}
+
+    for input_key in inputs:
+        input_type, expanded_val = classifier(input_key)
+        if input_type == input_classification.SINGLE:
+            single_inputs[input_key] = expanded_val
+        elif input_type == input_classification.MATCHED:
+            matched_multi_inputs[input_key] = expanded_val
+        elif input_type == input_classification.MULTIPLIED:
+            multiplied_multi_inputs[input_key] = expanded_val
+
+    return (single_inputs, matched_multi_inputs, multiplied_multi_inputs)
+
+
+def split_inputs_nested(inputs, nested_dict, classifier):
+    matched_multi_inputs: dict[str, Any] = {}
+    multiplied_multi_inputs: dict[str, Any] = {}
+    unset_value = object()
+
+    def visitor(input, value, prefix, prefixed_name, prefixed_label, error, **kwargs):
+        if value is unset_value:
+            # don't want to inject extra nulls into state
+            return
+
+        input_type, expanded_val = classifier(value, prefixed_name)
+        if input_type == input_classification.MATCHED:
+            matched_multi_inputs[prefixed_name] = expanded_val
+        elif input_type == input_classification.MULTIPLIED:
+            multiplied_multi_inputs[prefixed_name] = expanded_val
+
+    visit_input_values(
+        inputs=inputs, input_values=nested_dict, callback=visitor, allow_case_inference=True, unset_value=unset_value
+    )
+    _remove_internal_state_keys(nested_dict)
+    return (nested_dict, matched_multi_inputs, multiplied_multi_inputs)
+
+
+ExpandedAsyncT = tuple[
+    list[ToolStateJobInstanceT], list[ToolStateDumpedToJsonInternalT], matching.MatchingCollections | None
+]
+
+
+def expand_meta_parameters_async(app, tool, incoming: RequestInternalDereferencedToolState) -> ExpandedAsyncT:
+    collections_to_match = matching.CollectionsToMatch()
+
+    def classifier_from_value(value, input_key):
+        if isinstance(value, dict) and "values" in value:
+            # Explicit meta wrapper for inputs...
+            is_batch = value.get("__class__", "Batch") == "Batch"
+            is_linked = value.get("linked", True)
+            if is_batch and is_linked:
+                classification = input_classification.MATCHED
+            elif is_batch:
+                classification = input_classification.MULTIPLIED
+            else:
+                classification = input_classification.SINGLE
+            if __collection_multirun_parameter(value):
+                collection_value = value["values"][0]
+                values = __expand_collection_parameter_async(
+                    app, input_key, collection_value, collections_to_match, linked=is_linked
+                )
+            else:
+                values = value["values"]
+        else:
+            classification = input_classification.SINGLE
+            values = value
+        return classification, values
+
+    # is there a way to make Pydantic ensure reordering isn't needed - model and serialize out the parameters maybe?
+    reordered_incoming = reorder_parameters(tool, incoming.input_state, incoming.input_state, True)
+    incoming_template = reordered_incoming
+
+    single_inputs, matched_multi_inputs, multiplied_multi_inputs = split_inputs_nested(
+        tool.inputs, incoming_template, classifier_from_value
+    )
+    expanded_incomings = build_combos(single_inputs, matched_multi_inputs, multiplied_multi_inputs, nested=True)
+    # those all have sa model objects from expansion to be used within for additional logic (maybe?)
+    # but we want to record just src and IDS in the job state object - so undo that
+    expanded_job_states = build_combos(
+        to_decoded_json(single_inputs),
+        to_decoded_json(matched_multi_inputs),
+        to_decoded_json(multiplied_multi_inputs),
+        nested=True,
+    )
+    if collections_to_match.has_collections():
+        collection_info = app.dataset_collection_manager.match_collections(collections_to_match)
+    else:
+        collection_info = None
+    return expanded_incomings, expanded_job_states, collection_info
+
+
+def to_decoded_json(has_objects):
+    if isinstance(has_objects, dict):
+        decoded_json = {}
+        for key, value in has_objects.items():
+            decoded_json[key] = to_decoded_json(value)
+        return decoded_json
+    elif isinstance(has_objects, list):
+        return [to_decoded_json(o) for o in has_objects]
+    elif isinstance(has_objects, CollectionAdapter):
+        return has_objects.to_adapter_model().model_dump()
+    elif isinstance(has_objects, DatasetCollectionElement):
+        return {"src": "dce", "id": has_objects.id}
+    elif isinstance(has_objects, HistoryDatasetAssociation):
+        return {"src": "hda", "id": has_objects.id}
+    elif isinstance(has_objects, HistoryDatasetCollectionAssociation):
+        return {"src": "hdca", "id": has_objects.id}
+    elif isinstance(has_objects, LibraryDatasetDatasetAssociation):
+        return {"src": "ldda", "id": has_objects.id}
+    elif isinstance(has_objects, RuntimeValue):
+        return runtime_to_json(has_objects)
+    else:
+        return has_objects
+
+
+CollectionExpansionListT = (
+    list[DatasetCollectionElement | PromoteCollectionElementToCollectionAdapter] | list[DatasetInstance]
+)
+
+
+def __expand_collection_parameter(
+    trans: WorkRequestContext,
+    input_key,
+    incoming_val,
+    collections_to_match: "matching.CollectionsToMatch",
+    linked=False,
+) -> CollectionExpansionListT:
     # If subcollectin multirun of data_collection param - value will
     # be "hdca_id|subcollection_type" else it will just be hdca_id
     if "|" in incoming_val:
@@ -172,36 +453,83 @@ def __expand_collection_parameter(trans, input_key, incoming_val, collections_to
     else:
         try:
             src = incoming_val["src"]
-            if src != "hdca":
-                raise exceptions.ToolMetaParameterException("Invalid dataset collection source type %s" % src)
-            encoded_hdc_id = incoming_val["id"]
-            subcollection_type = incoming_val.get('map_over_type', None)
+            if src not in ("hdca", "dce"):
+                raise exceptions.ToolMetaParameterException(f"Invalid dataset collection source type {src}")
+            encoded_id = incoming_val["id"]
+            subcollection_type = incoming_val.get("map_over_type", None)
         except TypeError:
-            encoded_hdc_id = incoming_val
+            encoded_id = incoming_val
             subcollection_type = None
-    hdc_id = trans.app.security.decode_id(encoded_hdc_id)
-    hdc = trans.sa_session.query(model.HistoryDatasetCollectionAssociation).get(hdc_id)
-    collections_to_match.add(input_key, hdc, subcollection_type=subcollection_type, linked=linked)
+    decoded_id = trans.app.security.decode_id(encoded_id)
+    if src == "dce":
+        item = trans.sa_session.get_one(DatasetCollectionElement, decoded_id)
+        collection = item.child_collection
+        if not collection:
+            raise exceptions.ToolMetaParameterException(f"DCE {decoded_id} does not contain a child collection")
+    else:
+        item = trans.sa_session.get_one(HistoryDatasetCollectionAssociation, decoded_id)
+        collection = item.collection
+    if not collection.populated_optimized:
+        raise exceptions.ToolInputsNotReadyException("An input collection is not populated.")
+    collections_to_match.add(input_key, item, subcollection_type=subcollection_type, linked=linked)
     if subcollection_type is not None:
-        subcollection_elements = subcollections.split_dataset_collection_instance(hdc, subcollection_type)
+        subcollection_elements: list[DatasetCollectionElement | PromoteCollectionElementToCollectionAdapter] = (
+            subcollections._split_dataset_collection(collection, subcollection_type)
+        )
         return subcollection_elements
     else:
-        hdas = []
-        for element in hdc.collection.dataset_elements:
+        hdas: list[DatasetInstance] = []
+        for element in collection.dataset_elements:
             hda = element.dataset_instance
             hda.element_identifier = element.element_identifier
             hdas.append(hda)
         return hdas
 
 
-def __collection_multirun_parameter(value):
-    is_batch = value.get('batch', False)
+def __expand_collection_parameter_async(
+    app, input_key, incoming_val, collections_to_match: "matching.CollectionsToMatch", linked=False
+) -> CollectionExpansionListT:
+    # If subcollection multirun of data_collection param - value will
+    # be "hdca_id|subcollection_type" else it will just be hdca_id
+    try:
+        src = incoming_val["src"]
+        if src not in ("hdca", "dce"):
+            raise exceptions.ToolMetaParameterException(f"Invalid dataset collection source type {src}")
+        item_id = incoming_val["id"]
+        subcollection_type = incoming_val.get("map_over_type", None)
+    except TypeError:
+        item_id = incoming_val
+        src = "hdca"
+        subcollection_type = None
+    if src == "dce":
+        item = app.model.context.get(DatasetCollectionElement, item_id)
+        collection = item.child_collection
+        if not collection:
+            raise exceptions.ToolMetaParameterException(f"DCE {item_id} does not contain a child collection")
+    else:
+        item = app.model.context.get(HistoryDatasetCollectionAssociation, item_id)
+        collection = item.collection
+    collections_to_match.add(input_key, item, subcollection_type=subcollection_type, linked=linked)
+    if subcollection_type is not None:
+        subcollection_elements = subcollections._split_dataset_collection(collection, subcollection_type)
+        return subcollection_elements
+    else:
+        hdas: list[DatasetInstance] = []
+        for element in collection.dataset_elements:
+            hda = element.dataset_instance
+            hda.element_identifier = element.element_identifier
+            hdas.append(hda)
+        return hdas
+
+
+def __collection_multirun_parameter(value: dict[str, Any]) -> bool:
+    is_batch = value.get("batch", False) or value.get("__class__", None) == "Batch"
     if not is_batch:
         return False
 
-    batch_values = util.listify(value['values'])
+    batch_values = util.listify(value["values"])
     if len(batch_values) == 1:
         batch_over = batch_values[0]
-        if isinstance(batch_over, dict) and ('src' in batch_over) and (batch_over['src'] == 'hdca'):
+        if isinstance(batch_over, dict) and ("src" in batch_over) and (batch_over["src"] in {"hdca", "dce"}):
             return True
     return False

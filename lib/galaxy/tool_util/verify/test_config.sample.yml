@@ -1,0 +1,29 @@
+# Set Galaxy URL to test (command-line overrides this).
+galaxy_url: http://localhost:8080
+
+# User API key to test with.
+#key:
+
+# Admin API key to test with.
+#admin_key:
+
+# Path to accumulate output metadata into.
+#output_json:
+
+# Allow skipping tools and annotating test reports with notes and other metadata.
+tools:
+  'tool_id_0':
+    2:  # test index based at 0
+      skip: 'This test will never work on our servers.'
+  'tool_id_1/version':
+    0:
+      note: 'Add this note to the final report - maybe indicate flakey test or test important to check.'
+    1:
+      note: 'Or maybe note issue being tracked - fix open at https://github.com/bgruening/galaxytools/pull/1041'
+  'tool_id_2':
+    default:
+      skip: 'skip all tests for this tool+version'
+  'tool_id_3':
+    'version1.2':
+      default:
+        skip: 'skip all tests for this version'

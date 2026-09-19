@@ -19,4 +19,4 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 from galaxy.metadata.set_metadata import set_metadata
 
-__all__ = ('set_metadata', )
+__all__ = ("set_metadata",)

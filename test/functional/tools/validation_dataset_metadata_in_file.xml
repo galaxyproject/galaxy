@@ -1,0 +1,31 @@
+<tool id="validation_dataset_metadata_in_file" name="validation_dataset_metadata_in_file" profile="21.09" version="0.1">
+    <command><![CDATA[
+echo 'Hello World' > out1
+    ]]></command>
+    <inputs>
+        <!-- test dataset_metadata_in_file validator with and without negation
+             the test also uses the loc file all_fasta.loc.sample, but it could be any file in the tool data dir -->
+        <param name="value" type="data" format="data">
+            <validator type="dataset_metadata_in_file" filename="all_fasta.loc.sample" line_startswith="#h" metadata_name="dbkey" metadata_column="1"/>
+        </param>
+        <param name="value_neg" type="data" format="data">
+            <validator type="dataset_metadata_in_file" filename="all_fasta.loc.sample" line_startswith="#h" metadata_name="dbkey" metadata_column="1" negate="true"/>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" from_work_dir="out1"/>
+    </outputs>
+    <tests>
+        <!-- hg19 is in the file and hg38 isn't -->
+        <test expect_failure="false">
+            <param name="value" value="1.fasta" dbkey="hg19"/> 
+            <param name="value_neg" value="2.fasta" dbkey="hg38"/>
+           </test>
+        <test expect_failure="true">
+            <param name="value" value="1.fasta" dbkey="hg38"/>
+            <param name="value_neg" value="2.fasta" dbkey="hg19"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

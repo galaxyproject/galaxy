@@ -1,4 +1,4 @@
-<tool id="CONVERTER_wiggle_to_interval_0" name="Wiggle to Interval" version="1.0.1" profile="16.04">
+<tool id="CONVERTER_wiggle_to_interval_0" name="Convert Wiggle to Interval" version="1.0.1" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <!-- Used on the metadata edit page. -->
     <requirements>
@@ -14,8 +14,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" format="wig" value="aggregate_binned_scores_3.wig"/>
-            <output name="out_file1" format="interval" value="aggregate_binned_scores_3.interval"/>
+            <param name="input" ftype="wig" value="aggregate_binned_scores_3.wig"/>
+            <output name="out_file1" ftype="interval" value="aggregate_binned_scores_3.interval"/>
         </test>
     </tests>
 </tool>

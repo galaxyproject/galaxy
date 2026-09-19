@@ -1,0 +1,246 @@
+<template>
+    <div id="app" :style="theme">
+        <div id="everything">
+            <div id="background" />
+            <template v-if="!embedded">
+                <Masthead
+                    v-if="showMasthead"
+                    id="masthead"
+                    :brand="config.brand"
+                    :logo-url="config.logo_url"
+                    :logo-src="theme?.['--masthead-logo-img'] ?? config.logo_src"
+                    :logo-src-secondary="theme?.['--masthead-logo-img-secondary'] ?? config.logo_src_secondary"
+                    :window-tab="windowTab" />
+                <Alert
+                    v-if="config.message_box_visible && config.message_box_content"
+                    id="messagebox"
+                    class="rounded-0 m-0 p-2"
+                    :variant="config.message_box_class || 'info'">
+                    <span class="fa fa-fw mr-1 fa-exclamation" />
+                    <!-- eslint-disable-next-line vue/no-v-html -->
+                    <span v-html="config.message_box_content"></span>
+                </Alert>
+                <Alert
+                    v-if="showInactivityWarning && config.inactivity_box_content"
+                    id="inactivebox"
+                    class="rounded-0 m-0 p-2"
+                    variant="warning">
+                    <span class="fa fa-fw mr-1 fa-exclamation-triangle" />
+                    <span>{{ config.inactivity_box_content }}</span>
+                    <span>
+                        <a class="ml-1" :href="resendUrl">Resend Verification</a>
+                    </span>
+                </Alert>
+            </template>
+
+            <router-view @update:confirmation="confirmation = $event" />
+        </div>
+        <template v-if="!embedded">
+            <div id="dd-helper" />
+            <GToast />
+            <ConfirmDialog ref="confirmDialogRef" />
+            <BroadcastsOverlay />
+            <DragGhost />
+            <template v-if="showMasthead">
+                <WindowManagerWindow v-for="win in windowManagerStore.windows" :key="win.id" :window="win" />
+            </template>
+            <TourRunner v-if="currentTour?.id" :key="currentTour.id" :tour-id="currentTour.id" />
+        </template>
+    </div>
+</template>
+<script>
+import { storeToRefs } from "pinia";
+import { computed, ref, watch } from "vue";
+import { useRoute } from "vue-router/composables";
+
+import { getGalaxyInstance } from "@/app";
+import short from "@/components/plugins/short";
+import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
+import { useRouteQueryBool } from "@/composables/route";
+import { getAppRoot } from "@/onload";
+import { useEntryPointStore } from "@/stores/entryPointStore";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useNotificationsStore } from "@/stores/notificationsStore";
+import { useTourStore } from "@/stores/tourStore";
+import { useUserStore } from "@/stores/userStore";
+import { useWindowManagerStore } from "@/stores/windowManagerStore";
+
+import Alert from "@/components/Alert.vue";
+import GToast from "@/components/BaseComponents/GToast.vue";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import DragGhost from "@/components/DragGhost.vue";
+import Masthead from "@/components/Masthead/Masthead.vue";
+import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
+import TourRunner from "@/components/Tour/TourRunner.vue";
+import WindowManagerWindow from "@/components/WindowManager/WindowManagerWindow.vue";
+
+export default {
+    components: {
+        Alert,
+        DragGhost,
+        Masthead,
+        WindowManagerWindow,
+        GToast,
+        ConfirmDialog,
+        BroadcastsOverlay,
+        TourRunner,
+    },
+    directives: {
+        short,
+    },
+    setup() {
+        const tourStore = useTourStore();
+        const { currentTour } = storeToRefs(tourStore);
+
+        const userStore = useUserStore();
+        const { currentTheme } = storeToRefs(userStore);
+
+        const confirmDialogRef = ref(null);
+        setConfirmDialogComponentRef(confirmDialogRef);
+
+        const windowManagerStore = useWindowManagerStore();
+
+        // Treat any iframe context as embedded: scratchbook pops dataset
+        // displays into ``WinBox`` iframes that hit the same routes without
+        // an ``embed`` query param, and each one would otherwise open its own
+        // SSE + polling traffic, quickly saturating the HTTP/1.1 per-origin
+        // connection pool (e.g. ``test_scratchbook_window_persistence`` hangs
+        // indefinitely after two windows are open).
+        const inIframe = (() => {
+            if (typeof window === "undefined") {
+                return false;
+            }
+            try {
+                return window.top !== window.self;
+            } catch {
+                // Cross-origin access throws — that's definitely an iframe.
+                return true;
+            }
+        })();
+        const embeddedQuery = useRouteQueryBool("embed");
+        const embedded = computed(() => embeddedQuery.value || inIframe);
+        const historyStore = useHistoryStore();
+        if (!embedded.value) {
+            historyStore.startWatchingHistory();
+        }
+
+        watch(
+            () => embedded.value,
+            () => {
+                if (embedded.value) {
+                    userStore.$reset();
+                } else {
+                    userStore.loadUser();
+                }
+            },
+            { immediate: true },
+        );
+
+        const confirmation = ref(null);
+        const route = useRoute();
+        watch(
+            () => route.fullPath,
+            (newVal, oldVal) => {
+                // sometimes, the confirmation is not cleared when the route changes
+                // and the confirmation alert is shown needlessly
+                if (confirmation.value) {
+                    confirmation.value = null;
+                }
+
+                // if we are on a tour route, start a tour if it wasn't already started or change tours
+                if ("tourId" in route.params && route.params.tourId && route.params.tourId !== currentTour.value?.id) {
+                    tourStore.setTour(route.params.tourId);
+                }
+            },
+            { immediate: true },
+        );
+
+        return {
+            confirmation,
+            confirmDialogRef,
+            currentTheme,
+            embedded,
+            currentTour,
+            windowManagerStore,
+        };
+    },
+    data() {
+        return {
+            config: getGalaxyInstance().config,
+            resendUrl: `${getAppRoot()}user/resend_verification`,
+        };
+    },
+    computed: {
+        showInactivityWarning() {
+            return this.config.user_activation_on && this.Galaxy?.user?.id && !this.Galaxy.user.get("active");
+        },
+        showMasthead() {
+            const masthead = this.$route.query.hide_masthead;
+            if (masthead !== undefined) {
+                return masthead.toLowerCase() != "true";
+            }
+            return true;
+        },
+        theme() {
+            if (this.embedded) {
+                return null;
+            }
+
+            const themeKeys = Object.keys(this.config.themes);
+            if (themeKeys.length > 0) {
+                const foundTheme = themeKeys.includes(this.currentTheme);
+                const selectedTheme = foundTheme ? this.currentTheme : themeKeys[0];
+                return this.config.themes[selectedTheme];
+            }
+            return null;
+        },
+        windowTab() {
+            return this.windowManagerStore.getTab();
+        },
+    },
+    watch: {
+        confirmation() {
+            console.debug("App - Confirmation before route change: ", this.confirmation);
+            this.$router.confirmation = this.confirmation;
+        },
+    },
+    mounted() {
+        if (!this.embedded) {
+            this.Galaxy = getGalaxyInstance();
+            if (this.showMasthead) {
+                this.Galaxy.frame = this.windowManagerStore;
+                this.windowManagerStore.restore();
+            }
+            if (this.Galaxy.config.interactivetools_enable) {
+                this.startWatchingEntryPoints();
+            }
+            if (this.Galaxy.config.enable_notification_system) {
+                this.startWatchingNotifications();
+            }
+        }
+    },
+    created() {
+        if (!this.embedded) {
+            window.onbeforeunload = () => {
+                if (this.confirmation || this.windowManagerStore.beforeUnload()) {
+                    return "Are you sure you want to leave the page?";
+                }
+            };
+        }
+    },
+    methods: {
+        startWatchingEntryPoints() {
+            const entryPointStore = useEntryPointStore();
+            entryPointStore.startWatchingEntryPoints();
+        },
+        startWatchingNotifications() {
+            const notificationsStore = useNotificationsStore();
+            notificationsStore.startWatchingNotifications();
+        },
+    },
+};
+</script>
+
+<style lang="scss">
+@import "../../style/scss/custom_theme_variables.scss";
+</style>

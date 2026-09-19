@@ -1,0 +1,496 @@
+---
+# Metadata describing every Galaxy Markdown directive.
+#
+# Consumed at runtime by directives.ts (editor side panel) and used to generate the
+# human-readable reference directives.md via scripts/markdown_directives_doc.py.
+# The parameter, embeddable and requirement metadata here is checked against the
+# authoritative validator in lib/galaxy/managers/markdown_parse.py (and
+# Utilities/requirements.yml) by test/unit/app/test_markdown_directives_doc.py, so
+# keep them in sync.
+#
+# Keys starting with "_" are shared schema fragments, not directives.
+#
+# Per-directive fields:
+#   category        grouping used in the generated reference
+#   renders         one-line summary of the rendered output
+#   embeddable      true when usable inline via ${galaxy ...} (EMBED_CAPABLE_DIRECTIVES)
+#   requires        primary object the directive needs (mirrors requirements.yml)
+#   parameter_set   name of a shared bundle under _parameter_sets to include
+#   parameters      directive-specific arguments (name -> type/default/context/description)
+#   dynamic_parameters  true when arbitrary arguments are accepted (not validated)
+# The shared arguments below are valid on every directive and documented globally.
+
+_shared_arguments:
+  - collapse
+
+_parameter_sets:
+  dataset_addressing:
+    output:
+      type: label
+      context: report
+      description: Workflow output label, resolved per invocation (report templates).
+    input:
+      type: label
+      context: report
+      description: Workflow input label, resolved per invocation (report templates).
+    hid:
+      type: int
+      context: notebook
+      description: History item hid.
+    history_dataset_id:
+      type: id
+      context: page
+      description: Encoded (export) or numeric (internal) dataset ID.
+    invocation_id:
+      type: id
+      context: invocation
+      description: Invocation ID; usually injected automatically during resolution.
+  collection_addressing:
+    output:
+      type: label
+      context: report
+      description: Workflow output label, resolved per invocation (report templates).
+    input:
+      type: label
+      context: report
+      description: Workflow input label, resolved per invocation (report templates).
+    hid:
+      type: int
+      context: notebook
+      description: History item hid.
+    history_dataset_collection_id:
+      type: id
+      context: page
+      description: Encoded or numeric dataset collection ID.
+    invocation_id:
+      type: id
+      context: invocation
+      description: Invocation ID; usually injected automatically during resolution.
+  job_addressing:
+    step:
+      type: label
+      context: report
+      description: Workflow step label, resolved per invocation (report templates).
+    job_id:
+      type: id
+      context: page
+      description: Encoded or numeric job ID.
+    implicit_collection_jobs_id:
+      type: id
+      context: page
+      description: Mapped-collection job group ID.
+    invocation_id:
+      type: id
+      context: invocation
+      description: Invocation ID; usually injected automatically during resolution.
+  workflow_addressing:
+    workflow_id:
+      type: id
+      context: page
+      description: Stored workflow ID.
+    workflow_checkpoint:
+      type: int
+      context: page
+      description: Workflow version index.
+    invocation_id:
+      type: id
+      context: invocation
+      description: Invocation ID; usually injected automatically during resolution.
+  invocation_addressing:
+    invocation_id:
+      type: id
+      context: invocation
+      description: Invocation ID; usually injected automatically during resolution.
+
+history_dataset_display:
+  category: dataset
+  renders: Interactive dataset card with view/import/download options.
+  embeddable: false
+  requires: history_dataset_id
+  parameter_set: dataset_addressing
+  side_panel_name: Dataset
+  help: |
+    Display a dataset and relevant options for viewing, importing, downloading,
+    and visualization in the resulting document. To embed a dataset directly
+    into the document use the "history_dataset_embedded" / "Embedded Dataset"
+    directive.
+
+history_dataset_collection_display:
+  category: collection
+  renders: Collection browser for paired/list collections.
+  embeddable: false
+  requires: history_dataset_collection_id
+  parameter_set: collection_addressing
+  side_panel_name: Collection
+  help: |
+    Display a dataset collection and relevant options for viewing, importing, downloading
+    in the resulting document.
+
+history_dataset_as_image:
+  category: dataset
+  renders: Dataset embedded as an image.
+  embeddable: true
+  requires: history_dataset_id
+  parameter_set: dataset_addressing
+  parameters:
+    path:
+      type: path
+      description: File within a composite / extra-files dataset.
+  side_panel_name: Image
+  help: |
+    Embed a dataset in the resulting document as an image. This only works for simple image
+    types. This can be used to present graphs and other visual summaries of an analysis into
+    a Galaxy Markdown document summary.
+
+history_dataset_index:
+  category: dataset
+  renders: File/folder listing of a composite dataset.
+  embeddable: false
+  requires: history_dataset_id
+  parameter_set: dataset_addressing
+  parameters:
+    path:
+      type: path
+      description: File within a composite / extra-files dataset.
+  side_panel_name: Dataset Index
+  help: |
+    For Galaxy composite datasets (datasets that consist on multiple files), this option will
+    display the contents of the composite dataset as files and folders in the resulting document.
+
+history_dataset_embedded:
+  category: dataset
+  renders: Raw dataset content inline.
+  embeddable: false
+  requires: history_dataset_id
+  parameter_set: dataset_addressing
+  side_panel_name: Embedded Dataset
+
+history_dataset_as_table:
+  category: dataset
+  renders: Tabular dataset as a formatted table.
+  embeddable: false
+  requires: history_dataset_id
+  parameter_set: dataset_addressing
+  parameters:
+    title:
+      type: string
+      description: Table title.
+    footer:
+      type: string
+      description: Table footer.
+    compact:
+      type: boolean
+      default: false
+      description: Compact row height.
+    show_column_headers:
+      type: boolean
+      default: true
+      description: Show column headers.
+    path:
+      type: path
+      description: File within a composite / extra-files dataset.
+  side_panel_name: Embedded Dataset as table
+  help: |
+    Embed a dataset in the resulting document as a table. This only works for datasets with tabular
+    datatypes. This command works a lot like "history_dataset_embedded" but provides specialized options
+    for controlling the way tabular data is displayed in the resulting document.
+
+history_dataset_type:
+  category: dataset
+  renders: Datatype string as text.
+  embeddable: true
+  requires: history_dataset_id
+  parameter_set: dataset_addressing
+  side_panel_name: Dataset Type
+
+history_dataset_link:
+  category: dataset
+  renders: Download link for a dataset.
+  embeddable: false
+  requires: history_dataset_id
+  parameter_set: dataset_addressing
+  parameters:
+    label:
+      type: string
+      description: Link text.
+    path:
+      type: path
+      description: File within a composite / extra-files dataset.
+  side_panel_name: Link to Dataset
+
+history_dataset_name:
+  category: dataset
+  renders: Dataset name as text.
+  embeddable: true
+  requires: history_dataset_id
+  parameter_set: dataset_addressing
+  side_panel_name: Name of Dataset
+
+history_dataset_peek:
+  category: dataset
+  renders: Dataset "peek" preview.
+  embeddable: false
+  requires: history_dataset_id
+  parameter_set: dataset_addressing
+  side_panel_name: Peek into Dataset
+  help: |
+    Display a dataset metadata's "peek" field in the resulting document - this is datatype dependent
+    metadata but usually this is a few lines from the start of a file.
+
+history_dataset_info:
+  category: dataset
+  renders: Dataset "info" metadata.
+  embeddable: false
+  requires: history_dataset_id
+  parameter_set: dataset_addressing
+  side_panel_name: Dataset Details
+  help: |
+    Display a dataset metadata's "info" field in the resulting document. This info field is
+    usually based on the output of the tool run and sometimes contains useful metadata about a
+    dataset.
+
+history_link:
+  category: invocation
+  renders: Link to import the referenced history.
+  embeddable: false
+  requires: history_id
+  parameters:
+    history_id:
+      type: id
+      context: page
+      description: Encoded or numeric history ID.
+    invocation_id:
+      type: id
+      context: invocation
+      description: Invocation ID; usually injected automatically during resolution.
+  side_panel_name: Link to Import
+  help:
+    report: |
+      Add a link to import the history the workflow invocation was executed in.
+    page: |
+      Add a link to import the target history referenced by the directive.
+
+invocation_inputs:
+  category: invocation
+  renders: Summary of all workflow inputs.
+  embeddable: false
+  requires: invocation_id
+  parameter_set: invocation_addressing
+  side_panel_name: Invocation Inputs
+
+invocation_outputs:
+  category: invocation
+  renders: Summary of all workflow outputs.
+  embeddable: false
+  requires: invocation_id
+  parameter_set: invocation_addressing
+  side_panel_name: Invocation Output
+
+invocation_time:
+  category: invocation
+  renders: Invocation run timestamp.
+  embeddable: true
+  requires: invocation_id
+  parameter_set: invocation_addressing
+  side_panel_name:
+    report: Time Workflow
+    page: Time a Workflow
+  side_panel_description: was invoked
+  help:
+    report: |
+      Display this workflow run's invocation time in the resulting document.
+    page: |
+      Display a workflow run's invocation time in the resulting document.
+
+workflow_display:
+  category: workflow
+  renders: Step-by-step text description of a workflow.
+  embeddable: false
+  requires: workflow_id
+  parameter_set: workflow_addressing
+  side_panel_name:
+    report: Current Workflow
+    page: Display a Workflow
+  side_panel_description: containing all steps
+  help:
+    report: |
+      Embed a text description of this workflow's steps in the resulting document.
+    page: |
+      Embed a text description of a workflow's steps in the resulting document.
+
+workflow_image:
+  category: workflow
+  renders: SVG workflow diagram.
+  embeddable: false
+  requires: workflow_id
+  parameter_set: workflow_addressing
+  parameters:
+    size:
+      type: enum
+      values: [sm, md, lg]
+      default: lg
+      description: Image width (sm=300px, md=550px, lg=100%).
+  side_panel_name: Workflow (as image)
+  help:
+    report: |
+      Embed a rough image this workflow in the resulting document.
+    page: |
+      Embed a rough image a workflow in the resulting document.
+
+workflow_license:
+  category: workflow
+  renders: Workflow license information.
+  embeddable: true
+  requires: workflow_id
+  parameters:
+    workflow_id:
+      type: id
+      context: page
+      description: Stored workflow ID.
+    invocation_id:
+      type: id
+      context: invocation
+      description: Invocation ID; usually injected automatically during resolution.
+  side_panel_name: Workflow License
+  help:
+    report: |
+      Display this workflow's license in the resulting document.
+    page: |
+      Display a workflow's license in the resulting document.
+
+job_metrics:
+  category: job
+  renders: Runtime metrics table for a job.
+  embeddable: false
+  requires: job_id
+  parameter_set: job_addressing
+  side_panel_name: Job Metrics
+  side_panel_description: as table
+  help: |
+    Embed the job metrics for this job in the resulting document (if Galaxy is configured and you have
+    permission).
+
+job_parameters:
+  category: job
+  renders: Tool parameters table for a job.
+  embeddable: false
+  requires: job_id
+  parameter_set: job_addressing
+  parameters:
+    footer:
+      type: string
+      description: Table footer.
+  side_panel_name: Job Parameters
+  side_panel_description: as table
+  help: |
+    Embed the tool parameters for a job in the resulting document.
+
+tool_stdout:
+  category: job
+  renders: Tool standard output for a job.
+  embeddable: false
+  requires: job_id
+  parameter_set: job_addressing
+  side_panel_name: Tool Output
+  side_panel_description: of job run
+  help: |
+    Embed the tool standard output stream for a job in the resulting document.
+
+tool_stderr:
+  category: job
+  renders: Tool standard error for a job.
+  embeddable: false
+  requires: job_id
+  parameter_set: job_addressing
+  side_panel_name: Tool Error
+  side_panel_description: of job run
+  help: |
+    Embed the tool standard error stream for a job in the resulting document.
+
+visualization:
+  category: visualization
+  renders: Galaxy plugin-based visualization.
+  embeddable: false
+  requires: history_dataset_id
+  dynamic_parameters: true
+  side_panel_name: Visualization
+  help: |
+    Embed a Galaxy visualization in the resulting document. Accepts arguments specific to the
+    selected visualization plugin; these arguments are not validated by the Galaxy Markdown parser.
+
+generate_time:
+  category: utility
+  renders: Current time at generation.
+  embeddable: true
+  requires: none
+  side_panel_name: Current Time
+  side_panel_description: as text
+  help: |
+    Report the current time of %MODE% generation.
+
+    Warning: This is the time the %MODE% was generated and not the time of
+    an analysis. This option makes the most sense for PDF generation of %MODE%s
+    designed for external archiving or printing.
+
+generate_galaxy_version:
+  category: utility
+  renders: Galaxy version string at generation.
+  embeddable: true
+  requires: none
+  side_panel_name: Galaxy Version
+  side_panel_description: as text
+  help: |
+    Report the current Galaxy version at the time %MODE% generation.
+
+    Warning: This is the Galaxy version at the time the %MODE% was generated and
+    not the time of an analysis. This option makes the most sense for PDF generation
+    of %MODE%s designed for external archiving or printing.
+
+instance_access_link:
+  category: utility
+  renders: Link to the Galaxy instance.
+  embeddable: true
+  requires: none
+  side_panel_name: Instance Access Link
+
+instance_resources_link:
+  category: utility
+  renders: Link to instance resources.
+  embeddable: true
+  requires: none
+  side_panel_name: Instance Resources Link
+
+instance_help_link:
+  category: utility
+  renders: Link to instance help.
+  embeddable: true
+  requires: none
+  side_panel_name: Instance Help Link
+
+instance_support_link:
+  category: utility
+  renders: Link to instance support.
+  embeddable: true
+  requires: none
+  side_panel_name: Instance Support Link
+
+instance_citation_link:
+  category: utility
+  renders: Link to instance citation information.
+  embeddable: true
+  requires: none
+  side_panel_name: Instance Citation Link
+
+instance_terms_link:
+  category: utility
+  renders: Link to instance terms.
+  embeddable: true
+  requires: none
+  side_panel_name: Instance Terms Link
+
+instance_organization_link:
+  category: utility
+  renders: Link to the instance's organization.
+  embeddable: true
+  requires: none
+  side_panel_name: Instance Organization Link

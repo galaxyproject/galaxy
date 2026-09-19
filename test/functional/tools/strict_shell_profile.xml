@@ -1,0 +1,23 @@
+<tool id="strict_shell_profile" name="strict_shell_profile" version="1.0.0" profile="20.09">
+    <command detect_errors="exit_code"><![CDATA[
+echo 'Hello' > '$out_file1'
+; sh -c 'exit $exit_code'
+; sh -c 'exit 0'
+    ]]></command>
+    <inputs>
+        <param name="exit_code" type="integer" value="0" label="exit code"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" />
+    </outputs>
+    <tests>
+        <test expect_exit_code="0" expect_failure="false">
+            <param name="exit_code" value="0" />
+        </test>
+        <test expect_exit_code="1" expect_failure="true">
+            <param name="exit_code" value="1" />
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

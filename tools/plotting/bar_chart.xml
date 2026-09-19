@@ -40,7 +40,7 @@ $colList '$title' '$ylabel' $ymin $ymax '$out_file1' '$pdf_size'
     <data name="out_file1" format="png" />
   </outputs>
   <requirements>
-    <requirement type="package">gnuplot-py</requirement>
+    <requirement type="package" version="1.8">gnuplot-py</requirement>
   </requirements>
   <help>
 **What it does**

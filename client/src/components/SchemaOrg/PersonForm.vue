@@ -1,0 +1,99 @@
+<!-- https://schema.org/Person -->
+<template>
+    <b-form @submit="onSave" @reset="onReset">
+        <div v-for="attribute in displayedAttributes" :key="attribute.key" role="group" class="form-group">
+            <label :for="attribute.key">{{ attribute.label }}</label>
+            <span v-g-tooltip.hover title="Hide Attribute"
+                ><FontAwesomeIcon :icon="faEyeSlash" @click="onHide(attribute.key)"
+            /></span>
+            <div v-if="currentErrors[attribute.key]" class="error">{{ currentErrors[attribute.key] }}</div>
+            <b-form-input
+                :id="attribute.key"
+                v-model="currentValues[attribute.key]"
+                :placeholder="'Enter ' + attribute.placeholder + '.'"
+                :type="attribute.type"
+                :state="currentErrors[attribute.key] ? false : null"
+                @focus="removeErrorMessage(attribute.key)">
+            </b-form-input>
+        </div>
+        <div role="group" class="form-group">
+            <b-form-select v-model="addAttribute" :options="addAttributes" size="sm"></b-form-select>
+        </div>
+        <GButton type="submit" color="blue">Save</GButton>
+        <GButton type="reset" color="red">Cancel</GButton>
+    </b-form>
+</template>
+
+<script>
+import { faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+import ThingFormMixin from "./ThingFormMixin";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+
+const ATTRIBUTES_INFO = [
+    { key: "name", label: "Name", placeholder: "name" },
+    { key: "givenName", label: "Given Name", placeholder: "given name" },
+    { key: "familyName", label: "Family Name", placeholder: "family name" },
+    { key: "url", label: "URL", placeholder: "URL", type: "url" },
+    { key: "identifier", label: "Identifier (typically an orcid.org ID)", placeholder: "identifier" },
+    { key: "image", label: "Image URL", placeholder: "image URL", type: "url" },
+    { key: "address", label: "Address", placeholder: "address" },
+    { key: "email", label: "Email", placeholder: "email", type: "email" },
+    { key: "telephone", label: "Telephone", placeholder: "telephone", type: "tel" },
+    { key: "faxNumber", label: "Fax Number", placeholder: "fax number", type: "tel" },
+    { key: "alternateName", label: "Alternate Name", placeholder: "alternate name" },
+    { key: "honorificPrefix", label: "Honorific Prefix (e.g. Dr/Mrs/Mr)", placeholder: "honorific prefix" },
+    { key: "honorificSuffix", label: "Honorific Suffix (e.g. M.D.)", placeholder: "honorific suffix" },
+    { key: "jobTitle", label: "Job Title", placeholder: "job title" },
+];
+const ATTRIBUTES = ATTRIBUTES_INFO.map((a) => a.key);
+
+export default {
+    components: {
+        FontAwesomeIcon,
+        GButton,
+    },
+    mixins: [ThingFormMixin],
+    props: {
+        person: {
+            type: Object,
+        },
+    },
+    data() {
+        const currentValues = {};
+        const currentErrors = {};
+        const show = {};
+        for (const attribute of ATTRIBUTES) {
+            const showAttribute = attribute in this.person;
+            if (showAttribute) {
+                let value = this.person[attribute];
+                if (attribute == "email") {
+                    if (value.indexOf("mailto:") == 0) {
+                        value = value.slice("mailto:".length);
+                    }
+                }
+                currentValues[attribute] = value;
+            }
+            show[attribute] = showAttribute;
+        }
+        return {
+            faEyeSlash,
+            attributeInfo: ATTRIBUTES_INFO,
+            show: show,
+            currentValues: currentValues,
+            currentErrors: currentErrors,
+            addAttribute: null,
+            schemaOrgClass: "Person",
+        };
+    },
+};
+</script>
+
+<style lang="scss" scoped>
+@import "@/style/scss/custom_theme_variables.scss";
+.error {
+    color: var(--color-red-500);
+}
+</style>

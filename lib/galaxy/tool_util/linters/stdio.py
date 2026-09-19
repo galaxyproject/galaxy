@@ -1,43 +1,82 @@
 """This module contains a linting functions for tool error detection."""
-from .command import get_command
+
+import re
+from typing import TYPE_CHECKING
+
+from packaging.version import Version
+
+from galaxy.tool_util.lint import Linter
+
+if TYPE_CHECKING:
+    from galaxy.tool_util.lint import LintContext
+    from galaxy.tool_util.parser.interface import ToolSource
 
 
-def lint_stdio(tool_source, lint_ctx):
-    tool_xml = getattr(tool_source, "xml_tree", None)
-    stdios = tool_xml.findall("./stdio") if tool_xml else []
-
-    if not stdios:
-        command = get_command(tool_xml) if tool_xml else None
+class StdIOAbsenceLegacy(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            # Can only lint XML tools at this point.
+            # Should probably use tool_source.parse_stdio() to abstract away XML details
+            return
+        stdios = tool_xml.findall("./stdio") if tool_xml else []
+        if stdios:
+            return
+        tool_node = tool_xml.getroot()
+        command = tool_xml.find("./command")
         if command is None or not command.get("detect_errors"):
-            if tool_source.parse_profile() <= "16.01":
-                lint_ctx.info("No stdio definition found, tool indicates error conditions with output written to stderr.")
-            else:
-                lint_ctx.info("No stdio definition found, tool indicates error conditions with non-zero exit codes.")
-        return
-
-    if len(stdios) > 1:
-        lint_ctx.error("More than one stdio tag found, behavior undefined.")
-        return
-
-    stdio = stdios[0]
-    for child in list(stdio):
-        if child.tag == "regex":
-            _lint_regex(child, lint_ctx)
-        elif child.tag == "exit_code":
-            _lint_exit_code(child, lint_ctx)
-        else:
-            message = "Unknown stdio child tag discovered [%s]. "
-            message += "Valid options are exit_code and regex."
-            lint_ctx.warn(message % child.tag)
+            if Version(tool_source.parse_profile()) <= Version("16.01"):
+                lint_ctx.info(
+                    "No stdio definition found, tool indicates error conditions with output written to stderr.",
+                    linter=cls.name(),
+                    node=tool_node,
+                )
 
 
-def _lint_exit_code(child, lint_ctx):
-    for key in child.attrib.keys():
-        if key not in ["description", "level", "range"]:
-            lint_ctx.warn("Unknown attribute [%s] encountered on exit_code tag." % key)
+class StdIOAbsence(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            # Can only lint XML tools at this point.
+            # Should probably use tool_source.parse_stdio() to abstract away XML details
+            return
+        stdios = tool_xml.findall("./stdio") if tool_xml else []
+        if stdios:
+            return
+        tool_node = tool_xml.getroot()
+        command = tool_xml.find("./command")
+        if command is None or not command.get("detect_errors"):
+            if Version(tool_source.parse_profile()) > Version("16.01"):
+                lint_ctx.info(
+                    "No stdio definition found, tool indicates error conditions with non-zero exit codes.",
+                    linter=cls.name(),
+                    node=tool_node,
+                )
 
 
-def _lint_regex(child, lint_ctx):
-    for key in child.attrib.keys():
-        if key not in ["description", "level", "match", "source"]:
-            lint_ctx.warn("Unknown attribute [%s] encountered on regex tag." % key)
+class StdIORegex(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            # Can only lint XML tools at this point.
+            # Should probably use tool_source.parse_stdio() to abstract away XML details
+            return
+        stdios = tool_xml.findall("./stdio") if tool_xml else []
+
+        if len(stdios) != 1:
+            return
+
+        stdio = stdios[0]
+        for child in list(stdio):
+            if child.tag == "regex":
+                match = child.attrib.get("match")
+                if match:
+                    try:
+                        re.compile(match)
+                    except Exception as e:
+                        lint_ctx.error(
+                            f"Match '{match}' is no valid regular expression: {str(e)}", linter=cls.name(), node=child
+                        )

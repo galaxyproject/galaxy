@@ -1,126 +1,277 @@
 """
 API operations allowing clients to determine datatype supported by Galaxy.
 """
-import logging
 
-from galaxy import exceptions
-from galaxy.datatypes.data import Data
-from galaxy.util import (
-    asbool,
-    unicodify
+import logging
+from typing import (
+    cast,
 )
-from galaxy.web import expose_api_anonymous_and_sessionless
-from galaxy.webapps.base.controller import BaseAPIController
+
+from fastapi import (
+    Path,
+    Query,
+    Response,
+)
+
+from galaxy.datatypes.registry import Registry
+from galaxy.exceptions import ObjectNotFound
+from galaxy.managers.datatypes import (
+    DatatypeConverterList,
+    DatatypeDetails,
+    DatatypesCombinedMap,
+    DatatypesEDAMDetailsDict,
+    DatatypesMap,
+    DatatypeVisualizationMappingsList,
+    get_preferred_visualization,
+    view_converters,
+    view_edam_data,
+    view_edam_formats,
+    view_index,
+    view_mapping,
+    view_sniffers,
+    view_visualization_mappings,
+)
+from galaxy.structured_app import StructuredApp
+from . import (
+    depends,
+    DependsOnApp,
+    Router,
+)
 
 log = logging.getLogger(__name__)
 
+router = Router(tags=["datatypes"])
 
-class DatatypesController(BaseAPIController):
+ExtensionOnlyQueryParam: bool | None = Query(
+    default=True,
+    title="Extension only",
+    description="Whether to return only the datatype's extension rather than the datatype's details",
+)
 
-    @expose_api_anonymous_and_sessionless
-    def index(self, trans, **kwd):
+UploadOnlyQueryParam: bool | None = Query(
+    default=True,
+    title="Upload only",
+    description="Whether to return only datatypes which can be uploaded",
+)
+
+IdentifierOnly: bool | None = Query(
+    default=True,
+    title="prefixIRI only",
+    description="Whether to return only the EDAM prefixIRI rather than the EDAM details",
+)
+
+
+@router.cbv
+class FastAPIDatatypes:
+    datatypes_registry: Registry = depends(Registry)
+    app: StructuredApp = DependsOnApp
+
+    @router.get(
+        "/api/datatypes",
+        public=True,
+        summary="Lists all available data types",
+        response_description="List of data types",
+    )
+    async def index(
+        self,
+        extension_only: bool | None = ExtensionOnlyQueryParam,
+        upload_only: bool | None = UploadOnlyQueryParam,
+    ) -> list[DatatypeDetails] | list[str]:
+        """Gets the list of all available data types."""
+        return view_index(self.datatypes_registry, extension_only, upload_only)
+
+    @router.get(
+        "/api/datatypes/mapping",
+        public=True,
+        summary="Returns mappings for data types and their implementing classes",
+        response_description="Dictionary to map data types with their classes",
+    )
+    async def mapping(self) -> DatatypesMap:
+        """Gets mappings for data types."""
+        return view_mapping(self.datatypes_registry)
+
+    @router.get(
+        "/api/datatypes/types_and_mapping",
+        public=True,
+        summary="Returns all the data types extensions and their mappings",
+        response_description="Dictionary to map data types with their classes",
+    )
+    async def types_and_mapping(
+        self,
+        extension_only: bool | None = ExtensionOnlyQueryParam,
+        upload_only: bool | None = UploadOnlyQueryParam,
+    ) -> DatatypesCombinedMap:
+        """Combines the datatype information from (/api/datatypes) and the
+        mapping information from (/api/datatypes/mapping) into a single
+        response."""
+        return DatatypesCombinedMap(
+            datatypes=view_index(self.datatypes_registry, extension_only, upload_only),
+            datatypes_mapping=view_mapping(self.datatypes_registry),
+        )
+
+    @router.get(
+        "/api/datatypes/sniffers",
+        public=True,
+        summary="Returns the list of all installed sniffers",
+        response_description="List of datatype sniffers",
+    )
+    async def sniffers(self) -> list[str]:
+        """Gets the list of all installed data type sniffers."""
+        return view_sniffers(self.datatypes_registry)
+
+    @router.get(
+        "/api/datatypes/converters",
+        public=True,
+        summary="Returns the list of all installed converters",
+        response_description="List of all datatype converters",
+    )
+    async def converters(self) -> DatatypeConverterList:
+        """Gets the list of all installed converters."""
+        return view_converters(self.datatypes_registry)
+
+    @router.get(
+        "/api/datatypes/edam_formats",
+        public=True,
+        summary="Returns a dictionary/map of datatypes and EDAM formats",
+        response_description="Dictionary/map of datatypes and EDAM formats",
+    )
+    async def edam_formats(self) -> dict[str, str]:
+        """Gets a map of datatypes and their corresponding EDAM formats."""
+        return cast(dict[str, str], view_edam_formats(self.datatypes_registry))
+
+    @router.get(
+        "/api/datatypes/edam_formats/detailed",
+        public=True,
+        summary="Returns a dictionary of datatypes and EDAM format details",
+        response_description="Dictionary of EDAM format details containing the EDAM iri, label, and definition",
+        response_model=DatatypesEDAMDetailsDict,
+    )
+    async def edam_formats_detailed(self):
+        """Gets a map of datatypes and their corresponding EDAM formats.
+        EDAM formats contain the EDAM iri, label, and definition."""
+        return view_edam_formats(self.datatypes_registry, True)
+
+    @router.get(
+        "/api/datatypes/edam_data",
+        public=True,
+        summary="Returns a dictionary/map of datatypes and EDAM data",
+        response_description="Dictionary/map of datatypes and EDAM data",
+    )
+    async def edam_data(self) -> dict[str, str]:
+        """Gets a map of datatypes and their corresponding EDAM data."""
+        return cast(dict[str, str], view_edam_data(self.datatypes_registry))
+
+    @router.get(
+        "/api/datatypes/edam_data/detailed",
+        public=True,
+        summary="Returns a dictionary of datatypes and EDAM data details",
+        response_description="Dictionary of EDAM data details containing the EDAM iri, label, and definition",
+        response_model=DatatypesEDAMDetailsDict,
+    )
+    async def edam_data_detailed(self):
+        """Gets a map of datatypes and their corresponding EDAM data.
+        EDAM data contains the EDAM iri, label, and definition."""
+        return view_edam_data(self.datatypes_registry, True)
+
+    @router.get(
+        "/api/datatypes/{datatype}/visualizations",
+        public=True,
+        summary="Returns the visualization mapping for a specific datatype",
+        response_description="Visualization mapping for the specified datatype",
+        response_model=DatatypeVisualizationMappingsList,
+    )
+    async def visualization_for_datatype(
+        self,
+        datatype: str = Path(
+            ...,
+            title="Datatype",
+            description="Datatype extension to get visualization mapping for",
+            examples=["bam", "h5"],
+        ),
+    ) -> DatatypeVisualizationMappingsList:
+        """Gets the visualization mapping for a specific datatype.
+
+        Mappings are defined in the datatypes_conf.xml configuration file.
         """
-        GET /api/datatypes
-        Return an object containing upload datatypes.
+        return view_visualization_mappings(self.datatypes_registry, datatype)
+
+    @router.get(
+        "/api/datatypes/{datatype}",
+        public=True,
+        summary="Get details for a specific datatype",
+        response_description="Detailed information about a datatype",
+    )
+    async def show(
+        self,
+        datatype: str = Path(
+            ...,
+            title="Datatype",
+            description="Datatype extension to get information for",
+            examples=["bam", "h5", "vcf"],
+        ),
+    ):
+        """Gets detailed information about a specific datatype.
+
+        Includes information about:
+        - Basic properties (description, mime type, etc.)
+        - Available converters
+        - EDAM mappings
+        - Preferred visualization
         """
-        datatypes_registry = self._datatypes_registry
-        try:
-            extension_only = asbool(kwd.get('extension_only', True))
-            upload_only = asbool(kwd.get('upload_only', True))
-            if extension_only:
-                if upload_only:
-                    return datatypes_registry.upload_file_formats
+        # Get the datatype object
+        dt_object = self.datatypes_registry.get_datatype_by_extension(datatype)
+        if dt_object is None:
+            return Response(status_code=404, content=f"Datatype '{datatype}' not found")
+
+        # Basic information
+        result = {
+            "extension": datatype,
+            "description": getattr(dt_object, "description", None),
+            "display_in_upload": datatype in self.datatypes_registry.upload_file_formats,
+            "mimetype": self.datatypes_registry.get_mimetype_by_extension(datatype),
+            "is_binary": getattr(dt_object, "is_binary", False),
+            "display_behavior": (
+                dt_object.get_display_behavior() if hasattr(dt_object, "get_display_behavior") else None
+            ),
+        }
+
+        # Add composite files if applicable
+        composite_files = getattr(dt_object, "composite_files", None)
+        if composite_files:
+            result["composite_files"] = [{"name": k, **v.dict()} for k, v in composite_files.items()]
+
+        # Add EDAM information if available
+        edam_format = self.datatypes_registry.edam_formats.get(datatype)
+        if edam_format:
+            result["edam_format"] = edam_format
+
+        edam_data = self.datatypes_registry.edam_data.get(datatype)
+        if edam_data:
+            result["edam_data"] = edam_data
+
+        # Add converter information
+        converters = self.datatypes_registry.get_converters_by_datatype(datatype)
+        if converters:
+            result["converters"] = list(converters.keys())
+
+        # Add preferred visualization if any and if the plugin is available
+        preferred_viz = get_preferred_visualization(self.datatypes_registry, datatype)
+        if preferred_viz:
+            plugin_name = preferred_viz["visualization"]
+
+            # Check if the visualization plugin is actually available
+            try:
+                if self.app.visualizations_registry:
+                    self.app.visualizations_registry.get_plugin(plugin_name)
+                    result["preferred_visualization"] = {
+                        "visualization": plugin_name,
+                    }
                 else:
-                    return [ext for ext in datatypes_registry.datatypes_by_extension]
-            else:
-                rval = []
-                for datatype_info_dict in datatypes_registry.datatype_info_dicts:
-                    if not datatype_info_dict.get('display_in_upload') and upload_only:
-                        continue
-                    rval.append(datatype_info_dict)
-                return rval
-        except Exception as e:
-            log.exception('Could not get datatypes')
-            if not isinstance(e, exceptions.MessageException):
-                raise exceptions.InternalServerError(unicodify(e))
-            else:
-                raise
+                    log.warning(
+                        f"Visualizations registry not available, skipping preferred visualization for '{datatype}'"
+                    )
+            except ObjectNotFound:
+                # Plugin not available, don't include preferred_visualization
+                log.warning(f"Preferred visualization '{plugin_name}' for datatype '{datatype}' is not available")
 
-    @expose_api_anonymous_and_sessionless
-    def mapping(self, trans, **kwd):
-        '''
-        GET /api/datatypes/mapping
-        Return a dictionary of class to class mappings.
-        '''
-        try:
-            ext_to_class_name = dict()
-            classes = []
-            for k, v in self._datatypes_registry.datatypes_by_extension.items():
-                c = v.__class__
-                ext_to_class_name[k] = c.__module__ + "." + c.__name__
-                classes.append(c)
-            class_to_classes = dict()
-
-            def visit_bases(types, cls):
-                for base in cls.__bases__:
-                    if issubclass(base, Data):
-                        types.add(base.__module__ + "." + base.__name__)
-                    visit_bases(types, base)
-            for c in classes:
-                n = c.__module__ + "." + c.__name__
-                types = {n}
-                visit_bases(types, c)
-                class_to_classes[n] = dict((t, True) for t in types)
-            return dict(ext_to_class_name=ext_to_class_name, class_to_classes=class_to_classes)
-
-        except Exception as e:
-            log.exception('Could not get datatype mapping')
-            if not isinstance(e, exceptions.MessageException):
-                raise exceptions.InternalServerError(unicodify(e))
-            else:
-                raise
-
-    @expose_api_anonymous_and_sessionless
-    def sniffers(self, trans, **kwd):
-        '''
-        GET /api/datatypes/sniffers
-        Return a list of sniffers.
-        '''
-        try:
-            rval = []
-            for sniffer_elem in self._datatypes_registry.sniffer_elems:
-                datatype = sniffer_elem.get('type')
-                if datatype is not None:
-                    rval.append(datatype)
-            return rval
-        except Exception as e:
-            log.exception('Could not get datatypes')
-            if not isinstance(e, exceptions.MessageException):
-                raise exceptions.InternalServerError(unicodify(e))
-            else:
-                raise
-
-    @expose_api_anonymous_and_sessionless
-    def converters(self, trans, **kwd):
-        converters = []
-        for (source_type, targets) in self._datatypes_registry.datatype_converters.items():
-            for target_type in targets:
-                converters.append({
-                    'source': source_type,
-                    'target': target_type,
-                    'tool_id': targets[target_type].id,
-                })
-
-        return converters
-
-    @expose_api_anonymous_and_sessionless
-    def edam_formats(self, trans, **kwds):
-        return self._datatypes_registry.edam_formats
-
-    @expose_api_anonymous_and_sessionless
-    def edam_data(self, trans, **kwds):
-        return self._datatypes_registry.edam_data
-
-    @property
-    def _datatypes_registry(self):
-        return self.app.datatypes_registry
+        return result

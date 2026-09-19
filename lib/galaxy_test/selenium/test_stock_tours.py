@@ -2,6 +2,7 @@ import os
 
 from galaxy.util import galaxy_root_path
 from .framework import (
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
     TIMEOUT_MULTIPLIER,
@@ -11,7 +12,6 @@ STOCK_TOURS_DIRECTORY = os.path.join(galaxy_root_path, "config", "plugins", "tou
 
 
 class TestStockToursTestCase(SeleniumTestCase):
-
     @selenium_test
     def test_core_galaxy_ui(self):
         sleep_on_steps = {
@@ -21,17 +21,38 @@ class TestStockToursTestCase(SeleniumTestCase):
         }
         self.run_tour(
             os.path.join(STOCK_TOURS_DIRECTORY, "core.galaxy_ui.yaml"),
-            sleep_on_steps=sleep_on_steps
+            sleep_on_steps=sleep_on_steps,
+            tour_callback=TourCallback(self),
         )
 
     @selenium_test
-    def test_core_scratchbook(self):
+    def test_core_windows(self):
         self.run_tour(
-            os.path.join(STOCK_TOURS_DIRECTORY, "core.scratchbook.yaml"),
+            os.path.join(STOCK_TOURS_DIRECTORY, "core.windows.yaml"),
+            tour_callback=TourCallback(self),
         )
 
     @selenium_test
     def test_core_history(self):
         self.run_tour(
             os.path.join(STOCK_TOURS_DIRECTORY, "core.history.yaml"),
+            tour_callback=TourCallback(self),
         )
+
+    # Timeout finding tool_panel.tool_link(tool_id=cat1) after search textinsert.
+    # Tour step 18 can't find a[href$="/?tool_id=cat1&version=latest"] in Playwright.
+    @selenium_only
+    @selenium_test
+    def test_core_deferred(self):
+        self.run_tour(
+            os.path.join(STOCK_TOURS_DIRECTORY, "core.deferred.yaml"),
+            tour_callback=TourCallback(self),
+        )
+
+
+class TourCallback:
+    def __init__(self, test_case: TestStockToursTestCase):
+        self.test_case = test_case
+
+    def handle_step(self, step, step_index: int):
+        self.test_case.assert_baseline_accessibility()

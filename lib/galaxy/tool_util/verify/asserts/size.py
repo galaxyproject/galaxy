@@ -1,4 +1,46 @@
-def assert_has_size(output_bytes, value, delta=0):
-    """Asserts the specified output has a size of the specified value"""
+from ._types import (
+    Annotated,
+    AssertionParameter,
+    Delta,
+    Max,
+    Min,
+    Negate,
+    NEGATE_DEFAULT,
+    OptionalXmlInt,
+    OutputBytes,
+)
+from ._util import _assert_number
+
+
+def assert_has_size(
+    output_bytes: OutputBytes,
+    value: Annotated[OptionalXmlInt, AssertionParameter("Deprecated alias for `size`", xml_type="Bytes")] = None,
+    size: Annotated[
+        OptionalXmlInt,
+        AssertionParameter(
+            "Desired size of the output (in bytes), can be suffixed by ``(k|M|G|T|P|E)i?``", xml_type="Bytes"
+        ),
+    ] = None,
+    delta: Delta = 0,
+    min: Min = None,
+    max: Max = None,
+    negate: Negate = NEGATE_DEFAULT,
+) -> None:
+    """Asserts the specified output has a size of the specified value
+
+    Attributes size and value or synonyms though value is considered deprecated.
+    The size optionally allows for absolute (``delta``) difference.
+    """
     output_size = len(output_bytes)
-    assert abs(output_size - int(value)) <= int(delta), "Expected file size was %s, actual file size was %s (difference of %s accepted)" % (value, output_size, delta)
+    if size is None:
+        size = value
+    _assert_number(
+        output_size,
+        size,
+        delta,
+        min,
+        max,
+        negate,
+        "{expected} file size of {n}+-{delta}",
+        "{expected} file size to be in [{min}:{max}]",
+    )

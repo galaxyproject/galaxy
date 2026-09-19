@@ -1,0 +1,31 @@
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import FormCard from "./FormCard.vue";
+
+const localVue = getLocalVue();
+
+describe("FormCard", () => {
+    let wrapper;
+
+    beforeEach(() => {
+        wrapper = mount(FormCard, {
+            propsData: {
+                title: "title",
+                description: "description",
+                icon: "icon-class",
+            },
+            localVue,
+        });
+    });
+
+    it("check props", async () => {
+        const title = wrapper.find(".portlet-title-text");
+        expect(title.text()).toBe("title");
+        const description = wrapper.find(".portlet-title-description");
+        expect(description.text()).toBe("description");
+        const icon = wrapper.find(".portlet-title-icon");
+        expect(icon.classes()).toContain("icon-class");
+    });
+});

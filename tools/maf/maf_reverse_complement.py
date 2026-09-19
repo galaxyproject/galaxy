@@ -5,6 +5,7 @@ the reverse complement for each block in the source file.
 
 usage: %prog input_maf_file output_maf_file
 """
+
 # Dan Blankenberg
 from __future__ import print_function
 
@@ -22,13 +23,13 @@ def __main__():
     species = maf_utilities.parse_species_option(sys.argv.pop(1))
 
     try:
-        maf_writer = bx.align.maf.Writer(open(output_file, 'w'))
+        maf_writer = bx.align.maf.Writer(open(output_file, "w"))
     except Exception:
         print(sys.stderr, "Unable to open output file")
         sys.exit()
     try:
         count = 0
-        for count, maf in enumerate(bx.align.maf.Reader(open(input_file))):
+        for count, maf in enumerate(bx.align.maf.Reader(open(input_file))):  # noqa: B007
             maf = maf.reverse_complement()
             if species:
                 maf = maf.limit_to_species(species)

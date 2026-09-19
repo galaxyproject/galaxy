@@ -1,61 +1,88 @@
 """
 API operations on annotations.
 """
+
 import logging
 
-from galaxy.web import legacy_expose_api, require_admin
-from galaxy.webapps.base.controller import BaseAPIController
+from fastapi import Body
+
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.display_applications import (
+    CreateLinkFeedback,
+    CreateLinkIncoming,
+    DisplayApplication,
+    DisplayApplicationsManager,
+    ReloadFeedback,
+)
+from galaxy.webapps.galaxy.api import (
+    depends,
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
 
+router = Router(tags=["display_applications"])
 
-class DisplayApplicationsController(BaseAPIController):
 
-    @legacy_expose_api
-    def index(self, trans, **kwd):
+@router.cbv
+class FastAPIDisplayApplications:
+    manager: DisplayApplicationsManager = depends(DisplayApplicationsManager)
+
+    @router.get(
+        "/api/display_applications",
+        public=True,
+        summary="Returns the list of display applications.",
+        name="display_applications_index",
+    )
+    def index(
+        self,
+    ) -> list[DisplayApplication]:
         """
-        GET /api/display_applications/
-
         Returns the list of display applications.
-
-        :returns:   list of available display applications
-        :rtype:     list
         """
-        response = []
-        for display_app in trans.app.datatypes_registry.display_applications.values():
-            response.append({
-                'id' : display_app.id,
-                'name': display_app.name,
-                'version': display_app.version,
-                'filename_': display_app._filename,
-                'links': [{'name': l.name} for l in display_app.links.values()]
-            })
-        return response
+        return self.manager.index()
 
-    @require_admin
-    @legacy_expose_api
-    def reload(self, trans, payload={}, **kwd):
+    @router.post(
+        "/api/display_applications/create_link",
+        summary="Creates a link for display applications.",
+        name="display_applications_create_link",
+    )
+    def create_link(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: CreateLinkIncoming = Body(...),
+    ) -> CreateLinkFeedback:
         """
-        POST /api/display_applications/reload
-
-        Reloads the list of display applications.
-
-        :param  ids:  list containing ids of display to be reloaded
-        :type   ids:  list
+        Creates a link for display applications.
         """
-        ids = payload.get('ids')
-        trans.app.queue_worker.send_control_task(
-            'reload_display_application',
-            noop_self=True,
-            kwargs={'display_application_ids': ids}
+        app_name = payload.app_name
+        dataset_id = payload.dataset_id
+        link_name = payload.link_name
+        kwd = payload.kwd or {}
+        result = self.manager.create_link(
+            trans,
+            app_name=app_name,
+            dataset_id=dataset_id,
+            link_name=link_name,
+            **kwd,
         )
-        reloaded, failed = trans.app.datatypes_registry.reload_display_applications(ids)
-        if not reloaded and failed:
-            message = 'Unable to reload any of the %i requested display applications ("%s").' % (len(failed), '", "'.join(failed))
-        elif failed:
-            message = 'Reloaded %i display applications ("%s"), but failed to reload %i display applications ("%s").' % (len(reloaded), '", "'.join(reloaded), len(failed), '", "'.join(failed))
-        elif not reloaded:
-            message = 'You need to request at least one display application to reload.'
-        else:
-            message = 'Reloaded %i requested display applications ("%s").' % (len(reloaded), '", "'.join(reloaded))
-        return {'message': message, 'reloaded': reloaded, 'failed': failed}
+        return result
+
+    @router.post(
+        "/api/display_applications/reload",
+        summary="Reloads the list of display applications.",
+        name="display_applications_reload",
+        require_admin=True,
+    )
+    def reload(
+        self,
+        payload: dict[str, list[str]] | None = Body(default=None),
+    ) -> ReloadFeedback:
+        """
+        Reloads the list of display applications.
+        """
+        payload = payload or {}
+        ids = payload.get("ids", [])
+        result = self.manager.reload(ids)
+        return result

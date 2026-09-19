@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 640" width="800" height="640">
+  <defs>
+    <filter id="shadow" x="-4%" y="-4%" width="110%" height="110%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+      <feComponentTransfer in="blur">
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+    </marker>
+  </defs>
+
+  <!-- ==================== CASE A ==================== -->
+  <!-- Individual datasets → List collection -->
+
+  <!-- Case label -->
+  <circle cx="22" cy="85" r="14" fill="#555"/>
+  <text x="22" y="90" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#fff">A</text>
+
+  <!-- Left: individual datasets -->
+  <rect x="55" y="28" width="180" height="28" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="145" y="47" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#333">Dataset 1</text>
+
+  <rect x="55" y="64" width="180" height="28" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="145" y="83" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#333">Dataset 2</text>
+
+  <rect x="55" y="100" width="180" height="28" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="145" y="119" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#333">Dataset 3</text>
+
+  <!-- Arrow -->
+  <line x1="258" y1="80" x2="378" y2="80" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="318" y="70" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#555">Build list</text>
+
+  <!-- Right: List collection -->
+  <rect x="400" y="8" width="240" height="158" rx="8" ry="8" fill="#d9ead3" stroke="#888" stroke-width="1" filter="url(#shadow)"/>
+  <text x="520" y="28" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#333">List</text>
+
+  <rect x="415" y="40" width="210" height="28" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="520" y="59" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#333">Dataset 1</text>
+
+  <rect x="415" y="76" width="210" height="28" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="520" y="95" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#333">Dataset 2</text>
+
+  <rect x="415" y="112" width="210" height="28" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="520" y="131" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#333">Dataset 3</text>
+
+  <!-- ==================== SEPARATOR ==================== -->
+  <line x1="10" y1="180" x2="790" y2="180" stroke="#ccc" stroke-width="1" stroke-dasharray="6,4"/>
+
+  <!-- ==================== CASE B ==================== -->
+  <!-- Collection + individual dataset → list:list -->
+
+  <!-- Case label -->
+  <circle cx="22" cy="290" r="14" fill="#555"/>
+  <text x="22" y="295" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#fff">B</text>
+
+  <!-- Left: List collection -->
+  <rect x="50" y="198" width="195" height="95" rx="8" ry="8" fill="#d9ead3" stroke="#888" stroke-width="1" filter="url(#shadow)"/>
+  <text x="148" y="216" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#333">List</text>
+
+  <rect x="65" y="226" width="165" height="24" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="148" y="243" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">Dataset 1</text>
+
+  <rect x="65" y="256" width="165" height="24" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="148" y="273" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">Dataset 2</text>
+
+  <!-- Plus sign -->
+  <text x="148" y="314" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="bold" fill="#555">+</text>
+
+  <!-- Left: individual dataset -->
+  <rect x="73" y="326" width="150" height="28" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="148" y="345" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">Dataset A</text>
+
+  <!-- Arrow -->
+  <line x1="268" y1="285" x2="378" y2="285" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="323" y="275" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#555">Build list</text>
+
+  <!-- Right: list:list collection -->
+  <rect x="400" y="195" width="375" height="185" rx="8" ry="8" fill="#d9ead3" stroke="#888" stroke-width="1" filter="url(#shadow)"/>
+  <text x="587" y="215" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#333">Nested list</text>
+
+  <!-- Inner collection 1 -->
+  <rect x="415" y="225" width="345" height="58" rx="6" ry="6" fill="#e8f0e3" stroke="#aaa" stroke-width="0.7"/>
+  <rect x="425" y="233" width="325" height="20" rx="3" ry="3" fill="#fff" stroke="#bbb" stroke-width="0.5"/>
+  <text x="587" y="247" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#333">Dataset 1</text>
+  <rect x="425" y="257" width="325" height="20" rx="3" ry="3" fill="#fff" stroke="#bbb" stroke-width="0.5"/>
+  <text x="587" y="271" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#333">Dataset A</text>
+
+  <!-- Inner collection 2 -->
+  <rect x="415" y="291" width="345" height="58" rx="6" ry="6" fill="#e8f0e3" stroke="#aaa" stroke-width="0.7"/>
+  <rect x="425" y="299" width="325" height="20" rx="3" ry="3" fill="#fff" stroke="#bbb" stroke-width="0.5"/>
+  <text x="587" y="313" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#333">Dataset 2</text>
+  <rect x="425" y="323" width="325" height="20" rx="3" ry="3" fill="#fff" stroke="#bbb" stroke-width="0.5"/>
+  <text x="587" y="337" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#333">Dataset A</text>
+
+  <!-- Subtitle -->
+  <text x="587" y="372" text-anchor="middle" font-family="sans-serif" font-size="10" font-style="italic" fill="#666">each element paired with individual dataset</text>
+
+  <!-- ==================== SEPARATOR ==================== -->
+  <line x1="10" y1="398" x2="790" y2="398" stroke="#ccc" stroke-width="1" stroke-dasharray="6,4"/>
+
+  <!-- ==================== CASE C ==================== -->
+  <!-- Two collections → list:list -->
+
+  <!-- Case label -->
+  <circle cx="22" cy="530" r="14" fill="#555"/>
+  <text x="22" y="535" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#fff">C</text>
+
+  <!-- Left: List 1 collection -->
+  <rect x="50" y="415" width="195" height="90" rx="8" ry="8" fill="#d9ead3" stroke="#888" stroke-width="1" filter="url(#shadow)"/>
+  <text x="148" y="433" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#333">List 1</text>
+
+  <rect x="65" y="441" width="165" height="24" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="148" y="458" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">Dataset 1</text>
+
+  <rect x="65" y="471" width="165" height="24" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="148" y="488" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">Dataset 2</text>
+
+  <!-- Plus sign -->
+  <text x="148" y="527" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="bold" fill="#555">+</text>
+
+  <!-- Left: List 2 collection -->
+  <rect x="50" y="540" width="195" height="90" rx="8" ry="8" fill="#d9ead3" stroke="#888" stroke-width="1" filter="url(#shadow)"/>
+  <text x="148" y="558" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#333">List 2</text>
+
+  <rect x="65" y="566" width="165" height="24" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="148" y="583" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">Dataset A</text>
+
+  <rect x="65" y="596" width="165" height="24" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="148" y="613" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">Dataset B</text>
+
+  <!-- Arrow -->
+  <line x1="268" y1="530" x2="378" y2="530" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="323" y="520" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#555">Build list</text>
+
+  <!-- Right: list:list collection -->
+  <rect x="400" y="415" width="375" height="185" rx="8" ry="8" fill="#d9ead3" stroke="#888" stroke-width="1" filter="url(#shadow)"/>
+  <text x="587" y="435" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#333">Nested list</text>
+
+  <!-- Inner collection 1 -->
+  <rect x="415" y="445" width="345" height="58" rx="6" ry="6" fill="#e8f0e3" stroke="#aaa" stroke-width="0.7"/>
+  <rect x="425" y="453" width="325" height="20" rx="3" ry="3" fill="#fff" stroke="#bbb" stroke-width="0.5"/>
+  <text x="587" y="467" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#333">Dataset 1</text>
+  <rect x="425" y="477" width="325" height="20" rx="3" ry="3" fill="#fff" stroke="#bbb" stroke-width="0.5"/>
+  <text x="587" y="491" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#333">Dataset A</text>
+
+  <!-- Inner collection 2 -->
+  <rect x="415" y="511" width="345" height="58" rx="6" ry="6" fill="#e8f0e3" stroke="#aaa" stroke-width="0.7"/>
+  <rect x="425" y="519" width="325" height="20" rx="3" ry="3" fill="#fff" stroke="#bbb" stroke-width="0.5"/>
+  <text x="587" y="533" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#333">Dataset 2</text>
+  <rect x="425" y="543" width="325" height="20" rx="3" ry="3" fill="#fff" stroke="#bbb" stroke-width="0.5"/>
+  <text x="587" y="557" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#333">Dataset B</text>
+
+  <!-- Subtitle -->
+  <text x="587" y="592" text-anchor="middle" font-family="sans-serif" font-size="10" font-style="italic" fill="#666">collections matched element-wise</text>
+
+</svg>

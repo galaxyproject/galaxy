@@ -1,6 +1,5 @@
 import pickle
-
-from six.moves import cStringIO as StringIO
+from io import StringIO
 
 
 class AliasUnpickler(pickle.Unpickler):
@@ -13,7 +12,7 @@ class AliasUnpickler(pickle.Unpickler):
         return pickle.Unpickler.find_class(self, module, name)
 
 
-class AliasPickleModule(object):
+class AliasPickleModule:
     def __init__(self, aliases):
         self.aliases = aliases
 

@@ -1,0 +1,125 @@
+<script setup lang="ts">
+import { faArchive } from "@fortawesome/free-solid-svg-icons";
+import { BAlert, BCard } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
+import { RouterLink } from "vue-router";
+
+import type { HistorySummary } from "@/api";
+import { useConfig } from "@/composables/config";
+import { useFileSources } from "@/composables/fileSources";
+import { useToast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import Alert from "@/components/Alert.vue";
+import GTab from "@/components/BaseComponents/GTab.vue";
+import GTabs from "@/components/BaseComponents/GTabs.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
+import HistoryArchiveSimple from "@/components/History/Archiving/HistoryArchiveSimple.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+const historyStore = useHistoryStore();
+const { config } = useConfig(true);
+const toast = useToast();
+
+const { hasWritable: hasWritableFileSources } = useFileSources();
+
+interface ArchiveHistoryWizardProps {
+    historyId: string;
+}
+
+const props = defineProps<ArchiveHistoryWizardProps>();
+
+const isArchiving = ref(false);
+const loadError = ref<string | null>(null);
+
+const history = computed<HistorySummary | null>(() => {
+    return historyStore.getHistoryById(props.historyId, false);
+});
+
+watch(
+    () => props.historyId,
+    async (historyId) => {
+        loadError.value = null;
+        if (!historyStore.getHistoryById(historyId, false)) {
+            try {
+                await historyStore.loadHistoryById(historyId);
+            } catch (error) {
+                loadError.value = errorMessageAsString(error);
+            }
+        }
+    },
+    { immediate: true },
+);
+
+const isHistoryAlreadyArchived = computed(() => {
+    return history.value?.archived;
+});
+
+const canFreeStorage = computed(() => {
+    return hasWritableFileSources.value && config.value.enable_celery_tasks;
+});
+
+const archivedHistoriesRoute = "/histories/archived";
+
+async function onArchiveHistory(exportRecordId?: string) {
+    isArchiving.value = true;
+    try {
+        const shouldPurge = exportRecordId !== undefined;
+        await historyStore.archiveHistoryById(props.historyId, exportRecordId, shouldPurge);
+        toast.success("History archived successfully.");
+    } catch (error) {
+        toast.error(`The history archive request failed. Please try again later. Reason: ${error}`);
+    } finally {
+        isArchiving.value = false;
+    }
+}
+
+const breadcrumbItems = computed(() => [
+    { title: "Histories", to: "/histories/list" },
+    {
+        title: history.value?.name || "Archive History",
+        to: `/histories/view?id=${props.historyId}`,
+        superText: historyStore.currentHistoryId === props.historyId ? "current" : undefined,
+    },
+    { title: "Archive", icon: faArchive },
+]);
+</script>
+
+<template>
+    <div class="history-archive-wizard">
+        <BreadcrumbHeading :items="breadcrumbItems" />
+
+        <Alert v-if="loadError" :message="loadError" variant="error" />
+        <BAlert v-else-if="!history" show>
+            <LoadingSpan spinner-only />
+        </BAlert>
+
+        <BAlert v-if="isHistoryAlreadyArchived" id="history-archived-alert" show variant="success">
+            This history has been archived. You can access it from the
+            <RouterLink :to="archivedHistoriesRoute">Archived Histories</RouterLink> section.
+        </BAlert>
+        <div v-else-if="history">
+            <BAlert show variant="info">
+                Archiving a history will remove it from your <i>active histories</i>. You can still access it from the
+                <RouterLink :to="archivedHistoriesRoute">Archived Histories</RouterLink> section.
+            </BAlert>
+
+            <div v-if="canFreeStorage">
+                <h2 class="h-md">How do you want to archive this history?</h2>
+                <BCard no-body class="mt-3">
+                    <GTabs pills card vertical lazy class="archival-option-tabs">
+                        <GTab id="keep-storage-tab" title="Keep storage space" active>
+                            <HistoryArchiveSimple :history="history" @onArchive="onArchiveHistory" />
+                        </GTab>
+                        <GTab id="free-storage-tab" title="Free storage space">
+                            <HistoryArchiveExportSelector :history="history" @onArchive="onArchiveHistory" />
+                        </GTab>
+                    </GTabs>
+                </BCard>
+            </div>
+            <HistoryArchiveSimple v-else :history="history" @onArchive="onArchiveHistory" />
+        </div>
+    </div>
+</template>

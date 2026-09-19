@@ -3,6 +3,7 @@
     <macros>
         <import>macros.xml</import>
     </macros>
+    <expand macro="requirements" />
     <code file="maf_to_bed_code.py"/>
     <command>python '$__tool_directory__/maf_to_bed.py' '${input1}' '${out_file1}' '${species}' ${complete_blocks} '.' '${out_file1.id}'</command>
     <inputs>

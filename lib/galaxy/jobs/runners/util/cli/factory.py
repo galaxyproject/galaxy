@@ -1,19 +1,17 @@
 try:
     from galaxy.jobs.runners.util.cli import (
         CliInterface,
-        split_params
+        split_params,
     )
-    code_dir = 'lib'
 except ImportError:
-    from pulsar.managers.util.cli import (
+    from pulsar.managers.util.cli import (  # type: ignore[no-redef]
         CliInterface,
-        split_params
+        split_params,
     )
-    code_dir = '.'
 
 
 def build_cli_interface():
-    return CliInterface(code_dir=code_dir)
+    return CliInterface()
 
 
 def get_shell(params):

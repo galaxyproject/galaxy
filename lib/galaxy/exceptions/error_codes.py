@@ -2,12 +2,10 @@
 
 See the file error_codes.json for actual error code descriptions.
 """
+
 from json import loads
 
-from pkg_resources import resource_string
-
-from galaxy.util import unicodify
-
+from galaxy.util.resources import resource_string
 
 # Error codes are provided as a convience to Galaxy API clients, but at this
 # time they do represent part of the more stable interface. They can change
@@ -15,10 +13,10 @@ from galaxy.util import unicodify
 UNKNOWN_ERROR_MESSAGE = "Unknown error occurred while processing request."
 
 
-class ErrorCode(object):
+class ErrorCode:
     """Small class allowing object representation for error descriptions loaded from JSON."""
 
-    def __init__(self, code, default_error_message):
+    def __init__(self, code: int, default_error_message: str):
         """Construct a :class:`ErrorCode` from supplied integer and error message."""
         self.code = code
         self.default_error_message = default_error_message or UNKNOWN_ERROR_MESSAGE
@@ -29,11 +27,11 @@ class ErrorCode(object):
 
     def __repr__(self):
         """Return object representation of this error code."""
-        return "ErrorCode[code=%d,message=%s]" % (self.code, str(self.default_error_message))
+        return f"ErrorCode[code={self.code},message={str(self.default_error_message)}]"
 
     def __int__(self):
         """Return the error code integer."""
-        return int(self.code)
+        return self.code
 
 
 def _from_dict(entry):
@@ -44,7 +42,25 @@ def _from_dict(entry):
     return (name, ErrorCode(code, message))
 
 
-error_codes_json = unicodify(resource_string(__name__, 'error_codes.json'))
+error_codes_json = resource_string(__name__, "error_codes.json")
+error_codes_by_name: dict[str, ErrorCode] = {}
+error_codes_by_int_code: dict[int, ErrorCode] = {}
+
 for entry in loads(error_codes_json):
     name, error_code_obj = _from_dict(entry)
     globals()[name] = error_code_obj
+    error_codes_by_name[name] = error_code_obj
+    error_codes_by_int_code[error_code_obj.code] = error_code_obj
+
+
+def __getattr__(name: str) -> ErrorCode:
+    """Expose the JSON-driven, dynamically-created error codes to static analysis.
+
+    The codes above are assigned via ``globals()[name] = ...``, which mypy cannot
+    see, so attribute access like ``error_codes.ADMIN_REQUIRED`` is otherwise
+    reported as an unknown attribute.
+    """
+    try:
+        return error_codes_by_name[name]
+    except KeyError:
+        raise AttributeError(name)

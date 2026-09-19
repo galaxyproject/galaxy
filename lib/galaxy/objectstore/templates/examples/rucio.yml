@@ -1,0 +1,42 @@
+- id: rucio
+  version: 0
+  name: Rucio Storage
+  description: |
+    Rucio manages large volumes of data spread across facilities at multiple institutions and organisations.
+    More information on Rucio can be found in [Rucio's official site](https://rucio.cern.ch/). Currently supported only
+    userpass authentication type.
+  variables:
+    rse:
+      label: RSE Name
+      type: string
+      help: |
+        Name of the primary RSE for data upload
+    host:
+      label: Rucio Host
+      type: string
+      help: |
+        URL of Rucio host
+    account:
+      label: Rucio Account
+      type: string
+      help: |
+        Rucio account
+  secrets:
+    username:
+      label: User Name
+      help: |
+        Username
+    userpass:
+      label: User Password
+      help: |
+        Password of the user specified in username
+  configuration:
+    type: rucio
+    upload_rse_name: "{{ variables.rse }}"
+    scope: galaxy
+    account: "{{ variables.account }}"
+    auth_host: "{{ variables.host }}"
+    username: "{{ secrets.username }}"
+    password: "{{ secrets.userpass }}"
+    auth_type: userpass
+    host: "{{ variables.host }}"

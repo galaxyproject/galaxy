@@ -24,8 +24,8 @@ bedtools genomecov -bg -split -ibam '$input'
     </outputs>
     <tests>
         <test>
-            <param name="input" format="bam" value="srma_out2.bam" dbkey="hg17"/>
-            <output name="output" format="bigwig" value="srma_out2.bigwig"/>
+            <param name="input" ftype="bam" value="srma_out2.bam" dbkey="hg17"/>
+            <output name="output" ftype="bigwig" value="srma_out2.bigwig"/>
         </test>
     </tests>
     <help>

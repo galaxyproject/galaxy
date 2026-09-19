@@ -1,149 +1,79 @@
+from seletools.actions import drag_and_drop
+
+from galaxy.util.unittest_utils import transient_failure
 from .framework import (
+    managed_history,
+    selenium_only,
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 
-class HistoryMultiViewTestCase(SeleniumTestCase):
-
+class TestHistoryMultiView(SeleniumTestCase):
     ensure_registered = True
 
     @selenium_test
-    def test_create_new_old_slides_next(self):
+    def test_display(self):
         history_id = self.current_history_id()
-        input_collection = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json()
-        input_hid = input_collection["hid"]
-
+        input_collection = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["0", "1", "0", "1"], wait=True
+        ).json()
+        input_hid = input_collection["outputs"][0]["hid"]
         self.home()
-
-        hdca_selector = self.history_panel_wait_for_hid_state(input_hid, "ok")
-
-        self.components.history_panel.multi_view_button.wait_for_and_click()
-        self.components.multi_history_view.create_new_button.wait_for_and_click()
-        self.components.multi_history_view.drag_drop_help.wait_for_visible()
+        self.open_history_multi_view()
+        hdca_selector = self.history_panel_wait_for_hid_state(input_hid, "ok", multi_history_panel=True)
         self.wait_for_visible(hdca_selector)
         self.screenshot("multi_history_collection")
 
     @selenium_test
+    @managed_history
     def test_list_list_display(self):
         history_id = self.current_history_id()
-        method = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json
-        selector = self.prepare_multi_history_view(method)
-        first_level_element_selector = selector.descendant(".dataset-collection-element")
-        self.wait_for_and_click(first_level_element_selector)
-        dataset_selector = first_level_element_selector.descendant(".dataset")
-        self.wait_for_and_click(dataset_selector)
-
-        self.sleep_for(self.wait_types.UX_TRANSITION)
+        method = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json
+        self.prepare_multi_history_view(method)
+        dataset_selector = self.history_panel_wait_for_hid_state(1, None, multi_history_panel=True)
+        dataset_selector.wait_for_and_click()
+        dataset_selector = self.history_panel_wait_for_hid_state(3, None, multi_history_panel=True)
+        dataset_selector.wait_for_and_click()
         self.screenshot("multi_history_list_list")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
+    @transient_failure(issue=21380, potentially_fixed=True)
     @selenium_test
-    def test_list_list_list_display(self):
-        history_id = self.current_history_id()
-        method = self.dataset_collection_populator.create_nested_collection(history_id, collection_type="list:list:list").json
-        selector = self.prepare_multi_history_view(method)
-
-        first_level_element_selector = selector.descendant(".dataset-collection-element")
-        self.wait_for_and_click(first_level_element_selector)
-        second_level_element_selector = first_level_element_selector.descendant(".dataset-collection-element")
-        self.wait_for_and_click(second_level_element_selector)
-        dataset_selector = first_level_element_selector.descendant(".dataset")
-        self.wait_for_and_click(dataset_selector)
-
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        self.screenshot("multi_history_list_list_list")
-
-    @selenium_test
-    def test_copy_history(self):
-        history_id = self.current_history_id()
-        method = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json
-
+    @managed_history
+    def test_list_list_copy(self):
+        source_history_id = self.current_history_id()
+        # The way create_list_of_list_in_history it creates the datasets and the sublist
+        # in this history before creating the nested list - so the nested list
+        # will have an HID of 5 in the source history and an HID of 4 in the target
+        # history.
+        list_of_list_source_hid = 5
+        list_of_list_target_hid = 4
+        method = self.dataset_collection_populator.create_list_of_list_in_history(source_history_id, wait=True).json
         self.prepare_multi_history_view(method)
-        self.copy_history(history_id)
-        self.assert_history(history_id, histories_number=2)
-
-    @selenium_test
-    def test_delete_history(self):
-        history_id = self.current_history_id()
-        method = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json
-
-        self.prepare_multi_history_view(method)
-        self.copy_history(history_id)
-        self.components.multi_history_view.history_dropdown_btn(history_id=history_id).wait_for_and_click()
-        # click on delete button with corresponding history_id
-        self.components.multi_history_view.history_dropdown_menu.delete(history_id=history_id).wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-        self.assert_history(history_id, should_exist=False)
-
-    @selenium_test
-    def test_purge_history(self):
-        history_id = self.current_history_id()
-        method = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json
-
-        self.prepare_multi_history_view(method)
-        self.copy_history(history_id)
-        self.components.multi_history_view.history_dropdown_btn(history_id=history_id).wait_for_and_click()
-        # click on purge button with corresponding history_id
-        self.components.multi_history_view.history_dropdown_menu.purge(history_id=history_id).wait_for_and_click()
-
-        self.driver.switch_to_alert().accept()
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-        self.assert_history(history_id, should_exist=False)
-
-    @selenium_test
-    def test_switch_history(self):
-        '''
-        1. Load the multi history view. There should be a selector for the button
-           to create a new history.
-        2. Create a new history. This *should* automatically switch to the newly
-           created history.
-        3. Switch back to the original history. A button should appear on the old,
-           previously created history that allows switching back to that one, and
-           the history ID should now match the ID of the history with which we
-           started.
-        '''
-        self.home()
-        original_history_id = self.current_history_id()
-        # Load the multi-view
-        self.components.history_panel.multi_view_button.wait_for_and_click()
-        # There should be only one
-        self.assert_history(original_history_id, histories_number=1)
-        # Creating a new history should automatically switch to it
-        self.components.multi_history_view.create_new_button.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        new_history_id = self.current_history_id()
-        # Otherwise this assertion would fail
-        self.screenshot("multi_history_switch_created_history")
-        self.assertNotEqual(original_history_id, new_history_id)
-        # Switch back to the original history
-        switch_button = self.components.multi_history_view.switch_button(history_id=original_history_id)
-        switch_button.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.screenshot("multi_history_switch_changed_history")
-        self.assertEqual(original_history_id, self.current_history_id())
-
-    def assert_history(self, history_id, histories_number=1, should_exist=True):
-        self.components.multi_history_view.histories.wait_for_present()
-        histories = self.components.multi_history_view.histories.all()
-        assert len(histories) == histories_number
-        # search for history with history_id
-        assert should_exist == any(history.get_attribute("id") == "history-column-" + history_id for history in histories)
-
-    def copy_history(self, history_id):
-        self.components.multi_history_view.history_dropdown_btn(history_id=history_id).wait_for_and_click()
-        self.components.multi_history_view.copy.wait_for_and_click()
-        self.components.multi_history_view.copy_history_modal.copy_btn.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        # The multi-history view is incredibly hard to navigate around (in UI and testing)
+        # We just create a new history with the dropped element here.
+        drop_target = self.find_element_by_selector("div.history-picker-box.select-picker")
+        dataset_element = self.history_panel_wait_for_hid_state(list_of_list_source_hid, None).wait_for_visible()
+        drag_and_drop(self.driver, source=dataset_element, target=drop_target)
+        self._wait_on(lambda *driver: self.current_history_id() != source_history_id)
+        target_history_id = self.current_history_id()
+        self.wait_for_history_to_have_hid(target_history_id, list_of_list_target_hid)
+        assert source_history_id != target_history_id
+        source_contents = self.dataset_populator.get_history_contents(history_id=source_history_id)
+        source_dataset_ids = [item["id"] for item in source_contents if item["history_content_type"] == "dataset"]
+        target_contents = self.dataset_populator.get_history_contents(history_id=target_history_id)
+        target_dataset_ids = [item["id"] for item in target_contents if item["history_content_type"] == "dataset"]
+        assert len(target_dataset_ids) == len(source_dataset_ids), "expected datasets to be copied to new history"
 
     def prepare_multi_history_view(self, collection_populator_method):
         collection = collection_populator_method()
+        if "outputs" in collection:
+            collection = self.dataset_collection_populator.wait_for_fetched_collection(collection)
         collection_hid = collection["hid"]
 
         self.home()
-        self.components.history_panel.multi_view_button.wait_for_and_click()
-
-        selector = self.history_panel_wait_for_hid_state(collection_hid, "ok")
-        self.click(selector)
+        self.open_history_multi_view()
+        selector = self.history_panel_wait_for_hid_state(collection_hid, "ok", multi_history_panel=True)
+        selector.wait_for_and_click()
         return selector

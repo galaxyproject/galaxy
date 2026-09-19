@@ -1,0 +1,93 @@
+<tool id="select_from_url" name="select_from_url" version="0.1.0" profile="23.1">
+    <command><![CDATA[
+echo '$url_param_value' > '$param_value' &&
+echo '$url_param_value_postprocessed' > '$param_value_postprocessed' &&
+echo '$invalid_url_param_value_postprocessed' > '$invalid_param_value_postprocessed' &&
+echo '$url_param_value_header_and_body' > '$param_value_header_and_body'
+    ]]></command>
+    <inputs>
+        <param name="url_param_value" type="select">
+            <options from_url="https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/refs/heads/master/genomes.json"></options>
+        </param>
+        <param name="dynamic_param_filtered_with_validator" type="select">
+            <!-- tested in test_build_module_filter_dynamic_select -->
+            <options from_url="https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/refs/heads/master/genomes.json">
+                <filter type="param_value" ref="url_param_value" column="1" />
+            </options>
+            <validator type="no_options" message="Need at least one option here" />
+        </param>
+        <!--
+        <param name="url_param_value_templated" type="select">
+            <options from_url="http://localhost:8000/data?user=$__user_id__">
+            </options>
+        </param>
+        -->
+        <param name="url_param_value_postprocessed" type="select">
+            <options from_url="https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/refs/heads/master/dm6.json">
+                <postprocess_expression type="ecma5.1"><![CDATA[
+                    $( Object.values(inputs.chrom_info).map((v) => [v.chrom, v.len]) )
+                ]]></postprocess_expression>
+            </options>
+        </param>
+        <param name="invalid_url_param_value_postprocessed" type="select">
+            <options from_url="https://usegalaxy.or">
+                <postprocess_expression type="ecma5.1"><![CDATA[${
+                    if (inputs) {
+                        return Object.values(inputs.chrom_info).map((v) => [v.chrom, v.len])
+                    } else {
+                        return [["The fallback value", "default"]]
+                    }
+                }]]></postprocess_expression>
+            </options>
+        </param>
+        <param name="url_param_value_header_and_body" type="select">
+            <options from_url="https://postman-echo.com/post" request_method="POST">
+                <!-- Example for accessing user secrets via extra preferences -->
+                <request_headers type="json">
+                    {"x-api-key": "${__user__.extra_preferences.fake_api_key if $__user__ else "anon"}"}
+                </request_headers>
+                <request_body type="json">
+                    {"name": "value"}
+                </request_body>
+                <!-- https://postman-echo.com/post echos values sent to it, so here's we're listing the response headers -->
+                <postprocess_expression type="ecma5.1"><![CDATA[${
+                    return Object.keys(inputs.headers).map((header) => [header, header])
+                }]]></postprocess_expression>
+            </options>
+        </param>
+    </inputs>
+    <outputs>
+        <data format="txt" label="url param value" name="param_value"></data>
+        <data format="txt" label="url param value postprocessed" name="param_value_postprocessed"></data>
+        <data format="txt" label="invalid url param value postprocessed" name="invalid_param_value_postprocessed"></data>
+        <data format="txt" label="param value for header and body request" name="param_value_header_and_body"></data>
+    </outputs>
+    <tests>
+        <test>
+            <param name="url_param_value" value="dm6" />
+            <param name="url_param_value_postprocessed" value="chr2L" />
+            <param name="invalid_url_param_value_postprocessed" value="default" />
+            <param name="url_param_value_header_and_body" value="x-api-key" />
+            <output name="param_value">
+                <assert_contents>
+                    <has_text text="dm6"></has_text>
+                </assert_contents>
+            </output>
+            <output name="param_value_postprocessed">
+                <assert_contents>
+                    <has_text text="23513712"></has_text>
+                </assert_contents>
+            </output>
+            <output name="invalid_param_value_postprocessed">
+                <assert_contents>
+                    <has_text text="default"></has_text>
+                </assert_contents>
+            </output>
+            <output name="param_value_header_and_body">
+                <assert_contents>
+                    <has_text text="x-api-key"></has_text>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

@@ -1,106 +1,205 @@
-from collections import OrderedDict
+from typing import (
+    cast,
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
 
-from galaxy import model
+from galaxy.model import (
+    DatasetCollection,
+    DatasetInstance,
+)
+from galaxy.model.orm.util import add_object_to_object_session
+from galaxy.util.oset import OrderedSet
 from .type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 
+if TYPE_CHECKING:
+    from galaxy.model.dataset_collections.adapters import CollectionAdapter
+    from galaxy.model.dataset_collections.type_description import CollectionTypeDescription
+    from galaxy.model.dataset_collections.types import (
+        BaseDatasetCollectionType,
+        DatasetInstanceMapping,
+    )
+    from galaxy.tool_util_models.sample_sheet import SampleSheetRow
+    from galaxy.tool_util_models.tool_source import FieldDict
 
-def build_collection(type, dataset_instances):
+
+def build_collection(
+    type: "BaseDatasetCollectionType",
+    dataset_instances: "DatasetInstanceMapping",
+    collection: DatasetCollection | None = None,
+    associated_identifiers: set[str] | None = None,
+    fields: str | list["FieldDict"] | None = None,
+    column_definitions=None,
+    rows: dict[str, Optional["SampleSheetRow"]] | None = None,
+):
     """
     Build DatasetCollection with populated DatasetcollectionElement objects
     corresponding to the supplied dataset instances or throw exception if
     this is not a valid collection of the specified type.
     """
-    dataset_collection = model.DatasetCollection()
-    set_collection_elements(dataset_collection, type, dataset_instances)
+    dataset_collection = collection or DatasetCollection(fields=fields, column_definitions=column_definitions)
+    associated_identifiers = associated_identifiers or set()
+    set_collection_elements(
+        dataset_collection, type, dataset_instances, associated_identifiers, fields=fields, rows=rows
+    )
     return dataset_collection
 
 
-def set_collection_elements(dataset_collection, type, dataset_instances):
-    element_index = 0
+def set_collection_elements(
+    dataset_collection: DatasetCollection,
+    type: "BaseDatasetCollectionType",
+    dataset_instances: "DatasetInstanceMapping",
+    associated_identifiers: set[str],
+    fields: str | list["FieldDict"] | None = None,
+    rows: dict[str, Optional["SampleSheetRow"]] | None = None,
+) -> DatasetCollection:
+    new_element_keys = OrderedSet(dataset_instances.keys()) - associated_identifiers
+    new_dataset_instances = {k: dataset_instances[k] for k in new_element_keys}
+    dataset_collection.element_count = dataset_collection.element_count or 0
+    element_index = dataset_collection.element_count
     elements = []
-    for element in type.generate_elements(dataset_instances):
+    if type.collection_type == "record" and fields == "auto":
+        fields = guess_fields(dataset_instances)
+    column_definitions = dataset_collection.column_definitions
+    for element in type.generate_elements(
+        new_dataset_instances, fields=fields, rows=rows, column_definitions=column_definitions
+    ):
         element.element_index = element_index
+        add_object_to_object_session(element, dataset_collection)
         element.collection = dataset_collection
         elements.append(element)
 
         element_index += 1
+        assert element.element_identifier
+        associated_identifiers.add(element.element_identifier)
 
-    dataset_collection.elements = elements
     dataset_collection.element_count = element_index
     return dataset_collection
 
 
-class CollectionBuilder(object):
-    """ Purely functional builder pattern for building a dataset collection. """
+def guess_fields(dataset_instances: "DatasetInstanceMapping") -> list["FieldDict"]:
+    fields: list[FieldDict] = []
+    for identifier, element in dataset_instances.items():
+        if isinstance(element, DatasetCollection):
+            return []
+        else:
+            fields.append({"type": "File", "name": identifier})
+
+    return fields
+
+
+ElementsDict = dict[str, Union["CollectionBuilder", DatasetInstance]]
+
+
+class CollectionBuilder:
+    """Purely functional builder pattern for building a dataset collection."""
+
+    _current_elements: ElementsDict
+    _current_row_data: dict[str, Optional["SampleSheetRow"]] = {}
 
     def __init__(self, collection_type_description):
         self._collection_type_description = collection_type_description
-        self._current_elements = OrderedDict()
+        self._current_elements = {}
+        self._current_row_data = {}
 
-    def replace_elements_in_collection(self, template_collection, replacement_dict):
+        # Store collection here so we don't recreate the collection all the time
+        self.collection: DatasetCollection | None = None
+        self.associated_identifiers: set[str] = set()
+
+    def replace_elements_in_collection(
+        self,
+        template_collection: Union["CollectionAdapter", DatasetCollection],
+        replacement_dict: dict[DatasetInstance, DatasetInstance],
+    ) -> None:
         self._current_elements = self._replace_elements_in_collection(
             template_collection=template_collection,
             replacement_dict=replacement_dict,
         )
 
-    def _replace_elements_in_collection(self, template_collection, replacement_dict):
-        elements = OrderedDict()
+    def _replace_elements_in_collection(
+        self,
+        template_collection: Union["CollectionAdapter", DatasetCollection],
+        replacement_dict: dict[DatasetInstance, DatasetInstance],
+    ) -> ElementsDict:
+        elements: ElementsDict = {}
         for element in template_collection.elements:
-            if element.is_collection:
+            assert element.element_identifier
+            if element.child_collection:
                 collection_builder = CollectionBuilder(
                     collection_type_description=self._collection_type_description.child_collection_type_description()
                 )
                 collection_builder.replace_elements_in_collection(
-                    template_collection=element.child_collection,
-                    replacement_dict=replacement_dict
+                    template_collection=element.child_collection, replacement_dict=replacement_dict
                 )
                 elements[element.element_identifier] = collection_builder
             else:
-                elements[element.element_identifier] = replacement_dict.get(element.element_object, element.element_object)
+                assert isinstance(element.element_object, DatasetInstance)
+                elements[element.element_identifier] = replacement_dict.get(
+                    element.element_object, element.element_object
+                )
         return elements
 
-    def get_level(self, identifier):
+    def get_level(self, identifier: str, row: Optional["SampleSheetRow"] = None) -> "CollectionBuilder":
         if not self._nested_collection:
             message_template = "Cannot add nested collection to collection of type [%s]"
             message = message_template % (self._collection_type_description)
             raise AssertionError(message)
-        if identifier not in self._current_elements:
-            subcollection_builder = CollectionBuilder(
-                self._subcollection_type_description
-            )
+        if identifier in self._current_elements:
+            subcollection_builder = self._current_elements[identifier]
+            assert isinstance(subcollection_builder, CollectionBuilder)
+        else:
+            subcollection_builder = CollectionBuilder(self._subcollection_type_description)
             self._current_elements[identifier] = subcollection_builder
+            self._current_row_data[identifier] = row
+        return subcollection_builder
 
-        return self._current_elements[identifier]
-
-    def add_dataset(self, identifier, dataset_instance):
+    def add_dataset(
+        self, identifier: str, dataset_instance: DatasetInstance, row: Optional["SampleSheetRow"] = None
+    ) -> None:
         self._current_elements[identifier] = dataset_instance
+        self._current_row_data[identifier] = row
 
-    def build_elements(self):
+    def build_elements(self) -> "DatasetInstanceMapping":
         elements = self._current_elements
         if self._nested_collection:
-            new_elements = OrderedDict()
+            new_elements = {}
             for identifier, element in elements.items():
+                assert isinstance(element, CollectionBuilder)
                 new_elements[identifier] = element.build()
-            elements = new_elements
-        return elements
+            return new_elements
+        else:
+            self._current_elements = {}
+            return cast(dict[str, DatasetInstance], elements)
 
-    def build(self):
+    def build_elements_and_rows(
+        self,
+    ) -> tuple["DatasetInstanceMapping", dict[str, Optional["SampleSheetRow"]] | None]:
+        row_data = self._current_row_data
+        self._current_row_data = {}
+        return self.build_elements(), row_data
+
+    def build(self) -> DatasetCollection:
         type_plugin = self._collection_type_description.rank_type_plugin()
-        collection = build_collection(type_plugin, self.build_elements())
-        collection.collection_type = self._collection_type_description.collection_type
-        return collection
+        elements, rows = self.build_elements_and_rows()
+        self.collection = build_collection(
+            type_plugin, elements, self.collection, self.associated_identifiers, rows=rows
+        )
+        assert self.collection
+        self.collection.collection_type = self._collection_type_description.collection_type
+        return self.collection
 
     @property
-    def _subcollection_type_description(self):
+    def _subcollection_type_description(self) -> "CollectionTypeDescription":
         return self._collection_type_description.subcollection_type_description()
 
     @property
-    def _nested_collection(self):
+    def _nested_collection(self) -> bool:
         return self._collection_type_description.has_subcollections()
 
 
 class BoundCollectionBuilder(CollectionBuilder):
-    """ More stateful builder that is bound to a particular model object. """
+    """More stateful builder that is bound to a particular model object."""
 
     def __init__(self, dataset_collection):
         self.dataset_collection = dataset_collection
@@ -108,10 +207,13 @@ class BoundCollectionBuilder(CollectionBuilder):
             raise Exception("Cannot reset elements of an already populated dataset collection.")
         collection_type = dataset_collection.collection_type
         collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
-        super(BoundCollectionBuilder, self).__init__(collection_type_description)
+        super().__init__(collection_type_description)
+
+    def populate_partial(self):
+        elements, rows = self.build_elements_and_rows()
+        type_plugin = self._collection_type_description.rank_type_plugin()
+        set_collection_elements(self.dataset_collection, type_plugin, elements, self.associated_identifiers, rows=rows)
 
     def populate(self):
-        elements = self.build_elements()
-        type_plugin = self._collection_type_description.rank_type_plugin()
-        set_collection_elements(self.dataset_collection, type_plugin, elements)
+        self.populate_partial()
         self.dataset_collection.mark_as_populated()

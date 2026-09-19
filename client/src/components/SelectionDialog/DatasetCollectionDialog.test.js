@@ -1,0 +1,69 @@
+import { createLocalVue, mount } from "@vue/test-utils";
+import { BAlert } from "bootstrap-vue";
+import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+
+import DatasetCollectionDialog from "./DatasetCollectionDialog.vue";
+import SelectionDialog from "./SelectionDialog.vue";
+import GTable from "@/components/Common/GTable.vue";
+
+vi.mock("app");
+
+const { server, http } = useServerMock();
+
+const mockOptions = {
+    callback: () => {},
+    history: "f2db41e1fa331b3e",
+};
+
+describe("DatasetCollectionDialog.vue", () => {
+    let wrapper;
+    let localVue;
+
+    beforeEach(() => {
+        localVue = createLocalVue();
+    });
+
+    it("loads correctly in loading state, shows options when optionsShow becomes true", async () => {
+        // Initially in loading state.
+        const collectionsResponse = [{ id: "f2db41e1fa331b3e", name: "Awesome Collection", hid: 1 }];
+        server.use(
+            http.untyped.get(`/api/histories/${mockOptions.history}/contents`, ({ request }) => {
+                const url = new URL(request.url);
+                if (url.searchParams.get("type") === "dataset_collection") {
+                    return HttpResponse.json(collectionsResponse);
+                }
+                return HttpResponse.json([]);
+            }),
+        );
+
+        wrapper = mount(DatasetCollectionDialog, {
+            propsData: mockOptions,
+            localVue: localVue,
+        });
+
+        expect(wrapper.findComponent(SelectionDialog).exists()).toBe(true);
+        expect(wrapper.findComponent(GTable).exists()).toBe(false);
+
+        await flushPromises();
+
+        expect(wrapper.findComponent(BAlert).exists()).toBe(false);
+        expect(wrapper.findComponent(GTable).exists()).toBe(true);
+    });
+
+    it("error message set on dataset collection fetch problems", async () => {
+        server.use(
+            http.untyped.get(`/api/histories/${mockOptions.history}/contents`, () => {
+                return HttpResponse.json({ err_msg: "Bad error" }, { status: 403 });
+            }),
+        );
+        wrapper = mount(DatasetCollectionDialog, {
+            propsData: mockOptions,
+            localVue: localVue,
+        });
+        await flushPromises();
+        expect(wrapper.findComponent(BAlert).text()).toBe("Bad error");
+    });
+});

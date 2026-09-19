@@ -3,21 +3,29 @@
 """
 A script for calculating secure hashes / message digests.
 """
+
 import hashlib
 import optparse
 from collections import OrderedDict
 
-HASH_ALGORITHMS = ['md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512']
-CHUNK_SIZE = 2 ** 20  # 1mb
+HASH_ALGORITHMS = ["md5", "sha1", "sha224", "sha256", "sha384", "sha512"]
+CHUNK_SIZE = 2**20  # 1mb
 
 
 def __main__():
     # Parse Command Line
     parser = optparse.OptionParser()
-    parser.add_option('-a', '--algorithm', dest='algorithms', action='append', type="string", help='Algorithms to use, eg. (md5, sha1, sha224, sha256, sha384, sha512)')
-    parser.add_option('-i', '--input', dest='input', action='store', type="string", help='Input filename')
-    parser.add_option('-o', '--output', dest='output', action='store', type="string", help='Output filename')
-    (options, args) = parser.parse_args()
+    parser.add_option(
+        "-a",
+        "--algorithm",
+        dest="algorithms",
+        action="append",
+        type="string",
+        help="Algorithms to use, eg. (md5, sha1, sha224, sha256, sha384, sha512)",
+    )
+    parser.add_option("-i", "--input", dest="input", action="store", type="string", help="Input filename")
+    parser.add_option("-o", "--output", dest="output", action="store", type="string", help="Output filename")
+    options, args = parser.parse_args()
 
     algorithms = OrderedDict()
     for algorithm in options.algorithms:
@@ -28,7 +36,7 @@ def __main__():
     assert options.input, "You must provide an input filename."
     assert options.output, "You must provide an output filename."
 
-    with open(options.input, 'rb') as fh:
+    with open(options.input, "rb") as fh:
         while True:
             chunk = fh.read(CHUNK_SIZE)
             if chunk:
@@ -37,9 +45,9 @@ def __main__():
             else:
                 break
 
-    with open(options.output, 'w') as output:
-        output.write('#%s\n' % ('\t'.join(algorithms.keys())))
-        output.write('%s\n' % ('\t'.join(x.hexdigest() for x in algorithms.values())))
+    with open(options.output, "w") as output:
+        output.write("#%s\n" % ("\t".join(algorithms.keys())))
+        output.write("%s\n" % ("\t".join(x.hexdigest() for x in algorithms.values())))
 
 
 if __name__ == "__main__":

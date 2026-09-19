@@ -2,22 +2,23 @@
 
 Galaxy is designed to run jobs on your local system by default, but it can be configured to run jobs on a cluster.  The front-end Galaxy application runs on a single server as usual, but tools are run on cluster nodes instead.
 
-A [general reference for the job configuration file](jobs.md) is also available.
+A [general reference for the job configuration file](./jobs.md) is also available.
 
 ## Distributed Resources Managers
 
 Galaxy is known to work with:
 
-* [TORQUE Resource Manager](http://www.adaptivecomputing.com/products/torque/)
-* [PBS Professional](https://www.pbsworks.com/PBSProduct.aspx?n=PBS-Professional&c=Overview-and-Capabilities)
-* [Open Grid Engine](http://gridscheduler.sourceforge.net/)
-* [Univa Grid Engine](http://www.univa.com/products/grid-engine.php) (previously known as Sun Grid Engine and Oracle Grid Engine)
-* [Spectrum LSF](https://www.ibm.com/us-en/marketplace/hpc-workload-management)
-* [HTCondor](http://research.cs.wisc.edu/htcondor/)
+* [TORQUE Resource Manager](https://adaptivecomputing.com/cherry-services/torque-resource-manager/)
+* [Altair PBS Professional](https://altair.com/pbs-professional)
+* [Open Grid Engine](https://gridscheduler.sourceforge.net/)
+* [Altair Grid Engine](https://www.altair.com/grid-engine/) (previously known as Sun Grid Engine, Oracle Grid Engine and Univa Grid Engine)
+* [IBM Spectrum LSF](https://www.ibm.com/products/hpc-workload-management)
+* [HTCondor](https://research.cs.wisc.edu/htcondor/)
 * [Slurm](https://slurm.schedmd.com/)
 * [Galaxy Pulsar](#pulsar) (formerly LWR)
+* [AWS Batch](https://aws.amazon.com/batch/)
 
-It should also work with [any other DRM](http://www.drmaa.org/implementations.php) which implements a [DRMAA](http://www.drmaa.org) interface. If you successfully run Galaxy with a DRM not listed here, please let us know via an email to the [galaxy-dev mailing list](https://galaxyproject.org/mailing-lists/).
+It should also work with [any other DRM](https://www.drmaa.org/implementations.php) which implements a [DRMAA](https://www.drmaa.org) interface. If you successfully run Galaxy with a DRM not listed here, please let us know via an email to the [galaxy-dev mailing list](https://galaxyproject.org/mailing-lists/).
 
 If you do not already have a DRM, [Pulsar](#pulsar) is available which does not require an existing cluster or a shared filesystem and can also run jobs on Windows hosts.
 
@@ -59,18 +60,11 @@ If your cluster nodes have Internet access (NAT is okay) and you want to run the
 new_file_path: /clusterfs/galaxy/tmp
 ```
 
-
-Additionally some of the runners including DRMAA may use the ``cluster_files_directory`` for sharing files with the cluster, which defaults to ``database/pbs``. You may need to create this folder.
-
-```yaml
-cluster_files_directory: database/pbs
-```
-
 You may also find that attribute caching in your filesystem causes problems with job completion since it interferes with Galaxy detecting the presence and correct sizes of output files. In NFS caching can be disabled with the `-noac` mount option on Linux (on the Galaxy server), but this may have a significant impact on performance since all attributes will have to be read from the file server upon every file access. You should try the `retry_job_output_collection` option in `galaxy.yml` first to see if this solves the problem.
 
 ## Runner Configuration
 
-**This documentation covers configuration of the various runner plugins, not how to distribute jobs to the various plugins.** Consult the [job configuration file documentation](jobs.md) for full details on the correct syntax, and for instructions on how to configure tools to actually use the runners explained below.
+**This documentation covers configuration of the various runner plugins, not how to distribute jobs to the various plugins.** Consult the [job configuration file documentation](./jobs.md) for full details on the correct syntax, and for instructions on how to configure tools to actually use the runners explained below.
 
 ### Local
 
@@ -101,11 +95,11 @@ For each destination using the local runner, it is possible to specify the numbe
 ```
 
 
-The value of *local_slots* is used to define [GALAXY_SLOTS](https://galaxyproject.org/admin/config/galaxy_slots/).
+The value of *local_slots* is used to define [GALAXY_SLOTS](https://galaxyproject.org/admin/config/galaxy-slots/).
 
 ### DRMAA
 
-Runs jobs via any DRM which supports the [Distributed Resource Management Application API](http://www.drmaa.org). Most commonly used to interface with [PBS Professional](https://www.pbsworks.com/PBSProduct.aspx?n=PBS-Professional&c=Overview-and-Capabilities), [Sun Grid Engine](http://gridscheduler.sourceforge.net/), [Univa Grid Engine](http://www.univa.com/products/grid-engine.php), [Spectrum LSF](https://www.ibm.com/us-en/marketplace/hpc-workload-management), and [SLURM](https://slurm.schedmd.com/).
+Runs jobs via any DRM which supports the [Distributed Resource Management Application API](https://www.drmaa.org). Most commonly used to interface with [PBS Professional](https://altair.com/pbs-professional), [Open Grid Scheduler](https://gridscheduler.sourceforge.net/), [Altair Grid Engine](https://www.altair.com/grid-engine/), [IBM Spectrum LSF](https://www.ibm.com/products/hpc-workload-management), and [SLURM](https://slurm.schedmd.com/).
 
 #### Dependencies
 
@@ -119,15 +113,15 @@ galaxy_server% export DRMAA_LIBRARY_PATH=/galaxy/sge/lib/lx24-amd64/libdrmaa.so
 
 #### DRM Notes
 
-**Limitations**: The DRMAA runner does not work if Galaxy is configured to run jobs as real user, because in this setting jobs are submitted with an external script, i.e. in an extra DRMAA session, and the session based (python) DRMAA library can only query jobs within the session in which started them. Furthermore, the DRMAA job runner only distinguishes successful and failed jobs and ignores information about possible failure sources, e.g. runtime / memory violation, which could be used for job resubmission. Specialized job runners are abvailable that are not affected by these limitations, e.g. univa and slurm runners.
+**Limitations**: The DRMAA runner does not work if Galaxy is configured to run jobs as real user, because in this setting jobs are submitted with an external script, i.e. in an extra DRMAA session, and the session based (python) DRMAA library can only query jobs within the session in which started them. Furthermore, the DRMAA job runner only distinguishes successful and failed jobs and ignores information about possible failure sources, e.g. runtime / memory violation, which could be used for job resubmission. Specialized job runners are available that are not affected by these limitations, e.g. univa and slurm runners.
 
-**TORQUE**: The DRMAA runner can also be used (instead of the [PBS](#pbs) runner) to submit jobs to TORQUE, however, problems have been reported when using the `libdrmaa.so` provided with TORQUE.  Using this library will result in a segmentation fault when the drmaa runner attempts to write the job template, and any native job runner options will not be passed to the DRM.  Instead, you should compile the [pbs-drmaa](http://apps.man.poznan.pl/trac/pbs-drmaa/wiki) library and use this as the value for `$DRMAA_LIBRARY_PATH`.
+**TORQUE**: The DRMAA runner can also be used (instead of the [PBS](#pbs) runner) to submit jobs to TORQUE, however, problems have been reported when using the `libdrmaa.so` provided with TORQUE.  Using this library will result in a segmentation fault when the drmaa runner attempts to write the job template, and any native job runner options will not be passed to the DRM.  Instead, you should compile the [pbs-drmaa](https://apps.man.poznan.pl/trac/pbs-drmaa/wiki) library and use this as the value for `$DRMAA_LIBRARY_PATH`.
 
 **Slurm**: You will need to install [slurm-drmaa](https://github.com/natefoo/slurm-drmaa/). In production on [usegalaxy.org](https://usegalaxy.org) we observed pthread deadlocks in slurm-drmaa that would cause Galaxy job handlers to eventually stop processing jobs until the handler was restarted. Compiling slurm-drmaa using the compiler flags `-g -O0` (keep debugging symbols, disable optimization) caused the deadlock to disappear.
 
 #### Parameters and Configuration
 
-Most [options defined in the DRMAA interface](http://www.ogf.org/documents/GFD.143.pdf) are supported.  Exceptions include `remoteCommand`, `jobName`, `outputPath`, and `errorPath` since these attributes are set by Galaxy.  To pass parameters to your underlying DRM, use the `nativeSpecification` parameter.  The format of this parameter is dependent upon the underlying DRM.  However, for Grid Engine, it is the list of command line parameters that would be passed to `qsub(1)`.
+Most [options defined in the DRMAA interface](https://ogf.org/documents/GFD.143.pdf) are supported.  Exceptions include `remoteCommand`, `jobName`, `outputPath`, and `errorPath` since these attributes are set by Galaxy.  To pass parameters to your underlying DRM, use the `nativeSpecification` parameter.  The format of this parameter is dependent upon the underlying DRM.  However, for Grid Engine, it is the list of command line parameters that would be passed to `qsub(1)`.
 
 ```xml
 <plugins>
@@ -157,7 +151,7 @@ All as in the DRMAA runner, in `job_conf.xml` use `galaxy.jobs.runners.univa:Uni
 
 ### PBS
 
-Runs jobs via the [TORQUE Resource Manager](http://www.adaptivecomputing.com/products/torque/). For PBS Pro, use [DRMAA](#drmaa).
+Runs jobs via the [TORQUE Resource Manager](https://adaptivecomputing.com/cherry-services/torque-resource-manager/). For PBS Pro, use [DRMAA](#drmaa).
 
 #### Dependencies
 
@@ -193,12 +187,12 @@ Most options available to `qsub(1b)` and `pbs_submit(3b)` are supported.  Except
 </destinations>
 ```
 
-The value of *ppn=* is used by PBS to define the environment variable `$PBS_NCPUS` which in turn is used by galaxy for [GALAXY_SLOTS](https://galaxyproject.org/admin/config/galaxy_slots/).
+The value of *ppn=* is used by PBS to define the environment variable `$PBS_NCPUS` which in turn is used by galaxy for [GALAXY_SLOTS](https://galaxyproject.org/admin/config/galaxy-slots/).
 
 
 ### Condor
 
-Runs jobs via the [HTCondor](http://research.cs.wisc.edu/htcondor/) DRM.  There are no configurable parameters.  Galaxy's interface is via calls to HTCondor's command line tools, rather than via an API.
+Runs jobs via the [HTCondor](https://research.cs.wisc.edu/htcondor/) DRM.  There are no configurable parameters.  Galaxy's interface is via calls to HTCondor's command line tools, rather than via an API.
 
 ```xml
 <plugins>
@@ -222,6 +216,208 @@ If you need to add additional parameters to your condor submission, you can do s
 </destinations>
 ```
 
+### HTCondor (htcondor2 API)
+
+Runs jobs via the [HTCondor](https://research.cs.wisc.edu/htcondor/) DRM using the
+[htcondor2](https://pypi.org/project/htcondor/) Python bindings (v2 API). Unlike the
+legacy Condor runner, which shells out to CLI tools, this runner communicates entirely
+through the Python API for submitting, monitoring, and removing jobs. Install the
+package with `pip install htcondor` (or obtain it from your HTCondor installation).
+
+#### Architecture
+
+The `htcondor2` Python library is a C extension that reads its HTCondor
+configuration — collector address, authentication method, and security tokens —
+**at import time, not at call time**. Setting `CONDOR_CONFIG` after the module has
+already been imported has no effect. In a long-running Galaxy server process the
+library is therefore permanently bound to whatever configuration was active when it
+was first imported.
+
+This constraint drives the two-client design:
+
+- **In-process client** — used when no `htcondor_config` destination parameter is
+  set. `htcondor2` runs directly inside the Galaxy server process and uses whichever
+  `CONDOR_CONFIG` (or `$CONDOR_CONFIG` environment variable) was present at startup.
+  This covers the common case where the Galaxy server host is already a submit node
+  — i.e. HTCondor is configured system-wide and Galaxy can reach the local schedd
+  without any extra configuration.
+
+- **Subprocess client** — used when an `htcondor_config` destination parameter is
+  set. Because the Galaxy process has already imported `htcondor2` against its own
+  configuration, a separate Python helper process is spawned with `CONDOR_CONFIG`
+  set to the per-destination file *before* `htcondor2` is imported inside that
+  process. This isolates each pool's collector address and authentication tokens
+  entirely from the main Galaxy process and from every other pool. One long-lived
+  helper subprocess is shared across all destinations that reference the **same**
+  config file (keyed on the resolved absolute path), so multiple schedds within
+  the same pool share a single helper. Jobs targeting a second, independent pool
+  that has its own config file get their own helper subprocess.
+
+The practical rule is: to submit to a **remote or non-default pool**, set
+`htcondor_config` to a file that points `htcondor2` at the right collector and
+carries the pool's authentication tokens. To submit to the **local pool** (Galaxy
+host is already a submit node), omit `htcondor_config` and the in-process path is
+used automatically.
+
+Multiple independent pools are fully supported: give each destination its own
+`htcondor_config` file and the runner will maintain one helper subprocess per file.
+
+#### Destination parameters
+
+The following parameters are recognised by the runner and are **not** forwarded to the
+condor submit description. All others (e.g. `request_cpus`, `request_memory`,
+`universe`) are passed through verbatim.
+
+| Parameter | Description |
+|-----------|-------------|
+| `htcondor_collector` | Collector address (e.g. `collector.example.org:9618`). When set, the runner queries this collector for a schedd rather than using the default from `CONDOR_CONFIG`. |
+| `htcondor_schedd` | Name of a specific schedd to target (e.g. `schedd@submit.example.org`). When omitted, the first schedd returned by the collector is used. |
+| `htcondor_config` | Path to an alternative `condor_config` file. Triggers the subprocess client so Galaxy's own HTCondor environment is unaffected. Useful when submitting to multiple independent pools. |
+| `request_walltime` | Maximum wall-clock time for the job. Accepts plain seconds (`3600`), `HH:MM:SS` (`1:00:00`), `MM:SS`, or SLURM-compatible `D-HH:MM:SS` (`1-0:00:00`). The runner injects `periodic_hold = (JobDurationSeconds >= N)` into the submit description. When the limit is reached HTCondor holds the job with `HoldReasonCode=16`, which Galaxy reports as `walltime_reached` — enabling automatic resubmission to a longer-running destination. Ignored if the destination already sets a `periodic_hold` expression directly. |
+| `max_held_count` | Maximum number of *unresolved* `JOB_HELD` events tolerated before the job is permanently failed (default: `3`). The counter increments each time HTCondor places the job on hold with an unclassified reason code (memory and wall-time holds fail immediately regardless of this setting). A `JOB_RELEASED` event resets the counter to zero, because a release means the hold resolved and the job can make forward progress again — only consecutive holds that are never released indicate a genuinely stuck job. Once the threshold is reached the job fails with `runner_state=UNKNOWN_ERROR`, which the resubmission framework can act on. Set to `1` to fail immediately on the first unresolved hold, raise the value for pools that use automated hold/release policies, or set to `0` to disable hold escalation entirely. |
+
+#### Basic configuration
+
+```yaml
+runners:
+  htcondor:
+    load: galaxy.jobs.runners.htcondor:HTCondorJobRunner
+    workers: 4
+
+execution:
+  default: htcondor
+  environments:
+    htcondor:
+      runner: htcondor
+      request_cpus: 1
+      request_memory: 4096M
+      # Wall-clock time limit: seconds, HH:MM:SS, or D-HH:MM:SS.
+      request_walltime: "24:00:00"
+      # Fail after this many distinct hold events (default 3). Raise if your
+      # workflow expects periodic holds followed by automatic releases.
+      max_held_count: 3
+```
+
+For remote pools, supply the collector/schedd and an alternative config file:
+
+```yaml
+execution:
+  environments:
+    htcondor_remote:
+      runner: htcondor
+      htcondor_collector: "collector.example.org:9618"
+      htcondor_schedd: "schedd@submit.example.org"
+      htcondor_config: "/etc/condor/pool_b_config"
+      request_memory: 8192M
+```
+
+The equivalent XML form is also supported:
+
+```xml
+<plugins>
+    <plugin id="htcondor" type="runner" load="galaxy.jobs.runners.htcondor:HTCondorJobRunner"/>
+</plugins>
+<destinations>
+    <destination id="htcondor" runner="htcondor">
+        <param id="request_cpus">4</param>
+        <param id="request_memory">4096M</param>
+        <param id="request_walltime">24:00:00</param>
+    </destination>
+</destinations>
+```
+
+#### Walltime and Advanced Hold Expressions
+
+`request_walltime` is a convenience parameter that covers the most common case: limiting a job by elapsed wall-clock time. Internally it injects `periodic_hold = (JobDurationSeconds >= N)` into the submit description. HTCondor evaluates this expression every `PERIODIC_EXPR_INTERVAL` (default 60 s); when it becomes true the job is placed on hold with `HoldReasonCode=16`, which Galaxy maps to `walltime_reached`.
+
+For more complex policies you can set `periodic_hold` directly. HTCondor ClassAd expressions can combine any job attribute, so a single expression can enforce multiple resource limits at once:
+
+```yaml
+execution:
+  environments:
+    htcondor_gpu:
+      runner: htcondor
+      request_gpus: 1
+      request_memory: 16384M
+      # Hold the job if it exceeds 2 hours wall-clock time OR if its resident
+      # set size exceeds 16 GB (16777216 KB).  A user-supplied periodic_hold
+      # takes precedence over request_walltime — the runner will not overwrite it.
+      periodic_hold: "(JobDurationSeconds >= 7200 || ResidentSetSize > 16777216)"
+```
+
+When `periodic_hold` is set directly, `request_walltime` is ignored for that destination.
+
+#### Multiple Independent Pools
+
+To submit jobs to two separate HTCondor pools, give each destination its own
+`htcondor_config` file. The runner creates one helper subprocess per file and
+routes jobs accordingly:
+
+```yaml
+runners:
+  htcondor:
+    load: galaxy.jobs.runners.htcondor:HTCondorJobRunner
+    workers: 4
+
+execution:
+  default: htcondor_pool_a
+  environments:
+    htcondor_pool_a:
+      runner: htcondor
+      htcondor_collector: "collector-a.example.org:9618"
+      htcondor_config: "/etc/condor/pool_a_config"
+      request_memory: 4096M
+    htcondor_pool_b:
+      runner: htcondor
+      htcondor_collector: "collector-b.example.org:9618"
+      htcondor_config: "/etc/condor/pool_b_config"
+      request_memory: 8192M
+
+tools:
+  - id: memory_intensive_tool
+    environment: htcondor_pool_b
+```
+
+Each config file must point `htcondor2` at the right collector and carry the
+pool's authentication tokens (e.g. an IDTOKEN written to the directory referenced
+by `SEC_TOKEN_DIRECTORY`).
+
+#### Testing with htcondor/mini (Docker)
+
+The test suite in `test/integration/test_htcondor_runner.py` contains two tiers:
+
+**Automated Docker tests (`TestHTCondorContainerJob`)**
+
+Requires only Docker and the `htcondor2` Python package. The test class starts two
+`htcondor/mini` all-in-one containers automatically, each running a full HTCondor
+stack (master, schedd, collector, negotiator, and startd). It authenticates via
+IDTOKENS generated inside each container, submits real Galaxy jobs to both pools,
+and verifies via `condor_history` that each job reached the correct cluster.
+No manual setup is needed.
+
+```bash
+pip install htcondor
+python -m pytest test/integration/test_htcondor_runner.py::TestHTCondorContainerJob -v
+```
+
+Override the Docker image if needed:
+
+```bash
+GALAXY_TEST_HTCONDOR_IMAGE=htcondor/mini:23-el9 \
+python -m pytest test/integration/test_htcondor_runner.py::TestHTCondorContainerJob -v
+```
+
+**Unit-style tests (fake htcondor2 stub)**
+
+No HTCondor installation required. A lightweight stub at
+`test/integration/htcondor_fake/htcondor2.py` mirrors the real htcondor2 API and
+records every submit/remove call. These cover job lifecycle transitions, multi-pool
+helper isolation, crash recovery, and cancellation:
+
+```bash
+python -m pytest test/integration/test_htcondor_runner.py -k "not Container" -v
+```
+
 ### Pulsar
 
 Runs jobs via Galaxy [Pulsar](https://pulsar.readthedocs.io/). Pulsar does not require an existing cluster or a shared filesystem and can also run jobs on Windows hosts. It also has the ability to interface with all of the DRMs supported by Galaxy. Pulsar provides a much looser coupling between Galaxy job execution and the Galaxy server host than is possible with Galaxy's native job execution code.
@@ -241,13 +437,11 @@ If you are interested in developing additional plugins, see `lib/galaxy/jobs/run
 
 The cli runner requires, at a minimum, two parameters:
 
-```eval_rst
 ``shell_plugin``
-    This required parameter should be `a cli_shell class <https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/jobs/runners/util/cli/shell>`_ currently one of: ``LocalShell``, ``RemoteShell``, ``SecureShell``, ``ParamikoShell``, or ``GlobusSecureShell`` describing which shell plugin to use.
+: This required parameter should be [a cli_shell class](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/jobs/runners/util/cli/shell) currently one of: ``LocalShell``, ``RemoteShell``, ``SecureShell``, ``ParamikoShell``, or ``GlobusSecureShell`` describing which shell plugin to use.
 
 ``job_plugin``
-    This required parameter should be `a cli_job class <https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/jobs/runners/util/cli/job>`_ currently one of ``Torque``, ``SlurmTorque``, or ``Slurm``.
-```
+: This required parameter should be [a cli_job class](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/jobs/runners/util/cli/job) currently one of ``Torque``, ``SlurmTorque``, or ``Slurm``.
 
 All other parameters are specific to the chosen plugins. Parameters to pass to the shell plugin begin with the id `shell_` and parameters to pass to the job plugin begin with the id `job_`.
 
@@ -255,16 +449,14 @@ All other parameters are specific to the chosen plugins. Parameters to pass to t
 
 The `RemoteShell` plugin uses `rsh(1)` to connect to a remote system and execute shell commands.
 
-```eval_rst
 ``shell_username``
-    Optional user to log in to the remote system as. If unset uses ``rsh``'s default behavior (attempt to log in with the current user's username).
+: Optional user to log in to the remote system as. If unset uses ``rsh``'s default behavior (attempt to log in with the current user's username).
 
 ``shell_hostname``
-    Remote system hostname to log in to.
+: Remote system hostname to log in to.
 
 ``shell_rsh``
-    ``rsh``-like command to excute (e.g. ``<param id="shell_rsh">/opt/example/bin/remsh</param>``) - just defaults to ``rst``.
-```
+: ``rsh``-like command to execute (e.g. ``<param id="shell_rsh">/opt/example/bin/remsh</param>``) - just defaults to ``rst``.
 
 The `RemoteShell` parameters translate to a command line of `% <shell_rsh> [-l <shell_username>] <shell_hostname> "<remote_command_with_args>"`, where the inclusion of `-l` is dependent on whether `shell_username` is set. Alternate values for `shell_rsh` must be compatible with this syntax.
 
@@ -283,13 +475,11 @@ The ``ParamikoShell`` option was added in 17.09 with this pull request https://g
 
 The `Torque` plugin uses `qsub(1)` and `qstat(1)` to interface with a Torque server on the command line.
 
-```eval_rst
 ``job_<PBS_JOB_ATTR>``
-    ``<PBS_JOB_ATTR>`` refers to a ``qsub(1B)`` or ``pbs_submit(3B)`` argument/attribute
-    (e.g. ``<param id="job_Resource_List">walltime=24:00:00,ncpus=4</param>``).
-```
+: ``<PBS_JOB_ATTR>`` refers to a ``qsub(1B)`` or ``pbs_submit(3B)`` argument/attribute
+  (e.g. ``<param id="job_Resource_List">walltime=24:00:00,ncpus=4</param>``).
 
-Torque attributes can be defined in either their short (e.g. [qsub(1B)](http://cf.ccmr.cornell.edu/cgi-bin/w3mman2html.cgi?qsub(1B)) argument as used on the command line or in a script as `#PBS -<ARG>`) or long (e.g. [pbs_submit(3B)](http://cf.ccmr.cornell.edu/cgi-bin/w3mman2html.cgi?pbs_submit(3B)) attribute as used in the C library) oforms. Some additional examples follow:
+Torque attributes can be defined in either their short (e.g. [qsub(1B)](https://www.linuxcertif.com/man/1/qsub.1B/) argument as used on the command line or in a script as `#PBS -<ARG>`) or long (e.g. [pbs_submit(3B)](https://www.linuxcertif.com/man/3/pbs_submit.3B/) attribute as used in the C library) forms. Some additional examples follow:
 
 * `<param id="job_-q">queue</param>`: set the PBS destination (in this example, a queue), equivalent to `<param id="job_destination">queue</param>`
 * `<param id="job_Priority">128</param>`: set the job priority, equivalent to `<param id="job_-p">128</param>`
@@ -314,6 +504,62 @@ Torque attributes can be defined in either their short (e.g. [qsub(1B)](http://c
 
 Most options available to `qsub(1b)` and `pbs_submit(3b)` are supported.  Exceptions include `-o/Output_Path`, `-e/Error_Path`, and `-N/Job_Name` since these PBS job attributes are set by Galaxy.
 
+### AWS Batch
+
+Runs jobs via [AWS Batch](https://aws.amazon.com/batch/). Built on top of AWS Elastic Container Service (ECS), AWS Batch enables users to run hundreds of thousands of jobs with little configuration.
+
+#### Dependencies
+
+The AWS Batch job runner requires AWS Elastic File System (EFS) to be mounted as a shared file system that enables both Galaxy and job containers to read and write files. In a typical use case, Galaxy is installed on an AWS EC2 instance where an EFS drive is mounted, and all job-related paths, such as objects, jobs_directory, tool_directory and so on, are placed on the EFS drive. Galaxy admins configure Batch compute environments, Batch job queues and proper AWS IAM roles, and specify them as destination parameters.
+AWS Batch job runner requires [boto3](https://github.com/boto/boto3) to be installed in Galaxy's environment.
+
+#### Parameters and Configuration
+
+AWS Batch job runner sends jobs to Batch compute environment that is composed of either Fargate or EC2. While Fargate provides a series of lightweight compute resources (up to 4 vcpu and 30 GB memory), EC2 offers broader choices. With `auto_platform` enabled, this runner supports mapping to the best fit type of resources based on the requested `vcpu` and `memory`, i.e., Fargate is preferred over EC2 when `vcpu` and `memory` are below the limits (4 and 30 gb, respectively). If `GPU` computing is needed for a destination, a job queue built on top of a GPU-enabled compute environment must be provisioned.
+
+```xml
+<plugins>
+    <plugin id="aws_batch" type="runner" load="galaxy.jobs.runners.aws:AWSBatchJobRunner">
+        <!-- Run `aws configure` with aws cli or set params below -->
+        <!-- <param id="aws_access_key_id">xxxxxxxxx</param>
+        <param id="aws_secret_access_key">xxxxxxxxxxxxxxxxxxx</param>
+        <param id="region">us-west-1</param> -->
+    </plugin>
+</plugins>
+<destinations>
+    <destination id="aws_batch_auto" runner="aws_batch">
+        <param id="docker_enabled">true</param>
+        <!-- `docker_enabled = true` is always required -->
+        <param id="job_queue">arn_for_Fargate_job_queue, arn_for_EC2_job_queue</param>
+        <!-- Fargete and non-GPU EC2 -->
+        <param id="job_role_arn">arn:aws:iam::xxxxxxxxxxxxxxxxxx</param>
+        <param id="vcpu">1</param>
+        <param id="memory">2048</param>
+        <!-- MB, default is 2048 -->
+        <param id="efs_filesystem_id">fs-xxxxxxxxxxxxxx</param>
+        <param id="efs_mount_point">/mnt/efs/fs1</param>
+        <!-- This is the location where the EFS is mounted -->
+        <param id="fargate_version">1.4.0</param>
+        <!-- `fargate_version` is required to use Fargate compute resources -->
+        <param id="auto_platform">true</param>
+    </destination>
+    <destination id="aws_batch_gpu" runner="aws_batch">
+        <param id="docker_enabled">true</param>
+        <!-- `docker_enabled = true` is always required -->
+        <param id="job_queue">arn_for_gpu_job_queue</param>
+        <!-- Job queue must be built on GPU-specific compute environment -->
+        <param id="job_role_arn">arn:aws:iam::xxxxxxxxxxxxxxxxxx</param>
+        <param id="vcpu">4</param>
+        <param id="memory">20000</param>
+        <!-- MB, default is 2048 -->
+        <param id="gpu">1</param>
+        <param id="efs_filesystem_id">fs-xxxxxxxxxxxxxx</param>
+        <param id="efs_mount_point">/mnt/efs/fs1</param>
+            <!-- This is the location where the EFS is mounted -->
+    </destination>
+</destinations>
+```
+
 ## Submitting Jobs as the Real User
 
 Galaxy runs as a process on your server as whatever user starts the server - usually an account created for the purpose of running Galaxy. Jobs will be submitted to your cluster(s) as this user. In environments where users in Galaxy are guaranteed to be users on the underlying system (i.e. Galaxy is configured to use external authentication), it may be desirable to submit jobs to the cluster as the user logged in to Galaxy rather than Galaxy's system user.
@@ -325,12 +571,17 @@ Since this is a complex problem, the current solution does have some caveats:
 * All of the datasets stored in Galaxy will have to be readable on the underlying filesystem by all Galaxy users. Said users need not have direct access to any systems which mount these filesystems, only the ability to run jobs on clusters that mount them. But I expect that in most environments, users will have the ability to submit jobs to these clusters or log in to these clusters outside of Galaxy, so this will be a security concern to evaluate for most environments.
   * *Technical details* - Since Galaxy maintains dataset sharing internally and all files are owned by the Galaxy user, when running jobs only under a single user, permissions can be set such that only the Galaxy user can read all datasets. Since the dataset may be shared by multiple users, it is not suitable to simply change ownership of inputs before a job runs (what if another user tried to use the same dataset as an input during this time?). This could possibly be solved if Galaxy had tight control over extended ACLs on the file, but since many different ACL schemes exist, Galaxy would need a module for each scheme to be supported.
 * The real user system works by changing ownership of the job's working directory to the system prior to running the job, and back to the Galaxy user once the job has completed. It does this by executing a site-customizable script via [sudo](https://www.sudo.ws/).
-  * Two possibilities to determine the system user that corresponds to a galaxy user are implemented: i) the user whos name matches the Galaxy user's email address (with the @domain stripped off) and ii) the user whos name is equal to the galaxy user name. Until release 17.05 only the former option is available. The latter option is suitable for Galaxy installations that user external authentification (e.g. LDAP) against a source that is also the source of the system users.
+  * Two possibilities to determine the system user that corresponds to a galaxy user are implemented: i) the user whose name matches the Galaxy user's email address (with the @domain stripped off) and ii) the user whos name is equal to the galaxy user name. Until release 17.05 only the former option is available. The latter option is suitable for Galaxy installations that user external authentification (e.g. LDAP) against a source that is also the source of the system users.
   * The script accepts a path and does nothing to ensure that this path is a Galaxy working directory per default (and not at all up to release 17.05). So anyone who has access to the Galaxy user could use this script and sudo to change the ownership of any file or directory. Furthermore, anyone with write access to the script could introduce arbitrary (harmful) code -- so it might be a good idea to give write access only to trustworthy users, e.g., root.
 
 ### Configuration
 
-You'll need to ensure that all datasets are stored on the filesystem such that they are readable by all users that will use Galaxy: either made readable by a group, or world-readable. If using a group, set your `umask(1)` to `027` or for world-readable, use `022` Setting the umask assumes your underlying filesystem uses POSIX permissions, so if this is not the case, your environment changes may be different. For uWSGI setups (which are the default since release 19.01) the default umask is set in the `uwsgi:` section of `galaxy.yml` .
+You'll need to ensure that all datasets are stored on the filesystem such that they are readable by all users that will use Galaxy: either made readable by a group, or world-readable. If using a group, set your `umask(1)` to `027` or for world-readable, use `022` Setting the umask assumes your underlying filesystem uses POSIX permissions, so if this is not the case, your environment changes may be different. For [gravity](https://github.com/galaxyproject/gravity/) setups (which are the default since release 22.01) the default umask can be set in the `gravity:` section of `galaxy.yml`:
+
+```yaml
+gravity:
+  umask: 027
+```
 
 The directory specified in `new_file_path` in the Galaxy config should be world-writable, cluster-accessible (via the same absolute path) and have its sticky bit (+t) set. This directory should also be cleaned regularly using a script or program as is appropriate for your site, since temporary files created here may not always be cleaned up under certain conditions.
 
@@ -354,9 +605,11 @@ For Galaxy releases > 17.05, the sudo call has been moved to `galaxy.yml` and is
 drmaa_external_runjob_script: sudo -E .venv/bin/python scripts/drmaa_external_runner.py --assign_all_groups
 ```
 
-Also for Galaxy releases > 17.05: In order to allow `external_chown_script.py` to chown only path below certain entry points the variable `ALLOWED_PATHS` in the python script can be adapted. It is sufficient to include the directorries `job_working_directory` and `new_file_path` as configured in `galaxy.yml`.
+Also for Galaxy releases > 17.05: In order to allow `external_chown_script.py` to chown only path below certain entry points the variable `ALLOWED_PATHS` in the python script can be adapted. It is sufficient to include the directories `job_working_directory` and `new_file_path` as configured in `galaxy.yml`.
 
 It is also a good idea to make sure that only trusted users, e.g. root, have write access to all three scripts.
+
+Another important change is to set the `max-retries` option to `0` in `auth_conf.xml`.
 
 Some maintenance and support of this code will be provided via the usual [Support](https://galaxyproject.org/support/) channels, but improvements and fixes would be greatly welcomed, as this is a complex feature which is not used by the Galaxy Development Team.
 

@@ -1,0 +1,56 @@
+name: Window Manager - Introduction
+description: "An introduction on how to display multiple datasets and visualizations next to each other."
+title_default: "Window Manager Introduction"
+tags:
+    - "core"
+    - "UI"
+    - "visualization"
+
+requirements:
+    - new_history
+
+steps:
+    - content: "This short tour will walk you through <b>Galaxy's Window Manager</b> feature"
+
+    - component: upload_activity.activity
+      intro: "First, we will upload some tabular data into our new history."
+      preclick:
+          - ".activity-bar-header-badge"
+      postclick: true
+
+    - component: upload_activity.method_card(method_id=paste-content)
+      intro: "Select the Paste Content method to create a new dataset by pasting data directly."
+      preclick: true
+
+    - component: upload_activity.paste_content_row_textarea(row=1)
+      intro: "Paste your tabular data into the text area."
+      textinsert: |
+          1	0.039	0.000
+          2	0.455	0.000
+          3	0.472	0.000
+          4	0.030	0.000
+          5	0.000	0.000
+          6	0.000	0.000
+          7	0.000	0.000
+          8	0.000	0.000
+
+    - component: upload_activity.start_button
+      intro: "Upload the data into your Galaxy history."
+      postclick: true
+
+    - element: "#enable-window-manager > .nav-link"
+      intro: "Clicking this button will enable Galaxy's Window Manager mode."
+      postclick: true
+
+    - element: "#current-history-panel"
+      intro: "This is your history. It contains the table being uploaded."
+
+    - component: history_panel.item(hid=1,state=ok).display_button
+      intro: "Clicking the eye-icon usually displays a dataset in the center panel."
+      postclick: true
+
+    - element: ".window-manager-window"
+      intro: "However while using the Window Manager, the dataset will be shown as a resizable window."
+
+    - title: "Enjoy your Galaxy Window Manager"
+      intro: "Thanks for taking this tour! Happy research with Galaxy!"

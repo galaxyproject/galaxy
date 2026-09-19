@@ -1,12 +1,20 @@
+from typing import TYPE_CHECKING
+
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.util import plugin_config
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesUserContext
 
 DEFAULT_REPORT_GENERATOR_TYPE = "markdown"
 
 
-def generate_report(trans, invocation, runtime_report_config_json=None, plugin_type=None, target_format="json"):
+def generate_report(
+    trans: "ProvidesUserContext", invocation, runtime_report_config_json=None, plugin_type=None, target_format="json"
+):
     import galaxy.workflow.reports.generators
-    plugin_classes = plugin_config.plugins_dict(galaxy.workflow.reports.generators, 'plugin_type')
+
+    plugin_classes = plugin_config.plugins_dict(galaxy.workflow.reports.generators, "plugin_type")
     plugin_type = plugin_type or DEFAULT_REPORT_GENERATOR_TYPE
     plugin = plugin_classes[plugin_type]()
     if target_format == "json":
@@ -14,4 +22,4 @@ def generate_report(trans, invocation, runtime_report_config_json=None, plugin_t
     elif target_format == "pdf":
         return plugin.generate_report_pdf(trans, invocation, runtime_report_config_json=runtime_report_config_json)
     else:
-        raise RequestParameterInvalidException("Unknown report format [%s]" % target_format)
+        raise RequestParameterInvalidException(f"Unknown report format [{target_format}]")

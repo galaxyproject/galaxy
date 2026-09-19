@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 import sys
 
@@ -20,26 +19,28 @@ def main():
     """
     input_fname = sys.argv[1]
     if is_gzip(input_fname):
-        sys.exit('Conversion is only possible for uncompressed files')
+        sys.exit("Conversion is only possible for uncompressed files")
 
     current_line = 0
     sequences = 1000000
     lines_per_chunk = 4 * sequences
     chunk_begin = 0
 
-    with open(input_fname) as in_file, open(sys.argv[2], 'w') as out_file:
+    with open(input_fname) as in_file, open(sys.argv[2], "w") as out_file:
         out_file.write('{"sections" : [')
 
-        for line in in_file:
+        for _ in iter(in_file.readline, ""):
             current_line += 1
             if 0 == current_line % lines_per_chunk:
                 chunk_end = in_file.tell()
-                out_file.write('{"start":"%s","end":"%s","sequences":"%s"},' % (chunk_begin, chunk_end, sequences))
+                out_file.write(f'{{"start":"{chunk_begin}","end":"{chunk_end}","sequences":"{sequences}"}},')
                 chunk_begin = chunk_end
 
         chunk_end = in_file.tell()
-        out_file.write('{"start":"%s","end":"%s","sequences":"%s"}' % (chunk_begin, chunk_end, (current_line % lines_per_chunk) / 4))
-        out_file.write(']}\n')
+        out_file.write(
+            f'{{"start":"{chunk_begin}","end":"{chunk_end}","sequences":"{current_line % lines_per_chunk / 4}"}}'
+        )
+        out_file.write("]}\n")
 
 
 if __name__ == "__main__":

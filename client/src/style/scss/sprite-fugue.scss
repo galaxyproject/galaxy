@@ -1,0 +1,908 @@
+/*
+SCSS variables are information about icon's compiled state, stored under its original file name
+
+.icon-home {
+  width: $icon-home-width;
+}
+
+The large array-like variables contain all information about a single icon
+$icon-home: x y offset_x offset_y width height total_width total_height image_path;
+
+At the bottom of this section, we provide information about the spritesheet itself
+$spritesheet: width height image $spritesheet-sprites;
+*/
+$application-dock-270-bw-name: "application-dock-270-bw";
+$application-dock-270-bw-x: 16px;
+$application-dock-270-bw-y: 0px;
+$application-dock-270-bw-offset-x: -16px;
+$application-dock-270-bw-offset-y: 0px;
+$application-dock-270-bw-width: 16px;
+$application-dock-270-bw-height: 16px;
+$application-dock-270-bw-total-width: 144px;
+$application-dock-270-bw-total-height: 128px;
+$application-dock-270-bw-image: "sprite-fugue.png";
+$application-dock-270-bw: (
+    16px,
+    0px,
+    -16px,
+    0px,
+    16px,
+    16px,
+    144px,
+    128px,
+    "sprite-fugue.png",
+    "application-dock-270-bw"
+);
+$application-dock-270-name: "application-dock-270";
+$application-dock-270-x: 48px;
+$application-dock-270-y: 80px;
+$application-dock-270-offset-x: -48px;
+$application-dock-270-offset-y: -80px;
+$application-dock-270-width: 16px;
+$application-dock-270-height: 16px;
+$application-dock-270-total-width: 144px;
+$application-dock-270-total-height: 128px;
+$application-dock-270-image: "sprite-fugue.png";
+$application-dock-270: (48px, 80px, -48px, -80px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "application-dock-270");
+$arrow-000-small-bw-name: "arrow-000-small-bw";
+$arrow-000-small-bw-x: 0px;
+$arrow-000-small-bw-y: 16px;
+$arrow-000-small-bw-offset-x: 0px;
+$arrow-000-small-bw-offset-y: -16px;
+$arrow-000-small-bw-width: 16px;
+$arrow-000-small-bw-height: 16px;
+$arrow-000-small-bw-total-width: 144px;
+$arrow-000-small-bw-total-height: 128px;
+$arrow-000-small-bw-image: "sprite-fugue.png";
+$arrow-000-small-bw: (0px, 16px, 0px, -16px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "arrow-000-small-bw");
+$arrow-090-name: "arrow-090";
+$arrow-090-x: 16px;
+$arrow-090-y: 16px;
+$arrow-090-offset-x: -16px;
+$arrow-090-offset-y: -16px;
+$arrow-090-width: 16px;
+$arrow-090-height: 16px;
+$arrow-090-total-width: 144px;
+$arrow-090-total-height: 128px;
+$arrow-090-image: "sprite-fugue.png";
+$arrow-090: (16px, 16px, -16px, -16px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "arrow-090");
+$arrow-circle-name: "arrow-circle";
+$arrow-circle-x: 32px;
+$arrow-circle-y: 0px;
+$arrow-circle-offset-x: -32px;
+$arrow-circle-offset-y: 0px;
+$arrow-circle-width: 16px;
+$arrow-circle-height: 16px;
+$arrow-circle-total-width: 144px;
+$arrow-circle-total-height: 128px;
+$arrow-circle-image: "sprite-fugue.png";
+$arrow-circle: (32px, 0px, -32px, 0px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "arrow-circle");
+$arrow-resize-090-bw-name: "arrow-resize-090-bw";
+$arrow-resize-090-bw-x: 32px;
+$arrow-resize-090-bw-y: 16px;
+$arrow-resize-090-bw-offset-x: -32px;
+$arrow-resize-090-bw-offset-y: -16px;
+$arrow-resize-090-bw-width: 16px;
+$arrow-resize-090-bw-height: 16px;
+$arrow-resize-090-bw-total-width: 144px;
+$arrow-resize-090-bw-total-height: 128px;
+$arrow-resize-090-bw-image: "sprite-fugue.png";
+$arrow-resize-090-bw: (32px, 16px, -32px, -16px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "arrow-resize-090-bw");
+$arrow-resize-090-name: "arrow-resize-090";
+$arrow-resize-090-x: 0px;
+$arrow-resize-090-y: 32px;
+$arrow-resize-090-offset-x: 0px;
+$arrow-resize-090-offset-y: -32px;
+$arrow-resize-090-width: 16px;
+$arrow-resize-090-height: 16px;
+$arrow-resize-090-total-width: 144px;
+$arrow-resize-090-total-height: 128px;
+$arrow-resize-090-image: "sprite-fugue.png";
+$arrow-resize-090: (0px, 32px, 0px, -32px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "arrow-resize-090");
+$arrow-split-bw-name: "arrow-split-bw";
+$arrow-split-bw-x: 16px;
+$arrow-split-bw-y: 32px;
+$arrow-split-bw-offset-x: -16px;
+$arrow-split-bw-offset-y: -32px;
+$arrow-split-bw-width: 16px;
+$arrow-split-bw-height: 16px;
+$arrow-split-bw-total-width: 144px;
+$arrow-split-bw-total-height: 128px;
+$arrow-split-bw-image: "sprite-fugue.png";
+$arrow-split-bw: (16px, 32px, -16px, -32px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "arrow-split-bw");
+$arrow-split-name: "arrow-split";
+$arrow-split-x: 32px;
+$arrow-split-y: 32px;
+$arrow-split-offset-x: -32px;
+$arrow-split-offset-y: -32px;
+$arrow-split-width: 16px;
+$arrow-split-height: 16px;
+$arrow-split-total-width: 144px;
+$arrow-split-total-height: 128px;
+$arrow-split-image: "sprite-fugue.png";
+$arrow-split: (32px, 32px, -32px, -32px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "arrow-split");
+$arrow-transition-270-bw-name: "arrow-transition-270-bw";
+$arrow-transition-270-bw-x: 48px;
+$arrow-transition-270-bw-y: 0px;
+$arrow-transition-270-bw-offset-x: -48px;
+$arrow-transition-270-bw-offset-y: 0px;
+$arrow-transition-270-bw-width: 16px;
+$arrow-transition-270-bw-height: 16px;
+$arrow-transition-270-bw-total-width: 144px;
+$arrow-transition-270-bw-total-height: 128px;
+$arrow-transition-270-bw-image: "sprite-fugue.png";
+$arrow-transition-270-bw: (
+    48px,
+    0px,
+    -48px,
+    0px,
+    16px,
+    16px,
+    144px,
+    128px,
+    "sprite-fugue.png",
+    "arrow-transition-270-bw"
+);
+$arrow-transition-bw-name: "arrow-transition-bw";
+$arrow-transition-bw-x: 48px;
+$arrow-transition-bw-y: 16px;
+$arrow-transition-bw-offset-x: -48px;
+$arrow-transition-bw-offset-y: -16px;
+$arrow-transition-bw-width: 16px;
+$arrow-transition-bw-height: 16px;
+$arrow-transition-bw-total-width: 144px;
+$arrow-transition-bw-total-height: 128px;
+$arrow-transition-bw-image: "sprite-fugue.png";
+$arrow-transition-bw: (48px, 16px, -48px, -16px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "arrow-transition-bw");
+$asterisk-small-outline-name: "asterisk-small-outline";
+$asterisk-small-outline-x: 48px;
+$asterisk-small-outline-y: 32px;
+$asterisk-small-outline-offset-x: -48px;
+$asterisk-small-outline-offset-y: -32px;
+$asterisk-small-outline-width: 16px;
+$asterisk-small-outline-height: 16px;
+$asterisk-small-outline-total-width: 144px;
+$asterisk-small-outline-total-height: 128px;
+$asterisk-small-outline-image: "sprite-fugue.png";
+$asterisk-small-outline: (
+    48px,
+    32px,
+    -48px,
+    -32px,
+    16px,
+    16px,
+    144px,
+    128px,
+    "sprite-fugue.png",
+    "asterisk-small-outline"
+);
+$asterisk-small-yellow-name: "asterisk-small-yellow";
+$asterisk-small-yellow-x: 0px;
+$asterisk-small-yellow-y: 48px;
+$asterisk-small-yellow-offset-x: 0px;
+$asterisk-small-yellow-offset-y: -48px;
+$asterisk-small-yellow-width: 16px;
+$asterisk-small-yellow-height: 16px;
+$asterisk-small-yellow-total-width: 144px;
+$asterisk-small-yellow-total-height: 128px;
+$asterisk-small-yellow-image: "sprite-fugue.png";
+$asterisk-small-yellow: (0px, 48px, 0px, -48px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "asterisk-small-yellow");
+$asterisk-small-name: "asterisk-small";
+$asterisk-small-x: 16px;
+$asterisk-small-y: 48px;
+$asterisk-small-offset-x: -16px;
+$asterisk-small-offset-y: -48px;
+$asterisk-small-width: 16px;
+$asterisk-small-height: 16px;
+$asterisk-small-total-width: 144px;
+$asterisk-small-total-height: 128px;
+$asterisk-small-image: "sprite-fugue.png";
+$asterisk-small: (16px, 48px, -16px, -48px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "asterisk-small");
+$block-plus-bw-name: "block--plus-bw";
+$block-plus-bw-x: 32px;
+$block-plus-bw-y: 48px;
+$block-plus-bw-offset-x: -32px;
+$block-plus-bw-offset-y: -48px;
+$block-plus-bw-width: 16px;
+$block-plus-bw-height: 16px;
+$block-plus-bw-total-width: 144px;
+$block-plus-bw-total-height: 128px;
+$block-plus-bw-image: "sprite-fugue.png";
+$block-plus-bw: (32px, 48px, -32px, -48px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "block--plus-bw");
+$block-plus-name: "block--plus";
+$block-plus-x: 48px;
+$block-plus-y: 48px;
+$block-plus-offset-x: -48px;
+$block-plus-offset-y: -48px;
+$block-plus-width: 16px;
+$block-plus-height: 16px;
+$block-plus-total-width: 144px;
+$block-plus-total-height: 128px;
+$block-plus-image: "sprite-fugue.png";
+$block-plus: (48px, 48px, -48px, -48px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "block--plus");
+$bookmarks-bw-name: "bookmarks-bw";
+$bookmarks-bw-x: 64px;
+$bookmarks-bw-y: 0px;
+$bookmarks-bw-offset-x: -64px;
+$bookmarks-bw-offset-y: 0px;
+$bookmarks-bw-width: 16px;
+$bookmarks-bw-height: 16px;
+$bookmarks-bw-total-width: 144px;
+$bookmarks-bw-total-height: 128px;
+$bookmarks-bw-image: "sprite-fugue.png";
+$bookmarks-bw: (64px, 0px, -64px, 0px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "bookmarks-bw");
+$bookmarks-name: "bookmarks";
+$bookmarks-x: 64px;
+$bookmarks-y: 16px;
+$bookmarks-offset-x: -64px;
+$bookmarks-offset-y: -16px;
+$bookmarks-width: 16px;
+$bookmarks-height: 16px;
+$bookmarks-total-width: 144px;
+$bookmarks-total-height: 128px;
+$bookmarks-image: "sprite-fugue.png";
+$bookmarks: (64px, 16px, -64px, -16px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "bookmarks");
+$bug-name: "bug";
+$bug-x: 64px;
+$bug-y: 32px;
+$bug-offset-x: -64px;
+$bug-offset-y: -32px;
+$bug-width: 16px;
+$bug-height: 16px;
+$bug-total-width: 144px;
+$bug-total-height: 128px;
+$bug-image: "sprite-fugue.png";
+$bug: (64px, 32px, -64px, -32px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "bug");
+$chart-name: "chart";
+$chart-x: 64px;
+$chart-y: 48px;
+$chart-offset-x: -64px;
+$chart-offset-y: -48px;
+$chart-width: 16px;
+$chart-height: 16px;
+$chart-total-width: 144px;
+$chart-total-height: 128px;
+$chart-image: "sprite-fugue.png";
+$chart: (64px, 48px, -64px, -48px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "chart");
+$chevron-expand-bw-name: "chevron-expand-bw";
+$chevron-expand-bw-x: 0px;
+$chevron-expand-bw-y: 64px;
+$chevron-expand-bw-offset-x: 0px;
+$chevron-expand-bw-offset-y: -64px;
+$chevron-expand-bw-width: 16px;
+$chevron-expand-bw-height: 16px;
+$chevron-expand-bw-total-width: 144px;
+$chevron-expand-bw-total-height: 128px;
+$chevron-expand-bw-image: "sprite-fugue.png";
+$chevron-expand-bw: (0px, 64px, 0px, -64px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "chevron-expand-bw");
+$chevron-expand-name: "chevron-expand";
+$chevron-expand-x: 16px;
+$chevron-expand-y: 64px;
+$chevron-expand-offset-x: -16px;
+$chevron-expand-offset-y: -64px;
+$chevron-expand-width: 16px;
+$chevron-expand-height: 16px;
+$chevron-expand-total-width: 144px;
+$chevron-expand-total-height: 128px;
+$chevron-expand-image: "sprite-fugue.png";
+$chevron-expand: (16px, 64px, -16px, -64px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "chevron-expand");
+$chevron-name: "chevron";
+$chevron-x: 32px;
+$chevron-y: 64px;
+$chevron-offset-x: -32px;
+$chevron-offset-y: -64px;
+$chevron-width: 16px;
+$chevron-height: 16px;
+$chevron-total-width: 144px;
+$chevron-total-height: 128px;
+$chevron-image: "sprite-fugue.png";
+$chevron: (32px, 64px, -32px, -64px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "chevron");
+$control-270-name: "control-270";
+$control-270-x: 48px;
+$control-270-y: 64px;
+$control-270-offset-x: -48px;
+$control-270-offset-y: -64px;
+$control-270-width: 16px;
+$control-270-height: 16px;
+$control-270-total-width: 144px;
+$control-270-total-height: 128px;
+$control-270-image: "sprite-fugue.png";
+$control-270: (48px, 64px, -48px, -64px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "control-270");
+$cross-button-name: "cross-button";
+$cross-button-x: 64px;
+$cross-button-y: 64px;
+$cross-button-offset-x: -64px;
+$cross-button-offset-y: -64px;
+$cross-button-width: 16px;
+$cross-button-height: 16px;
+$cross-button-total-width: 144px;
+$cross-button-total-height: 128px;
+$cross-button-image: "sprite-fugue.png";
+$cross-button: (64px, 64px, -64px, -64px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "cross-button");
+$cross-circle-bw-name: "cross-circle-bw";
+$cross-circle-bw-x: 80px;
+$cross-circle-bw-y: 0px;
+$cross-circle-bw-offset-x: -80px;
+$cross-circle-bw-offset-y: 0px;
+$cross-circle-bw-width: 16px;
+$cross-circle-bw-height: 16px;
+$cross-circle-bw-total-width: 144px;
+$cross-circle-bw-total-height: 128px;
+$cross-circle-bw-image: "sprite-fugue.png";
+$cross-circle-bw: (80px, 0px, -80px, 0px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "cross-circle-bw");
+$cross-circle-name: "cross-circle";
+$cross-circle-x: 80px;
+$cross-circle-y: 16px;
+$cross-circle-offset-x: -80px;
+$cross-circle-offset-y: -16px;
+$cross-circle-width: 16px;
+$cross-circle-height: 16px;
+$cross-circle-total-width: 144px;
+$cross-circle-total-height: 128px;
+$cross-circle-image: "sprite-fugue.png";
+$cross-circle: (80px, 16px, -80px, -16px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "cross-circle");
+$cross-small-bw-name: "cross-small-bw";
+$cross-small-bw-x: 80px;
+$cross-small-bw-y: 32px;
+$cross-small-bw-offset-x: -80px;
+$cross-small-bw-offset-y: -32px;
+$cross-small-bw-width: 16px;
+$cross-small-bw-height: 16px;
+$cross-small-bw-total-width: 144px;
+$cross-small-bw-total-height: 128px;
+$cross-small-bw-image: "sprite-fugue.png";
+$cross-small-bw: (80px, 32px, -80px, -32px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "cross-small-bw");
+$cross-name: "cross";
+$cross-x: 80px;
+$cross-y: 48px;
+$cross-offset-x: -80px;
+$cross-offset-y: -48px;
+$cross-width: 16px;
+$cross-height: 16px;
+$cross-total-width: 144px;
+$cross-total-height: 128px;
+$cross-image: "sprite-fugue.png";
+$cross: (80px, 48px, -80px, -48px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "cross");
+$disk-arrow-bw-name: "disk--arrow-bw";
+$disk-arrow-bw-x: 80px;
+$disk-arrow-bw-y: 64px;
+$disk-arrow-bw-offset-x: -80px;
+$disk-arrow-bw-offset-y: -64px;
+$disk-arrow-bw-width: 16px;
+$disk-arrow-bw-height: 16px;
+$disk-arrow-bw-total-width: 144px;
+$disk-arrow-bw-total-height: 128px;
+$disk-arrow-bw-image: "sprite-fugue.png";
+$disk-arrow-bw: (80px, 64px, -80px, -64px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "disk--arrow-bw");
+$disk-arrow-name: "disk--arrow";
+$disk-arrow-x: 0px;
+$disk-arrow-y: 80px;
+$disk-arrow-offset-x: 0px;
+$disk-arrow-offset-y: -80px;
+$disk-arrow-width: 16px;
+$disk-arrow-height: 16px;
+$disk-arrow-total-width: 144px;
+$disk-arrow-total-height: 128px;
+$disk-arrow-image: "sprite-fugue.png";
+$disk-arrow: (0px, 80px, 0px, -80px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "disk--arrow");
+$disk-name: "disk";
+$disk-x: 16px;
+$disk-y: 80px;
+$disk-offset-x: -16px;
+$disk-offset-y: -80px;
+$disk-width: 16px;
+$disk-height: 16px;
+$disk-total-width: 144px;
+$disk-total-height: 128px;
+$disk-image: "sprite-fugue.png";
+$disk: (16px, 80px, -16px, -80px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "disk");
+$exclamation-name: "exclamation";
+$exclamation-x: 32px;
+$exclamation-y: 80px;
+$exclamation-offset-x: -32px;
+$exclamation-offset-y: -80px;
+$exclamation-width: 16px;
+$exclamation-height: 16px;
+$exclamation-total-width: 144px;
+$exclamation-total-height: 128px;
+$exclamation-image: "sprite-fugue.png";
+$exclamation: (32px, 80px, -32px, -80px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "exclamation");
+$external-name: "external";
+$external-x: 0px;
+$external-y: 0px;
+$external-offset-x: 0px;
+$external-offset-y: 0px;
+$external-width: 16px;
+$external-height: 16px;
+$external-total-width: 144px;
+$external-total-height: 128px;
+$external-image: "sprite-fugue.png";
+$external: (0px, 0px, 0px, 0px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "external");
+$eye-name: "eye";
+$eye-x: 64px;
+$eye-y: 80px;
+$eye-offset-x: -64px;
+$eye-offset-y: -80px;
+$eye-width: 16px;
+$eye-height: 16px;
+$eye-total-width: 144px;
+$eye-total-height: 128px;
+$eye-image: "sprite-fugue.png";
+$eye: (64px, 80px, -64px, -80px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "eye");
+$gear-bw-name: "gear-bw";
+$gear-bw-x: 80px;
+$gear-bw-y: 80px;
+$gear-bw-offset-x: -80px;
+$gear-bw-offset-y: -80px;
+$gear-bw-width: 16px;
+$gear-bw-height: 16px;
+$gear-bw-total-width: 144px;
+$gear-bw-total-height: 128px;
+$gear-bw-image: "sprite-fugue.png";
+$gear-bw: (80px, 80px, -80px, -80px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "gear-bw");
+$gear-name: "gear";
+$gear-x: 96px;
+$gear-y: 0px;
+$gear-offset-x: -96px;
+$gear-offset-y: 0px;
+$gear-width: 16px;
+$gear-height: 16px;
+$gear-total-width: 144px;
+$gear-total-height: 128px;
+$gear-image: "sprite-fugue.png";
+$gear: (96px, 0px, -96px, 0px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "gear");
+$globe-bw-name: "globe-bw";
+$globe-bw-x: 96px;
+$globe-bw-y: 16px;
+$globe-bw-offset-x: -96px;
+$globe-bw-offset-y: -16px;
+$globe-bw-width: 16px;
+$globe-bw-height: 16px;
+$globe-bw-total-width: 144px;
+$globe-bw-total-height: 128px;
+$globe-bw-image: "sprite-fugue.png";
+$globe-bw: (96px, 16px, -96px, -16px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "globe-bw");
+$globe-name: "globe";
+$globe-x: 96px;
+$globe-y: 32px;
+$globe-offset-x: -96px;
+$globe-offset-y: -32px;
+$globe-width: 16px;
+$globe-height: 16px;
+$globe-total-width: 144px;
+$globe-total-height: 128px;
+$globe-image: "sprite-fugue.png";
+$globe: (96px, 32px, -96px, -32px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "globe");
+$hammer-bw-name: "hammer-bw";
+$hammer-bw-x: 96px;
+$hammer-bw-y: 48px;
+$hammer-bw-offset-x: -96px;
+$hammer-bw-offset-y: -48px;
+$hammer-bw-width: 16px;
+$hammer-bw-height: 16px;
+$hammer-bw-total-width: 144px;
+$hammer-bw-total-height: 128px;
+$hammer-bw-image: "sprite-fugue.png";
+$hammer-bw: (96px, 48px, -96px, -48px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "hammer-bw");
+$hammer-name: "hammer";
+$hammer-x: 96px;
+$hammer-y: 64px;
+$hammer-offset-x: -96px;
+$hammer-offset-y: -64px;
+$hammer-width: 16px;
+$hammer-height: 16px;
+$hammer-total-width: 144px;
+$hammer-total-height: 128px;
+$hammer-image: "sprite-fugue.png";
+$hammer: (96px, 64px, -96px, -64px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "hammer");
+$information-white-name: "information-white";
+$information-white-x: 96px;
+$information-white-y: 80px;
+$information-white-offset-x: -96px;
+$information-white-offset-y: -80px;
+$information-white-width: 16px;
+$information-white-height: 16px;
+$information-white-total-width: 144px;
+$information-white-total-height: 128px;
+$information-white-image: "sprite-fugue.png";
+$information-white: (96px, 80px, -96px, -80px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "information-white");
+$layer-transparent-bw-name: "layer-transparent-bw";
+$layer-transparent-bw-x: 0px;
+$layer-transparent-bw-y: 96px;
+$layer-transparent-bw-offset-x: 0px;
+$layer-transparent-bw-offset-y: -96px;
+$layer-transparent-bw-width: 16px;
+$layer-transparent-bw-height: 16px;
+$layer-transparent-bw-total-width: 144px;
+$layer-transparent-bw-total-height: 128px;
+$layer-transparent-bw-image: "sprite-fugue.png";
+$layer-transparent-bw: (0px, 96px, 0px, -96px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "layer-transparent-bw");
+$layer-transparent-name: "layer-transparent";
+$layer-transparent-x: 16px;
+$layer-transparent-y: 96px;
+$layer-transparent-offset-x: -16px;
+$layer-transparent-offset-y: -96px;
+$layer-transparent-width: 16px;
+$layer-transparent-height: 16px;
+$layer-transparent-total-width: 144px;
+$layer-transparent-total-height: 128px;
+$layer-transparent-image: "sprite-fugue.png";
+$layer-transparent: (16px, 96px, -16px, -96px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "layer-transparent");
+$layers-stack-bw-name: "layers-stack-bw";
+$layers-stack-bw-x: 32px;
+$layers-stack-bw-y: 96px;
+$layers-stack-bw-offset-x: -32px;
+$layers-stack-bw-offset-y: -96px;
+$layers-stack-bw-width: 16px;
+$layers-stack-bw-height: 16px;
+$layers-stack-bw-total-width: 144px;
+$layers-stack-bw-total-height: 128px;
+$layers-stack-bw-image: "sprite-fugue.png";
+$layers-stack-bw: (32px, 96px, -32px, -96px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "layers-stack-bw");
+$layers-stack-name: "layers-stack";
+$layers-stack-x: 48px;
+$layers-stack-y: 96px;
+$layers-stack-offset-x: -48px;
+$layers-stack-offset-y: -96px;
+$layers-stack-width: 16px;
+$layers-stack-height: 16px;
+$layers-stack-total-width: 144px;
+$layers-stack-total-height: 128px;
+$layers-stack-image: "sprite-fugue.png";
+$layers-stack: (48px, 96px, -48px, -96px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "layers-stack");
+$magnifier-left-name: "magnifier-left";
+$magnifier-left-x: 64px;
+$magnifier-left-y: 96px;
+$magnifier-left-offset-x: -64px;
+$magnifier-left-offset-y: -96px;
+$magnifier-left-width: 16px;
+$magnifier-left-height: 16px;
+$magnifier-left-total-width: 144px;
+$magnifier-left-total-height: 128px;
+$magnifier-left-image: "sprite-fugue.png";
+$magnifier-left: (64px, 96px, -64px, -96px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "magnifier-left");
+$magnifier-zoom-out-name: "magnifier-zoom-out";
+$magnifier-zoom-out-x: 80px;
+$magnifier-zoom-out-y: 96px;
+$magnifier-zoom-out-offset-x: -80px;
+$magnifier-zoom-out-offset-y: -96px;
+$magnifier-zoom-out-width: 16px;
+$magnifier-zoom-out-height: 16px;
+$magnifier-zoom-out-total-width: 144px;
+$magnifier-zoom-out-total-height: 128px;
+$magnifier-zoom-out-image: "sprite-fugue.png";
+$magnifier-zoom-out: (80px, 96px, -80px, -96px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "magnifier-zoom-out");
+$magnifier-zoom-name: "magnifier-zoom";
+$magnifier-zoom-x: 96px;
+$magnifier-zoom-y: 96px;
+$magnifier-zoom-offset-x: -96px;
+$magnifier-zoom-offset-y: -96px;
+$magnifier-zoom-width: 16px;
+$magnifier-zoom-height: 16px;
+$magnifier-zoom-total-width: 144px;
+$magnifier-zoom-total-height: 128px;
+$magnifier-zoom-image: "sprite-fugue.png";
+$magnifier-zoom: (96px, 96px, -96px, -96px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "magnifier-zoom");
+$navigation-name: "navigation";
+$navigation-x: 112px;
+$navigation-y: 0px;
+$navigation-offset-x: -112px;
+$navigation-offset-y: 0px;
+$navigation-width: 16px;
+$navigation-height: 16px;
+$navigation-total-width: 144px;
+$navigation-total-height: 128px;
+$navigation-image: "sprite-fugue.png";
+$navigation: (112px, 0px, -112px, 0px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "navigation");
+$pencil-small-name: "pencil-small";
+$pencil-small-x: 112px;
+$pencil-small-y: 16px;
+$pencil-small-offset-x: -112px;
+$pencil-small-offset-y: -16px;
+$pencil-small-width: 16px;
+$pencil-small-height: 16px;
+$pencil-small-total-width: 144px;
+$pencil-small-total-height: 128px;
+$pencil-small-image: "sprite-fugue.png";
+$pencil-small: (112px, 16px, -112px, -16px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "pencil-small");
+$pencil-name: "pencil";
+$pencil-x: 112px;
+$pencil-y: 32px;
+$pencil-offset-x: -112px;
+$pencil-offset-y: -32px;
+$pencil-width: 16px;
+$pencil-height: 16px;
+$pencil-total-width: 144px;
+$pencil-total-height: 128px;
+$pencil-image: "sprite-fugue.png";
+$pencil: (112px, 32px, -112px, -32px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "pencil");
+$plus-button-bw-name: "plus-button-bw";
+$plus-button-bw-x: 112px;
+$plus-button-bw-y: 48px;
+$plus-button-bw-offset-x: -112px;
+$plus-button-bw-offset-y: -48px;
+$plus-button-bw-width: 16px;
+$plus-button-bw-height: 16px;
+$plus-button-bw-total-width: 144px;
+$plus-button-bw-total-height: 128px;
+$plus-button-bw-image: "sprite-fugue.png";
+$plus-button-bw: (112px, 48px, -112px, -48px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "plus-button-bw");
+$plus-button-name: "plus-button";
+$plus-button-x: 112px;
+$plus-button-y: 64px;
+$plus-button-offset-x: -112px;
+$plus-button-offset-y: -64px;
+$plus-button-width: 16px;
+$plus-button-height: 16px;
+$plus-button-total-width: 144px;
+$plus-button-total-height: 128px;
+$plus-button-image: "sprite-fugue.png";
+$plus-button: (112px, 64px, -112px, -64px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "plus-button");
+$plus-circle-name: "plus-circle";
+$plus-circle-x: 112px;
+$plus-circle-y: 80px;
+$plus-circle-offset-x: -112px;
+$plus-circle-offset-y: -80px;
+$plus-circle-width: 16px;
+$plus-circle-height: 16px;
+$plus-circle-total-width: 144px;
+$plus-circle-total-height: 128px;
+$plus-circle-image: "sprite-fugue.png";
+$plus-circle: (112px, 80px, -112px, -80px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "plus-circle");
+$sticky-note-text-name: "sticky-note-text";
+$sticky-note-text-x: 112px;
+$sticky-note-text-y: 96px;
+$sticky-note-text-offset-x: -112px;
+$sticky-note-text-offset-y: -96px;
+$sticky-note-text-width: 16px;
+$sticky-note-text-height: 16px;
+$sticky-note-text-total-width: 144px;
+$sticky-note-text-total-height: 128px;
+$sticky-note-text-image: "sprite-fugue.png";
+$sticky-note-text: (112px, 96px, -112px, -96px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "sticky-note-text");
+$tag-plus-name: "tag--plus";
+$tag-plus-x: 0px;
+$tag-plus-y: 112px;
+$tag-plus-offset-x: 0px;
+$tag-plus-offset-y: -112px;
+$tag-plus-width: 16px;
+$tag-plus-height: 16px;
+$tag-plus-total-width: 144px;
+$tag-plus-total-height: 128px;
+$tag-plus-image: "sprite-fugue.png";
+$tag-plus: (0px, 112px, 0px, -112px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "tag--plus");
+$tag-label-name: "tag-label";
+$tag-label-x: 16px;
+$tag-label-y: 112px;
+$tag-label-offset-x: -16px;
+$tag-label-offset-y: -112px;
+$tag-label-width: 16px;
+$tag-label-height: 16px;
+$tag-label-total-width: 144px;
+$tag-label-total-height: 128px;
+$tag-label-image: "sprite-fugue.png";
+$tag-label: (16px, 112px, -16px, -112px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "tag-label");
+$tags-name: "tags";
+$tags-x: 32px;
+$tags-y: 112px;
+$tags-offset-x: -32px;
+$tags-offset-y: -112px;
+$tags-width: 16px;
+$tags-height: 16px;
+$tags-total-width: 144px;
+$tags-total-height: 128px;
+$tags-image: "sprite-fugue.png";
+$tags: (32px, 112px, -32px, -112px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "tags");
+$toggle-bw-name: "toggle-bw";
+$toggle-bw-x: 48px;
+$toggle-bw-y: 112px;
+$toggle-bw-offset-x: -48px;
+$toggle-bw-offset-y: -112px;
+$toggle-bw-width: 16px;
+$toggle-bw-height: 16px;
+$toggle-bw-total-width: 144px;
+$toggle-bw-total-height: 128px;
+$toggle-bw-image: "sprite-fugue.png";
+$toggle-bw: (48px, 112px, -48px, -112px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "toggle-bw");
+$toggle-expand-bw-name: "toggle-expand-bw";
+$toggle-expand-bw-x: 64px;
+$toggle-expand-bw-y: 112px;
+$toggle-expand-bw-offset-x: -64px;
+$toggle-expand-bw-offset-y: -112px;
+$toggle-expand-bw-width: 16px;
+$toggle-expand-bw-height: 16px;
+$toggle-expand-bw-total-width: 144px;
+$toggle-expand-bw-total-height: 128px;
+$toggle-expand-bw-image: "sprite-fugue.png";
+$toggle-expand-bw: (64px, 112px, -64px, -112px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "toggle-expand-bw");
+$toggle-expand-name: "toggle-expand";
+$toggle-expand-x: 80px;
+$toggle-expand-y: 112px;
+$toggle-expand-offset-x: -80px;
+$toggle-expand-offset-y: -112px;
+$toggle-expand-width: 16px;
+$toggle-expand-height: 16px;
+$toggle-expand-total-width: 144px;
+$toggle-expand-total-height: 128px;
+$toggle-expand-image: "sprite-fugue.png";
+$toggle-expand: (80px, 112px, -80px, -112px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "toggle-expand");
+$toggle-name: "toggle";
+$toggle-x: 96px;
+$toggle-y: 112px;
+$toggle-offset-x: -96px;
+$toggle-offset-y: -112px;
+$toggle-width: 16px;
+$toggle-height: 16px;
+$toggle-total-width: 144px;
+$toggle-total-height: 128px;
+$toggle-image: "sprite-fugue.png";
+$toggle: (96px, 112px, -96px, -112px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "toggle");
+$toolbox-bw-name: "toolbox-bw";
+$toolbox-bw-x: 112px;
+$toolbox-bw-y: 112px;
+$toolbox-bw-offset-x: -112px;
+$toolbox-bw-offset-y: -112px;
+$toolbox-bw-width: 16px;
+$toolbox-bw-height: 16px;
+$toolbox-bw-total-width: 144px;
+$toolbox-bw-total-height: 128px;
+$toolbox-bw-image: "sprite-fugue.png";
+$toolbox-bw: (112px, 112px, -112px, -112px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "toolbox-bw");
+$toolbox-name: "toolbox";
+$toolbox-x: 128px;
+$toolbox-y: 0px;
+$toolbox-offset-x: -128px;
+$toolbox-offset-y: 0px;
+$toolbox-width: 16px;
+$toolbox-height: 16px;
+$toolbox-total-width: 144px;
+$toolbox-total-height: 128px;
+$toolbox-image: "sprite-fugue.png";
+$toolbox: (128px, 0px, -128px, 0px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "toolbox");
+$ui-slider-050-bw-name: "ui-slider-050-bw";
+$ui-slider-050-bw-x: 128px;
+$ui-slider-050-bw-y: 16px;
+$ui-slider-050-bw-offset-x: -128px;
+$ui-slider-050-bw-offset-y: -16px;
+$ui-slider-050-bw-width: 16px;
+$ui-slider-050-bw-height: 16px;
+$ui-slider-050-bw-total-width: 144px;
+$ui-slider-050-bw-total-height: 128px;
+$ui-slider-050-bw-image: "sprite-fugue.png";
+$ui-slider-050-bw: (128px, 16px, -128px, -16px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "ui-slider-050-bw");
+$ui-slider-050-name: "ui-slider-050";
+$ui-slider-050-x: 128px;
+$ui-slider-050-y: 32px;
+$ui-slider-050-offset-x: -128px;
+$ui-slider-050-offset-y: -32px;
+$ui-slider-050-width: 16px;
+$ui-slider-050-height: 16px;
+$ui-slider-050-total-width: 144px;
+$ui-slider-050-total-height: 128px;
+$ui-slider-050-image: "sprite-fugue.png";
+$ui-slider-050: (128px, 32px, -128px, -32px, 16px, 16px, 144px, 128px, "sprite-fugue.png", "ui-slider-050");
+$spritesheet-width: 144px;
+$spritesheet-height: 128px;
+$spritesheet-image: "sprite-fugue.png";
+$spritesheet-sprites: (
+    $application-dock-270-bw,
+    $application-dock-270,
+    $arrow-000-small-bw,
+    $arrow-090,
+    $arrow-circle,
+    $arrow-resize-090-bw,
+    $arrow-resize-090,
+    $arrow-split-bw,
+    $arrow-split,
+    $arrow-transition-270-bw,
+    $arrow-transition-bw,
+    $asterisk-small-outline,
+    $asterisk-small-yellow,
+    $asterisk-small,
+    $block-plus-bw,
+    $block-plus,
+    $bookmarks-bw,
+    $bookmarks,
+    $bug,
+    $chart,
+    $chevron-expand-bw,
+    $chevron-expand,
+    $chevron,
+    $control-270,
+    $cross-button,
+    $cross-circle-bw,
+    $cross-circle,
+    $cross-small-bw,
+    $cross,
+    $disk-arrow-bw,
+    $disk-arrow,
+    $disk,
+    $exclamation,
+    $external,
+    $eye,
+    $gear-bw,
+    $gear,
+    $globe-bw,
+    $globe,
+    $hammer-bw,
+    $hammer,
+    $information-white,
+    $layer-transparent-bw,
+    $layer-transparent,
+    $layers-stack-bw,
+    $layers-stack,
+    $magnifier-left,
+    $magnifier-zoom-out,
+    $magnifier-zoom,
+    $navigation,
+    $pencil-small,
+    $pencil,
+    $plus-button-bw,
+    $plus-button,
+    $plus-circle,
+    $sticky-note-text,
+    $tag-plus,
+    $tag-label,
+    $tags,
+    $toggle-bw,
+    $toggle-expand-bw,
+    $toggle-expand,
+    $toggle,
+    $toolbox-bw,
+    $toolbox,
+    $ui-slider-050-bw,
+    $ui-slider-050
+);
+$spritesheet: (144px, 128px, "sprite-fugue.png", $spritesheet-sprites);
+
+/*
+The provided mixins are intended to be used with the array-like variables
+
+.icon-home {
+  @include sprite-width($icon-home);
+}
+
+.icon-email {
+  @include sprite($icon-email);
+}
+*/
+@mixin sprite-width($sprite) {
+    width: nth($sprite, 5);
+}
+
+@mixin sprite-height($sprite) {
+    height: nth($sprite, 6);
+}
+
+@mixin sprite-position($sprite) {
+    $sprite-offset-x: nth($sprite, 3);
+    $sprite-offset-y: nth($sprite, 4);
+    background-position: $sprite-offset-x $sprite-offset-y;
+}
+
+@mixin sprite-image($sprite) {
+    $sprite-image: nth($sprite, 9);
+    background-image: url(../../assets/images/#{$sprite-image});
+}
+
+@mixin sprite($sprite) {
+    @include sprite-image($sprite);
+    @include sprite-position($sprite);
+    @include sprite-width($sprite);
+    @include sprite-height($sprite);
+}
+
+/*
+The `sprites` mixin generates identical output to the CSS template
+  but can be overridden inside of SCSS
+
+@include sprites($spritesheet-sprites);
+*/
+@mixin sprites($sprites) {
+    @each $sprite in $sprites {
+        $sprite-name: nth($sprite, 10);
+        .#{$sprite-name} {
+            @include sprite($sprite);
+        }
+    }
+}

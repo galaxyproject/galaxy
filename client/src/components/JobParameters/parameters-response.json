@@ -1,0 +1,29 @@
+{
+  "parameters": [
+    {
+      "text": "Add this value",
+      "depth": 1,
+      "value": "22",
+      "notes": ""
+    },
+    {
+      "text": "to Dataset",
+      "depth": 1,
+      "value": [
+        {
+          "src": "hda",
+          "id": "b8a0d6158b9961df",
+          "hid": 84,
+          "name": "Cut on data 83"
+        }
+      ]
+    },
+    {
+      "text": "Iterate?",
+      "depth": 1,
+      "value": "NO",
+      "notes": ""
+    }
+  ],
+  "has_parameter_errors": false
+}

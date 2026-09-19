@@ -1,0 +1,82 @@
+<template>
+    <div>
+        <Heading v-if="title" id="job-outputs-heading" h2 separator inline size="md">
+            {{ title }}
+            <span v-if="paginate && totalLength > firstN"> (showing {{ firstN }} of {{ totalLength }}) </span>
+        </Heading>
+        <table id="job-outputs" class="tabletip info_data_table">
+            <thead>
+                <tr>
+                    <th>Tool Outputs</th>
+                    <th>Dataset</th>
+                </tr>
+            </thead>
+            <tbody v-if="jobOutputs">
+                <tr v-for="(value, name) in nonHiddenOutputs" :key="name">
+                    <td>
+                        {{ value[0].label || name }}
+                    </td>
+                    <td>
+                        <GenericHistoryItem
+                            v-for="(item, index) in value"
+                            :key="index"
+                            :item-id="item.value.id"
+                            :item-src="item.value.src" />
+                    </td>
+                </tr>
+                <tr v-if="paginate && totalLength > firstN">
+                    <td colspan="2">
+                        <GButton id="paginate-btn" class="w-100" @click="firstN += 10">
+                            Show {{ totalLength - firstN >= 10 ? 10 : totalLength - firstN }} more outputs
+                        </GButton>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</template>
+
+<script>
+import Heading from "../Common/Heading.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
+
+export default {
+    components: {
+        GButton,
+        GenericHistoryItem,
+        Heading,
+    },
+    props: {
+        jobOutputs: Object,
+        title: {
+            type: String,
+            required: false,
+        },
+        paginate: {
+            type: Boolean,
+            default: false,
+        },
+    },
+    data() {
+        return {
+            firstN: 10,
+        };
+    },
+    computed: {
+        entries() {
+            return Object.entries(this.jobOutputs).filter(([key, value]) => !key.startsWith("__"));
+        },
+        nonHiddenOutputs() {
+            if (this.paginate) {
+                return Object.fromEntries(this.entries.slice(0, this.firstN));
+            } else {
+                return Object.fromEntries(this.entries);
+            }
+        },
+        totalLength() {
+            return this.entries.length;
+        },
+    },
+};
+</script>

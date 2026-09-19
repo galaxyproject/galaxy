@@ -15,5 +15,5 @@ execution:
       default_file_action: copy
 
 tools:
-- id: upload1
+- class: local
   environment: local

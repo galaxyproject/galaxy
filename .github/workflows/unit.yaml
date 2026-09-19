@@ -1,0 +1,61 @@
+name: Unit tests
+on:
+  push:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
+  pull_request:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+      - 'packages/**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions: {}
+jobs:
+  test:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.14']
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          path: 'galaxy root'
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install ffmpeg and bubblewrap
+        # bubblewrap: exercises the expression-evaluation isolation sandbox tests.
+        # Ubuntu >=24.04 restricts unprivileged user namespaces (which bwrap needs);
+        # allow them so the sandbox test can run.
+        run: |
+          sudo apt-get update && sudo apt-get -y install ffmpeg bubblewrap
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+      - name: Install tox
+        run: uv tool install tox --with tox-uv
+      - name: Run tests
+        run: tox -e unit-coverage
+        working-directory: 'galaxy root'
+      - uses: codecov/codecov-action@v7.0.0
+        with:
+          flags: py-unit
+          working-directory: 'galaxy root'
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: Unit test results (${{ matrix.python-version }})
+          path: 'galaxy root/run_unit_tests.html'

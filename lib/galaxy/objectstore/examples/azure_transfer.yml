@@ -1,0 +1,24 @@
+type: azure_blob
+auth:
+  account_name: azureact
+  account_key: password123
+
+container:
+  name: unique_container_name
+
+cache:
+  path: database/object_store_cache
+  size: 100
+
+transfer:
+  download_max_concurrency: 1
+  upload_max_concurrency: 2
+  max_single_put_size: 10
+  max_single_get_size: 20
+  max_block_size: 3
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure

@@ -1,7 +1,7 @@
-<tool id="multi_repeats" name="multi_repeats">
-    <command>
-        cat $input1 #for $q in $queries# ${q.input2} #end for# #for $q in $more_queries# ${q.more_queries_input} #end for# > $out_file1
-    </command>
+<tool id="multi_repeats" name="multi_repeats" version="1.0.0">
+    <command><![CDATA[
+cat '$input1' #for $q in $queries# '${q.input2}' #end for# #for $q in $more_queries# '${q.more_queries_input}' #end for# > '$out_file1'
+    ]]></command>
     <inputs>
         <param name="input1" type="data" label="Concatenate Dataset"/>
         <repeat name="queries" title="Dataset">

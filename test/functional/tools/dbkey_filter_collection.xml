@@ -1,0 +1,82 @@
+<tool id="dbkey_filter_collection_input" name="dbkey_filter_collection_input" version="0.1.0">
+    <description>Filter select on dbkey of collection inputs</description>
+    <command><![CDATA[
+        echo $index >> '$output'
+    ]]>
+    </command>
+    <inputs>
+        <param format="txt" name="inputs" type="data_collection" collection_type="list" label="Inputs" help="" />
+        <param name="index" type="select" label="Using reference genome">
+          <options from_data_table="test_fasta_indexes">
+            <filter type="data_meta" ref="inputs" key="dbkey" column="1" />
+            <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+          </options>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output" />
+    </outputs>
+
+    <tests>
+        <!-- note: in the following tests two different files are needed
+             otherwise, if both collection elements refer to the same file
+             only a single history element is created (i.e. only one of the
+             dbkeys is available) -->
+        <!-- can choose a dbkey if it matches input -->
+        <test>
+            <param name="inputs" >
+                <collection type="list">
+                    <element name="e1" value="simple_line.txt" dbkey="hg19"/>
+                    <element name="e2" value="simple_line_alternative.txt" dbkey="hg19"/>
+                </collection>
+            </param>
+            <param name="index" value="hg19_value" />
+            <output name="output">
+                <assert_contents><has_text text="hg19_value" /></assert_contents>
+            </output>
+        </test>
+        <!-- can choose any dbkey if none specified in reference -->
+        <test>
+            <param name="inputs" >
+                <collection type="list">
+                    <element name="e1" value="simple_line.txt"/>
+                    <element name="e2" value="simple_line_alternative.txt"/>
+                </collection>
+            </param>
+            <param name="index" value="hg18_value" />
+            <output name="output">
+                <assert_contents>
+                    <has_text text="hg18_value" /></assert_contents>
+            </output>
+        </test>
+        <!-- can choose any dbkey specified in reference -->
+        <test>
+            <param name="inputs" >
+                <collection type="list">
+                    <element name="e1" value="simple_line.txt" dbkey="hg19"/>
+                    <element name="e2" value="simple_line_alternative.txt" dbkey="hg18"/>
+                </collection>
+            </param>
+            <param name="index" value="hg18_value" />
+            <output name="output">
+                <assert_contents><has_text text="hg18_value" /></assert_contents>
+            </output>
+        </test>
+        <!-- cant choose a dkkey different from reference -->
+        <test expect_failure="true">
+            <param name="inputs" >
+                <collection type="list">
+                    <element name="e1" value="simple_line.txt" dbkey="hg19"/>
+                    <element name="e2" value="simple_line_alternative.txt" dbkey="hg19"/>
+                </collection>
+            </param>
+            <param name="index" value="hg18_value" />
+            <output name="output">
+                <assert_contents><not_has_text text="hg18_value" /></assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

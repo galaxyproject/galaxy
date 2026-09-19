@@ -1,11 +1,495 @@
 """Utilities to help job and tool code setup jobs."""
+
+import json
 import os
+import shutil
+import threading
+from typing import (
+    Any,
+    cast,
+    NamedTuple,
+    Optional,
+)
 
-from galaxy.util import safe_makedirs
+from galaxy.files import (
+    ConfiguredFileSources,
+    DictFileSourcesUserContext,
+    FileSourcesUserContext,
+)
+from galaxy.job_execution.datasets import (
+    DatasetPath,
+    DatasetPathRewriter,
+    DeferrableObjectsT,
+    get_path_rewriter,
+)
+from galaxy.model import (
+    DatasetInstance,
+    Job,
+    JobExportHistoryArchive,
+    MetadataFile,
+)
+from galaxy.objectstore import ObjectStore
+from galaxy.util import (
+    directory_hash_id,
+    safe_makedirs,
+)
+from galaxy.util.dictifiable import UsesDictVisibleKeys
+from galaxy.util.path import StrPath
+
+TOOL_PROVIDED_JOB_METADATA_FILE = "galaxy.json"
+TOOL_PROVIDED_JOB_METADATA_KEYS = ["name", "info", "dbkey", "created_from_basename"]
 
 
-def ensure_configs_directory(work_dir):
+OutputHdasAndType = dict[str, tuple[DatasetInstance, DatasetPath]]
+OutputPaths = list[DatasetPath]
+
+
+class JobOutput(NamedTuple):
+    output_name: str
+    dataset: DatasetInstance
+    dataset_path: DatasetPath
+
+
+class JobOutputs(threading.local):
+    def __init__(self) -> None:
+        super().__init__()
+        self.output_hdas_and_paths: OutputHdasAndType | None = None
+        self.output_paths: OutputPaths | None = None
+
+    @property
+    def populated(self) -> bool:
+        return self.output_hdas_and_paths is not None
+
+    def set_job_outputs(self, job_outputs: list[JobOutput]) -> None:
+        self.output_paths = [t[2] for t in job_outputs]
+        self.output_hdas_and_paths = {t.output_name: (t.dataset, t.dataset_path) for t in job_outputs}
+
+
+class JobIO(UsesDictVisibleKeys):
+    dict_collection_visible_keys = (
+        "job_id",
+        "working_directory",
+        "outputs_directory",
+        "outputs_to_working_directory",
+        "galaxy_url",
+        "version_path",
+        "tool_directory",
+        "home_directory",
+        "tmp_directory",
+        "tool_data_path",
+        "galaxy_data_manager_data_path",
+        "new_file_path",
+        "len_file_path",
+        "builds_file_path",
+        "file_sources_dict",
+        "check_job_script_integrity",
+        "check_job_script_integrity_count",
+        "check_job_script_integrity_sleep",
+        "tool_source",
+        "tool_source_class",
+        "tool_dir",
+        "is_task",
+    )
+
+    def __init__(
+        self,
+        sa_session,
+        job: Job,
+        working_directory: str,
+        outputs_directory: str,
+        outputs_to_working_directory: bool,
+        galaxy_url: str,
+        version_path: str,
+        tool_directory: str,
+        home_directory: str,
+        tmp_directory: str,
+        tool_data_path: str,
+        galaxy_data_manager_data_path: str,
+        new_file_path: str,
+        len_file_path: str,
+        builds_file_path: str,
+        check_job_script_integrity: bool,
+        check_job_script_integrity_count: int | None,
+        check_job_script_integrity_sleep: float | None,
+        file_sources_dict: dict[str, Any],
+        user_context: FileSourcesUserContext | dict[str, Any],
+        tool_source: str | None = None,
+        tool_source_class: Optional["str"] = "XmlToolSource",
+        tool_dir: StrPath | None = None,
+        is_task: bool = False,
+    ):
+        user_context_instance: FileSourcesUserContext
+        self.file_sources_dict = file_sources_dict
+        if isinstance(user_context, dict):
+            user_context_instance = DictFileSourcesUserContext(**user_context, file_sources=self.file_sources)
+        else:
+            user_context_instance = user_context
+        self.user_context = user_context_instance
+        self.sa_session = sa_session
+        self.job_id = job.id
+        self.working_directory = working_directory
+        self.outputs_directory = outputs_directory
+        self.outputs_to_working_directory = outputs_to_working_directory
+        self.galaxy_url = galaxy_url
+        self.version_path = version_path
+        self.tool_directory = tool_directory
+        self.home_directory = home_directory
+        self.tmp_directory = tmp_directory
+        self.tool_data_path = tool_data_path
+        self.galaxy_data_manager_data_path = galaxy_data_manager_data_path
+        self.new_file_path = new_file_path
+        self.len_file_path = len_file_path
+        self.builds_file_path = builds_file_path
+        self.check_job_script_integrity = check_job_script_integrity
+        self.check_job_script_integrity_count = check_job_script_integrity_count
+        self.check_job_script_integrity_sleep = check_job_script_integrity_sleep
+        self.tool_dir = tool_dir
+        self.is_task = is_task
+        self.tool_source = tool_source
+        self.tool_source_class = tool_source_class
+        self.job_outputs = JobOutputs()
+        self._dataset_path_rewriter: DatasetPathRewriter | None = None
+
+    @property
+    def job(self) -> Job:
+        return self.sa_session.get(Job, self.job_id)
+
+    @classmethod
+    def from_json(cls, path, sa_session):
+        with open(path) as job_io_serialized:
+            io_dict = json.load(job_io_serialized)
+            # Drop in 24.0
+            io_dict.pop("model_class", None)
+        job_id = io_dict.pop("job_id")
+        job = sa_session.get(Job, job_id)
+        return cls(sa_session=sa_session, job=job, **io_dict)
+
+    @classmethod
+    def from_dict(cls, io_dict, sa_session):
+        # Drop in 24.0
+        io_dict.pop("model_class", None)
+        return cls(sa_session=sa_session, **io_dict)
+
+    def to_dict(self):
+        io_dict = super()._dictify_view_keys()
+        # dict_for will always add `model_class`, we don't need or want it
+        io_dict.pop("model_class")
+        io_dict["user_context"] = self.user_context.to_dict()
+        return io_dict
+
+    def to_json(self, path):
+        with open(path, "w") as out:
+            out.write(json.dumps(self.to_dict()))
+
+    @property
+    def file_sources(self) -> ConfiguredFileSources:
+        return ConfiguredFileSources.from_dict(self.file_sources_dict)
+
+    @property
+    def dataset_path_rewriter(self) -> DatasetPathRewriter:
+        if self._dataset_path_rewriter is None:
+            self._dataset_path_rewriter = get_path_rewriter(
+                outputs_to_working_directory=self.outputs_to_working_directory,
+                working_directory=self.working_directory,
+                outputs_directory=self.outputs_directory,
+                is_task=self.is_task,
+            )
+        assert self._dataset_path_rewriter is not None
+        return self._dataset_path_rewriter
+
+    @property
+    def output_paths(self) -> OutputPaths:
+        if not self.job_outputs.populated:
+            self.compute_outputs()
+        return cast(OutputPaths, self.job_outputs.output_paths)
+
+    @property
+    def output_hdas_and_paths(self) -> OutputHdasAndType:
+        if not self.job_outputs.populated:
+            self.compute_outputs()
+        return cast(OutputHdasAndType, self.job_outputs.output_hdas_and_paths)
+
+    def get_input_dataset_fnames(self, ds: DatasetInstance) -> list[str]:
+        filenames = [ds.get_file_name()]
+        # we will need to stage in metadata file names also
+        # TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
+        for value in ds.metadata.values():
+            if isinstance(value, MetadataFile):
+                filenames.append(value.get_file_name())
+        if ds.dataset and ds.dataset.extra_files_path_exists():
+            filenames.append(ds.dataset.extra_files_path)
+        return filenames
+
+    def get_input_datasets(
+        self, materialized_objects: dict[str, DeferrableObjectsT] | None = None
+    ) -> list[DatasetInstance]:
+        job = self.job
+        datasets: list[DatasetInstance] = []
+        for da in job.input_datasets + job.input_library_datasets:
+            if materialized_objects and da.name in materialized_objects:
+                materialized_object = materialized_objects[da.name]
+                if isinstance(materialized_object, DatasetInstance):
+                    datasets.append(materialized_object)
+            elif da.dataset:
+                datasets.append(da.dataset)
+        return datasets
+
+    def get_input_fnames(self) -> list[str]:
+        filenames = []
+        for ds in self.get_input_datasets():
+            filenames.extend(self.get_input_dataset_fnames(ds))
+        return filenames
+
+    def get_input_paths(self, materialized_objects: dict[str, DeferrableObjectsT] | None) -> list[DatasetPath]:
+        paths = []
+        for ds in self.get_input_datasets(materialized_objects):
+            paths.append(self.get_input_path(ds))
+        return paths
+
+    def get_input_path(self, dataset: DatasetInstance) -> DatasetPath:
+        real_path = dataset.get_file_name()
+        false_path = self.dataset_path_rewriter.rewrite_dataset_path(dataset, "input")
+        assert dataset.dataset is not None
+        return DatasetPath(
+            dataset.dataset.id,
+            real_path=real_path,
+            false_path=false_path,
+            mutable=False,
+            dataset_uuid=dataset.dataset.uuid,
+            object_store_id=dataset.dataset.object_store_id,
+        )
+
+    def get_output_basenames(self) -> list[str]:
+        return [os.path.basename(str(fname)) for fname in self.get_output_fnames()]
+
+    def get_output_fnames(self) -> OutputPaths:
+        return self.output_paths
+
+    def get_output_path(self, dataset):
+        if getattr(dataset, "fake_dataset_association", False):
+            return dataset.get_file_name()
+        assert dataset.id is not None, f"{dataset} needs to be flushed to find output path"
+        for hda, dataset_path in self.output_hdas_and_paths.values():
+            if hda.id == dataset.id:
+                return dataset_path
+        raise KeyError(f"Couldn't find job output for [{dataset}] in [{self.output_hdas_and_paths.values()}]")
+
+    def get_mutable_output_fnames(self):
+        return [dsp for dsp in self.output_paths if dsp.mutable]
+
+    def get_output_hdas_and_fnames(self) -> OutputHdasAndType:
+        return self.output_hdas_and_paths
+
+    def compute_outputs(self) -> None:
+        dataset_path_rewriter = self.dataset_path_rewriter
+
+        job = self.job
+        # Job output datasets are combination of history, library, and jeha datasets.
+        special = self.sa_session.query(JobExportHistoryArchive).filter_by(job=job).first()
+        false_path = None
+
+        job_outputs = []
+        for da in job.output_datasets + job.output_library_datasets:
+            da_false_path = dataset_path_rewriter.rewrite_dataset_path(da.dataset, "output")
+            if da_false_path and not os.path.exists(da_false_path):
+                with open(da_false_path, "ab"):
+                    pass
+            real_path = da.dataset.get_file_name(sync_cache=False)
+            assert da.dataset.dataset is not None
+            false_extra_files_path = os.path.join(
+                os.path.dirname(da_false_path or real_path), da.dataset.dataset.extra_files_path_name
+            )
+
+            mutable = da.dataset.dataset.external_filename is None
+            dataset_path = DatasetPath(
+                da.dataset.dataset.id,
+                real_path,
+                false_path=da_false_path,
+                mutable=mutable,
+                false_extra_files_path=false_extra_files_path,
+            )
+            job_outputs.append(JobOutput(da.name, da.dataset, dataset_path))
+
+        if special:
+            false_path = dataset_path_rewriter.rewrite_dataset_path(special, "output")
+            dsp = DatasetPath(special.dataset.id, special.dataset.get_file_name(), false_path)
+            job_outputs.append(JobOutput("output_file", special.fda, dsp))
+
+        self.job_outputs.set_job_outputs(job_outputs)
+
+    def get_output_file_id(self, file: str) -> int | None:
+        for dp in self.output_paths:
+            if self.outputs_to_working_directory and os.path.basename(dp.false_path) == file:
+                return dp.dataset_id
+            elif os.path.basename(dp.real_path) == file:
+                return dp.dataset_id
+        return None
+
+
+def ensure_configs_directory(work_dir: str) -> str:
     configs_dir = os.path.join(work_dir, "configs")
     if not os.path.exists(configs_dir):
         safe_makedirs(configs_dir)
     return configs_dir
+
+
+# Sentinel object-store keys for the job working directory. Centralized so that
+# every JWD operation goes through the same code path instead of open-coding
+# ``if job.working_directory:`` forks at each call site.
+_JOB_WORK_BASE_DIR = "job_work"
+_CLEARED_CONTENTS_EXTRA_DIR = "_cleared_contents"
+
+
+class JobWorkingDirectory:
+    """Unified handle for a job's working directory.
+
+    Hides the two backing strategies — a custom path on ``job.working_directory``
+    (from the ``job_working_directory`` destination param) and the legacy
+    object-store-derived path — behind a single object.
+    """
+
+    __slots__ = ("_job", "_object_store")
+
+    def __init__(self, job: Job, object_store: ObjectStore) -> None:
+        self._job = job
+        self._object_store = object_store
+
+    @property
+    def _custom_path(self) -> str | None:
+        """Read ``job.working_directory`` fresh on each access (not cached)."""
+        return self._job.working_directory
+
+    def _per_job_subpath(self) -> str:
+        """Return the per-job relative subpath ``<directory_hash_id(job.id)>/<job.id>/``."""
+        obj_id = self._job.id
+        return os.path.join(*directory_hash_id(obj_id), str(obj_id))
+
+    def _per_job_path(self, custom_path: str) -> str:
+        """Return ``<custom_base>/<directory_hash_id(job.id)>/<job.id>/``."""
+        return os.path.join(custom_path, self._per_job_subpath())
+
+    def resolve(self) -> str:
+        """Return the working directory path, creating nothing on disk."""
+        if custom_path := self._custom_path:
+            return self._per_job_path(custom_path)
+        return self._object_store.get_filename(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+        )
+
+    def exists(self) -> bool:
+        """Check whether the working directory exists on disk."""
+        if custom_path := self._custom_path:
+            return os.path.exists(self._per_job_path(custom_path))
+        return self._object_store.exists(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+        )
+
+    def create(self) -> str:
+        """Create the working directory and return its path.
+
+        Idempotent: if the per-job directory already exists (e.g. wrapper
+        reconstruction for a resubmitted job), it is returned without error.
+        """
+        if custom_path := self._custom_path:
+            validate_working_directory_path(custom_path)
+            path = self._per_job_path(custom_path)
+            os.makedirs(path, exist_ok=True)
+            return path
+        self._object_store.create(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+        )
+        return self._object_store.get_filename(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+        )
+
+    def delete(self) -> bool:
+        """Recursively delete the working directory.
+
+        Returns ``True`` if something was deleted, ``False`` if the directory
+        did not exist or the object store reported a non-deletion.
+
+        For custom paths, only the per-job subdirectory is removed; the
+        admin-supplied base is preserved for other jobs.
+        """
+        if custom_path := self._custom_path:
+            validate_working_directory_path(custom_path)
+            resolved = self._per_job_path(custom_path)
+            if os.path.exists(resolved):
+                shutil.rmtree(resolved)
+                return True
+            return False
+        return self._object_store.delete(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            entire_dir=True,
+            dir_only=True,
+            obj_dir=True,
+        )
+
+    def cleared_contents_base(self) -> str:
+        """Return the directory under which cleared JWDs are archived.
+
+        Creates the archive directory if it does not exist. The archive is a
+        sibling tree of the JWD (keyed by ``<hash>/<job.id>``) so resubmits
+        don't collide on the archive name.
+        """
+        if custom_path := self._custom_path:
+            validate_working_directory_path(custom_path)
+            path = os.path.join(
+                custom_path,
+                _CLEARED_CONTENTS_EXTRA_DIR,
+                self._per_job_subpath(),
+            )
+            os.makedirs(path, exist_ok=True)
+            return path
+        self._object_store.create(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+            extra_dir=_CLEARED_CONTENTS_EXTRA_DIR,
+            extra_dir_at_root=True,
+        )
+        return self._object_store.get_filename(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+            extra_dir=_CLEARED_CONTENTS_EXTRA_DIR,
+            extra_dir_at_root=True,
+        )
+
+
+def validate_working_directory_path(path: str) -> None:
+    """Validate a custom ``job.working_directory`` path before disk operations.
+
+    This is the single canonical validator for ``job.working_directory``. It is
+    called both at set-time (before persisting the column) and at use-time
+    (before each disk operation on a custom path), so callers can rely on the
+    column value being validated without assuming set-time validation is the
+    only guard.
+
+    ``job.working_directory`` is a ``String(1024)`` populated from destination
+    params (admin/TPV-controlled) and is treated as a **parent/base** path:
+    Galaxy appends ``<directory_hash_id(job.id)>/<job.id>/`` for per-job
+    isolation. Refuse to operate on anything that is not an absolute,
+    non-root, non-empty path.
+    """
+    if not path:
+        raise ValueError("Refusing to operate on empty job working_directory")
+    if not os.path.isabs(path):
+        raise ValueError(f"Refusing to operate on relative job working_directory: {path!r}")
+    if os.path.normpath(path) == os.path.normpath(os.sep):
+        raise ValueError("Refusing to operate on filesystem root as job working_directory")

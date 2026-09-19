@@ -1,4 +1,3 @@
-
 # TODO: ---- This is a work in progress ----
 """
 Dataproviders are iterators with context managers that provide data to some
@@ -16,6 +15,7 @@ can be piped from one to the other.
     keywords to the proper (often final) provider. These errors that result
     can be hard to diagnose.
 """
+
 from . import (
     base,
     chunk,
@@ -25,7 +25,7 @@ from . import (
     exceptions,
     external,
     hierarchy,
-    line
+    line,
 )
 
-__all__ = ('decorators', 'exceptions', 'base', 'chunk', 'line', 'hierarchy', 'column', 'external', 'dataset')
+__all__ = ("decorators", "exceptions", "base", "chunk", "line", "hierarchy", "column", "external", "dataset")

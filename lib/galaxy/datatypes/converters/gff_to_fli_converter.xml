@@ -10,8 +10,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="gff" value="gff_filter_by_feature_count_out2.gff"/>
-            <output name="output1" format="fli" value="fli_filter_by_feature_count_out2.fli"/>
+            <param name="input1" ftype="gff" value="gff_filter_by_feature_count_out2.gff"/>
+            <output name="output1" ftype="fli" value="fli_filter_by_feature_count_out2.fli"/>
         </test>
     </tests>
     <help>

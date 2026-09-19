@@ -1,18 +1,24 @@
 <tool id="__SORTLIST__"
-      name="Sort Collection"
+      name="Sort collection"
       version="1.0.0"
       tool_type="sort_collection">
-    <description>of list of datasets</description>
+    <description>elements alphabetically, numerically, or by a custom order</description>
     <type class="SortTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3802</edam_operation>
+    </edam_operations>
     <inputs>
-        <param type="data_collection" collection_type="list" name="input" label="Input Collection" />
+        <param type="data_collection" collection_type="list,list:paired" name="input" label="Input Collection" />
         <conditional name="sort_type">
-            <param type="select" name="sort_type" label="Sort collection identifiers" help="All element identifiers must be present once.">
-                <option value="alpha">alphabetically</option>
-                <option value="numeric">numerically (strips all characters except numbers)</option>
-                <option value="file">Sort collection using order of identifiers in text file</option>
+            <param type="select" name="sort_type" label="Sort type" help="All element identifiers must be present once.">
+                <option value="alpha">alphabetical</option>
+                <option value="numeric">numeric (non numeric characters are ignored)</option>
+                <option value="file">from file</option>
             </param>
             <when value="alpha" />
             <when value="numeric" />
@@ -22,7 +28,7 @@
         </conditional>
     </inputs>
     <outputs>
-        <collection name="output" format_source="input" type="list" label="${on_string} (sorted)" >
+        <collection name="output" format_source="input" type_source="input" label="${on_string} (sorted)" >
         </collection>
     </outputs>
     <tests>
@@ -91,14 +97,111 @@
                 </element>
             </output_collection>
         </test>
+        <test>
+            <param name="input">
+                <collection type="list:paired">
+                    <element name="def456">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                    <element name="abc789">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
+            <param name="sort_type" value="alpha" />
+            <output_collection name="output" type="list:paired">
+                <element name="abc789">
+                    <element name="forward">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a line of text.\n$" />
+                        </assert_contents>
+                    </element>
+                    <element name="reverse">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a different line of text.\n$" />
+                        </assert_contents>
+                    </element>
+                </element>
+                <element name="def456">
+                    <element name="forward">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a line of text.\n$" />
+                        </assert_contents>
+                    </element>
+                    <element name="reverse">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a different line of text.\n$" />
+                        </assert_contents>
+                    </element>
+                </element>
+            </output_collection>
+        </test>
     </tests>
     <help><![CDATA[
 
-This tool takes list-type collections - and produces a sorted ist from the inputs. The collection identifiers are sorted either alphabetically or numerically (where the characters other than 0-9 are stripped before sorting).
+========
+Synopsis
+========
+
+Reorders elements of a collection alphabetically, numerically, or using a custom order from a file.
+
+===========
+Description
+===========
+
+This tool takes a collection and produces a new collection with the same elements in a different order. The datasets themselves are not modified — only the element ordering changes.
+
+Three sort modes are available:
+
+========
+Examples
+========
+
+**Alphabetical sort**
+
+Elements are sorted by their identifiers in ascending alphabetical (lexicographic) order::
+
+ Input:   sampleC, sampleA, sampleB
+ Output:  sampleA, sampleB, sampleC
+
+-------
+
+**Numeric sort**
+
+Non-numeric characters are stripped from each identifier, and elements are sorted by the resulting number in ascending order::
+
+ Input:   sample100, sample3, sample20
+ Output:  sample3, sample20, sample100
+
+-------
+
+**Sort from file**
+
+You supply a single-column text file listing identifiers in the desired order. The file must contain every element identifier exactly once::
+
+ Text file:     Output:
+
+ sampleB        sampleB
+ sampleC        sampleC
+ sampleA        sampleA
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/sort.svg
+  :alt: Sort collection elements
+  :width: 500
+
+-------
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
-     ]]></help>
+    ]]></help>
 </tool>

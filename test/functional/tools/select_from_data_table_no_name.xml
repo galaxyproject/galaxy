@@ -1,0 +1,26 @@
+<tool id="select_from_data_table_no_name" name="Select from data table without name column" version="1.0.0" profile="22.05">
+    <command><![CDATA[
+        echo "value $select" >> '$output1'
+    ]]></command>
+    <inputs>
+        <!-- testbeta has columns "value, path" with no "name" column. Building
+             the options list must not raise KeyError on the missing key. -->
+        <param name="select" type="select">
+            <options from_data_table="testbeta"/>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output1" format="tabular"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="select" value="newvalue"/>
+            <output name="output1">
+                <assert_contents>
+                    <has_line line="value newvalue"/>
+                    <has_n_lines n="1"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

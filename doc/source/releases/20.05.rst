@@ -1,0 +1,694 @@
+
+.. to_doc
+
+20.05
+===============================
+
+.. announce_start
+
+Enhancements
+-------------------------------
+
+.. major_feature
+
+* New data types for OpenMS
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 8109`_
+* Refactor Workflow Run Form Toward Vue (part 1)
+  `Pull Request 9138`_
+* Refactor Workflow Run Form Toward Vue (part 2)
+  `Pull Request 9147`_
+* Replace Workflow Editor Tool Panel with Vue component
+  `Pull Request 9201`_
+* Replace right panel in Workflow Editor with Vue component
+  `Pull Request 9249`_
+* Replacing Workflow Editor Node with Vue-component
+  `Pull Request 9332`_
+* Render workflow node connections using d3
+  `Pull Request 9471`_
+* Make Toolshed Python 3 compatible & tests
+  `Pull Request 9528`_
+* Migrate interactive tools from EU server
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 9559`_
+* Allow Tool Data Tables to be backed by refgenie
+  `Pull Request 9600`_
+* Startup speedups (XML doc cache, delay non-essential tool param parsing & indexing)
+  `Pull Request 9610`_
+
+.. feature
+
+* Enable admin to resend activation email
+  `Pull Request 9154`_
+* Create Python3 virtualenv by default
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9344`_
+* iRODS object store rewrite
+  (thanks to `@kxk302 <https://github.com/kxk302>`__).
+  `Pull Request 9438`_
+* Tool recommendation
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 9440`_
+* Tool recommendations in workflow editor
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 9569`_
+* Added whitelisting option for user registration
+  (thanks to `@MiguelJulia <https://github.com/MiguelJulia>`__).
+  `Pull Request 9501`_
+* Editor as visualization
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 9531`_
+* Chira visualization for Chimeras
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 9562`_
+* Datasource tool for SRA manifest
+  `Pull Request 9613`_, `Pull Request 9892`_
+
+.. enhancement_tag_viz
+
+* Skip visualization build, if no changes were registered
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 9634`_
+
+.. enhancement_tag_datatypes
+
+* Add tpr datatype
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 9244`_
+* Add datatypes for xcms and camera
+  (thanks to `@computational-metabolomics <https://github.com/computational-metabolomics>`__).
+  `Pull Request 9470`_
+* index with -c flag for large bam (one region larger than 2**29 - 1)
+  (thanks to `@FredericBGA <https://github.com/FredericBGA>`__).
+  `Pull Request 9570`_
+* Sniffer for multi-member zip archives
+  (thanks to `@lecorguille <https://github.com/lecorguille>`__).
+  `Pull Request 9595`_
+
+.. enhancement_tag_tools
+
+* Followup to shed tool static fixes
+  `Pull Request 9450`_
+* Remove deprecated ``interpreter`` attribute from tools ``<command>``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9490`_
+* Resize D3 tree and make it responsive
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 9547`_
+* Fix ITs to work in remote Kubernetes
+  `Pull Request 9614`_
+
+.. enhancement_tag_workflows
+
+* Fix galaxy_tool_util for composite file input testing in workflows.
+  `Pull Request 9312`_
+* Refactor toward testing workflow collection outputs.
+  `Pull Request 9340`_
+* Remove Backbone and Globals dependency from Workflow client code
+  `Pull Request 9346`_
+* Allow anonymous downloading of public workflows
+  `Pull Request 9736`_
+
+.. enhancement_tag_ui
+
+* MS Edge Fixes
+  `Pull Request 9289`_
+
+.. enhancement_tag_jobs
+
+* Refactor more of jobs admin component toward API.
+  `Pull Request 9093`_
+* make more tool parsing errors contain id
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9139`_
+* "Normalize" more custom functions in admin jobs index.
+  `Pull Request 9157`_
+* Job Lock VueJS component.
+  `Pull Request 9181`_
+* add a new function to get the local ip address
+  (thanks to `@gmauro <https://github.com/gmauro>`__).
+  `Pull Request 9353`_
+* Integration test for GxITs against remote proxies.
+  `Pull Request 9504`_
+* paramiko: load system host keys
+  (thanks to `@eancelet <https://github.com/eancelet>`__).
+  `Pull Request 9553`_
+* Optimize setting external ID for jobs.
+  `Pull Request 9691`_
+
+.. enhancement_tag_admin
+
+* Enable manual user activation
+  `Pull Request 9143`_
+* Skip migration if uninitialized database exists
+  `Pull Request 9491`_
+
+.. enhancement
+
+* Add Okta as OIDC authentication option
+  (thanks to `@selten <https://github.com/selten>`__).
+  `Pull Request 7497`_
+* Added trigger to dataset table to update history.update_time
+  `Pull Request 8187`_
+* Notifications on job completion
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 8427`_
+* Issue `#8445 <https://github.com/galaxyproject/galaxy/issues/8445>`__: Clicking on user/email in User menu triggers a page refresh - fix
+  (thanks to `@janani-prasad <https://github.com/janani-prasad>`__).
+  `Pull Request 8644`_
+* Third Party Identity Management
+  (thanks to `@juleengraham <https://github.com/juleengraham>`__).
+  `Pull Request 9060`_
+* Disable the admin_toolshed controller (except for tests).
+  `Pull Request 9072`_
+* Upgrade to Fontawesome 5
+  `Pull Request 9101`_
+* Add a test for a tool with `from_working_dir`, `outputs_to_working_directory` and `pulsar`
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 9108`_
+* Client build work (HMR, build upgrades, refactoring asset placement)
+  `Pull Request 9123`_
+* Correct typos, update location of api tests
+  `Pull Request 9158`_
+* Add more repository installation test cases
+  `Pull Request 9160`_
+* Add support for logging out of OIDC Identity Provider
+  (thanks to `@machristie <https://github.com/machristie>`__).
+  `Pull Request 9162`_
+* Vue-ify Upload Dialog w/small fixes
+  `Pull Request 9167`_
+* Update galaxy.tool_util.cwl for latest changes in CWL branch.
+  `Pull Request 9175`_
+* More progress on Tool shed cleanup
+  `Pull Request 9186`_
+* Full Python dependencies update
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9188`_, `Pull Request 9402`_, `Pull Request 9529`_, `Pull Request 9697`_
+* Allow mixed store_by objectstore configurations.
+  `Pull Request 9197`_
+* implement workflow bookmark selenium test
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 9208`_
+* Use a Galaxy root path with a space for integration tests
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9223`_
+* implementing a global tools-view component + schema.org support
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 9261`_
+* Add icons to dropdowns in dataset and workflow list
+  `Pull Request 9273`_
+* extend config file inputs tests
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9279`_
+* Do not strip tab characters from data_column reference and clarify documentation for use_header_names
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9291`_
+* Update CONTRIBUTING.md
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9299`_
+* Add more info to debug logging for loading datatypes.
+  `Pull Request 9301`_
+* Add do_not_cache decorator, apply to codebase.
+  `Pull Request 9311`_
+* Use Bootstrap components to build the Workflow Editor Toolbar
+  `Pull Request 9324`_
+* implement selenium test User->Preferences->Manage information
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 9355`_
+* Fix success message in user preferences, add help text to toolbox filter page
+  `Pull Request 9368`_
+* CSS changes for a modern look and feel
+  (thanks to `@bedroesb <https://github.com/bedroesb>`__).
+  `Pull Request 9386`_
+* Added conda python update
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 9390`_
+* Replace editor grid image with css, add editor client unit tests
+  `Pull Request 9392`_
+* Vuefy interactive tools
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 9409`_
+* Add delta_frac for sim_size to specify relative file size differences
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9425`_
+* Make mutable_config_dir configurable + rename
+  `Pull Request 9444`_
+* Remove `virtualenv<20` requirement for mulled tests
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9447`_
+* Remove mapping related abstraction classes from workflow client, increase node header contrast
+  `Pull Request 9474`_
+* Add eslint rule to check for invalid slot specifications
+  `Pull Request 9481`_
+* Another undocumented option: job metrics path
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 9482`_
+* Document maxpctfull objecto store option
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 9498`_
+* Selenium Multi-History View
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 9505`_
+* Adjust dataset error reporting page, remove email option, remove long info text
+  `Pull Request 9508`_
+* Drop remaining Python 2.7 CircleCI tests
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9518`_
+* Implementation selenium test for user change password
+  (thanks to `@Realjuan <https://github.com/Realjuan>`__).
+  `Pull Request 9521`_
+* Rename and modify current_history_contents method
+  `Pull Request 9526`_
+* Improvement to the selenium test to change password from user preferences
+  (thanks to `@Realjuan <https://github.com/Realjuan>`__).
+  `Pull Request 9545`_
+* Implementation of Selenium test for signout from user preferences
+  (thanks to `@Realjuan <https://github.com/Realjuan>`__).
+  `Pull Request 9546`_
+* Move OSX startup tests to github CI, drop travis tests
+  `Pull Request 9563`_
+* Check if path is set before joining
+  `Pull Request 9568`_
+* Sort Tool Search Result by ranking
+  (thanks to `@juleengraham <https://github.com/juleengraham>`__).
+  `Pull Request 9579`_
+* TS performance fixes
+  `Pull Request 9580`_
+* Vuefy Job Destination Parameters
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 9583`_
+* Fix kubernetes test failures again
+  `Pull Request 9585`_
+* Enabled various object store types to store data objects by uuid.
+  (thanks to `@kxk302 <https://github.com/kxk302>`__).
+  `Pull Request 9609`_
+* Add IDs to admin links and selenium navigation.
+  `Pull Request 9616`_
+* Feature/refactor rule builder
+  (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
+  `Pull Request 9619`_
+* Add selenium test for admin toolshed operations.
+  `Pull Request 9628`_
+* Add unit tests for all schema-defined config properties
+  `Pull Request 9631`_
+* Officially allow adding new datatypes to the latest tagged release
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9632`_
+* Update the main readme with new Python version
+  `Pull Request 9635`_
+* Minor IT doc clarification
+  `Pull Request 9668`_
+* Enhance toolshed selenium test.
+  `Pull Request 9678`_
+* Optimize history_content union and filtering query
+  `Pull Request 9680`_
+* Add CSS class to messages in error report pages to make errors more visible
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 9690`_
+* Feature/3937 advanced search tooltip
+  (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
+  `Pull Request 9696`_
+
+.. small_enhancement
+
+* Rename function, params in ConfigSerializer
+  `Pull Request 9247`_
+* Make ``str.join()``\s more efficient
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9258`_
+* Faster and cleaner set creation
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9300`_
+* Remove broken script
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9302`_
+* Clean up old 'blue' style path, update documentation and samples
+  `Pull Request 9306`_
+* Consistent "import" of maketrans
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9351`_
+* Move schema loading/validating code out of config
+  `Pull Request 9371`_
+* Remove more duplication from TS, galaxy config
+  `Pull Request 9379`_
+* Unify default values used for delta (sim_size)
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9439`_
+* Vue slot refactoring
+  `Pull Request 9443`_
+* Move sanitize_whitelist into mutable_config_dir
+  `Pull Request 9455`_
+* Use auto_create functionality of ``get_private_user_role()``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9509`_
+* Combine selenium tests for creating and switching histories
+  `Pull Request 9527`_
+* Eslint one-var spec / airbnbstyle
+  `Pull Request 9532`_
+* unify usage of Popen
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9544`_
+* Prettier 2.0
+  `Pull Request 9552`_
+* Abstract ObjectStore interface implementation
+  `Pull Request 9554`_
+* Misc. refactoring of galaxy+TS config
+  `Pull Request 9582`_
+* Use PyGithub for issue creation
+  `Pull Request 9637`_
+* clean up code to use helper function instead
+  (thanks to `@lawrence14701 <https://github.com/lawrence14701>`__).
+  `Pull Request 9643`_
+* Respect retry-after header, raise on unexpected status codes
+  `Pull Request 9659`_
+* restore tool_util.deps.commands
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9707`_
+
+
+Fixes
+-------------------------------
+
+.. major_bug
+
+
+.. bug_tag_viz
+
+* Update charts entrypoint inclusion of dist artifacts
+  `Pull Request 9511`_
+
+.. bug_tag_datatypes
+
+* Python3 compatible SnpEff and SnpSift metadata detection
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 9282`_
+* Add PAF, GFA1 and odgi datatypes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9592`_
+* Add xg, vg and protobuf datatypes
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 9593`_
+* Fix gff3.gz and gff3.bz2 datatypes
+  `Pull Request 9731`_
+* Use right extension in bz2_to_uncompressed.xml
+  `Pull Request 9734`_
+* Fix disappearing datatypes after restart
+  `Pull Request 9835`_
+
+.. bug_tag_tools
+
+* fix error in bundled tool: shrimp_color_wrapper
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9665`_
+* extract_genomic_dna.py: import Comment, Header from bx.tabular.io instead of bx.intervals.io
+  (thanks to `@cat-bro <https://github.com/cat-bro>`__).
+  `Pull Request 9748`_
+* Move some tools that no longer need galaxy on the PATH
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9850`_
+
+.. bug_tag_workflows
+
+* Fix workflow list filtering dropdown
+  `Pull Request 9468`_
+* Fix workfow parameter connections and default values
+  `Pull Request 9648`_
+* Fix ChangeOutputDatatype being dropped on node update
+  `Pull Request 9676`_
+* Trigger onchange event, fixes tool version changes being lost
+  `Pull Request 9695`_
+* Input dataset module format filtering fix;
+  `Pull Request 9884`_
+
+.. bug_tag_ui
+
+* fix for python3 and GEDA, was getting "Connection closed at byte 0"
+  `Pull Request 9507`_
+* Checkbox bugfix
+  `Pull Request 9667`_
+
+.. bug_tag_jobs
+
+* Fix none type exception in provided metadata handling.
+  `Pull Request 9173`_
+* Handles floats correctly in ByteSize
+  (thanks to `@pcm32 <https://github.com/pcm32>`__).
+  `Pull Request 9418`_
+* unicodify message
+  (thanks to `@ieguinoa <https://github.com/ieguinoa>`__).
+  `Pull Request 9494`_
+* Fixes for embedded Pulsar with MQ (with tests)
+  `Pull Request 9519`_
+* Fix outputs written to storage despite outputs_to_working_directory
+  `Pull Request 9683`_
+* Fix collection mapping in extended metadata mode.
+  `Pull Request 9709`_
+* Force container image names to lower case to satisfy Docker
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 9733`_
+* Make watcher more resilient to missing files
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 9738`_
+* Improved exception handling for kubernetes runner
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 9751`_
+* Check dataset is accessible and use payload in job error API
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9753`_
+* Fix the cleanup condition when job state is OK and cleanup_job is set as "onsuccess'
+  (thanks to `@gmauro <https://github.com/gmauro>`__).
+  `Pull Request 9761`_
+* Migrate condor runner to jwd for job-files
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 9833`_
+* Fix incorrect variable assignment
+  `Pull Request 9907`_
+
+.. bug_tag_admin
+
+* Fix vue helper in admin router, fixes toolshed installation, avoids console errors
+  `Pull Request 9220`_
+* Fix default quota creation message.
+  `Pull Request 9479`_
+* Fix data manager table headers
+  `Pull Request 9480`_
+* Save integrated tool panel once on toolbox reload
+  `Pull Request 9487`_
+* Cannot find migrate directory for tools database
+  (thanks to `@phac-nml <https://github.com/phac-nml>`__).
+  `Pull Request 9699`_
+
+.. bug
+
+* Fix S3 issue discovered during admin training
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 7294`_
+* Make failing to load tools from a tool_dir non-fatal.
+  `Pull Request 9106`_
+* Fix incorrect reference to app
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 9159`_
+* Missing env in AskOmics IT
+  (thanks to `@xgaia <https://github.com/xgaia>`__).
+  `Pull Request 9177`_
+* Check return value of quick_load
+  `Pull Request 9185`_
+* Fix sending email error on python-3.7
+  (thanks to `@shenweiyan <https://github.com/shenweiyan>`__).
+  `Pull Request 9204`_
+* Properly quote paths in upload tool
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9222`_
+* Fix reference in workflows API docs
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9259`_
+* Fix target_str_to_targets
+  `Pull Request 9268`_
+* Do not test config_dir default value
+  `Pull Request 9288`_
+* Remove a dead symlink
+  (thanks to `@abretaud <https://github.com/abretaud>`__).
+  `Pull Request 9292`_
+* Fixes reports app under py3
+  `Pull Request 9305`_
+* Allow setting container path for docker_volumes
+  (thanks to `@AndreasSko <https://github.com/AndreasSko>`__).
+  `Pull Request 9310`_
+* Skip ``test_config_option[build_sites_config_file]``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9357`_
+* fix special characters in citation field
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 9373`_
+* Use ES6 function declaration to handle error response in workflow form
+  `Pull Request 9412`_
+* Fix first_startup Travis tests
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9423`_
+* Use a Galaxy root path with a space for converters and mulled tests
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9429`_
+* Fix ``test_run_simple()`` test broken on Python 2 by virtualenv 20.0.5
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9458`_
+* Use browser locale over global default
+  `Pull Request 9460`_
+* Fix login handling w/ redirects and user creation disabled.
+  `Pull Request 9462`_
+* Add missing `pygithub` dev-requirement
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9463`_
+* Drop manage_dependency_relationships option
+  `Pull Request 9465`_
+* fix options_filter_attribute: needs to be str
+  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+  `Pull Request 9466`_
+* History Dropdown Fix
+  `Pull Request 9469`_
+* Print error message if no action is selected in pgcleanup script
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9489`_
+* Drop custom json encoding for tool test API endpoint
+  (thanks to `@nvk747 <https://github.com/nvk747>`__).
+  `Pull Request 9496`_
+* Keep status code on message exception and history import/export fixes
+  `Pull Request 9500`_
+* Fixed tool locations
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 9512`_
+* Update the current_history method in navigates_galaxy.py
+  `Pull Request 9514`_
+* Free space before running tests
+  `Pull Request 9533`_
+* History import/export fixes
+  `Pull Request 9535`_
+* Retry reading tool conf on IOError
+  `Pull Request 9537`_
+* Fix citation ids and vue unit test in ToolsView
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 9538`_
+* Bump tensorflow from 1.12.2 to 1.15.2 in /lib/galaxy/dependencies
+  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+  `Pull Request 9540`_
+* Incremental indexing for tool shed whoosh indexes
+  `Pull Request 9541`_
+* fix documentation for data checksum attribute
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9543`_
+* Prevent exception in toolshed if userid is 'current'
+  `Pull Request 9548`_
+* Fix setting annotation that contains only integers
+  `Pull Request 9549`_
+* Fix docs to update conda from conda-forge
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9550`_
+* Disable workflow parameter switch for data inputs, augment form handling
+  `Pull Request 9551`_
+* Hide LDDA when creating collection in library interface
+  `Pull Request 9561`_
+* Fix indexing script
+  `Pull Request 9565`_
+* Assign random password in user manager if none specified
+  (thanks to `@nuwang <https://github.com/nuwang>`__, `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9587`_, `Pull Request 9851`_
+* Fix removal of workflow outputs from workflow nodes in editor
+  `Pull Request 9606`_
+* Fix ELIXIR AAI
+  (thanks to `@lecorguille <https://github.com/lecorguille>`__).
+  `Pull Request 9620`_
+* Fix tensorflow bug
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 9622`_
+* Change session timeout redirect URL to login entrypoint.
+  `Pull Request 9626`_
+* Changed CSS overflow property from scroll to hidden to make table scrollable
+  (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
+  `Pull Request 9627`_
+* fix links in Galaxy xsd docs
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9633`_
+* Fix `TypeError: OSError object is not subscriptable` under Python 3
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9640`_
+* Fix vcf_bgzip mimetype, allow cors, tbi from metadata element
+  `Pull Request 9653`_
+* Hide "python: not found" error when Python 2 is not installed
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9657`_
+* Fix for ``time.clock()`` removal in Python 3.8
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9666`_
+* Fixed an issue in object store integration tests
+  (thanks to `@kxk302 <https://github.com/kxk302>`__).
+  `Pull Request 9677`_
+* Plugin build hash bugfix
+  `Pull Request 9679`_
+* Backport auth process lock fix
+  `Pull Request 9681`_
+* Update documentation
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9693`_
+* Rename galaxy.util.logging to galaxy.util.custom_logging
+  `Pull Request 9705`_
+* Make collection import from library import into correct history
+  `Pull Request 9715`_
+* Fix workflow steps import feature in workflow editor
+  `Pull Request 9724`_
+* Fix custos credential fetching in python3
+  `Pull Request 9726`_
+* oidc-based authnz provider overhaul; breaking changes for keycloak
+  `Pull Request 9730`_
+* Sort Workflow list by last updated time instead of created time
+  `Pull Request 9740`_
+* Remove dummy tool sequence
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 9752`_
+* Switch to lxml for xml parsing
+  `Pull Request 9759`_
+* Set UTF-8 for parsing tool xml
+  (thanks to `@AndreasSko <https://github.com/AndreasSko>`__).
+  `Pull Request 9760`_
+* inputs config file generation depend on profile
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9776`_
+* Pass through IOError/OSError in tool_shed parse_xml
+  `Pull Request 9781`_
+* Maintain whitespace when parsing token from xml
+  `Pull Request 9815`_
+* Log exception if reading tool file failed unexpectedly
+  `Pull Request 9816`_
+* Drop custom in-process lock class
+  `Pull Request 9817`_
+* Update NoseHTML to 0.4.6 for Python 3.8 compatibility
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9821`_
+* Tolerate exception in container resolution
+  `Pull Request 9824`_
+* Invalidate tool cache when tool modified outside of Galaxy
+  `Pull Request 9866`_
+* Custos spec fixes
+  `Pull Request 9889`_
+* Fixes for flake8 3.8 and bugbear
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9896`_
+* Fix webpack import proxy prefix
+  `Pull Request 9898`_
+* Fix extra preference values leaking between requests
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 9913`_
+* Rewrite ``check_html()`` and ``Text.count_data_lines()`` to read a chunk of each line
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9920`_
+* Make cookie handling more robust
+  `Pull Request 9921`_
+* Enable regex validator to validate lists of values.
+  `Pull Request 9925`_
+* oidc: fix dict_keys does not support indexing
+  (thanks to `@almahmoud <https://github.com/almahmoud>`__).
+  `Pull Request 9931`_
+* Move the ``--debug`` flag after the conda subcommand
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9932`_
+
+.. include:: 20.05_prs.rst
+

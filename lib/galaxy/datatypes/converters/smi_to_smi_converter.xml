@@ -41,6 +41,17 @@
     <outputs>
         <data name="output" format="smi"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="smi" value="drugbank_drugs.smi"/>
+            <output name="output" ftype="smi">
+                <assert_contents>
+                    <has_text text="O=C(N1[C"/>
+                    <has_text text="Goserelin"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
     <help>
 <![CDATA[
 ]]>

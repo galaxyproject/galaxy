@@ -1,0 +1,4 @@
+reference:
+  class: Directory
+  path: bwa_mem2_index
+  filetype: bwa_mem2_index

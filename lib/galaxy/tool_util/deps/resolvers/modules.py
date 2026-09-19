@@ -6,22 +6,22 @@ This is a community contributed feature and the core Galaxy team does utilize
 it, hence support for it will be minimal. The Galaxy team eagerly welcomes
 community contribution and maintenance however.
 """
+
 import logging
+from io import StringIO
 from os import (
     environ,
-    pathsep
+    pathsep,
 )
 from os.path import (
     exists,
     isdir,
-    join
+    join,
 )
 from subprocess import (
     PIPE,
-    Popen
+    Popen,
 )
-
-from six import StringIO
 
 from . import (
     Dependency,
@@ -33,48 +33,58 @@ from . import (
 log = logging.getLogger(__name__)
 
 DEFAULT_MODULECMD_PATH = "modulecmd"  # Just check path
-DEFAULT_MODULE_PATH = '/usr/share/modules/modulefiles'
-DEFAULT_INDICATOR = '(default)'
+DEFAULT_MODULE_PATH = "/usr/share/modules/modulefiles"
+DEFAULT_INDICATOR = "(default)"
 DEFAULT_MODULE_PREFETCH = "true"
-DEFAULT_MAPPING_FILE = 'config/environment_modules_mapping.yml'
-UNKNOWN_FIND_BY_MESSAGE = "ModuleDependencyResolver does not know how to find modules by [%s], find_by should be one of %s"
+DEFAULT_MAPPING_FILE = "config/environment_modules_mapping.yml"
+UNKNOWN_FIND_BY_MESSAGE = (
+    "ModuleDependencyResolver does not know how to find modules by [%s], find_by should be one of %s"
+)
 
 
 class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
-    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['base_path', 'modulepath', 'modulecmd', 'prefetch', 'default_indicator', 'find_by']
+    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + [
+        "base_path",
+        "modulepath",
+        "modulecmd",
+        "prefetch",
+        "default_indicator",
+        "find_by",
+    ]
     resolver_type = "modules"
 
     def __init__(self, dependency_manager, **kwds):
         # Mapping file management
         self._set_default_mapping_file(kwds)
         self._setup_mapping(dependency_manager, **kwds)
-        self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
-        find_by = kwds.get('find_by', 'avail')
+        self.versionless = _string_as_bool(kwds.get("versionless", "false"))
+        find_by = kwds.get("find_by", "avail")
         self.find_by = find_by
-        prefetch = _string_as_bool(kwds.get('prefetch', DEFAULT_MODULE_PREFETCH))
-        self.modulecmd = kwds.get('modulecmd', DEFAULT_MODULECMD_PATH)
-        self.modulepath = kwds.get('modulepath', self.__default_modulespath())
-        self.default_indicator = kwds.get('default_indicator', DEFAULT_INDICATOR)
-        if find_by == 'directory':
+        prefetch = _string_as_bool(kwds.get("prefetch", DEFAULT_MODULE_PREFETCH))
+        self.modulecmd = kwds.get("modulecmd", DEFAULT_MODULECMD_PATH)
+        self.modulepath = kwds.get("modulepath", self.__default_modulespath())
+        self.default_indicator = kwds.get("default_indicator", DEFAULT_INDICATOR)
+        self.skip_availability_check = _string_as_bool(kwds.get("skip_availability_check", "false"))
+        if find_by == "directory":
             self.module_checker = DirectoryModuleChecker(self, self.modulepath, prefetch)
-        elif find_by == 'avail':
+        elif find_by == "avail":
             self.module_checker = AvailModuleChecker(self, self.modulepath, prefetch, self.default_indicator)
         else:
             raise Exception(UNKNOWN_FIND_BY_MESSAGE % (find_by, ["avail", "directory"]))
 
     def __default_modulespath(self):
-        if 'MODULEPATH' in environ:
-            module_path = environ['MODULEPATH']
-        elif 'MODULESHOME' in environ:
-            module_path = join(environ['MODULESHOME'], 'modulefiles')
+        if "MODULEPATH" in environ:
+            module_path = environ["MODULEPATH"]
+        elif "MODULESHOME" in environ:
+            module_path = join(environ["MODULESHOME"], "modulefiles")
         else:
             module_path = DEFAULT_MODULE_PATH
         return module_path
 
     def _set_default_mapping_file(self, resolver_attributes):
-        if 'mapping_files' not in resolver_attributes:
+        if "mapping_files" not in resolver_attributes:
             if exists(DEFAULT_MAPPING_FILE):
-                resolver_attributes['mapping_files'] = DEFAULT_MAPPING_FILE
+                resolver_attributes["mapping_files"] = DEFAULT_MAPPING_FILE
 
     def resolve(self, requirement, **kwds):
         requirement = self._expand_mappings(requirement)
@@ -82,6 +92,9 @@ class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
 
         if type != "package":
             return NullDependency(version=version, name=name)
+
+        if self.skip_availability_check:
+            return ModuleDependency(self, name, version, exact=True, dependency_resolver=self)
 
         if self.__has_module(name, version):
             return ModuleDependency(self, name, version, exact=True, dependency_resolver=self)
@@ -94,7 +107,7 @@ class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
         return self.module_checker.has_module(name, version)
 
 
-class DirectoryModuleChecker(object):
+class DirectoryModuleChecker:
     """Finds module by path.
 
     Searches the paths listed in modulepath to for a file or directory matching the module name.
@@ -104,7 +117,9 @@ class DirectoryModuleChecker(object):
         self.module_dependency_resolver = module_dependency_resolver
         self.directories = modulepath.split(pathsep)
         if prefetch:
-            log.warning("Created module dependency resolver with prefetch enabled, but directory module checker does not support this.")
+            log.warning(
+                "Created module dependency resolver with prefetch enabled, but directory module checker does not support this."
+            )
 
     def has_module(self, module, version):
         has_module = False
@@ -122,7 +137,7 @@ class DirectoryModuleChecker(object):
         return has_module
 
 
-class AvailModuleChecker(object):
+class AvailModuleChecker:
     """Finds modules by searching output of 'module avail'.
 
     Parses the Environment Modules 'module avail' output, splitting
@@ -164,8 +179,8 @@ class AvailModuleChecker(object):
             line_modules = line.split()
             for module in line_modules:
                 if module.endswith(self.default_indicator):
-                    module = module[0:-len(self.default_indicator)].strip()
-                module_parts = module.split('/')
+                    module = module[0 : -len(self.default_indicator)].strip()
+                module_parts = module.split("/")
                 module_version = None
                 if len(module_parts) == 2:
                     module_version = module_parts[1]
@@ -173,8 +188,8 @@ class AvailModuleChecker(object):
                 yield module_name, module_version
 
     def __module_avail_output(self):
-        avail_command = [self.module_dependency_resolver.modulecmd, 'sh', 'avail']
-        return Popen(avail_command, stderr=PIPE, env={'MODULEPATH': self.modulepath}).communicate()[1]
+        avail_command = [self.module_dependency_resolver.modulecmd, "sh", "avail"]
+        return Popen(avail_command, stderr=PIPE, env={"MODULEPATH": self.modulepath}).communicate()[1]
 
 
 class ModuleDependency(Dependency):
@@ -183,10 +198,17 @@ class ModuleDependency(Dependency):
     Using Environment Modules' 'modulecmd' (specifically 'modulecmd sh load') to
     convert module specifications into shell expressions for inclusion in
     the script used to run a tool in Galaxy."""
-    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['module_name', 'module_version', 'dependency_resolver']
-    dependency_type = 'module'
 
-    def __init__(self, module_dependency_resolver, module_name, module_version=None, exact=True, dependency_resolver=None):
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + [
+        "module_name",
+        "module_version",
+        "dependency_resolver",
+    ]
+    dependency_type = "module"
+
+    def __init__(
+        self, module_dependency_resolver, module_name, module_version=None, exact=True, dependency_resolver=None
+    ):
         self.module_dependency_resolver = module_dependency_resolver
         self.module_name = module_name
         self.module_version = module_version
@@ -206,12 +228,18 @@ class ModuleDependency(Dependency):
         return self._exact
 
     def shell_commands(self):
+        # Get the full module name in the form "tool_name/tool_version"
         module_to_load = self.module_name
         if self.module_version:
-            module_to_load = '%s/%s' % (self.module_name, self.module_version)
-        command = 'MODULEPATH=%s; export MODULEPATH; eval `%s sh load %s`' % (self.module_dependency_resolver.modulepath,
-                                                                              self.module_dependency_resolver.modulecmd,
-                                                                              module_to_load)
+            module_to_load = f"{self.module_name}/{self.module_version}"
+
+        # Build the list of command to add to run script
+        # Note that since "module" is actually a bash function, we are directy executing the underlying executable instead
+        # - Set and/or prepend the MODULEPATH environment variable
+        command = f"MODULEPATH={self.module_dependency_resolver.modulepath}${{MODULEPATH:+:${{MODULEPATH}}}}; "
+        command += "export MODULEPATH; "
+        # - Execute the "module load" command (or rather the "/path/to/module load" command)
+        command += f"eval `{self.module_dependency_resolver.modulecmd} sh load {module_to_load}`"
         return command
 
 
@@ -219,4 +247,4 @@ def _string_as_bool(value):
     return str(value).lower() == "true"
 
 
-__all__ = ('ModuleDependencyResolver', )
+__all__ = ("ModuleDependencyResolver",)

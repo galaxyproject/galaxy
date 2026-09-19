@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 import os
 import sys
@@ -9,11 +8,11 @@ from common import delete
 try:
     assert sys.argv[2]
 except IndexError:
-    print('usage: %s key url [purge (true/false)] ' % os.path.basename(sys.argv[0]))
+    print(f"usage: {os.path.basename(sys.argv[0])} key url [purge (true/false)] ")
     sys.exit(1)
 try:
     data = {}
-    data['purge'] = sys.argv[3]
+    data["purge"] = sys.argv[3]
 except IndexError:
     pass
 

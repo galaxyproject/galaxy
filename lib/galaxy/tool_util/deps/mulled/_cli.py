@@ -15,6 +15,4 @@ def arg_parser(argv, globals):
     return parser
 
 
-__all__ = (
-    "arg_parser",
-)
+__all__ = ("arg_parser",)

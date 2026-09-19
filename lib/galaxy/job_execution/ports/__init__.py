@@ -1,3 +1,3 @@
 from .view import JobPortsView
 
-__all__ = ('JobPortsView', )
+__all__ = ("JobPortsView",)

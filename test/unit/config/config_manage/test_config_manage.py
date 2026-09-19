@@ -1,37 +1,17 @@
-
 import os
 import shutil
 import tempfile
 
+import pytest
 import yaml
+from pykwalify.core import Core
+from pykwalify.errors import SchemaError
 
+from galaxy.config import GALAXY_CONFIG_SCHEMA_PATH
 from galaxy.config.config_manage import main
+from galaxy.config.schema import AppSchema
 
 THIS_DIR = os.path.dirname(__file__)
-
-
-def test_reports_conversion_1607_sample():
-    with _config_directory("1607_root_samples") as config_dir:
-        config_dir.manage_cli(["convert", "reports"])
-        config_dir.assert_not_exists("config/reports.ini")
-        config_dir.assert_is_yaml("config/reports.yml")
-        config_dir.assert_moved("config/reports.ini", "config/reports.ini.backup")
-        with config_dir.open("config/reports.yml") as f:
-            config = yaml.safe_load(f)
-        assert "reports" in config
-        reports_config = config["reports"] or {}
-        assert "use_beaker_session" not in reports_config
-
-        assert "uwsgi" in config
-        uwsgi_config = config["uwsgi"]
-        assert uwsgi_config["module"] == "galaxy.webapps.reports.buildapp:uwsgi_app()"
-
-
-def test_reports_build_sample():
-    with _config_directory("1607_root_samples") as config_dir:
-        config_dir.assert_not_exists("config/reports.yml.sample")
-        config_dir.manage_cli(["build_sample_yaml", "reports", "--add-comments"])
-        config_dir.assert_is_yaml("config/reports.yml.sample")
 
 
 def test_shed_conversion_1607_sample():
@@ -57,10 +37,7 @@ def test_shed_conversion_1607_prefix():
         config_dir.assert_moved("config/tool_shed.ini", "config/tool_shed.ini.backup")
         with config_dir.open("config/tool_shed.yml") as f:
             config = yaml.safe_load(f)
-        assert "uwsgi" in config
-        uwsgi_config = config["uwsgi"]
-        assert "module" not in uwsgi_config
-        assert uwsgi_config["mount"].startswith("/shed=tool_shed.webapp")
+        assert "uwsgi" not in config
 
 
 def test_allow_library_path_paste_conversion():
@@ -76,11 +53,6 @@ def test_allow_library_path_paste_conversion():
         assert galaxy_config["allow_path_paste"] is True
 
 
-def test_build_uwsgi_yaml():
-    with _config_directory("1607_root_samples") as config_dir:
-        config_dir.manage_cli(["build_uwsgi_yaml"])
-
-
 def test_validate_simple_config():
     with _config_directory("simple") as config_dir:
         config_dir.manage_cli(["validate", "galaxy"])
@@ -91,8 +63,38 @@ def test_validate_embedded_config():
         config_dir.manage_cli(["validate", "galaxy"])
 
 
-class _TestConfigDirectory(object):
+def test_validate_subdomain_switcher():
+    switcher = [
+        {"label": "Base site", "url": "https://usegalaxy.example.org"},
+        {"label": "Single Cell Omics", "url": "http://singlecell.usegalaxy.example.org/"},
+    ]
 
+    _validate_subdomain_switcher([])
+    _validate_subdomain_switcher(switcher)
+
+
+@pytest.mark.parametrize(
+    "site",
+    [
+        {"label": "", "url": "https://usegalaxy.example.org"},
+        {"label": "Base site", "url": "/relative/url"},
+        {"label": "Base site", "url": "ftp://usegalaxy.example.org"},
+        {"label": "Base site"},
+        {"url": "https://usegalaxy.example.org"},
+    ],
+)
+def test_reject_invalid_subdomain_switcher_entries(site):
+    with pytest.raises(SchemaError):
+        _validate_subdomain_switcher([site])
+
+
+def _validate_subdomain_switcher(value):
+    option_schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, "galaxy").app_schema["subdomain_switcher"].copy()
+    option_schema.pop("default")
+    Core(source_data=value, schema_data=option_schema).validate()
+
+
+class _TestConfigDirectory:
     def __init__(self, base_name):
         temp_directory = tempfile.mkdtemp()
         os.removedirs(temp_directory)
@@ -122,7 +124,7 @@ class _TestConfigDirectory(object):
         return open(os.path.join(self.temp_directory, path), *args)
 
     def assert_moved(self, from_path, to_path):
-        with open(os.path.join(self.source_dir, from_path), "r") as f:
+        with open(os.path.join(self.source_dir, from_path)) as f:
             source_contents = f.read()
 
         with self.open(to_path, "r") as f:

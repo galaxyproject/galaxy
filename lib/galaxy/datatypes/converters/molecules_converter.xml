@@ -1,0 +1,303 @@
+<tool id="CONVERTER_molecules" name="OpenBabel converter for molecular formats" version="2.4.1" profile="21.09">
+    <description></description>
+    <requirements>
+        <requirement type="package" version="2.4.1">openbabel</requirement>
+    </requirements>
+    <command><![CDATA[
+        obabel
+            -i$input.ext 
+            '${input}'
+            #if $__target_datatype__ == 'smi'
+                -ocan
+            #else
+                -o$__target_datatype__
+            #end if
+            -O '${output}'
+            -e 
+            2>&1
+        && cp '$ext_config' 'galaxy.json'
+    ]]></command>
+    <configfiles>
+        <configfile name="ext_config">{"output": {
+  "name": "$input.name converted to $__target_datatype__",
+  "ext": "$__target_datatype__"
+}}</configfile>
+    </configfiles>
+    <inputs>
+        <param name="input" type="data" format="cml,inchi,mol,mol2,sdf,smi" label="Molecules in CML, inchi, mol, mol2, sdf, smiles format"/>
+        <param name="__target_datatype__" type="select" label="Target data type">
+            <option value="cml">cml</option>
+            <option value="inchi">inchi</option>
+            <option value="mol2">mol2</option>
+            <option value="sdf">sdf</option>
+            <option value="smi">smiles</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="auto"/>
+    </outputs>
+    <tests>
+        <!-- to cml -->
+        <test>
+            <param name="input" ftype="inchi" value="drugbank_drugs.inchi"/>
+            <param name="__target_datatype__" value="cml"/>
+            <output name="output" ftype="cml">
+                <assert_contents>
+                    <is_valid_xml/>
+                    <has_text text="http://www.xml-cml.org/schema"/>
+                    <has_text text="xml version"/>
+                    <has_text text="atomArray"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="mol" value="chebi_57262.v3k.mol"/>
+            <param name="__target_datatype__" value="cml"/>
+            <output name="output" ftype="cml">
+                <assert_contents>
+                    <is_valid_xml/>
+                    <has_text text="http://www.xml-cml.org/schema"/>
+                    <has_text text="xml version"/>
+                    <has_text text="atomArray"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="mol2" value="drugbank_drugs.mol2"/>
+            <param name="__target_datatype__" value="cml"/>
+            <output name="output" ftype="cml">
+                <assert_contents>
+                    <is_valid_xml/>
+                    <has_text text="http://www.xml-cml.org/schema"/>
+                    <has_text text="xml version"/>
+                    <has_text text="atomArray"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="sdf" value="drugbank_drugs.sdf"/>
+            <param name="__target_datatype__" value="cml"/>
+            <output name="output" ftype="cml">
+                <assert_contents>
+                    <is_valid_xml/>
+                    <has_text text="http://www.xml-cml.org/schema"/>
+                    <has_text text="xml version"/>
+                    <has_text text="atomArray"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="smi" value="drugbank_drugs.smi"/>
+            <param name="__target_datatype__" value="cml"/>
+            <output name="output" ftype="cml">
+                <assert_contents>
+                    <is_valid_xml/>
+                    <has_text text="http://www.xml-cml.org/schema"/>
+                    <has_text text="xml version"/>
+                    <has_text text="atomArray"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- to inchi -->
+        <test>
+            <param name="input" ftype="cml" value="drugbank_drugs.cml"/>
+            <param name="__target_datatype__" value="inchi"/>
+            <output name="output" ftype="inchi">
+                <assert_contents>
+                    <has_text text="InChI="/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="mol" value="drugbank_drugs.mol"/>
+            <param name="__target_datatype__" value="inchi"/>
+            <output name="output" ftype="inchi">
+                <assert_contents>
+                    <has_text text="InChI="/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="mol2" value="drugbank_drugs.mol2"/>
+            <param name="__target_datatype__" value="inchi"/>
+            <output name="output" ftype="inchi">
+                <assert_contents>
+                    <has_text text="InChI="/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="sdf" value="drugbank_drugs.sdf"/>
+            <param name="__target_datatype__" value="inchi"/>
+            <output name="output" ftype="inchi">
+                <assert_contents>
+                    <has_text text="InChI="/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="smi" value="drugbank_drugs.smi"/>
+            <param name="__target_datatype__" value="inchi"/>
+            <output name="output" ftype="inchi">
+                <assert_contents>
+                    <has_text text="InChI="/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- to mol2 -->
+        <test>
+            <param name="input" ftype="cml" value="drugbank_drugs.cml"/>
+            <param name="__target_datatype__" value="mol2"/>
+            <output name="output" ftype="mol2">
+                <assert_contents>
+                    <has_text text="Desmopressin"/>
+                    <has_text text="BOND"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="inchi" value="drugbank_drugs.inchi"/>
+            <param name="__target_datatype__" value="mol2"/>
+            <output name="output" ftype="mol2">
+                <assert_contents>
+                    <has_text text="MOLECULE"/>
+                    <has_text text="BOND"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="mol" value="chebi_57262.v3k.mol"/>
+            <param name="__target_datatype__" value="mol2"/>
+            <output name="output" ftype="mol2">
+                <assert_contents>
+                    <has_text text="CHEBI:57262"/>
+                    <has_text text="BOND"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="sdf" value="drugbank_drugs.sdf"/>
+            <param name="__target_datatype__" value="mol2"/>
+            <output name="output" ftype="mol2">
+                <assert_contents>
+                    <has_text text="Goserelin"/>
+                    <has_text text="BOND"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="smi" value="drugbank_drugs.smi"/>
+            <param name="__target_datatype__" value="mol2"/>
+            <output name="output" ftype="mol2">
+                <assert_contents>
+                    <has_text text="Goserelin"/>
+                    <has_text text="BOND"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- to smiles -->
+        <test>
+            <param name="input" ftype="inchi" value="drugbank_drugs.inchi"/>
+            <param name="__target_datatype__" value="smi"/>
+            <output name="output" ftype="smi">
+                <assert_contents>
+                    <has_text text="OC[C@@H]"/>
+                    <has_text text="OC(=N)"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="mol" value="chebi_57262.v3k.mol"/>
+            <param name="__target_datatype__" value="smi"/>
+            <output name="output" ftype="smi">
+                <assert_contents>
+                    <has_text text="[2*]C(=O)"/>
+                    <has_text text="CHEBI:57262"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="mol2" value="drugbank_drugs.mol2"/>
+            <param name="__target_datatype__" value="smi"/>
+            <output name="output" ftype="smi">
+                <assert_contents>
+                    <has_text text="OC[C@H]"/>
+                    <has_text text="Goserelin"/>
+                    <has_text text="NC(=O)"/>
+                    <has_text text="Desmopressin"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="sdf" value="drugbank_drugs.sdf"/>
+            <param name="__target_datatype__" value="smi"/>
+            <output name="output" ftype="smi">
+                <assert_contents>
+                    <has_text text="OC[C"/>
+                    <has_text text="NC("/>
+                    <has_text text="Goserelin"/>
+                    <has_text text="Desmopressin"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- to sdf -->
+        <test>
+            <param name="input" ftype="cml" value="drugbank_drugs.cml"/>
+            <param name="__target_datatype__" value="sdf"/>
+            <output name="output" ftype="sdf">
+                <assert_contents>
+                    <has_text text="Goserelin"/>
+                    <has_text text="OpenBabel"/>
+                    <has_text text="$$$$"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="inchi" value="drugbank_drugs.inchi"/>
+            <param name="__target_datatype__" value="sdf"/>
+            <output name="output" ftype="sdf">
+                <assert_contents>
+                    <has_text text="OpenBabel"/>
+                    <has_text text="$$$$"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="mol" value="chebi_57262.v3k.mol"/>
+            <param name="__target_datatype__" value="sdf"/>
+            <output name="output" ftype="sdf">
+                <assert_contents>
+                    <has_text text="CHEBI:57262"/>
+                    <has_text text="OpenBabel"/>
+                    <has_text text="$$$$"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="mol2" value="drugbank_drugs.mol2"/>
+            <param name="__target_datatype__" value="sdf"/>
+            <output name="output" ftype="sdf">
+                <assert_contents>
+                    <has_text text="Goserelin"/>
+                    <has_text text="OpenBabel"/>
+                    <has_text text="$$$$"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" ftype="smi" value="drugbank_drugs.smi"/>
+            <param name="__target_datatype__" value="sdf"/>
+            <output name="output" ftype="sdf">
+                <assert_contents>
+                    <has_text text="Goserelin"/>
+                    <has_text text="OpenBabel"/>
+                    <has_text text="$$$$"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+<![CDATA[
+]]>
+    </help>
+</tool>

@@ -1,9 +1,13 @@
-"""The class defines the default stock Galaxy workflow reporting plugin
-"""
+"""The class defines the default stock Galaxy workflow reporting plugin"""
+
 import logging
 import string
+from typing import TYPE_CHECKING
 
-from ..generators import WorkflowMarkdownGeneratorPlugin
+from . import WorkflowMarkdownGeneratorPlugin
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesHistoryContext
 
 log = logging.getLogger(__name__)
 
@@ -30,11 +34,11 @@ workflow_display()
 class MarkdownWorkflowMarkdownReportGeneratorPlugin(WorkflowMarkdownGeneratorPlugin):
     plugin_type = "markdown"
 
-    def _generate_report_markdown(self, trans, invocation, runtime_report_config_json=None):
+    def _generate_report_markdown(self, trans: "ProvidesHistoryContext", invocation, runtime_report_config_json=None):
         reports_config = (invocation.workflow.reports_config or {}).copy()
         # TODO: more intelligent merge here.
         reports_config.update(runtime_report_config_json or {})
-        title = reports_config.get("title", "Workflow Execution Summary of %s" % invocation.workflow.stored_workflow.name)
+        title = reports_config.get("title", f"Workflow Execution Summary of {invocation.workflow.stored_workflow.name}")
         markdown = reports_config.get("markdown")
         if markdown is None:
             template_kwds = {"title": title}
@@ -43,4 +47,4 @@ class MarkdownWorkflowMarkdownReportGeneratorPlugin(WorkflowMarkdownGeneratorPlu
         return markdown
 
 
-__all__ = ('MarkdownWorkflowMarkdownReportGeneratorPlugin', )
+__all__ = ("MarkdownWorkflowMarkdownReportGeneratorPlugin",)

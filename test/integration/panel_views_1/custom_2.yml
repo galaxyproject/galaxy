@@ -1,0 +1,7 @@
+name: Filtered Test Section
+type: activity
+items:
+- type: section
+  id: test
+  excludes:
+  - tool_id: multi_data_optional

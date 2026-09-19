@@ -1,0 +1,66 @@
+####################################################################### 
+# 
+# This file contains crystal structure data downloaded from the 
+# Cambridge Structural Database (CSD) hosted by the Cambridge 
+# Crystallographic Data Centre (CCDC) in cooperation with FIZ Karlsruhe.
+# 
+# Please note that these data are only for research purposes or private use.
+# For detailed information please see under Terms & Conditions.
+# Full information about CCDC and FIZ Karlsruhe data access policies and 
+# citation guidelines are available at http://www.ccdc.cam.ac.uk/access/V1
+# 
+# Audit and citation data items may have been added by FIZ Karlsruhe. 
+# Please retain this information to preserve the provenance of 
+# this file and to allow appropriate attribution of the data. 
+# 
+#######################################################################
+
+data_150259-ICSD
+_database_code_depnum_ccdc_archive 'CCDC 1667441'
+loop_
+_citation_id
+_citation_doi
+_citation_year
+1 10.1006/jssc.2001.9440 2002
+_audit_update_record             
+;
+2018-02-27 deposited with the CCDC.	2024-01-08 downloaded from the CCDC.
+;
+_database_code_ICSD              150259
+_chemical_name_systematic        'Lanthanum Manganate'
+_chemical_formula_sum            'La1 Mn1 O3'
+_cell_length_a                   5.486
+_cell_length_b                   7.761
+_cell_length_c                   5.487
+_cell_angle_alpha                90
+_cell_angle_beta                 90
+_cell_angle_gamma                90.01
+_cell_volume                     233.62
+_cell_formula_units_Z            4
+_symmetry_space_group_name_H-M   'I 1 1 2/b'
+_symmetry_Int_Tables_number      15
+_symmetry_cell_setting           monoclinic
+_refine_ls_R_factor_all          0.03
+loop_
+_symmetry_equiv_pos_site_id
+_symmetry_equiv_pos_as_xyz
+1 '-x, -y+1/2, z'
+2 'x, y+1/2, -z'
+3 '-x, -y, -z'
+4 'x, y, z'
+5 '-x+1/2, -y, z+1/2'
+6 'x+1/2, y, -z+1/2'
+7 '-x+1/2, -y+1/2, -z+1/2'
+8 'x+1/2, y+1/2, z+1/2'
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+La1 La3+ 0 0.25 0.5052
+Mn1 Mn3+ 0 0 0
+O1 O2- 0 0.25 0.0015
+O2 O2- 0.2682 0.0015 0.2427
+
+#End of data_150259-ICSD

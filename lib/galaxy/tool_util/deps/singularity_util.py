@@ -1,20 +1,35 @@
 import os
+import shlex
+from typing import (
+    TYPE_CHECKING,
+)
 
-from six.moves import shlex_quote
+if TYPE_CHECKING:
+    from .container_volumes import DockerVolume
 
 DEFAULT_WORKING_DIRECTORY = None
 DEFAULT_SINGULARITY_COMMAND = "singularity"
+# --pid isolates the pid namespace. --ipc isolates
+# the ipc namespace, this fixes some issues with python multiprocessing.
+# --cleanenv makes sure the current environment is not inherited.
+DEFAULT_CLEANENV = True
+DEFAULT_IPC = True
+DEFAULT_PID = True
+DEFAULT_CONTAIN = True
+DEFAULT_NO_MOUNT = ["tmp"]
 DEFAULT_SUDO = False
 DEFAULT_SUDO_COMMAND = "sudo"
 DEFAULT_RUN_EXTRA_ARGUMENTS = None
 
 
-def pull_mulled_singularity_command(docker_image_identifier,
-                                    cache_directory,
-                                    namespace=None,
-                                    singularity_cmd=DEFAULT_SINGULARITY_COMMAND,
-                                    sudo=DEFAULT_SUDO,
-                                    sudo_cmd=DEFAULT_SUDO_COMMAND):
+def pull_mulled_singularity_command(
+    docker_image_identifier: str,
+    cache_directory: str,
+    namespace: str | None = None,
+    singularity_cmd: str = DEFAULT_SINGULARITY_COMMAND,
+    sudo: bool = DEFAULT_SUDO,
+    sudo_cmd: str = DEFAULT_SUDO_COMMAND,
+) -> list[str]:
     command_parts = []
     command_parts += _singularity_prefix(
         singularity_cmd=singularity_cmd,
@@ -23,33 +38,55 @@ def pull_mulled_singularity_command(docker_image_identifier,
     )
     save_path = docker_image_identifier
     if namespace:
-        prefix = "docker://quay.io/%s/" % namespace
+        prefix = f"docker://quay.io/{namespace}/"
         if docker_image_identifier.startswith(prefix):
-            save_path = docker_image_identifier[len(prefix):]
+            save_path = docker_image_identifier[len(prefix) :]
     command_parts.extend(["build", os.path.join(cache_directory, save_path), docker_image_identifier])
     return command_parts
 
 
+def pull_singularity_command(
+    image_identifier: str,
+    cache_path: str,
+    singularity_cmd: str = DEFAULT_SINGULARITY_COMMAND,
+    sudo: bool = DEFAULT_SUDO,
+    sudo_cmd: str = DEFAULT_SUDO_COMMAND,
+) -> list[str]:
+    # Make sure cache dir exists
+    dirname = os.path.dirname(os.path.normpath(cache_path))
+    os.makedirs(dirname, exist_ok=True)
+    command_parts = _singularity_prefix(singularity_cmd, sudo, sudo_cmd)
+    command_parts.extend(["build", cache_path, image_identifier])
+    return command_parts
+
+
 def build_singularity_run_command(
-    container_command,
-    image,
-    volumes=[],
-    env=[],
-    working_directory=DEFAULT_WORKING_DIRECTORY,
-    singularity_cmd=DEFAULT_SINGULARITY_COMMAND,
-    run_extra_arguments=DEFAULT_RUN_EXTRA_ARGUMENTS,
-    sudo=DEFAULT_SUDO,
-    sudo_cmd=DEFAULT_SUDO_COMMAND,
-    guest_ports=False,
-    container_name=None
-):
+    container_command: str,
+    image: str,
+    volumes: list["DockerVolume"] | None = None,
+    env: list[tuple[str, str]] | None = None,
+    working_directory: str | None = DEFAULT_WORKING_DIRECTORY,
+    singularity_cmd: str = DEFAULT_SINGULARITY_COMMAND,
+    run_extra_arguments: str | None = DEFAULT_RUN_EXTRA_ARGUMENTS,
+    sudo: bool = DEFAULT_SUDO,
+    sudo_cmd: str = DEFAULT_SUDO_COMMAND,
+    guest_ports: bool | list[str] = False,
+    container_name: str | None = None,
+    cleanenv: bool = DEFAULT_CLEANENV,
+    ipc: bool = DEFAULT_IPC,
+    pid: bool = DEFAULT_PID,
+    contain: bool = DEFAULT_CONTAIN,
+    no_mount: list[str] | None = DEFAULT_NO_MOUNT,
+) -> str:
+    volumes = volumes or []
+    env = env or []
     command_parts = []
     # http://singularity.lbl.gov/docs-environment-metadata
     home = None
-    for (key, value) in env:
-        if key == 'HOME':
+    for key, value in env:
+        if key == "HOME":
             home = value
-        command_parts.extend(["SINGULARITYENV_%s=%s" % (key, value)])
+        command_parts.extend([f'SINGULARITYENV_{key}="{value}"'])
     command_parts += _singularity_prefix(
         singularity_cmd=singularity_cmd,
         sudo=sudo,
@@ -57,24 +94,37 @@ def build_singularity_run_command(
     )
     command_parts.append("-s")
     command_parts.append("exec")
+
+    if contain:
+        command_parts.append("--contain")
+    if working_directory:
+        command_parts.extend(["--pwd", shlex.quote(working_directory)])
+    if cleanenv:
+        command_parts.append("--cleanenv")
+    if ipc:
+        command_parts.append("--ipc")
+    if pid:
+        command_parts.append("--pid")
+    if no_mount:
+        command_parts.extend(["--no-mount", ",".join(no_mount)])
     for volume in volumes:
         command_parts.extend(["-B", str(volume)])
     if home is not None:
-        command_parts.extend(["--home", "%s:%s" % (home, home)])
+        command_parts.extend(["--home", f"{home}:{home}"])
     if run_extra_arguments:
         command_parts.append(run_extra_arguments)
     full_image = image
-    command_parts.append(shlex_quote(full_image))
+    command_parts.append(shlex.quote(full_image))
     command_parts.append(container_command)
     return " ".join(command_parts)
 
 
 def _singularity_prefix(
-    singularity_cmd=DEFAULT_SINGULARITY_COMMAND,
-    sudo=DEFAULT_SUDO,
-    sudo_cmd=DEFAULT_SUDO_COMMAND,
-    **kwds
-):
+    singularity_cmd: str = DEFAULT_SINGULARITY_COMMAND,
+    sudo: bool = DEFAULT_SUDO,
+    sudo_cmd: str = DEFAULT_SUDO_COMMAND,
+    **kwds,
+) -> list[str]:
     """Prefix to issue a singularity command."""
     command_parts = []
     if sudo:
@@ -83,4 +133,4 @@ def _singularity_prefix(
     return command_parts
 
 
-__all__ = ("build_singularity_run_command", "pull_mulled_singularity_command")
+__all__ = ("build_singularity_run_command", "pull_mulled_singularity_command", "pull_singularity_command")

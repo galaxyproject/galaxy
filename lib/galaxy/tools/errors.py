@@ -1,6 +1,7 @@
 """
 Functionality for dealing with tool errors.
 """
+
 import string
 
 import markupsafe
@@ -8,8 +9,8 @@ import markupsafe
 from galaxy import (
     model,
     util,
-    web
 )
+from galaxy.security.validate_user_input import validate_email_str
 from galaxy.util import unicodify
 
 error_report_template = """
@@ -19,7 +20,7 @@ GALAXY TOOL ERROR REPORT
 This error report was sent from the Galaxy instance hosted on the server
 "${host}"
 -----------------------------------------------------------------------------
-This is in reference to dataset id ${dataset_id} (${dataset_id_encoded}) from history id ${history_id} (${history_id_encoded})
+This is in reference to dataset id ${dataset_id_encoded} from history id ${history_id_encoded}
 -----------------------------------------------------------------------------
 You should be able to view the history containing the related history item (${hda_id_encoded})
 
@@ -35,7 +36,7 @@ The user ${email_str} provided the following information:
 ${message}
 -----------------------------------------------------------------------------
 info url: ${hda_show_params_link}
-job id: ${job_id} (${job_id_encoded})
+job id: ${job_id_encoded}
 tool id: ${job_tool_id}
 tool version: ${tool_version}
 job pid or drm id: ${job_runner_external_id}
@@ -68,8 +69,8 @@ error_report_template_html = """
 <h3>Error Localization</h3>
 <table style="margin:1em">
     <tbody>
-        <tr><td>Dataset</td><td><a href="${hda_show_params_link}">${dataset_id} (${dataset_id_encoded})</a></td></tr>
-        <tr style="background-color: #f2f2f2"><td>History</td><td><a href="${history_view_link}">${history_id} (${history_id_encoded})</a></td></tr>
+        <tr><td>Dataset</td><td><a href="${hda_show_params_link}">${dataset_id_encoded}</a></td></tr>
+        <tr style="background-color: #f2f2f2"><td>History</td><td><a href="${history_view_link}">${history_id_encoded}</a></td></tr>
         <tr><td>Failed Job</td><td>${hid}: ${history_item_name} (${hda_id_encoded})</td></tr>
     </tbody>
 </table>
@@ -89,7 +90,7 @@ Job environment and execution information is available at the job <a href="${hda
 
 <table style="margin:1em">
     <tbody>
-        <tr><td>Job ID</td><td>${job_id} (${job_id_encoded})</td></tr>
+        <tr><td>Job ID</td><td>${job_id_encoded}</td></tr>
         <tr style="background-color: #f2f2f2"><td>Tool ID</td><td>${job_tool_id}</td></tr>
         <tr><td>Tool Version</td><td>${tool_version}</td></tr>
         <tr style="background-color: #f2f2f2"><td>Job PID or DRM id</td><td>${job_runner_external_id}</td></tr>
@@ -129,18 +130,18 @@ This is an automated message. Do not reply to this address.
 """
 
 
-class ErrorReporter(object):
+class ErrorReporter:
     def __init__(self, hda, app):
         # Get the dataset
         sa_session = app.model.context
         if not isinstance(hda, model.HistoryDatasetAssociation):
             hda_id = hda
             try:
-                hda = sa_session.query(model.HistoryDatasetAssociation).get(hda_id)
+                hda = sa_session.get(model.HistoryDatasetAssociation, hda_id)
                 assert hda is not None, ValueError("No HDA yet")
             except Exception:
-                hda = sa_session.query(model.HistoryDatasetAssociation).get(app.security.decode_id(hda_id))
-        assert isinstance(hda, model.HistoryDatasetAssociation), ValueError("Bad value provided for HDA (%s)." % (hda))
+                hda = sa_session.get(model.HistoryDatasetAssociation, app.security.decode_id(hda_id))
+        assert isinstance(hda, model.HistoryDatasetAssociation), ValueError(f"Bad value provided for HDA ({hda}).")
         self.hda = hda
         # Get the associated job
         self.job = hda.creating_job
@@ -155,14 +156,16 @@ class ErrorReporter(object):
             roles = []
         return self.app.security_agent.can_access_dataset(roles, self.hda.dataset)
 
-    def create_report(self, user, email='', message='', redact_user_details_in_bugreport=False, **kwd):
+    def create_report(self, user, email="", message="", redact_user_details_in_bugreport=False, **kwd):
         hda = self.hda
         job = self.job
-        host = web.url_for('/', qualified=True)
+        host = self.app.url_for("/", qualified=True)
         history_id_encoded = self.app.security.encode_id(hda.history_id)
-        history_view_link = web.url_for("/histories/view", id=history_id_encoded, qualified=True)
+        history_view_link = self.app.url_for("/histories/view", id=history_id_encoded, qualified=True)
         hda_id_encoded = self.app.security.encode_id(hda.id)
-        hda_show_params_link = web.url_for(controller="dataset", action="show_params", dataset_id=hda_id_encoded, qualified=True)
+        hda_show_params_link = self.app.url_for(
+            controller="dataset", action="details", dataset_id=hda_id_encoded, qualified=True
+        )
         # Build the email message
         if redact_user_details_in_bugreport:
             # This is sub-optimal but it is hard to solve fully. This affects
@@ -178,30 +181,27 @@ class ErrorReporter(object):
             # the bug reporter (and preventing information about the bug
             # reporter from leaving the EU until it hits email directly to the
             # user.)
-            email_str = 'redacted'
+            email_str = "redacted"
             if user:
-                email_str += ' (user: %s)' % user.id
+                email_str += f" (user: {user.id})"
         else:
             if user:
-                email_str = "'%s'" % user.email
+                email_str = f"'{user.email}'"
                 if email and user.email != email:
-                    email_str += " (providing preferred contact email '%s')" % email
+                    email_str += f" (providing preferred contact email '{email}')"
             else:
-                email_str = "'%s'" % (email or 'anonymous')
+                email_str = "'%s'" % (email or "anonymous")
 
         report_variables = dict(
             host=host,
             dataset_id_encoded=self.app.security.encode_id(hda.dataset_id),
-            dataset_id=hda.dataset_id,
             history_id_encoded=history_id_encoded,
-            history_id=hda.history_id,
             hda_id_encoded=hda_id_encoded,
             hid=hda.hid,
             history_item_name=hda.get_display_name(),
             history_view_link=history_view_link,
             hda_show_params_link=hda_show_params_link,
             job_id_encoded=self.app.security.encode_id(job.id),
-            job_id=job.id,
             tool_version=job.tool_version,
             job_tool_id=job.tool_id,
             job_tool_version=hda.tool_version,
@@ -212,7 +212,7 @@ class ErrorReporter(object):
             job_info=util.unicodify(job.info),
             job_traceback=util.unicodify(job.traceback),
             email_str=email_str,
-            message=util.unicodify(message)
+            message=util.unicodify(message),
         )
 
         self.report = string.Template(error_report_template).safe_substitute(report_variables)
@@ -237,23 +237,25 @@ class EmailErrorReporter(ErrorReporter):
     def _send_report(self, user, email=None, message=None, **kwd):
         smtp_server = self.app.config.smtp_server
         assert smtp_server, ValueError("Mail is not configured for this Galaxy instance")
-        to_address = self.app.config.error_email_to
-        assert to_address, ValueError("Error reporting has been disabled for this Galaxy instance")
+        to = self.app.config.error_email_to
+        assert to, ValueError("Error reporting has been disabled for this Galaxy instance")
 
-        frm = to_address
-        # Check email a bit
-        email = email or ''
-        email = email.strip()
-        parts = email.split()
-        if len(parts) == 1 and len(email) > 0 and self._can_access_dataset(user):
-            to = to_address + ", " + email
-        else:
-            to = to_address
-        subject = "Galaxy tool error report from %s" % email
+        error_msg = validate_email_str(email)
+        if not error_msg and self._can_access_dataset(user):
+            to += f", {email.strip()}"
+        subject = f"Galaxy tool error report from {email}"
         try:
-            subject = "%s (%s)" % (subject, self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id)
+            subject = f"{subject} ({self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id})"
         except Exception:
             pass
 
-        # Send it
-        return util.send_mail(frm, to, subject, self.report, self.app.config, html=self.html_report)
+        reply_to = user.email if user else None
+        return util.send_mail(
+            self.app.config.email_from,
+            to,
+            subject,
+            self.report,
+            self.app.config,
+            html=self.html_report,
+            reply_to=reply_to,
+        )

@@ -1,20 +1,18 @@
-import unittest
+from .framework import (
+    selenium_test,
+    SeleniumTestCase,
+)
 
-from .framework import selenium_test, SeleniumTestCase
 
-
-class ToolDescribingToursTestCase(SeleniumTestCase):
-
+class TestToolDescribingTours(SeleniumTestCase):
     def setUp(self):
-        super(ToolDescribingToursTestCase, self).setUp()
+        super().setUp()
         self.home()
 
     @selenium_test
     def test_generate_tour_no_data(self):
         """Ensure a tour without data is generated and pops up."""
-        self._ensure_tdt_available()
-
-        self.tool_open('environment_variables')
+        self.tool_open("environment_variables")
 
         self.tool_form_generate_tour()
 
@@ -31,12 +29,8 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
     @selenium_test
     def test_generate_tour_with_data(self):
         """Ensure a tour with data populates history."""
-        self._ensure_tdt_available()
-
-        self.tool_open('md5sum')
-
+        self.tool_open("md5sum")
         self.tool_form_generate_tour()
-
         self.history_panel_wait_for_hid_ok(1)
 
         popover_component = self.components.tour.popover._
@@ -47,7 +41,6 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
         self.screenshot("tool_describing_tour_0_start")
 
         popover_component.next.wait_for_and_click()
-
         self.sleep_for(self.wait_types.UX_RENDER)
 
         text = popover_component.content.wait_for_visible().text
@@ -55,7 +48,6 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
         self.screenshot("tool_describing_tour_1_select")
 
         popover_component.next.wait_for_and_click()
-
         self.sleep_for(self.wait_types.UX_RENDER)
 
         title = popover_component.title.wait_for_visible().text
@@ -70,11 +62,23 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
         self.history_panel_wait_for_hid_ok(2)
         self.screenshot("tool_describing_tour_3_after_execute")
 
-    def _ensure_tdt_available(self):
-        """ Skip a test if the webhook TDT doesn't appear. """
-        response = self.api_get('webhooks', raw=True)
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        webhooks = [x['id'] for x in data]
-        if 'tour_generator' not in webhooks:
-            raise unittest.SkipTest('Skipping test, webhook "Tool-Describing-Tours" doesn\'t appear to be configured.')
+    @selenium_test
+    def test_generate_tour_boolean_conditional(self):
+        self.tool_open("gx_conditional_boolean")
+        self.tool_form_generate_tour()
+        popover_component = self.components.tour.popover._
+        popover_component.wait_for_visible()
+
+        # Intro step: advance to the outer conditional step.
+        popover_component.next.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # Advance to the inner boolean_parameter case step.
+        popover_component.next.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        # tests[0] specifies boolean_parameter="true" → tour should render "Yes".
+        text = popover_component.content.wait_for_visible().text
+        assert "Yes" in text, text
+
+        popover_component.end.wait_for_and_click()
+        popover_component.wait_for_absent_or_hidden()

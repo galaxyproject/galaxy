@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 270" width="680" height="270">
+  <defs>
+    <filter id="shadow" x="-4%" y="-4%" width="110%" height="110%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+      <feComponentTransfer in="blur">
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+    </marker>
+  </defs>
+
+  <!-- Left top: forward datasets -->
+  <rect x="10" y="10" width="190" height="105" rx="8" ry="8" fill="#fef3e2" stroke="#d4760a" stroke-width="1" filter="url(#shadow)"/>
+  <text x="105" y="28" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#d4760a">Forward datasets</text>
+
+  <rect x="22" y="36" width="166" height="20" rx="4" ry="4" fill="#fff" stroke="#d4760a" stroke-width="0.5"/>
+  <text x="105" y="51" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#d4760a">sample1_R1.fastq</text>
+
+  <rect x="22" y="62" width="166" height="20" rx="4" ry="4" fill="#fff" stroke="#d4760a" stroke-width="0.5"/>
+  <text x="105" y="77" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#d4760a">sample2_R1.fastq</text>
+
+  <rect x="22" y="88" width="166" height="20" rx="4" ry="4" fill="#fff" stroke="#d4760a" stroke-width="0.5"/>
+  <text x="105" y="103" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#d4760a">sample3_R1.fastq</text>
+
+  <!-- Left bottom: reverse datasets -->
+  <rect x="10" y="135" width="190" height="105" rx="8" ry="8" fill="#f0e8f5" stroke="#7b4fa0" stroke-width="1" filter="url(#shadow)"/>
+  <text x="105" y="153" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#7b4fa0">Reverse datasets</text>
+
+  <rect x="22" y="161" width="166" height="20" rx="4" ry="4" fill="#fff" stroke="#7b4fa0" stroke-width="0.5"/>
+  <text x="105" y="176" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#7b4fa0">sample1_R2.fastq</text>
+
+  <rect x="22" y="187" width="166" height="20" rx="4" ry="4" fill="#fff" stroke="#7b4fa0" stroke-width="0.5"/>
+  <text x="105" y="202" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#7b4fa0">sample2_R2.fastq</text>
+
+  <rect x="22" y="213" width="166" height="20" rx="4" ry="4" fill="#fff" stroke="#7b4fa0" stroke-width="0.5"/>
+  <text x="105" y="228" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#7b4fa0">sample3_R2.fastq</text>
+
+  <!-- Arrow -->
+  <line x1="215" y1="130" x2="400" y2="130" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="308" y="120" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#555">Zip</text>
+
+  <!-- Right: paired collection -->
+  <rect x="420" y="10" width="250" height="250" rx="8" ry="8" fill="#d9ead3" stroke="#888" stroke-width="1" filter="url(#shadow)"/>
+  <text x="545" y="28" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#333">Paired collection</text>
+
+  <!-- Pair: sample1 -->
+  <rect x="432" y="38" width="226" height="56" rx="6" ry="6" fill="#e8f0e3" stroke="#aaa" stroke-width="0.7"/>
+  <text x="460" y="53" font-family="sans-serif" font-size="10" font-weight="bold" fill="#555">sample1</text>
+
+  <rect x="444" y="57" width="202" height="14" rx="3" ry="3" fill="#fef3e2" stroke="#d4760a" stroke-width="0.5"/>
+  <text x="545" y="68" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#d4760a">forward</text>
+
+  <rect x="444" y="74" width="202" height="14" rx="3" ry="3" fill="#f0e8f5" stroke="#7b4fa0" stroke-width="0.5"/>
+  <text x="545" y="85" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#7b4fa0">reverse</text>
+
+  <!-- Pair: sample2 -->
+  <rect x="432" y="102" width="226" height="56" rx="6" ry="6" fill="#e8f0e3" stroke="#aaa" stroke-width="0.7"/>
+  <text x="460" y="117" font-family="sans-serif" font-size="10" font-weight="bold" fill="#555">sample2</text>
+
+  <rect x="444" y="121" width="202" height="14" rx="3" ry="3" fill="#fef3e2" stroke="#d4760a" stroke-width="0.5"/>
+  <text x="545" y="132" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#d4760a">forward</text>
+
+  <rect x="444" y="138" width="202" height="14" rx="3" ry="3" fill="#f0e8f5" stroke="#7b4fa0" stroke-width="0.5"/>
+  <text x="545" y="149" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#7b4fa0">reverse</text>
+
+  <!-- Pair: sample3 -->
+  <rect x="432" y="166" width="226" height="56" rx="6" ry="6" fill="#e8f0e3" stroke="#aaa" stroke-width="0.7"/>
+  <text x="460" y="181" font-family="sans-serif" font-size="10" font-weight="bold" fill="#555">sample3</text>
+
+  <rect x="444" y="185" width="202" height="14" rx="3" ry="3" fill="#fef3e2" stroke="#d4760a" stroke-width="0.5"/>
+  <text x="545" y="196" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#d4760a">forward</text>
+
+  <rect x="444" y="202" width="202" height="14" rx="3" ry="3" fill="#f0e8f5" stroke="#7b4fa0" stroke-width="0.5"/>
+  <text x="545" y="213" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#7b4fa0">reverse</text>
+
+  <text x="545" y="245" text-anchor="middle" font-family="sans-serif" font-size="10" font-style="italic" fill="#666">matched by position</text>
+
+</svg>

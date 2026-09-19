@@ -1,196 +1,342 @@
 """
-Module for building and searching the index of tools
-installed within this Galaxy. Before changing index-building
-or searching related parts it is deeply recommended to read
-through the library docs at https://whoosh.readthedocs.io.
+Module for building and searching the index of installed tools.
+
+Before changing index-building or searching related parts it is highly
+recommended to read the docs at https://whoosh.readthedocs.io.
+
+Schema - this is how we define the index, both for building and searching. A
+    field is created for each data element that we want to add e.g. tool name,
+    tool ID, description. The type of field and its attributes define how
+    entries for that field will be indexed and ultimately how they can be
+    searched. Score weighting (boost) is added here on a per-field bases, to
+    allow matches to important fields like "name" to receive a higher score.
+
+Tokenizers - these take an attribute (e.g. name) and parse it into "tokens" to
+    be stored in the index. Can be done in many ways for different search
+    functionality. For example, the IDTokenizer creates one token for an entire
+    entry, resulting in an index field that requires a full-field match. The
+    default tokenizer will break an entry into words, so that single word
+    matches are possible.
+
+Filters - various filters are available for processing content as the index is
+    built. A StopFilter removes common articles 'a', 'for', 'and' etc. A
+    StemmingFilter removes suffixes from words to create a 'base work' e.g.
+    stemming -> stem; opened -> open; philosophy -> philosoph.
+
 """
+
 import logging
 import os
-import re
+import shutil
+import threading
+from typing import (
+    Protocol,
+    runtime_checkable,
+    TYPE_CHECKING,
+)
 
-from whoosh import (
-    analysis,
-    index,
-)
-from whoosh.analysis import StandardAnalyzer
-from whoosh.fields import (
-    ID,
-    KEYWORD,
-    Schema,
-    TEXT
-)
-from whoosh.qparser import MultifieldParser
-from whoosh.qparser import OrGroup
-from whoosh.scoring import BM25F
+from whoosh import index
+from whoosh.fields import Schema
 from whoosh.writing import AsyncWriter
 
+from galaxy.config import GalaxyAppConfiguration
+from galaxy.tools.source_store.search import (
+    build_search_document,
+    build_search_schema,
+    search_whoosh_index,
+    ToolSearchTuning,
+    ToolWhooshIndex,
+)
 from galaxy.util import ExecutionTimer
-from galaxy.web.framework.helpers import to_unicode
+
+if TYPE_CHECKING:
+    from galaxy.tool_util.toolbox.views.interface import ToolPanelViewModel
+    from galaxy.tools import (
+        Tool,
+        ToolBox,
+    )
+    from galaxy.tools.cache import ToolCache
+    from galaxy.tools.source_store.index import ToolIndex
+    from galaxy.util.path import StrPath
 
 log = logging.getLogger(__name__)
 
+CanConvertToFloat = str | int | float
+CanConvertToInt = str | int | float
 
-def get_or_create_index(index_dir, schema):
-    if not os.path.exists(index_dir):
-        os.makedirs(index_dir)
+
+def get_or_create_index(index_dir: "StrPath", schema: Schema) -> index.FileIndex:
+    """Get or create a reference to the index."""
+    os.makedirs(index_dir, exist_ok=True)
     if index.exists_in(index_dir):
         idx = index.open_dir(index_dir)
-        try:
-            assert idx.schema == schema
+        if idx.schema == schema:
             return idx
-        except AssertionError:
-            log.warning("Index at '%s' uses outdated schema, creating new index", index_dir)
+    log.warning(f"Index at '{index_dir}' uses outdated schema, creating a new index")
+
+    # Delete the old index and return a new index reference
+    shutil.rmtree(index_dir)
+    os.makedirs(index_dir)
     return index.create_in(index_dir, schema=schema)
 
 
-class ToolBoxSearch(object):
-    """
-    Support searching tools in a toolbox. This implementation uses
-    the Whoosh search library.
+class ToolBoxSearch:
+    """Support searching across all fixed panel views in a toolbox.
+
+    Search is delegated off to ToolPanelViewSearch for each panel object.
     """
 
-    def __init__(self, toolbox, index_dir=None, index_help=True):
-        self.schema = Schema(id=ID(stored=True),
-                             stub=KEYWORD,
-                             name=TEXT(analyzer=analysis.SimpleAnalyzer()),
-                             description=TEXT,
-                             section=TEXT,
-                             help=TEXT,
-                             labels=KEYWORD)
-        self.rex = analysis.RegexTokenizer()
-        self.index_dir = index_dir
-        self.toolbox = toolbox
-        self.index = self._index_setup()
+    def __init__(self, toolbox: "ToolBox", index_dir: str, index_help: bool = True) -> None:
+        panel_searches: dict[str, ToolPanelViewSearch] = {}
+        for panel_view in toolbox.panel_views():
+            panel_view_id = panel_view.id
+            panel_index_dir = os.path.join(index_dir, panel_view_id)
+            panel_searches[panel_view_id] = ToolPanelViewSearch(
+                panel_view_id,
+                panel_index_dir,
+                index_help=index_help,
+                config=toolbox.app.config,
+            )
+        self.panel_searches = panel_searches
         # We keep track of how many times the tool index has been rebuilt.
         # We start at -1, so that after the first index the count is at 0,
         # which is the same as the toolbox reload count. This way we can skip
         # reindexing if the index count is equal to the toolbox reload count.
         self.index_count = -1
 
-    def _index_setup(self):
-        return get_or_create_index(index_dir=self.index_dir, schema=self.schema)
-
-    def build_index(self, tool_cache, index_help=True):
-        """
-        Prepare search index for tools loaded in toolbox.
-        Use `tool_cache` to determine which tools need indexing and which tools should be expired.
-        """
-        log.debug('Starting to build toolbox index.')
+    def build_index(self, tool_cache: "ToolCache", toolbox: "ToolBox", index_help: bool = True) -> None:
         self.index_count += 1
+        for panel_search in self.panel_searches.values():
+            panel_search.build_index(tool_cache, toolbox, index_help=index_help)
+
+    def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
+        if panel_view not in self.panel_searches:
+            raise KeyError(f"Unknown panel_view specified {panel_view}")
+        panel_search = self.panel_searches[panel_view]
+        return panel_search.search(q, config)
+
+
+@runtime_checkable
+class SupportsCachedSearch(Protocol):
+    """The toolbox surface :class:`CachedToolboxSearch` consumes."""
+
+    @property
+    def tool_index(self) -> "ToolIndex | None": ...
+
+    def panel_views(self) -> "list[ToolPanelViewModel]": ...
+
+    def panel_view_tool_ids(self, panel_view_id: str) -> set[str]: ...
+
+
+class CachedToolboxSearch(ToolBoxSearch):
+    """Build one metadata-only Whoosh corpus per rendered panel view."""
+
+    def __init__(self, config: GalaxyAppConfiguration, toolbox: SupportsCachedSearch | None = None) -> None:
+        self.config = config
+        self._toolbox: SupportsCachedSearch | None = None
+        self.cached_panel_searches: dict[str, ToolWhooshIndex] = {}
+        self._panel_view_ids: set[str] = set()
+        self.index_count = -1
+        # ``reindex_tool_search`` reaches ``build_index`` concurrently from
+        # boot, the ``rebuild_toolbox_search_index`` control task, and
+        # ``remove_tool_by_id`` — all writing the same on-disk Whoosh dirs.
+        # Two builds racing there corrupt each other: one thread's
+        # ``ToolWhooshIndex._open`` can ``create_in``/``rmtree`` a dir another
+        # thread is mid-write on, surfacing as ``whoosh.index.LockError`` or a
+        # fatal ``FileNotFoundError`` on the segment TOC (observed killing
+        # TestCachedDataManagerIntegration setup in CI). Serialize the whole
+        # build so only one rebuild touches the index dirs at a time.
+        self._build_lock = threading.RLock()
+        if toolbox is not None:
+            self._sync_panel_searches(toolbox)
+
+    def build_index(self, tool_cache: "ToolCache", toolbox: "ToolBox", index_help: bool = True) -> None:
+        cached_toolbox = self._require_search_toolbox(toolbox)
+        with self._build_lock:
+            self._sync_panel_searches(cached_toolbox)
+            tool_index = cached_toolbox.tool_index
+            if tool_index is not None:
+                for panel_view_id, searcher in self.cached_panel_searches.items():
+                    searcher.build(tool_index, cached_toolbox.panel_view_tool_ids(panel_view_id))
+            self.index_count += 1
+
+    def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
+        if panel_view not in self._panel_view_ids:
+            raise KeyError(f"Unknown panel_view specified {panel_view}")
+        if not config.tool_search_index_dir:
+            return []
+        return self.cached_panel_searches[panel_view].search(q, limit=None)
+
+    def _sync_panel_searches(self, toolbox: SupportsCachedSearch) -> None:
+        self._toolbox = toolbox
+        panel_view_ids = {panel_view.id for panel_view in toolbox.panel_views()}
+        self._panel_view_ids = panel_view_ids
+        if not self.config.tool_search_index_dir:
+            self.cached_panel_searches = {}
+            return
+        tuning = ToolSearchTuning.from_config(self.config)
+        self.cached_panel_searches = {
+            panel_view_id: ToolWhooshIndex(
+                index_dir=os.path.join(self.config.tool_search_index_dir, panel_view_id),
+                tuning=tuning,
+            )
+            for panel_view_id in panel_view_ids
+        }
+
+    @staticmethod
+    def _require_search_toolbox(toolbox: "ToolBox") -> SupportsCachedSearch:
+        if not isinstance(toolbox, SupportsCachedSearch):
+            raise TypeError("CachedToolboxSearch requires a toolbox with a tool index, e.g. CachedToolBox")
+        return toolbox
+
+
+class ToolPanelViewSearch:
+    """
+    Support searching tools in a toolbox. This implementation uses
+    the Whoosh search library.
+    """
+
+    def __init__(
+        self,
+        panel_view_id: str,
+        index_dir: str,
+        config: GalaxyAppConfiguration,
+        index_help: bool = True,
+    ) -> None:
+        """Build the schema and validate against the index."""
+        tuning = ToolSearchTuning.from_config(config)
+        self.schema = build_search_schema(
+            tuning,
+            help_boost=tuning.help_boost if index_help else None,
+        )
+        self.tuning = tuning
+        self.index_dir = index_dir
+        self.panel_view_id = panel_view_id
+        self.index = self._index_setup()
+
+    def _index_setup(self) -> index.FileIndex:
+        """Get or create a reference to the index."""
+        return get_or_create_index(self.index_dir, self.schema)
+
+    def build_index(self, tool_cache: "ToolCache", toolbox: "ToolBox", index_help: bool = True) -> None:
+        """Prepare search index for tools loaded in toolbox.
+
+        Use `tool_cache` to determine which tools need indexing and which
+        should be removed.
+        """
+        log.debug(f"Starting to build toolbox index of panel {self.panel_view_id}.")
         execution_timer = ExecutionTimer()
+
         with self.index.reader() as reader:
             # Index ocasionally contains empty stored fields
-            indexed_tool_ids = {f['id'] for f in reader.all_stored_fields() if f}
-        tool_ids_to_remove = (indexed_tool_ids - set(tool_cache._tool_paths_by_id.keys())).union(tool_cache._removed_tool_ids)
-        with AsyncWriter(self.index) as writer:
-            for tool_id in tool_ids_to_remove:
-                writer.delete_by_term('id', tool_id)
-            for tool_id in tool_cache._new_tool_ids - indexed_tool_ids:
-                tool = tool_cache.get_tool_by_id(tool_id)
-                if tool and tool.is_latest_version:
-                    add_doc_kwds = self._create_doc(tool_id=tool_id, tool=tool, index_help=index_help)
-                    writer.add_document(**add_doc_kwds)
-        log.debug("Toolbox index finished %s", execution_timer)
+            self.indexed_tool_ids = {f["id"] for f in reader.all_stored_fields() if f}
 
-    def _create_doc(self, tool_id, tool, index_help=True):
-        #  Do not add data managers to the public index
-        if tool.tool_type == 'manage_data':
-            return {}
-        add_doc_kwds = {
-            "id": tool_id,
-            "description": to_unicode(tool.description),
-            "section": to_unicode(tool.get_panel_section()[1] if len(tool.get_panel_section()) == 2 else ''),
-            "help": to_unicode("")
-        }
-        if tool.name.find('-') != -1:
-            # Replace hyphens, since they are wildcards in Whoosh causing false positives
-            add_doc_kwds['name'] = (' ').join(token.text for token in self.rex(to_unicode(tool.name)))
-        else:
-            add_doc_kwds['name'] = to_unicode(tool.name)
-        if tool.guid:
-            # Create a stub consisting of owner, repo, and tool from guid
-            slash_indexes = [m.start() for m in re.finditer('/', tool.guid)]
-            id_stub = tool.guid[(slash_indexes[1] + 1): slash_indexes[4]]
-            add_doc_kwds['stub'] = (' ').join(token.text for token in self.rex(to_unicode(id_stub)))
-        else:
-            add_doc_kwds['stub'] = to_unicode(id)
-        if tool.labels:
-            add_doc_kwds['labels'] = to_unicode(" ".join(tool.labels))
-        if index_help:
-            raw_help = tool.raw_help
-            if raw_help:
-                try:
-                    add_doc_kwds['help'] = to_unicode(raw_help)
-                except Exception:
-                    # Don't fail to build index just because help can't be converted.
-                    pass
-        return add_doc_kwds
-
-    def search(self, q, tool_name_boost, tool_section_boost,
-            tool_description_boost, tool_label_boost, tool_stub_boost,
-            tool_help_boost, tool_search_limit, tool_enable_ngram_search,
-            tool_ngram_minsize, tool_ngram_maxsize):
-        """
-        Perform search on the in-memory index. Weight in the given boosts.
-        """
-        # Change field boosts for searcher
-        self.searcher = self.index.searcher(
-            weighting=BM25F(
-                field_B={'name_B': float(tool_name_boost),
-                         'section_B': float(tool_section_boost),
-                         'description_B': float(tool_description_boost),
-                         'labels_B': float(tool_label_boost),
-                         'stub_B': float(tool_stub_boost),
-                         'help_B': float(tool_help_boost)}
-            )
+        tool_ids_to_remove = self._get_tools_to_remove(tool_cache)
+        tools_to_index = self._get_tool_list(
+            toolbox,
+            tool_cache,
         )
-        # Use OrGroup to change the default operation for joining multiple terms to logical OR.
-        # This means e.g. for search 'bowtie of king arthur' a document that only has 'bowtie' will be a match.
-        # https://whoosh.readthedocs.io/en/latest/api/qparser.html#whoosh.qparser.MultifieldPlugin
-        # However this changes scoring i.e. searching 'bowtie of king arthur' a document with 'arthur arthur arthur'
-        # would have a higher score than a document with 'bowtie arthur' which is usually unexpected for a user.
-        # Hence we introduce a bonus on multi-hits using the 'factory()' method using a scaling factor between 0-1.
-        # https://whoosh.readthedocs.io/en/latest/parsing.html#searching-for-any-terms-instead-of-all-terms-by-default
-        og = OrGroup.factory(0.9)
-        self.parser = MultifieldParser(['name', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema, group=og)
-        cleaned_query = q.lower()
-        # Replace hyphens, since they are wildcards in Whoosh causing false positives
-        if cleaned_query.find('-') != -1:
-            cleaned_query = (' ').join(token.text for token in self.rex(to_unicode(cleaned_query)))
-        if tool_enable_ngram_search is True:
-            rval = self._search_ngrams(cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit)
-            return rval
-        else:
-            # Use asterisk Whoosh wildcard so e.g. 'bow' easily matches 'bowtie'
-            parsed_query = self.parser.parse(cleaned_query + '*')
-            hits = self.searcher.search(parsed_query, limit=float(tool_search_limit), sortedby='')
-            return [hit['id'] for hit in hits]
 
-    def _search_ngrams(self, cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit):
-        """
-        Break tokens into ngrams and search on those instead.
-        This should make searching more resistant to typos and unfinished words.
-        See docs at https://whoosh.readthedocs.io/en/latest/ngrams.html
-        """
-        hits_with_score = {}
-        token_analyzer = StandardAnalyzer() | analysis.NgramFilter(minsize=int(tool_ngram_minsize), maxsize=int(tool_ngram_maxsize))
-        ngrams = [token.text for token in token_analyzer(cleaned_query)]
-        for query in ngrams:
-            # Get the tool list with respective scores for each qgram
-            curr_hits = self.searcher.search(self.parser.parse('*' + query + '*'), limit=float(tool_search_limit))
-            for i, curr_hit in enumerate(curr_hits):
-                is_present = False
-                for prev_hit in hits_with_score:
-                    # Check if the tool appears again for the next qgram search
-                    if curr_hit['id'] == prev_hit:
-                        is_present = True
-                        # Add the current score with the previous one if the
-                        # tool appears again for the next qgram
-                        hits_with_score[prev_hit] = curr_hits.score(i) + hits_with_score[prev_hit]
-                # Add the tool if not present to the collection with its score
-                if not is_present:
-                    hits_with_score[curr_hit['id']] = curr_hits.score(i)
-        # Sort the results based on aggregated BM25 score in decreasing order of scores
-        hits_with_score = sorted(hits_with_score.items(), key=lambda x: x[1], reverse=True)
-        # Return the tool ids
-        return [item[0] for item in hits_with_score[0:int(tool_search_limit)]]
+        with AsyncWriter(self.index) as writer:
+            # AsyncWriter commits from its own non-daemon thread and retries a held
+            # write lock forever. A writer that dies while holding the lock (the
+            # index directory can disappear under it during embedded-test teardown)
+            # leaves every later writer for this index spinning, and those threads
+            # then keep the interpreter from ever exiting. The index is disposable
+            # state, rebuilt on startup, so it must never outlive the process.
+            writer.daemon = True
+            for tool_id in tool_ids_to_remove:
+                writer.delete_by_term("id", tool_id)
+            for tool in tools_to_index:
+                add_doc_kwds = self._create_doc(
+                    tool=tool,
+                    index_help=index_help,
+                )
+                # Add tool document to index (or overwrite if existing)
+                writer.update_document(**add_doc_kwds)
+
+        log.debug("Toolbox index of panel %s finished %s", self.panel_view_id, execution_timer)
+
+    def _get_tools_to_remove(self, tool_cache: "ToolCache") -> list[str]:
+        """Return list of tool IDs to be removed from index."""
+        tool_ids_to_remove = (self.indexed_tool_ids - set(tool_cache._tool_paths_by_id.keys())).union(
+            tool_cache._removed_tool_ids
+        )
+
+        for indexed_tool_id in self.indexed_tool_ids:
+            indexed_tool = tool_cache.get_tool_by_id(indexed_tool_id)
+            if indexed_tool:
+                if indexed_tool.is_latest_version:
+                    continue
+                latest_version = indexed_tool.latest_version
+                # `Tool.latest_version` resolves the newest revision through the
+                # tool cache under the lineage id `<versionless id>/<version>`.
+                # That key only exists for tools whose id carries their version,
+                # i.e. toolshed guids. A tool whose revisions share one bare id
+                # (`filters/grep.xml` and `filters/grep_1.0.1.xml` both declare
+                # `Grep1`) resolves to None, and the tool cache hands back
+                # whichever revision was parsed last. Both revisions are indexed
+                # under that one id, so an unresolvable latest version means the
+                # entry is still current, not that the tool went away.
+                if latest_version is None or latest_version.hidden:
+                    continue
+            tool_ids_to_remove.add(indexed_tool_id)
+
+        return list(tool_ids_to_remove)
+
+    def _get_tool_list(self, toolbox: "ToolBox", tool_cache: "ToolCache") -> list["Tool"]:
+        """Return list of tools to add and remove from index."""
+        tools_to_index: list[Tool] = []
+
+        for tool_id in tool_cache._new_tool_ids - self.indexed_tool_ids:
+            tool_like = toolbox.get_tool(tool_id)
+            tool = toolbox.materialize_tool(tool_like, reason="detail") if tool_like else None
+            if tool and tool.is_latest_version and toolbox.panel_has_tool(tool, self.panel_view_id):
+                if tool.hidden:
+                    # Check if there is an older tool we can return
+                    if tool.lineage:
+                        tool_versions = reversed(tool.lineage.get_versions())
+                        for tool_version in tool_versions:
+                            tool = tool_cache.get_tool_by_id(tool_version.id)
+                            if tool and not tool.hidden:
+                                break
+                        else:
+                            continue
+                    else:
+                        continue
+                tools_to_index.append(tool)
+
+        return tools_to_index
+
+    def _create_doc(
+        self,
+        tool: "Tool",
+        index_help: bool = True,
+    ) -> dict[str, str | list[str]]:
+        if tool.id is None:
+            return {}
+        document = build_search_document(
+            tool_id=tool.id,
+            guid=tool.guid,
+            name=tool.name,
+            description=tool.description,
+            section=tool.get_panel_section()[1],
+            edam_operations=tool.edam_operations,
+            edam_topics=tool.edam_topics,
+            repository=tool.repository_name,
+            owner=tool.repository_owner,
+            labels=tool.labels,
+            tool_tags=tool.tool_tags,
+            help_text=tool.raw_help if index_help else None,
+            tool_type=tool.tool_type,
+        )
+        return document or {}
+
+    def search(
+        self,
+        q: str,
+        config: GalaxyAppConfiguration,
+    ) -> list[str]:
+        """Perform search on the in-memory index."""
+        tuning = ToolSearchTuning.from_config(config)
+        return [tool_id for tool_id, _score in search_whoosh_index(self.index, q, tuning, limit=None)]

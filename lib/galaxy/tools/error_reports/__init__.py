@@ -1,28 +1,29 @@
-"""This module defines the error reporting framework for Galaxy jobs.
-"""
+"""This module defines the error reporting framework for Galaxy jobs."""
+
 import collections
 import logging
 import os
 
+from galaxy.exceptions import (
+    ItemAccessibilityException,
+    UserRequiredException,
+)
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.util import plugin_config
 
 log = logging.getLogger(__name__)
 
 DEFAULT_CONFIG = [
     {
-        'type': 'email',
-        'verbose': True,
-        'user_submission': True,
-    },
-    {
-        'type': 'sentry',
-        'user_submission': False,
+        "type": "email",
+        "verbose": True,
+        "user_submission": True,
     },
 ]
-DEFAULT_PLUGINS_SOURCE = plugin_config.PluginConfigSource('dict', DEFAULT_CONFIG)
+DEFAULT_PLUGINS_SOURCE = plugin_config.PluginConfigSource("dict", DEFAULT_CONFIG)
 
 
-class ErrorReports(object):
+class ErrorReports:
     """Load and store a collection of :class:`ErrorPlugin` objects."""
 
     def __init__(self, conf_file=None, **kwargs):
@@ -33,24 +34,27 @@ class ErrorReports(object):
 
     def __plugins_dict(self):
         import galaxy.tools.error_reports.plugins
-        return plugin_config.plugins_dict(galaxy.tools.error_reports.plugins, 'plugin_type')
+
+        return plugin_config.plugins_dict(galaxy.tools.error_reports.plugins, "plugin_type")
 
 
-class NullErrorPlugin(object):
-
+class NullErrorPlugin:
     def submit_report(self, dataset, job, tool, **kwargs):
         log.warning("Bug report for dataset %s, job %s submitted to NullErrorPlugin", dataset, job)
+        return [("Error reporting is not configured for this Galaxy instance", "danger")]
+
+    def submit_invocation_report(self, invocation, user, **kwargs):
+        log.warning("Bug report for invocation %s submitted to NullErrorPlugin", invocation)
         return [("Error reporting is not configured for this Galaxy instance", "danger")]
 
 
 NULL_ERROR_PLUGIN = NullErrorPlugin()
 
 
-class ErrorPlugin(object):
-
+class ErrorPlugin:
     def __init__(self, plugin_classes, plugins_source, **kwargs):
         self.extra_kwargs = kwargs
-        self.app = kwargs['app']
+        self.app = kwargs["app"]
         self.plugin_classes = plugin_classes
         self.plugins = self.__plugins_from_source(plugins_source)
 
@@ -60,6 +64,12 @@ class ErrorPlugin(object):
         else:
             roles = []
         return self.app.security_agent.can_access_dataset(roles, dataset.dataset)
+
+    def _check_invocation_accessibility(self, trans: ProvidesUserContext | None, invocation, user):
+        if not user:
+            raise UserRequiredException("User is not logged in", type="error")
+        if not trans or not self.app.workflow_manager.check_security(trans, invocation, check_ownership=False):
+            raise ItemAccessibilityException("Invocation is not accessible to the reporting user", type="error")
 
     def submit_report(self, dataset, job, tool, user=None, user_submission=False, **kwargs):
         if user_submission:
@@ -75,6 +85,22 @@ class ErrorPlugin(object):
                         responses.append(response)
                 except Exception:
                     log.exception("Failed to generate submit_report commands for plugin %s", plugin)
+        return responses
+
+    def submit_invocation_report(self, invocation, user=None, user_submission=False, **kwargs):
+        if user_submission:
+            self._check_invocation_accessibility(trans=kwargs.get("trans", None), invocation=invocation, user=user)
+
+        responses = []
+        for plugin in self.plugins:
+            if user_submission == plugin.user_submission:
+                try:
+                    response = plugin.submit_invocation_report(invocation, **kwargs)
+                    log.debug("Bug report plugin %s generated response %s", plugin, response)
+                    if plugin.verbose and response:
+                        responses.append(response)
+                except Exception:
+                    log.exception("Failed to generate submit_invocation_report commands for plugin %s", plugin)
         return responses
 
     def __plugins_from_source(self, plugins_source):

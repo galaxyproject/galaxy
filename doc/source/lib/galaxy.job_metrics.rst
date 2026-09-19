@@ -2,17 +2,17 @@ galaxy.job\_metrics package
 ===========================
 
 .. automodule:: galaxy.job_metrics
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
-    galaxy.job_metrics.collectl
-    galaxy.job_metrics.instrumenters
+   galaxy.job_metrics.instrumenters
 
 Submodules
 ----------
@@ -21,8 +21,14 @@ galaxy.job\_metrics.formatting module
 -------------------------------------
 
 .. automodule:: galaxy.job_metrics.formatting
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
+galaxy.job\_metrics.safety module
+---------------------------------
 
+.. automodule:: galaxy.job_metrics.safety
+   :members:
+   :undoc-members:
+   :show-inheritance:

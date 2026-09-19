@@ -1,0 +1,81 @@
+import flushPromises from "flush-promises";
+import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+
+import testInteractiveToolsResponse from "../components/InteractiveTools/testData/testInteractiveToolsResponse";
+import { sseMockFactory } from "./_testing/sseStoreSupport";
+import { useEntryPointStore } from "./entryPointStore";
+
+// ``vi.mock`` is hoisted above module-level declarations, so the capture-state
+// has to be built via ``vi.hoisted`` to be visible to the factory. Prevents
+// these tests from opening a real EventSource against ``/api/events/stream``
+// when ``useEntryPointStore()`` is invoked.
+const sseState = vi.hoisted(() => ({
+    onEvent: null,
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    connected: null,
+}));
+vi.mock("@/composables/useNotificationSSE", () => sseMockFactory(sseState));
+
+const { server, http } = useServerMock();
+
+describe("stores/EntryPointStore", () => {
+    let store;
+
+    beforeEach(async () => {
+        server.use(
+            http.untyped.get("/api/entry_points", ({ request }) => {
+                const url = new URL(request.url);
+                if (url.searchParams.get("running") === "true") {
+                    return HttpResponse.json(testInteractiveToolsResponse);
+                }
+                return HttpResponse.json([]);
+            }),
+        );
+        setActivePinia(createPinia());
+        store = useEntryPointStore();
+        await store.fetchEntryPoints();
+        await flushPromises();
+    });
+
+    it("performs a partial update", async () => {
+        const updateData = [
+            {
+                model_class: "InteractiveToolEntryPoint",
+                id: "b887d74393f85b6d",
+                job_id: "52e496b945151ee8",
+                name: "Oh there you go, bringing class into it again.",
+                created_time: "2020-01-24T15:59:22.406480",
+                modified_time: "2020-02-24T15:59:24.757453",
+                output_datasets_ids: ["4e9e0c7225b0bb81"],
+                target: "http://b887d74393f85b6d-b1fd3f42331a49c1b3d8a4d1b27240b8.interactivetoolentrypoint.interactivetool.localhost:8080/loginapikey/oleg",
+            },
+        ];
+        store.updateEntryPoints(updateData);
+        expect(store.entryPoints.length).toBe(1);
+        expect(store.entryPoints[0].name).toBe("Oh there you go, bringing class into it again.");
+        expect(store.entryPoints[0].active).toBeTruthy();
+    });
+    it("removes an entry point of given id", async () => {
+        let entryPointForId = store.entryPoints.filter((item) => item.id === "52e496b945151ee8");
+        expect(entryPointForId.length).toBe(1);
+        store.removeEntryPoint("52e496b945151ee8");
+        entryPointForId = store.entryPoints.filter((item) => item.id === "52e496b945151ee8");
+        expect(entryPointForId.length).toBe(0);
+    });
+    it("retrieves entry point for a given job", async () => {
+        const entryPointForJob = store.entryPointsForJob("6fc9fbb81c497f69");
+        expect(entryPointForJob.length).toBe(1);
+        expect(entryPointForJob[0].id).toBe("52e496b945151ee8");
+        expect(entryPointForJob[0].active).toBeTruthy();
+    });
+    it("retrieves entry points for a given hda", async () => {
+        const entryPointForHda = store.entryPointsForHda("4e9e0c7225b0bb81");
+        expect(entryPointForHda.length).toBe(1);
+        expect(entryPointForHda[0].id).toBe("52e496b945151ee8");
+        expect(entryPointForHda[0].active).toBeTruthy();
+    });
+});

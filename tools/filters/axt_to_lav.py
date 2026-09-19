@@ -9,9 +9,11 @@ Application to convert AXT file to LAV file
 The application reads an AXT file from standard input and writes a LAV file to
 standard out;  some statistics are written to standard error.
 """
+
 from __future__ import print_function
 
 import sys
+from typing import Optional
 
 import bx.align.axt
 import bx.align.lav
@@ -44,19 +46,17 @@ axt_to_lav primary_spec secondary_spec [--silent] < axt_file > lav_file
 
 
 def main():
-    global debug
-
     # parse the command line
 
-    primary = None
+    primary: Optional[str] = None
     secondary = None
     silent = False
 
     # pick off options
 
     args = sys.argv[1:]
-    seq_file2 = open(args.pop(-1), 'w')
-    seq_file1 = open(args.pop(-1), 'w')
+    seq_file2 = open(args.pop(-1), "w")
+    seq_file1 = open(args.pop(-1), "w")
     lav_out = args.pop(-1)
     axt_in = args.pop(-1)
     while len(args) > 0:
@@ -85,12 +85,12 @@ def main():
         usage("missing secondary file name and length")
 
     try:
-        (primaryFile, primary, primaryLengths) = parse_spec(primary)
+        primaryFile, primary, primaryLengths = parse_spec(primary)
     except Exception:
         usage("bad primary spec (must be seq_file[:species_name]:lengths_file")
 
     try:
-        (secondaryFile, secondary, secondaryLengths) = parse_spec(secondary)
+        secondaryFile, secondary, secondaryLengths = parse_spec(secondary)
     except Exception:
         usage("bad secondary spec (must be seq_file[:species_name]:lengths_file")
 
@@ -102,25 +102,32 @@ def main():
 
     # read the alignments
 
-    out = bx.align.lav.Writer(open(lav_out, 'w'),
-                              attributes={"name_format_1": primaryFile,
-                                          "name_format_2": secondaryFile})
+    out = bx.align.lav.Writer(
+        open(lav_out, "w"), attributes={"name_format_1": primaryFile, "name_format_2": secondaryFile}
+    )
 
     axtsRead = 0
     axtsWritten = 0
     for axtBlock in bx.align.axt.Reader(
-            open(axt_in), species_to_lengths=speciesToLengths, species1=primary,
-            species2=secondary, support_ids=True):
+        open(axt_in), species_to_lengths=speciesToLengths, species1=primary, species2=secondary, support_ids=True
+    ):
         axtsRead += 1
         out.write(axtBlock)
         primary_c = axtBlock.get_component_by_src_start(primary)
         secondary_c = axtBlock.get_component_by_src_start(secondary)
 
-        print(">%s_%s_%s_%s" % (primary_c.src, secondary_c.strand, primary_c.start, primary_c.start + primary_c.size), file=seq_file1)
+        print(
+            ">%s_%s_%s_%s" % (primary_c.src, secondary_c.strand, primary_c.start, primary_c.start + primary_c.size),
+            file=seq_file1,
+        )
         print(primary_c.text, file=seq_file1)
         print(file=seq_file1)
 
-        print(">%s_%s_%s_%s" % (secondary_c.src, secondary_c.strand, secondary_c.start, secondary_c.start + secondary_c.size), file=seq_file2)
+        print(
+            ">%s_%s_%s_%s"
+            % (secondary_c.src, secondary_c.strand, secondary_c.start, secondary_c.start + secondary_c.size),
+            file=seq_file2,
+        )
         print(secondary_c.text, file=seq_file2)
         print(file=seq_file2)
         axtsWritten += 1
@@ -147,7 +154,7 @@ def parse_spec(spec):
 def read_lengths(fileName):
     chromToLength = {}
 
-    f = open(fileName, "r")
+    f = open(fileName)
 
     for lineNumber, line in enumerate(f):
         line = line.strip()
@@ -167,7 +174,7 @@ def read_lengths(fileName):
             raise Exception("bad lengths line (%s:%d): %s" % (fileName, lineNumber, line))
 
         if chrom in chromToLength:
-            raise Exception("%s appears more than once (%s:%d): %s" % (chrom, fileName, lineNumber))
+            raise Exception("%s appears more than once (%s:%d): %s" % (chrom, fileName, lineNumber, line))
 
         chromToLength[chrom] = length
 
