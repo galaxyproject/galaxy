@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pydantic
 import pytest
 from pydantic import (
     TypeAdapter,
@@ -469,6 +470,10 @@ def test_each_validator_type_publishes_one_valid_example():
         assert validated.root.model_dump()["validators"][0]["type"] == validator_type
 
 
+@pytest.mark.skipif(
+    tuple(int(part) for part in pydantic.VERSION.split(".")[:2]) < (2, 11),
+    reason="the published schema is a snapshot of pydantic >= 2.11 JSON schema rendering",
+)
 def test_editor_tool_source_schema_matches_pydantic_model():
     schema_path = PROJECT_ROOT / "client" / "src" / "components" / "Tool" / "ToolSourceSchema.json"
     published_schema = json.loads(schema_path.read_text())
