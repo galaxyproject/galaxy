@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
-import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
 import { CLEAR_TOOL_YAML, NEW_TOOL_YAML } from "./customToolEditorDefaults";
+import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
 
 describe("custom tool editor defaults", () => {
     it("preloads the schema-derived Getting Started example", () => {

@@ -8,8 +8,8 @@ import {
     authoringHelpIntro,
     authoringHelpSections,
     authoringHelpTitle,
-    linkSchemaKeys,
     linkedAuthoringHelpSection,
+    linkSchemaKeys,
     resolveDocLinks,
 } from "./authoringHelp";
 import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
