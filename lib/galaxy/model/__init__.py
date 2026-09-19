@@ -260,6 +260,7 @@ _datatypes_registry = None
 
 MAX_WORKFLOW_README_SIZE = 20000
 MAX_WORKFLOW_HELP_SIZE = 40000
+MAX_ANNOTATION_SIZE = 65536
 STR_TO_STR_DICT = dict[str, str]
 
 
@@ -12283,9 +12284,20 @@ class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
 
 
 # Item annotation classes.
-class HistoryAnnotationAssociation(Base, RepresentById):
+class ItemAnnotationAssociation:
+    """Bounds annotation length; the column itself is unbounded TEXT."""
+
+    @validates("annotation")
+    def validates_annotation(self, key, annotation):
+        if annotation is not None and (size := len(annotation)) > MAX_ANNOTATION_SIZE:
+            raise galaxy.exceptions.RequestParameterInvalidException(
+                f"Annotation too large ({size}), maximum allowed length ({MAX_ANNOTATION_SIZE})."
+            )
+        return annotation
+
+
+class HistoryAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "history_annotation_association"
-    __table_args__ = (Index("ix_history_anno_assoc_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
@@ -12295,9 +12307,8 @@ class HistoryAnnotationAssociation(Base, RepresentById):
     user: Mapped["User"] = relationship()
 
 
-class HistoryDatasetAssociationAnnotationAssociation(Base, RepresentById):
+class HistoryDatasetAssociationAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "history_dataset_association_annotation_association"
-    __table_args__ = (Index("ix_history_dataset_anno_assoc_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     history_dataset_association_id: Mapped[int] = mapped_column(
@@ -12309,9 +12320,8 @@ class HistoryDatasetAssociationAnnotationAssociation(Base, RepresentById):
     user: Mapped[Optional["User"]] = relationship()
 
 
-class StoredWorkflowAnnotationAssociation(Base, RepresentById):
+class StoredWorkflowAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "stored_workflow_annotation_association"
-    __table_args__ = (Index("ix_stored_workflow_ann_assoc_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     stored_workflow_id: Mapped[int] = mapped_column(ForeignKey("stored_workflow.id"), index=True, nullable=True)
@@ -12321,9 +12331,8 @@ class StoredWorkflowAnnotationAssociation(Base, RepresentById):
     user: Mapped[Optional["User"]] = relationship()
 
 
-class WorkflowStepAnnotationAssociation(Base, RepresentById):
+class WorkflowStepAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "workflow_step_annotation_association"
-    __table_args__ = (Index("ix_workflow_step_ann_assoc_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True, nullable=True)
@@ -12333,9 +12342,8 @@ class WorkflowStepAnnotationAssociation(Base, RepresentById):
     user: Mapped[Optional["User"]] = relationship()
 
 
-class PageAnnotationAssociation(Base, RepresentById):
+class PageAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "page_annotation_association"
-    __table_args__ = (Index("ix_page_annotation_association_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
@@ -12345,9 +12353,8 @@ class PageAnnotationAssociation(Base, RepresentById):
     user: Mapped[Optional["User"]] = relationship()
 
 
-class VisualizationAnnotationAssociation(Base, RepresentById):
+class VisualizationAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "visualization_annotation_association"
-    __table_args__ = (Index("ix_visualization_annotation_association_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=True)
@@ -12357,7 +12364,7 @@ class VisualizationAnnotationAssociation(Base, RepresentById):
     user: Mapped[Optional["User"]] = relationship()
 
 
-class HistoryDatasetCollectionAssociationAnnotationAssociation(Base, RepresentById):
+class HistoryDatasetCollectionAssociationAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "history_dataset_collection_annotation_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -12372,7 +12379,7 @@ class HistoryDatasetCollectionAssociationAnnotationAssociation(Base, RepresentBy
     user: Mapped[Optional["User"]] = relationship()
 
 
-class LibraryDatasetCollectionAnnotationAssociation(Base, RepresentById):
+class LibraryDatasetCollectionAnnotationAssociation(Base, ItemAnnotationAssociation, RepresentById):
     __tablename__ = "library_dataset_collection_annotation_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
