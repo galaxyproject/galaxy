@@ -415,7 +415,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
             "type": self.plugin_type,
             "label": self.label,
             "doc": self.doc,
-            "writable": self.writable,
+            "writable": self.get_writable(),
             "browsable": self.get_browsable(),
             "requires_roles": self.requires_roles,
             "requires_groups": self.requires_groups,
