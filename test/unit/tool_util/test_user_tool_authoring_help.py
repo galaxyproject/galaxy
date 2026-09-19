@@ -274,7 +274,7 @@ def test_documented_json_payloads_validate_and_lint(section_id: str, source: str
     ids=[section_id for section_id, _ in CONSOLE_BLOCKS],
 )
 def test_documented_console_snippets_have_valid_shell_syntax(section_id: str, source: str) -> None:
-    shell_source = "\n".join(line.removeprefix("$ ") for line in source.splitlines())
+    shell_source = "\n".join(line[2:] if line.startswith("$ ") else line for line in source.splitlines())
 
     _assert_shell_syntax(shell_source)
 

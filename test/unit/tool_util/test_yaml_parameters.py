@@ -43,7 +43,8 @@ from galaxy.tool_util_models.tool_outputs import (
 )
 from galaxy.tool_util_models.yaml_parameters import YamlGalaxyToolParameter
 
-PROJECT_ROOT = Path(__file__).parents[3]
+# Resolve the symlink the packages/tool_util test tree uses so the path reaches the repository root.
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 def _validate(input_dict):

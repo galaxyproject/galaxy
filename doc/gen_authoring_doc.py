@@ -5,6 +5,8 @@ tool editor's help panel and this page stay the same text. See that file for
 the authoring conventions; this script only reshapes it into MyST markdown.
 """
 
+from __future__ import annotations
+
 import json
 import re
 import sys
@@ -161,7 +163,7 @@ def _reference_index(label: str, prefix: str, sections: list[dict]) -> str:
             f"| {label} | Details |",
             "| --- | --- |",
             *[
-                f"| [`{section['id'].removeprefix(f'{prefix}-')}` #](#{section['id']}) | "
+                f"| [`{section['id'][len(prefix) + 1 :]}` #](#{section['id']}) | "
                 f"{_markdown_cell(section['body'].splitlines()[0])} |"
                 for section in sections
             ],
