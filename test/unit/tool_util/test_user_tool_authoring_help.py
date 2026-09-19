@@ -6,10 +6,17 @@ import subprocess
 import sys
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
 
 import pytest
 import yaml
+from cwl_utils.expression import do_eval as cwl_do_eval
 from cwl_utils.types import CWLObjectType
 
 from galaxy.tool_util.lint import lint_user_tool_source
@@ -18,7 +25,6 @@ from galaxy.tool_util_models.dynamic_tool_models import (
     DynamicUnprivilegedToolCreatePayload,
 )
 from galaxy.tool_util_models.tool_source import JavascriptRequirement
-from galaxy.tools.expressions import do_eval
 
 HELP_RELATIVE_PATH = Path("client/src/components/Tool/authoringHelp.yml")
 HELP_TERMS_RELATIVE_PATH = Path("lib/galaxy/schema/terms.yml")
@@ -39,7 +45,7 @@ FENCED_BLOCK = re.compile(r"```(?P<language>\w+)\n(?P<source>.*?)\n```", re.DOTA
 HELP_TERM_LINK = re.compile(r"\[[^\]]+\]\(gxhelp://(?P<term>[^)]+)\)")
 INPUT_REFERENCE = re.compile(r"inputs\.([A-Za-z_][A-Za-z0-9_]*)(\.path)?")
 KNOWN_FENCE_LANGUAGES = {"console", "json", "yaml"}
-BASE_TOOL: dict[str, Any] = {
+BASE_TOOL: Dict[str, Any] = {
     "class": "GalaxyUserTool",
     "id": "documentation-example",
     "name": "Documentation Example",
@@ -49,7 +55,7 @@ BASE_TOOL: dict[str, Any] = {
     "inputs": [],
     "outputs": [],
 }
-PARAMETER_RUNTIME_INPUTS: dict[str, Any] = {
+PARAMETER_RUNTIME_INPUTS: Dict[str, Any] = {
     "include_header": True,
     "plot_color": "#ff0000",
     "search_options": {"mode": "sensitive", "iterations": 3},
@@ -72,7 +78,7 @@ PARAMETER_RUNTIME_INPUTS: dict[str, Any] = {
 }
 
 
-def _help_data() -> dict[str, Any]:
+def _help_data() -> Dict[str, Any]:
     help_data = yaml.safe_load(HELP_PATH.read_text())
     quick_start = yaml.safe_dump(UserToolSource.model_json_schema()["examples"][0], sort_keys=False).rstrip()
     for section in help_data["sections"]:
@@ -80,7 +86,7 @@ def _help_data() -> dict[str, Any]:
     return help_data
 
 
-def _blocks(language: str) -> list[tuple[str, str]]:
+def _blocks(language: str) -> List[Tuple[str, str]]:
     return [
         (section["id"], match.group("source"))
         for section in _help_data()["sections"]
@@ -94,13 +100,13 @@ JSON_BLOCKS = _blocks("json")
 CONSOLE_BLOCKS = _blocks("console")
 
 
-def _add_input(tool_dict: dict[str, Any], name: str, parameter_type: str) -> None:
+def _add_input(tool_dict: Dict[str, Any], name: str, parameter_type: str) -> None:
     inputs = tool_dict.setdefault("inputs", [])
     if not any(parameter["name"] == name for parameter in inputs):
         inputs.append({"name": name, "type": parameter_type})
 
 
-def _supply_fragment_context(tool_dict: dict[str, Any]) -> None:
+def _supply_fragment_context(tool_dict: Dict[str, Any]) -> None:
     templated_text = [tool_dict.get("shell_command", "")]
     templated_text.extend(configfile.get("content", "") for configfile in tool_dict.get("configfiles") or [])
     for text in templated_text:
@@ -126,8 +132,8 @@ def _tool_from_fragment(section_id: str, source: str) -> UserToolSource:
     return UserToolSource.model_validate(tool_dict)
 
 
-def _runtime_inputs(tool: UserToolSource) -> dict[str, Any]:
-    values: dict[str, Any] = {}
+def _runtime_inputs(tool: UserToolSource) -> Dict[str, Any]:
+    values: Dict[str, Any] = {}
     for parameter_wrapper in tool.inputs:
         parameter = parameter_wrapper.root
         if parameter.type == "data":
@@ -143,8 +149,24 @@ def _runtime_inputs(tool: UserToolSource) -> dict[str, Any]:
     return values
 
 
-def _javascript_requirements(tool: UserToolSource) -> list[JavascriptRequirement]:
+def _javascript_requirements(tool: UserToolSource) -> List[JavascriptRequirement]:
     return [requirement for requirement in tool.requirements or [] if isinstance(requirement, JavascriptRequirement)]
+
+
+def _do_eval(
+    expression: str,
+    jobinput: CWLObjectType,
+    javascript_requirements: Optional[List[JavascriptRequirement]] = None,
+):
+    requirements: List[CWLObjectType] = []
+    for requirement in javascript_requirements or []:
+        if expression_lib := requirement.expression_lib:
+            requirements.append({"class": "InlineJavascriptRequirement", "expressionLib": expression_lib})  # type: ignore[dict-item]
+        else:
+            requirements.append({"class": "InlineJavascriptRequirement"})
+    if not requirements:
+        requirements = [{"class": "InlineJavascriptRequirement"}]
+    return cwl_do_eval(expression, jobinput, requirements, None, None, {}, cwlVersion="v1.2.1")
 
 
 def _assert_shell_syntax(source: str) -> None:
@@ -242,7 +264,7 @@ def test_documented_json_payloads_validate_and_lint(section_id: str, source: str
     tool = payload.representation
 
     assert lint_user_tool_source(tool) == [], section_id
-    evaluated_command = do_eval(tool.shell_command, _runtime_inputs(tool), _javascript_requirements(tool))
+    evaluated_command = _do_eval(tool.shell_command, _runtime_inputs(tool), _javascript_requirements(tool))
     _assert_shell_syntax(evaluated_command)
 
 
@@ -267,22 +289,22 @@ def test_documented_commands_and_configfiles_evaluate(section_id: str, source: s
     runtime_inputs = _runtime_inputs(tool)
     javascript_requirements = _javascript_requirements(tool)
 
-    evaluated_command = do_eval(tool.shell_command, runtime_inputs, javascript_requirements)
+    evaluated_command = _do_eval(tool.shell_command, runtime_inputs, javascript_requirements)
     _assert_shell_syntax(evaluated_command)
     for configfile in tool.configfiles or []:
-        evaluated_content = do_eval(configfile.content, runtime_inputs, javascript_requirements)
+        evaluated_content = _do_eval(configfile.content, runtime_inputs, javascript_requirements)
         if configfile.filename and configfile.filename.endswith(".sh"):
             _assert_shell_syntax(evaluated_content)
     for requirement in javascript_requirements:
-        assert do_eval("$(1)", {}, [requirement]) == 1
+        assert _do_eval("$(1)", {}, [requirement]) == 1
 
 
 def test_documented_expression_forms_evaluate() -> None:
     runtime_inputs: CWLObjectType = {"num_lines": 10, "query": {"path": "/tmp/query.txt"}}
 
-    assert do_eval("$(inputs.num_lines)", runtime_inputs) == 10
-    assert do_eval("$(inputs.query.path)", runtime_inputs) == "/tmp/query.txt"
-    assert do_eval("${ return inputs.num_lines * 2 }", runtime_inputs) == 20
+    assert _do_eval("$(inputs.num_lines)", runtime_inputs) == 10
+    assert _do_eval("$(inputs.query.path)", runtime_inputs) == "/tmp/query.txt"
+    assert _do_eval("${ return inputs.num_lines * 2 }", runtime_inputs) == 20
 
 
 def test_parameter_shell_command_examples_evaluate_and_have_valid_shell_syntax() -> None:
@@ -291,6 +313,6 @@ def test_parameter_shell_command_examples_evaluate_and_have_valid_shell_syntax()
 
     for parameter_type, reference in mapping.items():
         definition = definitions[reference.rsplit("/", 1)[-1]]
-        evaluated = do_eval(definition["x-shell-command"], PARAMETER_RUNTIME_INPUTS)
+        evaluated = _do_eval(definition["x-shell-command"], PARAMETER_RUNTIME_INPUTS)
         _assert_shell_syntax(evaluated)
         assert "$(inputs." not in evaluated, parameter_type
