@@ -7,12 +7,14 @@ import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
 import { useUploadDatasetMonitorStore } from "@/stores/uploadDatasetMonitorStore";
 
-const { mockGetHistoryItems, mockFetchHistoryItems, mockStartWatching, mockStopWatching } = vi.hoisted(() => ({
-    mockGetHistoryItems: vi.fn(),
-    mockFetchHistoryItems: vi.fn(),
-    mockStartWatching: vi.fn(),
-    mockStopWatching: vi.fn(),
-}));
+const { mockGetHistoryItems, mockFetchHistoryItems, mockStartWatching, mockStopWatching, mockWatchHandlers } =
+    vi.hoisted(() => ({
+        mockGetHistoryItems: vi.fn(),
+        mockFetchHistoryItems: vi.fn(),
+        mockStartWatching: vi.fn(),
+        mockStopWatching: vi.fn(),
+        mockWatchHandlers: [] as Array<() => Promise<void>>,
+    }));
 
 const mockCurrentHistoryId = ref<string | null>("hist_1");
 
@@ -34,11 +36,15 @@ vi.mock("@/stores/historyStore", () => ({
 }));
 
 vi.mock("@/composables/resourceWatcher", () => ({
-    useResourceWatcher: () => ({
-        startWatchingResource: mockStartWatching,
-        stopWatchingResource: mockStopWatching,
-        isWatchingResource: ref(false),
-    }),
+    useResourceWatcher: (handler: () => Promise<void>) => {
+        mockWatchHandlers.push(handler);
+        return {
+            startWatchingResource: mockStartWatching,
+            stopWatchingResource: mockStopWatching,
+            dispose: mockStopWatching,
+            isWatchingResource: ref(false),
+        };
+    },
 }));
 
 function makePastedItem(name = "file.txt", targetHistoryId = "hist_1"): NewUploadItem {
@@ -112,6 +118,7 @@ describe("useUploadDatasetMonitorStore", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         vi.clearAllMocks();
+        mockWatchHandlers.length = 0;
         mockCurrentHistoryId.value = "hist_1";
         mockGetHistoryItems.mockReturnValue([]);
         mockFetchHistoryItems.mockResolvedValue(undefined);
@@ -308,6 +315,70 @@ describe("useUploadDatasetMonitorStore", () => {
             createMonitor();
 
             expect(uploadState.getBatch(batchId)?.status).toBe("cancelled");
+        });
+    });
+
+    describe("hidden and missing contents", () => {
+        it("reads history items without the visible/deleted defaults", () => {
+            mockGetHistoryItems.mockReturnValue([makeHistoryItem("ds_1", "ok")]);
+
+            const id = uploadState.addUploadItem(makePastedItem());
+            uploadState.setStatus(id, "uploading");
+            uploadState.markProcessing(id, ["ds_1"]);
+            createMonitor();
+
+            expect(mockGetHistoryItems).toHaveBeenCalledWith("hist_1", "deleted:any visible:any");
+        });
+
+        it("fetches non-current histories without the visible/deleted defaults", async () => {
+            mockGetHistoryItems.mockReturnValue([makeHistoryItem("ds_1", "running")]);
+
+            const otherId = uploadState.addUploadItem(makePastedItem("file.txt", "hist_2"));
+            uploadState.setStatus(otherId, "uploading");
+            uploadState.markProcessing(otherId, ["ds_1"]);
+            createMonitor();
+            await nextTick();
+
+            expect(mockWatchHandlers).toHaveLength(1);
+            await mockWatchHandlers[0]?.();
+            expect(mockFetchHistoryItems).toHaveBeenCalledWith("hist_2", "deleted:any visible:any", 0);
+        });
+
+        it("resolves a hidden dataset instead of hanging in processing", () => {
+            mockGetHistoryItems.mockImplementation((historyId: string, filterText: string) =>
+                filterText === "" ? [] : [makeHistoryItem("ds_1", "ok")],
+            );
+
+            const id = uploadState.addUploadItem(makePastedItem());
+            uploadState.setStatus(id, "uploading");
+            uploadState.markProcessing(id, ["ds_1"]);
+            createMonitor();
+
+            const item = uploadState.activeItems.value.find((u) => u.id === id)!;
+            expect(item.status).toBe("completed");
+        });
+
+        it("marks an upload as error after missing contents exceed the timeout", async () => {
+            vi.useFakeTimers();
+            try {
+                mockGetHistoryItems.mockReturnValue([]);
+
+                const id = uploadState.addUploadItem(makePastedItem());
+                uploadState.setStatus(id, "uploading");
+                uploadState.markProcessing(id, ["ds_1"]);
+                createMonitor();
+
+                expect(uploadState.activeItems.value.find((u) => u.id === id)?.status).toBe("processing");
+
+                await vi.advanceTimersByTimeAsync(31 * 60 * 1000);
+                await nextTick();
+
+                const item = uploadState.activeItems.value.find((u) => u.id === id)!;
+                expect(item.status).toBe("error");
+                expect(item.error).toBeTruthy();
+            } finally {
+                vi.useRealTimers();
+            }
         });
     });
 });

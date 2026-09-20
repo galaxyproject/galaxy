@@ -11,19 +11,21 @@ import {
     stateText,
 } from "@/components/History/Content/model/states";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
-import { useResourceWatcher } from "@/composables/resourceWatcher";
+import { useTerminalStateMonitor } from "@/composables/useTerminalStateMonitor";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
-import { useHistoryStore } from "@/stores/historyStore";
 
 type PendingEntry =
     | { kind: "datasets"; uploadId: string; historyId: string; datasetIds: string[] }
     | { kind: "collection"; uploadId: string; historyId: string; collectionId: string };
 
+const MONITOR_FILTER = "deleted:any visible:any";
+const PROCESSING_TIMEOUT_MS = 30 * 60 * 1000;
+const GIVE_UP_CHECK_INTERVAL_MS = 60 * 1000;
+
 export const useUploadDatasetMonitorStore = defineStore("uploadDatasetMonitor", () => {
     const uploadState = useUploadState();
     const historyItemsStore = useHistoryItemsStore();
-    const historyStore = useHistoryStore();
-    const pollers = new Map<string, ReturnType<typeof useResourceWatcher>>();
+    const missingSince = new Map<string, number>();
 
     const pendingEntries = computed<PendingEntry[]>(() => {
         const entries: PendingEntry[] = [];
@@ -59,8 +61,29 @@ export const useUploadDatasetMonitorStore = defineStore("uploadDatasetMonitor", 
         ...new Set(pendingEntries.value.map((entry) => entry.historyId)),
     ]);
 
+    const { syncPollers } = useTerminalStateMonitor(pendingHistoryIds, (historyId) =>
+        historyItemsStore.fetchHistoryItems(historyId, MONITOR_FILTER, 0),
+    );
+
     function findHistoryItem(historyId: string, id: string) {
-        return historyItemsStore.getHistoryItems(historyId, "").find((item) => item.id === id);
+        return historyItemsStore.getHistoryItems(historyId, MONITOR_FILTER).find((item) => item.id === id);
+    }
+
+    function forgetMissing(uploadId: string) {
+        missingSince.delete(uploadId);
+    }
+
+    function checkMissingTimeout(uploadId: string, onTimeout: () => void) {
+        const now = Date.now();
+        const firstSeen = missingSince.get(uploadId);
+        if (firstSeen === undefined) {
+            missingSince.set(uploadId, now);
+            return;
+        }
+        if (now - firstSeen >= PROCESSING_TIMEOUT_MS) {
+            missingSince.delete(uploadId);
+            onTimeout();
+        }
     }
 
     function resolveEntry(entry: PendingEntry) {
@@ -71,6 +94,7 @@ export const useUploadDatasetMonitorStore = defineStore("uploadDatasetMonitor", 
 
         const item = uploadState.activeItems.value.find((u) => u.id === entry.uploadId);
         if (!item || item.status !== "processing") {
+            forgetMissing(entry.uploadId);
             return;
         }
 
@@ -83,8 +107,15 @@ export const useUploadDatasetMonitorStore = defineStore("uploadDatasetMonitor", 
         }
 
         if (datasets.length < entry.datasetIds.length) {
+            checkMissingTimeout(entry.uploadId, () =>
+                uploadState.markDatasetsFailed(
+                    entry.uploadId,
+                    "Dataset is no longer available in the history and will not finish processing.",
+                ),
+            );
             return;
         }
+        forgetMissing(entry.uploadId);
 
         const states = datasets.map((ds) => ds.state ?? "new");
         const errorState = states.find((s) => ERROR_DATASET_STATES.includes(s));
@@ -105,13 +136,21 @@ export const useUploadDatasetMonitorStore = defineStore("uploadDatasetMonitor", 
     function resolveCollectionEntry(entry: Extract<PendingEntry, { kind: "collection" }>) {
         const batch = uploadState.getBatch(entry.uploadId);
         if (!batch || batch.status !== "processing") {
+            forgetMissing(entry.uploadId);
             return;
         }
 
         const hdca = findHistoryItem(entry.historyId, entry.collectionId);
         if (!hdca || !isHDCA(hdca)) {
+            checkMissingTimeout(entry.uploadId, () =>
+                uploadState.markBatchFailed(
+                    entry.uploadId,
+                    "Collection is no longer available in the history and will not finish processing.",
+                ),
+            );
             return;
         }
+        forgetMissing(entry.uploadId);
 
         const state = getContentItemState(hdca);
         if (isErrorCollectionState(state)) {
@@ -127,41 +166,18 @@ export const useUploadDatasetMonitorStore = defineStore("uploadDatasetMonitor", 
         }
     }
 
-    function stopPoller(historyId: string) {
-        pollers.get(historyId)?.stopWatchingResource();
-        pollers.delete(historyId);
-    }
-
-    function ensureFallbackPoller(historyId: string) {
-        if (pollers.has(historyId)) {
-            return;
-        }
-        const watcher = useResourceWatcher(async () => {
-            await historyItemsStore.fetchHistoryItems(historyId, "", 0);
-        });
-        pollers.set(historyId, watcher);
-        watcher.startWatchingResource();
-    }
-
-    function syncPollers() {
-        const currentId = historyStore.currentHistoryId;
-
-        for (const historyId of pendingHistoryIds.value) {
-            if (currentId && currentId !== historyId) {
-                ensureFallbackPoller(historyId);
-            }
-        }
-
-        for (const historyId of [...pollers.keys()]) {
-            const stillPending = pendingEntries.value.some((e) => e.historyId === historyId);
-            if (!stillPending || (currentId && currentId === historyId)) {
-                stopPoller(historyId);
+    function pruneMissing() {
+        const pendingIds = new Set(pendingEntries.value.map((e) => e.uploadId));
+        for (const uploadId of [...missingSince.keys()]) {
+            if (!pendingIds.has(uploadId)) {
+                missingSince.delete(uploadId);
             }
         }
     }
 
     function resolveAndSync() {
         resolveEntries();
+        pruneMissing();
         syncPollers();
     }
 
@@ -186,12 +202,16 @@ export const useUploadDatasetMonitorStore = defineStore("uploadDatasetMonitor", 
 
     watch(watchedStates, resolveAndSync);
 
-    watch(() => historyStore.currentHistoryId, syncPollers);
+    const giveUpTimer = setInterval(() => {
+        if (isMonitoring.value) {
+            resolveAndSync();
+        }
+    }, GIVE_UP_CHECK_INTERVAL_MS);
+    (giveUpTimer as unknown as { unref?: () => void }).unref?.();
 
     onScopeDispose(() => {
-        for (const historyId of [...pollers.keys()]) {
-            stopPoller(historyId);
-        }
+        clearInterval(giveUpTimer);
+        missingSince.clear();
     });
 
     return { isMonitoring };
