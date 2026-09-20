@@ -75,7 +75,9 @@ def _login_redirect_for(path: str, query_string: str = "", script_name: str = ""
     trans = _trans_for(path, query_string, script_name)
     with pytest.raises(webob.exc.HTTPFound) as caught:
         trans._ensure_logged_in_user("galaxysession")
-    return caught.value.location
+    location = caught.value.location
+    assert location is not None
+    return location
 
 
 def _redirect_param(location: str) -> str:

@@ -68,6 +68,7 @@ test = [
     "pytest",
     "pytest-mock",
     "responses",
+    "watchdog",
 ]
 
 [project.scripts]
