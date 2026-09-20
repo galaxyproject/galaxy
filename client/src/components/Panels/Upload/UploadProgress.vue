@@ -70,6 +70,16 @@ function onCancelBatch(batchId: string) {
     uploadBatchOperations.cancelBatch(batchId);
 }
 
+function onDismissUpload(uploadId: string) {
+    uploadBatchOperations.dismissUpload(uploadId);
+    cleanupExpandedBatches();
+}
+
+function onDismissBatch(batchId: string) {
+    uploadBatchOperations.dismissBatch(batchId);
+    cleanupExpandedBatches();
+}
+
 function onStopAll() {
     uploadBatchOperations.cancelAll();
 }
@@ -99,9 +109,10 @@ function onStopAll() {
                             :expanded="isExpanded(item.batch.id)"
                             @toggle="toggleBatch(item.batch.id)"
                             @retry="retryBatch(item.batch.id)"
-                            @cancel="onCancelBatch" />
+                            @cancel="onCancelBatch"
+                            @dismiss="onDismissBatch" />
 
-                        <UploadFileRow v-else :file="item.upload" @cancel="onCancelUpload" />
+                        <UploadFileRow v-else :file="item.upload" @cancel="onCancelUpload" @dismiss="onDismissUpload" />
                     </div>
                 </div>
 

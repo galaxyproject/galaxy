@@ -556,6 +556,36 @@ export function useUploadState() {
     }
 
     /**
+     * Removes a failed upload from the list so stuck or errored entries can be
+     * dismissed individually without clearing everything.
+     * @param id - Upload item identifier
+     */
+    function dismissUpload(id: string) {
+        const index = items.value.findIndex((u) => u.id === id);
+        if (index === -1 || items.value[index]?.status !== "error") {
+            return;
+        }
+        items.value.splice(index, 1);
+        for (const batch of batches.value) {
+            batch.uploadIds = batch.uploadIds.filter((uploadId) => uploadId !== id);
+        }
+    }
+
+    /**
+     * Removes a failed batch and its upload items from the list.
+     * @param batchId - Batch identifier
+     */
+    function dismissBatch(batchId: string) {
+        const batch = batches.value.find((b) => b.id === batchId);
+        if (!batch || batch.status !== "error") {
+            return;
+        }
+        const memberIds = new Set(batch.uploadIds);
+        items.value = items.value.filter((item) => !memberIds.has(item.id) && item.batchId !== batchId);
+        batches.value = batches.value.filter((b) => b.id !== batchId);
+    }
+
+    /**
      * Clears all upload items from the list.
      */
     function clearAll() {
@@ -598,6 +628,8 @@ export function useUploadState() {
         cancelAll,
         clearCompleted,
         clearAll,
+        dismissUpload,
+        dismissBatch,
         markProcessing,
         markDatasetsResolved,
         markDatasetsFailed,

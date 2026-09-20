@@ -294,6 +294,14 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
         uploadState.clearCompleted();
     }
 
+    function dismissUpload(uploadId: string): void {
+        uploadState.dismissUpload(uploadId);
+    }
+
+    function dismissBatch(batchId: string): void {
+        uploadState.dismissBatch(batchId);
+    }
+
     function clearAll(): void {
         uploadState.clearAll();
     }
@@ -310,6 +318,8 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
         clearAll,
         clearCompleted,
         createCollection,
+        dismissBatch,
+        dismissUpload,
         processDirectBatch,
         recoverIncompleteBatches,
         retryCollectionCreation,

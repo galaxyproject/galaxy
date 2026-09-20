@@ -551,4 +551,37 @@ describe("useUploadState", () => {
             expect(state.getBatch(batchId)?.error).toBe("Collection failed to populate");
         });
     });
+
+    describe("dismiss", () => {
+        it("dismissUpload removes an errored item", () => {
+            const id = state.addUploadItem(makePastedItem());
+            state.setError(id, "oops");
+
+            state.dismissUpload(id);
+
+            expect(state.activeItems.value.find((i) => i.id === id)).toBeUndefined();
+        });
+
+        it("dismissUpload leaves non-error items alone", () => {
+            const id = state.addUploadItem(makePastedItem());
+            state.setStatus(id, "uploading");
+
+            state.dismissUpload(id);
+
+            expect(state.activeItems.value.find((i) => i.id === id)).toBeDefined();
+        });
+
+        it("dismissBatch removes an errored batch and its items", () => {
+            suppressExpectedErrorMessages(["failed"]);
+
+            const id = state.addUploadItem(makePastedItem("a.txt"));
+            const batchId = state.addBatch(BATCH_CONFIG, [id]);
+            state.setBatchError(batchId, "failed");
+
+            state.dismissBatch(batchId);
+
+            expect(state.getBatch(batchId)).toBeUndefined();
+            expect(state.activeItems.value.find((i) => i.id === id)).toBeUndefined();
+        });
+    });
 });

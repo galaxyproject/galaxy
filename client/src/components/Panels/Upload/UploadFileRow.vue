@@ -32,6 +32,7 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "cancel", id: string): void;
+    (e: "dismiss", id: string): void;
 }>();
 
 const historyStore = useHistoryStore();
@@ -54,6 +55,7 @@ const hasError = computed(() => props.file.status === "error");
 const sourceUrl = computed(() => displayInfo.value.sourceUrl);
 
 const isCancellable = computed(() => !props.nested && isCancellableUpload(props.file));
+const canDismiss = computed(() => !props.nested && props.file.status === "error");
 
 const cardBadges = computed(() => {
     const badges = [] as any[];
@@ -103,6 +105,11 @@ function onCancel(event: Event) {
     event.stopPropagation();
     emit("cancel", props.file.id);
 }
+
+function onDismiss(event: Event) {
+    event.stopPropagation();
+    emit("dismiss", props.file.id);
+}
 </script>
 
 <template>
@@ -143,6 +150,13 @@ function onCancel(event: Event) {
                 class="btn btn-link text-muted p-0 ml-1 cancel-btn"
                 title="Cancel upload"
                 @click="onCancel">
+                <FontAwesomeIcon :icon="faTimesCircle" fixed-width />
+            </button>
+            <button
+                v-if="canDismiss"
+                class="btn btn-link text-muted p-0 ml-1 cancel-btn"
+                title="Dismiss upload"
+                @click="onDismiss">
                 <FontAwesomeIcon :icon="faTimesCircle" fixed-width />
             </button>
         </template>
