@@ -12499,6 +12499,11 @@ export interface components {
              */
             id: string;
             /**
+             * Implicit Collection Jobs ID
+             * @description Encoded ID of the ImplicitCollectionJobs group this job belongs to, or null if the job was not mapped over a collection.
+             */
+            implicit_collection_jobs_id?: string | null;
+            /**
              * Inputs
              * @description Dictionary mapping all the tool inputs (by name) to the corresponding data references.
              * @default {}
@@ -23173,6 +23178,11 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
+            /**
+             * Implicit Collection Jobs ID
+             * @description Encoded ID of the ImplicitCollectionJobs group this job belongs to, or null if the job was not mapped over a collection.
+             */
+            implicit_collection_jobs_id?: string | null;
             /**
              * Inputs
              * @description Dictionary mapping all the tool inputs (by name) to the corresponding data references.

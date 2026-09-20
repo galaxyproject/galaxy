@@ -230,6 +230,8 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
             "name": "test",
             "nested": {"id": 456, "history_id": 789},
             "list_items": [{"id": 111, "dataset_id": 222}, {"id": 333}],
+            "implicit_collection_jobs_id": 444,
+            "unmapped_job": {"implicit_collection_jobs_id": None},
         }
 
         result = ops._encode_ids_in_response(test_data)
@@ -242,6 +244,8 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
         assert isinstance(result["list_items"][0]["id"], str)
         assert isinstance(result["list_items"][0]["dataset_id"], str)
         assert isinstance(result["list_items"][1]["id"], str)
+        assert isinstance(result["implicit_collection_jobs_id"], str)
+        assert result["unmapped_job"]["implicit_collection_jobs_id"] is None
 
     def test_encode_ids_preserves_non_id_fields(self):
         ops = self._make_ops()

@@ -1368,6 +1368,13 @@ class BaseDatasetPopulator(BasePopulator):
         assert details_response.status_code == 200, details_response.content
         return details_response.json()
 
+    def get_hdca_implicit_collection_jobs_id(self, history_id: str, hdca_id: str, **kwds) -> str:
+        """Encoded ImplicitCollectionJobs id of a map-over output HDCA."""
+        details = self.get_history_collection_details(history_id, content_id=hdca_id, **kwds)
+        icj_id = details.get("implicit_collection_jobs_id")
+        assert icj_id, f"HDCA {hdca_id} has no implicit_collection_jobs_id"
+        return icj_id
+
     def run_collection_creates_list(self, history_id: str, hdca_id: str) -> Response:
         inputs = {
             "input1": {"src": "hdca", "id": hdca_id},
