@@ -3,26 +3,24 @@ API operations on Group objects.
 """
 
 import logging
+from typing import Annotated
 
-from fastapi import (
-    Body,
-    Path,
-)
-from typing_extensions import Annotated
+from fastapi import Body
 
-from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.groups import GroupsManager
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.groups import (
     GroupCreatePayload,
     GroupListResponse,
     GroupResponse,
+    GroupUpdatePayload,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import GroupIDPathParam
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -41,7 +39,7 @@ class FastAPIGroups:
     )
     def index(
         self,
-        trans: ProvidesAppContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> GroupListResponse:
         return self.manager.index(trans)
 
@@ -54,7 +52,7 @@ class FastAPIGroups:
     def create(
         self,
         payload: Annotated[GroupCreatePayload, Body(...)],
-        trans: ProvidesAppContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> GroupListResponse:
         return self.manager.create(trans, payload)
 
@@ -66,8 +64,8 @@ class FastAPIGroups:
     )
     def show(
         self,
-        group_id: Annotated[DecodedDatabaseIdField, Path(...)],
-        trans: ProvidesAppContext = DependsOnTrans,
+        group_id: GroupIDPathParam,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> GroupResponse:
         return self.manager.show(trans, group_id)
 
@@ -79,20 +77,20 @@ class FastAPIGroups:
     )
     def update(
         self,
-        group_id: Annotated[DecodedDatabaseIdField, Path(...)],
-        trans: ProvidesAppContext = DependsOnTrans,
-        payload: GroupCreatePayload = Body(...),
+        group_id: GroupIDPathParam,
+        payload: Annotated[GroupUpdatePayload, Body(...)],
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> GroupResponse:
         return self.manager.update(trans, group_id, payload)
 
     @router.delete("/api/groups/{group_id}", require_admin=True)
-    def delete(self, group_id: DecodedDatabaseIdField, trans: ProvidesAppContext = DependsOnTrans):
+    def delete(self, group_id: GroupIDPathParam, trans: SessionRequestContext = DependsOnTrans):
         self.manager.delete(trans, group_id)
 
     @router.post("/api/groups/{group_id}/purge", require_admin=True)
-    def purge(self, group_id: DecodedDatabaseIdField, trans: ProvidesAppContext = DependsOnTrans):
+    def purge(self, group_id: GroupIDPathParam, trans: SessionRequestContext = DependsOnTrans):
         self.manager.purge(trans, group_id)
 
     @router.post("/api/groups/{group_id}/undelete", require_admin=True)
-    def undelete(self, group_id: DecodedDatabaseIdField, trans: ProvidesAppContext = DependsOnTrans):
+    def undelete(self, group_id: GroupIDPathParam, trans: SessionRequestContext = DependsOnTrans):
         self.manager.undelete(trans, group_id)

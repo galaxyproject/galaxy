@@ -1,14 +1,16 @@
 <script setup lang="ts">
+import { faPlus, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
+import { BAlert, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
 import Vue, { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { createBroadcast, fetchBroadcast, updateBroadcast } from "@/api/notifications.broadcast";
-import { type components } from "@/api/schema";
+import { type components, GalaxyApi } from "@/api";
+import { createBroadcast, updateBroadcast } from "@/api/notifications.broadcast";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormElement from "@/components/Form/FormElement.vue";
@@ -40,7 +42,9 @@ const loading = ref(false);
 const broadcastData = ref<BroadcastNotificationCreateRequest>({
     source: "admin",
     variant: "info",
+    category: "broadcast",
     content: {
+        category: "broadcast",
         subject: "",
         message: "",
     },
@@ -106,7 +110,19 @@ async function createOrUpdateBroadcast() {
 async function loadBroadcastData() {
     loading.value = true;
     try {
-        const loadedBroadcast = await fetchBroadcast(props.id);
+        const { data: loadedBroadcast, error } = await GalaxyApi().GET(
+            "/api/notifications/broadcast/{notification_id}",
+            {
+                params: {
+                    path: { notification_id: props.id },
+                },
+            },
+        );
+
+        if (error) {
+            Toast.error(errorMessageAsString(error));
+            return;
+        }
 
         broadcastData.value.publication_time = convertUTCtoLocal(loadedBroadcast.publication_time);
 
@@ -119,10 +135,9 @@ async function loadBroadcastData() {
         if (broadcastData.value.publication_time) {
             broadcastPublished.value = new Date(broadcastData.value.publication_time) < new Date();
         }
-    } catch (error: any) {
-        Toast.error(errorMessageAsString(error));
+    } finally {
+        loading.value = false;
     }
-    loading.value = false;
 }
 
 if (props.id) {
@@ -197,32 +212,32 @@ if (props.id) {
                             required />
                     </BCol>
                     <BCol cols="auto">
-                        <BButton
+                        <GButton
                             :id="`delete-action-link-${index}}`"
-                            v-b-tooltip.hover.bottom
+                            tooltip
                             title="Delete action link"
-                            variant="error-outline"
-                            role="button"
+                            outline
+                            color="red"
                             @click="
                                 broadcastData.content.action_links?.splice(
                                     broadcastData.content.action_links.indexOf(actionLink),
-                                    1
+                                    1,
                                 )
                             ">
-                            <FontAwesomeIcon icon="times" />
-                        </BButton>
+                            <FontAwesomeIcon :icon="faTimes" />
+                        </GButton>
                     </BCol>
                 </BRow>
 
-                <BButton
+                <GButton
                     id="create-action-link"
                     title="Add new action link"
-                    variant="outline-primary"
-                    role="button"
+                    outline
+                    color="blue"
                     @click="addActionLink">
-                    <FontAwesomeIcon icon="plus" />
+                    <FontAwesomeIcon :icon="faPlus" />
                     Add action link
-                </BButton>
+                </GButton>
             </BFormGroup>
 
             <BRow>
@@ -255,10 +270,10 @@ if (props.id) {
             <BRow class="m-2" align-h="center">
                 <AsyncButton
                     id="broadcast-submit"
-                    icon="save"
+                    :icon="faSave"
                     :title="!requiredFieldsFilled ? 'Please fill all required fields' : ''"
-                    variant="primary"
-                    size="md"
+                    color="blue"
+                    size="medium"
                     :disabled="!requiredFieldsFilled"
                     :action="createOrUpdateBroadcast">
                     <span v-if="props.id" v-localize> Update Broadcast </span>

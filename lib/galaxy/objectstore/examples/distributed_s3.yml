@@ -1,0 +1,34 @@
+type: distributed
+backends:
+  - id: files1
+    weight: 1
+    type: s3
+    auth:
+      access_key: access_moo
+      secret_key: secret_cow
+
+    bucket:
+      name: unique_bucket_name_all_lowercase
+      use_reduced_redundancy: false
+
+    extra_dirs:
+    - type: job_work
+      path: ${temp_directory}/job_working_directory_s3
+    - type: temp
+      path: ${temp_directory}/tmp_s3
+  - id: files2
+    weight: 1
+    type: s3
+    auth:
+      access_key: access_moo
+      secret_key: secret_cow
+
+    bucket:
+      name: unique_bucket_name_all_lowercase_2
+      use_reduced_redundancy: false
+
+    extra_dirs:
+    - type: job_work
+      path: ${temp_directory}/job_working_directory_s3_2
+    - type: temp
+      path: ${temp_directory}/tmp_s3_2

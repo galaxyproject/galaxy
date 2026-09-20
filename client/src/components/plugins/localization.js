@@ -2,7 +2,7 @@
  * Makes localization directives and filters available
  */
 
-import _l from "utils/localization";
+import _l from "@/utils/localization";
 
 const newlineMatch = /\r?\n|\r/g;
 const doublespaces = /\s\s+/g;

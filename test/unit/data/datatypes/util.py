@@ -2,7 +2,6 @@ import os
 import shutil
 import tempfile
 from contextlib import contextmanager
-from typing import Optional
 
 from galaxy.datatypes.sniff import get_test_fname
 from galaxy.util.bunch import Bunch
@@ -14,7 +13,7 @@ class MockDatasetDataset:
         self.purged = False
         self.file_name_ = file_name
 
-    def get_file_name(self, sync_cache=True):
+    def get_file_name(self, sync_cache=True, auth=None):
         return self.file_name_
 
     def set_file_name(self, file_name):
@@ -22,9 +21,9 @@ class MockDatasetDataset:
 
 
 class MockMetadata(Bunch):
-    file_name_: Optional[str] = None
+    file_name_: str | None = None
 
-    def get_file_name(self, sync_cache=True):
+    def get_file_name(self, sync_cache=True, auth=None):
         return self.file_name_
 
     def set_file_name(self, file_name):
@@ -36,9 +35,9 @@ class MockDataset:
         self.id = id
         self.metadata = MockMetadata()
         self.dataset = None
-        self.file_name_: Optional[str] = None
+        self.file_name_: str | None = None
 
-    def get_file_name(self, sync_cache=True):
+    def get_file_name(self, sync_cache=True, auth=None):
         return self.file_name_
 
     def set_file_name(self, file_name):

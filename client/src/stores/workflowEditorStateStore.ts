@@ -1,9 +1,9 @@
 import type { UseElementBoundingReturn } from "@vueuse/core";
-import type { UnwrapRef } from "vue";
-import { computed, reactive, ref, set } from "vue";
+import { computed, reactive, ref, set, type UnwrapRef } from "vue";
 
 import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
 import reportDefault from "@/components/Workflow/Editor/reportDefault";
+import type { Rectangle } from "@/utils/geometry";
 
 import { defineScopedStore } from "./scopedStore";
 
@@ -42,9 +42,12 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     const draggingTerminal = ref<OutputTerminals | null>(null);
     const activeNodeId = ref<number | null>(null);
     const scale = ref(1);
+    const position = ref<[number, number]>([0, 0]);
     const stepPosition = ref<StepPosition>({});
     const stepLoadingState = ref<StepLoadingState>({});
+    const multiSelectedSteps = ref<Record<number, boolean>>({});
     const hasChanges = ref(false);
+    const pendingHighlight = ref<{ bounds: Rectangle; moveTo?: boolean } | null>(null);
     const report = ref<WorkflowReport>({
         markdown: reportDefault,
     });
@@ -56,22 +59,45 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         draggingTerminal.value = null;
         activeNodeId.value = null;
         scale.value = 1;
+        position.value = [0, 0];
         stepPosition.value = {};
         stepLoadingState.value = {};
+        multiSelectedSteps.value = {};
+        pendingHighlight.value = null;
         report.value = {
             markdown: reportDefault,
         };
     }
 
     const getInputTerminalPosition = computed(
-        () => (stepId: number, inputName: string) => inputTerminals.value[stepId]?.[inputName]
+        () => (stepId: number, inputName: string) => inputTerminals.value[stepId]?.[inputName],
     );
 
     const getOutputTerminalPosition = computed(
-        () => (stepId: number, outputName: string) => outputTerminals.value[stepId]?.[outputName]
+        () => (stepId: number, outputName: string) => outputTerminals.value[stepId]?.[outputName],
     );
 
     const getStepLoadingState = computed(() => (stepId: number) => stepLoadingState.value[stepId]);
+
+    const getStepMultiSelected = computed(() => (stepId: number) => Boolean(multiSelectedSteps.value[stepId]));
+
+    const multiSelectedStepIds = computed(() =>
+        Object.entries(multiSelectedSteps.value)
+            .filter(([_id, selected]) => selected)
+            .map(([id]) => parseInt(id)),
+    );
+
+    function clearStepMultiSelection() {
+        multiSelectedSteps.value = {};
+    }
+
+    function toggleStepMultiSelected(stepId: number) {
+        setStepMultiSelected(stepId, !getStepMultiSelected.value(stepId));
+    }
+
+    function setStepMultiSelected(stepId: number, selected: boolean) {
+        set(multiSelectedSteps.value, stepId, selected);
+    }
 
     function setInputTerminalPosition(stepId: number, inputName: string, position: InputTerminalPosition) {
         if (!inputTerminals.value[stepId]) {
@@ -121,14 +147,22 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         draggingTerminal,
         activeNodeId,
         scale,
+        position,
         report,
         hasChanges,
         stepPosition,
         stepLoadingState,
+        pendingHighlight,
         $reset,
         getInputTerminalPosition,
         getOutputTerminalPosition,
         getStepLoadingState,
+        multiSelectedSteps,
+        multiSelectedStepIds,
+        getStepMultiSelected,
+        clearStepMultiSelection,
+        toggleStepMultiSelected,
+        setStepMultiSelected,
         setInputTerminalPosition,
         setOutputTerminalPosition,
         deleteInputTerminalPosition,

@@ -1,17 +1,16 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
-import { BroadcastNotification } from "@/stores/broadcastsStore";
+import { useServerMock } from "@/api/client/__mocks__";
+import type { BroadcastNotification } from "@/stores/broadcastsStore";
 
 import { generateNewBroadcast } from "./test.utils";
 
 import BroadcastsList from "./BroadcastsList.vue";
-
-jest.mock("@/api/schema");
 
 const localVue = getLocalVue(true);
 
@@ -23,16 +22,19 @@ const selectors = {
     broadcastItem: "[data-test-id='broadcast-item']",
 } as const;
 
+const { server, http } = useServerMock();
+
 async function mountBroadcastsList(broadcasts?: BroadcastNotification[]) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
-    mockFetcher
-        .path("/api/notifications/broadcast")
-        .method("get")
-        .mock({ data: broadcasts ?? [] });
+    server.use(
+        http.get("/api/notifications/broadcast", ({ response }) => {
+            return response(200).json(broadcasts ?? []);
+        }),
+    );
 
-    const wrapper = shallowMount(BroadcastsList as object, {
+    const wrapper = mount(BroadcastsList as object, {
         localVue,
         pinia,
         stubs: {

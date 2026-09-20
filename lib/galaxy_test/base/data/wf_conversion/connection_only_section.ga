@@ -1,0 +1,46 @@
+{
+    "steps": {
+        "0": {
+            "tool_id": null,
+            "label": "input_data",
+            "id": 0,
+            "position": {
+                "left": 0,
+                "top": 0
+            },
+            "type": "data_input",
+            "name": "Input dataset",
+            "post_job_actions": {},
+            "tool_version": "1.0.0",
+            "annotation": "",
+            "input_connections": {},
+            "tool_state": "{\"name\": \"input_data\"}"
+        },
+        "1": {
+            "tool_id": "gx_section_data",
+            "label": "test_tool",
+            "id": 1,
+            "position": {
+                "left": 10,
+                "top": 10
+            },
+            "type": "tool",
+            "name": "gx_section_data",
+            "post_job_actions": {},
+            "tool_version": "1.0.0",
+            "annotation": "",
+            "input_connections": {
+                "parameter|data_parameter": {
+                    "output_name": "output",
+                    "id": 0
+                }
+            },
+            "tool_state": "{\"__page__\": 0}"
+        }
+    },
+    "a_galaxy_workflow": "true",
+    "format-version": "0.1",
+    "name": "Test connection-only section omission artifact",
+    "uuid": "41da8099-1cf0-4cc2-bcd0-a931a2608bd7",
+    "annotation": ""
+}

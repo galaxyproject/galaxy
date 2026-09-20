@@ -1,53 +1,58 @@
 <script setup lang="ts">
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
-import { BButton } from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onMounted, type Ref, ref, watch } from "vue";
 import Vue from "vue";
 
-import { useGlobalUploadModal } from "@/composables/globalUploadModal";
+import type { TableField } from "@/components/Common/GTable.types";
+import type { DataOption } from "@/components/Form/Elements/FormData/types";
+import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
+import { useUrlTracker } from "@/composables/urlTracker";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { Model } from "./model";
 import { Services } from "./services";
-import { UrlTracker } from "./utilities";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
-interface Record {
-    id: string;
-    isLeaf: boolean;
-    url: string;
-}
+type Record = SelectionItem;
 
 interface Props {
     allowUpload?: boolean;
-    callback?: (results: Array<Record>) => void;
+    callback?: (results: Record[] | DataOption[]) => void;
+    filterOkState?: boolean;
+    filterByTypeIds?: string[];
     format?: string;
     library?: boolean;
-    modalStatic?: boolean;
     multiple?: boolean;
     title?: string;
     history: string;
+    /** Optional formats to constrain the upload modal */
+    uploadModalFormats?: string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
     allowUpload: true,
     callback: () => {},
+    filterOkState: false,
+    filterByTypeIds: undefined,
     format: "download",
     library: true,
-    modalStatic: false,
     multiple: false,
     title: "",
+    uploadModalFormats: undefined,
 });
 
 const emit = defineEmits<{
     (e: "onCancel"): void;
-    (e: "onOk", results: Array<Record>): void;
+    (e: "onOk", results: unknown): void;
     (e: "onUpload"): void;
 }>();
 
-const { openGlobalUploadModal } = useGlobalUploadModal();
+const { openUploadModal } = useUploadMethodModal();
 
 const errorMessage = ref("");
 const filter = ref("");
@@ -59,21 +64,25 @@ const undoShow = ref(false);
 
 const services = new Services();
 const model = new Model({ multiple: props.multiple, format: props.format });
-let urlTracker = new UrlTracker(getHistoryUrl());
+const urlTracker = useUrlTracker<string>({ root: getHistoryUrl() });
 
 /** Specifies data columns to be shown in the dialog's table */
-const fields = [
+const fields: TableField[] = [
     {
         key: "label",
+        label: "Name",
     },
     {
         key: "extension",
+        label: "Extension",
     },
     {
         key: "tags",
+        label: "Tags",
     },
     {
         key: "update_time",
+        label: "Update Time",
     },
 ];
 
@@ -90,7 +99,14 @@ function formatRows() {
 
 /** Returns the default url i.e. the url of the current history **/
 function getHistoryUrl() {
-    return `${getAppRoot()}api/histories/${props.history}/contents?deleted=false`;
+    let queryString = "&q=deleted&qv=false";
+    if (props.filterOkState) {
+        queryString += "&q=state-eq&qv=ok";
+    }
+    if (props.filterByTypeIds && props.filterByTypeIds.length > 0) {
+        queryString += `&q=type_id-in&qv=${props.filterByTypeIds.join(",")}`;
+    }
+    return `${getAppRoot()}api/histories/${props.history}/contents?v=dev${queryString}`;
 }
 
 /** Called when the modal is hidden */
@@ -118,7 +134,7 @@ function onClick(record: Record) {
 function onOk() {
     const results = model.finalize();
     modalShow.value = false;
-    props.callback(results);
+    props.callback?.(results);
     emit("onOk", results);
 }
 
@@ -128,29 +144,34 @@ function onOpen(record: Record) {
 }
 
 /** Called when user decides to upload new data */
-function onUpload() {
-    const propsData = {
+async function onUpload() {
+    const result = await openUploadModal({
+        formats: props.uploadModalFormats,
         multiple: props.multiple,
-        format: props.format,
-        callback: props.callback,
-        modalShow: true,
-        selectable: true,
-    };
-    openGlobalUploadModal(propsData);
+        hideTips: true,
+    });
     modalShow.value = false;
+    if (!result.cancelled) {
+        const uploadedOptions = result.toDataOptions();
+        props.callback?.(uploadedOptions);
+        emit("onOk", uploadedOptions);
+    }
     emit("onUpload");
 }
 
 /** Performs server request to retrieve data records **/
-function load(url: string = "") {
-    url = urlTracker.getUrl(url);
+function load(url?: string) {
+    if (url) {
+        urlTracker.forward(url);
+    }
+    const currentUrl = urlTracker.current.value;
     filter.value = "";
     optionsShow.value = false;
-    undoShow.value = !urlTracker.atRoot();
+    undoShow.value = !urlTracker.isAtRoot.value;
     services
-        .get(url)
+        .get(currentUrl)
         .then((incoming) => {
-            if (props.library && urlTracker.atRoot()) {
+            if (props.library && urlTracker.isAtRoot.value) {
                 incoming.unshift({
                     label: "Data Libraries",
                     url: `${getAppRoot()}api/libraries`,
@@ -174,9 +195,9 @@ onMounted(() => {
 watch(
     () => history,
     () => {
-        urlTracker = new UrlTracker(getHistoryUrl());
+        urlTracker.reset(getHistoryUrl());
         load();
-    }
+    },
 );
 </script>
 
@@ -186,6 +207,7 @@ watch(
         :disable-ok="!hasValue"
         :fields="fields"
         :items="items"
+        :total-items="items.length"
         :modal-show="modalShow"
         :multiple="multiple"
         :options-show="optionsShow"
@@ -196,10 +218,10 @@ watch(
         @onOpen="onOpen"
         @onUndo="load()">
         <template v-slot:buttons>
-            <BButton v-if="allowUpload" size="sm" @click="onUpload">
-                <Icon :icon="faUpload" />
+            <GButton v-if="allowUpload" size="small" class="mr-1" @click="onUpload">
+                <FontAwesomeIcon :icon="faUpload" />
                 Upload
-            </BButton>
+            </GButton>
         </template>
     </SelectionDialog>
 </template>

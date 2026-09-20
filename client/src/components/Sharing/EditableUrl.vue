@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheck, faCopy, faEdit } from "@fortawesome/free-solid-svg-icons";
+import { faCopy } from "@fortawesome/free-regular-svg-icons";
+import { faCheck, faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { computed, nextTick, ref } from "vue";
 
 import { copy } from "@/utils/clipboard";
 
 import SlugInput from "./SlugInput.vue";
-
-library.add(faCopy, faEdit, faCheck);
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const props = defineProps<{
     prefix: string;
@@ -70,44 +68,35 @@ function onCopyOut() {
                 @keyup.enter="onSubmit" />
         </span>
 
-        <BButton
-            v-if="!editing"
-            v-b-tooltip.hover
-            class="inline-icon-button"
-            title="Edit URL"
-            size="md"
-            @click="onEdit">
-            <FontAwesomeIcon icon="edit" fixed-width />
-        </BButton>
-        <BButton v-else v-b-tooltip.hover class="inline-icon-button" title="Done" size="md" @click="onSubmit">
-            <FontAwesomeIcon icon="check" fixed-width />
-        </BButton>
+        <GButton v-if="!editing" v-g-tooltip.hover class="inline-icon-button" title="Edit URL" @click="onEdit">
+            <FontAwesomeIcon :icon="faEdit" fixed-width />
+        </GButton>
+        <GButton v-else v-g-tooltip.hover class="inline-icon-button" title="Done" @click="onSubmit">
+            <FontAwesomeIcon :icon="faCheck" fixed-width />
+        </GButton>
 
-        <BButton
+        <GButton
             v-if="!editing"
             id="tooltip-clipboard"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             :disabled="editing"
-            size="md"
             class="inline-icon-button"
             :title="clipboardTitle"
             @click="onCopy"
             @mouseout="onCopyOut"
             @blur="onCopyOut">
-            <FontAwesomeIcon :icon="['far', 'copy']" fixed-width />
-        </BButton>
+            <FontAwesomeIcon :icon="faCopy" fixed-width />
+        </GButton>
     </div>
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .editable-url {
-    height: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
+    word-break: break-all;
 }
+
 .inline-icon-button:disabled:hover {
     background-color: $brand-secondary;
     color: unset;

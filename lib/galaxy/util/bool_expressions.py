@@ -4,17 +4,15 @@ Based on the example: https://github.com/pyparsing/pyparsing/blob/master/example
 """
 
 import logging
-from typing import (
+from collections.abc import (
     Callable,
     Iterable,
-    Optional,
-    Set,
 )
 
 from pyparsing import (
     alphanums,
     CaselessKeyword,
-    infixNotation,
+    infix_notation,
     Keyword,
     opAssoc,
     ParseException,
@@ -25,7 +23,7 @@ from pyparsing import (
 
 log = logging.getLogger(__name__)
 
-ParserElement.enablePackrat()
+ParserElement.enable_packrat()
 
 # Defines the allowed characters that form a valid token.
 # Tokens that don't match this format will raise an exception when found.
@@ -90,14 +88,14 @@ class BoolAnd(BoolBinaryOperation):
     """Represents the `AND` boolean operation."""
 
     reprsymbol = "&"
-    evalop = all
+    evalop = all  # type: ignore[assignment]
 
 
 class BoolOr(BoolBinaryOperation):
     """Represents the `OR` boolean operation."""
 
     reprsymbol = "|"
-    evalop = any
+    evalop = any  # type: ignore[assignment]
 
 
 class BoolNot:
@@ -124,7 +122,7 @@ class BooleanExpressionEvaluator:
     You can pass in different TokenEvaluator implementations to customize how the tokens (or variables) are
     converted to a boolean value when evaluating the expression."""
 
-    def __init__(self, evaluator: TokenEvaluator, token_format: Optional[str] = None) -> None:
+    def __init__(self, evaluator: TokenEvaluator, token_format: str | None = None) -> None:
         """Initializes the expression evaluator.
 
         :param evaluator: The custom TokenEvaluator used to transform any token into a boolean.
@@ -137,8 +135,8 @@ class BooleanExpressionEvaluator:
         action = BoolOperand
         action.evaluator = evaluator
         boolOperand = TRUE | FALSE | QUOTED_STRING | Word(token_format or DEFAULT_TOKEN_FORMAT)
-        boolOperand.setParseAction(action)
-        self.boolExpr: ParserElement = infixNotation(
+        boolOperand.set_parse_action(action)
+        self.boolExpr: ParserElement = infix_notation(
             boolOperand,
             [
                 (NOT_OP, 1, opAssoc.RIGHT, BoolNot),
@@ -150,7 +148,7 @@ class BooleanExpressionEvaluator:
     def evaluate_expression(self, expr: str) -> bool:
         """Given an expression it gets evaluated to True or False using boolean logic."""
         try:
-            res = self.boolExpr.parseString(expr, parseAll=True)[0]
+            res = self.boolExpr.parse_string(expr, parse_all=True)[0]
             return bool(res)
         except ParseException as e:
             log.error(f"BooleanExpressionEvaluator unable to evaluate expression => {expr}", exc_info=e)
@@ -172,7 +170,7 @@ class TokenContainedEvaluator(TokenEvaluator):
     """Implements the TokenEvaluator interface to determine if a token is contained
     in a particular list of tokens."""
 
-    def __init__(self, tokens: Set[str]) -> None:
+    def __init__(self, tokens: set[str]) -> None:
         """Initializes the token evaluator with the set of tokens that will evaluate to `True`.
 
         :param tokens: The list of tokens that should be evaluated to True.

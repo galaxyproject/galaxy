@@ -15,6 +15,7 @@ class TestCompressionUtil(TestCase):
         self.assert_safety("test-data/unsafe.zip", False)
         self.assert_safety("test-data/4.bed.zip", True)
         self.assert_safety("test-data/testdir.tar", True)
+        self.assert_safety("test-data/testdir1.tar.gz", True)
         self.assert_safety("test-data/safetar_with_symlink.tar", True)
         self.assert_safety("test-data/safe_relative_symlink.tar", True)
 
@@ -30,10 +31,12 @@ class TestCompressionUtil(TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             if expected_to_be_safe:
-                CompressedFile(path).extract(temp_dir)
+                with CompressedFile(path) as cf:
+                    cf.extract(temp_dir)
             else:
                 with self.assertRaisesRegex(Exception, "is blocked"):
-                    CompressedFile(path).extract(temp_dir)
+                    with CompressedFile(path) as cf:
+                        cf.extract(temp_dir)
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 

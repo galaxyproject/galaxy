@@ -1,0 +1,27 @@
+<tool id="gx_group_tag" name="gx_group_tag" version="1.0.0">
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command><![CDATA[
+echo "parameter: $parameter" > '$output'
+    ]]></command>
+    <inputs>
+        <param name="ref_parameter" type="data_collection" format="tabular" />
+        <param name="parameter" type="group_tag" data_ref="ref_parameter" />
+    </inputs>
+    <expand macro="simple_text_output" />
+    <tests>
+        <test>
+            <param name="ref_parameter">
+                <collection type="paired">
+                    <element name="forward" value="simple_line.txt" tags="group:type:single" />
+                    <element name="reverse" value="simple_line_alternative.txt" tags="group:type:split" />
+                </collection>
+            </param>
+            <param name="parameter" value="type:single" />
+            <expand macro="assert_output">
+                <has_line line="parameter: type:single"/>
+            </expand>
+        </test>
+    </tests>
+</tool>

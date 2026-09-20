@@ -16,12 +16,10 @@ log = logging.getLogger(__name__)
 
 
 def run():
-    """
-    If the target database is 'tool_shed', delegate to sqlalchemy migrate.
-    Otherwise, handle with Alembic.
-    """
     if sys.argv[-1] == "tool_shed":
-        _run_sqlalchemy_migrate_on_toolshed()
+        raise Exception(
+            "Please use the `manage_toolshed_db.sh` script (or `scripts/toolshed_db.py` if running Ansible)."
+        )
     else:
         arg = _get_command_argument()
         lmdb = LegacyManageDb()
@@ -44,21 +42,6 @@ def _get_command_argument():
         return arg
     else:
         raise Exception("Invalid command argument; should be: 'version', 'db_version', or 'upgrade'")
-
-
-def _run_sqlalchemy_migrate_on_toolshed():
-    # This is the only case when we use SQLAlchemy Migrate.
-    # This intentionally duplicates the code in `migrate_toolshed_db.py`.
-    # The dependency on `migrate` should be removed prior to the move to SQLAlchemy 2.0.
-    from migrate.versioning.shell import main
-
-    from galaxy.model.orm.scripts import get_config
-
-    config = get_config(sys.argv, use_argparse=False, cwd=os.getcwd())
-    db_url = config["db_url"]
-    repo = config["repo"]
-
-    main(repository=repo, url=db_url)
 
 
 if __name__ == "__main__":

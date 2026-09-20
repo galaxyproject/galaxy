@@ -1,4 +1,4 @@
-import { type components } from "@/api/schema";
+import type { components } from "@/api/schema";
 
 type NotificationVariants = components["schemas"]["NotificationVariant"];
 type BroadcastNotificationResponse = components["schemas"]["BroadcastNotificationResponse"];

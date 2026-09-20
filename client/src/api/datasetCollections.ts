@@ -1,32 +1,60 @@
-import { CollectionEntry, DCESummary, HDCADetailed, HDCASummary, isHDCA } from "@/api";
-import { fetcher } from "@/api/schema";
+import {
+    type CollectionElementIdentifiers,
+    type CollectionEntry,
+    type CreateNewCollectionPayload,
+    type DCESummary,
+    GalaxyApi,
+    type HDCADetailed,
+    type HDCASummary,
+    isHDCA,
+} from "@/api";
+import type { components } from "@/api/schema";
+import { ApiError, errorMessageAsString, type GalaxyApiResult, rethrowSimple } from "@/utils/simple-error";
 
 const DEFAULT_LIMIT = 50;
 
-const getCollectionDetails = fetcher.path("/api/dataset_collections/{id}").method("get").create();
+export type CollectionType = string;
+
+export type SampleSheetCollectionType =
+    | "sample_sheet"
+    | "sample_sheet:paired"
+    | "sample_sheet:paired_or_unpaired"
+    | "sample_sheet:record";
+// mirror the python definition here
+export type SampleSheetColumnValueT = string | number | boolean;
 
 /**
  * Fetches the details of a collection.
  * @param params.id The ID of the collection (HDCA) to fetch.
  */
-export async function fetchCollectionDetails(params: { id: string }): Promise<HDCADetailed> {
-    const { data } = await getCollectionDetails({ id: params.id });
-    return data as HDCADetailed;
+export async function fetchCollectionDetails(params: { hdca_id: string }): Promise<GalaxyApiResult<HDCADetailed>> {
+    const { data, error, response } = await GalaxyApi().GET("/api/dataset_collections/{hdca_id}", {
+        params: { path: params },
+    });
+
+    if (error) {
+        return { data: undefined, error: new ApiError(errorMessageAsString(error), response.status) };
+    }
+    return { data: data as HDCADetailed, error: undefined };
 }
 
 /**
  * Fetches the details of a collection.
  * @param params.id The ID of the collection (HDCA) to fetch.
  */
-export async function fetchCollectionSummary(params: { id: string }): Promise<HDCASummary> {
-    const { data } = await getCollectionDetails({ id: params.id, view: "collection" });
+export async function fetchCollectionSummary(params: { hdca_id: string }): Promise<HDCASummary> {
+    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{hdca_id}", {
+        params: {
+            path: params,
+            query: { view: "collection" },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
     return data as HDCASummary;
 }
-
-const getCollectionContents = fetcher
-    .path("/api/dataset_collections/{hdca_id}/contents/{parent_id}")
-    .method("get")
-    .create();
 
 export async function fetchCollectionElements(params: {
     /** The ID of the top level HDCA that associates this collection with the History it belongs to. */
@@ -38,13 +66,16 @@ export async function fetchCollectionElements(params: {
     /** The maximum number of elements to fetch. */
     limit?: number;
 }): Promise<DCESummary[]> {
-    const { data } = await getCollectionContents({
-        instance_type: "history",
-        hdca_id: params.hdcaId,
-        parent_id: params.collectionId,
-        offset: params.offset,
-        limit: params.limit,
+    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{hdca_id}/contents/{parent_id}", {
+        params: {
+            path: { hdca_id: params.hdcaId, parent_id: params.collectionId },
+            query: { instance_type: "history", offset: params.offset, limit: params.limit },
+        },
     });
+
+    if (error) {
+        rethrowSimple(error);
+    }
     return data;
 }
 
@@ -66,13 +97,76 @@ export async function fetchElementsFromCollection(params: {
     });
 }
 
-export const fetchCollectionAttributes = fetcher
-    .path("/api/dataset_collections/{id}/attributes")
-    .method("get")
-    .create();
+export type NewCollectionOptions = {
+    name: string;
+    element_identifiers: CollectionElementIdentifiers;
+    collection_type: string;
+    history_id: string;
+    copy_elements?: boolean;
+    hide_source_items?: boolean;
+};
 
-const postCopyCollection = fetcher.path("/api/dataset_collections/{id}/copy").method("post").create();
-export async function copyCollection(id: string, dbkey: string): Promise<Record<string, never>> {
-    const { data } = await postCopyCollection({ id, dbkey });
+export function createCollectionPayload(options: NewCollectionOptions): CreateNewCollectionPayload {
+    const hideSourceItems = options.hide_source_items === undefined ? true : options.hide_source_items;
+    return {
+        name: options.name,
+        history_id: options.history_id,
+        element_identifiers: options.element_identifiers,
+        collection_type: options.collection_type,
+        instance_type: "history",
+        fields: "auto",
+        copy_elements: options.copy_elements || true,
+        hide_source_items: hideSourceItems,
+    } as CreateNewCollectionPayload;
+}
+
+export async function createHistoryDatasetCollectionInstanceSimple(options: NewCollectionOptions) {
+    const payload = createCollectionPayload(options);
+    return createHistoryDatasetCollectionInstanceFull(payload);
+}
+
+export async function createHistoryDatasetCollectionInstanceFull(
+    payload: CreateNewCollectionPayload,
+    signal?: AbortSignal,
+) {
+    const { data, error } = await GalaxyApi().POST("/api/dataset_collections", {
+        body: payload,
+        signal,
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+export type CreateWorkbookForCollectionPayload = components["schemas"]["CreateWorkbookForCollectionApi"];
+export type CreateWorkbookPayload = components["schemas"]["CreateWorkbookRequest"];
+
+export async function createWorkbook(payload: CreateWorkbookPayload): Promise<Blob> {
+    const { data, error } = await GalaxyApi().POST("/api/sample_sheet_workbook", {
+        body: payload,
+        parseAs: "blob",
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+export async function createWorkbookForCollection(
+    hdca_id: string,
+    payload: CreateWorkbookForCollectionPayload,
+): Promise<Blob> {
+    const { data, error } = await GalaxyApi().POST("/api/dataset_collections/{hdca_id}/sample_sheet_workbook", {
+        params: { path: { hdca_id: hdca_id } },
+        body: payload,
+        parseAs: "blob",
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
     return data;
 }

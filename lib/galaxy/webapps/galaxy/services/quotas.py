@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from sqlalchemy import (
     false,
@@ -8,11 +7,14 @@ from sqlalchemy import (
 )
 
 from galaxy import util
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.groups import get_group_by_name
 from galaxy.managers.quotas import QuotaManager
-from galaxy.managers.users import get_user_by_email
 from galaxy.model import Quota
+from galaxy.model.db.user import get_user_by_email
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.quota._schema import (
     CreateQuotaParams,
@@ -96,11 +98,12 @@ class QuotasService(ServiceBase):
         messages = []
         for method in methods:
             message = method(quota, params)
-            messages.append(message)
+            if message:
+                messages.append(message)
         return "; ".join(messages)
 
     def delete(
-        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, payload: Optional[DeleteQuotaPayload] = None
+        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, payload: DeleteQuotaPayload | None = None
     ) -> str:
         """Marks a quota as deleted."""
         quota = self.quota_manager.get_quota(
@@ -121,7 +124,7 @@ class QuotasService(ServiceBase):
         quota = self.quota_manager.get_quota(trans, id, deleted=True)
         return self.quota_manager.undelete_quota(quota)
 
-    def validate_in_users_and_groups(self, trans, payload):
+    def validate_in_users_and_groups(self, trans: ProvidesAppContext, payload):
         """
         For convenience, in_users and in_groups can be encoded IDs or emails/group names in the API.
         """
@@ -130,7 +133,13 @@ class QuotasService(ServiceBase):
             try:
                 return trans.security.decode_id(item)
             except Exception:
-                return get_user_by_email(trans.sa_session, item).id
+                user = get_user_by_email(trans.sa_session, item)
+                if not user:
+                    # Try a case-insensitive match on the email
+                    user = get_user_by_email(trans.sa_session, item, case_sensitive=False)
+                if not user:
+                    raise ValueError(f"User with email address '{item}' not found.")
+                return user.id
 
         def get_group_id(item):
             try:

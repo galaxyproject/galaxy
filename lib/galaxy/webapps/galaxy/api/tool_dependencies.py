@@ -3,7 +3,6 @@ API operations allowing clients to manage tool dependencies.
 """
 
 import logging
-from typing import Optional
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.structured_app import StructuredApp
@@ -40,7 +39,7 @@ class ToolDependenciesAPIController(BaseGalaxyAPIController):
 
     @require_admin
     @expose_api
-    def update(self, trans):
+    def update(self, trans: ProvidesAppContext):
         """
         PUT /api/dependency_resolvers
 
@@ -76,7 +75,7 @@ class ToolDependenciesAPIController(BaseGalaxyAPIController):
 
     @require_admin
     @expose_api
-    def install_dependency(self, trans: ProvidesAppContext, id: Optional[str] = None, **kwds):
+    def install_dependency(self, trans: ProvidesAppContext, id: str | None = None, **kwds):
         """
         POST /api/dependency_resolvers/{index}/dependency
         POST /api/dependency_resolvers/dependency

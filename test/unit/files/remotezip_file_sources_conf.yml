@@ -1,0 +1,3 @@
+- type: remoteZip
+  id: test1
+  doc: Test remote zip file source

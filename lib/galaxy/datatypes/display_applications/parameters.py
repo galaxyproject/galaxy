@@ -1,17 +1,14 @@
 # Contains parameters that are used in Display Applications
 import mimetypes
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import (
-    Callable,
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 from urllib.parse import quote_plus
 
 from galaxy.datatypes.data import Data
 from galaxy.model import DatasetInstance
-from galaxy.model.base import transaction
 from galaxy.schema.schema import DatasetState
 from galaxy.util import string_as_bool
 from galaxy.util.template import fill_template
@@ -24,7 +21,7 @@ DEFAULT_DATASET_NAME = "dataset"
 class DisplayApplicationParameter:
     """Abstract Class for Display Application Parameters"""
 
-    type: Optional[str] = None
+    type: str | None = None
 
     @classmethod
     def from_elem(cls, elem, link):
@@ -73,7 +70,7 @@ class DatasetLikeObject:
     state: DatasetState
     extension: str
     name: str
-    dbkey: Optional[str]
+    dbkey: str | None
     datatype: Data
 
 
@@ -117,7 +114,7 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
             )
         return None
 
-    def _get_dataset_like_object(self, other_values) -> Optional[Union[DatasetLikeObject, DatasetInstance]]:
+    def _get_dataset_like_object(self, other_values) -> DatasetLikeObject | DatasetInstance | None:
         data = other_values.get(self.dataset, None)
         assert data, "Base dataset could not be found in values provided to DisplayApplicationDataParameter"
         if isinstance(data, DisplayDataValueWrapper):
@@ -182,22 +179,9 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
                 if target_ext and not converted_dataset:
                     if isinstance(data, DisplayDataValueWrapper):
                         data = data.value
-                    new_data = next(
-                        iter(
-                            data.datatype.convert_dataset(
-                                trans, data, target_ext, return_output=True, visible=False
-                            ).values()
-                        )
+                    data.datatype.convert_dataset(
+                        trans, data, target_ext, return_output=True, visible=False, history=data.history
                     )
-                    new_data.hid = data.hid
-                    new_data.name = data.name
-                    trans.sa_session.add(new_data)
-                    assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation(
-                        parent=data, file_type=target_ext, dataset=new_data, metadata_safe=False
-                    )
-                    trans.sa_session.add(assoc)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
                 elif converted_dataset and converted_dataset.state == DatasetState.ERROR:
                     raise Exception(f"Dataset conversion failed for data parameter: {self.name}")
         return self.get_value(other_values, dataset_hash, user_hash, trans)
@@ -270,19 +254,17 @@ class DisplayParameterValueWrapper:
         base_url = self.trans.request.base
         if self.parameter.strip_https and base_url[:5].lower() == "https":
             base_url = f"http{base_url[5:]}"
-        return "{}{}".format(
-            base_url,
-            self.trans.app.url_for(
-                controller="dataset",
-                action="display_application",
-                dataset_id=self._dataset_hash,
-                user_id=self._user_hash,
-                app_name=quote_plus(self.parameter.link.display_application.id),
-                link_name=quote_plus(self.parameter.link.id),
-                app_action=self.action_name,
-                action_param=self._url,
-            ),
+        path = self.trans.app.url_for(
+            controller="dataset",
+            action="display_application",
+            dataset_id=self._dataset_hash,
+            user_id=self._user_hash,
+            app_name=quote_plus(self.parameter.link.display_application.id),
+            link_name=quote_plus(self.parameter.link.id),
+            app_action=self.action_name,
+            action_param=self._url,
         )
+        return f"{base_url.rstrip('/')}/{path.lstrip('/')}"
 
     @property
     def action_name(self):

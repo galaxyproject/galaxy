@@ -5,6 +5,7 @@ from galaxy_test.base.populators import (
     WorkflowPopulator,
 )
 from galaxy_test.base.uses_shed_api import UsesShedApi
+from galaxy_test.driver import integration_util
 from .test_containerized_jobs import ContainerizedIntegrationTestCase
 
 
@@ -102,4 +103,15 @@ test_data:
                 history_id=history_id,
                 wait=True,
                 assert_ok=True,
+                # Both data manager jobs resolve their biocontainers image via live
+                # quay.io queries, which alone take 15-75s each on a cold CI runner —
+                # the 60s default invocation timeout is sized for lightweight tools.
+                timeout=180,
             )
+
+
+class TestCachedDataManagerWorkflowInvocation(
+    integration_util.CachedToolBoxIntegrationMixin,
+    TestDataManagerWorkflowInvocation,
+):
+    pass

@@ -4,7 +4,6 @@ from galaxy.model.unittest_utils.store_fixtures import (
     one_ld_library_model_store_dict,
     TEST_LIBRARY_NAME,
 )
-from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import api_asserts
 from galaxy_test.base.decorators import requires_new_library
 from galaxy_test.base.populators import (
@@ -194,7 +193,7 @@ class TestLibrariesApi(ApiTestCase):
         library = self.library_populator.new_private_library(library_name)
         payload, files = self.library_populator.create_dataset_request(library, file_type="txt", contents="create_test")
         create_response = self.galaxy_interactor.post(
-            "libraries/%s/contents" % library["id"], payload, files=files, key=self.master_api_key
+            f"libraries/{library['id']}/contents", payload, files=files, key=self.master_api_key
         )
         self._assert_status_code_is(create_response, 400)
 
@@ -313,20 +312,23 @@ class TestLibrariesApi(ApiTestCase):
             "upload_option": "upload_file",
             "files_0|url_paste": FILE_URL,
         }
-        create_response = self._post(f"libraries/{library['id']}/contents", payload)
+        create_response = self._post(f"libraries/{library['id']}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 400)
-        assert create_response.json() == "Requested extension 'xxx' unknown, cannot upload dataset."
+        assert create_response.json()["err_msg"] == "Requested extension 'xxx' unknown, cannot upload dataset."
 
-    @skip_if_github_down
     @requires_new_library
-    def test_fetch_failed_validation(self):
+    def test_fetch_failed_validation(self, mock_http_server):
         # Exception handling is really rough here - we should be creating a dataset in error instead
         # of just failing the job like this.
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
+        url = mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+            file_path="test-data/4.bed",
+        )
         items = [
             {
                 "src": "url",
-                "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                "url": url,
                 "MD5": "37b59762b59fff860460522d271bc112",
                 "name": "4.bed",
             }
@@ -340,7 +342,6 @@ class TestLibrariesApi(ApiTestCase):
         payload = {
             "history_id": history_id,  # TODO: Shouldn't be needed :(
             "targets": targets,
-            "validate_hashes": True,
         }
         tool_response = self.dataset_populator.fetch(payload, assert_ok=False)
         job = self.dataset_populator.check_run(tool_response)
@@ -353,16 +354,19 @@ class TestLibrariesApi(ApiTestCase):
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         assert dataset["state"] == "error", dataset
 
-    @skip_if_github_down
     @requires_new_library
-    def test_fetch_url_archive_to_folder(self):
+    def test_fetch_url_archive_to_folder(self, mock_http_server):
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
+        url = mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed.zip",
+            file_path="test-data/4.bed.zip",
+        )
         targets = [
             {
                 "destination": destination,
                 "items_from": "archive",
                 "src": "url",
-                "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed.zip",
+                "url": url,
             }
         ]
         payload = {
@@ -423,15 +427,18 @@ class TestLibrariesApi(ApiTestCase):
         print(subfolder_response.json())
         subfolder_id = subfolder_response.json()["id"]
         history_id = self.dataset_populator.new_history()
-        hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3 sub")["id"]
+        expected_dataset_name = "test_dataset_in_subfolder"
+        hda_id = self.dataset_populator.new_dataset(history_id, name=expected_dataset_name, content="1 2 3 sub")["id"]
         payload = {"from_hda_id": hda_id}
         create_response = self._post(f"folders/{subfolder_id}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "id")
-        dataset_update_time = create_response.json()["update_time"]
-        container_fetch_response = self.galaxy_interactor.get(f"folders/{folder_id}/contents")
-        container_update_time = container_fetch_response.json()["folder_contents"][0]["update_time"]
-        assert dataset_update_time == container_update_time, container_fetch_response
+
+        folder_response = self.galaxy_interactor.get(f"folders/{subfolder_id}/contents")
+        self._assert_status_code_is(folder_response, 200)
+        folder_contents = folder_response.json()["folder_contents"]
+        assert len(folder_contents) == 1
+        assert folder_contents[0]["name"] == expected_dataset_name
 
     def _patch_library_dataset(self, library_dataset_id, data):
         create_response = self._patch(f"libraries/datasets/{library_dataset_id}", data=data, json=True)
@@ -447,10 +454,11 @@ class TestLibrariesApi(ApiTestCase):
             "name": "updated_name",
             "file_ext": "fasta",
             "misc_info": "updated_info",
-            "genome_build": "updated_genome_build",
+            "message": "update message",
         }
         ld_updated = self._patch_library_dataset(ld["id"], data)
-        self._assert_has_keys(ld_updated, "name", "file_ext", "misc_info", "genome_build")
+        for key, value in data.items():
+            assert ld_updated[key] == value
 
     @requires_new_library
     def test_update_dataset_tags(self):
@@ -551,7 +559,7 @@ class TestLibrariesApi(ApiTestCase):
             history_id, contents=["xxx", "yyy"], direct_upload=True, wait=True
         ).json()["outputs"][0]["id"]
         payload = {"from_hdca_id": hdca_id, "create_type": "file", "folder_id": folder_id}
-        create_response = self._post(f"libraries/{library['id']}/contents", payload)
+        create_response = self._post(f"libraries/{library['id']}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 200)
 
     @requires_new_library
@@ -587,7 +595,7 @@ class TestLibrariesApi(ApiTestCase):
             create_type="folder",
             name="New Folder",
         )
-        return self._post(f"libraries/{library['id']}/contents", data=create_data)
+        return self._post(f"libraries/{library['id']}/contents", data=create_data, json=True)
 
     def _create_subfolder(self, containing_folder_id):
         create_data = dict(
@@ -604,6 +612,6 @@ class TestLibrariesApi(ApiTestCase):
         history_id = self.dataset_populator.new_history()
         hda_id = self.dataset_populator.new_dataset(history_id, content=content, wait=wait)["id"]
         payload = {"from_hda_id": hda_id, "create_type": "file", "folder_id": folder_id}
-        ld = self._post(f"libraries/{folder_id}/contents", payload)
+        ld = self._post(f"libraries/{library['id']}/contents", payload, json=True)
         ld.raise_for_status()
         return ld

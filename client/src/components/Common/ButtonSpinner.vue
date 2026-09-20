@@ -1,45 +1,47 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faPlay, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
+import { computed } from "vue";
 
-library.add(faPlay, faSpinner);
+import type { ComponentColor, ComponentSize } from "@/components/BaseComponents/componentVariants";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
-    title: string;
+    title?: string;
     wait?: boolean;
     tooltip?: string;
     disabled?: boolean;
+    size?: ComponentSize;
+    color?: ComponentColor;
+    icon?: IconDefinition;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
+    title: "",
     wait: false,
-    tooltip: undefined,
+    tooltip: "",
     disabled: false,
+    size: "medium",
+    color: "blue",
+    icon: undefined,
 });
+
+const currentTitle = computed(() => (props.wait ? "Please wait..." : props.tooltip));
 </script>
 
 <template>
-    <BButton
-        v-if="wait"
-        v-b-tooltip.hover.bottom
-        disabled
-        variant="info"
-        title="Please Wait..."
-        class="d-flex flex-nowrap align-items-center text-nowrap">
-        <FontAwesomeIcon :icon="faSpinner" class="mr-2" spin />
-        {{ title }}
-    </BButton>
-    <BButton
-        v-else
-        v-b-tooltip.hover.bottom
-        variant="primary"
-        class="d-flex flex-nowrap align-items-center text-nowrap"
-        :title="tooltip"
-        :disabled="disabled"
+    <GButton
+        tooltip
+        tooltip-placement="bottom"
+        :color="props.color"
+        :title="currentTitle"
+        :disabled="props.wait || props.disabled"
+        :size="props.size"
         @click="$emit('onClick')">
-        <FontAwesomeIcon :icon="faPlay" class="mr-2" />
-        {{ title }}
-    </BButton>
+        <FontAwesomeIcon v-if="wait" :icon="faSpinner" fixed-width spin />
+        <FontAwesomeIcon v-else :icon="!props.icon ? faPlay : props.icon" fixed-width />
+        <span v-if="title">{{ title }}</span>
+    </GButton>
 </template>

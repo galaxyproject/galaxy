@@ -77,8 +77,7 @@ class CommandInfo(Linter):
         command = tool_xml.find("./command")
         if command is None:
             return
-        interpreter_type = command.attrib.get("interpreter", None)
         interpreter_info = ""
-        if interpreter_type:
+        if interpreter_type := command.attrib.get("interpreter", None):
             interpreter_info = f" with interpreter of type [{interpreter_type}]"
         lint_ctx.info(f"Tool contains a command{interpreter_info}.", linter=cls.name(), node=command)

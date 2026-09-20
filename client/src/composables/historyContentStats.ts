@@ -1,6 +1,6 @@
 import { computed, type Ref } from "vue";
 
-import { type HistoryContentsStats } from "@/api";
+import type { HistoryContentsStats } from "@/api";
 
 export function useHistoryContentStats(history: Ref<HistoryContentsStats>) {
     const historySize = computed(() => history.value?.size ?? 0);

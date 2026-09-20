@@ -1,8 +1,27 @@
 <script setup lang="ts">
+import {
+    faCopy,
+    faEyeSlash,
+    faFile,
+    faInfoCircle,
+    faPen,
+    faStop,
+    faTrash,
+    faTrashRestore,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
 import { BDropdown } from "bootstrap-vue";
+//@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
+import { ScanEye } from "lucide-vue";
 import { computed, type Ref, ref } from "vue";
 
+import { getAppRoot } from "@/onload/loadConfig";
+import { useEntryPointStore } from "@/stores/entryPointStore";
+import localize from "@/utils/localization";
 import { prependPath } from "@/utils/redirect";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const props = defineProps({
     writable: { type: Boolean, default: true },
@@ -12,6 +31,8 @@ const props = defineProps({
     isVisible: { type: Boolean, default: true },
     state: { type: String, default: "" },
     itemUrls: { type: Object, required: true },
+    isRunningInteractiveTool: { type: Boolean, default: false },
+    interactiveToolId: { type: String, default: "" },
 });
 
 const emit = defineEmits<{
@@ -23,21 +44,16 @@ const emit = defineEmits<{
     (e: "unhide"): void;
 }>();
 
+const entryPointStore = useEntryPointStore();
+const errorMessage = ref("");
 const deleteCollectionMenu: Ref<BDropdown | null> = ref(null);
 
-const displayButtonTitle = computed(() => (displayDisabled.value ? "This dataset is not yet viewable." : "Display"));
-
-const displayDisabled = computed(() => ["discarded", "new", "upload", "queued"].includes(props.state));
-
 const editButtonTitle = computed(() => (editDisabled.value ? "This dataset is not yet editable." : "Edit attributes"));
-
 const editDisabled = computed(() =>
-    ["discarded", "new", "upload", "queued", "running", "waiting"].includes(props.state)
+    ["discarded", "new", "upload", "queued", "running", "waiting"].includes(props.state),
 );
-
-const displayUrl = computed(() => prependPath(props.itemUrls.display));
-
 const editUrl = computed(() => prependPath(props.itemUrls.edit));
+const displayUrl = computed(() => (props.itemUrls.display ? prependPath(props.itemUrls.display) : undefined));
 
 const isCollection = computed(() => !props.isDataset);
 
@@ -46,10 +62,29 @@ const canShowCollectionDetails = computed(() => props.itemUrls.showDetails);
 const showCollectionDetailsUrl = computed(() => prependPath(props.itemUrls.showDetails));
 
 function onDelete($event: MouseEvent) {
-    if (isCollection.value) {
+    if (props.isRunningInteractiveTool) {
+        stopInteractiveTool();
+    } else if (isCollection.value) {
         deleteCollectionMenu.value?.show();
     } else {
         onDeleteItem();
+    }
+}
+
+async function stopInteractiveTool() {
+    if (!props.interactiveToolId) {
+        console.error("No interactive tool ID provided");
+        return;
+    }
+
+    try {
+        const root = getAppRoot();
+        const url = `${root}api/entry_points/${props.interactiveToolId}`;
+        await axios.delete(url);
+        entryPointStore.removeEntryPoint(props.interactiveToolId);
+    } catch (error) {
+        console.error("Failed to stop interactive tool:", error);
+        errorMessage.value = "Failed to stop interactive tool";
     }
 }
 
@@ -76,84 +111,99 @@ function onDisplay($event: MouseEvent) {
 <template>
     <span class="align-self-start btn-group align-items-baseline">
         <!-- Special case for collections -->
-        <b-button
+        <GButton
             v-if="isCollection && canShowCollectionDetails"
+            v-g-tooltip.hover
             class="collection-job-details-btn px-1"
-            title="Show Details"
-            size="sm"
-            variant="link"
+            :title="localize('Show Details')"
+            size="small"
+            transparent
             :href="showCollectionDetailsUrl"
             @click.prevent.stop="emit('showCollectionInfo')">
-            <icon icon="info-circle" />
-        </b-button>
+            <FontAwesomeIcon :icon="faInfoCircle" />
+        </GButton>
         <!-- Common for all content items -->
-        <b-button
+        <GButton
             v-if="isDataset"
-            :disabled="displayDisabled"
-            :title="displayButtonTitle"
+            v-g-tooltip.hover
+            :title="localize('View')"
             tabindex="0"
             class="display-btn px-1"
-            size="sm"
-            variant="link"
+            size="small"
+            transparent
             :href="displayUrl"
             @click.prevent.stop="onDisplay($event)">
-            <icon icon="eye" />
-        </b-button>
-        <b-button
+            <ScanEye absolute-stroke-width :size="16" />
+        </GButton>
+        <GButton
             v-if="writable && isHistoryItem"
+            v-g-tooltip.hover
             :disabled="editDisabled"
-            :title="editButtonTitle"
+            :title="localize(editButtonTitle)"
             tabindex="0"
             class="edit-btn px-1"
-            size="sm"
-            variant="link"
+            size="small"
+            transparent
             :href="editUrl"
             @click.prevent.stop="emit('edit')">
-            <icon icon="pen" />
-        </b-button>
-        <b-button
-            v-if="writable && isHistoryItem && !isDeleted"
+            <FontAwesomeIcon :icon="faPen" />
+        </GButton>
+        <GButton
+            v-if="isRunningInteractiveTool"
+            v-g-tooltip.hover
+            class="delete-btn px-1"
+            :title="localize('Stop this Interactive Tool')"
+            size="small"
+            transparent
+            @click.stop="onDelete($event)">
+            <FontAwesomeIcon :icon="faStop" />
+        </GButton>
+        <GButton
+            v-else-if="writable && isHistoryItem && !isDeleted"
+            v-g-tooltip.hover
             :tabindex="isDataset ? '0' : '-1'"
             class="delete-btn px-1"
-            title="Delete"
-            size="sm"
-            variant="link"
+            :title="localize('Delete')"
+            size="small"
+            transparent
             @click.stop="onDelete($event)">
-            <icon v-if="isDataset" icon="trash" />
+            <FontAwesomeIcon v-if="isDataset" :icon="faTrash" />
             <BDropdown v-else ref="deleteCollectionMenu" size="sm" variant="link" no-caret toggle-class="p-0 m-0">
                 <template v-slot:button-content>
-                    <icon icon="trash" />
+                    <FontAwesomeIcon :icon="faTrash" />
                 </template>
                 <b-dropdown-item title="Delete collection only" @click.prevent.stop="onDeleteItem">
-                    <icon icon="file" />
+                    <FontAwesomeIcon :icon="faFile" />
                     Collection only
                 </b-dropdown-item>
                 <b-dropdown-item title="Delete collection and elements" @click.prevent.stop="onDeleteItemRecursively">
-                    <icon icon="copy" />
+                    <FontAwesomeIcon :icon="faCopy" />
                     Collection and elements
                 </b-dropdown-item>
             </BDropdown>
-        </b-button>
-        <b-button
+        </GButton>
+        <GButton
             v-if="writable && isHistoryItem && isDeleted"
+            v-g-tooltip.hover
             tabindex="0"
             class="undelete-btn px-1"
-            title="Undelete"
-            size="sm"
-            variant="link"
+            :title="localize('Undelete')"
+            size="small"
+            transparent
             @click.stop="emit('undelete')">
-            <icon icon="trash-restore" />
-        </b-button>
-        <b-button
+            <FontAwesomeIcon :icon="faTrashRestore" />
+        </GButton>
+        <GButton
             v-if="writable && isHistoryItem && !isVisible"
+            v-g-tooltip.hover
             tabindex="0"
             class="unhide-btn px-1"
-            title="Unhide"
-            size="sm"
-            variant="link"
+            :title="localize('Unhide')"
+            size="small"
+            transparent
             @click.stop="emit('unhide')">
-            <icon icon="eye-slash" />
-        </b-button>
+            <FontAwesomeIcon :icon="faEyeSlash" />
+        </GButton>
     </span>
 </template>
 

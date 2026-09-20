@@ -241,14 +241,6 @@ galaxy\_test.selenium.test\_login module
    :undoc-members:
    :show-inheritance:
 
-galaxy\_test.selenium.test\_navigates\_galaxy module
-----------------------------------------------------
-
-.. automodule:: galaxy_test.selenium.test_navigates_galaxy
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy\_test.selenium.test\_pages module
 ----------------------------------------
 

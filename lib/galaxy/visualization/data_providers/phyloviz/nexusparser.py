@@ -58,8 +58,9 @@ class Nexus_Parser(Newick_Parser):
 
                 if intranslateBlock:
                     mappingLine = self.splitLinebyWhitespaces(line)
-                    key, value = mappingLine[1], mappingLine[2].replace(",", "").replace(
-                        "'", ""
+                    key, value = (
+                        mappingLine[1],
+                        mappingLine[2].replace(",", "").replace("'", ""),
                     )  # replacing illegal json characters
                     self.nameMapping[key] = value
 

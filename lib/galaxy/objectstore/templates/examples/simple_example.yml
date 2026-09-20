@@ -1,0 +1,15 @@
+- id: project_scratch
+  name: Project Scratch
+  version: 0
+  description: Folder on institutional scratch disk area bound to your user.
+  variables:
+    project_name:
+      type: path_component
+      help: The name of your project scratch.
+  configuration:
+    type: disk
+    files_dir: '/scratch/for_galaxy/{{ user.username | ensure_path_component }}/{{ variables.project_name | ensure_path_component }}'
+    badges:
+    - type: faster
+    - type: less_secure
+    - type: not_backed_up

@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { BModal } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { WorkflowLabel } from "./labels";
+import type { WorkflowLabel } from "./Editor/types";
 
+import GModal from "../BaseComponents/GModal.vue";
 import LabelSelector from "./LabelSelector.vue";
 
-interface MarkdownSelectorProps {
+const props = defineProps<{
+    argumentName: string;
     labelTitle?: string;
-    labels: WorkflowLabel[];
-    argumentName?: string;
-}
+    labels: Array<WorkflowLabel>;
+}>();
 
-const props = defineProps<MarkdownSelectorProps>();
 const selectedValue = ref<WorkflowLabel | undefined>(undefined);
 const modalShow = ref(true);
 
@@ -39,13 +38,13 @@ function onCancel() {
 
 <template>
     <span>
-        <BModal v-model="modalShow" :title="title" ok-title="Continue" @ok="onOk" @cancel="onCancel" @hidden="onCancel">
+        <GModal :show.sync="modalShow" :title="title" confirm ok-text="Continue" @ok="onOk" @close="onCancel">
             <LabelSelector
                 v-model="selectedValue"
                 class="ml-2"
                 :has-labels="hasLabels"
-                :label-title="labelTitle"
+                :label-title="labelTitle ?? ''"
                 :labels="labels" />
-        </BModal>
+        </GModal>
     </span>
 </template>

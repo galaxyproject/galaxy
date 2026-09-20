@@ -1,0 +1,21 @@
+<tool id="gx_section_data" name="gx_section_data" version="1.0.0">
+    <command><![CDATA[
+cat '$parameter.data_parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <section name="parameter">
+            <param name="data_parameter" type="data" ext="data" />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <section name="parameter">
+                <param name="data_parameter" value="1.bed" />
+            </section>
+            <output name="out_file1" file="1.bed" />
+        </test>
+    </tests>
+</tool>

@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 import json
 from typing import cast
@@ -35,13 +34,15 @@ class BaseTestCase(TestCase):
 
     def set_up_mocks(self):
         admin_users_list = [u for u in admin_users.split(",") if u]
-        self.trans = cast(
-            SessionRequestContext, galaxy_mock.MockTrans(admin_users=admin_users, admin_users_list=admin_users_list)
-        )
+        self.mock_trans = galaxy_mock.MockTrans(admin_users=admin_users, admin_users_list=admin_users_list)
+        self.trans = cast(SessionRequestContext, self.mock_trans)
         self.app = self.trans.app
 
+    def init_user_in_database(self):
+        self.mock_trans.init_user_in_database()
+
     def set_up_managers(self):
-        self.user_manager = self.app[UserManager]
+        self.user_manager: UserManager = self.app[UserManager]
 
     def set_up_trans(self):
         self.admin_user = self.user_manager.create(email=admin_email, username="admin", password=default_password)

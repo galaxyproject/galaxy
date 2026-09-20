@@ -1,0 +1,21 @@
+- doc: |
+    LIST_REDUCTION: A list collection consumed by a multi-data input (reduction)
+    produces a single dataset containing all elements.
+  job:
+    input1:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: el1
+          class: File
+          contents: "element 1"
+        - identifier: el2
+          class: File
+          contents: "element 2"
+  outputs:
+    wf_output:
+      asserts:
+        - that: has_text
+          text: "element 1"
+        - that: has_text
+          text: "element 2"

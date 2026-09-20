@@ -1,29 +1,18 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import {
-    faBug,
-    faChartBar,
-    faInfoCircle,
-    faLink,
-    faQuestion,
-    faRedo,
-    faSitemap,
-} from "@fortawesome/free-solid-svg-icons";
+import { faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type HDADetailed } from "@/api";
+import type { HDADetailed } from "@/api";
 import { copy as sendToClipboard } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 import { absPath, prependPath } from "@/utils/redirect";
 
-import { type ItemUrls } from ".";
+import type { ItemUrls } from ".";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import DatasetDownload from "@/components/History/Content/Dataset/DatasetDownload.vue";
-
-library.add(faBug, faChartBar, faInfoCircle, faLink, faQuestion, faRedo, faSitemap);
 
 interface Props {
     item: HDADetailed;
@@ -45,17 +34,16 @@ const showDownloads = computed(() => {
     return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
 });
 const showError = computed(() => {
-    return props.item.state == "error" || props.item.state == "failed_metadata";
+    return props.item.state === "error" || props.item.state === "failed_metadata";
 });
 const showInfo = computed(() => {
     return props.item.accessible;
 });
+const showVisualizations = computed(() => {
+    return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
+});
 const showRerun = computed(() => {
     return props.item.accessible && props.item.rerunnable && props.item.creating_job && props.item.state != "upload";
-});
-const showVisualizations = computed(() => {
-    // TODO: Check hasViz, if visualizations are activated in the config
-    return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
 });
 const reportErrorUrl = computed(() => {
     return prependPath(props.itemUrls.reportError!);
@@ -63,14 +51,14 @@ const reportErrorUrl = computed(() => {
 const showDetailsUrl = computed(() => {
     return prependPath(props.itemUrls.showDetails!);
 });
-const rerunUrl = computed(() => {
-    return prependPath(props.itemUrls.rerun!);
-});
 const visualizeUrl = computed(() => {
     return prependPath(props.itemUrls.visualize!);
 });
+const rerunUrl = computed(() => {
+    return prependPath(props.itemUrls.rerun!);
+});
 const downloadUrl = computed(() => {
-    return prependPath(`api/datasets/${props.item.id}/display?to_ext=${props.item.extension}`);
+    return prependPath(`api/datasets/${props.item.id}/download?to_ext=${props.item.extension}`);
 });
 
 function onCopyLink() {
@@ -82,24 +70,24 @@ function onDownload(resource: string) {
     window.location.href = resource;
 }
 
+function onHighlight() {
+    emit("toggleHighlights");
+}
+
 function onError() {
-    router.push(props.itemUrls.reportError!);
+    router.push(`/datasets/${props.item.id}/error`);
 }
 
 function onInfo() {
-    router.push(props.itemUrls.showDetails!);
-}
-
-function onRerun() {
-    router.push(`/root?job_id=${props.item.creating_job}`);
+    router.push(`/datasets/${props.item.id}/details`);
 }
 
 function onVisualize() {
-    router.push(props.itemUrls.visualize!);
+    router.push(`/datasets/${props.item.id}/visualize`);
 }
 
-function onHighlight() {
-    emit("toggleHighlights");
+function onRerun() {
+    router.push(`/?job_id=${props.item.creating_job}`);
 }
 </script>
 
@@ -107,75 +95,77 @@ function onHighlight() {
     <div class="dataset-actions mb-1">
         <div class="clearfix">
             <div class="btn-group float-left">
-                <BButton
+                <GButton
                     v-if="showError"
+                    v-g-tooltip.hover
                     class="px-1"
                     title="Error"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
                     :href="reportErrorUrl"
                     @click.prevent.stop="onError">
                     <FontAwesomeIcon :icon="faBug" />
-                </BButton>
+                </GButton>
 
                 <DatasetDownload v-if="showDownloads" :item="item" @on-download="onDownload" />
 
-                <BButton
+                <GButton
                     v-if="showDownloads"
+                    v-g-tooltip.hover
                     class="px-1"
                     title="Copy Link"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
                     @click.stop="onCopyLink">
                     <FontAwesomeIcon :icon="faLink" />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="showInfo"
-                    class="params-btn px-1"
+                    v-g-tooltip.hover
+                    class="info-btn px-1"
                     title="Dataset Details"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
                     :href="showDetailsUrl"
                     @click.prevent.stop="onInfo">
                     <FontAwesomeIcon :icon="faInfoCircle" />
-                </BButton>
+                </GButton>
 
-                <BButton
-                    v-if="writable && showRerun"
-                    class="rerun-btn px-1"
-                    title="Run Job Again"
-                    size="sm"
-                    variant="link"
-                    :href="rerunUrl"
-                    @click.prevent.stop="onRerun">
-                    <FontAwesomeIcon :icon="faRedo" />
-                </BButton>
-
-                <BButton
+                <GButton
                     v-if="showVisualizations"
+                    v-g-tooltip.hover
                     class="visualize-btn px-1"
                     title="Visualize"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
                     :href="visualizeUrl"
                     @click.prevent.stop="onVisualize">
                     <FontAwesomeIcon :icon="faChartBar" />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="showHighlight"
+                    v-g-tooltip.hover
                     class="highlight-btn px-1"
                     title="Show Related Items"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
                     @click.stop="onHighlight">
                     <FontAwesomeIcon :icon="faSitemap" />
-                </BButton>
+                </GButton>
 
-                <BButton v-if="showRerun" class="px-1" title="Help" size="sm" variant="link" @click.stop="onRerun">
-                    <FontAwesomeIcon :icon="faQuestion" />
-                </BButton>
+                <GButton
+                    v-if="writable && showRerun"
+                    v-g-tooltip.hover
+                    class="rerun-btn px-1"
+                    title="Run Job Again"
+                    size="small"
+                    transparent
+                    :href="rerunUrl"
+                    @click.prevent.stop="onRerun">
+                    <FontAwesomeIcon :icon="faRedo" />
+                </GButton>
             </div>
         </div>
     </div>

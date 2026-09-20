@@ -1,13 +1,19 @@
 import os
 from typing import (
-    List,
+    cast,
+    get_args,
     NamedTuple,
 )
 
 import pytest
 
+from galaxy.tool_util.verify.interactor import (
+    DEFAULT_USE_LEGACY_API,
+    UseLegacyApiT,
+)
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.driver.driver_util import GalaxyTestDriver
+from galaxy_test.driver.integration_util import ConfiguresDatabaseVault
 
 SKIPTEST = os.path.join(os.path.dirname(__file__), "known_broken_tools.txt")
 
@@ -24,7 +30,7 @@ def get_skiplist():
         return skiplist
 
 
-def get_cases() -> List[ToolTest]:
+def get_cases() -> list[ToolTest]:
     atc = ApiTestCase()
     atc._test_driver = GalaxyTestDriver()
     atc._test_driver.setup()
@@ -55,10 +61,22 @@ def idfn(val: ToolTest):
     return f"{val.tool_id}/{val.tool_version}-{val.test_index}"
 
 
-class TestFrameworkTools(ApiTestCase):
+class TestFrameworkTools(ApiTestCase, ConfiguresDatabaseVault):
     conda_auto_init = True
     conda_auto_install = True
 
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        """Configure vault for credential testing."""
+        super().handle_galaxy_config_kwds(config)
+        cls._configure_database_vault(config)
+
     @pytest.mark.parametrize("testcase", cases(), ids=idfn)
     def test_tool(self, testcase: ToolTest):
-        self._test_driver.run_tool_test(testcase.tool_id, testcase.test_index, tool_version=testcase.tool_version)
+        use_legacy_api = os.environ.get("GALAXY_TEST_USE_LEGACY_TOOL_API", DEFAULT_USE_LEGACY_API)
+        assert use_legacy_api in get_args(UseLegacyApiT)
+        cast(UseLegacyApiT, use_legacy_api)  # https://github.com/python/mypy/issues/15106
+        assert self._test_driver
+        self._test_driver.run_tool_test(
+            testcase.tool_id, testcase.test_index, tool_version=testcase.tool_version, use_legacy_api=use_legacy_api
+        )

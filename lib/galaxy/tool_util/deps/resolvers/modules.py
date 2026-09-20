@@ -64,6 +64,7 @@ class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
         self.modulecmd = kwds.get("modulecmd", DEFAULT_MODULECMD_PATH)
         self.modulepath = kwds.get("modulepath", self.__default_modulespath())
         self.default_indicator = kwds.get("default_indicator", DEFAULT_INDICATOR)
+        self.skip_availability_check = _string_as_bool(kwds.get("skip_availability_check", "false"))
         if find_by == "directory":
             self.module_checker = DirectoryModuleChecker(self, self.modulepath, prefetch)
         elif find_by == "avail":
@@ -91,6 +92,9 @@ class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
 
         if type != "package":
             return NullDependency(version=version, name=name)
+
+        if self.skip_availability_check:
+            return ModuleDependency(self, name, version, exact=True, dependency_resolver=self)
 
         if self.__has_module(name, version):
             return ModuleDependency(self, name, version, exact=True, dependency_resolver=self)
@@ -224,10 +228,18 @@ class ModuleDependency(Dependency):
         return self._exact
 
     def shell_commands(self):
+        # Get the full module name in the form "tool_name/tool_version"
         module_to_load = self.module_name
         if self.module_version:
             module_to_load = f"{self.module_name}/{self.module_version}"
-        command = f"MODULEPATH={self.module_dependency_resolver.modulepath}; export MODULEPATH; eval `{self.module_dependency_resolver.modulecmd} sh load {module_to_load}`"
+
+        # Build the list of command to add to run script
+        # Note that since "module" is actually a bash function, we are directy executing the underlying executable instead
+        # - Set and/or prepend the MODULEPATH environment variable
+        command = f"MODULEPATH={self.module_dependency_resolver.modulepath}${{MODULEPATH:+:${{MODULEPATH}}}}; "
+        command += "export MODULEPATH; "
+        # - Execute the "module load" command (or rather the "/path/to/module load" command)
+        command += f"eval `{self.module_dependency_resolver.modulecmd} sh load {module_to_load}`"
         return command
 
 

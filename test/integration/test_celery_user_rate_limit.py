@@ -1,10 +1,6 @@
 import datetime
 import tempfile
 from functools import lru_cache
-from typing import (
-    Dict,
-    List,
-)
 
 from celery.result import AsyncResult
 from sqlalchemy import text
@@ -50,7 +46,7 @@ def setup_users(dburl: str, num_users: int = 2):
                 for user_id in user_ids_to_add:
                     conn.execute(
                         text("insert into galaxy_user(id, active, email, password) values (:id, :active, :email, :pw)"),
-                        [{"id": user_id, "active": True, "email": "e", "pw": "p"}],
+                        [{"id": user_id, "active": True, "email": f"e{user_id}", "pw": "p"}],
                     )
 
 
@@ -83,12 +79,12 @@ class TestCeleryUserRateLimitIntegration(IntegrationTestCase):
             expected_duration = secs_between_tasks_per_user * (num_calls - 1)
             expected_duration_lbound = expected_duration - 4
         expected_duration_hbound = expected_duration + 4
-        start_time = datetime.datetime.utcnow()
+        start_time = datetime.datetime.now(datetime.timezone.utc)
         timer = ExecutionTimer()
         #  Invoke test task num_calls times for each user
-        results: Dict[int, List[AsyncResult]] = {}
+        results: dict[int, list[AsyncResult]] = {}
         for user in users:
-            user_results: List[AsyncResult] = []
+            user_results: list[AsyncResult] = []
             for _ in range(num_calls):
                 user_results.append(mock_user_id_task.delay(task_user_id=user))
             results[user] = user_results

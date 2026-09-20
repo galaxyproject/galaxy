@@ -1,6 +1,9 @@
 export interface Option {
     name: string;
     value: string;
+    leaf?: boolean;
+    fullPath?: string;
+    disabled?: boolean;
     options: Array<Option>;
 }
 

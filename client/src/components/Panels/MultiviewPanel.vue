@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faColumns, faPlus, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BButton, BButtonGroup } from "bootstrap-vue";
+import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
@@ -15,14 +14,14 @@ import { localize } from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import HistoryList from "@/components/History/HistoryScrollList.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
 const route = useRoute();
 const router = useRouter();
-
-library.add(faColumns, faPlus, faUndo);
 
 const filter = ref("");
 const showAdvanced = ref(false);
@@ -38,9 +37,9 @@ const pinnedHistoryCount = computed(() => {
 
 const pinRecentTitle = computed(() => {
     if (pinnedHistoryCount.value > 0) {
-        return localize("Reset selection to show 4 most recently updated histories instead");
+        return localize("Reset selection to show most recently updated histories instead");
     } else {
-        return localize("Currently showing 4 most recently updated histories in Multiview");
+        return localize("Currently showing most recently updated histories in Multiview");
     }
 });
 
@@ -73,12 +72,12 @@ async function createAndPin() {
     }
 }
 
-/** Reset to _default_ state; showing 4 latest updated histories */
+/** Reset to _default_ state; showing latest updated histories */
 function pinRecent() {
-    historyStore.pinnedHistories = [];
+    historyStore.clearPinnedHistories();
     Toast.info(
-        "Showing the 4 most recently updated histories in Multiview. Pin histories to History Multiview by selecting them in the panel.",
-        "History Multiview"
+        "Showing the most recently updated histories in Multiview. Pin histories to History Multiview by selecting them in the panel.",
+        "History Multiview",
     );
 }
 
@@ -98,23 +97,23 @@ function userTitle(title: string) {
 <template>
     <ActivityPanel title="Select Histories">
         <template v-slot:header-buttons>
-            <BButtonGroup>
-                <BButton
-                    v-b-tooltip.bottom.hover
+            <GButtonGroup>
+                <GButton
+                    v-g-tooltip.bottom.hover
                     data-description="create new history for multiview"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
+                    icon-only
                     :title="userTitle('Create new history and show in multiview')"
                     :disabled="isAnonymous"
                     @click="createAndPin">
                     <FontAwesomeIcon :icon="faPlus" fixed-width />
-                </BButton>
-            </BButtonGroup>
+                </GButton>
+            </GButtonGroup>
         </template>
 
         <template v-slot:header>
             <FilterMenu
-                class="mb-3"
                 name="Histories"
                 placeholder="search histories"
                 :filter-class="HistoriesFilters"
@@ -122,31 +121,19 @@ function userTitle(title: string) {
                 :loading="historiesLoading || loading"
                 :show-advanced.sync="showAdvanced" />
             <section v-if="!showAdvanced">
-                <BButton
-                    v-if="route.path !== '/histories/view_multiple'"
-                    v-b-tooltip.hover.noninteractive.bottom
-                    :aria-label="userTitle('Open History Multiview in center panel')"
-                    :title="userTitle('Open History Multiview in center panel')"
-                    class="w-100"
-                    size="sm"
-                    :disabled="isAnonymous"
-                    @click="router.push('/histories/view_multiple')">
-                    <FontAwesomeIcon :icon="faColumns" class="mr-1" />
-                    <span v-localize>Open History Multiview</span>
-                </BButton>
-                <BButtonGroup
-                    v-else
-                    v-b-tooltip.hover.noninteractive.bottom
-                    class="w-100"
+                <GButtonGroup
+                    v-if="route.path === '/histories/view_multiple'"
+                    v-g-tooltip.hover.bottom
+                    class="w-100 mt-2"
                     :aria-label="pinRecentTitle"
                     :title="pinRecentTitle">
-                    <BButton size="sm" :disabled="!pinnedHistoryCount" @click="pinRecent">
+                    <GButton size="small" :disabled="!pinnedHistoryCount" @click="pinRecent">
                         <span class="position-relative">
                             <FontAwesomeIcon v-if="pinnedHistoryCount" :icon="faUndo" class="mr-1" />
                             <b>{{ pinRecentText }}</b>
                         </span>
-                    </BButton>
-                </BButtonGroup>
+                    </GButton>
+                </GButtonGroup>
             </section>
         </template>
 

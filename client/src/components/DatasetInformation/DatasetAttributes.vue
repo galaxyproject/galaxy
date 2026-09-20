@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { type AxiosError } from "axios";
-import { BAlert, BButton, BTab, BTabs } from "bootstrap-vue";
+import type { AxiosError } from "axios";
+import { BAlert } from "bootstrap-vue";
 import { onMounted, ref } from "vue";
 
 import { fetchDatasetAttributes } from "@/api/datasets";
@@ -11,10 +10,12 @@ import { setAttributes } from "@/components/DatasetInformation/services";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
+import Heading from "../Common/Heading.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GTab from "@/components/BaseComponents/GTab.vue";
+import GTabs from "@/components/BaseComponents/GTabs.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-library.add(faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser);
 
 interface Props {
     datasetId: string;
@@ -25,7 +26,8 @@ const props = defineProps<Props>();
 const historyStore = useHistoryStore();
 
 const loading = ref(false);
-const messageText = ref("");
+const loadingFailed = ref(false);
+const messageText = ref<string>();
 const messageVariant = ref("danger");
 const formData = ref<Record<string, any>>({});
 const datasetAttributes = ref<Record<string, any>>({});
@@ -75,7 +77,7 @@ async function loadDatasetAttributes() {
         datasetAttributes.value = data;
     } catch (e) {
         const error = e as AxiosError<{ err_msg?: string }>;
-
+        loadingFailed.value = true;
         onError(error.response?.data?.err_msg || "Unable to fetch available dataset attributes.");
     } finally {
         loading.value = false;
@@ -88,8 +90,10 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div aria-labelledby="dataset-attributes-heading">
-        <h1 id="dataset-attributes-heading" v-localize class="h-lg">Edit Dataset Attributes</h1>
+    <div class="dataset-attributes" aria-labelledby="dataset-attributes-heading">
+        <Heading id="dataset-attributes-heading" h1 separator inline size="md">
+            {{ localize("Edit Dataset Attributes") }}
+        </Heading>
 
         <BAlert v-if="messageText" class="dataset-attributes-alert" :variant="messageVariant" show>
             {{ localize(messageText) }}
@@ -98,9 +102,9 @@ onMounted(async () => {
         <BAlert v-if="loading" variant="info" show>
             <LoadingSpan message="Loading dataset attributes..." />
         </BAlert>
-        <div v-else class="mt-3">
-            <BTabs>
-                <BTab v-if="!datasetAttributes['attribute_disable']">
+        <div v-else-if="!loadingFailed" class="mt-3">
+            <GTabs>
+                <GTab v-if="!datasetAttributes['attribute_disable']">
                     <template v-slot:title>
                         <FontAwesomeIcon :icon="faBars" class="mr-1" />
                         {{ localize("Attributes") }}
@@ -112,29 +116,30 @@ onMounted(async () => {
                         @onChange="onAttribute" />
 
                     <div class="mt-2">
-                        <BButton
+                        <GButton
                             id="dataset-attributes-default-save"
-                            variant="primary"
+                            color="blue"
                             class="mr-1"
                             @click="submit('attribute', 'attributes')">
                             <FontAwesomeIcon :icon="faSave" class="mr-1" />
                             {{ localize("Save") }}
-                        </BButton>
+                        </GButton>
 
-                        <BButton
+                        <GButton
                             v-if="!datasetAttributes['metadata_disable']"
                             @click="submit('attribute', 'autodetect')">
                             <FontAwesomeIcon :icon="faRedo" class="mr-1" />
                             {{ localize("Auto-detect") }}
-                        </BButton>
+                        </GButton>
                     </div>
-                </BTab>
+                </GTab>
 
-                <BTab
+                <GTab
                     v-if="
                         (!datasetAttributes['conversion_disable'] || !datasetAttributes['datatype_disable']) &&
                         !datasetAttributes['metadata_disable']
-                    ">
+                    "
+                    title-link-class="dataset-edit-datatype-tab">
                     <template v-slot:title>
                         <FontAwesomeIcon :icon="faDatabase" class="mr-1" />
                         {{ localize("Datatypes") }}
@@ -159,15 +164,17 @@ onMounted(async () => {
                                 @onChange="onDatatype" />
 
                             <div class="mt-2">
-                                <BButton variant="primary" class="mr-1" @click="submit('datatype', 'datatype')">
+                                <GButton color="blue" class="mr-1" @click="submit('datatype', 'datatype')">
                                     <FontAwesomeIcon :icon="faSave" class="mr-1" />
                                     {{ localize("Save") }}
-                                </BButton>
+                                </GButton>
 
-                                <BButton @click="submit('datatype', 'datatype_detect')">
+                                <GButton
+                                    id="dataset-attributes-autodetect-datatype"
+                                    @click="submit('datatype', 'datatype_detect')">
                                     <FontAwesomeIcon :icon="faRedo" class="mr-1" />
                                     {{ localize("Auto-detect") }}
-                                </BButton>
+                                </GButton>
                             </div>
                         </div>
                     </div>
@@ -191,16 +198,16 @@ onMounted(async () => {
                                 @onChange="onConversion" />
 
                             <div class="mt-2">
-                                <BButton variant="primary" @click="submit('conversion', 'conversion')">
+                                <GButton color="blue" @click="submit('conversion', 'conversion')">
                                     <FontAwesomeIcon :icon="faExchangeAlt" class="mr-1" />
                                     {{ localize("Create Dataset") }}
-                                </BButton>
+                                </GButton>
                             </div>
                         </div>
                     </div>
-                </BTab>
+                </GTab>
 
-                <BTab v-if="!datasetAttributes['permission_disable']">
+                <GTab v-if="!datasetAttributes['permission_disable']">
                     <template v-slot:title>
                         <FontAwesomeIcon :icon="faUser" class="mr-1" />
                         {{ localize("Permissions") }}
@@ -212,13 +219,21 @@ onMounted(async () => {
                         @onChange="onPermission" />
 
                     <div class="mt-2">
-                        <BButton variant="primary" @click="submit('permission', 'permission')">
+                        <GButton color="blue" @click="submit('permission', 'permission')">
                             <FontAwesomeIcon :icon="faSave" class="mr-1" />
                             {{ localize("Save") }}
-                        </BButton>
+                        </GButton>
                     </div>
-                </BTab>
-            </BTabs>
+                </GTab>
+            </GTabs>
         </div>
     </div>
 </template>
+
+<style>
+.dataset-attributes {
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+</style>

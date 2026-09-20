@@ -19,12 +19,6 @@ import sys
 import traceback
 from functools import partial
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
 
 try:
     from pulsar.client.staging import COMMAND_VERSION_FILENAME
@@ -36,6 +30,7 @@ import galaxy.datatypes.registry
 import galaxy.model.mapping
 from galaxy.datatypes import sniff
 from galaxy.datatypes.data import validate
+from galaxy.exceptions import MessageException
 from galaxy.job_execution.compute_environment import dataset_path_to_extra_path
 from galaxy.job_execution.output_collect import (
     collect_dynamic_outputs,
@@ -45,6 +40,7 @@ from galaxy.job_execution.output_collect import (
     default_exit_code_file,
     read_exit_code_from,
     SessionlessJobContext,
+    validate_unnamed_outputs,
 )
 from galaxy.job_execution.setup import TOOL_PROVIDED_JOB_METADATA_KEYS
 from galaxy.model import (
@@ -52,28 +48,43 @@ from galaxy.model import (
     DatasetInstance,
     HistoryDatasetAssociation,
     Job,
+    JobOutputNameTooLongError,
     store,
 )
 from galaxy.model.custom_types import total_size
 from galaxy.model.metadata import MetadataTempFile
-from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
+from galaxy.model.store import SessionlessContext
+from galaxy.model.store.discover import (
+    ensure_path_in_directory,
+    MaxDiscoveredFilesExceededError,
+    OutputCollectionSecurityError,
+)
 from galaxy.objectstore import (
     build_object_store_from_config,
     ObjectStore,
 )
 from galaxy.tool_util.output_checker import (
+    AnyJobMessage,
     check_output,
     DETECTED_JOB_STATE,
+    MaxDiscoveredFilesJobMessage,
+    output_discovery_job_message,
+    OutputCollectionSecurityJobMessage,
 )
 from galaxy.tool_util.parser.stdio import (
     StdioErrorLevel,
     ToolStdioExitCode,
     ToolStdioRegex,
 )
-from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
+from galaxy.tool_util.provided_metadata import (
+    BaseToolProvidedMetadata,
+    NullToolProvidedMetadata,
+    parse_tool_provided_metadata,
+)
 from galaxy.util import (
     safe_contains,
     stringify_dictionary_keys,
+    StrPath,
     unicodify,
 )
 from galaxy.util.expressions import ExpressionContext
@@ -96,7 +107,8 @@ def push_if_necessary(object_store: ObjectStore, dataset: DatasetInstance, exter
     # or a remote object store from its cache path.
     # empty files could happen when outputs are discovered from working dir,
     # empty file check needed for e.g. test/integration/test_extended_metadata_outputs_to_working_directory.py::test_tools[multi_output_assign_primary]
-    if os.path.getsize(external_filename):
+    assert dataset.dataset is not None
+    if not dataset.dataset.purged and os.path.getsize(external_filename):
         object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
 
 
@@ -177,8 +189,8 @@ def get_object_store(tool_job_working_directory, object_store=None):
 
 def set_metadata_portable(
     tool_job_working_directory=None,
-    object_store: Optional[ObjectStore] = None,
-    extended_metadata_collection: Optional[bool] = None,
+    object_store: ObjectStore | None = None,
+    extended_metadata_collection: bool | None = None,
 ):
     is_celery_task = tool_job_working_directory is not None
     tool_job_working_directory = Path(tool_job_working_directory or os.path.abspath(os.getcwd()))
@@ -193,11 +205,19 @@ def set_metadata_portable(
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
     job_metadata = tool_job_working_directory / metadata_params["job_metadata"]
     provided_metadata_style = metadata_params.get("provided_metadata_style")
+    # Params created before capability serialization omitted this key and
+    # always loaded tool-provided metadata. Keep already-running jobs viable.
+    uses_tool_provided_metadata = metadata_params.get("uses_tool_provided_metadata", True)
     max_metadata_value_size = metadata_params.get("max_metadata_value_size") or 0
     max_discovered_files = metadata_params.get("max_discovered_files")
     outputs = metadata_params["outputs"]
 
-    tool_provided_metadata = load_job_metadata(job_metadata, provided_metadata_style)
+    tool_provided_metadata = load_job_metadata(
+        job_metadata,
+        provided_metadata_style,
+        uses_tool_provided_metadata=uses_tool_provided_metadata,
+        job_working_directory=tool_job_working_directory / "working",
+    )
 
     def set_meta(new_dataset_instance, file_dict):
         if not extended_metadata_collection:
@@ -223,7 +243,8 @@ def set_metadata_portable(
 
     export_store = None
     final_job_state = Job.states.OK
-    job_messages: List[Dict[str, Any]] = []
+    discovery_failed = False
+    job_messages: list[AnyJobMessage] = []
     if extended_metadata_collection:
         tool_dict = metadata_params["tool"]
         stdio_exit_code_dicts, stdio_regex_dicts = tool_dict["stdio_exit_codes"], tool_dict["stdio_regexes"]
@@ -303,9 +324,10 @@ def set_metadata_portable(
     import_model_store = store.imported_store_for_metadata(
         tool_job_working_directory / "metadata/outputs_new", object_store=object_store
     )
+    assert isinstance(import_model_store.sa_session, SessionlessContext)
 
     tool_script_file = tool_job_working_directory / "tool_script.sh"
-    job: Optional[Job] = None
+    job: Job | None = None
     if export_store:
         job = next(iter(import_model_store.sa_session.objects[Job].values()))
 
@@ -318,7 +340,15 @@ def set_metadata_portable(
         tool_job_working_directory / "working",
         final_job_state=final_job_state,
         max_discovered_files=max_discovered_files,
+        job=job,
     )
+
+    output_collection_security_error = None
+    try:
+        unnamed_outputs = validate_unnamed_outputs(job_context)
+    except OutputCollectionSecurityError as e:
+        output_collection_security_error = e
+        unnamed_outputs = []
 
     if extended_metadata_collection:
         if not export_store:
@@ -339,22 +369,46 @@ def set_metadata_portable(
 
         input_ext = json.loads(metadata_params["job_params"].get("__input_ext") or '"data"')
         try:
+            if output_collection_security_error:
+                raise output_collection_security_error
             collect_primary_datasets(
                 job_context,
                 output_instances,
                 input_ext=input_ext,
             )
             collect_dynamic_outputs(job_context, output_collections)
-        except MaxDiscoveredFilesExceededError as e:
+        except (MaxDiscoveredFilesExceededError, JobOutputNameTooLongError, OutputCollectionSecurityError) as e:
+            log.warning("Job failed during extended metadata output discovery: %s", e)
+            discovery_failed = True
             final_job_state = Job.states.ERROR
-            job_messages.append(
-                {
-                    "type": "max_discovered_files",
-                    "desc": str(e),
-                    "code_desc": None,
-                    "error_level": StdioErrorLevel.FATAL,
-                }
-            )
+            message: AnyJobMessage
+            if isinstance(e, OutputCollectionSecurityError):
+                message = OutputCollectionSecurityJobMessage(
+                    type="output_collection_security",
+                    desc=str(e),
+                    code_desc=None,
+                    error_level=StdioErrorLevel.FATAL,
+                )
+            else:
+                message = MaxDiscoveredFilesJobMessage(
+                    type="max_discovered_files",
+                    desc=str(e),
+                    code_desc=None,
+                    error_level=StdioErrorLevel.FATAL,
+                )
+            job_messages.append(message)
+        except MessageException as e:
+            log.warning("Job failed during extended metadata output discovery: %s", e)
+            discovery_failed = True
+            final_job_state = Job.states.ERROR
+            job_messages.append(output_discovery_job_message(unicodify(e)))
+        except Exception:
+            log.exception("Unexpected failure during extended metadata output discovery")
+            discovery_failed = True
+            final_job_state = Job.states.ERROR
+            if job:
+                job.traceback = unicodify(traceback.format_exc(), strip_null=True)
+            job_messages.append(output_discovery_job_message())
 
         if job:
             job.set_streams(tool_stdout=tool_stdout, tool_stderr=tool_stderr, job_messages=job_messages)
@@ -368,11 +422,10 @@ def set_metadata_portable(
                             continue
                         command_line_lines.append(line)
                     job.command_line = "".join(command_line_lines).strip()
-                    export_store.export_job(job, include_job_data=False)
 
     unnamed_id_to_path = {}
     unnamed_is_deferred = {}
-    for unnamed_output_dict in job_context.tool_provided_metadata.get_unnamed_outputs():
+    for unnamed_output_dict in unnamed_outputs:
         destination = unnamed_output_dict["destination"]
         elements = unnamed_output_dict["elements"]
         destination_type = destination["type"]
@@ -403,21 +456,38 @@ def set_metadata_portable(
         )  # load kwds; need to ensure our keywords are not unicode
         object_store_update_actions = []
         try:
+            if output_collection_security_error:
+                raise output_collection_security_error
             is_deferred = bool(unnamed_is_deferred.get(dataset_instance_id))
             dataset.metadata_deferred = is_deferred
             if not is_deferred:
                 external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
                 if not os.path.exists(external_filename):
                     matches = glob.glob(external_filename)
-                    assert len(matches) == 1, f"{len(matches)} file(s) matched by output glob '{external_filename}'"
-                    external_filename = matches[0]
-                    assert safe_contains(
-                        tool_job_working_directory, external_filename
-                    ), f"Cannot collect output '{external_filename}' from outside of working directory"
-                    created_from_basename = os.path.relpath(
-                        external_filename, os.path.join(tool_job_working_directory, "working")
-                    )
-                    dataset.dataset.created_from_basename = created_from_basename
+                    if matches:
+                        assert len(matches) == 1, f"{len(matches)} file(s) matched by output glob '{external_filename}'"
+                        external_filename = matches[0]
+                        assert safe_contains(
+                            tool_job_working_directory, external_filename
+                        ), f"Cannot collect output '{external_filename}' from outside of working directory"
+                        created_from_basename = os.path.relpath(
+                            external_filename, os.path.join(tool_job_working_directory, "working")
+                        )
+                        dataset.dataset.created_from_basename = created_from_basename
+                    elif os.path.exists(dataset_path_to_extra_path(external_filename)):
+                        # Only output is extra files dir, but no primary output file, that's fine,
+                        # but make sure we create an empty primary output file. It's a little
+                        # weird to do this, but it does indicate that there's nothing wrong with the file,
+                        # as opposed to perhaps a storage issue.
+                        with open(external_filename, "wb"):
+                            pass
+                    elif not os.path.exists(dataset_filename_override):
+                        # purged output ?
+                        dataset.purged = True
+                        dataset.dataset.purged = True
+                    else:
+                        raise Exception(f"Output file '{external_filename}' not found")
+
                 # override filename if we're dealing with outputs to working directory and dataset is not linked to
                 link_data_only = metadata_params.get("link_data_only")
                 if not link_data_only:
@@ -460,13 +530,14 @@ def set_metadata_portable(
                     # Can't happen, but type system doesn't know
                     raise Exception("object_store not built")
                 if not is_deferred and not link_data_only:
-                    object_store_update_actions.append(
-                        partial(push_if_necessary, object_store, dataset, external_filename)
-                    )
+                    if dataset_instance_id not in unnamed_id_to_path:
+                        object_store_update_actions.append(
+                            partial(push_if_necessary, object_store, dataset, external_filename)
+                        )
                     object_store_update_actions.append(partial(reset_external_filename, dataset))
                 object_store_update_actions.append(partial(dataset.set_total_size))
                 object_store_update_actions.append(partial(export_store.add_dataset, dataset))
-                if dataset_instance_id not in unnamed_id_to_path:
+                if dataset_instance_id not in unnamed_id_to_path and not dataset.dataset.purged:
                     object_store_update_actions.append(partial(collect_extra_files, object_store, dataset, "."))
                     dataset_state = "deferred" if (is_deferred and final_job_state == "ok") else final_job_state
                     if not dataset.state == dataset.states.ERROR:
@@ -474,7 +545,8 @@ def set_metadata_portable(
                         dataset.state = dataset.dataset.state = dataset_state
                     # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
                     # so only run set_meta for fixed outputs
-                    set_meta(dataset, file_dict)
+                    if not dataset.dataset.purged:
+                        set_meta(dataset, file_dict)
                 # TODO: merge expression_context into tool_provided_metadata so we don't have to special case this (here and in _finish_dataset)
                 meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
                 if meta:
@@ -495,18 +567,13 @@ def set_metadata_portable(
                     dataset.dataset.uuid = context["uuid"]
                 if not final_job_state == Job.states.ERROR:
                     line_count = context.get("line_count", None)
-                    try:
-                        # Certain datatype's set_peek methods contain a line_count argument
-                        dataset.set_peek(line_count=line_count)
-                    except TypeError:
-                        # ... and others don't
-                        dataset.set_peek()
+                    dataset.set_peek(line_count=line_count)
                 for context_key in TOOL_PROVIDED_JOB_METADATA_KEYS:
                     if context_key in context:
                         context_value = context[context_key]
                         setattr(dataset, context_key, context_value)
             else:
-                if dataset_instance_id not in unnamed_id_to_path:
+                if dataset_instance_id not in unnamed_id_to_path and not dataset.dataset.purged:
                     # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
                     # so only run set_meta for fixed outputs
                     set_meta(dataset, file_dict)
@@ -524,6 +591,16 @@ def set_metadata_portable(
     if export_store:
         export_store.push_metadata_files()
         export_store._finalize()
+        if discovery_failed and job:
+            # _finalize() builds the jobs attrs file from included_datasets /
+            # included_collections via `creating_job_associations`. For tools
+            # whose only discoverable outputs are dynamic collections, nothing
+            # reaches either of those before discovery fails, so _finalize()
+            # writes an empty jobs list - and the ERROR state (plus
+            # job_messages) we set on the job is not persisted. Export the job
+            # once here so perform_import on the host side picks it up from
+            # the jobs attrs file.
+            export_store.export_job(job, include_job_data=False)
     write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 
 
@@ -551,7 +628,15 @@ def validate_and_load_datatypes_config(datatypes_config):
     return datatypes_registry
 
 
-def load_job_metadata(job_metadata, provided_metadata_style):
+def load_job_metadata(
+    job_metadata: StrPath,
+    provided_metadata_style: str | None,
+    uses_tool_provided_metadata: bool,
+    job_working_directory: StrPath,
+) -> BaseToolProvidedMetadata:
+    if not uses_tool_provided_metadata:
+        return NullToolProvidedMetadata()
+    ensure_path_in_directory(job_metadata, job_working_directory)
     return parse_tool_provided_metadata(job_metadata, provided_metadata_style=provided_metadata_style)
 
 

@@ -1,4 +1,5 @@
 <tool id="interactive_tool_openrefine" tool_type="interactive" name="OpenRefine" version="0.2">
+    <icon src="openrefine.png" />
     <description>Working with messy data</description>
     <requirements>
         <container type="docker">ylebras/openrefine-docker</container>

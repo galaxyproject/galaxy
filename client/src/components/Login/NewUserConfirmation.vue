@@ -1,20 +1,13 @@
 <script setup lang="ts">
 import axios from "axios";
-import {
-    BAlert,
-    BButton,
-    BCard,
-    BCardBody,
-    BCardFooter,
-    BEmbed,
-    BForm,
-    BFormCheckbox,
-    BFormGroup,
-} from "bootstrap-vue";
+import { BAlert, BCard, BCardBody, BCardFooter, BEmbed, BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     termsUrl?: string;
@@ -58,8 +51,7 @@ async function submit() {
             }
         } catch (error: any) {
             messageVariant.value = "danger";
-            const errMsg = error.response.data && error.response.data.err_msg;
-            messageText.value = errMsg || "Login failed for an unknown reason.";
+            messageText.value = errorMessageAsString(error, "Login failed for an unknown reason.");
         }
     }
 }
@@ -110,11 +102,11 @@ async function submit() {
                                 </BFormCheckbox>
                             </BFormGroup>
 
-                            <BButton name="confirm" type="submit" :disabled="!termsRead" @click.prevent="submit">
+                            <GButton name="confirm" type="submit" :disabled="!termsRead" @click.prevent="submit">
                                 Yes, create new account
-                            </BButton>
+                            </GButton>
 
-                            <BButton name="cancel" type="submit" @click.prevent="login"> No, go back to login </BButton>
+                            <GButton name="cancel" type="submit" @click.prevent="login"> No, go back to login </GButton>
                         </BCardBody>
 
                         <BCardFooter>

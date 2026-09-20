@@ -1,7 +1,7 @@
 import logging
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ Verify that convert_chars was installed first, contrary to the ordering that wou
 running_standalone = False
 
 
-class TestSimplePriorInstallation(ShedTwillTestCase):
+class TestSimplePriorInstallation(ShedTestCase):
     """Test features related to datatype converters."""
 
     requires_galaxy = True
@@ -66,7 +66,6 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0010_create_column_repository(self):
         """Create and populate convert_chars_0150."""
-        global running_standalone
         category = self.create_category(name=category_name, description=category_description)
         repository = self.get_or_create_repository(
             name=column_repository_name,
@@ -89,7 +88,6 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
         Column maker repository dependency:
             <repository toolshed="self.url" name="convert_chars" owner="test" changeset_revision="<tip>" prior_installation_required="True" />
         """
-        global running_standalone
         column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
         convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
         if running_standalone:

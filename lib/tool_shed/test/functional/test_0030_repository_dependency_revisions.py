@@ -1,6 +1,5 @@
 from ..base import common
-from ..base.api import skip_if_api_v2
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 column_maker_repository_name = "column_maker_0030"
 column_maker_repository_description = "Add column"
@@ -13,7 +12,7 @@ emboss_repository_description = "Galaxy wrappers for Emboss version 5.0.0 tools 
 emboss_repository_long_description = "Galaxy wrappers for Emboss version 5.0.0 tools for test 0030"
 
 
-class TestRepositoryDependencyRevisions(ShedTwillTestCase):
+class TestRepositoryDependencyRevisions(ShedTestCase):
     """Test dependencies on different revisions of a repository."""
 
     def test_0000_initiate_users(self):
@@ -159,27 +158,6 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
         self.create_repository_dependency(
             repository=emboss_repository, repository_tuples=[emboss_tuple], filepath=repository_dependencies_path
         )
-
-    @skip_if_api_v2
-    def test_0050_verify_repository_dependency_revisions(self):
-        """Verify that different metadata revisions of the emboss repository have different repository dependencies."""
-        repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
-        repository_metadata = [
-            (metadata.metadata, metadata.changeset_revision) for metadata in self.get_repository_metadata(repository)
-        ]
-        column_maker_repository = self._get_repository_by_name_and_owner(
-            column_maker_repository_name, common.test_user_1_name
-        )
-        column_maker_tip = self.get_repository_tip(column_maker_repository)
-        strings_displayed = []
-        # Iterate through all metadata revisions and check for repository dependencies.
-        for _metadata, changeset_revision in repository_metadata:
-            # Add the dependency description and bismark repository details to the strings to check.
-            strings_displayed = ["column_maker_0030", "user1", column_maker_tip]
-            strings_displayed.extend(["Tool dependencies", "emboss", "5.0.0", "package"])
-            self.display_manage_repository_page(
-                repository, changeset_revision=changeset_revision, strings_displayed=strings_displayed
-            )
 
     def test_0055_verify_repository_metadata(self):
         """Verify that resetting the metadata does not change it."""

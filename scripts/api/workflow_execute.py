@@ -24,7 +24,7 @@ def main():
             step, src, ds_id = v.split("=")
             data["ds_map"][step] = {"src": src, "id": ds_id}
     except IndexError:
-        print("usage: %s key url workflow_id history step=src=dataset_id" % os.path.basename(sys.argv[0]))
+        print(f"usage: {os.path.basename(sys.argv[0])} key url workflow_id history step=src=dataset_id")
         sys.exit(1)
     submit(sys.argv[1], sys.argv[2], data)
 

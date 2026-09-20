@@ -1,0 +1,20 @@
+<tool id="gx_conditional_underscore_name" name="gx_conditional_underscore_name" version="1.0.0" profile="24.2">
+    <command detect_errors="exit_code"><![CDATA[echo '$__cond_opts__.__selector__' > '$output']]></command>
+    <inputs>
+        <conditional name="__cond_opts__">
+            <param name="__selector__" type="select" label="Choose">
+                <option value="a" selected="true">A</option>
+                <option value="b">B</option>
+            </param>
+            <when value="a">
+                <param name="param_a" type="text" value="val_a" label="Param A"/>
+            </when>
+            <when value="b">
+                <param name="param_b" type="text" value="val_b" label="Param B"/>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+</tool>

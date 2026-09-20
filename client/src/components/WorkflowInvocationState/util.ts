@@ -1,11 +1,27 @@
-import { InvocationJobsSummary } from "@/api/invocations";
+import type { InvocationJobsSummary, StepJobSummary } from "@/api/invocations";
+import { ERROR_STATES, NON_TERMINAL_STATES, TERMINAL_STATES } from "@/api/jobs";
 
-export const NON_TERMINAL_STATES = ["new", "queued", "running", "waiting"];
-export const ERROR_STATES = ["error", "deleted"];
-export const TERMINAL_STATES = ["ok", "skipped"].concat(ERROR_STATES);
+export { ERROR_STATES, NON_TERMINAL_STATES, TERMINAL_STATES } from "@/api/jobs";
+
 export const POPULATED_STATE_FAILED = "failed";
 
-function countStates(jobSummary: InvocationJobsSummary | null, queryStates: string[]): number {
+export const INVOCATION_MSG_LEVEL = {
+    history_deleted: "cancel",
+    user_request: "cancel",
+    cancelled_on_review: "cancel",
+    dataset_failed: "error",
+    collection_failed: "error",
+    job_failed: "error",
+    output_not_found: "error",
+    expression_evaluation_failed: "error",
+    when_not_boolean: "error",
+    unexpected_failure: "error",
+    workflow_output_not_found: "warning",
+    workflow_parameter_invalid: "error",
+    step_input_deleted: "error",
+} as const satisfies Readonly<Record<string, "cancel" | "error" | "warning">>;
+
+function countStates(jobSummary: InvocationJobsSummary | StepJobSummary | null, queryStates: string[]): number {
     let count = 0;
     const states = jobSummary?.states;
     if (states) {
@@ -38,19 +54,19 @@ export function runningCount(jobSummary: InvocationJobsSummary): number {
     return countStates(jobSummary, ["running"]);
 }
 
-export function numTerminal(jobSummary: InvocationJobsSummary): number {
+export function numTerminal(jobSummary: InvocationJobsSummary | StepJobSummary): number {
     return countStates(jobSummary, TERMINAL_STATES);
 }
 
-export function errorCount(jobSummary: InvocationJobsSummary): number {
+export function errorCount(jobSummary: InvocationJobsSummary | StepJobSummary): number {
     return countStates(jobSummary, ERROR_STATES);
 }
 
-function isNew(jobSummary: InvocationJobsSummary) {
+function isNew(jobSummary: InvocationJobsSummary | StepJobSummary) {
     return jobSummary.populated_state && jobSummary.populated_state == "new";
 }
 
-function anyWithStates(jobSummary: InvocationJobsSummary, queryStates: string[]) {
+function anyWithStates(jobSummary: InvocationJobsSummary | StepJobSummary, queryStates: string[]) {
     const states = jobSummary.states;
     for (const index in queryStates) {
         const state: string = queryStates[index] as string;
@@ -61,11 +77,40 @@ function anyWithStates(jobSummary: InvocationJobsSummary, queryStates: string[])
     return false;
 }
 
-export function isTerminal(jobSummary: InvocationJobsSummary) {
+export function isTerminal(jobSummary: InvocationJobsSummary | StepJobSummary) {
     if (isNew(jobSummary)) {
         return false;
     } else {
         const anyNonTerminal = anyWithStates(jobSummary, NON_TERMINAL_STATES);
         return !anyNonTerminal;
+    }
+}
+
+export function getStepTitle(
+    stepIndex: number,
+    stepType: string,
+    stepLabel?: string,
+    toolName = "Unknown tool",
+    subworkflowName = "Subworkflow",
+): string {
+    const oneBasedStepIndex = stepIndex + 1;
+    if (stepLabel) {
+        return `Step ${oneBasedStepIndex}: ${stepLabel}`;
+    }
+    const workflowStepType = stepType;
+    switch (workflowStepType) {
+        case "tool":
+            return `Step ${oneBasedStepIndex}: ${toolName}`;
+        case "subworkflow": {
+            return `Step ${oneBasedStepIndex}: ${subworkflowName}`;
+        }
+        case "parameter_input":
+            return `Step ${oneBasedStepIndex}: Parameter input`;
+        case "data_input":
+            return `Step ${oneBasedStepIndex}: Data input`;
+        case "data_collection_input":
+            return `Step ${oneBasedStepIndex}: Data collection input`;
+        default:
+            return `Step ${oneBasedStepIndex}: Unknown step type '${workflowStepType}'`;
     }
 }

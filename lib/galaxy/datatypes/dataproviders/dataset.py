@@ -14,7 +14,9 @@ from bx import (
     wiggle as bx_wig,
 )
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.util import sqlite
+from galaxy.util.compression_utils import get_fileobj
 from . import (
     base,
     column,
@@ -54,7 +56,7 @@ class DatasetDataProvider(base.DataProvider):
         # this dataset file is obviously the source
         # TODO: this might be a good place to interface with the object_store...
         mode = "rb" if dataset.datatype.is_binary else "r"
-        super().__init__(open(dataset.get_file_name(), mode))
+        super().__init__(get_fileobj(dataset.get_file_name(), mode))
 
     # TODO: this is a bit of a mess
     @classmethod
@@ -715,7 +717,11 @@ class SQliteDataProvider(base.DataProvider):
 
     def __init__(self, source, query=None, **kwargs):
         self.query = query
-        self.connection = sqlite.connect(source.dataset.get_file_name())
+        datatype = source.datatype
+        file_name = source.dataset.get_file_name()
+        if not datatype.sniff(file_name):
+            raise RequestParameterInvalidException("Dataset is not a SQlite file, cannot fetch data.")
+        self.connection = sqlite.connect(file_name)
         super().__init__(source, **kwargs)
 
     def __iter__(self):

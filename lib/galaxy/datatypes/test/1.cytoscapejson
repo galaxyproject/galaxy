@@ -1,0 +1,33 @@
+{
+  "format_version" : "1.0",
+  "generated_by" : "cytoscape-3.1.1",
+  "target_cytoscapejs_version" : "~2.1",
+  "elements": {
+  "nodes": [
+      { "data": { "id": "n1", "label": "Node 1" } },
+      { "data": { "id": "n2", "label": "Node 2" } }
+    ],
+    "edges": [
+      { "data": { "id": "e1", "source": "n1", "target": "n2", "label": "Edge from Node1 to Node2" } }
+    ]
+  },
+  "style": [
+    {
+      "selector": "node",
+      "style": {
+        "label": "data(label)"
+      }
+    },
+    {
+      "selector": "edge",
+      "style": {
+        "label": "data(label)",
+        "curve-style": "bezier",
+        "target-arrow-shape": "triangle"
+      }
+    }
+  ],
+  "layout": {
+    "name": "grid"
+  }
+}

@@ -37,7 +37,7 @@ def _get_or_create_index(whoosh_index_dir):
     return get_or_create_index(whoosh_index_dir, repo_schema), get_or_create_index(tool_index_dir, tool_schema)
 
 
-def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
+def build_index(whoosh_index_dir, file_path, hgweb_config_dir, hgweb_repo_prefix, dburi, **kwargs):
     """
     Build two search indexes simultaneously
     One is for repositories and the other for tools.
@@ -55,7 +55,9 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
 
     execution_timer = ExecutionTimer()
     with repo_index.searcher() as searcher:
-        for repo in get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
+        for repo in get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwargs):
+            if repo is None:
+                continue
             tools_list = repo.pop("tools_list")
             repo_id = repo["id"]
             indexed_document = searcher.document(id=repo_id)
@@ -89,7 +91,7 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
     return repos_indexed, tools_indexed
 
 
-def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
+def get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwargs):
     """
     Load repos from DB and included tools from .xml configs.
     """
@@ -115,13 +117,18 @@ def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
             user = sa_session.get(model.User, repo.user_id)
             repo_owner_username = user.username.lower()
 
-        last_updated = pretty_print_time_interval(repo.update_time)
-        full_last_updated = repo.update_time.strftime("%Y-%m-%d %I:%M %p")
+        laste_updated_time = repo.last_updated_time
+        # If committed must have last_updated_time
+        assert laste_updated_time is not None
+        last_updated = pretty_print_time_interval(laste_updated_time)
+        full_last_updated = laste_updated_time.strftime("%Y-%m-%d %I:%M %p")
 
         # Load all changesets of the repo for lineage.
-        repo_path = os.path.join(
-            hgweb_config_dir, hgwcm.get_entry(os.path.join("repos", repo.user.username, repo.name))
-        )
+        try:
+            entry = hgwcm.get_entry(os.path.join(hgweb_repo_prefix, repo.user.username, repo.name))
+        except Exception:
+            return None
+        repo_path = os.path.join(hgweb_config_dir, entry)
         hg_repo = hg.repository(ui.ui(), repo_path.encode("utf-8"))
         lineage = []
         for changeset in hg_repo.changelog:
@@ -131,7 +138,7 @@ def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
         #  Parse all the tools within repo for a separate index.
         tools_list = []
         path = os.path.join(file_path, *directory_hash_id(repo.id))
-        path = os.path.join(path, "repo_%d" % repo.id)
+        path = os.path.join(path, f"repo_{repo.id}")
         if os.path.exists(path):
             tools_list.extend(load_one_dir(path))
             for root, dirs, _files in os.walk(path):
@@ -194,13 +201,16 @@ def load_one_dir(path):
 
 def get_repositories_for_indexing(session):
     # Do not index deleted, deprecated, or "tool_dependency_definition" type repositories.
+    # Order by last_updated_time so the build_index incremental fast path can
+    # break out as soon as it encounters an already-indexed repo with a
+    # matching full_last_updated stamp.
     Repository = model.Repository
     stmt = (
         select(Repository)
         .where(Repository.deleted == false())
         .where(Repository.deprecated == false())
         .where(Repository.type != "tool_dependency_definition")
-        .order_by(Repository.update_time.desc())
+        .order_by(Repository.last_updated_time.desc())
     )
     return session.scalars(stmt)
 

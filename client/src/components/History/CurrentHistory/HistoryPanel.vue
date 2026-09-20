@@ -1,22 +1,23 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, type Ref, ref, set as VueSet, unref, watch } from "vue";
+import { computed, onMounted, ref, set as VueSet, unref, watch } from "vue";
 
-import type { HistoryItemSummary, HistorySummaryExtended } from "@/api";
-import { copyDataset } from "@/api/datasets";
+import { type HistoryItemSummary, type HistorySummaryExtended, userOwnsHistory } from "@/api";
+import { getGalaxyInstance } from "@/app";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
-import SelectedItems from "@/components/History/Content/SelectedItems";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
-import { Toast } from "@/composables/toast";
-import { useActiveElement } from "@/composables/useActiveElement";
-import { startWatchingHistory } from "@/store/historyStore/model/watchHistory";
-import { useEventStore } from "@/stores/eventStore";
+import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useStorageOperationsStore } from "@/stores/storageOperationsStore";
+import { useUserStore } from "@/stores/userStore";
 import { type Alias, getOperatorForAlias } from "@/utils/filtering";
-import { setDrag } from "@/utils/setDrag";
+import { setItemDragstart } from "@/utils/setDrag";
+import { refreshHistoryFromPush } from "@/watch/watchHistory";
+
+import { useHistoryDragDrop } from "../../../composables/historyDragDrop";
 
 import HistoryCounter from "./HistoryCounter.vue";
 import HistoryDetails from "./HistoryDetails.vue";
@@ -49,17 +50,13 @@ interface Props {
     listOffset?: number;
     history: HistorySummaryExtended;
     filter?: string;
-    canEditHistory?: boolean;
     filterable?: boolean;
     isMultiViewItem?: boolean;
 }
 
-type ContentItemRef = Record<string, Ref<InstanceType<typeof ContentItem> | null>>;
-
 const props = withDefaults(defineProps<Props>(), {
     listOffset: 0,
     filter: "",
-    canEditHistory: true,
     filterable: false,
     isMultiViewItem: false,
 });
@@ -71,25 +68,27 @@ const isLoading = ref(false);
 const offsetQueryParam = ref(0);
 const searchError = ref<BackendFilterError | undefined>(undefined);
 const showAdvanced = ref(false);
-const showDropZone = ref(false);
 const operationRunning = ref<string | null>(null);
 const operationError = ref(null);
 const querySelectionBreak = ref(false);
-const dragTarget = ref<EventTarget | null>(null);
-const contentItemRefs = computed(() => {
-    return historyItems.value.reduce((acc: ContentItemRef, item) => {
-        acc[itemUniqueKey(item)] = ref(null);
-        return acc;
-    }, {});
-});
-const currItemFocused = useActiveElement();
-const lastItemId = ref<string | null>(null);
 
-const { currentFilterText, currentHistoryId } = storeToRefs(useHistoryStore());
+const { currentFilterText, currentHistoryId, pinnedHistories, storedHistories } = storeToRefs(useHistoryStore());
 const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistoryItemsStore());
 
 const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
+const storageOperationsStore = useStorageOperationsStore();
+const { currentUser } = storeToRefs(useUserStore());
+
+const historyIdComputed = computed(() => props.history.id);
+const { showDropZone, onDragEnter, onDragLeave, onDragOver, onDrop } = useHistoryDragDrop(historyIdComputed);
+
+const currentUserOwnsHistory = computed(() => {
+    return userOwnsHistory(currentUser.value, props.history);
+});
+const canEditHistory = computed(() => {
+    return currentUserOwnsHistory.value && !props.history.deleted && !props.history.archived;
+});
 
 const historyUpdateTime = computed(() => {
     return props.history.update_time;
@@ -114,6 +113,10 @@ const historyItems = computed(() => {
     return historyItemsStore.getHistoryItems(props.history.id, filterText.value);
 });
 
+const activeStorageRuns = computed(() => {
+    return storageOperationsStore.getActiveRuns(props.history.id);
+});
+
 const visibleHistoryItems = computed(() => {
     return historyItems.value.filter((item) => !invisibleHistoryItems.value[item.hid]);
 });
@@ -136,15 +139,52 @@ const formattedSearchError = computed(() => {
     };
 });
 
+/** Returns a string that indicates whether all the pinned histories have annotations,
+ * tags, both, or none of them.
+ * This is used to format the `DetailsLayout` header uniformly for multi-view histories.
+ */
+const detailsSummarized = computed(() => {
+    if (!props.isMultiViewItem) {
+        return undefined;
+    }
+    if (pinnedHistories.value.length === 0) {
+        return "hidden";
+    }
+
+    let annotation = false;
+    let tags = false;
+    let loaded = true;
+
+    for (const h of pinnedHistories.value) {
+        const history = storedHistories.value[h.id];
+        if (!history) {
+            loaded = false;
+            break;
+        }
+        if (history.annotation) {
+            annotation = true;
+        }
+        if (history.tags.length > 0) {
+            tags = true;
+        }
+    }
+
+    if (!loaded || (annotation && tags)) {
+        return "both";
+    } else if (annotation) {
+        return "annotation";
+    } else if (tags) {
+        return "tags";
+    } else {
+        return "none";
+    }
+});
+
 const storeFilterText = computed(() => {
     if (props.history.id !== currentHistoryId.value) {
         return "";
     }
     return currentFilterText.value || "";
-});
-
-const lastItemFocused = computed(() => {
-    return lastItemId.value ? historyItems.value.find((item) => lastItemId.value === `dataset-${item.id}`) : null;
 });
 
 watch(offsetQueryParam, () => loadHistoryItems());
@@ -155,13 +195,12 @@ watch(
         invisibleHistoryItems.value = {};
         offsetQueryParam.value = 0;
         loadHistoryItems();
-        lastItemId.value = null;
-    }
+    },
 );
 
 watch(
     () => props.filter,
-    (newVal) => (filterText.value = newVal)
+    (newVal) => (filterText.value = newVal),
 );
 
 watch(filterText, (newFilterTextValue) => {
@@ -183,9 +222,8 @@ watch(
     (newValue, currentValue) => {
         if (newValue !== currentValue) {
             operationRunning.value = null;
-            lastItemId.value = null;
         }
-    }
+    },
 );
 
 watch(historyItems, (newHistoryItems) => {
@@ -200,47 +238,6 @@ watch(historyItems, (newHistoryItems) => {
         }
     }
 });
-
-watch(
-    () => currItemFocused.value,
-    (newItem, oldItem) => {
-        // if user clicked elsewhere, set lastItemId to the last focused item
-        // (if it was indeed a history .content-item)
-        if (newItem && oldItem?.classList?.contains("content-item") && oldItem?.getAttribute("data-hid")) {
-            lastItemId.value = oldItem?.id || null;
-        }
-    }
-);
-
-function dragSameHistory() {
-    return getDragData().sameHistory;
-}
-
-function getDragData() {
-    const eventStore = useEventStore();
-    const multiple = eventStore.multipleDragData;
-    let data: HistoryItemSummary[] | undefined;
-    let historyId: string | undefined;
-    try {
-        if (multiple) {
-            const dragData = eventStore.getDragData() as Record<string, HistoryItemSummary>;
-            // set historyId to the first history_id in the multiple drag data
-            const firstItem = Object.values(dragData)[0];
-            if (firstItem) {
-                historyId = firstItem.history_id;
-            }
-            data = Object.values(dragData);
-        } else {
-            data = [eventStore.getDragData() as HistoryItemSummary];
-            if (data[0]) {
-                historyId = data[0].history_id;
-            }
-        }
-    } catch (error) {
-        // this was not a valid object for this dropzone, ignore
-    }
-    return { data, sameHistory: historyId === props.history.id, multiple };
-}
 
 function getHighlight(item: HistoryItemSummary) {
     if (unref(isLoading)) {
@@ -339,7 +336,11 @@ function updateContentStats() {
 }
 
 function reloadContents() {
-    startWatchingHistory();
+    // ``startWatchingHistory`` is idempotent, so the prior call did nothing
+    // once SSE/polling was already initialized. Force a refresh through the
+    // same code path SSE pushes use so the user-initiated click actually
+    // re-fetches the history and items.
+    refreshHistoryFromPush(getGalaxyInstance()).catch((err) => console.error("Manual history refresh failed:", err));
 }
 
 function setInvisible(item: HistoryItemSummary) {
@@ -355,77 +356,13 @@ function onOperationError(error: any) {
     operationError.value = error;
 }
 
-function onDragEnter(e: DragEvent) {
-    if (dragSameHistory()) {
-        return;
-    }
-    dragTarget.value = e.target;
-    showDropZone.value = true;
-}
-
-function onDragOver(e: DragEvent) {
-    if (dragSameHistory()) {
-        return;
-    }
-    e.preventDefault();
-}
-
-function onDragLeave(e: DragEvent) {
-    if (dragSameHistory()) {
-        return;
-    }
-    if (dragTarget.value === e.target) {
-        showDropZone.value = false;
-    }
-}
-
-async function onDrop() {
-    showDropZone.value = false;
-    const { data, sameHistory, multiple } = getDragData();
-    if (!data || sameHistory) {
-        return;
-    }
-
-    let datasetCount = 0;
-    let collectionCount = 0;
-    try {
-        // iterate over the data array and copy each item to the current history
-        for (const item of data) {
-            const dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
-            await copyDataset(item.id, props.history.id, item.history_content_type, dataSource);
-
-            if (item.history_content_type === "dataset") {
-                datasetCount++;
-                if (!multiple) {
-                    Toast.info("Dataset copied to history");
-                }
-            } else {
-                collectionCount++;
-                if (!multiple) {
-                    Toast.info("Collection copied to history");
-                }
-            }
-        }
-
-        if (multiple && datasetCount > 0) {
-            Toast.info(`${datasetCount} dataset${datasetCount > 1 ? "s" : ""} copied to new history`);
-        }
-        if (multiple && collectionCount > 0) {
-            Toast.info(`${collectionCount} collection${collectionCount > 1 ? "s" : ""} copied to new history`);
-        }
-        historyStore.loadHistoryById(props.history.id);
-    } catch (error) {
-        Toast.error(`${error}`);
-    }
-}
-
 function updateFilterValue(filterKey: string, newValue: any) {
     const currentFilterText = filterText.value;
     filterText.value = filterClass.setFilterValue(currentFilterText, filterKey, newValue);
 }
 
 function getItemKey(item: HistoryItemSummary) {
-    return item.type_id;
+    return itemUniqueKey(item);
 }
 
 function itemUniqueKey(item: HistoryItemSummary) {
@@ -440,45 +377,41 @@ onMounted(async () => {
     await loadHistoryItems();
     // if there is a listOffset, we are coming from a collection view, so focus on item at that offset
     if (props.listOffset) {
-        const itemAtOffset = historyItems.value[props.listOffset];
-        if (itemAtOffset) {
-            const itemElement = contentItemRefs.value[itemUniqueKey(itemAtOffset)]?.value?.$el as HTMLElement;
-            itemElement?.focus();
-        }
+        resetFocusToOffset(props.listOffset);
     }
 });
 
-function arrowNavigate(item: HistoryItemSummary, eventKey: string) {
-    let nextItem = null;
-    if (eventKey === "ArrowDown") {
-        nextItem = historyItems.value[historyItems.value.indexOf(item) + 1];
-    } else if (eventKey === "ArrowUp") {
-        nextItem = historyItems.value[historyItems.value.indexOf(item) - 1];
-    }
-    if (nextItem) {
-        const itemElement = contentItemRefs.value[itemUniqueKey(nextItem)]?.value?.$el as HTMLElement;
-        itemElement?.focus();
-    }
-    return nextItem;
-}
-
-function setItemDragstart(
-    item: HistoryItemSummary,
-    itemIsSelected: boolean,
-    selectedItems: Map<string, HistoryItemSummary>,
-    selectionSize: number,
-    event: DragEvent
-) {
-    if (itemIsSelected && selectionSize > 1) {
-        const selectedItemsObj: any = {};
-        for (const [key, value] of selectedItems) {
-            selectedItemsObj[key] = value;
-        }
-        setDrag(event, selectedItemsObj, true);
-    } else {
-        setDrag(event, item as any);
-    }
-}
+const {
+    selectedItems,
+    showSelection,
+    isQuerySelection,
+    selectionSize,
+    setShowSelection,
+    selectAllInCurrentQuery,
+    isRangeSelectAnchor,
+    isSelected,
+    setSelected,
+    initKeySelection,
+    resetFocusToOffset,
+    resetSelection,
+    itemRefs,
+    onClick,
+    onKeyDown,
+} = useSelectedItems<HistoryItemSummary, typeof ContentItem>({
+    scopeKey: queryKey,
+    getItemKey: getItemKey,
+    filterText: filterText,
+    totalItemsInQuery: computed(() => totalMatchesCount.value ?? 0),
+    allItems: historyItems,
+    filterClass: HistoryFilters,
+    selectable: canEditHistory,
+    querySelectionBreak: () => {
+        querySelectionBreak.value = true;
+    },
+    onDelete,
+    expectedKeyDownClass: "content-item",
+    disallowedKeyDownClasses: ["sub-item"],
+});
 </script>
 
 <template>
@@ -486,184 +419,177 @@ function setItemDragstart(
         v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }"
         :scope-key="props.history.id"
         :get-item-key="getItemKey">
-        <SelectedItems
-            v-slot="{
-                selectedItems,
-                showSelection,
-                isQuerySelection,
-                selectionSize,
-                setShowSelection,
-                selectAllInCurrentQuery,
-                isSelected,
-                rangeSelect,
-                setSelected,
-                shiftArrowKeySelect,
-                initKeySelection,
-                resetSelection,
-                initSelectedItem,
-            }"
-            :scope-key="queryKey"
-            :get-item-key="getItemKey"
-            :filter-text="filterText"
-            :all-items="historyItems"
-            :total-items-in-query="totalMatchesCount"
-            @query-selection-break="querySelectionBreak = true">
-            <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-            <section
-                class="history-layout d-flex flex-column w-100 h-100"
-                @drop.prevent="onDrop"
-                @dragenter.prevent="onDragEnter"
-                @dragover="onDragOver"
-                @dragleave.prevent="onDragLeave">
-                <slot name="navigation" :history="history" />
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+        <section
+            class="history-layout d-flex flex-column w-100 h-100"
+            @drop.prevent="onDrop"
+            @dragenter.prevent="onDragEnter"
+            @dragover="onDragOver"
+            @dragleave.prevent="onDragLeave">
+            <slot name="navigation" :history="history" />
 
-                <FilterMenu
-                    v-if="filterable"
-                    class="content-operations-filters mx-3"
-                    name="History Items"
-                    placeholder="search datasets"
-                    :filter-class="filterClass"
+            <FilterMenu
+                v-if="filterable"
+                :key="props.history.id"
+                class="content-operations-filters mx-3"
+                name="History Items"
+                placeholder="search datasets"
+                :filter-class="filterClass"
+                :filter-text.sync="filterText"
+                :loading="isLoading"
+                :search-error="searchError"
+                :show-advanced.sync="showAdvanced" />
+
+            <section v-if="!showAdvanced">
+                <HistoryDetails :history="history" :writeable="canEditHistory" :summarized="detailsSummarized" />
+
+                <HistoryMessages v-if="!isMultiViewItem" :history="history" :current-user="currentUser" />
+
+                <HistoryCounter
+                    :history="history"
+                    :is-watching="isWatching"
+                    :last-checked="lastCheckedTime"
+                    :show-controls="canEditHistory"
+                    :owned-by-current-user="userOwnsHistory(currentUser, history)"
                     :filter-text.sync="filterText"
-                    :loading="isLoading"
-                    :search-error="searchError"
-                    :show-advanced.sync="showAdvanced" />
+                    :hide-reload="isMultiViewItem"
+                    @reloadContents="reloadContents" />
 
-                <section v-if="!showAdvanced">
-                    <HistoryDetails
-                        :history="history"
-                        :writeable="canEditHistory"
-                        :summarized="isMultiViewItem"
-                        @update:history="historyStore.updateHistory($event)" />
+                <HistoryOperations
+                    :history="history"
+                    :editable="canEditHistory"
+                    :is-multi-view-item="isMultiViewItem"
+                    :active-storage-runs="activeStorageRuns"
+                    :show-selection="showSelection"
+                    :expanded-count="expandedCount"
+                    :has-matches="hasMatches(historyItems)"
+                    :operation-running.sync="operationRunning"
+                    @update:show-selection="setShowSelection"
+                    @collapse-all="collapseAll">
+                    <template v-slot:selection-operations>
+                        <HistorySelectionOperations
+                            :history="history"
+                            :is-multi-view-item="isMultiViewItem"
+                            :filter-text="filterText"
+                            :content-selection="selectedItems"
+                            :selection-size="selectionSize"
+                            :is-query-selection="isQuerySelection"
+                            :total-items-in-query="totalMatchesCount"
+                            :operation-running.sync="operationRunning"
+                            @update:show-selection="setShowSelection"
+                            @operation-error="onOperationError"
+                            @hide-selection="onHideSelection"
+                            @reset-selection="resetSelection" />
 
-                    <HistoryMessages :history="history" />
+                        <HistorySelectionStatus
+                            v-if="showSelection"
+                            :selection-size="selectionSize"
+                            @select-all="selectAllInCurrentQuery()"
+                            @reset-selection="resetSelection" />
+                    </template>
+                </HistoryOperations>
 
-                    <HistoryCounter
-                        :history="history"
-                        :is-watching="isWatching"
-                        :last-checked="lastCheckedTime"
-                        :show-controls="canEditHistory"
-                        :filter-text.sync="filterText"
-                        :hide-reload="isMultiViewItem"
-                        @reloadContents="reloadContents" />
+                <SelectionChangeWarning v-if="!isMultiViewItem" :query-selection-break="querySelectionBreak" />
 
-                    <HistoryOperations
-                        v-if="canEditHistory"
-                        :history="history"
-                        :is-multi-view-item="isMultiViewItem"
-                        :show-selection="showSelection"
-                        :expanded-count="expandedCount"
-                        :has-matches="hasMatches(historyItems)"
-                        :operation-running.sync="operationRunning"
-                        @update:show-selection="setShowSelection"
-                        @collapse-all="collapseAll">
-                        <template v-slot:selection-operations>
-                            <HistorySelectionOperations
-                                :history="history"
-                                :is-multi-view-item="isMultiViewItem"
-                                :filter-text="filterText"
-                                :content-selection="selectedItems"
-                                :selection-size="selectionSize"
-                                :is-query-selection="isQuerySelection"
-                                :total-items-in-query="totalMatchesCount"
-                                :operation-running.sync="operationRunning"
-                                @update:show-selection="setShowSelection"
-                                @operation-error="onOperationError"
-                                @hide-selection="onHideSelection"
-                                @reset-selection="resetSelection" />
-
-                            <HistorySelectionStatus
-                                v-if="showSelection"
-                                :selection-size="selectionSize"
-                                @select-all="selectAllInCurrentQuery()"
-                                @reset-selection="resetSelection" />
-                        </template>
-                    </HistoryOperations>
-
-                    <SelectionChangeWarning v-if="!isMultiViewItem" :query-selection-break="querySelectionBreak" />
-
-                    <OperationErrorDialog
-                        v-if="operationError"
-                        :operation-error="operationError"
-                        @hide="operationError = null" />
-                </section>
-
-                <section v-show="!showAdvanced" class="position-relative flex-grow-1 scroller overflow-hidden">
-                    <HistoryDropZone v-if="showDropZone" />
-                    <div class="h-100">
-                        <div v-if="isLoading && historyItems && historyItems.length === 0">
-                            <BAlert class="m-2" variant="info" show>
-                                <LoadingSpan message="Loading History" />
-                            </BAlert>
-                        </div>
-                        <BAlert v-else-if="isProcessing" class="m-2" variant="info" show>
-                            <LoadingSpan message="Processing operation" />
-                        </BAlert>
-                        <div v-else-if="historyItems.length === 0">
-                            <HistoryEmpty v-if="queryDefault" :writable="canEditHistory" class="m-2" />
-
-                            <BAlert v-else-if="formattedSearchError" class="m-2" variant="danger" show>
-                                Error in filter:
-                                <a href="javascript:void(0)" @click="showAdvanced = true">
-                                    {{ formattedSearchError.filter }}'{{ formattedSearchError.value }}'
-                                </a>
-                            </BAlert>
-                            <BAlert v-else class="m-2" variant="info" show> No data found for selected filter. </BAlert>
-                        </div>
-                        <ListingLayout
-                            v-else
-                            :offset="listOffset"
-                            :items="visibleHistoryItems"
-                            :query-key="queryKey"
-                            data-key="hid"
-                            @scroll="onScroll">
-                            <template v-slot:item="{ item, currentOffset }">
-                                <ContentItem
-                                    :id="item.hid"
-                                    :ref="contentItemRefs[itemUniqueKey(item)]"
-                                    is-history-item
-                                    :item="item"
-                                    :name="item.name"
-                                    :writable="canEditHistory"
-                                    :expand-dataset="isExpanded(item)"
-                                    :is-dataset="isDataset(item)"
-                                    :is-range-select-anchor="
-                                        initSelectedItem && itemUniqueKey(item) === itemUniqueKey(initSelectedItem)
-                                    "
-                                    :highlight="getHighlight(item)"
-                                    :selected="isSelected(item)"
-                                    :selectable="showSelection"
-                                    :filterable="filterable"
-                                    @arrow-navigate="arrowNavigate(item, $event)"
-                                    @drag-start="
-                                        setItemDragstart(
-                                            item,
-                                            showSelection && isSelected(item),
-                                            selectedItems,
-                                            selectionSize,
-                                            $event
-                                        )
-                                    "
-                                    @hide-selection="setShowSelection(false)"
-                                    @init-key-selection="initKeySelection"
-                                    @shift-arrow-select="
-                                        (eventKey) => shiftArrowKeySelect(item, arrowNavigate(item, eventKey), eventKey)
-                                    "
-                                    @select-all="selectAllInCurrentQuery(false)"
-                                    @selected-to="rangeSelect(item, lastItemFocused)"
-                                    @tag-click="updateFilterValue('tag', $event)"
-                                    @tag-change="onTagChange"
-                                    @toggleHighlights="updateFilterValue('related', item.hid)"
-                                    @update:expand-dataset="setExpanded(item, $event)"
-                                    @update:selected="setSelected(item, $event)"
-                                    @view-collection="$emit('view-collection', item, currentOffset)"
-                                    @delete="onDelete"
-                                    @undelete="onUndelete(item)"
-                                    @unhide="onUnhide(item)" />
-                            </template>
-                        </ListingLayout>
-                    </div>
-                </section>
+                <OperationErrorDialog
+                    v-if="operationError"
+                    :operation-error="operationError"
+                    @hide="operationError = null" />
             </section>
-        </SelectedItems>
+
+            <section v-show="!showAdvanced" class="position-relative flex-grow-1 scroller overflow-hidden">
+                <HistoryDropZone v-if="showDropZone" />
+                <div class="h-100">
+                    <div v-if="isLoading && historyItems && historyItems.length === 0">
+                        <BAlert class="m-2" variant="info" show>
+                            <LoadingSpan message="Loading History" />
+                        </BAlert>
+                    </div>
+                    <BAlert v-else-if="isProcessing" class="m-2" variant="info" show>
+                        <LoadingSpan message="Processing operation" />
+                    </BAlert>
+                    <div v-else-if="historyItems.length === 0">
+                        <HistoryEmpty v-if="queryDefault" :writable="canEditHistory" class="m-2" />
+
+                        <BAlert v-else-if="formattedSearchError" class="m-2" variant="danger" show>
+                            Error in filter:
+                            <a href="javascript:void(0)" @click="showAdvanced = true">
+                                {{ formattedSearchError.filter }}'{{ formattedSearchError.value }}'
+                            </a>
+                        </BAlert>
+                        <BAlert v-else class="m-2" variant="info" show> No data found for selected filter. </BAlert>
+                    </div>
+                    <ListingLayout
+                        v-else
+                        :offset="listOffset"
+                        :items="visibleHistoryItems"
+                        :query-key="queryKey"
+                        data-key="hid"
+                        @scroll="onScroll">
+                        <template v-slot:item="{ item, currentOffset }">
+                            <ContentItem
+                                :id="item.hid"
+                                :ref="itemRefs[itemUniqueKey(item)]"
+                                is-history-item
+                                :item="item"
+                                :name="item.name"
+                                :writable="canEditHistory"
+                                :expand-dataset="isExpanded(item)"
+                                :is-dataset="isDataset(item)"
+                                :is-range-select-anchor="isRangeSelectAnchor(item)"
+                                :highlight="getHighlight(item)"
+                                :selected="isSelected(item)"
+                                :selectable="showSelection"
+                                :filterable="filterable"
+                                :get-item-key="getItemKey"
+                                :select-click-handler="onClick"
+                                @on-key-down="onKeyDown(item, $event)"
+                                @drag-start="
+                                    setItemDragstart(
+                                        item,
+                                        $event,
+                                        showSelection && isSelected(item),
+                                        selectionSize,
+                                        selectedItems,
+                                    )
+                                "
+                                @init-key-selection="initKeySelection"
+                                @tag-click="updateFilterValue('tag', $event)"
+                                @tag-change="onTagChange"
+                                @toggleHighlights="updateFilterValue('related', item.hid)"
+                                @update:expand-dataset="setExpanded(item, $event)"
+                                @update:selected="setSelected(item, $event)"
+                                @view-collection="$emit('view-collection', item, currentOffset)"
+                                @delete="onDelete"
+                                @undelete="onUndelete(item)"
+                                @unhide="onUnhide(item)">
+                                <template v-slot:sub_items="slotProps">
+                                    <div v-if="slotProps.subItemsVisible" class="pl-2 sub-items-content">
+                                        <ContentItem
+                                            v-for="subItem in item.sub_items"
+                                            :id="subItem.hid"
+                                            :key="subItem.id"
+                                            :item="subItem"
+                                            :name="subItem.name"
+                                            :expand-dataset="isExpanded(subItem)"
+                                            :is-dataset="isDataset(subItem)"
+                                            :is-sub-item="true"
+                                            @update:expand-dataset="setExpanded(subItem, $event)" />
+                                    </div>
+                                </template>
+                            </ContentItem>
+                        </template>
+                    </ListingLayout>
+                </div>
+            </section>
+        </section>
     </ExpandedItems>
 </template>
+
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+
+.sub-items-content {
+    background: $body-bg;
+}
+</style>

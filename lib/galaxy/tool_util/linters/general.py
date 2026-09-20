@@ -2,7 +2,6 @@
 
 import re
 from typing import (
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -30,7 +29,7 @@ PROFILE_PATTERN = re.compile(r"^[12]\d\.\d{1,2}$")
 lint_tool_types = ["*"]
 
 
-def _tool_xml_and_root(tool_source: "ToolSource") -> Tuple["ElementTree", "Element"]:
+def _tool_xml_and_root(tool_source: "ToolSource") -> tuple["ElementTree", "Element"]:
     tool_xml = getattr(tool_source, "xml_tree", None)
     if tool_xml:
         tool_node = tool_xml.getroot()
@@ -183,7 +182,7 @@ class RequirementNameMissing(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         _, tool_node = _tool_xml_and_root(tool_source)
-        requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
+        requirements, *_ = tool_source.parse_requirements()
         for r in requirements:
             if r.type != "package":
                 continue
@@ -195,7 +194,7 @@ class RequirementVersionMissing(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         _, tool_node = _tool_xml_and_root(tool_source)
-        requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
+        requirements, *_ = tool_source.parse_requirements()
         for r in requirements:
             if r.type != "package":
                 continue
@@ -207,7 +206,7 @@ class RequirementVersionWhitespace(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         _, tool_node = _tool_xml_and_root(tool_source)
-        requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
+        requirements, *_ = tool_source.parse_requirements()
         for r in requirements:
             if r.type != "package":
                 continue
@@ -223,7 +222,7 @@ class ResourceRequirementExpression(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         _, tool_node = _tool_xml_and_root(tool_source)
-        requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements, *_ = tool_source.parse_requirements()
         for rr in resource_requirements:
             if rr.runtime_required:
                 lint_ctx.warn(
@@ -237,11 +236,11 @@ class BioToolsValid(Linter):
         _, tool_node = _tool_xml_and_root(tool_source)
         xrefs = tool_source.parse_xrefs()
         for xref in xrefs:
-            if xref["reftype"] != "bio.tools":
+            if xref["type"] != "bio.tools":
                 continue
             metadata_source = ApiBiotoolsMetadataSource()
             if not metadata_source.get_biotools_metadata(xref["value"]):
-                lint_ctx.warn(f'No entry {xref["value"]} in bio.tools.', linter=cls.name(), node=tool_node)
+                lint_ctx.warn(f"No entry {xref['value']} in bio.tools.", linter=cls.name(), node=tool_node)
 
 
 class EDAMTermsValid(Linter):

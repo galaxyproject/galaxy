@@ -6,7 +6,6 @@ https://github.com/dmontagu/fastapi-utils
 from typing import (
     Any,
     ClassVar,
-    Optional,
 )
 
 from fastapi import (
@@ -70,12 +69,14 @@ def test_method_order_preserved() -> None:
 
     app = FastAPI()
     app.include_router(router)
+    client = TestClient(app)
 
-    assert TestClient(app).get("/test").json() == 1
-    assert TestClient(app).get("/other").json() == 2
+    assert client.get("/test").json() == 1
+    assert client.get("/other").json() == 2
 
 
 def test_multiple_decorators() -> None:
+    app = FastAPI()
     router = APIRouter()
 
     @cbv(router)
@@ -83,14 +84,16 @@ def test_multiple_decorators() -> None:
         @router.get("/items/?")
         @router.get("/items/{item_path:path}")
         @router.get("/database/{item_path:path}")
-        def root(self, item_path: Optional[str] = None, item_query: Optional[str] = None) -> Any:
+        def root(self, item_path: str | None = None, item_query: str | None = None) -> Any:
             if item_path:
                 return {"item_path": item_path}
             if item_query:
                 return {"item_query": item_query}
             return []
 
-    client = TestClient(router)
+    app = FastAPI()
+    app.include_router(router)
+    client = TestClient(app)
 
     assert client.get("/items").json() == []
     assert client.get("/items/1").json() == {"item_path": "1"}

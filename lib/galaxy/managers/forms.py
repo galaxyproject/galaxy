@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import select
 from sqlalchemy.exc import (
     MultipleResultsFound,
@@ -15,8 +17,10 @@ from galaxy.model import (
     FormDefinition,
     FormDefinitionCurrent,
 )
-from galaxy.model.base import transaction
 from galaxy.util import unicodify
+
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 
 def get_form_definitions(session):
@@ -34,7 +38,7 @@ def get_filtered_form_definitions_current(session, filter):
     return session.scalars(stmt)
 
 
-def get_form(trans, form_id):
+def get_form(trans: "GalaxyWebTransaction", form_id):
     """Get a FormDefinition from the database by id."""
     form = trans.sa_session.query(FormDefinitionCurrent).get(trans.security.decode_id(form_id))
     if not form:
@@ -73,13 +77,11 @@ class FormManager(base.ModelManager[FormDefinitionCurrent]):
     def delete(self, trans: ProvidesUserContext, form: FormDefinitionCurrent) -> FormDefinitionCurrent:
         form.deleted = True
         trans.sa_session.add(form)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return form
 
     def undelete(self, trans: ProvidesUserContext, form: FormDefinitionCurrent) -> FormDefinitionCurrent:
         form.deleted = False
         trans.sa_session.add(form)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return form

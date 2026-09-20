@@ -251,3 +251,17 @@ def get_sections(index_panel):
 
 def model_classes(elements):
     return [x["model_class"] for _, x in elements.items()]
+
+
+class TestCachedPanelViewsFromDirectoryIntegration(
+    integration_util.CachedToolBoxIntegrationMixin,
+    TestPanelViewsFromDirectoryIntegration,
+):
+    pass
+
+
+class TestCachedPanelViewsWithShedTools(
+    integration_util.CachedToolBoxIntegrationMixin,
+    TestPanelViewsWithShedTools,
+):
+    pass

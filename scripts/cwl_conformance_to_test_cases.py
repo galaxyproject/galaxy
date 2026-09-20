@@ -8,8 +8,7 @@ THIS_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 GALAXY_ROOT_DIR = os.path.abspath(os.path.join(THIS_DIRECTORY, os.pardir))
 CWL_API_TESTS_DIRECTORY = os.path.join(GALAXY_ROOT_DIR, "lib", "galaxy_test", "api", "cwl")
 
-TEST_FILE_TEMPLATE = string.Template(
-    '''"""Test CWL conformance for version ${version}."""
+TEST_FILE_TEMPLATE = string.Template('''"""Test CWL conformance for version ${version}."""
 
 import pytest
 
@@ -18,11 +17,9 @@ from ..test_workflows_cwl import BaseCwlWorkflowsApiTestCase
 
 class TestCwlConformance(BaseCwlWorkflowsApiTestCase):
     """Test case mapping to CWL conformance tests for version ${version}."""
-$tests'''
-)
+$tests''')
 
-TEST_TEMPLATE = string.Template(
-    '''
+TEST_TEMPLATE = string.Template('''
 ${marks}    def test_conformance_${version_simple}_${id_}(self):
         """${doc}
 
@@ -31,8 +28,7 @@ ${marks}    def test_conformance_${version_simple}_${id_}(self):
 ${cwl_test_def}
         """  # noqa: W293
         self.cwl_populator.run_conformance_test("""${version}""", """${doc}""")
-'''
-)
+''')
 
 RED_TESTS = {
     "v1.0": [

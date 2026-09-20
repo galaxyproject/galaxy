@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckDouble } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useNotificationsStore } from "@/stores/notificationsStore";
+import localize from "@/utils/localization";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import NotificationCard from "@/components/Notifications/NotificationCard.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
-
-library.add(faCheckDouble);
 
 const { confirm } = useConfirmDialog();
 
@@ -39,19 +39,23 @@ async function onMarkAllAsRead() {
 </script>
 
 <template>
-    <ActivityPanel title="Unread Notifications" go-to-all-title="All notifications" href="/user/notifications">
+    <ActivityPanel
+        :title="localize('Unread Notifications')"
+        :go-to-all-title="localize('All notifications')"
+        href="/user/notifications">
         <template v-slot:header-buttons>
-            <BButtonGroup>
-                <BButton
-                    v-b-tooltip.bottom.hover
+            <GButtonGroup>
+                <GButton
+                    v-g-tooltip.bottom.hover
                     data-description="mark all as read"
-                    size="sm"
-                    variant="link"
-                    title="Mark all as read"
+                    size="small"
+                    transparent
+                    icon-only
+                    :title="localize('Mark all as read')"
                     @click="onMarkAllAsRead">
                     <FontAwesomeIcon :icon="faCheckDouble" fixed-width />
-                </BButton>
-            </BButtonGroup>
+                </GButton>
+            </GButtonGroup>
         </template>
 
         <template v-slot:header>
@@ -69,19 +73,16 @@ async function onMarkAllAsRead() {
         </BAlert>
 
         <TransitionGroup class="notifications-box-list" name="notifications-box-list" tag="div">
-            <div v-for="notification in unreadNotifications" :key="notification.id" class="notifications-box-card">
-                <NotificationCard :notification="notification" />
-            </div>
+            <NotificationCard
+                v-for="notification in unreadNotifications"
+                :key="notification.id"
+                :notification="notification" />
         </TransitionGroup>
     </ActivityPanel>
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
-
-.notifications-box-card {
-    background-color: $body-bg;
-}
+@import "@/style/scss/theme/blue.scss";
 
 .notifications-box-list {
     overflow-y: scroll;

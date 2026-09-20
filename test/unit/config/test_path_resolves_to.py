@@ -132,21 +132,21 @@ def test_kwargs_relative_path_old_prefix_for_other_option(mock_init):
 
 def test_kwargs_relative_path_old_prefix_empty_after_strip(mock_init):
     # Expect: use value from kwargs, strip old prefix, then resolve
-    new_path1 = "old-config"
+    new_path1 = "old-config/foo"
     config = BaseAppConfiguration(path1=new_path1)
 
-    assert config.path1 == "my-config/"  # stripped of old prefix, then resolved
+    assert config.path1 == "my-config/foo"  # stripped of old prefix, then resolved
     assert config.path2 == "my-data/my-data-files"  # stripped of old prefix, then resolved
     assert config.path3 == "my-other-files"  # no change
 
 
 def test_kwargs_set_to_null(mock_init):
-    # Expected: allow overriding with null, then resolve
+    # Expected: allow overriding with null
     # This is not a common scenario, but it does happen: one example is
     # `job_config` set to `None` when testing
     config = BaseAppConfiguration(path1=None)
 
-    assert config.path1 == "my-config"  # resolved
+    assert config.path1 is None
     assert config.path2 == "my-data/my-data-files"  # resolved
     assert config.path3 == "my-other-files"  # no change
 
@@ -157,7 +157,7 @@ def test_add_sample_file(mock_init, monkeypatch):
     # - has ".sample" suffix
     # Last value (sample file) resolved and listified; others dropped as files do not exist
     monkeypatch.setattr(BaseAppConfiguration, "add_sample_file_to_defaults", {"path1", "path4"})
-    monkeypatch.setattr(BaseAppConfiguration, "_in_sample_dir", lambda a, path: "/sample-dir/%s" % path)
+    monkeypatch.setattr(BaseAppConfiguration, "_in_sample_dir", lambda a, path: f"/sample-dir/{path}")
     config = BaseAppConfiguration()
 
     assert config._raw_config["path1"] == "my-config-files"
@@ -169,7 +169,7 @@ def test_add_sample_file(mock_init, monkeypatch):
 def test_select_one_path_from_list(mock_init, monkeypatch):
     # Expected: files do not exist, so use last file in list (would be sample file); value is not a list
     monkeypatch.setattr(BaseAppConfiguration, "add_sample_file_to_defaults", {"path1"})
-    monkeypatch.setattr(BaseAppConfiguration, "_in_sample_dir", lambda a, path: "/sample-dir/%s" % path)
+    monkeypatch.setattr(BaseAppConfiguration, "_in_sample_dir", lambda a, path: f"/sample-dir/{path}")
     config = BaseAppConfiguration()
 
     assert config._raw_config["path1"] == "my-config-files"
@@ -227,7 +227,7 @@ def mock_check_against_root(mock_init, monkeypatch):
         return True if path == "root/foo" else False
 
     monkeypatch.setattr(BaseAppConfiguration, "_path_exists", path_exists)
-    monkeypatch.setattr(BaseAppConfiguration, "_in_root_dir", lambda _, path: "root/%s" % path)
+    monkeypatch.setattr(BaseAppConfiguration, "_in_root_dir", lambda _, path: f"root/{path}")
     monkeypatch.setattr(BaseAppConfiguration, "paths_to_check_against_root", {"path1", "path4"})
 
 

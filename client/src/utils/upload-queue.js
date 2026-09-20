@@ -1,8 +1,7 @@
 /*
     galaxy upload utilities - requires FormData and XMLHttpRequest
 */
-import { uploadPayload } from "@/utils/upload-payload.js";
-import { sendPayload, uploadSubmit } from "@/utils/upload-submit.js";
+import { buildLegacyPayload, fetchDatasets, submitUpload } from "@/utils/upload";
 
 export class UploadQueue {
     constructor(options) {
@@ -96,7 +95,11 @@ export class UploadQueue {
             // Remove item from queue
             this.remove(index);
             // Collect upload request data
-            const data = uploadPayload([this.opts.get(index)], this.opts.historyId);
+            const item = this.opts.get(index);
+            if (!item.targetHistoryId) {
+                throw new Error(`Missing target history for upload item [${index}] ${item.fileName}`);
+            }
+            const data = buildLegacyPayload([item], item.targetHistoryId);
             // Initiate upload request
             this._processSubmit(index, data);
         } catch (e) {
@@ -107,20 +110,28 @@ export class UploadQueue {
         }
     }
 
-    // Submit remote files as single batch request
+    // Submit remote files as single batch request per target history
     _processUrls() {
-        const list = [];
+        const batchByHistory = {};
         for (const index of this.queue.keys()) {
             const model = this.opts.get(index);
             if (model.status === "queued" && model.fileMode === "url") {
-                list.push({ index, ...model });
+                if (!model.targetHistoryId) {
+                    throw new Error(`Missing target history for upload item [${index}] ${model.fileName}`);
+                }
+                if (!batchByHistory[model.targetHistoryId]) {
+                    batchByHistory[model.targetHistoryId] = [];
+                }
+                batchByHistory[model.targetHistoryId].push({ index, ...model });
                 this.remove(index);
             }
         }
-        if (list.length > 0) {
+
+        for (const historyId in batchByHistory) {
+            const list = batchByHistory[historyId];
             try {
-                const data = uploadPayload(list, this.opts.historyId);
-                sendPayload(data, {
+                const data = buildLegacyPayload(list, historyId);
+                fetchDatasets(data, {
                     success: (message) => {
                         list.forEach((model) => {
                             this.opts.success(model.index, message);
@@ -147,7 +158,7 @@ export class UploadQueue {
 
     // Submit request data
     _processSubmit(index, data) {
-        uploadSubmit({
+        submitUpload({
             data: data,
             success: (message) => {
                 this.opts.success(index, message);

@@ -26,7 +26,13 @@ from galaxy.managers import (
     library_datasets,
     roles,
 )
-from galaxy.model.base import transaction
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
+from galaxy.model import DatasetPermissions
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.structured_app import StructuredApp
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
@@ -42,6 +48,7 @@ from galaxy.web import (
     expose_api_anonymous,
 )
 from galaxy.webapps.base.controller import UsesVisualizationMixin
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
@@ -57,7 +64,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         self.ldda_manager = lddas.LDDAManager(app)
 
     @expose_api_anonymous
-    def show(self, trans, id, **kwd):
+    def show(self, trans: ProvidesUserContext, id, **kwd):
         """
         GET /api/libraries/datasets/{encoded_dataset_id}
 
@@ -74,7 +81,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         return serialized
 
     @expose_api_anonymous
-    def show_version(self, trans, encoded_dataset_id, encoded_ldda_id, **kwd):
+    def show_version(self, trans: ProvidesUserContext, encoded_dataset_id, encoded_ldda_id, **kwd):
         """
         GET /api/libraries/datasets/{encoded_dataset_id}/versions/{encoded_ldda_id}
 
@@ -107,7 +114,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         return rval
 
     @expose_api
-    def show_roles(self, trans, encoded_dataset_id, **kwd):
+    def show_roles(self, trans: ProvidesUserContext, encoded_dataset_id, **kwd):
         """
         GET /api/libraries/datasets/{encoded_dataset_id}/permissions
 
@@ -150,17 +157,20 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                 page_limit = 10
             query = kwd.get("q", None)
             roles, total_roles = trans.app.security_agent.get_valid_roles(trans, dataset, query, page, page_limit)
+            role_ids = {r.id for r in roles}
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session, role_ids=role_ids)
             return_roles = []
             for role in roles:
                 role_id = trans.security.encode_id(role.id)
-                return_roles.append(dict(id=role_id, name=role.name, type=role.type))
+                displayed_name = private_role_emails.get(role.id, role.name)
+                return_roles.append(dict(id=role_id, name=displayed_name, type=role.type))
             return dict(roles=return_roles, page=page, page_limit=page_limit, total=total_roles)
         else:
             raise exceptions.RequestParameterInvalidException(
                 "The value of 'scope' parameter is invalid. Alllowed values: current, available"
             )
 
-    def _get_current_roles(self, trans, library_dataset):
+    def _get_current_roles(self, trans: ProvidesAppContext, library_dataset):
         """
         Find all roles currently connected to relevant permissions
         on the library dataset and the underlying dataset.
@@ -171,10 +181,10 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        return self.ldda_manager.serialize_dataset_association_roles(trans, library_dataset)
+        return self.ldda_manager.serialize_dataset_association_roles(library_dataset)
 
     @expose_api
-    def update(self, trans, encoded_dataset_id, payload=None, **kwd):
+    def update(self, trans: ProvidesUserContext, encoded_dataset_id, payload=None, **kwd):
         """
         PATCH /api/libraries/datasets/{encoded_dataset_id}
 
@@ -199,12 +209,13 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         :rtype:     dictionary
         """
         library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
-        updated = self.ld_manager.update(trans, library_dataset, payload)
+        self.ld_manager.check_modifiable(trans, library_dataset)
+        updated = self.ld_manager.update(library_dataset, payload, trans=trans)
         serialized = self.ld_manager.serialize(trans, updated)
         return serialized
 
     @expose_api
-    def update_permissions(self, trans, encoded_dataset_id, payload=None, **kwd):
+    def update_permissions(self, trans: ProvidesUserContext, encoded_dataset_id, payload=None, **kwd):
         """
         POST /api/libraries/datasets/{encoded_dataset_id}/permissions
 
@@ -259,12 +270,11 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         elif action == "make_private":
             if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 private_role = trans.app.security_agent.get_private_user_role(trans.user)
-                dp = trans.app.model.DatasetPermissions(
+                dp = DatasetPermissions(
                     trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role
                 )
                 trans.sa_session.add(dp)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 # Check again and inform the user if dataset is not private.
                 raise exceptions.InternalServerError("An error occurred and the dataset is NOT private.")
@@ -328,7 +338,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         return self._get_current_roles(trans, library_dataset)
 
     @expose_api
-    def delete(self, trans, encoded_dataset_id, **kwd):
+    def delete(self, trans: ProvidesUserContext, encoded_dataset_id, **kwd):
         """
         DELETE /api/libraries/datasets/{encoded_dataset_id}
 
@@ -357,8 +367,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
             library_dataset.deleted = True
 
         trans.sa_session.add(library_dataset)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         rval = trans.security.encode_all_ids(library_dataset.to_dict())
         nice_size = util.nice_size(
@@ -371,7 +380,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         return rval
 
     @expose_api
-    def load(self, trans, payload=None, **kwd):
+    def load(self, trans: ProvidesHistoryContext, payload=None, **kwd):
         """
         POST /api/libraries/datasets
 
@@ -486,9 +495,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                     os.path.realpath(path),
                 )
                 raise exceptions.RequestParameterInvalidException("The given path is invalid.")
-            if trans.app.config.user_library_import_check_permissions and not full_path_permission_for_user(
-                full_dir, path, username
-            ):
+            if username is not None and not full_path_permission_for_user(full_dir, path, username):
                 log.error(
                     "User attempted to import a path that resolves to a path outside of their import dir: "
                     "%s -> %s and cannot be read by them.",
@@ -523,6 +530,8 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         # Set up the traditional tool state/params
         tool_id = "upload1"
         tool = trans.app.toolbox.get_tool(tool_id)
+        assert tool is not None, f"'{tool_id}' tool not found in toolbox"
+        tool = trans.app.toolbox.materialize_tool(tool, reason="execution")
         state = tool.new_state(trans)
         populate_state(trans, tool.inputs, kwd, state.inputs)
         tool_params = state.inputs
@@ -577,7 +586,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
 
     @web.expose
     #  TODO convert to expose_api
-    def download(self, trans, archive_format, **kwd):
+    def download(self, trans: GalaxyWebTransaction, archive_format, **kwd):
         """
         GET /api/libraries/datasets/download/{archive_format}
         POST /api/libraries/datasets/download/{archive_format}

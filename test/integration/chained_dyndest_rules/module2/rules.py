@@ -1,4 +1,4 @@
-from galaxy.jobs import JobDestination
+from galaxy.jobs.job_destination import JobDestination
 
 
 def dyndest_chain_1():
@@ -15,7 +15,7 @@ def dyndest_chain_2(tmp_dir_prefix):
             "type": "python",
             "function": "dyndest_chain_3",
             "rules_module": "integration.chained_dyndest_rules.module3",
-            "tmp_dir_prefix_two": "%sand2" % tmp_dir_prefix,
+            "tmp_dir_prefix_two": f"{tmp_dir_prefix}and2",
         },
     )
 

@@ -244,10 +244,10 @@ def __inject_api_timing_summary_test(test):
             continue
 
         endpoint_summary = {"total_time": summarize_times(timings), "label": endpoint[len("api.") :]}
-        sql_times = "sql.%s" % endpoint
+        sql_times = f"sql.{endpoint}"
         if sql_times in timing:
             endpoint_summary["sql_time"] = summarize_times(timing[sql_times])
-        sql_queries = "sqlqueries.%s" % endpoint
+        sql_queries = f"sqlqueries.{endpoint}"
         if sql_queries in counter:
             endpoint_summary["sql_queries"] = summarize_counter(counter[sql_queries])
         api_endpoints[endpoint] = endpoint_summary

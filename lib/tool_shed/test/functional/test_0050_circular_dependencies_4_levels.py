@@ -1,6 +1,5 @@
 from ..base import common
-from ..base.api import skip_if_api_v2
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 emboss_repository_name = "emboss_0050"
 emboss_repository_description = "Galaxy's emboss tool"
@@ -30,7 +29,7 @@ category_name = "Test 0050 Circular Dependencies 5 Levels"
 category_description = "Test circular dependency features"
 
 
-class TestRepositoryCircularDependenciesToNLevels(ShedTwillTestCase):
+class TestRepositoryCircularDependenciesToNLevels(ShedTestCase):
     """Verify that the code correctly handles circular dependencies down to n levels."""
 
     def test_0000_initiate_users(self):
@@ -242,24 +241,6 @@ class TestRepositoryCircularDependenciesToNLevels(ShedTwillTestCase):
         self.check_repository_dependency(filtering_repository, emboss_repository)
         for repository in [bismark_repository, emboss_repository, column_repository]:
             self.check_repository_dependency(freebayes_repository, repository)
-        if not self.is_v2:
-            strings_displayed = ["freebayes_0050 depends on freebayes_0050, emboss_0050, column_maker_0050."]
-            self.display_manage_repository_page(freebayes_repository, strings_displayed=strings_displayed)
-
-    @skip_if_api_v2
-    def test_0050_verify_tool_dependencies(self):
-        """Check that freebayes and emboss display tool dependencies."""
-        freebayes_repository = self._get_repository_by_name_and_owner(
-            freebayes_repository_name, common.test_user_1_name
-        )
-        emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
-        self.display_manage_repository_page(
-            freebayes_repository,
-            strings_displayed=["freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18", "Tool dependencies", "package"],
-        )
-        self.display_manage_repository_page(
-            emboss_repository, strings_displayed=["Tool dependencies", "emboss", "5.0.0", "package"]
-        )
 
     def test_0055_verify_repository_metadata(self):
         """Verify that resetting the metadata does not change it."""

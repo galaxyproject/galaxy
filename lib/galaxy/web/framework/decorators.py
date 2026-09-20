@@ -3,10 +3,7 @@ from functools import wraps
 from inspect import getfullargspec
 from json import loads
 from traceback import format_exc
-from typing import (
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING
 
 import paste.httpexceptions
 from pydantic import (
@@ -17,19 +14,21 @@ from pydantic import (
 from galaxy.exceptions import (
     error_codes,
     MessageException,
-    RequestParameterInvalidException,
-    RequestParameterMissingException,
 )
-from galaxy.exceptions.utils import api_error_to_dict
+from galaxy.exceptions.utils import (
+    api_error_to_dict,
+    validation_error_to_message_exception,
+)
 from galaxy.util import (
     parse_non_hex_float,
+    smart_str,
     unicodify,
 )
 from galaxy.util.json import safe_dumps
 from galaxy.web.framework import url_for
 
 if TYPE_CHECKING:
-    from fastapi.exceptions import RequestValidationError
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -64,7 +63,7 @@ def json(func, pretty=False):
     """
 
     @wraps(func)
-    def call_and_format(self, trans, *args, **kwargs):
+    def call_and_format(self, trans: "GalaxyWebTransaction", *args, **kwargs):
         # pull out any callback argument to the api endpoint and set the content type to json or javascript
         jsonp_callback = kwargs.pop(JSONP_CALLBACK_KEY, None)
         if jsonp_callback:
@@ -89,7 +88,7 @@ def json_pretty(func):
 def require_login(verb="perform this action", use_panels=False):
     def argcatcher(func):
         @wraps(func)
-        def decorator(self, trans, *args, **kwargs):
+        def decorator(self, trans: "GalaxyWebTransaction", *args, **kwargs):
             if trans.get_user():
                 return func(self, trans, *args, **kwargs)
             else:
@@ -110,7 +109,7 @@ def require_login(verb="perform this action", use_panels=False):
 
 def require_admin(func):
     @wraps(func)
-    def decorator(self, trans, *args, **kwargs):
+    def decorator(self, trans: "GalaxyWebTransaction", *args, **kwargs):
         if not trans.user_is_admin:
             msg = require_admin_message(trans.app.config, trans.get_user())
             trans.response.status = 403
@@ -141,7 +140,7 @@ def do_not_cache(func):
     """
 
     @wraps(func)
-    def set_nocache_headers(self, trans, *args, **kwargs):
+    def set_nocache_headers(self, trans: "GalaxyWebTransaction", *args, **kwargs):
         trans.response.headers["Cache-Control"] = ["no-cache", "no-store", "must-revalidate"]
         trans.response.headers["Pragma"] = "no-cache"
         trans.response.headers["Expires"] = "0"
@@ -157,10 +156,10 @@ def legacy_expose_api(func, to_json=True, user_required=True):
     """
 
     @wraps(func)
-    def decorator(self, trans, *args, **kwargs):
+    def decorator(self, trans: "GalaxyWebTransaction", *args, **kwargs):
         def error(environ, start_response):
             start_response(error_status, [("Content-type", "text/plain")])
-            return error_message
+            return [smart_str(error_message)]
 
         error_status = "403 Forbidden"
         if trans.error_message:
@@ -216,7 +215,7 @@ def legacy_expose_api(func, to_json=True, user_required=True):
     return expose(_save_orig_fn(decorator, func))
 
 
-def __extract_payload_from_request(trans, func, kwargs):
+def __extract_payload_from_request(trans: "GalaxyWebTransaction", func, kwargs):
     content_type = trans.request.headers.get("content-type", "")
     if content_type.startswith("application/x-www-form-urlencoded") or content_type.startswith("multipart/form-data"):
         # If the content type is a standard type such as multipart/form-data, the wsgi framework parses the request body
@@ -281,7 +280,7 @@ def expose_api(func, to_json=True, user_required=True, user_or_session_required=
     """
 
     @wraps(func)
-    def decorator(self, trans, *args, **kwargs):
+    def decorator(self, trans: "GalaxyWebTransaction", *args, **kwargs):
         # errors passed in from trans._authenticate_api
         if trans.error_message:
             return __api_error_response(
@@ -390,37 +389,14 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     return json
 
 
-def validation_error_to_message_exception(e: Union[ValidationError, "RequestValidationError"]) -> MessageException:
-    invalid_found = False
-    missing_found = False
-    messages = []
-    clean_validation_errors = []
-    for error in e.errors():
-        messages.append(f"{error['msg']} in {error['loc']}")
-        if error["type"] == "missing" or error["type"] == "type_error.none.not_allowed":
-            missing_found = True
-        elif error["type"].startswith("type_error"):
-            invalid_found = True
-        # ctx contains data that can't be serialized, like exception instances
-        error.pop("ctx", None)
-        try:
-            clean_validation_errors.append(safe_dumps(error))
-        except TypeError:
-            pass
-    if missing_found and not invalid_found:
-        return RequestParameterMissingException("\n".join(messages), validation_errors=clean_validation_errors)
-    else:
-        return RequestParameterInvalidException("\n".join(messages), validation_errors=clean_validation_errors)
-
-
-def __api_error_dict(trans, **kwds):
+def __api_error_dict(trans: "GalaxyWebTransaction", **kwds):
     error_dict = api_error_to_dict(debug=trans.debug, **kwds)
     exception = kwds.get("exception", None)
     # If we are given an status code directly - use it - otherwise check
     # the exception for a status_code attribute.
     if "status_code" in kwds:
-        status_code = int(kwds.get("status_code"))
-    elif hasattr(exception, "status_code"):
+        status_code = int(kwds["status_code"])
+    elif exception is not None and hasattr(exception, "status_code"):
         status_code = int(exception.status_code)
     else:
         status_code = 500
@@ -433,7 +409,7 @@ def __api_error_dict(trans, **kwds):
     return error_dict
 
 
-def __api_error_response(trans, **kwds):
+def __api_error_response(trans: "GalaxyWebTransaction", **kwds):
     error_dict = __api_error_dict(trans, **kwds)
     return safe_dumps(error_dict)
 

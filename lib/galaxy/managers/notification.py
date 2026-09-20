@@ -1,15 +1,10 @@
 import logging
+from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
 from typing import (
     cast,
-    Dict,
-    List,
     NamedTuple,
-    Optional,
-    Set,
-    Tuple,
-    Type,
 )
 from urllib.parse import urlparse
 
@@ -27,10 +22,13 @@ from sqlalchemy import (
     union,
     update,
 )
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import Select
 from typing_extensions import Protocol
 
+from galaxy import util
+from galaxy.celery.helpers import async_task_summary
 from galaxy.config import (
     GalaxyAppConfiguration,
     templates,
@@ -40,7 +38,9 @@ from galaxy.exceptions import (
     ObjectNotFound,
 )
 from galaxy.managers.markdown_util import to_html
+from galaxy.managers.sse_dispatch import SSEEventDispatcher
 from galaxy.model import (
+    DatasetStorageOperationRun,
     GroupRoleAssociation,
     Notification,
     User,
@@ -48,11 +48,11 @@ from galaxy.model import (
     UserNotificationAssociation,
     UserRoleAssociation,
 )
-from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.notifications import (
     AnyNotificationContent,
     BroadcastNotificationCreateRequest,
+    BroadcastNotificationResponse,
     MandatoryNotificationCategory,
     MessageNotificationContent,
     NewSharedItemNotificationContent,
@@ -60,17 +60,23 @@ from galaxy.schema.notifications import (
     NotificationCategorySettings,
     NotificationChannelSettings,
     NotificationCreateData,
+    NotificationCreatedResponse,
     NotificationCreateRequest,
     NotificationRecipients,
+    NotificationResponse,
+    NotificationVariant,
     PersonalNotificationCategory,
+    StorageOperationNotificationContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
 )
-from galaxy.util import (
-    send_mail,
-    unicodify,
+from galaxy.schema.schema import AsyncTaskResultSummary
+from galaxy.schema.storage_operations import (
+    StorageOperationExecutionResult,
+    StorageOperationRunState,
 )
+from galaxy.util import now
 
 log = logging.getLogger(__name__)
 
@@ -84,7 +90,7 @@ class CleanupResultSummary(NamedTuple):
 
 
 class NotificationRecipientResolverStrategy(Protocol):
-    def resolve_users(self, recipients: NotificationRecipients) -> List[User]:
+    def resolve_users(self, recipients: NotificationRecipients) -> list[User]:
         pass
 
 
@@ -101,11 +107,17 @@ class NotificationChannelPlugin(Protocol):
 class NotificationManager:
     """Manager class to interact with the database models related with Notifications."""
 
-    def __init__(self, sa_session: galaxy_scoped_session, config: GalaxyAppConfiguration):
+    def __init__(
+        self,
+        sa_session: galaxy_scoped_session,
+        config: GalaxyAppConfiguration,
+        sse_dispatcher: SSEEventDispatcher | None = None,
+    ):
         self.sa_session = sa_session
         self.config = config
+        self.sse_dispatcher = sse_dispatcher
         self.recipient_resolver = NotificationRecipientResolver(strategy=DefaultStrategy(sa_session))
-        self.user_notification_columns: List[InstrumentedAttribute] = [
+        self.user_notification_columns: list[InstrumentedAttribute] = [
             Notification.id,
             Notification.source,
             Notification.category,
@@ -118,7 +130,7 @@ class NotificationManager:
             UserNotificationAssociation.seen_time,
             UserNotificationAssociation.deleted,
         ]
-        self.broadcast_notification_columns: List[InstrumentedAttribute] = [
+        self.broadcast_notification_columns: list[InstrumentedAttribute] = [
             Notification.id,
             Notification.source,
             Notification.category,
@@ -137,7 +149,7 @@ class NotificationManager:
 
     @property
     def _now(self):
-        return datetime.utcnow()
+        return now()
 
     @property
     def _notification_is_active(self):
@@ -155,7 +167,7 @@ class NotificationManager:
     def can_send_notifications_async(self):
         return self.config.enable_celery_tasks
 
-    def send_notification_to_recipients(self, request: NotificationCreateRequest) -> Tuple[Optional[Notification], int]:
+    def send_notification_to_recipients(self, request: NotificationCreateRequest) -> tuple[Notification | None, int]:
         """
         Creates a new notification and associates it with all the recipient users.
 
@@ -166,27 +178,124 @@ class NotificationManager:
         recipient_users = self.recipient_resolver.resolve(request.recipients)
         notification = self._create_notification_model(request.notification, request.galaxy_url)
         self.sa_session.add(notification)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
         notifications_sent = self._create_associations(notification, recipient_users)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
+
+        # Push SSE events to connected users via control queue
+        user_ids = [user.id for user in recipient_users]
+        self._notify_users_via_sse(user_ids, notification)
 
         return notification, notifications_sent
 
-    def _create_associations(self, notification: Notification, users: List[User]) -> int:
+    def send_storage_operation_notification(
+        self,
+        user_id: int,
+        run: DatasetStorageOperationRun,
+        execution_result: StorageOperationExecutionResult,
+        encode_id: Callable[[int], str],
+    ) -> tuple[Notification | None, int]:
+        """Create and send a storage operation notification to a single user."""
+        encoded_history_id = encode_id(run.history_id)
+        encoded_run_id = encode_id(run.id)
+        relative_run_url = f"/histories/{encoded_history_id}/storage/runs/{encoded_run_id}"
+        galaxy_url = getattr(self.config, "galaxy_infrastructure_url", None)
+        run_url = f"{galaxy_url}{relative_run_url}" if galaxy_url else relative_run_url
+
+        if execution_result.state == StorageOperationRunState.failed:
+            variant = NotificationVariant.urgent
+        elif run.failed_count > 0 or run.skipped_count > 0:
+            variant = NotificationVariant.warning
+        else:
+            variant = NotificationVariant.info
+
+        notification_request = NotificationCreateRequest(
+            recipients=NotificationRecipients.model_construct(user_ids=[user_id]),
+            notification=NotificationCreateData(
+                source="galaxy",
+                category=PersonalNotificationCategory.storage_operation,
+                variant=variant,
+                publication_time=None,
+                expiration_time=None,
+                content=StorageOperationNotificationContent.model_construct(
+                    subject=(
+                        "Storage operation completed"
+                        if execution_result.state == StorageOperationRunState.completed
+                        else "Storage operation failed"
+                    ),
+                    message=execution_result.message,
+                    history_id=encoded_history_id,
+                    run_id=encoded_run_id,
+                    run_url=run_url,
+                    mode=run.mode,
+                    state=execution_result.state,
+                    total_count=run.total_count,
+                    succeeded_count=run.succeeded_count,
+                    failed_count=run.failed_count,
+                    skipped_count=run.skipped_count,
+                ),
+            ),
+            galaxy_url=galaxy_url,
+        )
+        return self.send_notification_to_recipients(notification_request)
+
+    def send_notification_internal(
+        self, request: NotificationCreateRequest, force_sync: bool = False
+    ) -> NotificationCreatedResponse | AsyncTaskResultSummary:
+        """Sends a notification to a list of recipients (users, groups or roles).
+
+        If `force_sync` is set to `True`, the notification recipients will be processed synchronously instead of
+        in a background task.
+
+        Note: This function is meant for internal use from other callers that don't need to check sender permissions.
+        """
+        if self.can_send_notifications_async and not force_sync:
+            # Local import: galaxy.celery.tasks imports NotificationManager at module load,
+            # so importing it at module level here would be a circular dependency.
+            from galaxy.celery.tasks import send_notification_to_recipients_async
+
+            result = send_notification_to_recipients_async.delay(request)
+            return async_task_summary(result)
+
+        notification, recipient_user_count = self.send_notification_to_recipients(request)
+        return NotificationCreatedResponse(
+            total_notifications_sent=recipient_user_count,
+            notification=NotificationResponse.model_validate(notification),
+        )
+
+    def _create_associations(self, notification: Notification, users: list[User]) -> int:
         success_count = 0
         for user in users:
             try:
-                if self._is_user_subscribed_to_category(user, notification.category):  # type:ignore[arg-type]
+                if self._is_user_subscribed_to_notification(user, notification):
                     user_notification_association = UserNotificationAssociation(user, notification)
                     self.sa_session.add(user_notification_association)
                     success_count += 1
             except Exception as e:
-                log.error(f"Error sending notification to user {user.id}. Reason: {unicodify(e)}")
+                log.error(f"Error sending notification to user {user.id}. Reason: {util.unicodify(e)}")
                 continue
         return success_count
+
+    def _notify_users_via_sse(self, user_ids: list[int], notification: Notification) -> None:
+        """Broadcast a control task to all workers to push SSE events to connected users."""
+        if not self.sse_dispatcher or not user_ids:
+            return
+        try:
+            payload = NotificationResponse.model_validate(notification).model_dump_json()
+            self.sse_dispatcher.notify_users(user_ids, payload)
+        except Exception:
+            log.warning("Failed to send SSE notification event", exc_info=True)
+
+    def _notify_broadcast_via_sse(self, notification: Notification) -> None:
+        """Broadcast a control task to all workers to push SSE broadcast events."""
+        if not self.sse_dispatcher:
+            return
+        try:
+            payload = BroadcastNotificationResponse.model_validate(notification).model_dump_json()
+            self.sse_dispatcher.notify_broadcast(payload)
+        except Exception:
+            log.warning("Failed to send SSE broadcast event", exc_info=True)
 
     def dispatch_pending_notifications_via_channels(self) -> int:
         """
@@ -201,8 +310,7 @@ class NotificationManager:
         for notification in pending_notifications:
             notification.dispatched = True
 
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
         # Do the actual dispatching
         for notification in pending_notifications:
@@ -221,10 +329,13 @@ class NotificationManager:
     def _dispatch_notification_to_users(self, notification: Notification):
         users = self._get_associated_users(notification)
         for user in users:
-            category_settings = self._get_user_category_settings(user, notification.category)  # type:ignore[arg-type]
-            if not self._is_subscribed_to_category(category_settings):
+            try:
+                if self._is_user_subscribed_to_notification(user, notification):
+                    settings = self._get_user_category_settings(user, notification.category)  # type: ignore[arg-type]
+                    self._send_via_channels(notification, user, settings.channels)
+            except Exception as e:
+                log.error(f"Error sending notification to user {user.id}. Reason: {util.unicodify(e)}")
                 continue
-            self._send_via_channels(notification, user, category_settings.channels)
 
     def _get_associated_users(self, notification: Notification):
         stmt = (
@@ -239,23 +350,30 @@ class NotificationManager:
         )
         return self.sa_session.execute(stmt).scalars().all()
 
-    def _is_user_subscribed_to_category(self, user: User, category: PersonalNotificationCategory) -> bool:
-        category_settings = self._get_user_category_settings(user, category)
+    def _is_user_subscribed_to_notification(self, user: User, notification: Notification) -> bool:
+        if self._is_urgent(notification):
+            # Urgent notifications are always sent
+            return True
+        category_settings = self._get_user_category_settings(user, notification.category)  # type: ignore[arg-type]
         return self._is_subscribed_to_category(category_settings)
 
     def _send_via_channels(self, notification: Notification, user: User, channel_settings: NotificationChannelSettings):
-        channels = channel_settings.model_fields_set
-        for channel in channels:
-            if channel not in self.channel_plugins:
-                log.warning(f"Notification channel '{channel}' is not supported.")
-                continue
-            if getattr(channel_settings, channel, False) is False:
-                continue  # User opted out of this channel
-            plugin = self.channel_plugins[channel]
-            plugin.send(notification, user)
+        for channel, plugin in self.channel_plugins.items():
+            user_opted_out = getattr(channel_settings, channel, False) is False
+            if user_opted_out and not self._is_urgent(notification):
+                continue  # Skip sending to opted-out users unless it's an urgent notification
+            try:
+                plugin.send(notification, user)
+            except Exception as e:
+                log.error(
+                    f"Error sending notification to user {user.id} via channel '{channel}'. Reason: {util.unicodify(e)}"
+                )
 
     def _is_subscribed_to_category(self, category_settings: NotificationCategorySettings) -> bool:
         return category_settings.enabled
+
+    def _is_urgent(self, notification: Notification) -> bool:
+        return notification.variant == NotificationVariant.urgent.value
 
     def _get_user_category_settings(
         self, user: User, category: PersonalNotificationCategory
@@ -272,11 +390,11 @@ class NotificationManager:
         self.ensure_notifications_enabled()
         notification = self._create_notification_model(request)
         self.sa_session.add(notification)
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
+        self._notify_broadcast_via_sse(notification)
         return notification
 
-    def get_user_notification(self, user: User, notification_id: int, active_only: Optional[bool] = True):
+    def get_user_notification(self, user: User, notification_id: int, active_only: bool | None = True):
         """
         Displays a notification belonging to the user.
         """
@@ -291,9 +409,9 @@ class NotificationManager:
     def get_user_notifications(
         self,
         user: User,
-        limit: Optional[int] = 50,
-        offset: Optional[int] = None,
-        since: Optional[datetime] = None,
+        limit: int | None = 50,
+        offset: int | None = None,
+        since: datetime | None = None,
     ):
         """
         Displays the list of notifications belonging to the user.
@@ -330,7 +448,7 @@ class NotificationManager:
         )
         return self.sa_session.execute(stmt).scalar() or 0
 
-    def get_broadcasted_notification(self, notification_id: int, active_only: Optional[bool] = True):
+    def get_broadcasted_notification(self, notification_id: int, active_only: bool | None = True):
         stmt = (
             select(*self.broadcast_notification_columns)
             .select_from(Notification)
@@ -348,13 +466,16 @@ class NotificationManager:
             raise ObjectNotFound
         return result
 
-    def get_all_broadcasted_notifications(self, since: Optional[datetime] = None, active_only: Optional[bool] = True):
+    def get_all_broadcasted_notifications(self, since: datetime | None = None, active_only: bool | None = True):
         stmt = self._broadcasted_notifications_query(since, active_only)
         result = self.sa_session.execute(stmt).fetchall()
         return result
 
     def update_user_notifications(
-        self, user: User, notification_ids: Set[int], request: UserNotificationUpdateRequest
+        self,
+        user: User,
+        notification_ids: set[int],
+        request: UserNotificationUpdateRequest,
     ) -> int:
         """Updates a batch of notifications associated with the user using the requested values."""
         updated_row_count = 0
@@ -369,10 +490,9 @@ class NotificationManager:
             stmt = stmt.values(seen_time=seen_time)
         if request.deleted is not None:
             stmt = stmt.values(deleted=request.deleted)
-        result = self.sa_session.execute(stmt)
+        result = cast(CursorResult, self.sa_session.execute(stmt))
         updated_row_count = result.rowcount
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return updated_row_count
 
     def update_broadcasted_notification(self, notification_id: int, request: NotificationBroadcastUpdateRequest) -> int:
@@ -393,25 +513,22 @@ class NotificationManager:
         if request.expiration_time is not None:
             stmt = stmt.values(expiration_time=request.expiration_time)
         if request.content is not None:
-            stmt = stmt.values(content=request.content.json())
-        result = self.sa_session.execute(stmt)
+            stmt = stmt.values(content=request.content.model_dump_json())
+        result = cast(CursorResult, self.sa_session.execute(stmt))
         updated_row_count = result.rowcount
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return updated_row_count
 
     def get_user_notification_preferences(self, user: User) -> UserNotificationPreferences:
         """Gets the user's current notification preferences or the default ones if no preferences are set."""
-        current_notification_preferences = (
-            user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME]
-            if NOTIFICATION_PREFERENCES_SECTION_NAME in user.preferences
-            else None
-        )
-        try:
-            return UserNotificationPreferences.model_validate_json(current_notification_preferences)
-        except ValidationError:
-            # Gracefully return default preferences is they don't exist or get corrupted
-            return UserNotificationPreferences.default()
+        current_notification_preferences = user.preferences.get(NOTIFICATION_PREFERENCES_SECTION_NAME)
+        if current_notification_preferences:
+            try:
+                return UserNotificationPreferences.model_validate_json(current_notification_preferences)
+            except ValidationError:
+                pass
+        # Gracefully return default preferences is they don't exist or get corrupted
+        return UserNotificationPreferences.default()
 
     def update_user_notification_preferences(
         self, user: User, request: UpdateUserNotificationPreferencesRequest
@@ -420,13 +537,12 @@ class NotificationManager:
         preferences = self.get_user_notification_preferences(user)
         preferences.update(request.preferences)
         user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME] = preferences.model_dump_json()
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
         return preferences
 
-    def _register_supported_channels(self) -> Dict[str, NotificationChannelPlugin]:
+    def _register_supported_channels(self) -> dict[str, NotificationChannelPlugin]:
         """Registers the supported notification channels in this server."""
-        supported_channels: Dict[str, NotificationChannelPlugin] = {
+        supported_channels: dict[str, NotificationChannelPlugin] = {
             # Push notifications are handled client-side so no real plugin is needed
             "push": NoOpNotificationChannelPlugin(self.config),
         }
@@ -438,7 +554,7 @@ class NotificationManager:
 
         return supported_channels
 
-    def get_supported_channels(self) -> Set[str]:
+    def get_supported_channels(self) -> set[str]:
         """Returns the set of supported notification channels in this server."""
         return set(self.channel_plugins.keys())
 
@@ -452,20 +568,22 @@ class NotificationManager:
         delete_stmt = delete(UserNotificationAssociation).where(
             UserNotificationAssociation.notification_id.in_(expired_notifications_stmt)
         )
-        result = self.sa_session.execute(delete_stmt, execution_options={"synchronize_session": False})
+        result = cast(
+            CursorResult,
+            self.sa_session.execute(delete_stmt, execution_options={"synchronize_session": False}),
+        )
         deleted_associations_count = result.rowcount
 
         delete_stmt = delete(Notification).where(notification_has_expired)
-        result = self.sa_session.execute(delete_stmt)
+        result = cast(CursorResult, self.sa_session.execute(delete_stmt))
         deleted_notifications_count = result.rowcount
 
-        with transaction(self.sa_session):
-            self.sa_session.commit()
+        self.sa_session.commit()
 
         return CleanupResultSummary(deleted_notifications_count, deleted_associations_count)
 
     def _create_notification_model(
-        self, payload: NotificationCreateData, galaxy_url: Optional[str] = None
+        self, payload: NotificationCreateData, galaxy_url: str | None = None
     ) -> Notification:
         notification = Notification(
             payload.source,
@@ -479,7 +597,10 @@ class NotificationManager:
         return notification
 
     def _user_notifications_query(
-        self, user: User, since: Optional[datetime] = None, active_only: Optional[bool] = True
+        self,
+        user: User,
+        since: datetime | None = None,
+        active_only: bool | None = True,
     ):
         stmt = (
             select(*self.user_notification_columns)
@@ -503,7 +624,7 @@ class NotificationManager:
 
         return stmt
 
-    def _broadcasted_notifications_query(self, since: Optional[datetime] = None, active_only: Optional[bool] = True):
+    def _broadcasted_notifications_query(self, since: datetime | None = None, active_only: bool | None = True):
         stmt = (
             select(*self.broadcast_notification_columns)
             .select_from(Notification)
@@ -531,7 +652,7 @@ class NotificationRecipientResolver:
     def __init__(self, strategy: NotificationRecipientResolverStrategy):
         self.strategy = strategy
 
-    def resolve(self, recipients: NotificationRecipients) -> List[User]:
+    def resolve(self, recipients: NotificationRecipients) -> list[User]:
         """Given individual user, group and roles ids as recipients, obtains the unique list of users.
 
         The resulting list will contain only unique users even if the same user id might have been provided more
@@ -546,8 +667,8 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
     def __init__(self, sa_session: galaxy_scoped_session):
         self.sa_session = sa_session
 
-    def resolve_users(self, recipients: NotificationRecipients) -> List[User]:
-        unique_user_ids: Set[int] = set(recipients.user_ids)
+    def resolve_users(self, recipients: NotificationRecipients) -> list[User]:
+        unique_user_ids: set[int] = set(recipients.user_ids)
 
         all_group_ids, all_role_ids = self._expand_group_and_roles_ids(
             set(recipients.group_ids), set(recipients.role_ids)
@@ -557,13 +678,13 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
         user_ids_from_roles_stmt = self._get_all_user_ids_from_roles_query(all_role_ids)
 
         union_stmt = union(user_ids_from_groups_stmt, user_ids_from_roles_stmt)
-        user_ids_from_groups_and_roles = {id for id, in self.sa_session.execute(union_stmt)}
+        user_ids_from_groups_and_roles = {id for (id,) in self.sa_session.execute(union_stmt)}
         unique_user_ids.update(user_ids_from_groups_and_roles)
 
         stmt = select(User).where(User.id.in_(unique_user_ids))
-        return self.sa_session.scalars(stmt).all()  # type:ignore[return-value]
+        return self.sa_session.scalars(stmt).all()  # type: ignore[return-value]
 
-    def _get_all_user_ids_from_roles_query(self, role_ids: Set[int]) -> Select:
+    def _get_all_user_ids_from_roles_query(self, role_ids: set[int]) -> Select:
         stmt = (
             select(UserRoleAssociation.user_id)
             .select_from(UserRoleAssociation)
@@ -572,7 +693,7 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
         )
         return stmt
 
-    def _get_all_user_ids_from_groups_query(self, group_ids: Set[int]) -> Select:
+    def _get_all_user_ids_from_groups_query(self, group_ids: set[int]) -> Select:
         stmt = (
             select(UserGroupAssociation.user_id)
             .select_from(UserGroupAssociation)
@@ -581,12 +702,12 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
         )
         return stmt
 
-    def _expand_group_and_roles_ids(self, group_ids: Set[int], role_ids: Set[int]) -> Tuple[Set[int], Set[int]]:
+    def _expand_group_and_roles_ids(self, group_ids: set[int], role_ids: set[int]) -> tuple[set[int], set[int]]:
         """Given a set of group and roles IDs, it expands those sets (non-recursively) by including sub-groups or sub-roles
         indirectly associated with them.
         """
-        processed_group_ids: Set[int] = set()
-        processed_role_ids: Set[int] = set()
+        processed_group_ids: set[int] = set()
+        processed_role_ids: set[int] = set()
 
         while True:
             # Get group IDs associated with any of the given role IDs
@@ -596,7 +717,7 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
                 .where(GroupRoleAssociation.role_id.in_(role_ids))
                 .distinct()
             )
-            group_ids_from_roles = {id for id, in self.sa_session.execute(stmt) if id is not None}
+            group_ids_from_roles = {id for (id,) in self.sa_session.execute(stmt) if id is not None}
             new_group_ids = group_ids_from_roles - processed_group_ids
 
             # Get role IDs associated with any of the given group IDs
@@ -606,7 +727,7 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
                 .where(GroupRoleAssociation.group_id.in_(group_ids))
                 .distinct()
             )
-            role_ids_from_groups = {id for id, in self.sa_session.execute(stmt) if id is not None}
+            role_ids_from_groups = {id for (id,) in self.sa_session.execute(stmt) if id is not None}
             new_role_ids = role_ids_from_groups - processed_role_ids
 
             # Stop if there are no new group or role IDs to process
@@ -625,7 +746,7 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
 
 
 class RecursiveCTEStrategy(NotificationRecipientResolverStrategy):
-    def resolve_users(self, recipients: NotificationRecipients) -> List[User]:
+    def resolve_users(self, recipients: NotificationRecipients) -> list[User]:
         # TODO Implement resolver using recursive CTEs?
         return []
 
@@ -652,9 +773,10 @@ class NotificationContext(BaseModel):
     date: str
     hostname: str
     contact_email: str
+    variant: str
     notification_settings_url: str
     content: AnyNotificationContent
-    galaxy_url: Optional[str] = None
+    galaxy_url: str | None = None
 
 
 class EmailNotificationTemplateBuilder(Protocol):
@@ -701,6 +823,7 @@ class EmailNotificationTemplateBuilder(Protocol):
             hostname=hostname,
             contact_email=contact_email,
             notification_settings_url=notification_settings_url,
+            variant=notification.variant,
             content=self.get_content(template_format),
             galaxy_url=self.notification.galaxy_url,
         )
@@ -716,14 +839,13 @@ class EmailNotificationTemplateBuilder(Protocol):
 
 
 class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
-
     markdown_to = {
         TemplateFormats.HTML: to_html,
         TemplateFormats.TXT: lambda x: x,  # TODO: strip markdown?
     }
 
     def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
-        content = MessageNotificationContent.model_construct(**self.notification.content)  # type:ignore[arg-type]
+        content = MessageNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
         content.message = self.markdown_to[template_format](content.message)
         return content
 
@@ -733,9 +855,8 @@ class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
 
 
 class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
-
     def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
-        content = NewSharedItemNotificationContent.model_construct(**self.notification.content)  # type:ignore[arg-type]
+        content = NewSharedItemNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
         return content
 
     def get_subject(self) -> str:
@@ -743,12 +864,28 @@ class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBui
         return f"[Galaxy] New {content.item_type} shared with you: {content.item_name}"
 
 
-class EmailNotificationChannelPlugin(NotificationChannelPlugin):
+class StorageOperationEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
+    markdown_to = {
+        TemplateFormats.HTML: to_html,
+        TemplateFormats.TXT: lambda x: x,
+    }
 
+    def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
+        content = StorageOperationNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
+        content.message = self.markdown_to[template_format](content.message)
+        return content
+
+    def get_subject(self) -> str:
+        content = cast(StorageOperationNotificationContent, self.get_content(TemplateFormats.TXT))
+        return f"[Galaxy] {content.subject}"
+
+
+class EmailNotificationChannelPlugin(NotificationChannelPlugin):
     # Register the supported email templates here
-    email_templates_by_category: Dict[PersonalNotificationCategory, Type[EmailNotificationTemplateBuilder]] = {
+    email_templates_by_category: dict[PersonalNotificationCategory, type[EmailNotificationTemplateBuilder]] = {
         PersonalNotificationCategory.message: MessageEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.new_shared_item: NewSharedItemEmailNotificationTemplateBuilder,
+        PersonalNotificationCategory.storage_operation: StorageOperationEmailNotificationTemplateBuilder,
     }
 
     def send(self, notification: Notification, user: User):
@@ -762,7 +899,7 @@ class EmailNotificationChannelPlugin(NotificationChannelPlugin):
             subject = template_builder.get_subject()
             text_body = template_builder.get_body(TemplateFormats.TXT)
             html_body = template_builder.get_body(TemplateFormats.HTML)
-            send_mail(
+            util.send_mail(
                 frm=self.config.email_from,
                 to=user.email,
                 subject=subject,
@@ -771,5 +908,5 @@ class EmailNotificationChannelPlugin(NotificationChannelPlugin):
                 html=html_body,
             )
         except Exception as e:
-            log.error(f"Error sending email notification to user {user.id}. Reason: {unicodify(e)}")
+            log.error(f"Error sending email notification to user {user.id}. Reason: {util.unicodify(e)}")
             pass

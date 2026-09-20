@@ -3,6 +3,7 @@ Contains implementations of the authentication logic.
 """
 
 import logging
+from typing import TYPE_CHECKING
 
 from galaxy.auth.util import (
     get_authenticators,
@@ -10,6 +11,9 @@ from galaxy.auth.util import (
 )
 from galaxy.exceptions import Conflict
 from galaxy.util import string_as_bool
+
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -41,7 +45,7 @@ class AuthManager:
                 break
         return message, status
 
-    def check_auto_registration(self, trans, login, password, no_password_check=False):
+    def check_auto_registration(self, trans: "GalaxyWebTransaction", login, password, no_password_check=False):
         """
         Checks the username/email & password using auth providers in order.
         If a match is found, returns the 'auto-register' option for that provider.

@@ -47,7 +47,7 @@
         }
 
         &.multiselect__option--highlight {
-            background: $brand-danger;
+            background: darken($brand-secondary, 10%);
 
             &::after {
                 background: unset;
@@ -56,7 +56,8 @@
     }
 
     .multiselect__placeholder {
-        margin-bottom: 8px;
+        padding-top: 0px;
+        margin-bottom: 7px;
     }
 
     .multiselect__tag {
@@ -94,4 +95,39 @@
             word-break: break-all;
         }
     }
+}
+
+/* Optional modifier for contexts that need softer option hover/selection contrast. */
+.multiselect.multiselect--soft-option-highlight {
+    .multiselect__option--highlight {
+        background: $brand-secondary;
+        color: $text-color;
+
+        &::after {
+            background: unset;
+            color: inherit;
+            font-weight: normal;
+        }
+    }
+
+    .multiselect__option--selected {
+        background: lighten($brand-secondary, 3%);
+        color: $text-color;
+
+        &::after {
+            color: inherit;
+        }
+
+        &.multiselect__option--highlight {
+            background: darken($brand-secondary, 3%);
+
+            &::after {
+                background: unset;
+            }
+        }
+    }
+}
+
+.multiselect--active {
+    z-index: 1500; // Should be on top of everything
 }

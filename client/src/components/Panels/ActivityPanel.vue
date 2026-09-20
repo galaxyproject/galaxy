@@ -1,45 +1,63 @@
 <script setup lang="ts">
+import { computed } from "vue";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+
 interface Props {
     title: string;
     goToAllTitle?: string;
     href?: string;
+    goToAllDataDescription?: string;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    goToAllTitle: undefined,
+    href: undefined,
+    goToAllDataDescription: undefined,
+});
 
 const emit = defineEmits(["goToAll"]);
+
+const hasGoToAll = computed(() => props.goToAllTitle && props.href);
 </script>
 
 <template>
     <div class="activity-panel" :data-description="props.title" aria-labelledby="activity-panel-heading">
         <div class="activity-panel-header">
             <nav unselectable="on" class="activity-panel-header-top">
-                <h2 id="activity-panel-heading" v-localize class="activity-panel-heading h-sm">{{ props.title }}</h2>
+                <slot name="activity-panel-header-top">
+                    <h2 id="activity-panel-heading" v-localize class="activity-panel-heading h-sm">
+                        {{ props.title }}
+                    </h2>
+                </slot>
 
-                <slot name="header-buttons" />
+                <GButtonGroup>
+                    <slot name="header-buttons" />
+                </GButtonGroup>
             </nav>
 
             <slot name="header" class="activity-panel-header-description" />
+            <GButton
+                v-if="hasGoToAll"
+                class="activity-panel-footer"
+                color="blue"
+                :data-description="goToAllDataDescription"
+                :to="props.href"
+                size="small"
+                @click="emit('goToAll')">
+                {{ props.goToAllTitle }}
+            </GButton>
         </div>
 
         <div class="activity-panel-body">
             <slot />
         </div>
-
-        <BButton
-            v-if="props.goToAllTitle"
-            class="activity-panel-footer"
-            variant="primary"
-            :data-description="`props.mainButtonText button`"
-            :to="props.href"
-            @click="emit('goToAll')">
-            {{ props.goToAllTitle }}
-        </BButton>
     </div>
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .activity-panel {
     height: 100%;
@@ -67,22 +85,13 @@ const emit = defineEmits(["goToAll"]);
         display: flex;
         flex-direction: column;
         flex-grow: 1;
-        overflow-y: hidden;
-        button:first-child {
-            background: none;
-            border: none;
-            text-align: left;
-            transition: none;
-            width: 100%;
-            border-color: transparent;
-        }
-        button:first-child:hover {
-            background: $gray-200;
-        }
+        overflow-y: auto;
+        position: relative;
     }
 
     .activity-panel-footer {
         margin-top: 0.5rem;
+        width: 100%;
         font-weight: bold;
     }
 }

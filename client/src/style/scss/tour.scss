@@ -29,16 +29,6 @@
         border-radius: $border-radius-base;
         color: $text-color;
     }
-    .tour-buttons {
-        @extend .float-right;
-        @extend .p-2;
-        .tour-button {
-            @extend .ml-1;
-            @extend .btn;
-            @extend .btn-sm;
-            @extend .btn-info;
-        }
-    }
 }
 
 .tour-element,

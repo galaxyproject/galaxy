@@ -15,7 +15,7 @@ from galaxy.model.migrations.util import (
     add_column,
     drop_column,
 )
-from galaxy.model.orm.now import now
+from galaxy.util import now
 
 # revision identifiers, used by Alembic.
 revision = "186d4835587b"

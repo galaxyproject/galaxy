@@ -5,7 +5,7 @@ Tiny plugin interface to extend the Galaxy client.
 
 Galaxy webhooks provides a simple way of inserting icons, links, or other HTML elements into predefined locations.
 For this Galaxy provides some entry points which can be used to extend the client with content. This content
-can consists out of simple HTML, JS or dynamically generated content from a python function.
+can consist of simple HTML, JS or dynamically generated content from a python function.
 
   Please note that the webhooks interface is new and can change in the coming releases. Consider it as beta as we don't
   make promises to keep the API stable at the moment.
@@ -82,7 +82,7 @@ The configuration file is just a .yml (or .yaml) file with a few options. The fo
 - **activate** - *true* or *false* - whether show the plugin on a page or not
 - **icon** Icon to show (if masthead)
 - **tooltip** - Tooltip to show on hover
-- **function** - A javascript function to be executed. Any calls to Galaxy APIs should be sure to use Galaxy.root when constructing the URL to ensure compatability across Galaxy deployments.
+- **function** - A javascript function to be executed. Any calls to Galaxy APIs should be sure to use Galaxy.root when constructing the URL to ensure compatibility across Galaxy deployments.
 
 All other options can be anything used by the plugin and accessed later via *webhook.config['...']*.
 
@@ -120,6 +120,13 @@ static files
 
 - script.js - all JavaScript code (with all third-party dependencies) must be here
 - styles.css - all CSS styles, used by the plugin
+
+script.js must be self-contained, modern vanilla JavaScript. The client no longer
+exposes Backbone, underscore or jQuery as globals, so webhook scripts cannot rely
+on them; use standard DOM APIs (``document.getElementById``, ``fetch``, etc.). Each
+script is wrapped in an IIFE and injected only after its ``#<webhook-id>`` mount
+point has rendered, so it may query that element immediately. The *phdcomics* and
+*xkcd* example plugins in ``test/functional/webhooks/`` show the expected style.
 
 
 Plugin dependencies

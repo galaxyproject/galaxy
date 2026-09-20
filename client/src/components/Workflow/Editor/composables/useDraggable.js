@@ -76,7 +76,7 @@ export function useDraggable(target, options = {}) {
             draggingElement,
             "pointermove",
             throttleMove,
-            options.useCapture ?? true
+            options.useCapture ?? true,
         );
         handleEvent(e);
     };

@@ -1,0 +1,63 @@
+changelog:
+  exclude:
+    labels:
+      - merge
+      - procedures
+      - planning
+      - status/needs feedback
+      - status/planning
+    authors:
+      - dependabot[bot]
+      - github-actions[bot]
+      - galaxybot
+  categories:
+    - title: 🎉 Major Changes
+      labels:
+        - highlight
+        - highlight/admin
+        - highlight/dev
+        - highlight/power-user
+    - title: 🚀 New Features
+      labels:
+        - kind/feature
+      exclude:
+        labels:
+          - area/documentation
+    - title: 🔧 Enhancements
+      labels:
+        - kind/enhancement
+    - title: 🐛 Bug Fixes
+      labels:
+        - kind/bug
+    - title: '🔒 Security Updates'
+      labels:
+        - 'area/security'
+    - title: '⚡ Performance'
+      labels:
+        - 'area/performance'
+    - title: '🧰 Refactoring'
+      labels:
+        - 'kind/refactoring'
+    - title: '📚 Documentation'
+      labels:
+        - 'area/documentation'
+    - title: '🔧 Admin & Configuration'
+      labels:
+        - 'area/admin'
+        - 'area/configuration'
+    - title: '🛠️ API Changes'
+      labels:
+        - 'area/API'
+    - title: '🧪 Testing'
+      labels:
+        - 'area/testing'
+        - 'area/testing/api'
+        - 'area/testing/integration'
+        - 'area/testing/selenium'
+    - title: '🏗️ Infrastructure & Dependencies'
+      labels:
+        - 'area/dependencies'
+        - 'area/client-build'
+    - title: Other Changes
+      labels:
+        - "*"

@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
 
 import { useConfig } from "@/composables/config";
 
 import BroadcastsList from "@/components/admin/Notifications/BroadcastsList.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 const router = useRouter();
@@ -33,23 +35,20 @@ function goToCreateNewBroadcast() {
 
         <div v-if="isConfigLoaded && config.enable_notification_system">
             <div>
-                <BButton
+                <GButton
                     id="send-notification-button"
                     class="mb-2"
-                    variant="outline-primary"
+                    outline
+                    color="blue"
                     @click="goToCreateNewNotification">
-                    <FontAwesomeIcon icon="plus" />
+                    <FontAwesomeIcon :icon="faPlus" />
                     Send new notification
-                </BButton>
+                </GButton>
 
-                <BButton
-                    id="create-broadcast-button"
-                    class="mb-2"
-                    variant="outline-primary"
-                    @click="goToCreateNewBroadcast">
-                    <FontAwesomeIcon icon="plus" />
+                <GButton id="create-broadcast-button" class="mb-2" outline color="blue" @click="goToCreateNewBroadcast">
+                    <FontAwesomeIcon :icon="faPlus" />
                     Create new broadcast
-                </BButton>
+                </GButton>
             </div>
 
             <BroadcastsList class="mt-2" />

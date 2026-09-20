@@ -4,19 +4,15 @@ API operations on library folders.
 
 import logging
 from typing import (
-    Optional,
-    Union,
+    Annotated,
 )
 
 from fastapi import (
     Body,
-    Path,
     Query,
 )
-from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import (
     CreateLibraryFolderPayload,
     LibraryAvailablePermissions,
@@ -32,19 +28,15 @@ from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import FolderIdPathParam
 from galaxy.webapps.galaxy.services.library_folders import LibraryFoldersService
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["data libraries folders"])
 
-FolderIdPathParam = Annotated[
-    LibraryFolderDatabaseIdField,
-    Path(..., title="Folder ID", description="The encoded identifier of the library folder."),
-]
-
 UndeleteQueryParam = Annotated[
-    Optional[bool], Query(title="Undelete", description="Whether to restore a deleted library folder.")
+    bool | None, Query(title="Undelete", description="Whether to restore a deleted library folder.")
 ]
 
 
@@ -112,7 +104,7 @@ class FastAPILibraryFolders:
         self,
         id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        scope: Optional[LibraryPermissionScope] = Query(
+        scope: LibraryPermissionScope | None = Query(
             None,
             title="Scope",
             description="The scope of the permissions to retrieve. Either the `current` permissions or the `available`.",
@@ -123,10 +115,10 @@ class FastAPILibraryFolders:
         page_limit: int = Query(
             default=10, title="Page Limit", description="The maximum number of permissions per page when paginating."
         ),
-        q: Optional[str] = Query(
+        q: str | None = Query(
             None, title="Query", description="Optional search text to retrieve only the roles matching this query."
         ),
-    ) -> Union[LibraryFolderCurrentPermissions, LibraryAvailablePermissions]:
+    ) -> LibraryFolderCurrentPermissions | LibraryAvailablePermissions:
         """Gets the current or available permissions of a particular library.
         The results can be paginated and additionally filtered by a query."""
         return self.service.get_permissions(
@@ -146,7 +138,7 @@ class FastAPILibraryFolders:
         self,
         id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        action: Optional[LibraryFolderPermissionAction] = Query(
+        action: LibraryFolderPermissionAction | None = Query(
             default=None,
             title="Action",
             description=(

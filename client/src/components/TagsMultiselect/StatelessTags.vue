@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { BButton } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
-import { computed, onMounted, ref } from "vue";
+import { faAngleUp } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { type ComponentPublicInstance, computed, onMounted, ref } from "vue";
 
 import { useToast } from "@/composables/toast";
 import { useUid } from "@/composables/utils/uid";
 import { useUserTagsStore } from "@/stores/userTagsStore";
 
+import { VALID_TAG_RE } from "../Tags/model";
+
 import HeadlessMultiselect from "./HeadlessMultiselect.vue";
 import Tag from "./Tag.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GTooltip from "@/components/BaseComponents/GTooltip.vue";
 
 interface StatelessTagsProps {
     value?: string[];
@@ -17,6 +21,7 @@ interface StatelessTagsProps {
     useToggleLink?: boolean;
     maxVisibleTags?: number;
     placeholder?: string;
+    inline?: boolean;
 }
 
 const props = withDefaults(defineProps<StatelessTagsProps>(), {
@@ -34,7 +39,6 @@ const emit = defineEmits<{
 }>();
 
 const userTagsStore = useUserTagsStore();
-const { userTags } = storeToRefs(userTagsStore);
 const { warning } = useToast();
 
 onMounted(() => {
@@ -67,6 +71,8 @@ const tags = computed(() => props.value.map((tag) => tag.replace(/^name:/, "#"))
 
 const toggledOpen = ref(false);
 const toggleButtonId = useUid("toggle-link-");
+const moreButtonRef = ref<ComponentPublicInstance | null>(null);
+const moreButtonEl = computed(() => (moreButtonRef.value?.$el as HTMLElement) ?? null);
 
 const trimmedTags = computed(() => {
     if (!props.useToggleLink || toggledOpen.value) {
@@ -84,10 +90,8 @@ const slicedTags = computed(() => {
     }
 });
 
-const invalidTagRegex = /([.:\s][.:\s])|(^[.:])|([.:]$)|(^[\s]*$)/;
-
 function isValid(tag: string) {
-    return !tag.match(invalidTagRegex);
+    return tag.match(VALID_TAG_RE);
 }
 
 function onTagClicked(tag: string) {
@@ -97,23 +101,45 @@ function onTagClicked(tag: string) {
 
 <template>
     <div class="stateless-tags">
-        <div v-if="!disabled" class="tags-edit">
+        <div v-if="!disabled" class="tags-edit" :class="{ 'align-items-baseline d-flex flex-wrap': props.inline }">
             <div class="interactive-tags">
                 <Tag
-                    v-for="tag in tags"
+                    v-for="tag in trimmedTags"
                     :key="tag"
                     :option="tag"
                     :editable="true"
                     :clickable="props.clickable"
                     @deleted="onDelete"
-                    @click="onTagClicked"></Tag>
+                    @click="onTagClicked" />
+
+                <GButton
+                    v-if="slicedTags.length > 0 && !toggledOpen"
+                    :id="toggleButtonId"
+                    color="blue"
+                    transparent
+                    class="toggle-link show-more-tags"
+                    @click.stop="() => (toggledOpen = true)">
+                    {{ slicedTags.length }} more...
+                </GButton>
+                <GButton
+                    v-else-if="slicedTags.length > 0 && toggledOpen"
+                    :id="toggleButtonId"
+                    v-g-tooltip.hover
+                    color="blue"
+                    transparent
+                    title="Show fewer tags"
+                    class="toggle-link show-less-tags"
+                    @click.stop="() => (toggledOpen = false)">
+                    <FontAwesomeIcon :icon="faAngleUp" fixed-width />
+                    Fewer tags
+                </GButton>
             </div>
 
             <HeadlessMultiselect
-                :options="userTags"
+                :options="userTagsStore.userTags"
                 :selected="props.value"
                 :placeholder="props.placeholder"
-                :validator="isValid"
+                :validator="(x) => !!isValid(x)"
                 @addOption="onAddTag"
                 @input="onInput"
                 @selected="(tag) => userTagsStore.onTagUsed(tag)" />
@@ -127,39 +153,32 @@ function onTagClicked(tag: string) {
                     :option="tag"
                     :editable="false"
                     :clickable="props.clickable"
-                    @click="onTagClicked"></Tag>
-                <BButton
+                    @click="onTagClicked" />
+
+                <GButton
                     v-if="slicedTags.length > 0 && !toggledOpen"
                     :id="toggleButtonId"
-                    variant="link"
+                    ref="moreButtonRef"
+                    color="blue"
+                    transparent
                     class="toggle-link"
                     @click.stop="() => (toggledOpen = true)">
                     {{ slicedTags.length }} more...
-                </BButton>
+                </GButton>
 
-                <b-tooltip
-                    v-if="slicedTags.length > 0 && !toggledOpen"
-                    :target="toggleButtonId"
-                    custom-class="stateless-tags--tag-preview-tooltip"
-                    placement="bottom">
+                <GTooltip v-if="slicedTags.length > 0 && !toggledOpen" :reference="moreButtonEl" placement="bottom">
                     <Tag
                         v-for="tag in slicedTags"
                         :key="tag"
                         :option="tag"
                         :editable="false"
                         :clickable="props.clickable"
-                        @click="onTagClicked"></Tag>
-                </b-tooltip>
+                        @click="onTagClicked" />
+                </GTooltip>
             </div>
         </div>
     </div>
 </template>
-
-<style lang="scss">
-.stateless-tags--tag-preview-tooltip {
-    opacity: 1 !important;
-}
-</style>
 
 <style lang="scss" scoped>
 .stateless-tags {

@@ -4,8 +4,8 @@ import { computed } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { FreehandWorkflowComment } from "@/stores/workflowEditorCommentStore";
+import { vecSubtract } from "@/utils/geometry";
 
-import { vecSubtract } from "../modules/geometry";
 import { colors } from "./colors";
 
 const props = defineProps<{
@@ -58,7 +58,9 @@ function onClick() {
 </script>
 
 <template>
-    <svg class="freehand-workflow-comment">
+    <svg
+        class="freehand-workflow-comment"
+        :class="{ 'multi-selected': commentStore.getCommentMultiSelected(props.comment.id) }">
         <path
             class="prevent-zoom"
             :d="curve"
@@ -69,7 +71,7 @@ function onClick() {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .freehand-workflow-comment {
     --color: #{$brand-primary};
@@ -92,5 +94,12 @@ function onClick() {
     }
 
     pointer-events: none;
+
+    &.multi-selected {
+        border-radius: 0.25rem;
+        box-shadow:
+            0 0 0 2px $white,
+            0 0 0 4px lighten($brand-info, 20%);
+    }
 }
 </style>

@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from galaxy.schema.schema import (
     DatasetStateField,
+    OAuth2State,
     TAG_ITEM_PATTERN,
 )
 from galaxy.schema.tasks import (
@@ -41,7 +42,6 @@ def test_dataset_state_coercion():
 
 
 class TestTagPattern:
-
     def test_valid(self):
         tag_strings = [
             "a",
@@ -78,3 +78,10 @@ class TestTagPattern:
         ]
         for t in tag_strings:
             assert not re.match(TAG_ITEM_PATTERN, t)
+
+
+def test_oauth_state():
+    state_in = OAuth2State(route="/file_sources/dropbox", nonce="abcde56")
+    state_out = OAuth2State.decode(state_in.encode())
+    assert state_out.route == "/file_sources/dropbox"
+    assert state_out.nonce == "abcde56"

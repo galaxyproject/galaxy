@@ -1,5 +1,4 @@
-import type { Component, SelectorTemplate } from "./index";
-import { ROOT_COMPONENT as raw_root_component } from "./index";
+import { type Component, ROOT_COMPONENT as raw_root_component, type SelectorTemplate } from "./index";
 
 interface Root_messages extends Component {
     all: SelectorTemplate;
@@ -24,7 +23,8 @@ interface Root_ extends Component {
 interface Rootmasthead extends Component {
     _: SelectorTemplate;
     user: SelectorTemplate;
-    register_or_login: SelectorTemplate;
+    login_masthead_button: SelectorTemplate;
+    register_masthead_button: SelectorTemplate;
     user_menu: SelectorTemplate;
     workflow: SelectorTemplate;
     username: SelectorTemplate;
@@ -32,8 +32,10 @@ interface Rootmasthead extends Component {
     logged_out_only: SelectorTemplate;
 }
 interface Rootpreferencesobject_store_selection extends Component {
-    option_buttons: SelectorTemplate;
-    option_button: SelectorTemplate;
+    modal: SelectorTemplate;
+    option_cards: SelectorTemplate;
+    option_card: SelectorTemplate;
+    option_card_select: SelectorTemplate;
 }
 interface Rootpreferences extends Component {
     sign_out: SelectorTemplate;
@@ -64,10 +66,6 @@ interface Rootchange_user_password extends Component {
 }
 interface Rootchange_user_address extends Component {
     address_button: SelectorTemplate;
-}
-interface Rootsign_out extends Component {
-    cancel_button: SelectorTemplate;
-    sign_out_button: SelectorTemplate;
 }
 interface Rootdataset_details extends Component {
     _: SelectorTemplate;
@@ -101,7 +99,6 @@ interface Roothistory_panelitem extends Component {
     delete_button: SelectorTemplate;
     download_button: SelectorTemplate;
     info_button: SelectorTemplate;
-    tool_help_button: SelectorTemplate;
     rerun_button: SelectorTemplate;
     alltags: SelectorTemplate;
 }
@@ -300,6 +297,8 @@ interface Rootfiles_dialog extends Component {
     ftp_details: SelectorTemplate;
     row: SelectorTemplate;
     back_btn: SelectorTemplate;
+    options_ready: SelectorTemplate;
+    ok: SelectorTemplate;
 }
 interface Roothistory_export extends Component {
     export_link: SelectorTemplate;
@@ -386,13 +385,6 @@ interface Rootworkflows extends Component {
     workflow_rows: SelectorTemplate;
     external_link: SelectorTemplate;
     trs_icon: SelectorTemplate;
-    pager: SelectorTemplate;
-    pager_page: SelectorTemplate;
-    pager_page_next: SelectorTemplate;
-    pager_page_first: SelectorTemplate;
-    pager_page_last: SelectorTemplate;
-    pager_page_previous: SelectorTemplate;
-    pager_page_active: SelectorTemplate;
     run_button: SelectorTemplate;
     bookmark_link: SelectorTemplate;
     workflow_with_name: SelectorTemplate;
@@ -427,7 +419,8 @@ interface Rootworkflow_run extends Component {
     validation_error: SelectorTemplate;
     expand_form_link: SelectorTemplate;
     expanded_form: SelectorTemplate;
-    new_history_target_link: SelectorTemplate;
+    new_history_badge: SelectorTemplate;
+    history_target_link: SelectorTemplate;
     runtime_setting_button: SelectorTemplate;
     runtime_setting_target: SelectorTemplate;
     input_select_field: SelectorTemplate;
@@ -452,8 +445,6 @@ interface Rootworkflow_editor extends Component {
     edit_annotation: SelectorTemplate;
     edit_name: SelectorTemplate;
     tool_menu: SelectorTemplate;
-    tool_menu_section_link: SelectorTemplate;
-    tool_menu_item_link: SelectorTemplate;
     workflow_link: SelectorTemplate;
     insert_steps: SelectorTemplate;
     connect_icon: SelectorTemplate;
@@ -471,6 +462,8 @@ interface Rootworkflow_editor extends Component {
     change_datatype: SelectorTemplate;
     select_datatype_text_search: SelectorTemplate;
     select_datatype: SelectorTemplate;
+    select_datatype_option_not_matching: SelectorTemplate;
+    selected_datatype: SelectorTemplate;
     add_tags: SelectorTemplate;
     remove_tags: SelectorTemplate;
     tool_version_button: SelectorTemplate;
@@ -478,8 +471,8 @@ interface Rootworkflow_editor extends Component {
     connector_invalid_for: SelectorTemplate;
     connector_destroy_callout: SelectorTemplate;
     save_button: SelectorTemplate;
-    state_modal_body: SelectorTemplate;
-    modal_button_continue: SelectorTemplate;
+    state_upgrade_modal: SelectorTemplate;
+    modal_button_close: SelectorTemplate;
 }
 interface Rootworkflow_show extends Component {
     title: SelectorTemplate;
@@ -488,6 +481,8 @@ interface Rootworkflow_show extends Component {
 interface Rootinvocations extends Component {
     invocations_table: SelectorTemplate;
     invocations_table_rows: SelectorTemplate;
+    invocations_panel_list: SelectorTemplate;
+    invocations_panel_list_items: SelectorTemplate;
     pager: SelectorTemplate;
     pager_page: SelectorTemplate;
     pager_page_next: SelectorTemplate;
@@ -496,7 +491,6 @@ interface Rootinvocations extends Component {
     pager_page_previous: SelectorTemplate;
     pager_page_active: SelectorTemplate;
     state_details: SelectorTemplate;
-    toggle_invocation_details: SelectorTemplate;
     progress_steps_note: SelectorTemplate;
     progress_jobs_note: SelectorTemplate;
     invocation_tab: SelectorTemplate;
@@ -510,10 +504,19 @@ interface Rootinvocations extends Component {
     step_output_collection_element_identifier: SelectorTemplate;
     step_output_collection_element_datatype: SelectorTemplate;
     step_job_details: SelectorTemplate;
-    step_job_table: SelectorTemplate;
-    step_job_table_rows: SelectorTemplate;
     step_job_information: SelectorTemplate;
     step_job_information_tool_id: SelectorTemplate;
+}
+interface Rootworkflow_extract extends Component {
+    _: SelectorTemplate;
+    workflow_name_input: SelectorTemplate;
+    create_button: SelectorTemplate;
+    no_workflow_message: SelectorTemplate;
+    tool_card: SelectorTemplate;
+    tool_card_checkbox: SelectorTemplate;
+    tool_card_checkbox_checked: SelectorTemplate;
+    card_checkbox_by_job_id: SelectorTemplate;
+    all_card_checkboxes_checked: SelectorTemplate;
 }
 interface Roottourpopover extends Component {
     _: SelectorTemplate;
@@ -703,7 +706,6 @@ interface Rootupload extends Component {
     rule_dataset_selector_row: SelectorTemplate;
     build_btn: SelectorTemplate;
     file_source_selector: SelectorTemplate;
-    file_dialog_ok: SelectorTemplate;
     paste_new: SelectorTemplate;
 }
 interface Rootrule_builder extends Component {
@@ -743,7 +745,6 @@ export interface root_component {
     change_user_email: Rootchange_user_email;
     change_user_password: Rootchange_user_password;
     change_user_address: Rootchange_user_address;
-    sign_out: Rootsign_out;
     dataset_details: Rootdataset_details;
     object_store_details: Rootobject_store_details;
     history_panel: Roothistory_panel;
@@ -773,6 +774,7 @@ export interface root_component {
     workflow_editor: Rootworkflow_editor;
     workflow_show: Rootworkflow_show;
     invocations: Rootinvocations;
+    workflow_extract: Rootworkflow_extract;
     tour: Roottour;
     admin: Rootadmin;
     libraries: Rootlibraries;

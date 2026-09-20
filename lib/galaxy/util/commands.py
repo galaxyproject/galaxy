@@ -8,10 +8,6 @@ import sys as _sys
 import tempfile
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Union,
 )
 
 from galaxy.util import (
@@ -56,7 +52,7 @@ def redirect_aware_commmunicate(p, sys=_sys):
     return out, err
 
 
-def shell(cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **kwds: Any) -> int:
+def shell(cmds: list[str] | str, env: dict[str, str] | None = None, **kwds: Any) -> int:
     """Run shell commands with `shell_process` and wait."""
     sys = kwds.get("sys", _sys)
     assert sys is not None
@@ -69,14 +65,14 @@ def shell(cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **k
         return p.wait()
 
 
-def shell_process(cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **kwds: Any) -> subprocess.Popen:
+def shell_process(cmds: list[str] | str, env: dict[str, str] | None = None, **kwds: Any) -> subprocess.Popen:
     """A high-level method wrapping subprocess.Popen.
 
     Handles details such as environment extension and in process I/O
     redirection.
     """
     sys = kwds.get("sys", _sys)
-    popen_kwds: Dict[str, Any] = {}
+    popen_kwds: dict[str, Any] = {}
     if isinstance(cmds, str):
         log.warning("Passing program arguments as a string may be a security hazard if combined with untrusted input")
         popen_kwds["shell"] = True

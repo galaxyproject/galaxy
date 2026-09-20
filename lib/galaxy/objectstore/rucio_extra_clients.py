@@ -1,9 +1,14 @@
 import copy
 import logging
+import os
 import time
 
 try:
     from rucio.client.uploadclient import UploadClient
+    from rucio.common.checksum import (
+        adler32,
+        md5,
+    )
     from rucio.common.exception import (
         InputValidationError,
         NoFilesUploaded,
@@ -35,7 +40,7 @@ class DeleteClient(UploadClient):
             if not self.rses.get(rse):
                 rse_settings = self.rses.setdefault(rse, rsemgr.get_rse_info(rse, vo=self.client.vo))
                 if not ignore_availability and rse_settings["availability_delete"] != 1:
-                    logger(logging.DEBUG, "%s is not available for deletion. No actions have been taken" % rse)
+                    logger(logging.DEBUG, "%s is not available for deletion. No actions have been taken", rse)
                     continue
 
             # protocol handling and deletion
@@ -52,11 +57,15 @@ class DeleteClient(UploadClient):
                     success = True
                 except Exception as error:
                     logger(logging.WARNING, "Delete attempt failed")
-                    logger(logging.INFO, "Exception: %s" % str(error), exc_info=True)
-            logger(logging.DEBUG, "Successfully deleted dataset %s" % pfn)
+                    logger(logging.INFO, "Exception: %s", error, exc_info=True)
+            logger(logging.DEBUG, "Successfully deleted dataset %s", pfn)
 
 
 class InPlaceIngestClient(UploadClient):
+    def __init__(self, client, register_with_checksum):
+        super().__init__(client)
+        self.register_with_checksum = register_with_checksum
+
     def ingest(self, items, summary_file_path=None, traces_copy_out=None, ignore_availability=False, activity=None):
         """
         :param items: List of dictionaries. Each dictionary describing a file to upload. Keys:
@@ -107,7 +116,7 @@ class InPlaceIngestClient(UploadClient):
             if not self.rses.get(rse):
                 rse_settings = self.rses.setdefault(rse, rsemgr.get_rse_info(rse, vo=self.client.vo))
                 if not ignore_availability and rse_settings["availability_write"] != 1:
-                    raise RSEWriteBlocked("%s is not available for writing. No actions have been taken" % rse)
+                    raise RSEWriteBlocked(f"{rse} is not available for writing. No actions have been taken")
 
             dataset_scope = file.get("dataset_scope")
             dataset_name = file.get("dataset_name")
@@ -120,7 +129,7 @@ class InPlaceIngestClient(UploadClient):
             registered_file_dids.add(f"{file['did_scope']}:{file['did_name']}")
         wrong_dids = registered_file_dids.intersection(registered_dataset_dids)
         if len(wrong_dids):
-            raise InputValidationError("DIDs used to address both files and datasets: %s" % str(wrong_dids))
+            raise InputValidationError(f"DIDs used to address both files and datasets: {wrong_dids}")
         logger(logging.DEBUG, "Input validation done.")
 
         # clear this set again to ensure that we only try to register datasets once
@@ -129,8 +138,9 @@ class InPlaceIngestClient(UploadClient):
         summary = []
         for file in files:
             basename = file["basename"]
-            logger(logging.INFO, "Preparing upload for file %s" % basename)
+            logger(logging.INFO, "Preparing upload for file %s", basename)
 
+            no_register = False
             pfn = file.get("pfn")
 
             trace = copy.deepcopy(self.trace)
@@ -169,7 +179,7 @@ class InPlaceIngestClient(UploadClient):
             trace["transferEnd"] = time.time()
             trace["clientState"] = "DONE"
             file["state"] = "A"
-            logger(logging.INFO, "Successfully uploaded file %s" % basename)
+            logger(logging.INFO, "Successfully uploaded file %s", basename)
             self._send_trace(trace)
 
             if summary_file_path:
@@ -195,3 +205,36 @@ class InPlaceIngestClient(UploadClient):
         elif num_succeeded != len(files):
             raise NotAllFilesUploaded()
         return 0
+
+    def _collect_file_info(self, filepath, item):
+        """
+        Collects infos (e.g. size, checksums, etc.) about the file and
+        returns them as a dictionary
+        (This function is meant to be used as class internal only)
+
+        :param filepath: path where the file is stored
+        :param item: input options for the given file
+
+        :returns: a dictionary containing all collected info and the input options
+        """
+        new_item = copy.deepcopy(item)
+        new_item["path"] = filepath
+        new_item["dirname"] = os.path.dirname(filepath)
+        new_item["basename"] = os.path.basename(filepath)
+
+        new_item["bytes"] = os.stat(filepath).st_size
+        if self.register_with_checksum:
+            new_item["adler32"] = adler32(filepath)
+            new_item["md5"] = md5(filepath)
+        else:
+            new_item["adler32"] = "00000001"  # empty file
+            new_item["md5"] = "d41d8cd98f00b204e9800998ecf8427e"  # empty file
+
+        new_item["meta"] = {"guid": self._get_file_guid(new_item)}
+        new_item["state"] = "C"
+        if not new_item.get("did_scope"):
+            new_item["did_scope"] = self.default_file_scope
+        if not new_item.get("did_name"):
+            new_item["did_name"] = new_item["basename"]
+
+        return new_item

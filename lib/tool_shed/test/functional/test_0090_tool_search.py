@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 emboss_repository_name = "emboss_0090"
 emboss_repository_description = "Galaxy's emboss tool"
@@ -25,7 +25,7 @@ category_name = "Test 0090 Tool Search And Installation"
 category_description = "Test 0090 Tool Search And Installation"
 
 
-class TestRepositoryCircularDependenciesAgain(ShedTwillTestCase):
+class TestRepositoryCircularDependenciesAgain(ShedTestCase):
     """Test more features related to repository dependencies."""
 
     def test_0000_initiate_users(self):

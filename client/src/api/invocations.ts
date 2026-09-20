@@ -1,55 +1,54 @@
-import axios from "axios";
+import { rethrowSimple } from "@/utils/simple-error";
 
-import { getAppRoot } from "@/onload";
-
-import { ApiResponse, components, fetcher } from "./schema";
+import { GalaxyApi } from "./client";
+import type { components } from "./schema";
 
 export type WorkflowInvocationElementView = components["schemas"]["WorkflowInvocationElementView"];
 export type WorkflowInvocationCollectionView = components["schemas"]["WorkflowInvocationCollectionView"];
+export type InvocationInput = components["schemas"]["InvocationInput"];
+export type InvocationInputParameter = components["schemas"]["InvocationInputParameter"];
+export type InvocationOutput = components["schemas"]["InvocationOutput"];
+export type InvocationOutputCollection = components["schemas"]["InvocationOutputCollection"];
 export type InvocationJobsSummary = components["schemas"]["InvocationJobsResponse"];
+type InvocationReport = components["schemas"]["InvocationReport"];
+export type InvocationState = components["schemas"]["InvocationState"];
 export type InvocationStep = components["schemas"]["InvocationStep"];
+export type InvocationMessage = components["schemas"]["InvocationMessageResponseUnion"];
+export type WorkflowInvocationRequest = components["schemas"]["WorkflowInvocationRequestModel"];
+export type WorkflowInvocationRequestInputs = components["schemas"]["WorkflowInvocationRequestModel"]["inputs"];
 
-export const invocationsFetcher = fetcher.path("/api/invocations").method("get").create();
+export type StepJobSummary =
+    | components["schemas"]["InvocationStepJobsResponseStepModel"]
+    | components["schemas"]["InvocationStepJobsResponseJobModel"]
+    | components["schemas"]["InvocationStepJobsResponseCollectionJobsModel"];
 
-export type WorkflowInvocation = WorkflowInvocationElementView | WorkflowInvocationCollectionView;
+export type WorkflowJobMetric = components["schemas"]["WorkflowJobMetric"];
 
-export interface WorkflowInvocationJobsSummary {
-    id: string;
+export type WorkflowInvocation = components["schemas"]["WorkflowInvocationResponse"];
+
+export function isWorkflowInvocationElementView(
+    item: WorkflowInvocation | null,
+): item is WorkflowInvocationElementView {
+    return item !== null && "steps" in item;
 }
 
-export interface WorkflowInvocationStep {
-    id: string;
-}
+// TODO: Consider caching this in the store given this doesn't change as it is generated once
+// when an invocation is complete?
+/**
+ * Fetches the invocation report for a given invocation ID
+ * @param {string} invocationId The ID of the invocation to fetch the report for
+ * @returns {Promise<InvocationReport>} A promise that resolves to the invocation report
+ */
+export async function fetchInvocationReport(invocationId: string): Promise<InvocationReport> {
+    const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}/report", {
+        params: {
+            path: { invocation_id: invocationId },
+        },
+    });
 
-export async function invocationForJob(params: { jobId: string }): Promise<WorkflowInvocation | null> {
-    const { data } = await axios.get(`${getAppRoot()}api/invocations?job_id=${params.jobId}`);
-    if (data.length > 0) {
-        return data[0] as WorkflowInvocation;
-    } else {
-        return null;
+    if (error) {
+        rethrowSimple(error);
     }
-}
 
-// TODO: Replace these provisional functions with fetchers after https://github.com/galaxyproject/galaxy/pull/16707 is merged
-export async function fetchInvocationDetails(params: { id: string }): Promise<ApiResponse<WorkflowInvocation>> {
-    const { data } = await axios.get(`${getAppRoot()}api/invocations/${params.id}`);
-    return {
-        data,
-    } as ApiResponse<WorkflowInvocation>;
-}
-
-export async function fetchInvocationJobsSummary(params: {
-    id: string;
-}): Promise<ApiResponse<WorkflowInvocationJobsSummary>> {
-    const { data } = await axios.get(`${getAppRoot()}api/invocations/${params.id}/jobs_summary`);
-    return {
-        data,
-    } as ApiResponse<WorkflowInvocationJobsSummary>;
-}
-
-export async function fetchInvocationStep(params: { id: string }): Promise<ApiResponse<WorkflowInvocationStep>> {
-    const { data } = await axios.get(`${getAppRoot()}api/invocations/steps/${params.id}`);
-    return {
-        data,
-    } as ApiResponse<WorkflowInvocationStep>;
+    return data as InvocationReport;
 }

@@ -5,8 +5,6 @@ import shutil
 import threading
 from datetime import date
 
-from galaxy.util import unicodify
-
 log = logging.getLogger(__name__)
 
 new_hgweb_config_template = """
@@ -19,11 +17,12 @@ class HgWebConfigManager:
     def __init__(self):
         self.hgweb_config_dir = None
         self.in_memory_config = None
+        self.lock = threading.Lock()
+        self.hgweb_repo_prefix = None
 
     def add_entry(self, lhs, rhs):
         """Add an entry in the hgweb.config file for a new repository."""
-        lock = threading.Lock()
-        lock.acquire(True)
+        self.lock.acquire(True)
         try:
             # Since we're changing the config, make sure the latest is loaded into memory.
             self.read_config(force_read=True)
@@ -35,15 +34,14 @@ class HgWebConfigManager:
             self.in_memory_config.set("paths", lhs, rhs)
             # Persist our in-memory configuration.
             self.write_config()
-        except Exception as e:
-            log.debug("Exception in HgWebConfigManager.add_entry(): %s", unicodify(e))
+        except Exception:
+            log.exception("Exception in HgWebConfigManager.add_entry()")
         finally:
-            lock.release()
+            self.lock.release()
 
     def change_entry(self, old_lhs, new_lhs, new_rhs):
         """Change an entry in the hgweb.config file for a repository - this only happens when the owner changes the name of the repository."""
-        lock = threading.Lock()
-        lock.acquire(True)
+        self.lock.acquire(True)
         try:
             self.make_backup()
             # Remove the old entry.
@@ -52,10 +50,10 @@ class HgWebConfigManager:
             self.in_memory_config.set("paths", new_lhs, new_rhs)
             # Persist our in-memory configuration.
             self.write_config()
-        except Exception as e:
-            log.debug("Exception in HgWebConfigManager.change_entry(): %s", unicodify(e))
+        except Exception:
+            log.exception("Exception in HgWebConfigManager.change_entry()")
         finally:
-            lock.release()
+            self.lock.release()
 
     def get_entry(self, lhs):
         """Return an entry in the hgweb.config file for a repository"""

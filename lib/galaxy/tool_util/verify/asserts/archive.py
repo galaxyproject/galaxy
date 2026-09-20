@@ -3,12 +3,22 @@ import re
 import tarfile
 import tempfile
 import zipfile
-from typing import (
-    Optional,
-    Union,
-)
 
 from galaxy.util import asbool
+from ._types import (
+    Annotated,
+    AssertionParameter,
+    ChildAssertions,
+    Delta,
+    Max,
+    Min,
+    N,
+    Negate,
+    NEGATE_DEFAULT,
+    OutputBytes,
+    VerifyAssertionsFunction,
+    XmlBool,
+)
 from ._util import _assert_presence_number
 
 
@@ -55,21 +65,72 @@ def _list_from_zip(output_bytes, path):
     return sorted(lst)
 
 
+Path = Annotated[str, AssertionParameter("The regular expression specifying the archive member.")]
+All = Annotated[
+    XmlBool,
+    AssertionParameter(
+        "Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first",
+        xml_type="PermissiveBoolean",
+    ),
+]
+
+
 def assert_has_archive_member(
-    output_bytes: bytes,
-    path: str,
-    verify_assertions_function,
-    children,
-    all: Union[bool, str] = False,
-    n: Optional[Union[int, str]] = None,
-    delta: Union[int, str] = 0,
-    min: Optional[Union[int, str]] = None,
-    max: Optional[Union[int, str]] = None,
-    negate: Union[bool, str] = False,
+    output_bytes: OutputBytes,
+    path: Path,
+    verify_assertions_function: VerifyAssertionsFunction,
+    children: ChildAssertions = None,
+    all: All = False,
+    n: N = None,
+    delta: Delta = 0,
+    min: Min = None,
+    max: Max = None,
+    negate: Negate = NEGATE_DEFAULT,
 ) -> None:
-    """Recursively checks the specified children assertions against the text of
-    the first element matching the specified path found within the archive.
-    Currently supported formats: .zip, .tar, .tar.gz."""
+    """This tag allows to check if ``path`` is contained in a compressed file.
+
+    The path is a regular expression that is matched against the full paths of the objects in
+    the compressed file (remember that "matching" means it is checked if a prefix of
+    the full path of an archive member is described by the regular expression).
+    Valid archive formats include ``.zip``, ``.tar``, and ``.tar.gz``. Note that
+    depending on the archive creation method:
+
+    - full paths of the members may be prefixed with ``./``
+    - directories may be treated as empty files
+
+    ```xml
+    <has_archive_member path="./path/to/my-file.txt"/>
+    ```
+
+    With ``n`` and ``delta`` (or ``min`` and ``max``) assertions on the number of
+    archive members matching ``path`` can be expressed. The following could be used,
+    e.g., to assert an archive containing n&plusmn;1 elements out of which at least
+    4 need to have a ``txt`` extension.
+
+    ```xml
+    <has_archive_member path=".*" n="10" delta="1"/>
+    <has_archive_member path=".*\\.txt" min="4"/>
+    ```
+
+    In addition the tag can contain additional assertions as child elements about
+    the first member in the archive matching the regular expression ``path``. For
+    instance
+
+    ```xml
+    <has_archive_member path=".*/my-file.txt">
+      <not_has_text text="EDK72998.1"/>
+    </has_archive_member>
+    ```
+
+    If the ``all`` attribute is set to ``true`` then all archive members are subject
+    to the assertions. Note that, archive members matching the ``path`` are sorted
+    alphabetically.
+
+    The ``negate`` attribute of the ``has_archive_member`` assertion only affects
+    the asserts on the presence and number of matching archive members, but not any
+    sub-assertions (which can offer the ``negate`` attribute on their own).  The
+    check if the file is an archive at all, which is also done by the function, is
+    not affected."""
     all = asbool(all)
     extract_foo = None
     # from python 3.9 is_tarfile supports file like objects then we do not need
