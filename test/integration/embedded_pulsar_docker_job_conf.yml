@@ -20,6 +20,10 @@ execution:
       docker_required: true
       container_monitor_result: callback
       remote_metadata: true
+      metadata_config:
+        containerize: True
+        engine: docker
+        image: "galaxyproject/galaxy-job-execution"
 
 tools:
 - id: upload1
