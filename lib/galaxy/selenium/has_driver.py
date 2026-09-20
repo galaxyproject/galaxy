@@ -40,6 +40,7 @@ from .axe_results import (
 from .has_driver_protocol import (
     Cookie,
     HasElementLocator,
+    HOVER_AWAY_OFFSET,
     TimeoutCallback,
     WaitTypeT,
 )
@@ -397,6 +398,14 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         for modifier in reversed(modifiers):
             chain = chain.key_up(KEY_TO_SELENIUM[modifier])
         chain.perform()
+
+    def hover_away(self) -> None:
+        """
+        Move the mouse off whatever element it is currently over.
+
+        Used to dismiss hover-triggered UI such as tooltips.
+        """
+        self.action_chains().move_by_offset(HOVER_AWAY_OFFSET, HOVER_AWAY_OFFSET).perform()
 
     def send_enter(self, element: WebElement | None = None):
         self.press(Key.ENTER, element=element)

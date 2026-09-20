@@ -2675,9 +2675,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         last_timeout: SeleniumTimeoutException | None = None
         for _ in range(2):
             if not tooltip_component.is_absent:
-                move_away_chain = self.action_chains()
-                move_away_chain.move_by_offset(100, 100)
-                move_away_chain.perform()
+                self.hover_away()
             try:
                 tooltip_component.wait_for_absent()
                 return

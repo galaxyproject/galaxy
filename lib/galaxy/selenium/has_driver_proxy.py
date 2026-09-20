@@ -304,6 +304,10 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """Hover mouse over element."""
         self._driver_impl.hover(element)
 
+    def hover_away(self) -> None:
+        """Move the mouse off whatever element it is currently over."""
+        self._driver_impl.hover_away()
+
     def move_to_and_click(self, element: WebElementProtocol) -> None:
         """Move mouse to element and click."""
         self._driver_impl.move_to_and_click(element)

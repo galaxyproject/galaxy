@@ -28,6 +28,9 @@ from .web_element_protocol import WebElementProtocol
 ElementLocatorTuple = tuple[str, str]  # e.g., ("css selector", "#id") or ("id", "test")
 HasElementLocator = Target | ElementLocatorTuple
 
+# Pixels of clearance hover_away() puts between the pointer and the element it left.
+HOVER_AWAY_OFFSET = 100
+
 
 class Cookie(TypedDict, total=False):
     """Cookie dictionary structure compatible with both Selenium and Playwright."""
@@ -343,6 +346,11 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
     @abstractmethod
     def hover(self, element: WebElementProtocol) -> None:
         """Hover mouse over element."""
+        ...
+
+    @abstractmethod
+    def hover_away(self) -> None:
+        """Move the mouse off whatever element it is currently over."""
         ...
 
     @abstractmethod

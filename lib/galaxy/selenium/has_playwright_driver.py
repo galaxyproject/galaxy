@@ -150,6 +150,7 @@ from .has_driver_protocol import (
     BackendType,
     Cookie,
     HasElementLocator,
+    HOVER_AWAY_OFFSET,
     TimeoutCallback,
     WaitTypeT,
 )
@@ -160,6 +161,17 @@ from .keys import (
 from .playwright_element import PlaywrightElement
 from .wait_methods_mixin import WaitMethodsMixin
 from .web_element_protocol import WebElementProtocol
+
+# Innermost element the pointer is currently over, or null when only the page itself is.
+HOVERED_ELEMENT_RECT_JS = """() => {
+    const hovered = document.querySelectorAll(":hover");
+    const target = hovered[hovered.length - 1];
+    if (!target || target === document.body || target === document.documentElement) {
+        return null;
+    }
+    const { x, y, width, height } = target.getBoundingClientRect();
+    return { x, y, width, height };
+}"""
 
 logger = logging.getLogger(__name__)
 
@@ -782,6 +794,30 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         # Hover is non-destructive so this is safe.
         element.hover(force=True)
 
+    def hover_away(self) -> None:
+        """
+        Move the mouse off whatever element it is currently over.
+
+        Used to dismiss hover-triggered UI such as tooltips. Playwright exposes no
+        read of the current pointer position, so this cannot be the relative move the
+        Selenium backend makes. Instead the page reports which element is hovered and
+        the pointer moves clear of that element's box.
+        """
+        rect = self.page.evaluate(HOVERED_ELEMENT_RECT_JS)
+        if rect is None:
+            # nothing but the page itself is hovered - already away from everything
+            return
+        x = rect["x"] + rect["width"] + HOVER_AWAY_OFFSET
+        y = rect["y"] + rect["height"] + HOVER_AWAY_OFFSET
+        viewport = self.page.viewport_size
+        if viewport is not None:
+            # past the far edge there is nowhere to land, so leave on the near side instead
+            if x >= viewport["width"]:
+                x = max(0.0, rect["x"] - HOVER_AWAY_OFFSET)
+            if y >= viewport["height"]:
+                y = max(0.0, rect["y"] - HOVER_AWAY_OFFSET)
+        self.page.mouse.move(x, y)
+
     def move_to_and_click(self, element: WebElementProtocol) -> None:
         """
         Move to an element and click it.
@@ -829,17 +865,17 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
     def action_chains(self):
         """
-        Return action chains object (for Playwright, returns None as not needed).
+        Refuse to hand out an action chain builder.
 
-        Playwright handles actions differently than Selenium, so this method
-        returns None to maintain API compatibility.
-
-        Returns:
-            None (Playwright doesn't use ActionChains pattern)
+        Selenium's ActionChains has no Playwright equivalent. Returning a stub let
+        callers compose a chain whose methods then failed on this object, so raise
+        something that names the alternative instead.
         """
-        # Playwright doesn't use action chains - return a placeholder object
-        # that indicates it exists but isn't used the same way
-        return self
+        raise NotImplementedError(
+            "action_chains() is Selenium-only - express the gesture instead: hover(), "
+            "hover_away(), move_to_and_click(), double_click() and drag_and_drop() here, "
+            "or shift_click(), send_keys_to_page() and mouse_drag() on NavigatesGalaxy."
+        )
 
     def switch_to_frame(self, frame_reference: str | int | ElementHandle | PlaywrightElement = "frame"):
         """

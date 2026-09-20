@@ -652,10 +652,13 @@ class TestActionChainsAndKeys:
     """Tests for action chains and key sending methods."""
 
     def test_action_chains(self, has_driver_instance, base_url):
-        """Test creating action chains."""
+        """Selenium hands out its native builder; Playwright refuses rather than stubbing one."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
-        chains = has_driver_instance.action_chains()
-        assert chains is not None
+        if has_driver_instance.backend_type == "playwright":
+            with pytest.raises(NotImplementedError):
+                has_driver_instance.action_chains()
+        else:
+            assert has_driver_instance.action_chains() is not None
 
     def test_drag_and_drop(self, has_driver_instance, base_url):
         """Test drag and drop functionality."""
@@ -701,6 +704,19 @@ class TestActionChainsAndKeys:
 
         # Verify the hover made the indicator visible (using CSS :hover + sibling selector)
         assert hover_indicator.is_displayed()
+
+    def test_hover_away(self, has_driver_instance, base_url):
+        """Test moving the pointer back off a hovered element."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        hover_target = has_driver_instance.find_element_by_id("hover-target")
+        hover_indicator = has_driver_instance.find_element_by_id("hover-indicator")
+
+        has_driver_instance.hover(hover_target)
+        assert hover_indicator.is_displayed(), "precondition failed - hover did not register"
+
+        has_driver_instance.hover_away()
+
+        assert not hover_indicator.is_displayed()
 
     def test_send_enter(self, has_driver_instance, base_url):
         """Test sending ENTER key."""
