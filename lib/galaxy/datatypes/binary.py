@@ -2070,7 +2070,7 @@ class Anndata(H5):
                     # if X matrix has actual data
                     shape = anndata_file["X"].attrs.get("shape")
                     if shape is not None:
-                        dataset.metadata.shape = tuple(shape)
+                        dataset.metadata.shape = tuple(int(dim) for dim in shape)
                     elif hasattr(anndata_file["X"], "shape") and anndata_file["X"].shape is not None:
                         dataset.metadata.shape = tuple(anndata_file["X"].shape)
 
