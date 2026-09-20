@@ -22,6 +22,7 @@ from typing import (
     cast,
     Literal,
     NamedTuple,
+    Protocol,
     TYPE_CHECKING,
 )
 
@@ -118,8 +119,12 @@ def galaxy_timeout_handler(timeout_multiplier: float = 1):
 DEFAULT_WAIT_TYPE = WAIT_TYPES.DATABASE_OPERATION
 
 
-class NullTourCallback:
-    def handle_step(self, step, step_index: int):
+class TourCallbackProtocol(Protocol):
+    def handle_step(self, step: dict[str, Any], step_index: int) -> None: ...
+
+
+class NullTourCallback(TourCallbackProtocol):
+    def handle_step(self, step: dict[str, Any], step_index: int) -> None:
         pass
 
 
@@ -2638,7 +2643,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             not self.is_logged_in()
         ), "Clicked to logged out and UI reflects a logout, but API still thinks a user is logged in."
 
-    def run_tour(self, path, skip_steps=None, sleep_on_steps=None, tour_callback=None):
+    def run_tour(
+        self,
+        path: str,
+        skip_steps: list[str] | None = None,
+        sleep_on_steps: dict[str, int | float] | None = None,
+        tour_callback: TourCallbackProtocol | None = None,
+    ) -> None:
         skip_steps = skip_steps or []
         sleep_on_steps = sleep_on_steps or {}
         if tour_callback is None:
@@ -2760,7 +2771,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def assert_no_error_message(self):
         self.components._.messages.error.assert_absent_or_hidden()
 
-    def run_tour_step(self, step, step_index: int, tour_callback):
+    def run_tour_step(self, step: dict[str, Any], step_index: int, tour_callback: TourCallbackProtocol) -> None:
         element_str = step.get("element", None)
         if element_str is None:
             component = step.get("component", None)

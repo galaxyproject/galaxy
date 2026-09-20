@@ -188,6 +188,7 @@ typecheck = [
     "types-docutils",
     "types-Markdown",
     "types-paramiko",
+    "types-protobuf",
     "types-python-dateutil",
     "types-python-slugify",
     "types-PyYAML",
