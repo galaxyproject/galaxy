@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
-import { copyDatasets } from "./datasets";
+import { copyDatasets, copyHistoryItems } from "./datasets";
 
 const { server, http } = useServerMock();
 
@@ -63,5 +63,49 @@ describe("copyDatasets", () => {
             failedDatasetIds: ["dataset-7"],
         });
         expect(peakInFlight).toBe(5);
+    });
+});
+
+describe("copyHistoryItems", () => {
+    it("copies datasets and collections using their matching content type and source", async () => {
+        const requests: Array<{ pathname: string; body: Record<string, unknown> }> = [];
+
+        server.use(
+            http.post("/api/histories/{history_id}/contents/{type}s", async ({ request, response }) => {
+                requests.push({
+                    pathname: new URL(request.url).pathname,
+                    body: (await request.json()) as Record<string, unknown>,
+                });
+
+                return response(200).json({ id: requests.at(-1)?.body.content } as never);
+            }),
+        );
+
+        const result = await copyHistoryItems(
+            [
+                { id: "dataset-a", history_content_type: "dataset" },
+                { id: "collection-a", history_content_type: "dataset_collection" },
+            ],
+            "target-history",
+        );
+
+        expect(requests).toEqual([
+            {
+                pathname: "/api/histories/target-history/contents/datasets",
+                body: expect.objectContaining({ content: "dataset-a", source: "hda", type: "dataset" }),
+            },
+            {
+                pathname: "/api/histories/target-history/contents/dataset_collections",
+                body: expect.objectContaining({
+                    content: "collection-a",
+                    source: "hdca",
+                    type: "dataset_collection",
+                }),
+            },
+        ]);
+        expect(result).toEqual({
+            copiedItems: [{ id: "dataset-a" }, { id: "collection-a" }],
+            failedItemIds: [],
+        });
     });
 });
