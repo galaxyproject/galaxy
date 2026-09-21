@@ -204,6 +204,7 @@ from galaxy.util import (
     enum_values,
     hex_to_lowercase_alphanum,
     listify,
+    MAX_ANNOTATION_SIZE,
     now,
     ready_name_for_url,
     unicodify,
@@ -260,7 +261,6 @@ _datatypes_registry = None
 
 MAX_WORKFLOW_README_SIZE = 20000
 MAX_WORKFLOW_HELP_SIZE = 40000
-MAX_ANNOTATION_SIZE = 65536
 STR_TO_STR_DICT = dict[str, str]
 
 
@@ -12292,7 +12292,7 @@ class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
 
 # Item annotation classes.
 class ItemAnnotationAssociation:
-    """Bounds annotation length; the column itself is unbounded TEXT."""
+    """Enforce the annotation limit for legacy API and internal writes that bypass input schemas."""
 
     @validates("annotation")
     def validates_annotation(self, key, annotation):

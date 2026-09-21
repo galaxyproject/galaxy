@@ -58,6 +58,7 @@ from galaxy.tool_util_models.sample_sheet import (
     SampleSheetRows,
 )
 from galaxy.tool_util_models.tool_source import FieldDict
+from galaxy.util import MAX_ANNOTATION_SIZE
 from galaxy.util.config_templates import partial_model
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
@@ -1424,6 +1425,7 @@ class UpdateHistoryContentsPayload(Model):
         None,
         title="Annotation",
         description="A user-defined annotation for this item.",
+        max_length=MAX_ANNOTATION_SIZE,
     )
     tags: TagCollection | None = Field(
         None,
@@ -1616,7 +1618,7 @@ AnyHistoryView = Annotated[
 
 class UpdateHistoryPayload(Model):
     name: str | None = None
-    annotation: str | None = None
+    annotation: str | None = Field(default=None, max_length=MAX_ANNOTATION_SIZE)
     tags: TagCollection | None = None
     published: bool | None = None
     importable: bool | None = None
@@ -4115,6 +4117,7 @@ class CreatePagePayload(PageSummaryBase):
         default=None,
         title="Annotation",
         description="Annotation that will be attached to the page.",
+        max_length=MAX_ANNOTATION_SIZE,
     )
     invocation_id: DecodedDatabaseIdField | None = Field(
         None,
@@ -4149,6 +4152,7 @@ class UpdatePagePayload(PageSummaryBase):
         default=None,
         title="Annotation",
         description="Annotation that will be attached to the page.",
+        max_length=MAX_ANNOTATION_SIZE,
     )
     edit_source: str | None = Field(
         default=None,

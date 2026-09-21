@@ -22,6 +22,7 @@ from galaxy.schema.schema import (
     UpdateTimeField,
     WithModelClass,
 )
+from galaxy.util import MAX_ANNOTATION_SIZE
 
 VisualizationSortByEnum = Literal["create_time", "title", "update_time", "username"]
 
@@ -339,6 +340,7 @@ class VisualizationCreatePayload(Model):
         None,
         title="Annotation",
         description="The annotation of the visualization.",
+        max_length=MAX_ANNOTATION_SIZE,
     )
     config: dict | None = Field(
         {},

@@ -7,6 +7,7 @@ import pytest
 
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.util import MAX_ANNOTATION_SIZE
 
 
 def test_get_uuid():
@@ -89,7 +90,7 @@ ANNOTATION_MODELS = model.ItemAnnotationAssociation.__subclasses__()
 
 @pytest.mark.parametrize("annotation_model", ANNOTATION_MODELS, ids=lambda cls: cls.__name__)
 def test_annotation_size_limit(annotation_model):
-    at_limit = "a" * model.MAX_ANNOTATION_SIZE
+    at_limit = "a" * MAX_ANNOTATION_SIZE
     assert annotation_model(annotation=None).annotation is None
     assert annotation_model(annotation=at_limit).annotation == at_limit
     with pytest.raises(RequestParameterInvalidException, match="Annotation too large"):
