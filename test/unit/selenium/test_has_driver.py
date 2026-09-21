@@ -1,5 +1,6 @@
 """Unit tests for galaxy.selenium.has_driver module."""
 
+import sys
 from typing import cast
 
 import pytest
@@ -8,6 +9,7 @@ from selenium.common.exceptions import (
     TimeoutException as SeleniumTimeoutException,
 )
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 
 from galaxy.navigation.components import Target
@@ -32,6 +34,7 @@ from galaxy.selenium.has_playwright_driver import (
     PlaywrightResources,
     PlaywrightTimeoutException,
 )
+from galaxy.selenium.keys import Key
 from .util import (
     check_playwright_cached,
     check_selenium_cached,
@@ -1254,3 +1257,136 @@ class TestCSSProperties:
         assert font_size != ""
         # Font size should contain numeric value
         assert any(char.isdigit() for char in font_size)
+
+
+class TestKeyPresses:
+    """Tests for the backend-neutral press() gesture."""
+
+    def test_press_to_page(self, has_driver_instance, base_url):
+        """A key pressed with no element goes to whatever has focus."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+
+        has_driver_instance.press(Key.TAB)
+
+        key_log = has_driver_instance.find_element_by_id("key-log")
+        assert key_log.text == "Tab"
+
+    def test_press_with_modifier(self, has_driver_instance, base_url):
+        """Modifiers are held down while each key is pressed."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+
+        has_driver_instance.press(Key.TAB, modifiers=[Key.SHIFT])
+
+        # The modifier's own keydown is delivered first, by both backends.
+        key_log = has_driver_instance.find_element_by_id("key-log")
+        assert key_log.text == "shift+Shift shift+Tab"
+
+    def test_press_multiple_keys_in_order(self, has_driver_instance, base_url):
+        """Each key is pressed, in the order given."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+
+        has_driver_instance.press(Key.ARROW_RIGHT, Key.ARROW_LEFT, Key.ARROW_RIGHT)
+
+        key_log = has_driver_instance.find_element_by_id("key-log")
+        assert key_log.text == "ArrowRight ArrowLeft ArrowRight"
+
+    def test_press_to_element(self, has_driver_instance, base_url):
+        """A key pressed with an element is delivered to that element."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+
+        has_driver_instance.press(Key.ARROW_DOWN, element=target)
+
+        target_log = has_driver_instance.find_element_by_id("target-log")
+        assert target_log.text == "ArrowDown"
+
+    def test_press_to_element_with_modifier(self, has_driver_instance, base_url):
+        """An element press with modifiers focuses the element without clicking it."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+
+        has_driver_instance.press(Key.END, modifiers=[Key.SHIFT], element=target)
+
+        # The modifier's own keydown is delivered first, by both backends.
+        target_log = has_driver_instance.find_element_by_id("target-log")
+        assert target_log.text == "shift+Shift shift+End"
+
+    def test_send_enter_to_page(self, has_driver_instance, base_url):
+        """send_enter() with no element reaches the page."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+
+        has_driver_instance.send_enter()
+
+        key_log = has_driver_instance.find_element_by_id("key-log")
+        assert key_log.text == "Enter"
+
+    def test_send_escape_to_page(self, has_driver_instance, base_url):
+        """send_escape() with no element reaches the page."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+
+        has_driver_instance.send_escape()
+
+        key_log = has_driver_instance.find_element_by_id("key-log")
+        assert key_log.text == "Escape"
+
+    def test_press_character_with_modifier(self, has_driver_instance, base_url):
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+        has_driver_instance.press("a", modifiers=[Key.CONTROL], element=target)
+        assert has_driver_instance.find_element_by_id("target-log").text == "ctrl+Control ctrl+a"
+        has_driver_instance.press("b")
+        assert target.get_attribute("value") == "b"
+
+    def test_press_select_all_shortcut(self, has_driver_instance, base_url):
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+        target.send_keys("replace this")
+        modifier = Key.META if sys.platform == "darwin" else Key.CONTROL
+        has_driver_instance.press("a", modifiers=[modifier], element=target)
+        has_driver_instance.press("b")
+        assert target.get_attribute("value") == "b"
+
+    def test_press_multiple_tabs_to_element(self, has_driver_instance, base_url):
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+        has_driver_instance.press(Key.TAB, Key.TAB, element=target)
+        assert has_driver_instance.active_element().get_attribute("id") == "third-target"
+
+    def test_press_sequence_holds_and_releases_modifier(self, has_driver_instance, base_url):
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+        has_driver_instance.press(Key.ARROW_LEFT, Key.ARROW_RIGHT, modifiers=[Key.SHIFT], element=target)
+        has_driver_instance.press(Key.ENTER)
+        assert has_driver_instance.find_element_by_id("key-events").text == (
+            "keydown:shift+Shift keydown:shift+ArrowLeft keyup:shift+ArrowLeft "
+            "keydown:shift+ArrowRight keyup:shift+ArrowRight keyup:Shift keydown:Enter keyup:Enter"
+        )
+        assert has_driver_instance.execute_script("return window.clickCount") == 0
+
+    def test_legacy_send_keys_shortcut_and_return(self, has_driver_instance, base_url):
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+        target.send_keys(Keys.CONTROL, "a")
+        target.send_keys(Keys.RETURN)
+        assert has_driver_instance.find_element_by_id("target-log").text == "ctrl+Control ctrl+a Enter"
+
+
+class TestActiveElement:
+    """Tests for the active_element() focus accessor."""
+
+    def test_active_element_after_click(self, has_driver_instance, base_url):
+        """A clicked input becomes the active element."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+        target = has_driver_instance.find_element_by_id("key-target")
+
+        has_driver_instance.move_to_and_click(target)
+
+        assert has_driver_instance.active_element().get_attribute("id") == "key-target"
+
+    def test_active_element_follows_tab(self, has_driver_instance, base_url):
+        """Focus moves with TAB, so active_element() tracks keyboard navigation."""
+        has_driver_instance.navigate_to(f"{base_url}/keys.html")
+
+        has_driver_instance.press(Key.TAB)
+
+        assert has_driver_instance.active_element().get_attribute("id") == "key-target"
