@@ -4,7 +4,7 @@ import { BSkeleton } from "bootstrap-vue";
 import { computed, ref, toRef, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
-import { GalaxyApi } from "@/api";
+import { fetchInvocationForJob } from "@/api/invocations";
 import type { CardAction } from "@/components/Common/GCard.types";
 import { useJobConsoleOutput, useJobDetails } from "@/composables/jobDetails";
 import { useToolStore } from "@/stores/toolStore";
@@ -115,42 +115,37 @@ function filterMetadata(jobMessages: JobMessage[]): Partial<JobMessage>[] {
     });
 }
 
-async function fetchInvocationForJob(jobId: string) {
-    const { data: invocations, error } = await GalaxyApi().GET("/api/invocations", {
-        params: {
-            query: { job_id: jobId },
-        },
-    });
-
-    if (error) {
-        rethrowSimple(error);
-    }
-
-    if (invocations.length) {
-        return invocations[0];
-    }
-
-    return null;
-}
-
-// Fetches the invocation for the given job id to get the associated invocation id
+// Reset the fetched invocation ID as soon as the job ID changes and no invocation ID is provided
 watch(
     () => props.jobId,
-    async (newId, oldId) => {
-        // Reset the fetched invocation ID if the job ID has changed and no invocation ID is provided via props
+    (newId, oldId) => {
         if (!props.invocationId && newId !== oldId) {
             fetchedInvocationId.value = undefined;
         }
+    },
+);
 
-        // Fetch the invocation for the new job ID if it hasn't been fetched yet
-        if (newId && fetchedInvocationId.value === undefined) {
-            const invocation = await fetchInvocationForJob(newId);
+// Fetches the invocation for the given job id to get the associated invocation id
+watch(
+    job,
+    async (newJob) => {
+        const jobId = props.jobId;
+        if (!newJob || !jobId || fetchedInvocationId.value !== undefined) {
+            return;
+        }
+        try {
+            const invocation = await fetchInvocationForJob(jobId);
             if (invocation) {
                 fetchedInvocationId.value = invocation.id;
             } else {
                 // The job does not have an associated invocation
                 fetchedInvocationId.value = null;
             }
+        } catch (error) {
+            // Log error (we do not need to display it to the user as we only fetch this to display
+            // a singular invocation ID in the table)
+            console.error(error);
+            fetchedInvocationId.value = null;
         }
     },
     { immediate: true },

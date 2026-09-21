@@ -52,3 +52,27 @@ export async function fetchInvocationReport(invocationId: string): Promise<Invoc
 
     return data as InvocationReport;
 }
+
+/**
+ * Fetches the workflow invocation associated with a given job ID
+ * @param {string} jobId The ID of the job to fetch the invocation for
+ * @returns {Promise<WorkflowInvocation | null>} A promise that resolves to the workflow invocation
+ * or `null` if not found (could mean that the job is not part of any workflow invocation)
+ */
+export async function fetchInvocationForJob(jobId: string): Promise<WorkflowInvocation | null> {
+    const { data: invocations, error } = await GalaxyApi().GET("/api/invocations", {
+        params: {
+            query: { job_id: jobId },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    if (invocations.length && invocations[0]) {
+        return invocations[0];
+    }
+
+    return null;
+}
