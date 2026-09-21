@@ -493,6 +493,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         )
         return response.json()
 
+    def api_put(self, endpoint, data=None, raw=False):
+        full_url = self.build_url(f"api/{endpoint}", for_selenium=False)
+        response = requests.put(
+            full_url, json=data or {}, cookies=self.selenium_to_requests_cookies(), timeout=DEFAULT_SOCKET_TIMEOUT
+        )
+        return self._handle_response(response, raw)
+
     def api_delete(self, endpoint, raw=False):
         full_url = self.build_url(f"api/{endpoint}", for_selenium=False)
         response = requests.delete(
@@ -1504,6 +1511,29 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         galaxyai.send_button.wait_for_and_click()
         galaxyai.loading.wait_for_absent_or_hidden()
         galaxyai.response_content.wait_for_visible()
+
+    def galaxyai_wait_for_learning_mode(self, enabled: bool):
+        """Wait for the chat panel to report the given learning mode state."""
+        galaxyai = self.components.galaxyai
+        return self.wait_for_visible(galaxyai.learning_mode_toggle.with_data("tutor-mode", "on" if enabled else "off"))
+
+    def galaxyai_set_learning_mode(self, enabled: bool):
+        """Put the chat panel's learning mode switch into the requested state."""
+        galaxyai = self.components.galaxyai
+        galaxyai.learning_mode_toggle.wait_for_visible()
+        if galaxyai.learning_mode_toggle.data_value("tutor-mode") != ("on" if enabled else "off"):
+            # bootstrap-vue renders the real checkbox visually hidden, so click the label instead.
+            galaxyai.learning_mode_switch.wait_for_and_click()
+        # The marker only flips once the server has stored the preference.
+        self.galaxyai_wait_for_learning_mode(enabled)
+
+    def galaxyai_dock_to_side_panel(self):
+        """Move the chat out of the center view and into the right side panel."""
+        galaxyai = self.components.galaxyai
+        self.navigate_to_galaxyai()
+        galaxyai._.wait_for_visible()
+        galaxyai.dock_right_button.wait_for_and_click()
+        return galaxyai.docked_panel.wait_for_visible()
 
     def _galaxyai_assert_chat_empty(self):
         galaxyai = self.components.galaxyai
