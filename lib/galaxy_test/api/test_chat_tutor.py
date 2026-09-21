@@ -1,13 +1,23 @@
-"""API tests for the cognitive tutor's learning-state endpoints.
+"""API tests for the cognitive tutor's learning-state endpoints and routing.
 
-These endpoints are plain per-user preference CRUD (no LLM required), so they run
-against any Galaxy with a logged-in user.
+The learning-state endpoints are plain per-user preference CRUD (no LLM required),
+so they run against any Galaxy with a logged-in user. The routing tests drive
+``POST /api/chat`` for real and need agents configured; against the auto-started
+test server that is the static backend, so they assert exact agent types.
 
 ## Running (auto-started server):
     ./run_tests.sh -api lib/galaxy_test/api/test_chat_tutor.py
 """
 
+import json
+from contextlib import contextmanager
+from typing import Any
+
 from galaxy_test.base.decorators import requires_admin
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    skip_without_agents,
+)
 from ._framework import ApiTestCase
 
 EXPECTED_STATE_KEYS = {
@@ -17,6 +27,9 @@ EXPECTED_STATE_KEYS = {
     "tutor_mode_enabled",
     "last_interaction",
 }
+
+# Canned reply of the static backend's teaching_assistant rule.
+TUTOR_STATIC_REPLY = "Before I explain, what do you already know about this step?"
 
 
 class TestChatTutorApi(ApiTestCase):
@@ -83,3 +96,120 @@ class TestChatTutorApi(ApiTestCase):
             "demonstrations_per_interaction",
         ):
             assert key in data
+
+
+class TestChatTutorRoutingApi(ApiTestCase):
+    """How POST /api/chat picks an agent when learning mode is involved."""
+
+    dataset_populator: DatasetPopulator
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        config = self._get("configuration").json()
+        self._registry_type = config.get("llm_registry_type", "default")
+
+    @property
+    def _is_static(self) -> bool:
+        return self._registry_type == "static"
+
+    def _set_tutor_mode(self, enabled: bool) -> None:
+        response = self._post("chat/tutor/mode", data={"enabled": enabled}, json=True)
+        self._assert_status_code_is_ok(response)
+
+    @contextmanager
+    def _tutor_mode_on(self):
+        # The session server and its user are shared across every API test module, so
+        # learning mode has to come back off even when an assertion blows up.
+        self._set_tutor_mode(True)
+        try:
+            yield
+        finally:
+            self._set_tutor_mode(False)
+
+    def _chat_raw(
+        self,
+        query: str,
+        agent_type: str = "auto",
+        context: dict[str, Any] | None = None,
+        job_id: str | None = None,
+    ):
+        url = f"chat?agent_type={agent_type}"
+        if job_id is not None:
+            url += f"&job_id={job_id}"
+        payload: dict[str, Any] = {"query": query}
+        if context is not None:
+            payload["context"] = json.dumps(context)
+        return self._post(url, payload, json=True)
+
+    def _chat(self, query: str, **kwds) -> dict[str, Any]:
+        response = self._chat_raw(query, **kwds)
+        self._assert_status_code_is_ok(response)
+        result = response.json()
+        # The endpoint swallows agent failures into a 200 carrying error_code 500.
+        assert result["error_code"] == 0, result["error_message"]
+        return result
+
+    def _responder(self, result: dict[str, Any]) -> str:
+        agent_response = result.get("agent_response")
+        assert agent_response, f"No agent_response in {result}"
+        return agent_response["agent_type"]
+
+    def _notebook_context(self, page_id: str, history_id: str | None = None) -> dict[str, Any]:
+        context: dict[str, Any] = {"contextType": "notebook", "pageId": page_id}
+        if history_id:
+            context["historyId"] = history_id
+        return context
+
+    def _new_page(self, title: str) -> tuple[str, str]:
+        history_id = self.dataset_populator.new_history()
+        page = self.dataset_populator.new_history_page(history_id, content=f"# {title}")
+        return page["id"], history_id
+
+    @skip_without_agents
+    def test_auto_query_reaches_tutor_when_learning_mode_is_on(self):
+        with self._tutor_mode_on():
+            result = self._chat("How do I trim adapters?")
+        assert self._responder(result) == "teaching_assistant"
+        if self._is_static:
+            assert result["response"] == TUTOR_STATIC_REPLY
+
+    @skip_without_agents
+    def test_page_context_outranks_learning_mode_for_auto_queries(self):
+        page_id, history_id = self._new_page("Page beats tutor")
+        with self._tutor_mode_on():
+            result = self._chat(
+                "Summarize this for me",
+                context=self._notebook_context(page_id, history_id),
+            )
+        assert self._responder(result) == "page_assistant"
+
+    @skip_without_agents
+    def test_auto_query_reaches_router_when_learning_mode_is_off(self):
+        self._set_tutor_mode(False)
+        result = self._chat("Tell me about Galaxy")
+        assert self._responder(result) != "teaching_assistant"
+        if self._is_static:
+            assert self._responder(result) == "router"
+
+    @skip_without_agents
+    def test_explicit_tutor_request_keeps_the_tutor_despite_page_context(self):
+        page_id, history_id = self._new_page("Explicit tutor")
+        self._set_tutor_mode(False)
+        result = self._chat(
+            "Walk me through this",
+            agent_type="teaching_assistant",
+            context=self._notebook_context(page_id, history_id),
+        )
+        assert self._responder(result) == "teaching_assistant"
+
+    @skip_without_agents
+    def test_unreadable_page_id_leaves_auto_query_with_the_tutor(self):
+        with self._tutor_mode_on():
+            result = self._chat(
+                "What should I look at next?",
+                context=self._notebook_context("not-an-encoded-id"),
+            )
+        # A page hint the server can't decode is dropped rather than fatal, so routing
+        # continues as if no page context had been sent at all.
+        assert self._responder(result) == "teaching_assistant"
