@@ -86,7 +86,7 @@ def check_commit_size(size: int, rpath: str) -> None:
 
 if GitLabARCFileSystem is not None:
 
-    class WritableGitLabFileSystem(GitLabARCFileSystem):
+    class WritableGitLabFileSystem(GitLabARCFileSystem):  # type: ignore[misc]  # arcfs-fsspec is untyped
         """``GitLabARCFileSystem`` that commits a file instead of exporting it the ARC way."""
 
         async def _put_file(self, lpath, rpath, **kwargs):

@@ -18,7 +18,6 @@ from galaxy.exceptions import (
     MessageException,
     RequestParameterInvalidException,
 )
-from galaxy.files.models import FilesSourceOptions
 from galaxy.files.sources import gitlab
 from galaxy.files.sources.arc import ARCFilesSource
 from galaxy.files.sources.gitlab import (
