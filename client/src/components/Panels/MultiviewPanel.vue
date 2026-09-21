@@ -26,6 +26,7 @@ const router = useRouter();
 const filter = ref("");
 const showAdvanced = ref(false);
 const loading = ref(false);
+const pinnedOrderResetKey = ref(0);
 
 const isAnonymous = computed(() => useUserStore().isAnonymous);
 const historyStore = useHistoryStore();
@@ -75,6 +76,7 @@ async function createAndPin() {
 /** Reset to _default_ state; showing latest updated histories */
 function pinRecent() {
     historyStore.clearPinnedHistories();
+    pinnedOrderResetKey.value++;
     Toast.info(
         "Showing the most recently updated histories in Multiview. Pin histories to History Multiview by selecting them in the panel.",
         "History Multiview",
@@ -127,7 +129,11 @@ function userTitle(title: string) {
                     class="w-100 mt-2"
                     :aria-label="pinRecentTitle"
                     :title="pinRecentTitle">
-                    <GButton size="small" :disabled="!pinnedHistoryCount" @click="pinRecent">
+                    <GButton
+                        data-description="reset multiview history selection"
+                        size="small"
+                        :disabled="!pinnedHistoryCount"
+                        @click="pinRecent">
                         <span class="position-relative">
                             <FontAwesomeIcon v-if="pinnedHistoryCount" :icon="faUndo" class="mr-1" />
                             <b>{{ pinRecentText }}</b>
@@ -143,6 +149,12 @@ function userTitle(title: string) {
             </BBadge>
         </div>
 
-        <HistoryList v-show="!showAdvanced" multiple :filter="filter" :loading.sync="loading" @setFilter="setFilter" />
+        <HistoryList
+            v-show="!showAdvanced"
+            multiple
+            :filter="filter"
+            :loading.sync="loading"
+            :pinned-order-reset-key="pinnedOrderResetKey"
+            @setFilter="setFilter" />
     </ActivityPanel>
 </template>

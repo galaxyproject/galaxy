@@ -31,6 +31,8 @@ interface Props {
     additionalOptions?: AdditionalOptions[];
     showModal?: boolean;
     inModal?: boolean;
+    /** Increment to explicitly refresh the pinned-history sort snapshot. */
+    pinnedOrderResetKey?: number;
     filter: string;
     loading: boolean;
 }
@@ -43,6 +45,7 @@ const props = withDefaults(defineProps<Props>(), {
     additionalOptions: () => [],
     showModal: false,
     inModal: false,
+    pinnedOrderResetKey: 0,
     filter: "",
     loading: false,
 });
@@ -84,6 +87,11 @@ watch(
             await loadMore(true);
         }
     },
+);
+
+watch(
+    () => props.pinnedOrderResetKey,
+    () => freezePinnedOrder(),
 );
 
 watch(

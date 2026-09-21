@@ -527,6 +527,9 @@ histories:
     bulk_delete_button: 'button[id="history-list-footer-bulk-delete-button"]'
     bulk_restore_button: 'button[id="history-list-footer-bulk-restore-button"]'
     bulk_open_multiview_button: 'button[id="history-list-footer-bulk-open-multiview-button"]'
+    multiview_activity: '#activity-multiview'
+    multiview_history_card: '[data-description="Select Histories"] #g-card-history-${history_id}'
+    multiview_reset_button: '[data-description="reset multiview history selection"]'
   sharing:
     selectors:
       unshare_user_button: '.share_with_view .multiselect__tag-icon'
