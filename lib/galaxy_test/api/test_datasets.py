@@ -984,6 +984,20 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(response, 200)
         assert quote(name, safe="") in response.headers["Content-Disposition"]
 
+    def test_report_for_tool_markdown_dataset_with_unknown_output_label(self, history_id):
+        content = "# Report\n\n```galaxy\nhistory_dataset_peek(output=no_such_output)\n```\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=content, file_type="tool_markdown", wait=True)
+        response = self._get(f"datasets/{hda['id']}/report")
+        self._assert_status_code_is(response, 400)
+        assert "no_such_output" in response.json()["err_msg"]
+
+    def test_report_for_tool_markdown_dataset_with_unknown_input_label(self, history_id):
+        content = "# Report\n\n```galaxy\nhistory_dataset_peek(input=no_such_input)\n```\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=content, file_type="tool_markdown", wait=True)
+        response = self._get(f"datasets/{hda['id']}/report")
+        self._assert_status_code_is(response, 400)
+        assert "no_such_input" in response.json()["err_msg"]
+
     def test_copy_dataset_from_history_with_copied_from_fields(self, history_id):
         original_hda = self.dataset_populator.new_dataset(history_id, content="original data", wait=True)
         self._assert_copied_from_fields(history_id, original_hda["id"], None, None, None)
