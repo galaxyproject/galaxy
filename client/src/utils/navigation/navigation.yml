@@ -141,6 +141,7 @@ dataset_details:
   selectors:
     _: 'table#dataset-details'
     tool_parameters: 'table#tool-parameters'
+    tool_parameters_row: 'table#tool-parameters tbody tr'
     transform_action: '[data-transform-action="${action}"]'
     deferred_source_uri: '.deferred-dataset-source-uri'
 
