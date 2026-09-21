@@ -166,6 +166,11 @@ class TestChatTutorRoutingApi(ApiTestCase):
         page = self.dataset_populator.new_history_page(history_id, content=f"# {title}")
         return page["id"], history_id
 
+    def _tutor_message_count(self) -> int:
+        response = self._get("chat/tutor/analytics", admin=True)
+        self._assert_status_code_is_ok(response)
+        return response.json()["tutor_messages"]
+
     @skip_without_agents
     def test_auto_query_reaches_tutor_when_learning_mode_is_on(self):
         with self._tutor_mode_on():
@@ -202,6 +207,27 @@ class TestChatTutorRoutingApi(ApiTestCase):
             context=self._notebook_context(page_id, history_id),
         )
         assert self._responder(result) == "teaching_assistant"
+
+    @skip_without_agents
+    @requires_admin
+    def test_job_linked_tutor_chat_is_stored_and_counted(self):
+        history_id = self.dataset_populator.new_history()
+        self.dataset_populator.new_dataset(history_id, content="1\n2\n3\n", wait=True)
+        job_id = self.dataset_populator.get_history_dataset_details(history_id)["creating_job"]
+
+        before = self._tutor_message_count()
+        query = "Why does this upload have three lines?"
+        with self._tutor_mode_on():
+            result = self._chat(query, job_id=job_id)
+        assert self._responder(result) == "teaching_assistant"
+        assert result["exchange_id"]
+        assert self._tutor_message_count() == before + 1
+
+        # A repeat POST for the same job replays the stored exchange instead of
+        # re-running the agent, so it reads back what was persisted.
+        cached = self._chat(query, job_id=job_id)
+        assert self._responder(cached) == "teaching_assistant"
+        assert cached["exchange_id"] == result["exchange_id"]
 
     @skip_without_agents
     def test_unreadable_page_id_leaves_auto_query_with_the_tutor(self):
