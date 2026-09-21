@@ -8,8 +8,6 @@
 
       Exporting commits the file to the branch. A GitLab instance that hosts ARCs takes data
       another way, so use the ARC file source for those.
-
-      Requires the ``arcfs-fsspec`` package to be installed on the Galaxy server.
   variables:
       base_url:
           label: GitLab URL (e.g. https://gitlab.com)
@@ -33,20 +31,10 @@
           label: GitLab Access Token
           optional: true
           help: |
-              A personal access token. It is required to see private projects. Public ones can
-              be browsed without one, though a token also removes the limit some servers place
-              on how deep an anonymous listing can page.
-
-              A classic token needs the "read_api" scope to browse, or "api" to export. That is
-              the simplest thing that works.
-
-              A fine-grained token needs "Project: Read" granted under "User", not only the
-              permission of the same name under "Group and project". Listing the projects you
-              can see is a user-level call, so the project-scoped permission alone is refused
-              with "403 ... requires ... user permissions: [Project: Read]". Add
-              "Repository: Read" for file contents, and for exports also "Code: Push" and
-              "Commit: Create". Give the token access to all groups and projects you are a
-              member of.
+              Required for private projects; public ones need none, though a token also lifts
+              the limit some servers place on how deep an anonymous listing can page. A classic
+              token needs the "read_api" scope to browse, or "api" to export. A fine-grained
+              token needs "Project: Read" under "User" as well as its repository permissions.
   configuration:
       type: gitlab
       base_url: "{{ variables.base_url }}"

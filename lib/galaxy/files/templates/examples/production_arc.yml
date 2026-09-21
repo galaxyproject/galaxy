@@ -6,8 +6,6 @@
       as Git repositories on a DataPLANT DataHUB, a GitLab instance. This configuration lets you browse
       the ARCs you have access to and import their files into Galaxy. Public ARCs can be browsed
       without an access token.
-
-      Requires the ``arcfs-fsspec`` package to be installed on the Galaxy server.
   variables:
       base_url:
           label: DataHUB URL (e.g. https://git.nfdi4plants.org)
@@ -32,19 +30,9 @@
           label: DataHUB Access Token
           optional: true
           help: |
-              A personal access token for the DataHUB (GitLab) instance. It is required to see
-              private ARCs and to export data; public ARCs can be browsed without one.
-
-              A classic token needs the "api" scope, or "read_api" to browse only. That is the
-              simplest thing that works.
-
-              A fine-grained token needs "Project: Read" granted under "User", not only the
-              permission of the same name under "Group and project". Listing the ARCs you can
-              see is a user-level call, so the project-scoped permission alone is refused with
-              "403 ... requires ... user permissions: [Project: Read]". Add "Repository: Read"
-              for file contents, and for exports also "Code: Push" and "Create" on Branch,
-              Commit and Merge Request. Give the token access to all groups and projects you
-              are a member of.
+              Required for private ARCs and for exporting; public ARCs need none. A classic
+              token needs the "api" scope, or "read_api" to browse only. A fine-grained token
+              needs "Project: Read" under "User" as well as its repository permissions.
   configuration:
       type: arc
       base_url: "{{ variables.base_url }}"
