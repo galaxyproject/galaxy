@@ -74,21 +74,15 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
 
     Known limitations:
 
-    - Entries carry no size, timestamp or hash. GitLab's repository tree API does not return them,
-      and asking per file would cost a request each.
-    - Search reads at most ``MAX_ITEMS_LIMIT`` entries and filters them by name, so on a server
-      with more projects than that, a match beyond the cap is not found. It is a plain substring
-      match, so wildcards are matched literally. GitLab can search projects server side, but the
-      backend does not expose that yet.
-    - The root listing is paged by offset, newest project first, and a window wider than one
-      GitLab page is assembled from several requests. A project created or removed while that is
-      going on shifts the ones after it, so such a window can repeat one project and miss another.
-    - A listing without credentials cannot page very deep. GitLab caps how far an offset listing
-      may page and applies the cap only to unauthenticated requests, so a token removes it.
-    - Everything is read from each project's default branch. There is no branch or ref setting, so
-      browsing, searching and importing cannot reach another branch, and an export commits to the
-      default one. This is the only item on this list that the backend does not impose: arcfs takes
-      a ``ref`` on listing, reading and writing, and this plugin passes it on none of them.
+    - Entries carry no size, timestamp or hash; GitLab's tree API does not return them.
+    - Search is a plain substring match over at most ``MAX_ITEMS_LIMIT`` entries, so wildcards are
+      literal and a match beyond the cap is not found.
+    - The root listing is paged by offset over a list ordered by last activity, so a window
+      assembled from several pages can repeat one project and miss another.
+    - An anonymous listing cannot page very deep; a token lifts GitLab's cap.
+    - Everything is read from each project's default branch. There is no branch or ref setting,
+      which is the only item here the backend does not impose: arcfs accepts a ``ref`` and this
+      plugin passes it on none of its calls.
     """
 
     plugin_type = "gitlab"
@@ -125,13 +119,9 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
             raise self.required_package_exception
 
         config = context.config
-        # A base_url with no scheme reaches aiohttp as a relative URL, which it refuses with an
-        # exception carrying nothing but the URL it was handed. That surfaces to whoever filled in
-        # the form as "Reason: gitlab.com/api/v4/projects", which names neither the problem nor the
-        # field. Leaving out the protocol is the obvious thing to do, so it is worth saying so.
-        # Stripped because a URL pasted from a browser or a wiki often carries whitespace, and
-        # it survives into the hostname, where it becomes a connection failure naming a host
-        # that looks exactly right.
+        # Without a scheme aiohttp refuses the URL with an exception carrying only the URL, which
+        # reached the form as "Reason: gitlab.com/api/v4/projects". Stripped because whitespace
+        # pasted along with a URL survives into the hostname.
         base_url = config.base_url.strip()
         parts = urlparse(base_url)
         if parts.scheme not in ("http", "https") or not parts.netloc:
@@ -139,10 +129,6 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 f"'{config.base_url}' is not a usable address for {self.label}. It needs a "
                 "protocol and a host, as in 'https://gitlab.com'."
             )
-        # The template exposes base_url as an ordinary variable, so a user creating their own
-        # instance chooses which host Galaxy talks to and sends their token to. Without this a
-        # personal file source pointed at a link-local or loopback address turns the server into
-        # a probe for its own network, with the error ladder reporting what it found.
         self._refuse_a_private_address(base_url, parts)
         return cast(
             "GitLabARCFileSystem",
@@ -161,28 +147,13 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     def _refuse_a_private_address(self, base_url: str, parts: "ParseResult") -> None:
         """Refuse a base_url that points into the network Galaxy itself sits on.
 
-        The template exposes base_url as an ordinary variable, so a user creating their own
-        instance chooses which host Galaxy talks to and sends their token to. Without this a
-        personal file source pointed at a loopback or link-local address turns the server into a
-        probe for its own network, with the error ladder reporting what it found.
-
-        ``validate_non_local`` is the shared check every such source uses, but it cannot be handed
-        the raw URL here. It tests for a scheme with a case-sensitive ``startswith``, so an
-        uppercase ``HTTP://127.0.0.1`` returns unchecked while the lowercase form is refused; and
-        it resolves an IPv6 literal with its brackets still attached, which fails and is reported
-        as an unresolvable host rather than as a private one. An address written either way would
-        otherwise pass, because yarl normalises both before aiohttp connects.
-
-        So the host is taken from ``urlparse``, which lowercases it and removes the brackets. A
-        literal address needs no DNS and is checked directly against the same allowlist; anything
-        else is a name, and goes to the shared check.
-
-        Args:
-            base_url: The address as configured, stripped, for the error message.
-            parts: That address already parsed.
-
-        Raises:
-            ConfigDoesNotAllowException: If the address is private and not allowlisted.
+        base_url is a template variable, so a user chooses which host Galaxy talks to and sends
+        their token to. ``validate_non_local`` cannot be handed the raw URL: it tests the scheme
+        with a case-sensitive ``startswith``, so ``HTTP://127.0.0.1`` returns unchecked, and it
+        resolves an IPv6 literal with its brackets attached, which fails and looks unresolvable.
+        yarl normalises both before aiohttp connects. The host therefore comes from ``urlparse``,
+        which lowercases it and strips the brackets; a literal needs no DNS and is checked
+        directly against the same allowlist.
         """
         allowlist = self._file_sources_config.fetch_url_allowlist or []
         host = parts.hostname or ""
@@ -449,21 +420,10 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     def _require_a_project(self, path: str) -> None:
         """Refuse a listing whose path carries the marker but names no project.
 
-        ``:-:`` on its own, or anything with an empty left side, is a path a user can produce by
-        editing the address bar or by pasting half of one. The backend does not catch it: it asks
-        GitLab for the project named "", which is the endpoint that lists *all* projects, and then
-        indexes the list as if it were one project's payload. That surfaces as
-        ``list indices must be integers or slices, not str``, a Python error about Galaxy's own
-        internals standing where an explanation of the user's path should be.
-
-        Listing a project root is legitimate, so this only checks the project side, unlike
-        ``_require_a_file_inside``.
-
-        Args:
-            path: The Galaxy-side path the caller named.
-
-        Raises:
-            RequestParameterInvalidException: If the marker is present with no project before it.
+        ``:-:`` with nothing before it reaches GitLab as a request for the project named "",
+        which is the endpoint that lists every project, and the result is then indexed as one
+        project's payload. The user saw ``list indices must be integers or slices, not str``.
+        Listing a project root is legitimate, so only the project side is checked here.
         """
         project, marker, _ = path.partition(ROOT_MARKER)
         if marker and not self._names_something(project):
@@ -476,19 +436,12 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     def _require_a_file_inside(self, path: str, what: str) -> None:
         """Refuse a path that does not name a file inside a project.
 
-        Each of the three ways it can fail reaches the backend as its own obscure failure.
-        Without the marker the backend cannot tell where the project path ends, so it probes
-        prefixes and builds the whole project index before failing, with a message about a
-        missing project for a path that never named one. With nothing after the marker the path
-        is a project itself, which a listing of the top level offers verbatim, and the backend
-        refuses it with an error carrying only the path again, so the user is told their path
-        failed because of their path. With nothing before the marker the project part is empty,
-        which the backend does not catch at all: it asks GitLab for the project named "",
-        reaching the endpoint that lists projects, and fails on the shape of the answer.
+        Each of the three ways it can fail reaches the backend as its own obscure failure: a
+        missing marker makes it probe prefixes and build the whole project index, nothing after
+        the marker comes back as the path repeated, and nothing before it asks GitLab for the
+        project named "" and fails on the shape of the answer.
 
-        Args:
-            path: The Galaxy-side path the caller named.
-            what: "Exports" or "Imports", so the message names what the user was doing.
+        ``what`` is "Exports" or "Imports", so the message names what the user was doing.
         """
         project, marker, inside = path.partition(ROOT_MARKER)
         if marker and self._names_something(project) and self._names_something(inside):
@@ -504,21 +457,11 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     ) -> tuple[list[AnyRemoteEntry], int]:
         """Recurse with failures raised rather than omitted.
 
-        This walks with its own stack rather than calling ``fs.walk(on_error="raise")``, because
-        that argument only governs the top directory. fsspec's ``walk`` recurses as
-        ``self.walk(full_dirs[d], maxdepth=..., detail=..., topdown=..., **kwargs)``, and
-        ``on_error`` is a named parameter rather than part of ``**kwargs``, so every level below
-        the first silently reverts to the ``"omit"`` default. Confirmed against fsspec 2026.7.0.
-
-        What that omits is not only a folder removed mid-walk. ``walk`` swallows every
-        ``OSError``, and aiohttp raises ``ClientConnectorError`` and friends, which are
-        ``OSError`` subclasses. A recursive listing is one request per directory, so a connection
-        reset partway through returned the remaining folders as empty, with HTTP 200 and no
-        indication that anything was missing, while listing the same folder on its own reported
-        the failure correctly.
-
-        Checking the cap before descending, rather than after, also stops a subtree being fetched
-        only to be discarded.
+        Its own stack rather than ``fs.walk(on_error="raise")``: fsspec passes only ``**kwargs``
+        when it recurses, and ``on_error`` is a named parameter, so every level below the first
+        reverts to ``"omit"`` (fsspec 2026.7.0). ``walk`` swallows every ``OSError``, and
+        aiohttp's connection errors are ``OSError`` subclasses, so a reset partway through
+        returned the remaining folders empty with HTTP 200.
         """
         entries: list[AnyRemoteEntry] = []
         to_entry = functools.partial(self._info_to_entry, config=config)
@@ -543,13 +486,10 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     ) -> tuple[list[AnyRemoteEntry], int]:
         """Return up to ``count`` entries from ``start``.
 
-        Since 0.1.11 arcfs serves any window from the GitLab pages that cover it, so this only
-        has to convert what comes back. On a server that reports no total it returns a lower
-        bound that grows as the caller pages, and zero for a window past the end.
-
-        ``membership`` narrows a root listing to the projects the credentials belong to. It is
-        used when Galaxy is asking where a file may be written, since every visible project can be
-        read but only some can be pushed to. arcfs ignores it below the root.
+        Since 0.1.11 arcfs serves any window from the pages that cover it, so this only converts
+        what comes back. ``membership`` narrows a root listing to projects the credentials belong
+        to, used when Galaxy asks where a file may be written: every visible project can be read,
+        only some can be pushed to.
         """
         infos, total = fs.list_page(fs_path, True, offset=start, limit=count, membership=membership)
         return [self._info_to_entry(info, config) for info in infos], total
@@ -634,14 +574,8 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         return entry
 
     def _credentials_message(self, description: str, reason: object) -> str:
-        # Callers pass arcfs', the OS' or aiohttp's own text, none of which is under Galaxy's
-        # control and any of which may already end in a period. Trimming here rather than at each
-        # call site is what keeps "scope.." from coming back the next time one is added, and
-        # ``description`` is a parameter for that same reason rather than something each caller
-        # prefixes. Every other branch of the ladder leads with "Problem ...", and a credentials
-        # failure that left it out told the user their token was refused without saying which
-        # project, path or operation it was refused for - a failed export read as a bare permission
-        # complaint about nothing in particular.
+        # Callers pass arcfs', the OS' or aiohttp's text, any of which may already end in a
+        # period, so the trim lives here rather than at each call site.
         return (
             f"Problem {description}. Permission Denied. Reason: {str(reason).rstrip(' .')}. "
             f"Please check your credentials in your preferences for {self.label}."
@@ -661,16 +595,10 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     def _is_source_root(path: str) -> bool:
         """Whether the path names the source itself rather than anything inside it.
 
-        Whitespace is stripped as well as slashes because everything downstream does: fsspec
-        strips it, and arcfs resolves a path of blanks to the root project listing. Reading only
-        the slashes made "/ /" look like an ordinary path, so a recursive listing of it walked
-        every project on the instance instead of being refused.
-
-        The slashes are removed and what is left is stripped, rather than stripping a set of
-        characters: the whitespace can sit between the slashes, so ``"/ /".strip().strip("/")``
-        is still ``" "``; and ``str.strip`` is what arcfs uses, which covers every character
-        Python calls whitespace, so naming an ASCII set here would miss the non-breaking space,
-        the ideographic space and the separator controls that arcfs still resolves to the root.
+        arcfs resolves a path of blanks to the root project listing, so "/ /" has to count as the
+        root or a recursive listing of it walks every project on the instance. Slashes are removed
+        and the rest stripped, since the whitespace can sit between them and ``str.strip`` covers
+        every character Python calls whitespace, not just the ASCII ones.
         """
         return not path.replace("/", "").strip()
 
