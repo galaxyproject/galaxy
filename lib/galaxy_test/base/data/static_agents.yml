@@ -78,6 +78,13 @@ rules:
       agent_type: error_analysis
 
   - match:
+      agent_type: teaching_assistant
+    response:
+      content: "Before I explain, what do you already know about this step?"
+      confidence: high
+      agent_type: teaching_assistant
+
+  - match:
       agent_type: router
     response:
       content: "I can help with Galaxy workflows, tools, and data analysis."
