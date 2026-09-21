@@ -3,6 +3,7 @@ import os
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 from .test_containerized_jobs import (
+    build_metadata_container,
     disable_dependency_resolution,
     MulledJobTestCases,
     skip_if_container_type_unavailable,
@@ -17,6 +18,7 @@ class BaseEmbeddedPulsarContainerIntegrationTestCase(integration_util.Integratio
     dataset_populator: DatasetPopulator
     job_config_file: str
     jobs_directory: str
+    container_type: str
     framework_tool_and_types = True
 
     @classmethod
@@ -34,6 +36,8 @@ class BaseEmbeddedPulsarContainerIntegrationTestCase(integration_util.Integratio
     @classmethod
     def setUpClass(cls) -> None:
         skip_if_container_type_unavailable(cls)
+        if cls.container_type == "docker":
+            build_metadata_container()
         super().setUpClass()
 
 

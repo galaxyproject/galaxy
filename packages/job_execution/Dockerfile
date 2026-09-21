@@ -40,7 +40,23 @@ RUN set -xe; \
 ADD lib /galaxy/lib
 ADD packages /galaxy/packages
 
-RUN python -m venv /venv && . /venv/bin/activate && python -m pip install /galaxy/packages/util /galaxy/packages/schema "/galaxy/packages/objectstore[all]" /galaxy/packages/data /galaxy/packages/job_execution
+# setuptools-scm cannot discover package data without the Git checkout. Include
+# the source resources explicitly (error_codes.json, datatype configs, etc.).
+# Install the Galaxy dependency closure from this checkout, not released wheels.
+RUN for package in util tool_util_models config schema tool_util files objectstore data job_execution; do \
+        printf 'graft src\nglobal-exclude *.py[cod]\n' > /galaxy/packages/$package/MANIFEST.in; \
+    done \
+    && python -m venv /venv \
+    && /venv/bin/python -m pip install \
+        /galaxy/packages/util \
+        /galaxy/packages/tool_util_models \
+        /galaxy/packages/config \
+        /galaxy/packages/schema \
+        /galaxy/packages/tool_util \
+        /galaxy/packages/files \
+        "/galaxy/packages/objectstore[all]" \
+        /galaxy/packages/data \
+        /galaxy/packages/job_execution
 ENV LC_ALL en_US.UTF-8
 
 #======================================================
@@ -71,5 +87,8 @@ LABEL org.opencontainers.image.title="galaxy-job-execution" \
 ENV LC_ALL=en_US.UTF-8
 ENV LANG=en_US.UTF-8
 ENV PATH="/venv/bin:${PATH}"
+
+# Fail the image build if the installed metadata runtime is incomplete.
+RUN python -c "from galaxy.metadata.set_metadata import set_metadata"
 
 CMD ["galaxy-set-metadata"]

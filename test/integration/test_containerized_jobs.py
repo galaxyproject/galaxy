@@ -2,6 +2,7 @@
 
 import json
 import os
+import subprocess
 import unittest
 from typing import Any
 
@@ -13,6 +14,7 @@ from galaxy_test.base.populators import (
     skip_without_tool,
     WorkflowPopulator,
 )
+from galaxy_test.driver.driver_util import galaxy_root
 from galaxy_test.driver.integration_util import (
     ConfiguresDatabaseVault,
     IntegrationTestCase,
@@ -36,6 +38,20 @@ MULLED_EXAMPLE_MULTI_1_HASH = (
 CREDENTIALS_TEST_TOOL = "secret_tool"
 CONTAINER_TEST_VARIABLES = [{"name": "server", "value": "http://test-server:8080"}]
 CONTAINER_TEST_SECRETS = [{"name": "username", "value": "test_user"}, {"name": "password", "value": "test_pass"}]
+
+
+def build_metadata_container():
+    subprocess.check_output(
+        [
+            "docker",
+            "build",
+            "-t",
+            "galaxyproject/galaxy-job-execution",
+            "-f",
+            os.path.join(galaxy_root, "packages", "job_execution", "Dockerfile"),
+            galaxy_root,
+        ]
+    )
 
 
 class MulledJobTestCases:

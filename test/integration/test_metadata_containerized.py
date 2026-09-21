@@ -1,10 +1,7 @@
-import os
-import subprocess
-
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
-from galaxy_test.driver.driver_util import galaxy_root
 from .test_containerized_jobs import (
+    build_metadata_container,
     disable_dependency_resolution,
     skip_if_container_type_unavailable,
 )
@@ -70,17 +67,7 @@ class ContainerizedMetadataIntegrationTestCase(integration_util.IntegrationTestC
     @classmethod
     def setUpClass(cls) -> None:
         skip_if_container_type_unavailable(cls)
-        subprocess.check_output(
-            [
-                "docker",
-                "build",
-                "-t",
-                "galaxyproject/galaxy-job-execution",
-                "-f",
-                os.path.join(galaxy_root, "packages", "job_execution", "Dockerfile"),
-                galaxy_root,
-            ]
-        )
+        build_metadata_container()
         super().setUpClass()
 
 

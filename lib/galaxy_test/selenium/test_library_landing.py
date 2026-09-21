@@ -17,11 +17,15 @@ class TestLibraryLanding(SeleniumTestCase):
 
     @selenium_test
     def test_create_new_close(self):
+        name = self._get_random_name(prefix="testcreatenewclose")
+        self.libraries_index_create(name)
+        self._search_for_only_with_name(name)
         num_displayed_libraries = self._num_displayed_libraries()
         self.components.libraries.create_new_library_btn.wait_for_and_click()
         self.wait_for_selector_visible(".new-row")
         self.screenshot("libraries_new")
         self.components.libraries.create_new_library_btn.wait_for_and_click()
+        self.wait_for_selector_absent_or_hidden(".new-row")
         self.wait_for_overlays_cleared()
         assert self._num_displayed_libraries() == num_displayed_libraries
 

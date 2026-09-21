@@ -1,9 +1,8 @@
 from typing import (
     Any,
+    Literal,
     Union,
 )
-
-from typing import Literal
 
 from galaxy.tool_util.deps.requirements import (
     ContainerDescription,
