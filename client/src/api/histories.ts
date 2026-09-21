@@ -69,6 +69,39 @@ export interface GetHistoriesOptions {
 }
 
 /**
+ * Represents the visibility flags accepted by the histories index endpoint.
+ *
+ * The backend defaults `show_published` to `true`, so every request built here
+ * passes an explicit value for each flag. Otherwise a listing of the user's own
+ * histories would silently include other users' published histories.
+ */
+export interface HistoryVisibilityOptions {
+    showOwn?: boolean;
+    showPublished?: boolean;
+    showShared?: boolean;
+    showArchived?: boolean;
+}
+
+/**
+ * Represents the options for fetching histories from the index endpoint,
+ * including the visibility flags and the serialization keys to request.
+ */
+export interface GetHistoryListOptions extends Partial<GetHistoriesOptions>, HistoryVisibilityOptions {
+    /** Additional serialization keys requested on top of the `summary` view. */
+    keys?: string;
+}
+
+/**
+ * Represents a page of history entries together with the total number of matches.
+ */
+export interface HistoryListResult<T> {
+    data: T[];
+    total: number;
+}
+
+const DEFAULT_HISTORY_LIMIT = 24;
+
+/**
  * Checks if the current user owns a history entry.
  * @param {string} username The username of the history owner
  * @returns True if the current user owns the history, false otherwise
@@ -153,27 +186,45 @@ export async function getBeaconHistories(beaconHistoryName: string): Promise<Bea
 }
 
 /**
- * Fetches the current user's history entries.
- * @param {GetHistoriesOptions} options The options for fetching histories
- * @returns {Promise<{ data: MyHistory[]; total: number }>} A promise that resolves to the user's history entries
+ * Fetches history entries from the histories index endpoint.
+ *
+ * All visibility flags are optional and default to a listing of the current
+ * user's own, non-archived histories. They are always sent explicitly, so a
+ * listing can never pick up the backend's `show_published=true` default.
+ *
+ * @param {GetHistoryListOptions} options The options for fetching histories
+ * @returns {Promise<HistoryListResult<T>>} A promise that resolves to the matching history entries
  */
-export async function getMyHistories(options?: GetHistoriesOptions): Promise<{ data: MyHistory[]; total: number }> {
-    const { limit = 24, offset = 0, search = "", sortBy = "update_time", sortDesc = false } = options || {};
+export async function getHistories<T = AnyHistoryEntry>(
+    options?: GetHistoryListOptions,
+): Promise<HistoryListResult<T>> {
+    const {
+        limit = DEFAULT_HISTORY_LIMIT,
+        offset = 0,
+        search = "",
+        sortBy = "update_time",
+        sortDesc = false,
+        showOwn = true,
+        showPublished = false,
+        showShared = false,
+        showArchived = false,
+        keys = "username",
+    } = options || {};
 
     const { response, data, error } = await GalaxyApi().GET("/api/histories", {
         params: {
             query: {
                 view: "summary",
-                keys: "username",
+                keys: keys,
                 limit: limit,
                 offset: offset,
                 search: search,
                 sort_by: sortBy,
                 sort_desc: sortDesc,
-                show_own: true,
-                show_published: false,
-                show_shared: false,
-                show_archived: false,
+                show_own: showOwn,
+                show_published: showPublished,
+                show_shared: showShared,
+                show_archived: showArchived,
             },
         },
     });
@@ -182,88 +233,78 @@ export async function getMyHistories(options?: GetHistoriesOptions): Promise<{ d
         rethrowSimple(error);
     }
 
-    return { data: data as MyHistory[], total: parseInt(response.headers.get("total_matches") ?? "0") };
+    return { data: data as T[], total: parseInt(response.headers.get("total_matches") ?? "0") };
+}
+
+/**
+ * Fetches the current user's history entries.
+ * @param {Partial<GetHistoriesOptions>} options The options for fetching histories
+ * @returns {Promise<HistoryListResult<MyHistory>>} A promise that resolves to the user's history entries
+ */
+export function getMyHistories(options?: Partial<GetHistoriesOptions>): Promise<HistoryListResult<MyHistory>> {
+    return getHistories<MyHistory>({
+        ...options,
+        keys: "username",
+        showOwn: true,
+        showPublished: false,
+        showShared: false,
+        showArchived: false,
+    });
 }
 
 /**
  * Fetches the current user's shared history entries.
- * @param {GetHistoriesOptions} options The options for fetching histories
- * @returns {Promise<{ data: SharedHistory[]; total: number }>} A promise that resolves to the shared history entries
+ * @param {Partial<GetHistoriesOptions>} options The options for fetching histories
+ * @returns {Promise<HistoryListResult<SharedHistory>>} A promise that resolves to the shared history entries
  */
-export async function getSharedHistories(
-    options?: GetHistoriesOptions,
-): Promise<{ data: SharedHistory[]; total: number }> {
-    const { limit = 24, offset = 0, search = "", sortBy = "update_time", sortDesc = false } = options || {};
-
-    const { response, data, error } = await GalaxyApi().GET("/api/histories", {
-        params: {
-            query: {
-                view: "summary",
-                keys: "username,owner",
-                limit: limit,
-                offset: offset,
-                search: search,
-                sort_by: sortBy,
-                sort_desc: sortDesc,
-                show_own: false,
-                show_published: false,
-                show_shared: true,
-                show_archived: false,
-            },
-        },
+export function getSharedHistories(options?: Partial<GetHistoriesOptions>): Promise<HistoryListResult<SharedHistory>> {
+    return getHistories<SharedHistory>({
+        ...options,
+        keys: "username,owner",
+        showOwn: false,
+        showPublished: false,
+        showShared: true,
+        showArchived: false,
     });
-
-    if (error) {
-        rethrowSimple(error);
-    }
-
-    return { data: data as SharedHistory[], total: parseInt(response.headers.get("total_matches") ?? "0") };
 }
 
 /**
  * Fetches the published history entries.
- * @param {GetHistoriesOptions} options The options for fetching histories
- * @returns {Promise<{ data: PublishedHistory[]; total: number }>} A promise that resolves to the published history entries
+ * @param {Partial<GetHistoriesOptions>} options The options for fetching histories
+ * @returns {Promise<HistoryListResult<PublishedHistory>>} A promise that resolves to the published history entries
  */
-export async function getPublishedHistories(
-    options?: GetHistoriesOptions,
-): Promise<{ data: PublishedHistory[]; total: number }> {
-    const { limit = 24, offset = 0, search = "", sortBy = "update_time", sortDesc = false } = options || {};
-
-    const { response, data, error } = await GalaxyApi().GET("/api/histories", {
-        params: {
-            query: {
-                view: "summary",
-                keys: "username,owner,published",
-                limit: limit,
-                offset: offset,
-                search: search,
-                sort_by: sortBy,
-                sort_desc: sortDesc,
-                show_own: false,
-                show_published: true,
-                show_shared: false,
-                show_archived: false,
-            },
-        },
+export function getPublishedHistories(
+    options?: Partial<GetHistoriesOptions>,
+): Promise<HistoryListResult<PublishedHistory>> {
+    return getHistories<PublishedHistory>({
+        ...options,
+        keys: "username,owner,published",
+        showOwn: false,
+        showPublished: true,
+        showShared: false,
+        showArchived: false,
     });
-
-    if (error) {
-        rethrowSimple(error);
-    }
-
-    return { data: data as PublishedHistory[], total: parseInt(response.headers.get("total_matches") ?? "0") };
 }
 
 /**
  * Fetches the current user's archived history entries.
- * @param {GetHistoriesOptions} options The options for fetching histories
- * @returns {Promise<{ data: ArchivedHistorySummary[]; total: number }>} A promise that resolves to the archived history entries
+ *
+ * Archived histories have their own endpoint (which implies the visibility
+ * flags), so this wrapper does not go through `getHistories`.
+ *
+ * @param {Partial<GetHistoriesOptions>} options The options for fetching histories
+ * @returns {Promise<HistoryListResult<ArchivedHistorySummary>>} A promise that resolves to the archived history entries
  */
 export async function getArchivedHistories(
-    options?: GetHistoriesOptions,
-): Promise<{ data: ArchivedHistorySummary[]; total: number }> {
-    const { limit = 24, offset = 0, search = "", sortBy = "update_time", sortDesc = false } = options || {};
+    options?: Partial<GetHistoriesOptions>,
+): Promise<HistoryListResult<ArchivedHistorySummary>> {
+    const {
+        limit = DEFAULT_HISTORY_LIMIT,
+        offset = 0,
+        search = "",
+        sortBy = "update_time",
+        sortDesc = false,
+    } = options || {};
 
     const { response, data, error } = await GalaxyApi().GET("/api/histories/archived", {
         params: {

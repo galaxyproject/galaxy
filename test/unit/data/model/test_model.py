@@ -3,7 +3,10 @@ from uuid import (
     uuid4,
 )
 
+import pytest
+
 from galaxy import model
+from galaxy.exceptions import RequestParameterInvalidException
 
 
 def test_get_uuid():
@@ -56,3 +59,45 @@ def test_io_dicts_excludes_implicit_output_collections():
     # With exclude_implicit_outputs=False (default), they should be included
     io = job.io_dicts(exclude_implicit_outputs=False)
     assert "paired_output" in io.out_collections
+
+
+def _record_state(job, state):
+    job.state = state
+    job.state_history.append(model.JobStateHistory(job))
+
+
+def test_resubmission_count_counts_resubmitted_state_history_entries():
+    job = model.Job()
+    assert job.resubmission_count == 0
+
+    _record_state(job, model.Job.states.QUEUED)
+    _record_state(job, model.Job.states.RUNNING)
+    assert job.resubmission_count == 0
+
+    _record_state(job, model.Job.states.RESUBMITTED)
+    _record_state(job, model.Job.states.QUEUED)
+    _record_state(job, model.Job.states.RUNNING)
+    assert job.resubmission_count == 1
+
+    _record_state(job, model.Job.states.RESUBMITTED)
+    _record_state(job, model.Job.states.OK)
+    assert job.resubmission_count == 2
+
+
+ANNOTATION_MODELS = model.ItemAnnotationAssociation.__subclasses__()
+
+
+@pytest.mark.parametrize("annotation_model", ANNOTATION_MODELS, ids=lambda cls: cls.__name__)
+def test_annotation_size_limit(annotation_model):
+    at_limit = "a" * model.MAX_ANNOTATION_SIZE
+    assert annotation_model(annotation=None).annotation is None
+    assert annotation_model(annotation=at_limit).annotation == at_limit
+    with pytest.raises(RequestParameterInvalidException, match="Annotation too large"):
+        annotation_model(annotation=at_limit + "a")
+
+
+def test_annotation_columns_are_not_indexed():
+    tables = [table for table in model.Base.metadata.tables.values() if "annotation" in table.columns]
+    assert len(tables) == len(ANNOTATION_MODELS)  # every annotated table carries the length validator
+    for table in tables:
+        assert not any(list(index.columns.keys()) == ["annotation"] for index in table.indexes)

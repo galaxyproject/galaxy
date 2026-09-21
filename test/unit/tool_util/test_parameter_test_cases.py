@@ -55,11 +55,7 @@ TOOLS_THAT_USE_SELECT_BY_VALUE = [
     "multi_select.xml",
 ]
 
-# Figure out the problem and resolve.
-TOOLS_THAT_ARE_OUTSTANDING_ISSUES = [
-    "gx_conditional_boolean_optional.xml",
-    "gx_conditional_boolean_discriminate_on_string_value.xml",
-]
+TOOLS_THAT_ARE_OUTSTANDING_ISSUES: list[str] = []
 
 TEST_TOOL_THAT_DO_NOT_VALIDATE = (
     TOOLS_THAT_USE_UNQUALIFIED_PARAMETER_ACCESS
@@ -82,6 +78,92 @@ def test_parameter_test_cases_validate():
 
     validation_result = validate_test_cases_for("column_param", use_latest_profile=True)
     assert validation_result[2].validation_error
+
+
+def _validate_inline_tool(tmp_path, name: str, inputs: str, test_body: str):
+    tool = (
+        f'<tool id="{name}" name="t" version="1.0" profile="24.2">'
+        "<command>echo</command>"
+        f"<inputs>{inputs}</inputs>"
+        '<outputs><data name="o" format="txt"/></outputs>'
+        f"<tests><test>{test_body}"
+        '<output name="o"><assert_contents><has_text text="x"/></assert_contents></output>'
+        "</test></tests>"
+        "</tool>"
+    )
+    path = tmp_path / f"{name}.xml"
+    path.write_text(tool)
+    return validate_test_cases_for_tool_source(get_tool_source(str(path)), use_latest_profile=True)
+
+
+def test_malformed_test_case_is_reported_not_raised(tmp_path):
+    # Building the test-case state can fail on a malformed test (coercing a typed
+    # value, resolving a conditional ``when`` branch). validate_test_cases_for_tool_source
+    # must report these as a validation error rather than raising out of the call.
+
+    # A non-numeric value for an integer/float parameter (int()/float() coercion).
+    for param_type in ("integer", "float"):
+        results = _validate_inline_tool(
+            tmp_path,
+            f"numeric_{param_type}",
+            f'<param name="n" type="{param_type}" value="1"/>',
+            '<param name="n" value="not_a_number"/>',
+        )
+        assert results[0].validation_error is not None
+
+    # A conditional test value that selects no ``when`` branch.
+    cond_inputs = (
+        '<conditional name="c"><param name="mode" type="select">'
+        '<option value="a">A</option><option value="b">B</option></param>'
+        '<when value="a"><param name="x" type="integer" value="1"/></when>'
+        '<when value="b"><param name="y" type="integer" value="1"/></when>'
+        "</conditional>"
+    )
+    results = _validate_inline_tool(
+        tmp_path,
+        "cond_unknown",
+        cond_inputs,
+        '<conditional name="c"><param name="mode" value="nosuch"/></conditional>',
+    )
+    assert results[0].validation_error is not None
+
+
+def test_unmodelable_tool_is_reported_not_raised(tmp_path):
+    # A tool whose parameter model cannot be built (here, an unknown parameter type)
+    # must be reported as a validation error, not raise out of the validator.
+    tool = (
+        '<tool id="badtype" name="t" version="1.0" profile="24.2"><command>echo</command>'
+        '<inputs><param name="n" type="not_a_real_type"/></inputs>'
+        '<outputs><data name="o" format="txt"/></outputs>'
+        '<tests><test><param name="n" value="x"/>'
+        '<output name="o"><assert_contents><has_text text="x"/></assert_contents></output>'
+        "</test></tests></tool>"
+    )
+    path = tmp_path / "badtype.xml"
+    path.write_text(tool)
+    results = validate_test_cases_for_tool_source(get_tool_source(str(path)), use_latest_profile=True)
+    assert results
+    assert results[0].validation_error is not None
+
+
+def test_infinity_in_range_validator_bound_does_not_crash(tmp_path):
+    # An in_range validator bound written as "Infinity" must parse as float("inf")
+    # rather than crash int("Infinity") while building the parameter model, so a
+    # tool that uses it validates normally. (A float parameter is used because an
+    # integer field cannot carry an le=inf bound in the underlying pydantic model.)
+    tool = (
+        '<tool id="inf" name="t" version="1.0" profile="24.2"><command>echo</command>'
+        '<inputs><param name="n" type="float" value="1">'
+        '<validator type="in_range" min="0" max="Infinity"/></param></inputs>'
+        '<outputs><data name="o" format="txt"/></outputs>'
+        '<tests><test><param name="n" value="5"/>'
+        '<output name="o"><assert_contents><has_text text="x"/></assert_contents></output>'
+        "</test></tests></tool>"
+    )
+    path = tmp_path / "inf.xml"
+    path.write_text(tool)
+    results = validate_test_cases_for_tool_source(get_tool_source(str(path)), use_latest_profile=True)
+    assert results[0].validation_error is None
 
 
 def test_legacy_features_fail_validation_with_24_2(tmp_path):
@@ -431,13 +513,19 @@ def test_legacy_unqualified_repeat_inputs_are_not_expanded():
         case_state_for(tool_source, test_cases[2])
 
 
-def test_unrepresentable_test_case_falls_back_to_legacy_request():
-    # A test whose inputs can't be represented in a modern request (unqualified repeats) yields no
-    # request, so the interactor falls back to the legacy tool API rather than erroring.
+def test_legacy_unqualified_repeat_inputs_are_qualified_on_load():
+    # Loading a legacy test resolves its unqualified repeat params against the tool's input
+    # tree, the way the sync path does, so the nth bare occurrence lands in the nth instance
+    # and sibling repeats stay separate. The request is then representable.
     tests = list(parse_tool_test_descriptions(tool_source_for("multi_repeats")))
     description = tests[2].to_dict()
     assert description["error"] is False
-    assert description["request"] is None
+    request = description["request"]
+    assert request is not None
+    assert len(request["queries"]) == 2
+    assert len(request["more_queries"]) == 2
+    assert request["queries"][0]["input2"]["path"] == "simple_line.txt"
+    assert request["more_queries"][1]["more_queries_input"]["path"] == "simple_line.txt"
 
 
 def test_legacy_unqualified_repeat_inside_conditional_is_resolved():

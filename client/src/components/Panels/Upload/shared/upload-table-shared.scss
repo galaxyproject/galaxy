@@ -12,7 +12,6 @@
     overflow: auto;
 
     :deep(.table) {
-        table-layout: auto;
         min-width: 100%;
     }
 }

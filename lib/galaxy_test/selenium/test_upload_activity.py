@@ -1,6 +1,9 @@
 """Integration coverage for the new Upload Activity."""
 
-from galaxy_test.base.decorators import requires_admin
+from galaxy_test.base.decorators import (
+    requires_admin,
+    requires_new_history,
+)
 from .framework import (
     managed_history,
     selenium_test,
@@ -101,25 +104,23 @@ class TestUploadActivity(SeleniumTestCase, UsesUploadActivity, UsesHistoryItemAs
         self.assert_item_extension(1, "velvet")
 
     @selenium_test
-    @managed_history
+    @requires_new_history
     def test_target_history_change(self):
         """Upload can be redirected to a non-current history via target selector."""
-        source_history_id = self.current_history_id()
-        target_history_id = self.dataset_populator.new_history(f"target_history_for_upload_{source_history_id}")
-        try:
-            context = self.upload_context("paste-content")
-            context.stage_paste_content("upload to another history", {"name": "redirected_upload"})
-            context.select_target_history(target_history_id)
-            context.start()
+        with self.dataset_populator.test_history(require_new=True, name="target history") as target_history_id:
+            with self.dataset_populator.test_history(require_new=True, name="current history") as current_history_id:
+                self.home()
+                context = self.upload_context("paste-content")
+                context.stage_paste_content("upload to another history", {"name": "redirected_upload"})
+                context.select_target_history(target_history_id)
+                context.start()
 
-            self.wait_for_history_to_have_hid(target_history_id, 1)
-            target_contents = self.dataset_populator.get_history_contents(history_id=target_history_id)
-            assert any(item.get("name") == "redirected_upload" for item in target_contents)
+                self.wait_for_history_to_have_hid(target_history_id, 1)
+                target_contents = self.dataset_populator.get_history_contents(history_id=target_history_id)
+                assert any(item.get("name") == "redirected_upload" for item in target_contents)
 
-            source_contents = self.dataset_populator.get_history_contents(history_id=source_history_id)
-            assert len(source_contents) == 0
-        finally:
-            self.api_delete(f"histories/{target_history_id}")
+                source_contents = self.dataset_populator.get_history_contents(history_id=current_history_id)
+                assert len(source_contents) == 0
 
 
 class TestUploadActivityDataLibrary(SeleniumTestCase, UsesUploadActivity, UsesHistoryItemAssertions):

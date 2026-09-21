@@ -527,6 +527,13 @@ watch(currentChatId, async (newId) => {
         }
     }
 
+    // The history load above is awaited, so this handler can resume after a new chat
+    // was started. Pushing the route back to a conversation that is no longer current
+    // would re-fetch it through the exchangeId watch and discard the fresh one.
+    if (currentChatId.value !== newId) {
+        return;
+    }
+
     // Ensure the route is updated to reflect the current chat in center (non-window manager) mode
     if (isRouteMode.value) {
         const targetPath = newId ? `/galaxyai/${newId}` : "/galaxyai/new";

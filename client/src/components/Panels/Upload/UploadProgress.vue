@@ -15,7 +15,7 @@ import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 const uploadBatchOperations = useUploadBatchOperations();
 const uploadState = useUploadState();
-const { orderedUploadItems, batchesWithProgress, activeItems, hasCompleted } = uploadState;
+const { orderedUploadItems, batchesWithProgress, activeItems, hasCompleted, isUploading } = uploadState;
 
 const { paginatedItems, currentPage, itemsPerPage, showPagination, onPageChange } = usePagination(orderedUploadItems, {
     itemsPerPage: 24,
@@ -59,12 +59,25 @@ function onClearAll() {
 async function retryBatch(batchId: string) {
     await uploadBatchOperations.retryCollectionCreation(batchId);
 }
+
+function onCancelUpload(uploadId: string) {
+    uploadBatchOperations.cancelUpload(uploadId);
+}
+
+function onCancelBatch(batchId: string) {
+    uploadBatchOperations.cancelBatch(batchId);
+}
+
+function onStopAll() {
+    uploadBatchOperations.cancelAll();
+}
 </script>
 
 <template>
     <div class="upload-progress-view d-flex flex-column h-100">
         <BreadcrumbHeading :items="breadcrumbItems">
             <div v-if="activeItems.length > 0" class="d-flex flex-gapx-1">
+                <GButton v-if="isUploading" size="small" outline color="red" @click="onStopAll()"> Stop All </GButton>
                 <GButton v-if="hasCompleted" size="small" outline color="grey" @click="onClearCompleted()">
                     Clear Completed
                 </GButton>
@@ -81,9 +94,10 @@ async function retryBatch(batchId: string) {
                             :batch="item.batch"
                             :expanded="isExpanded(item.batch.id)"
                             @toggle="toggleBatch(item.batch.id)"
-                            @retry="retryBatch(item.batch.id)" />
+                            @retry="retryBatch(item.batch.id)"
+                            @cancel="onCancelBatch" />
 
-                        <UploadFileRow v-else :file="item.upload" />
+                        <UploadFileRow v-else :file="item.upload" @cancel="onCancelUpload" />
                     </div>
                 </div>
 

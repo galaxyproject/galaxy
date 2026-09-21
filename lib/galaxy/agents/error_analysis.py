@@ -26,7 +26,9 @@ from .base import (
     extract_result_content,
     extract_structured_output,
     GalaxyAgentDependencies,
+    JOB_LOG_EXCERPT_CHARS,
     normalize_llm_text,
+    truncate_middle,
 )
 
 log = logging.getLogger(__name__)
@@ -49,6 +51,16 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
 
     agent_type = AgentType.ERROR_ANALYSIS
     capability_blurb = "Troubleshoot a failed job when you share its error message or job details."
+
+    # The query here is a job's stderr, not something a human typed. Tool banners
+    # routinely print "Operating System:", "Filesystem:", "Subsystem:" and friends,
+    # every one of which trips the role-marker blacklist and hands the user "please
+    # rephrase" for a log they never wrote.
+    #
+    # Only the role markers are exempted -- the instruction-phrase patterns still run,
+    # since no tool prints "ignore previous instructions". Within a run this agent
+    # registers no tools and nothing reads its output back as another agent's input.
+    SCAN_QUERY_FOR_ROLE_MARKERS = False
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
         if self._supports_structured_output():
@@ -90,8 +102,8 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 "tool_version": job.tool_version,
                 "state": job.state,
                 "exit_code": job.exit_code,
-                "stderr": job.stderr[:2000] if job.stderr else "",
-                "stdout": job.stdout[:1000] if job.stdout else "",
+                "stderr": truncate_middle(job.stderr, JOB_LOG_EXCERPT_CHARS) if job.stderr else "",
+                "stdout": truncate_middle(job.stdout, JOB_LOG_EXCERPT_CHARS) if job.stdout else "",
                 "command_line": job.command_line,
                 "parameters": job.get_param_values(self.deps.trans.app) if hasattr(job, "get_param_values") else {},
                 "create_time": job.create_time.isoformat() if job.create_time else None,
@@ -104,75 +116,92 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             return {"error": f"Failed to retrieve job details: {str(e)}"}
 
     async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
+        # Trim an oversized error dump rather than refusing it: the wizard posts a job's
+        # raw stderr as the query and tools can emit tens of kilobytes, so a length
+        # rejection hands the user a validation error where they asked for a diagnosis.
+        max_length = self._resolve_max_query_length()
+        original_length = len(query) if isinstance(query, str) and len(query) > max_length else None
+        if original_length is not None:
+            log.info("ErrorAnalysis: trimming %d-char error output to fit %d chars", original_length, max_length)
+            query = truncate_middle(query, max_length)
+
         validation_error = self._validate_query(query)
         if validation_error:
             return self._validation_error_response(validation_error)
 
         try:
-            log.info(f"ErrorAnalysis: Received query (length={len(query)})")
-            log.info(f"ErrorAnalysis: Query preview: {query[:800]}...")
-
-            enhanced_query = query
-            run_state = context.get("run_state") if context else None
-            if isinstance(run_state, AgentRunState):
-                prior = run_state.get_prior(AgentType.HISTORY)
-                if prior is not None:
-                    log.info("ErrorAnalysis: Found prior history analysis in run_state")
-                    enhanced_query += f"\n\nContext from history analysis:\n{prior.content}"
-
-            if context and context.get("job_id"):
-                job_details = await self.get_job_details(context["job_id"])
-                if "error" not in job_details:
-                    enhanced_query += f"\n\nJob Details:\n{self._format_job_context(job_details)}"
-
-            result = await self._run_with_retry(enhanced_query)
-
-            if self._supports_structured_output():
-                analysis_result = extract_structured_output(result, ErrorAnalysisResult, log)
-
-                if analysis_result is None:
-                    content = extract_result_content(result)
-                    return self._build_response(
-                        content=content,
-                        confidence=ConfidenceLevel.MEDIUM,
-                        method="text_fallback",
-                        result=result,
-                        query=query,
-                    )
-
-                content = self._format_analysis_response(analysis_result)
-                suggestions = self._create_suggestions(analysis_result)
-
-                return self._build_response(
-                    content=content,
-                    confidence=ConfidenceLevel(analysis_result.confidence),
-                    method="structured",
-                    result=result,
-                    query=query,
-                    suggestions=suggestions,
-                    agent_data={
-                        "error_category": analysis_result.error_category,
-                        "requires_admin": analysis_result.requires_admin,
-                        "has_alternatives": bool(analysis_result.alternative_approaches),
-                    },
-                )
-            else:
-                response_text = extract_result_content(result)
-                parsed_result = self._parse_simple_response(response_text)
-
-                return self._build_response(
-                    content=parsed_result.get("content", response_text),
-                    confidence=parsed_result.get("confidence", ConfidenceLevel.MEDIUM),
-                    method="simple_text",
-                    result=result,
-                    query=query,
-                    suggestions=parsed_result.get("suggestions", []),
-                    agent_data={"error_category": parsed_result.get("error_category", "unknown")},
-                )
-
+            response = await self._analyze(query, context)
         except (OSError, ValueError) as e:
             log.warning(f"Error analysis failed: {e}")
-            return self._get_fallback_response(query, str(e))
+            response = self._get_fallback_response(query, str(e))
+
+        if original_length is not None:
+            response.metadata["query_truncated"] = True
+            response.metadata["original_query_length"] = original_length
+
+        return response
+
+    async def _analyze(self, query: str, context: dict[str, Any] | None) -> AgentResponse:
+        log.info(f"ErrorAnalysis: Received query (length={len(query)})")
+        log.info(f"ErrorAnalysis: Query preview: {query[:800]}...")
+
+        enhanced_query = query
+        run_state = context.get("run_state") if context else None
+        if isinstance(run_state, AgentRunState):
+            prior = run_state.get_prior(AgentType.HISTORY)
+            if prior is not None:
+                log.info("ErrorAnalysis: Found prior history analysis in run_state")
+                enhanced_query += f"\n\nContext from history analysis:\n{prior.content}"
+
+        if context and context.get("job_id"):
+            job_details = await self.get_job_details(context["job_id"])
+            if "error" not in job_details:
+                enhanced_query += f"\n\nJob Details:\n{self._format_job_context(job_details)}"
+
+        result = await self._run_with_retry(enhanced_query)
+
+        if self._supports_structured_output():
+            analysis_result = extract_structured_output(result, ErrorAnalysisResult, log)
+
+            if analysis_result is None:
+                content = extract_result_content(result)
+                return self._build_response(
+                    content=content,
+                    confidence=ConfidenceLevel.MEDIUM,
+                    method="text_fallback",
+                    result=result,
+                    query=query,
+                )
+
+            content = self._format_analysis_response(analysis_result)
+            suggestions = self._create_suggestions(analysis_result)
+
+            return self._build_response(
+                content=content,
+                confidence=ConfidenceLevel(analysis_result.confidence),
+                method="structured",
+                result=result,
+                query=query,
+                suggestions=suggestions,
+                agent_data={
+                    "error_category": analysis_result.error_category,
+                    "requires_admin": analysis_result.requires_admin,
+                    "has_alternatives": bool(analysis_result.alternative_approaches),
+                },
+            )
+        else:
+            response_text = extract_result_content(result)
+            parsed_result = self._parse_simple_response(response_text)
+
+            return self._build_response(
+                content=parsed_result.get("content", response_text),
+                confidence=parsed_result.get("confidence", ConfidenceLevel.MEDIUM),
+                method="simple_text",
+                result=result,
+                query=query,
+                suggestions=parsed_result.get("suggestions", []),
+                agent_data={"error_category": parsed_result.get("error_category", "unknown")},
+            )
 
     def _format_job_context(self, job_details: dict[str, Any]) -> str:
         parts = []
@@ -184,7 +213,9 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         if job_details.get("exit_code") is not None:
             parts.append(f"Exit Code: {job_details['exit_code']}")
         if job_details.get("stderr"):
-            parts.append(f"Error Output: {job_details['stderr'][:500]}...")
+            # Already excerpted by get_job_details -- re-slicing here would drop the
+            # tail it deliberately kept, and made that budget dead code.
+            parts.append(f"Error Output: {job_details['stderr']}")
 
         return "\n".join(parts)
 

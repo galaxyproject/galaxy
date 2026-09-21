@@ -47,6 +47,7 @@ class ToolOutputBase(Dictifiable):
     label: str | None
     hidden: bool
     precreate_directory: bool
+    from_work_dir: str | None
 
     def __init__(
         self,
@@ -276,8 +277,8 @@ class ToolOutputCollection(ToolOutputBase):
         "hidden",
         "output_type",
         "default_format",
-        "default_format_source",
-        "default_metadata_source",
+        "format_source",
+        "metadata_source",
         "inherit_format",
         "inherit_metadata",
     ]
@@ -360,7 +361,7 @@ class ToolOutputCollection(ToolOutputBase):
         return output_parts
 
     @property
-    def dynamic_structure(self):
+    def dynamic_structure(self) -> bool:
         return self.structure.dynamic
 
     @property
@@ -383,6 +384,9 @@ class ToolOutputCollection(ToolOutputBase):
             name=self.name,
             label=self.label,
             hidden=self.hidden,
+            format=self.default_format,
+            format_source=self.format_source,
+            metadata_source=self.metadata_source,
             collection_type=self.structure.collection_type,
             collection_type_source=self.structure.collection_type_source,
             collection_type_from_rules=self.structure.collection_type_from_rules,
@@ -400,8 +404,8 @@ class ToolOutputCollection(ToolOutputBase):
             filters=[],
             hidden=output_dict.get("hidden", False),
             default_format=output_dict.get("default_format", "data"),
-            default_format_source=output_dict.get("default_format_source", None),
-            default_metadata_source=output_dict.get("default_metadata_source", None),
+            default_format_source=output_dict.get("format_source", output_dict.get("default_format_source")),
+            default_metadata_source=output_dict.get("metadata_source", output_dict.get("default_metadata_source")),
             inherit_format=output_dict.get("inherit_format", False),
             inherit_metadata=output_dict.get("inherit_metadata", False),
         )
@@ -528,11 +532,11 @@ class ToolOutputCollectionPart:
         return effective_output_name
 
     @staticmethod
-    def is_named_collection_part_name(name):
+    def is_named_collection_part_name(name: str) -> bool:
         return "|__part__|" in name
 
     @staticmethod
-    def split_output_name(name):
+    def split_output_name(name: str) -> list[str]:
         assert ToolOutputCollectionPart.is_named_collection_part_name(name)
         return name.split("|__part__|")
 

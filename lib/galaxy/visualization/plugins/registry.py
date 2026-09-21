@@ -139,7 +139,9 @@ class VisualizationsRegistry:
         if os.path.exists(config_file):
             config = self.config_parser.parse_file(config_file)
             if config is not None:
-                return VisualizationPlugin(plugin_path, plugin_name, config)
+                app = self.app()
+                url_prefix = app.config.galaxy_url_prefix.rstrip("/") if app is not None else ""
+                return VisualizationPlugin(plugin_path, plugin_name, config, url_prefix=url_prefix)
         raise ObjectNotFound(f"Visualization XML not found in config or static paths for: {plugin_name}.")
 
     def get_plugin(self, key):

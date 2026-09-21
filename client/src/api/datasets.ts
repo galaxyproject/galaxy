@@ -130,6 +130,7 @@ export async function copyDataset(
     historyId: CopyDatasetParamsType["path"]["history_id"],
     type: CopyDatasetParamsType["path"]["type"] = "dataset",
     source: CopyDatasetBodyType["source"] = "hda",
+    signal?: AbortSignal,
 ) {
     const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents/{type}s", {
         params: {
@@ -145,6 +146,7 @@ export async function copyDataset(
             hide_source_items: null,
             instance_type: null,
         },
+        signal,
     });
     if (error) {
         rethrowSimple(error);
@@ -201,6 +203,22 @@ export const NON_TERMINAL_DATASET_STATES = ["new", "upload", "queued", "running"
 
 // Error dataset states (dataset failed processing)
 export const ERROR_DATASET_STATES = ["error", "failed_metadata"];
+
+// States a dataset may be in and still be offered as a tool/workflow input.
+// Mirrors ``Dataset.valid_input_states`` (all states bar error, discarded and
+// failed_metadata), which the server applies when it builds the first page of
+// a data parameter's options.
+export const VALID_INPUT_DATASET_STATES = [
+    "new",
+    "upload",
+    "queued",
+    "running",
+    "setting_metadata",
+    "ok",
+    "empty",
+    "paused",
+    "deferred",
+];
 
 // Terminal dataset states (dataset processing is complete)
 export const TERMINAL_DATASET_STATES = ["ok", "empty", "deferred", "discarded", "paused"].concat(ERROR_DATASET_STATES);

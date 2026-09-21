@@ -983,6 +983,25 @@ class TestToolsUpload(ApiTestCase):
             assert extra_file["path"] == "composite"
             assert extra_file["class"] == "File"
 
+    @pytest.mark.parametrize("name", ["../escaped.txt", "/escaped.txt"])
+    def test_upload_force_composite_rejects_escaping_name(self, history_id, name):
+        payload = self.dataset_populator.upload_payload(
+            history_id,
+            "primary\n",
+            extra_inputs={
+                "files_1|url_paste": "extra file\n",
+                "files_1|NAME": name,
+                "file_count": "2",
+                "force_composite": "True",
+            },
+        )
+        response = self.dataset_populator.tools_post(payload)
+        self.dataset_populator.wait_for_tool_run(history_id, response, assert_ok=False)
+        job_id = response.json()["jobs"][0]["id"]
+        job = self.dataset_populator.get_job_details(job_id, full=True).json()
+        assert job["state"] == "error"
+        assert f"Invalid composite file name '{name}'" in job["stderr"]
+
     def test_upload_from_invalid_url(self):
         with pytest.raises(AssertionError):
             self._upload("https://foo.invalid", assert_ok=False)
@@ -1193,3 +1212,22 @@ class TestToolsUpload(ApiTestCase):
         )
         assert details["state"] == "deferred"
         assert details["file_ext"] == "bam"
+
+    def test_fetch_hdca_without_collection_type_fails_the_job(self):
+        # The fetch succeeds and only the collection creation fails, so the failure has
+        # to be reported by the job rather than by the request.
+        with self.dataset_populator.test_history() as history_id:
+            targets = [
+                {
+                    "destination": {"type": "hdca"},
+                    "name": "no collection type",
+                    "elements": [{"src": "pasted", "paste_content": "hello\n", "name": "f.txt"}],
+                }
+            ]
+            payload = {"history_id": history_id, "targets": targets}
+            response = self.dataset_populator.fetch(payload, assert_ok=False, wait=True)
+            job = response.json()["jobs"][0]
+            details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+            assert details["state"] == "error", details["state"]
+            messages = " ".join(m.get("desc") or "" for m in details.get("job_messages") or [])
+            assert "collection_type" in messages, messages

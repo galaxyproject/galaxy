@@ -10,7 +10,10 @@ from galaxy.datatypes.data import (
     Text,
 )
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.protocols import DatasetProtocol
+from galaxy.datatypes.protocols import (
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -628,7 +631,7 @@ class OBFS(Binary):
     """OpenBabel Fastsearch format (fs)."""
 
     file_ext = "obfs"
-    composite_type = "basic"
+    composite_type = "auto_primary_file"
 
     MetadataElement(
         name="base_name",
@@ -650,6 +653,33 @@ class OBFS(Binary):
         self.add_composite_file("molecule.inchi", optional=True, is_binary=False, description="Molecule File")
         self.add_composite_file("molecule.mol2", optional=True, is_binary=False, description="Molecule File")
         self.add_composite_file("molecule.cml", optional=True, is_binary=False, description="Molecule File")
+
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
+        rval = ["<html><head><title>OpenBabel Fastsearch Index</title></head><p/>"]
+        rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+            description = composite_file.get("description")
+            if description:
+                rval.append(
+                    f'<li><a href="{composite_name}" type="application/binary">{composite_name} ({description})</a></li>'
+                )
+            else:
+                rval.append(f'<li><a href="{composite_name}" type="application/binary">{composite_name}</a></li>')
+        rval.append("</ul></div></html>")
+        return "\n".join(rval)
+
+    def regenerate_primary_file(self, dataset: DatasetProtocol) -> None:
+        efp = dataset.extra_files_path
+        flist = os.listdir(efp)
+        rval = [
+            f"<html><head><title>Files for Composite Dataset {dataset.name}</title></head><body><p/>Composite {dataset.name} contains:<p/><ul>"
+        ]
+        for fname in flist:
+            sfname = os.path.split(fname)[-1]
+            rval.append(f'<li><a href="{sfname}">{sfname}</a></li>')
+        rval.append("</ul></body></html>")
+        with open(dataset.get_file_name(), "w") as f:
+            f.write("\n".join(rval))
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text."""

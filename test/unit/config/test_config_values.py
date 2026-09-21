@@ -51,6 +51,23 @@ def test_base_config_if_running_not_from_source(monkeypatch):
     assert appconfig.managed_config_dir == os.path.join(appconfig.data_dir, "config")
 
 
+def test_subdomain_switcher_defaults_to_empty_list():
+    appconfig = config.GalaxyAppConfiguration(override_tempdir=False)
+
+    assert appconfig.subdomain_switcher == []
+
+
+def test_subdomain_switcher_preserves_configured_entries():
+    sites = [
+        {"label": "Base site", "url": "https://usegalaxy.example.org"},
+        {"label": "Single Cell Omics", "url": "https://singlecell.usegalaxy.example.org/"},
+    ]
+
+    appconfig = config.GalaxyAppConfiguration(override_tempdir=False, subdomain_switcher=sites)
+
+    assert appconfig.subdomain_switcher == sites
+
+
 def test_assign_email_from(monkeypatch):
     appconfig = config.GalaxyAppConfiguration(
         override_tempdir=False, galaxy_infrastructure_url="http://myhost:8080/galaxy/"

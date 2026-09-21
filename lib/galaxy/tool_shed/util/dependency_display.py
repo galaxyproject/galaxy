@@ -1,10 +1,6 @@
 import logging
-import os
 
-from galaxy import util
 from galaxy.tool_shed.util import utility_container_manager
-from galaxy.util import UNKNOWN
-from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
 
 log = logging.getLogger(__name__)
 
@@ -12,114 +8,6 @@ log = logging.getLogger(__name__)
 class DependencyDisplayer:
     def __init__(self, app):
         self.app = app
-
-    def _add_installation_directories_to_tool_dependencies(self, tool_dependencies):
-        """
-        Determine the path to the installation directory for each of the received
-        tool dependencies.  This path will be displayed within the tool dependencies
-        container on the select_tool_panel_section or reselect_tool_panel_section
-        pages when installing or reinstalling repositories that contain tools with
-        the defined tool dependencies.  The list of tool dependencies may be associated
-        with more than a single repository.
-        """
-        for dependency_key, requirements_dict in tool_dependencies.items():
-            if dependency_key in ["set_environment"]:
-                continue
-            repository_name = requirements_dict.get("repository_name", UNKNOWN)
-            repository_owner = requirements_dict.get("repository_owner", UNKNOWN)
-            changeset_revision = requirements_dict.get("changeset_revision", UNKNOWN)
-            dependency_name = requirements_dict["name"]
-            version = requirements_dict["version"]
-            if self.app.tool_dependency_dir:
-                root_dir = self.app.tool_dependency_dir
-            else:
-                root_dir = "<set your tool_dependency_dir in your Galaxy configuration file>"
-            install_dir = os.path.join(
-                root_dir, dependency_name, version, repository_owner, repository_name, changeset_revision
-            )
-            requirements_dict["install_dir"] = install_dir
-            tool_dependencies[dependency_key] = requirements_dict
-        return tool_dependencies
-
-    def generate_message_for_invalid_repository_dependencies(self, metadata_dict, error_from_tuple=False):
-        """
-        Get or generate and return an error message associated with an invalid repository dependency.
-        """
-        message = ""
-        if metadata_dict:
-            if error_from_tuple:
-                # Return the error messages associated with a set of one or more invalid repository
-                # dependency tuples.
-                invalid_repository_dependencies_dict = metadata_dict.get("invalid_repository_dependencies", None)
-                if invalid_repository_dependencies_dict is not None:
-                    invalid_repository_dependencies = invalid_repository_dependencies_dict.get(
-                        "invalid_repository_dependencies", []
-                    )
-                    for repository_dependency_tup in invalid_repository_dependencies:
-                        (
-                            toolshed,
-                            name,
-                            owner,
-                            changeset_revision,
-                            prior_installation_required,
-                            only_if_compiling_contained_td,
-                            error,
-                        ) = parse_repository_dependency_tuple(repository_dependency_tup, contains_error=True)
-                        if error:
-                            message += f"{error}  "
-            else:
-                # The complete dependency hierarchy could not be determined for a repository being installed into
-                # Galaxy.  This is likely due to invalid repository dependency definitions, so we'll get them from
-                # the metadata and parse them for display in an error message.  This will hopefully communicate the
-                # problem to the user in such a way that a resolution can be determined.
-                message += (
-                    "The complete dependency hierarchy could not be determined for this repository, so no required "
-                )
-                message += "repositories will not be installed.  This is likely due to invalid repository dependency definitions.  "
-                repository_dependencies_dict = metadata_dict.get("repository_dependencies", None)
-                if repository_dependencies_dict is not None:
-                    rd_tups = repository_dependencies_dict.get("repository_dependencies", None)
-                    if rd_tups is not None:
-                        message += "Here are the attributes of the dependencies defined for this repository to help determine the "
-                        message += "cause of this problem.<br/>"
-                        message += '<table cellpadding="2" cellspacing="2">'
-                        message += (
-                            "<tr><th>Tool shed</th><th>Repository name</th><th>Owner</th><th>Changeset revision</th>"
-                        )
-                        message += "<th>Prior install required</th></tr>"
-                        for rd_tup in rd_tups:
-                            (
-                                tool_shed,
-                                name,
-                                owner,
-                                changeset_revision,
-                                pir,
-                                oicct,
-                            ) = parse_repository_dependency_tuple(rd_tup)
-                            if util.asbool(pir):
-                                pir_str = "True"
-                            else:
-                                pir_str = ""
-                            message += f"<tr><td>{tool_shed}</td><td>{name}</td><td>{owner}</td><td>{changeset_revision}</td><td>{pir_str}</td></tr>"
-                        message += "</table>"
-        return message
-
-    def generate_message_for_invalid_tool_dependencies(self, metadata_dict):
-        """
-        Tool dependency definitions can only be invalid if they include a definition for a complex
-        repository dependency and the repository dependency definition is invalid.  This method
-        retrieves the error message associated with the invalid tool dependency for display in the
-        caller.
-        """
-        message = ""
-        if metadata_dict:
-            invalid_tool_dependencies = metadata_dict.get("invalid_tool_dependencies", None)
-            if invalid_tool_dependencies:
-                for requirement_dict in invalid_tool_dependencies.values():
-                    error = requirement_dict.get("error", None)
-                    if error:
-                        message = f"{error}  "
-        return message
 
     def generate_message_for_orphan_tool_dependencies(self, repository, metadata_dict):
         """
@@ -196,21 +84,13 @@ class DependencyDisplayer:
         when displaying repository dependencies for installed repositories and when displaying
         them for uninstalled repositories that are being reinstalled.
         """
-        if metadata := repository.metadata_:
+        if repository.metadata_:
             irm = self.app.installed_repository_manager
             # Handle repository dependencies.
             (
                 installed_repository_dependencies,
                 missing_repository_dependencies,
             ) = irm.get_installed_and_missing_repository_dependencies(repository)
-            # Handle the current repository's tool dependencies.
-            repository_tool_dependencies = metadata.get("tool_dependencies", None)
-            # Make sure to display missing tool dependencies as well.
-            repository_invalid_tool_dependencies = metadata.get("invalid_tool_dependencies", None)
-            if repository_invalid_tool_dependencies is not None:
-                if repository_tool_dependencies is None:
-                    repository_tool_dependencies = {}
-                repository_tool_dependencies.update(repository_invalid_tool_dependencies)
             gucm = GalaxyUtilityContainerManager(self.app)
             containers_dict = gucm.build_repository_containers(
                 missing_repository_dependencies=missing_repository_dependencies,

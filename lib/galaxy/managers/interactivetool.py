@@ -170,7 +170,11 @@ class InteractiveToolManager:
         self.dispatcher = dispatcher if dispatcher is not None else app.resolve_or_none(SSEEventDispatcher)
 
     def create_entry_points(
-        self, job: Job, tool: "Tool", entry_points=Iterable[dict[str, Any]] | None, flush: bool = True
+        self,
+        job: Job,
+        tool: "Tool",
+        entry_points: Iterable[dict[str, Any]] | None = None,
+        flush: bool = True,
     ) -> None:
         entry_points = entry_points or tool.ports
         for entry in entry_points:

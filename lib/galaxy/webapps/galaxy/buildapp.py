@@ -15,7 +15,6 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework
-import galaxy.webapps.base.webapp
 from galaxy import util
 from galaxy.security.validate_user_input import VALID_PUBLICNAME_RE
 from galaxy.structured_app import MinimalApp
@@ -24,13 +23,16 @@ from galaxy.util.properties import load_app_properties
 from galaxy.web.framework.middleware.error import ErrorMiddleware
 from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
 from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
-from galaxy.webapps.base.webapp import build_url_map
+from galaxy.webapps.base.webapp import (
+    build_url_map,
+    WebApplication,
+)
 from galaxy.webapps.util import wrap_if_allowed
 
 log = logging.getLogger(__name__)
 
 
-class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
+class GalaxyWebApplication(WebApplication):
     injection_aware = True
 
     def __init__(self, galaxy_app: MinimalApp, session_cookie: str = "galaxysession", name: str | None = None) -> None:
@@ -310,7 +312,6 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/workflows/list_shared_with_me")
     webapp.add_client_route("/workflows/edit")
     webapp.add_client_route("/workflows/export")
-    webapp.add_client_route("/workflows/create")
     webapp.add_client_route("/workflows/rerun")
     webapp.add_client_route("/workflows/run")
     webapp.add_client_route("/workflows/import")
@@ -358,7 +359,7 @@ def postfork_setup():
     app.application_stack.log_startup()
 
 
-def populate_api_routes(webapp, app):
+def populate_api_routes(webapp: WebApplication, app: MinimalApp):
     webapp.add_api_controllers("galaxy.webapps.galaxy.api", app)
 
     _add_item_annotation_controller(

@@ -16,6 +16,7 @@ import PageEmbed from "./Embeds/PageEmbed.vue";
 import WorkflowEmbed from "./Embeds/WorkflowEmbed.vue";
 import ErrorMessages from "./ErrorMessages.vue";
 import UserSharing from "./UserSharing.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 const props = defineProps<{
@@ -231,7 +232,7 @@ const embedable = computed(
                 <input v-model="newUsername" class="form-control" type="text" />
             </label>
 
-            <b-button class="align-self-start" type="submit" variant="primary">Set Username</b-button>
+            <GButton class="align-self-start" type="submit" color="blue">Set Username</GButton>
         </form>
         <div v-else-if="ready">
             <div class="mb-3">

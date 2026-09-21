@@ -1,5 +1,5 @@
 <template>
-    <ActivityPanel>
+    <ActivityPanel title="Insert Markdown Objects">
         <template v-slot:activity-panel-header-top>
             <GButton size="small" transparent @click="onClosePanel">
                 <FontAwesomeIcon fixed-width :icon="faChevronLeft" />

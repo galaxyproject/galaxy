@@ -6,6 +6,7 @@ attribute.
 
 import abc
 import threading
+from collections.abc import Sequence
 from contextlib import contextmanager
 from typing import (
     Any,
@@ -42,6 +43,11 @@ from .has_driver_protocol import (
     TimeoutCallback,
     WaitTypeT,
 )
+from .keys import (
+    Key,
+    validate_key_press,
+)
+from .selenium_keys import KEY_TO_SELENIUM
 from .wait_methods_mixin import WaitMethodsMixin
 from .web_element_protocol import WebElementProtocol
 
@@ -122,7 +128,6 @@ class TimeoutMessageMixin:
 
 class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
     by: type[By] = By
-    keys: type[Keys] = Keys
     driver: WebDriver
     axe_script_url: str = DEFAULT_AXE_SCRIPT_URL
     axe_skip: bool = False
@@ -368,26 +373,45 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         self.action_chains().move_to_element(element).perform()
 
+    def active_element(self) -> WebElement:
+        return self.driver.switch_to.active_element
+
+    def press(
+        self,
+        *keys: Key | str,
+        modifiers: Sequence[Key] = (),
+        element: WebElement | None = None,
+    ) -> None:
+        validate_key_press(keys, modifiers)
+        if not keys:
+            return
+        selenium_keys = [KEY_TO_SELENIUM[key] if isinstance(key, Key) else key for key in keys]
+        chain = self.action_chains()
+        if element is not None:
+            # Focus once so Tab and other focus-changing keys can advance naturally.
+            self.execute_script("arguments[0].focus();", element)
+        for modifier in modifiers:
+            chain = chain.key_down(KEY_TO_SELENIUM[modifier])
+        for selenium_key in selenium_keys:
+            chain = chain.send_keys(selenium_key)
+        for modifier in reversed(modifiers):
+            chain = chain.key_up(KEY_TO_SELENIUM[modifier])
+        chain.perform()
+
     def send_enter(self, element: WebElement | None = None):
-        self._send_key(Keys.ENTER, element)
+        self.press(Key.ENTER, element=element)
 
     def send_escape(self, element: WebElement | None = None):
-        self._send_key(Keys.ESCAPE, element)
+        self.press(Key.ESCAPE, element=element)
 
     def send_backspace(self, element: WebElement | None = None):
-        self._send_key(Keys.BACKSPACE, element)
+        self.press(Key.BACKSPACE, element=element)
 
     def aggressive_clear(self, element: WebElement) -> None:
         # for when a simple .clear() doesn't work
         self.driver.execute_script("arguments[0].value = '';", element)
         for _ in range(25):
             element.send_keys(Keys.BACKSPACE)
-
-    def _send_key(self, key: str, element: WebElement | None = None):
-        if element is None:
-            self.action_chains().send_keys(key)
-        else:
-            element.send_keys(key)
 
     @property
     @abc.abstractmethod
@@ -502,19 +526,31 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         Args:
             element: The element to scroll into view
         """
-        self.execute_script("arguments[0].scrollIntoView(true);", element)
+        self.execute_script('arguments[0].scrollIntoView({block: "center", inline: "nearest"});', element)
 
     def set_element_value(self, element: WebElement, value: str) -> None:
         """
         Set an element's value property directly using JavaScript.
 
-        This is useful for contenteditable elements or when .clear() doesn't work.
+        This is useful for contenteditable elements, Vue/JS framework inputs
+        that need event dispatch, or when .clear() doesn't work.
+
+        The value is passed via ``arguments[1]`` (not interpolated into the JS
+        string) so that values containing quotes or other special characters
+        are handled correctly. Both ``input`` and ``change`` events are
+        dispatched so that reactive frameworks (e.g. Vue) detect the change.
 
         Args:
             element: The element to modify
             value: The value to set
         """
-        self.execute_script(f"arguments[0].value = '{value}';", element)
+        self.execute_script(
+            "arguments[0].value = arguments[1];"
+            "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));"
+            "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));",
+            element,
+            value,
+        )
 
     def execute_script_click(self, element: WebElement) -> None:
         """

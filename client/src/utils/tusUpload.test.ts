@@ -73,6 +73,7 @@ describe("tusUpload", () => {
             findPreviousUploads: ReturnType<typeof vi.fn>;
             resumeFromPreviousUpload: ReturnType<typeof vi.fn>;
             start: ReturnType<typeof vi.fn>;
+            abort: ReturnType<typeof vi.fn>;
             url: string | null;
             options?: Record<string, unknown>;
         };
@@ -85,6 +86,7 @@ describe("tusUpload", () => {
                 findPreviousUploads: vi.fn().mockResolvedValue([]),
                 resumeFromPreviousUpload: vi.fn(),
                 start: vi.fn(),
+                abort: vi.fn().mockResolvedValue(undefined),
                 url: null,
                 options: undefined,
             };
@@ -261,6 +263,40 @@ describe("tusUpload", () => {
 
             const result = await uploadPromise;
             expect(result.sessionId).toBe("session789");
+        });
+
+        it("should not call start after the signal aborts while previous uploads are being fetched", async () => {
+            const controller = new AbortController();
+            const file = new File(["content"], "cancelled.txt");
+            let resolvePreviousUploads: (value: unknown[]) => void;
+            mockUpload.findPreviousUploads.mockImplementation(
+                () =>
+                    new Promise((resolve) => {
+                        resolvePreviousUploads = resolve;
+                    }),
+            );
+
+            const onError = vi.fn();
+            const uploadPromise = createTusUpload({
+                file,
+                endpoint: "http://localhost/upload",
+                historyId: "hist123",
+                chunkSize: 1024,
+                onProgress: vi.fn(),
+                onError,
+                signal: controller.signal,
+            });
+
+            await vi.waitFor(() => expect(mockUploadConstructor).toHaveBeenCalled());
+            controller.abort();
+            resolvePreviousUploads!([]);
+
+            await Promise.resolve();
+
+            expect(mockUpload.start).not.toHaveBeenCalled();
+            await expect(uploadPromise).rejects.toThrow("Upload aborted");
+            expect(mockUpload.abort).toHaveBeenCalled();
+            expect(onError).toHaveBeenCalledWith(expect.objectContaining({ name: "AbortError" }));
         });
 
         it("should handle FileStream by extracting reader", async () => {

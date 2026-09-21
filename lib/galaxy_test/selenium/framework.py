@@ -622,7 +622,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     def assert_workflow_has_changes_and_save(self):
         save_button = self.components.workflow_editor.save_button
         save_button.wait_for_visible()
-        assert not save_button.has_class("disabled")
+        assert not save_button.has_class("g-disabled")
         save_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
@@ -980,7 +980,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
 
     def _add_repeat_instances(self, repeat_name: str, count: int):
         for _ in range(count):
-            self.components.tool_form.repeat_insert.wait_for_and_click()
+            self.components.tool_form.repeat_insert_named(name=repeat_name).wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
 
     def _expand_collapsed_sections(self):
@@ -1073,20 +1073,11 @@ class RunsToolTests(NavigatesGalaxyMixin):
 
     def _set_color_value(self, expanded_id: str, value: str):
         color_input = self.components.tool_form.parameter_color_input(parameter=expanded_id).wait_for_present()
-        self._set_input_value_via_js(color_input, value)
+        self.set_element_value(color_input, value)
 
     def _set_text_value(self, expanded_id: str, value: str):
         input_element = self.components.tool_form.parameter_text_input(parameter=expanded_id).wait_for_present()
-        self._set_input_value_via_js(input_element, value)
-
-    def _set_input_value_via_js(self, element, value):
-        self.execute_script(
-            "arguments[0].value = arguments[1];"
-            "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));"
-            "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));",
-            element,
-            value,
-        )
+        self.set_element_value(input_element, value)
 
     # -- Output verification --
 

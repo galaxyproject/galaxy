@@ -28,6 +28,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
+from galaxy.tool_util.abstract_tool import parse_tool_version_for_comparison
 from galaxy.tool_util.deps.requirements import (
     ContainerDescription,
     ToolRequirements,
@@ -66,7 +67,6 @@ from galaxy.util.tool_version import (
 from . import (
     create_tool_from_source,
     DataManagerTool,
-    parse_tool_version_for_comparison,
     tool_requires_galaxy_python_environment,
     ToolBox,
 )
@@ -563,7 +563,7 @@ class CachedToolBox(ToolBox):
     def _init_tools_from_configs(self, config_filenames: list[str]) -> None:
         """Load or populate the index, then let the eager walk register stubs."""
         # Index-backed lineages reflect reloads and all known versions.
-        self._lineage_map = CachedLineageMap(self.app, versions_for=self._index_versions_for)
+        self._lineage_map = CachedLineageMap(self, versions_for=self._index_versions_for)
         self._tool_panel_loaded_from_index = False
         if self._store is not None:
             self._tool_index = self._store.load_index() or ToolIndex()

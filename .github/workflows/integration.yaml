@@ -27,6 +27,11 @@ concurrency:
 permissions: {}
 jobs:
   prepare-mulled-cache:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     name: Prepare mulled resolution cache
     runs-on: ubuntu-latest
     steps:
@@ -40,13 +45,13 @@ jobs:
           path: '${{ runner.temp }}/mulled-resolution-seed'
       - name: Check out Galaxy for mulled-cache
         if: steps.restore-mulled-cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
         with:
           path: 'galaxy cache source'
           persist-credentials: false
       - name: Install uv
         if: steps.restore-mulled-cache.outputs.cache-hit != 'true'
-        uses: astral-sh/setup-uv@v8.3.2
+        uses: astral-sh/setup-uv@v10.1.0
         with:
           python-version: '3.10'
       - name: Fetch Biocontainers repository index
@@ -81,6 +86,11 @@ jobs:
           retention-days: 1
 
   test:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     name: Test
     needs: prepare-mulled-cache
     runs-on: ubuntu-latest
@@ -104,20 +114,30 @@ jobs:
         run: rm -Rf /usr/share/dotnet
       - name: Install packages
         # ffmpeg: ffprobe needed by media datatypes
-        run: sudo apt-get update && sudo apt-get -y install ffmpeg
+        # bubblewrap: exercises the expression-evaluation isolation sandbox integration test.
+        # Ubuntu >=24.04 restricts unprivileged user namespaces (which bwrap needs); allow them.
+        run: |
+          sudo apt-get update && sudo apt-get -y install ffmpeg bubblewrap
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+      - name: Create the CNI config directory minikube's none driver expects
+        # The action chmods /etc/cni/net.d without creating it, and current
+        # runner images no longer ship the directory. See
+        # https://github.com/medyagh/setup-minikube/issues/835
+        run: sudo mkdir -p /etc/cni/net.d
       - name: Setup Minikube
         uses: medyagh/setup-minikube@latest
         with:
           driver: none
+          container-runtime: docker
           kubernetes-version: '1.28.0'
       - name: Check pods
         run: kubectl get pods -A
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           path: 'galaxy root'
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.3.2
+        uses: astral-sh/setup-uv@v10.1.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Python

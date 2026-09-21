@@ -1,17 +1,42 @@
+import errno
 import json
 import os
+import shutil
 import tempfile
 from base64 import b64encode
 from contextlib import contextmanager
 from shutil import rmtree
 from tempfile import mkdtemp
+from typing import (
+    Any,
+)
+from uuid import uuid4
 
 import pytest
+import responses
 
 from galaxy.tools.data_fetch import main
+from galaxy.util import galaxy_directory
+
+# Package tests relocate this module.
+GALAXY_ROOT = galaxy_directory()
+STOCK_DATATYPES_CONF = os.path.join(GALAXY_ROOT, "lib", "galaxy", "config", "sample", "datatypes_conf.xml.sample")
 
 B64_FOR_1_2_3 = b64encode(b"1 2 3").decode("utf-8")
 URI_FOR_1_2_3 = f"base64://{B64_FOR_1_2_3}"
+
+DRS_OBJECT_ID = "000009a0-5b22-5be5-9217-a26b5c0b03c2"
+DRS_URI = f"drs://drs.example.org/{DRS_OBJECT_ID}"
+DRS_OBJECT_URL = f"https://drs.example.org/ga4gh/drs/v1/objects/{DRS_OBJECT_ID}"
+
+# Register lped to exercise composite filenames that substitute base_name.
+LPED_DATATYPES_CONF = """<?xml version="1.0"?>
+<datatypes>
+  <registration>
+    <datatype extension="lped" type="galaxy.datatypes.genetics:Lped"/>
+  </registration>
+</datatypes>
+"""
 
 
 @pytest.mark.parametrize(
@@ -87,6 +112,113 @@ def test_simple_uri_get(mock_http_server):
         hda_result = output["elements"][0]
         assert hda_result["state"] == "ok"
         assert hda_result["ext"] == "bed"
+        assert hda_result["name"] == "1.bed"
+
+
+@responses.activate
+def test_drs_uri_named_from_drs_metadata(mock_http_server):
+    _mock_drs_object(_bed_content_url(mock_http_server), name="sample.bed")
+    hda_result = _fetch_drs_element()
+    assert hda_result["state"] == "ok"
+    assert hda_result["name"] == "sample.bed"
+
+
+@responses.activate
+def test_drs_uri_named_from_drs_metadata_via_access_id(mock_http_server):
+    _mock_drs_object(_bed_content_url(mock_http_server), name="sample.bed", access_id="https")
+    hda_result = _fetch_drs_element()
+    assert hda_result["state"] == "ok"
+    assert hda_result["name"] == "sample.bed"
+
+
+@responses.activate
+def test_drs_uri_explicit_name_wins(mock_http_server):
+    _mock_drs_object(_bed_content_url(mock_http_server), name="sample.bed")
+    hda_result = _fetch_drs_element(name="user supplied name")
+    assert hda_result["state"] == "ok"
+    assert hda_result["name"] == "user supplied name"
+
+
+@responses.activate
+def test_drs_uri_without_name_falls_back_to_uri_basename(mock_http_server):
+    _mock_drs_object(_bed_content_url(mock_http_server))
+    hda_result = _fetch_drs_element()
+    assert hda_result["state"] == "ok"
+    assert hda_result["name"] == DRS_OBJECT_ID
+
+
+@pytest.mark.parametrize(
+    "drs_name, expected_name",
+    [
+        ("../../../etc/passwd", "passwd"),
+        ("/etc/passwd", "passwd"),
+        ("..\\..\\windows\\system32", "system32"),
+        ("sample\r\n.bed", "sample.bed"),
+        ("..", DRS_OBJECT_ID),
+        (".", DRS_OBJECT_ID),
+        ("", DRS_OBJECT_ID),
+        ("   ", DRS_OBJECT_ID),
+        ("etc/", DRS_OBJECT_ID),
+        (12345, DRS_OBJECT_ID),
+        ({"value": "sample.bed"}, DRS_OBJECT_ID),
+    ],
+)
+@responses.activate
+def test_drs_uri_name_is_sanitized(mock_http_server, drs_name, expected_name):
+    _mock_drs_object(_bed_content_url(mock_http_server), name=drs_name)
+    hda_result = _fetch_drs_element()
+    assert hda_result["state"] == "ok"
+    assert hda_result["name"] == expected_name
+
+
+@responses.activate
+def test_drs_uri_overlong_name_is_truncated(mock_http_server):
+    _mock_drs_object(_bed_content_url(mock_http_server), name="a" * 300)
+    hda_result = _fetch_drs_element()
+    assert hda_result["state"] == "ok"
+    assert hda_result["name"] == "a" * 255
+
+
+def _bed_content_url(mock_http_server) -> str:
+    return mock_http_server.get_url(
+        remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+        file_path="test-data/1.bed",
+    )
+
+
+def _mock_drs_object(content_url: str, name: Any = None, access_id: str | None = None) -> None:
+    """Register mock responses for a DRS object resolving to ``content_url``."""
+    # The DRS API endpoints are mocked below, but the payload itself is served by the
+    # real local mock_http_server; the download also goes through requests now, so it
+    # has to be exempted from the responses mock.
+    responses.add_passthru(content_url)
+    access_method: dict[str, Any] = {"type": "https"}
+    if access_id is not None:
+        access_method["access_id"] = access_id
+        responses.add(responses.GET, f"{DRS_OBJECT_URL}/access/{access_id}", json={"url": content_url})
+    else:
+        access_method["access_url"] = {"url": content_url}
+    drs_object: dict[str, Any] = {"id": DRS_OBJECT_ID, "access_methods": [access_method]}
+    if name is not None:
+        drs_object["name"] = name
+    responses.add(responses.GET, DRS_OBJECT_URL, json=drs_object)
+
+
+def _fetch_drs_element(name: str | None = None) -> dict[str, Any]:
+    element: dict[str, Any] = {"src": "url", "url": DRS_URI}
+    if name is not None:
+        element["name"] = name
+    with _execute_context(allow_localhost=True) as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {"type": "hdas"},
+                    "elements": [element],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        return _unnamed_output(execute_context)["elements"][0]
 
 
 def test_correct_md5():
@@ -407,9 +539,134 @@ def test_hdca_failed_expansion():
         assert "Expected bagit.txt does not exist" in output["error_message"]
 
 
+def test_extra_files_nested_layout_stays_in_extra_files_directory():
+    with _execute_context() as execute_context:
+        extra_files = {
+            "elements": [
+                {"src": "pasted", "paste_content": "top\n", "name": "top.txt"},
+                {
+                    "name": "subdir",
+                    "elements": [
+                        {"src": "pasted", "paste_content": "nested\n", "name": "nested.txt"},
+                        {"src": "pasted", "paste_content": "deep\n", "name": "deeper/deep.txt"},
+                    ],
+                },
+            ]
+        }
+        execute_context.execute_request(_composite_request(extra_files))
+        output = _unnamed_output(execute_context)
+        element = output["elements"][0]
+        assert "error_message" not in element
+        extra_files_path = element["extra_files"]
+        job_directory = os.path.realpath(execute_context.job_directory)
+        assert os.path.realpath(extra_files_path).startswith(job_directory + os.sep)
+        assert os.path.exists(os.path.join(extra_files_path, "top.txt"))
+        assert os.path.exists(os.path.join(extra_files_path, "subdir", "nested.txt"))
+        assert os.path.exists(os.path.join(extra_files_path, "subdir", "deeper", "deep.txt"))
+
+
+def test_extra_files_leaf_name_cannot_escape_extra_files_directory():
+    with _execute_context() as execute_context:
+        escaped_path = execute_context.path_outside_job_directory()
+        bad_name = os.path.join("..", "..", os.path.basename(escaped_path))
+        extra_files = {"elements": [{"src": "pasted", "paste_content": "escaped\n", "name": bad_name}]}
+        _assert_extra_files_rejected(execute_context, extra_files, bad_name, escaped_path)
+
+
+def test_extra_files_directory_name_cannot_escape_extra_files_directory():
+    with _execute_context() as execute_context:
+        escaped_path = execute_context.path_outside_job_directory()
+        bad_name = os.path.join("..", "..")
+        extra_files = {
+            "elements": [
+                {
+                    "name": bad_name,
+                    "elements": [
+                        {"src": "pasted", "paste_content": "escaped\n", "name": os.path.basename(escaped_path)}
+                    ],
+                }
+            ]
+        }
+        _assert_extra_files_rejected(execute_context, extra_files, bad_name, escaped_path)
+
+
+def test_extra_files_absolute_name_cannot_escape_extra_files_directory():
+    with _execute_context() as execute_context:
+        escaped_path = execute_context.path_outside_job_directory()
+        extra_files = {"elements": [{"src": "pasted", "paste_content": "escaped\n", "name": escaped_path}]}
+        _assert_extra_files_rejected(execute_context, extra_files, escaped_path, escaped_path)
+
+
+def _composite_request(extra_files):
+    return {
+        "targets": [
+            {
+                "destination": {
+                    "type": "hdas",
+                },
+                "elements": [
+                    {
+                        "src": "pasted",
+                        "paste_content": "primary\n",
+                        "ext": "txt",
+                        "extra_files": extra_files,
+                    }
+                ],
+            }
+        ]
+    }
+
+
+def _assert_extra_files_rejected(execute_context, extra_files, bad_name, escaped_path):
+    execute_context.execute_request(_composite_request(extra_files))
+    assert not os.path.exists(escaped_path), f"extra file escaped the job directory to {escaped_path}"
+    output = _unnamed_output(execute_context)
+    element = output["elements"][0]
+    assert "error_message" in element
+    assert bad_name in element["error_message"]
+    assert "extra file name" in element["error_message"]
+
+
+def test_composite_base_name_cannot_escape_extra_files_directory():
+    # For a composite datatype whose file template substitutes ``base_name`` (e.g.
+    # lped's ``%s.ped``), the user-supplied element name becomes part of the
+    # on-disk composite key. A traversing name must not write outside the dataset.
+    with _execute_context() as execute_context:
+        conf_path = os.path.join(execute_context.job_directory, "test_datatypes_conf.xml")
+        with open(conf_path, "w") as f:
+            f.write(LPED_DATATYPES_CONF)
+        escape_dir = os.path.join(os.path.dirname(execute_context.job_directory), f"escape-{uuid4().hex}")
+        os.makedirs(escape_dir)
+        try:
+            base_name = ("../" * 40) + os.path.join(escape_dir.lstrip("/"), "pwned")
+            request = {
+                "targets": [
+                    {
+                        "destination": {"type": "hdas"},
+                        "elements": [
+                            {
+                                "ext": "lped",
+                                "name": base_name,
+                                "composite": {"elements": [{"src": "pasted", "paste_content": "ped content\n"}]},
+                            }
+                        ],
+                    }
+                ]
+            }
+            execute_context.execute_request(request, datatypes_registry=conf_path)
+            # base_name is sanitized before it becomes the composite key on this
+            # branch, so the traversing name is contained rather than rejected; the
+            # sink guard is covered directly by test_sniff. The invariant is no escape.
+            assert os.listdir(escape_dir) == [], f"composite file escaped into {escape_dir}"
+            _unnamed_output(execute_context)
+        finally:
+            rmtree(escape_dir, ignore_errors=True)
+
+
 @contextmanager
 def _execute_context(allow_localhost=False):
     job_directory = mkdtemp()
+    execute_context = ExecuteContext(job_directory)
     try:
         if allow_localhost:
             file_sources_path = os.path.join(job_directory, "file_sources.json")
@@ -419,6 +676,7 @@ def _execute_context(allow_localhost=False):
                         "file_sources": [
                             {"type": "http", "id": "stock_http"},
                             {"type": "base64", "id": "stock_base64"},
+                            {"type": "drs", "id": "stock_drs"},
                         ],
                         "config": {
                             "symlink_allowlist": [],
@@ -437,10 +695,13 @@ def _execute_context(allow_localhost=False):
         # to make sure all intermediate files are created in the working
         # directory
         tempfile.tempdir = "/abcdefgh123456"
-        yield ExecuteContext(job_directory)
+        yield execute_context
     finally:
         tempfile.tempdir = None
         rmtree(job_directory)
+        for path in execute_context.paths_outside_job_directory:
+            if os.path.exists(path):
+                os.remove(path)
 
 
 def _unnamed_output(execute_context: "ExecuteContext"):
@@ -457,12 +718,22 @@ class ExecuteContext:
     def __init__(self, directory):
         self.job_directory = directory
         self.galaxy_json_path = os.path.join(directory, "galaxy.json")
+        self.paths_outside_job_directory: list[str] = []
 
-    def execute_request(self, request):
+    def path_outside_job_directory(self):
+        # A sibling of the job directory: where ``<primary>_extra/../../<name>`` would land.
+        path = os.path.join(os.path.dirname(self.job_directory), f"escaped-{uuid4().hex}.txt")
+        self.paths_outside_job_directory.append(path)
+        return path
+
+    def execute_request(self, request, datatypes_registry: str | None = None):
         request_path = os.path.join(self.job_directory, "request.json")
         with open(request_path, "w") as f:
             json.dump(request, f)
-        self._execute(["--request", request_path])
+        args = ["--request", request_path]
+        if datatypes_registry:
+            args.extend(["--galaxy-root", GALAXY_ROOT, "--datatypes-registry", datatypes_registry])
+        self._execute(args)
 
     def _execute(self, args):
         args.extend(["--working-directory", self.job_directory])
@@ -474,3 +745,387 @@ class ExecuteContext:
         assert os.path.exists(self.galaxy_json_path)
         with open(self.galaxy_json_path) as f:
             return json.load(f)
+
+
+def _write_zarr_store(root: str) -> None:
+    """Minimal v2 zarr layout: a .zgroup at the store root plus one array."""
+    os.makedirs(os.path.join(root, "0"))
+    with open(os.path.join(root, ".zgroup"), "w") as f:
+        json.dump({"zarr_format": 2}, f)
+    with open(os.path.join(root, "0", ".zarray"), "w") as f:
+        json.dump({"zarr_format": 2, "shape": [1], "chunks": [1], "dtype": "<i4"}, f)
+    with open(os.path.join(root, "0", "0"), "wb") as f:
+        f.write(b"\x00\x00\x00\x00")
+
+
+def _write_json(path: str, content: Any) -> None:
+    with open(path, "w") as f:
+        json.dump(content, f)
+
+
+def _write_ome_sidecar(root: str) -> None:
+    os.mkdir(os.path.join(root, "OME"))
+    with open(os.path.join(root, "OME", "METADATA.ome.xml"), "w") as f:
+        f.write("<OME/>")
+
+
+def _fetch_single_path(
+    path: str,
+    ext: str | None = None,
+    link_data_only: Any = None,
+    purge_source: Any = None,
+) -> tuple[dict[str, Any], list[str]]:
+    """Fetch one path and return its metadata and relative extra-file paths."""
+    with _execute_context() as execute_context:
+        element: dict[str, Any] = {"src": "path", "path": path}
+        if ext is not None:
+            element["ext"] = ext
+        if link_data_only is not None:
+            element["link_data_only"] = link_data_only
+        if purge_source is not None:
+            element["purge_source"] = purge_source
+        execute_context.execute_request(
+            {"targets": [{"destination": {"type": "hdas"}, "elements": [element]}]},
+            datatypes_registry=STOCK_DATATYPES_CONF,
+        )
+        output = _unnamed_output(execute_context)
+        assert output
+        result = output["elements"][0]
+        staged = []
+        extra_files = result.get("extra_files")
+        if extra_files and os.path.isdir(extra_files):
+            for dirpath, _, filenames in os.walk(extra_files):
+                for filename in filenames:
+                    staged.append(os.path.relpath(os.path.join(dirpath, filename), extra_files))
+        if result.get("filename"):
+            result["_primary_file_size"] = os.path.getsize(result["filename"])
+        if len(staged) == 1 and extra_files:
+            only = os.path.join(extra_files, staged[0])
+            result["_staged_content"] = None
+            if os.path.isfile(only) and os.path.getsize(only) < 4096:
+                with open(only) as f:
+                    result["_staged_content"] = f.read()
+        return result, sorted(staged)
+
+
+def test_directory_path_is_staged_as_directory_dataset(tmp_path):
+    source = tmp_path / "some_dir"
+    (source / "nested").mkdir(parents=True)
+    (source / "nested" / "a.txt").write_text("hello")
+
+    result, staged = _fetch_single_path(str(source))
+
+    assert "error_message" not in result, result.get("error_message")
+    assert result["ext"] == "directory"
+    assert result["name"] == "some_dir"
+    assert staged == [os.path.join("some_dir", "nested", "a.txt")]
+    assert result["_primary_file_size"] == 0
+
+
+def test_zarr_directory_path_is_detected(tmp_path):
+    source = tmp_path / "input9.zarr"
+    source.mkdir()
+    _write_zarr_store(str(source))
+
+    result, staged = _fetch_single_path(str(source))
+
+    assert "error_message" not in result, result.get("error_message")
+    assert result["ext"] == "zarr"
+    assert os.path.join("input9.zarr", ".zgroup") in staged
+
+
+def test_zarr_directory_detected_without_a_zarr_suffix(tmp_path):
+    source = tmp_path / "plainly_named"
+    source.mkdir()
+    _write_zarr_store(str(source))
+
+    assert _fetch_single_path(str(source))[0]["ext"] == "zarr"
+
+
+@pytest.mark.parametrize(
+    "describe_store",
+    [
+        pytest.param(lambda root: None, id="plain"),
+        pytest.param(
+            lambda root: _write_json(os.path.join(root, ".zattrs"), {"multiscales": [{"version": "0.4"}]}),
+            id="ngff-multiscales",
+        ),
+        pytest.param(lambda root: _write_ome_sidecar(root), id="bioformats2raw-sidecar"),
+    ],
+)
+def test_ome_zarr_directory_is_detected_as_zarr(tmp_path, describe_store):
+    source = tmp_path / "image.zarr"
+    source.mkdir()
+    _write_zarr_store(str(source))
+    describe_store(str(source))
+
+    assert _fetch_single_path(str(source))[0]["ext"] == "zarr"
+
+
+def test_explicit_ome_zarr_extension(tmp_path):
+    source = tmp_path / "image.zarr"
+    source.mkdir()
+    _write_zarr_store(str(source))
+    _write_ome_sidecar(str(source))
+
+    assert _fetch_single_path(str(source), ext="ome_zarr")[0]["ext"] == "ome_zarr"
+
+
+def test_explicit_ext_overrides_directory_sniffing(tmp_path):
+    source = tmp_path / "input9.zarr"
+    source.mkdir()
+    _write_zarr_store(str(source))
+
+    assert _fetch_single_path(str(source), ext="directory")[0]["ext"] == "directory"
+
+
+def test_directory_upload_rejects_a_non_directory_datatype(tmp_path):
+    source = tmp_path / "some_dir"
+    source.mkdir()
+    (source / "a.txt").write_text("hello")
+
+    result, staged = _fetch_single_path(str(source), ext="txt")
+
+    assert "not a directory datatype" in result["error_message"]
+    assert staged == []
+    assert source.is_dir(), "the source must be left alone when the request is rejected"
+
+
+def test_directory_upload_rejects_linking(tmp_path):
+    source = tmp_path / "some_dir"
+    source.mkdir()
+    (source / "a.txt").write_text("hello")
+
+    result, _ = _fetch_single_path(str(source), link_data_only=True)
+
+    assert "linking directory datasets is not implemented" in result["error_message"]
+    assert source.is_dir()
+
+
+def test_directory_upload_purges_the_source_when_asked(tmp_path):
+    source = tmp_path / "some_dir"
+    source.mkdir()
+    (source / "a.txt").write_text("hello")
+
+    result, staged = _fetch_single_path(str(source), purge_source=True)
+
+    assert "error_message" not in result, result.get("error_message")
+    assert staged == [os.path.join("some_dir", "a.txt")]
+    assert not source.exists(), "purge_source: true must not leave the source tree behind"
+
+
+def test_directory_upload_keeps_the_source_when_not_purging(tmp_path):
+    source = tmp_path / "some_dir"
+    source.mkdir()
+    (source / "a.txt").write_text("hello")
+
+    result, staged = _fetch_single_path(str(source), purge_source=False)
+
+    assert "error_message" not in result, result.get("error_message")
+    assert staged == [os.path.join("some_dir", "a.txt")]
+    assert (source / "a.txt").read_text() == "hello"
+
+
+@pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root ignores directory permissions")
+def test_directory_purge_keeps_the_staged_copy_when_the_source_cannot_be_removed(tmp_path):
+    parent = tmp_path / "locked"
+    source = parent / "some_dir"
+    source.mkdir(parents=True)
+    (source / "a.txt").write_text("hello")
+    # Removing source requires write permission on parent.
+    parent.chmod(0o500)
+    try:
+        result, staged = _fetch_single_path(str(source), purge_source=True)
+    finally:
+        parent.chmod(0o700)
+
+    assert "error_message" not in result, result.get("error_message")
+    assert staged == [os.path.join("some_dir", "a.txt")], "the staged tree must survive intact"
+
+
+def test_directory_purge_renames_within_a_filesystem(tmp_path, monkeypatch):
+    source = tmp_path / "some_dir"
+    source.mkdir()
+    (source / "a.txt").write_text("hello")
+
+    copied = []
+    real_copytree = shutil.copytree
+
+    def spy_copytree(src, dst, *args, **kwargs):
+        copied.append(src)
+        return real_copytree(src, dst, *args, **kwargs)
+
+    monkeypatch.setattr(shutil, "copytree", spy_copytree)
+
+    result, staged = _fetch_single_path(str(source), purge_source=True)
+
+    assert "error_message" not in result, result.get("error_message")
+    assert staged == [os.path.join("some_dir", "a.txt")]
+    assert not source.exists()
+    assert copied == [], f"expected a rename, but the tree was copied: {copied}"
+
+
+def test_directory_purge_falls_back_to_copying_when_the_source_is_read_only(tmp_path, monkeypatch):
+    source = tmp_path / "some_dir"
+    source.mkdir()
+    (source / "a.txt").write_text("hello")
+
+    def is_our_source(candidate) -> bool:
+        return os.path.abspath(str(candidate)) == os.path.abspath(str(source))
+
+    real_rename = os.rename
+    real_rmtree = shutil.rmtree
+
+    def refuse_rename(src, dst, *args, **kwargs):
+        if is_our_source(src):
+            raise OSError(errno.EROFS, "Read-only file system")
+        return real_rename(src, dst, *args, **kwargs)
+
+    def refuse_rmtree(path, ignore_errors=False, **kwargs):
+        if is_our_source(path):
+            if ignore_errors:
+                return
+            raise OSError(errno.EROFS, "Read-only file system")
+        return real_rmtree(path, ignore_errors=ignore_errors, **kwargs)
+
+    monkeypatch.setattr(os, "rename", refuse_rename)
+    monkeypatch.setattr(shutil, "rmtree", refuse_rmtree)
+
+    result, staged = _fetch_single_path(str(source), purge_source=True)
+
+    assert "error_message" not in result, result.get("error_message")
+    assert staged == [os.path.join("some_dir", "a.txt")]
+    assert (source / "a.txt").read_text() == "hello", "a read-only source is left in place"
+
+
+def test_directory_path_with_a_trailing_slash(tmp_path):
+    source = tmp_path / "some_dir"
+    source.mkdir()
+    (source / "a.txt").write_text("hello")
+
+    result, staged = _fetch_single_path(f"{source}{os.sep}")
+
+    assert "error_message" not in result, result.get("error_message")
+    assert result["name"] == "some_dir"
+    assert staged == [os.path.join("some_dir", "a.txt")]
+
+
+def test_a_directory_holding_a_text_file_named_meta_is_not_zarr(tmp_path):
+    source = tmp_path / "notes"
+    source.mkdir()
+    (source / "meta").write_text("just some notes, not JSON\n")
+
+    result, _ = _fetch_single_path(str(source))
+
+    assert "error_message" not in result, result.get("error_message")
+    assert result["ext"] == "directory"
+
+
+def test_a_directory_holding_a_json_meta_file_is_not_zarr(tmp_path):
+    source = tmp_path / "notes"
+    source.mkdir()
+    (source / "meta").write_text('{"description": "notes"}')
+
+    result, _ = _fetch_single_path(str(source))
+
+    assert "error_message" not in result, result.get("error_message")
+    assert result["ext"] == "directory"
+
+
+@pytest.mark.parametrize("meta_content", ["[1]", '"notes"', "null", "12"])
+def test_non_object_json_meta_uses_directory_datatype(tmp_path, meta_content):
+    source = tmp_path / "notes"
+    source.mkdir()
+    (source / "meta").write_text(meta_content)
+
+    result, staged = _fetch_single_path(str(source))
+
+    assert "error_message" not in result, result.get("error_message")
+    assert result["ext"] == "directory"
+    assert staged == [os.path.join("notes", "meta")]
+
+
+@pytest.mark.parametrize(
+    "make_link",
+    [
+        pytest.param(lambda root: os.symlink("chunk", os.path.join(root, "a")), id="internal"),
+        pytest.param(lambda root: os.symlink(os.path.join("..", "secret"), os.path.join(root, "a")), id="escaping"),
+        pytest.param(lambda root: os.symlink(os.pardir, os.path.join(root, "a")), id="ancestor"),
+    ],
+)
+def test_directory_uploads_refuse_symlinks(tmp_path, make_link):
+    (tmp_path / "secret").write_text("not yours")
+    source = tmp_path / "some_dir"
+    source.mkdir()
+    (source / "chunk").write_text("payload")
+    make_link(str(source))
+
+    result, staged = _fetch_single_path(str(source), purge_source=True)
+
+    assert "symbolic links are not supported" in result["error_message"]
+    assert staged == [], "nothing may be staged from a refused directory"
+    assert source.is_dir(), "the source must be left alone"
+
+
+def test_a_symlinked_directory_root_is_refused(tmp_path):
+    real = tmp_path / "real_store"
+    real.mkdir()
+    (real / "a.txt").write_text("payload")
+    source = tmp_path / "some_dir"
+    source.symlink_to(os.path.join(".", "real_store"))
+
+    result, _ = _fetch_single_path(str(source), purge_source=True)
+
+    assert "symbolic links are not supported" in result["error_message"]
+    assert real.is_dir()
+
+
+def test_a_directory_containing_the_staging_location_is_refused(tmp_path):
+    with _execute_context() as execute_context:
+        job_directory = execute_context.job_directory
+        execute_context.execute_request(
+            {
+                "targets": [
+                    {
+                        "destination": {"type": "hdas"},
+                        "elements": [{"src": "path", "path": job_directory}],
+                    }
+                ]
+            },
+            datatypes_registry=STOCK_DATATYPES_CONF,
+        )
+        result = _unnamed_output(execute_context)["elements"][0]
+
+    assert "contains the location it would be staged to" in result["error_message"]
+
+
+def test_the_filesystem_root_is_refused(tmp_path):
+    result, staged = _fetch_single_path(os.sep, purge_source=False)
+
+    assert "error_message" in result, "uploading / must not be attempted"
+    assert staged == []
+
+
+@pytest.mark.parametrize(
+    "checksum",
+    [
+        pytest.param({"hashes": [{"hash_function": "MD5", "hash_value": "0" * 32}]}, id="hashes-list"),
+        pytest.param({"MD5": "0" * 32}, id="md5-key"),
+        pytest.param({"SHA-256": "0" * 64}, id="sha256-key"),
+    ],
+)
+def test_directory_uploads_refuse_checksums(tmp_path, checksum):
+    source = tmp_path / "some_dir"
+    source.mkdir()
+    (source / "a.txt").write_text("hello")
+
+    with _execute_context() as execute_context:
+        element = {"src": "path", "path": str(source)}
+        element.update(checksum)
+        execute_context.execute_request(
+            {"targets": [{"destination": {"type": "hdas"}, "elements": [element]}]},
+            datatypes_registry=STOCK_DATATYPES_CONF,
+        )
+        result = _unnamed_output(execute_context)["elements"][0]
+
+    assert "checksums are not supported" in result["error_message"]

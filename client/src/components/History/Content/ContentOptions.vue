@@ -11,7 +11,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BButton, BDropdown } from "bootstrap-vue";
+import { BDropdown } from "bootstrap-vue";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
 import { ScanEye } from "lucide-vue";
 import { computed, type Ref, ref } from "vue";
@@ -20,6 +20,8 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import localize from "@/utils/localization";
 import { prependPath } from "@/utils/redirect";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const props = defineProps({
     writable: { type: Boolean, default: true },
@@ -109,61 +111,61 @@ function onDisplay($event: MouseEvent) {
 <template>
     <span class="align-self-start btn-group align-items-baseline">
         <!-- Special case for collections -->
-        <BButton
+        <GButton
             v-if="isCollection && canShowCollectionDetails"
             v-g-tooltip.hover
             class="collection-job-details-btn px-1"
             :title="localize('Show Details')"
-            size="sm"
-            variant="link"
+            size="small"
+            transparent
             :href="showCollectionDetailsUrl"
             @click.prevent.stop="emit('showCollectionInfo')">
             <FontAwesomeIcon :icon="faInfoCircle" />
-        </BButton>
+        </GButton>
         <!-- Common for all content items -->
-        <BButton
+        <GButton
             v-if="isDataset"
             v-g-tooltip.hover
             :title="localize('View')"
             tabindex="0"
             class="display-btn px-1"
-            size="sm"
-            variant="link"
+            size="small"
+            transparent
             :href="displayUrl"
             @click.prevent.stop="onDisplay($event)">
             <ScanEye absolute-stroke-width :size="16" />
-        </BButton>
-        <BButton
+        </GButton>
+        <GButton
             v-if="writable && isHistoryItem"
             v-g-tooltip.hover
             :disabled="editDisabled"
             :title="localize(editButtonTitle)"
             tabindex="0"
             class="edit-btn px-1"
-            size="sm"
-            variant="link"
+            size="small"
+            transparent
             :href="editUrl"
             @click.prevent.stop="emit('edit')">
             <FontAwesomeIcon :icon="faPen" />
-        </BButton>
-        <BButton
+        </GButton>
+        <GButton
             v-if="isRunningInteractiveTool"
             v-g-tooltip.hover
             class="delete-btn px-1"
             :title="localize('Stop this Interactive Tool')"
-            size="sm"
-            variant="link"
+            size="small"
+            transparent
             @click.stop="onDelete($event)">
             <FontAwesomeIcon :icon="faStop" />
-        </BButton>
-        <BButton
+        </GButton>
+        <GButton
             v-else-if="writable && isHistoryItem && !isDeleted"
             v-g-tooltip.hover
             :tabindex="isDataset ? '0' : '-1'"
             class="delete-btn px-1"
             :title="localize('Delete')"
-            size="sm"
-            variant="link"
+            size="small"
+            transparent
             @click.stop="onDelete($event)">
             <FontAwesomeIcon v-if="isDataset" :icon="faTrash" />
             <BDropdown v-else ref="deleteCollectionMenu" size="sm" variant="link" no-caret toggle-class="p-0 m-0">
@@ -179,29 +181,29 @@ function onDisplay($event: MouseEvent) {
                     Collection and elements
                 </b-dropdown-item>
             </BDropdown>
-        </BButton>
-        <BButton
+        </GButton>
+        <GButton
             v-if="writable && isHistoryItem && isDeleted"
             v-g-tooltip.hover
             tabindex="0"
             class="undelete-btn px-1"
             :title="localize('Undelete')"
-            size="sm"
-            variant="link"
+            size="small"
+            transparent
             @click.stop="emit('undelete')">
             <FontAwesomeIcon :icon="faTrashRestore" />
-        </BButton>
-        <BButton
+        </GButton>
+        <GButton
             v-if="writable && isHistoryItem && !isVisible"
             v-g-tooltip.hover
             tabindex="0"
             class="unhide-btn px-1"
             :title="localize('Unhide')"
-            size="sm"
-            variant="link"
+            size="small"
+            transparent
             @click.stop="emit('unhide')">
             <FontAwesomeIcon :icon="faEyeSlash" />
-        </BButton>
+        </GButton>
     </span>
 </template>
 

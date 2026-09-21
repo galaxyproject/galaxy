@@ -36,6 +36,9 @@ omero-py #type: omero
 iiif-fsspec # type: iiif
 fs-irods # type: irods, depends on python-irodsclient
 mavedb-fsspec>=0.1.0 # type: mavedb
+pybis==7.0.0rc1 # type: openbis, pinned pre-release required for openBIS 7 backend compatibility
+commoncrawl-fsspec>=0.1.1 # type: commoncrawl
+arcfs-fsspec>=0.1.11 # type: gitlab, arc
 
 # Vault backend
 hvac
@@ -47,7 +50,8 @@ chronos-python==1.2.1
 pykube-ng==23.6.0
 
 # Cloud object store
-cloudbridge
+# 4.4.0 makes iter_content take a chunk_size, which the object store sets when streaming.
+cloudbridge>=4.4.0
 
 # Synnefo / Pithos+ object store client
 kamaki

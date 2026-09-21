@@ -53,7 +53,7 @@ jsonviewer:
     version: 0.0.0
 jupyterlite:
     package: "@galaxyproject/jupyterlite"
-    version: 0.0.30
+    version: 0.0.31
 kepler:
     package: "@galaxyproject/kepler"
     version: 0.0.3
@@ -113,7 +113,7 @@ rerunio:
     version: 0.0.0
 rmsxflipbook:
     package: "@galaxyproject/rmsxflipbook"
-    version: 0.0.2
+    version: 0.0.4
 seqviz:
     package: "@galaxyproject/seqviz"
     version: 0.0.2
@@ -129,6 +129,9 @@ ts_visjs:
 unipept:
     package: "@galaxyproject/unipept"
     version: 0.0.2
+varri:
+    package: "@galaxyproject/varri"
+    version: 0.0.0
 venn:
     package: "@galaxyproject/venn"
     version: 0.0.8

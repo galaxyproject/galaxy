@@ -67,19 +67,20 @@ def test_hda_to_table_entries_without_dbkey():
     dada2_species) must still yield a table entry - keyed by its ``value``
     column - so it can be consumed by a downstream tool in a workflow (the
     data-manager bundle chain). Previously such entries were dropped, leaving
-    the downstream select param with "no legal values defined"."""
+    the downstream select param with "no legal values defined".
+
+    The motus DM records the entry as a bare dict (not a one-element list), so
+    exercise that shape here - iterating it directly would yield column names."""
     hda = Bunch(
         extra_files_path="/bundle/extra",
         _metadata={
             "data_tables": {
-                "motus_db_versioned": [
-                    {
-                        "value": "db_from_2026-04-27T094930Z",
-                        "version": "3.1.0",
-                        "name": "mOTUs DB version 3.1.0",
-                        "path": "db_from_2026-04-27T094930Z",
-                    }
-                ]
+                "motus_db_versioned": {
+                    "value": "db_from_2026-04-27T094930Z",
+                    "version": "3.1.0",
+                    "name": "mOTUs DB version 3.1.0",
+                    "path": "db_from_2026-04-27T094930Z",
+                }
             }
         },
     )

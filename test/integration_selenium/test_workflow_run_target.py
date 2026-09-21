@@ -6,6 +6,7 @@ from galaxy_test.selenium.framework import (
     RunsWorkflows,
     UsesHistoryItemAssertions,
 )
+from galaxy_test.selenium.upload_activity_helpers import UsesUploadActivity
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
@@ -15,7 +16,9 @@ if TYPE_CHECKING:
     from galaxy_test.selenium.framework import SeleniumSessionDatasetPopulator
 
 
-class BaseWorkflowRunTargetTestCase(SeleniumIntegrationTestCase, RunsWorkflows, UsesHistoryItemAssertions):
+class BaseWorkflowRunTargetTestCase(
+    SeleniumIntegrationTestCase, RunsWorkflows, UsesHistoryItemAssertions, UsesUploadActivity
+):
     dataset_populator: "SeleniumSessionDatasetPopulator"
     ensure_registered = True
 
@@ -31,7 +34,7 @@ class TestWorkflowRunTargetNewSeleniumIntegration(BaseWorkflowRunTargetTestCase)
     @managed_history
     def test_execution_to_new_history(self):
         filename = self.test_data_resolver.get_filename("1.fasta")
-        self.perform_upload(filename)
+        self.upload_context("local-file").stage_local_file(filename).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         workflow_run = self.components.workflow_run
@@ -57,7 +60,7 @@ class TestWorkflowRunTargetCurrentSeleniumIntegration(BaseWorkflowRunTargetTestC
     @managed_history
     def test_execution_in_current_history(self):
         filename = self.test_data_resolver.get_filename("1.fasta")
-        self.perform_upload(filename)
+        self.upload_context("local-file").stage_local_file(filename).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         workflow_run = self.components.workflow_run
@@ -81,7 +84,7 @@ class TestWorkflowRunTargetSelectNewSeleniumIntegration(BaseWorkflowRunTargetTes
     @managed_history
     def test_execution_in_current_history(self):
         filename = self.test_data_resolver.get_filename("1.fasta")
-        self.perform_upload(filename)
+        self.upload_context("local-file").stage_local_file(filename).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         workflow_run = self.components.workflow_run

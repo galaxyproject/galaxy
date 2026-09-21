@@ -48,7 +48,6 @@ from galaxy.workflow.run_request import (
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesHistoryContext
     from galaxy.model import (
-        HistoryItem,
         Workflow,
         WorkflowOutput,
         WorkflowStep,
@@ -460,10 +459,10 @@ class WorkflowProgress:
                 remaining_steps.append((step, invocation_step))
         return remaining_steps
 
-    def replacement_for_input(self, trans: "ProvidesHistoryContext", step: "WorkflowStep", input_dict: dict[str, Any]):
-        replacement: (
-            NoReplacement | model.DatasetCollectionInstance | list[model.DatasetCollectionInstance] | HistoryItem
-        ) = NO_REPLACEMENT
+    def replacement_for_input(
+        self, trans: "ProvidesHistoryContext", step: "WorkflowStep", input_dict: dict[str, Any]
+    ) -> modules.StepInputReplacement:
+        replacement: modules.StepInputReplacement = NO_REPLACEMENT
         prefixed_name = input_dict["name"]
         multiple = input_dict["multiple"]
         is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]

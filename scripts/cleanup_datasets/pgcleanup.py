@@ -584,6 +584,8 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
     - Delete all UserRoleAssociations whose user_ids are purged in this step EXCEPT FOR THE PRIVATE
       ROLE.
     - Delete all UserAddresses whose user_ids are purged in this step.
+    - Delete all OIDC user authnz tokens (external identity associations) whose user_ids are purged
+      in this step.
     """
 
     _action_sql = """
@@ -615,6 +617,12 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
                     WHERE user_address.user_id = purged_user_ids.id
                 RETURNING user_address.user_id AS user_id,
                           user_address.id AS id),
+             deleted_oidc_ids
+          AS (DELETE FROM oidc_user_authnz_tokens
+                    USING purged_user_ids
+                    WHERE oidc_user_authnz_tokens.user_id = purged_user_ids.id
+                RETURNING oidc_user_authnz_tokens.user_id AS user_id,
+                          oidc_user_authnz_tokens.id AS id),
              user_events
           AS (INSERT INTO cleanup_event_user_association
                           (create_time, cleanup_event_id, user_id)
@@ -658,7 +666,8 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
              deleted_icda_ids.hda_id AS deleted_icda_hda_id,
              deleted_uga_ids.id AS deleted_uga_id,
              deleted_ura_ids.id AS deleted_ura_id,
-             deleted_ua_ids.id AS deleted_ua_id
+             deleted_ua_ids.id AS deleted_ua_id,
+             deleted_oidc_ids.id AS deleted_oidc_id
         FROM purged_user_ids
              LEFT OUTER JOIN purged_history_ids
                              ON purged_user_ids.id = purged_history_ids.user_id
@@ -674,6 +683,8 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
                              ON purged_user_ids.id = deleted_ura_ids.user_id
              LEFT OUTER JOIN deleted_ua_ids
                              ON purged_user_ids.id = deleted_ua_ids.user_id
+             LEFT OUTER JOIN deleted_oidc_ids
+                             ON purged_user_ids.id = deleted_oidc_ids.user_id
     ORDER BY purged_user_ids.id
     """
     causals = (
@@ -684,6 +695,7 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
         ("purged_user_id", "deleted_uga_id"),
         ("purged_user_id", "deleted_ura_id"),
         ("purged_user_id", "deleted_ua_id"),
+        ("purged_user_id", "deleted_oidc_id"),
     )
 
     def _init(self):
@@ -714,6 +726,8 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
     """
     - Perform all steps in the PurgeDeletedUsers/purge_deleted_users action
     - Obfuscate User.email and User.username for all users purged in this step.
+    - Delete all OIDC user authnz tokens (external identity associations) whose user_ids are purged
+      in this step.
 
     NOTE: Your database must have the pgcrypto extension installed e.g. with:
       CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -751,6 +765,12 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
                     WHERE user_address.user_id = purged_user_ids.id
                 RETURNING user_address.user_id AS user_id,
                           user_address.id AS id),
+             deleted_oidc_ids
+          AS (DELETE FROM oidc_user_authnz_tokens
+                    USING purged_user_ids
+                    WHERE oidc_user_authnz_tokens.user_id = purged_user_ids.id
+                RETURNING oidc_user_authnz_tokens.user_id AS user_id,
+                          oidc_user_authnz_tokens.id AS id),
              user_events
           AS (INSERT INTO cleanup_event_user_association
                           (create_time, cleanup_event_id, user_id)
@@ -794,7 +814,8 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
              deleted_icda_ids.hda_id AS deleted_icda_hda_id,
              deleted_uga_ids.id AS deleted_uga_id,
              deleted_ura_ids.id AS deleted_ura_id,
-             deleted_ua_ids.id AS deleted_ua_id
+             deleted_ua_ids.id AS deleted_ua_id,
+             deleted_oidc_ids.id AS deleted_oidc_id
         FROM purged_user_ids
              LEFT OUTER JOIN purged_history_ids
                              ON purged_user_ids.id = purged_history_ids.user_id
@@ -810,6 +831,8 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
                              ON purged_user_ids.id = deleted_ura_ids.user_id
              LEFT OUTER JOIN deleted_ua_ids
                              ON purged_user_ids.id = deleted_ua_ids.user_id
+             LEFT OUTER JOIN deleted_oidc_ids
+                             ON purged_user_ids.id = deleted_oidc_ids.user_id
     ORDER BY purged_user_ids.id
     """
     causals = (
@@ -820,6 +843,7 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
         ("purged_user_id", "deleted_uga_id"),
         ("purged_user_id", "deleted_ura_id"),
         ("purged_user_id", "deleted_ua_id"),
+        ("purged_user_id", "deleted_oidc_id"),
     )
 
     @classmethod

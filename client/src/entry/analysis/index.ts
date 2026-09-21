@@ -3,6 +3,7 @@ import { createPinia, PiniaVuePlugin } from "pinia";
 import Vue from "vue";
 
 import { installPendingRequestsInterceptor } from "@/api/pendingRequests";
+import { installStaleCacheRetryInterceptor } from "@/api/staleCacheRetry";
 import { initGalaxyInstance } from "@/app";
 import { initSentry } from "@/app/addons/sentry";
 import { initWebhooks } from "@/app/addons/webhooks";
@@ -19,6 +20,7 @@ const pinia = createPinia();
 // navigates — otherwise their late ``Set-Cookie: galaxysession=<anon>`` can
 // clobber the authenticated cookie.
 installPendingRequestsInterceptor();
+installStaleCacheRetryInterceptor();
 
 window.addEventListener("load", async () => {
     // Create Galaxy object

@@ -133,9 +133,11 @@ class ChangeDatatypeAction(DefaultJobAction):
                 return
         for dataset_collection_assoc in job.output_dataset_collection_instances:
             if action.output_name == "" or dataset_collection_assoc.name == action.output_name:
-                for dataset_instance in dataset_collection_assoc.dataset_collection_instance.dataset_instances:
-                    if dataset_instance:
-                        app.datatypes_registry.change_datatype(dataset_instance, action.action_arguments["newtype"])
+                dataset_instances = dataset_collection_assoc.dataset_collection_instance.dataset_instances
+                if dataset_instances:
+                    for dataset_instance in dataset_instances:
+                        if dataset_instance:
+                            app.datatypes_registry.change_datatype(dataset_instance, action.action_arguments["newtype"])
                 else:
                     # dynamic collection, add as PJA
                     pjaa = PostJobActionAssociation(action, job)

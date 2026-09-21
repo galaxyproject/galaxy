@@ -9,6 +9,7 @@ from galaxy_test.selenium.framework import (
     selenium_only,
     UsesHistoryItemAssertions,
 )
+from galaxy_test.selenium.upload_activity_helpers import UsesUploadActivity
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
@@ -18,7 +19,9 @@ if TYPE_CHECKING:
     from galaxy_test.selenium.framework import SeleniumSessionDatasetPopulator
 
 
-class BaseWorkflowRunTargetTestCase(SeleniumIntegrationTestCase, RunsWorkflows, UsesHistoryItemAssertions):
+class BaseWorkflowRunTargetTestCase(
+    SeleniumIntegrationTestCase, RunsWorkflows, UsesHistoryItemAssertions, UsesUploadActivity
+):
     dataset_populator: "SeleniumSessionDatasetPopulator"
     ensure_registered = True
 
@@ -35,7 +38,7 @@ class TestWorkflowRunNotificationSeleniumIntegration(BaseWorkflowRunTargetTestCa
     def test_on_complete_notification_action(self):
         """Test configuring the send notification completion action."""
         filename = self.test_data_resolver.get_filename("1.fasta")
-        self.perform_upload(filename)
+        self.upload_context("local-file").stage_local_file(filename).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.sleep_for(self.wait_types.UX_RENDER)

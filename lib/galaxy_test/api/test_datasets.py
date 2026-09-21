@@ -729,6 +729,32 @@ class TestDatasetsApi(ApiTestCase):
         )
         self._assert_status_code_is(invalidly_updated_hda_response, 400)
 
+    def test_update_metadata(self, history_id):
+        hda_id = self.dataset_populator.new_dataset(history_id, wait=True)["id"]
+        original_hda = self._get(f"histories/{history_id}/contents/{hda_id}").json()
+        assert original_hda["metadata_dbkey"] == "?"
+
+        updated_response = self._put(
+            f"histories/{history_id}/contents/{hda_id}", data={"metadata": {"dbkey": "hg38"}}, json=True
+        )
+        self._assert_status_code_is(updated_response, 200)
+        updated_hda = updated_response.json()
+        assert updated_hda["metadata_dbkey"] == "hg38"
+
+        # readonly metadata keys should be silently ignored
+        readonly_response = self._put(
+            f"histories/{history_id}/contents/{hda_id}", data={"metadata": {"data_lines": 999}}, json=True
+        )
+        self._assert_status_code_is(readonly_response, 200)
+        assert readonly_response.json().get("metadata_data_lines") != 999
+
+        # unknown metadata keys should be silently ignored
+        unknown_response = self._put(
+            f"histories/{history_id}/contents/{hda_id}", data={"metadata": {"nonexistent_key": "value"}}, json=True
+        )
+        self._assert_status_code_is(unknown_response, 200)
+        assert "metadata_nonexistent_key" not in unknown_response.json()
+
     @skip_without_tool("cat_data_and_sleep")
     def test_delete_cancels_job(self, history_id):
         self._run_cancel_job(history_id, use_query_params=False)

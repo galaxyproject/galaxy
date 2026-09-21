@@ -99,6 +99,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
     """
 
     runner_name = "GoogleCloudBatchJobRunner"
+    always_handle_metadata_externally = True
 
     def __init__(self, app, nworkers, **kwargs):
         """Initialize the Google Cloud Batch job runner."""
@@ -361,16 +362,27 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         # Configure network for NFS access (required when using NFS volumes)
         if parsed_volumes:
             network_interface = batch_v1.AllocationPolicy.NetworkInterface()
-            network_interface.network = f"global/networks/{params.get('network', 'default')}"
-            network_interface.subnetwork = f"regions/{params['region']}/subnetworks/{params.get('subnet', 'default')}"
+            # Qualify bare names with the project so Batch resolves them in project_id's
+            # VPC, not the (possibly different, e.g. a Terra pet) project the Batch VMs are
+            # provisioned in -- a relative "global/networks/<name>" resolves against the
+            # latter and 404s. A value that is already a full/relative path is passed through.
+            project_id = params["project_id"]
+            network = params.get("network", "default")
+            subnet = params.get("subnet", "default")
+            network_interface.network = (
+                network if "/" in network else f"projects/{project_id}/global/networks/{network}"
+            )
+            network_interface.subnetwork = (
+                subnet if "/" in subnet else f"projects/{project_id}/regions/{params['region']}/subnetworks/{subnet}"
+            )
 
             network_policy = batch_v1.AllocationPolicy.NetworkPolicy()
             network_policy.network_interfaces = [network_interface]
             allocation_policy.network = network_policy
             log.debug(
-                "Configured network for NFS access: %s/%s for job %s",
-                params.get("network", "default"),
-                params.get("subnet", "default"),
+                "Configured network for NFS access: %s / %s for job %s",
+                network_interface.network,
+                network_interface.subnetwork,
                 job_wrapper.get_id_tag(),
             )
 
@@ -738,7 +750,6 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             if job_status == batch_v1.JobStatus.State.SUCCEEDED:
                 log.info("Batch job %s completed successfully", batch_job_name)
                 job_state.running = False
-                job_state.job_wrapper.change_state(model.Job.states.OK)
                 self.mark_as_finished(job_state)
                 log.debug("Finished check_watched_item for job %s (completed successfully)", job_state.job_id)
                 return None  # Remove from monitoring

@@ -7,6 +7,7 @@ from tempfile import (
     mkstemp,
 )
 from unittest.mock import (
+    call,
     MagicMock,
     patch,
 )
@@ -17,8 +18,13 @@ from requests import get
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.objectstore import (
+    DeviceSourceMap,
     ObjectStoreAuth,
     persist_extra_files_for_dataset,
+)
+from galaxy.objectstore._caching_base import (
+    RemoteDataStream,
+    STREAM_CHUNK_SIZE,
 )
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
 from galaxy.objectstore.caching import (
@@ -42,6 +48,30 @@ from galaxy.util import (
     unlink,
 )
 from galaxy.util.unittest_utils import skip_unless_environ
+
+
+def test_persist_extra_files_skips_symlink_outside_source_directory(tmp_path):
+    extra_files_path = tmp_path / "extra"
+    extra_files_path.mkdir()
+    valid_path = extra_files_path / "valid.txt"
+    valid_path.write_text("valid")
+    outside_path = tmp_path / "outside.txt"
+    outside_path.write_text("outside")
+    (extra_files_path / "escaped.txt").symlink_to(outside_path)
+
+    with TestConfig(DISK_TEST_CONFIG) as (_directory, object_store):
+        dataset = MockDataset(1)
+        object_store.create(dataset)
+        persist_extra_files_for_dataset(
+            object_store,
+            extra_files_path,
+            dataset,  # type: ignore[arg-type,unused-ignore]
+            dataset._extra_files_rel_path,
+        )
+
+        persisted_extra_files = _extra_file_path(object_store, dataset)
+        assert open(os.path.join(persisted_extra_files, "valid.txt")).read() == "valid"
+        assert not os.path.lexists(os.path.join(persisted_extra_files, "escaped.txt"))
 
 
 # Unit testing the cloud and advanced infrastructure object stores is difficult, but
@@ -507,6 +537,16 @@ def test_distributed_store():
             assert device_source_map.get_device_id("files2") == "primary_disk"
 
 
+def test_device_source_map_user_object_store():
+    """User-defined object stores return their own ID as the device ID."""
+
+    device_map = DeviceSourceMap()
+    user_store_id = "user_objects://abc123"
+    assert device_map.get_device_id(user_store_id) == user_store_id
+    # A non-existent, non-user store still falls back to the default (None).
+    assert device_map.get_device_id("does_not_exist") is None
+
+
 def test_distributed_store_empty_cache_targets():
     for config_str in [DISTRIBUTED_TEST_CONFIG, DISTRIBUTED_TEST_CONFIG_YAML]:
         with TestConfig(config_str) as (directory, object_store):
@@ -576,6 +616,16 @@ def test_hiercachical_backend_must_share_quota_source():
 
 PITHOS_TEST_CONFIG = get_example("pithos_simple.xml")
 PITHOS_TEST_CONFIG_YAML = get_example("pithos_simple.yml")
+
+
+@patch_object_stores_to_skip_initialize
+def test_pithos_caches_outside_the_dataset_directory():
+    # Pithos used to stage into config.file_path - the primary dataset directory -
+    # which puts cache files among datasets and points the cache monitor at them.
+    for config_str in [PITHOS_TEST_CONFIG, PITHOS_TEST_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.staging_path == directory.global_config.object_store_cache_path
+            assert object_store.staging_path != directory.global_config.file_path
 
 
 @patch_object_stores_to_skip_initialize
@@ -780,6 +830,429 @@ def test_get_direct_download_url_disk_store_returns_none():
         assert url is None
 
 
+BOTO3_TEE_STREAMING_TEST_CONFIG_YAML = """
+type: boto3
+auth:
+  access_key: access_moo
+  secret_key: secret_cow
+
+bucket:
+  name: unique_bucket_name_all_lowercase
+
+cache:
+  path: "${temp_directory}/object_store_cache"
+  size: 1000
+
+extra_dirs:
+- type: job_work
+  path: "${temp_directory}/job_working_directory_s3"
+- type: temp
+  path: "${temp_directory}/tmp_s3"
+"""
+
+
+def _cache_path_for(object_store, dataset):
+    rel_path = object_store._construct_path(dataset)
+    return object_store._get_cache_path(rel_path, object_store._get_object_id(dataset))
+
+
+def _leftover_temp_files(cache_path):
+    cache_dir = os.path.dirname(cache_path)
+    if not os.path.exists(cache_dir):
+        return []
+    return [name for name in os.listdir(cache_dir) if name.endswith(".tmp")]
+
+
+def _remote_stream(chunks, on_close=None):
+    """Build what `_stream_remote` returns: an open read, plus the call that releases it."""
+    return RemoteDataStream(iter(chunks), on_close or (lambda: None))
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_tees_remote_bytes_into_cache():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        with (
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"chunk1", b"chunk2"])),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(dataset)
+            assert stream is not None
+            assert b"".join(stream) == b"chunk1chunk2"
+
+        cache_path = _cache_path_for(object_store, dataset)
+        with open(cache_path, "rb") as f:
+            assert f.read() == b"chunk1chunk2"
+        assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_discards_partial_cache_when_client_disconnects():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        with (
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"chunk1", b"chunk2"])),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(dataset)
+            assert stream is not None
+            assert next(stream) == b"chunk1"
+            # A client disconnecting mid-download closes the generator.
+            stream.close()
+
+        cache_path = _cache_path_for(object_store, dataset)
+        assert not os.path.exists(cache_path)
+        assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_discards_partial_cache_when_remote_read_fails():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+
+        def failing_chunks():
+            yield b"chunk1"
+            raise OSError("connection reset by the object store")
+
+        with (
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream(failing_chunks())),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(dataset)
+            assert stream is not None
+            with pytest.raises(OSError):
+                b"".join(stream)
+
+        cache_path = _cache_path_for(object_store, dataset)
+        assert not os.path.exists(cache_path)
+        assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_bypasses_cache_when_object_is_bigger_than_cache():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        one_terabyte = 1024**4
+        with (
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"chunk1", b"chunk2"])),
+            patch.object(object_store, "_get_remote_size", return_value=one_terabyte),
+        ):
+            stream = object_store.get_data_stream(dataset)
+            assert stream is not None
+            assert b"".join(stream) == b"chunk1chunk2"
+
+        cache_path = _cache_path_for(object_store, dataset)
+        assert not os.path.exists(cache_path)
+        assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_does_not_cache_a_truncated_object():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        # The store says the object is 12 bytes but the stream ends after 6.
+        with (
+            patch.object(object_store, "_stream_remote", return_value=_remote_stream([b"chunk1"])),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(dataset)
+            assert stream is not None
+            with pytest.raises(OSError):
+                b"".join(stream)
+
+        cache_path = _cache_path_for(object_store, dataset)
+        # Publishing it would poison the cache: every later download would serve half an object.
+        assert not os.path.exists(cache_path)
+        assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_returns_none_when_remote_size_is_unknown():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        # Backends report an unknown size as a negative number; without a size there is nothing to
+        # check a streamed object against, so fall back to pulling it into the cache.
+        with (
+            patch.object(object_store, "_stream_remote") as stream_remote,
+            patch.object(object_store, "_get_remote_size", return_value=-1),
+        ):
+            assert object_store.get_data_stream(MockDataset(1)) is None
+            # Deciding against streaming after opening the read would strand the connection: nobody
+            # owns it once None is returned in its place.
+            stream_remote.assert_not_called()
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_does_not_open_a_read_it_cannot_hand_over():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        # Same reason, for the other way the decision can go wrong: a size lookup that raises.
+        with (
+            patch.object(object_store, "_stream_remote") as stream_remote,
+            patch.object(object_store, "_get_remote_size", side_effect=OSError("no such key")),
+        ):
+            assert object_store.get_data_stream(MockDataset(1)) is None
+            stream_remote.assert_not_called()
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_releases_the_remote_read_when_the_client_disconnects():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        closed = []
+        with (
+            patch.object(
+                object_store,
+                "_stream_remote",
+                return_value=_remote_stream([b"chunk1", b"chunk2"], on_close=lambda: closed.append(True)),
+            ),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(MockDataset(1))
+            assert stream is not None
+            assert next(stream) == b"chunk1"
+            stream.close()
+            # An abandoned read has to hand its connection back, or a cancelled download costs one
+            # from the pool for as long as the store keeps the response open.
+            assert closed == [True]
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_releases_the_remote_read_before_the_first_chunk():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        closed = []
+        with (
+            patch.object(
+                object_store,
+                "_stream_remote",
+                return_value=_remote_stream([b"chunk1", b"chunk2"], on_close=lambda: closed.append(True)),
+            ),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(MockDataset(1))
+            assert stream is not None
+            stream.close()
+            # A client can disappear while response headers are being sent, before Starlette asks
+            # the iterator for its first chunk. The already-open read must still be released.
+            assert closed == [True]
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_releases_the_remote_read_when_it_errors():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        closed = []
+
+        def failing_chunks():
+            yield b"chunk1"
+            raise OSError("connection reset by the object store")
+
+        with (
+            patch.object(
+                object_store,
+                "_stream_remote",
+                return_value=_remote_stream(failing_chunks(), on_close=lambda: closed.append(True)),
+            ),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            stream = object_store.get_data_stream(MockDataset(1))
+            assert stream is not None
+            with pytest.raises(OSError):
+                b"".join(stream)
+            assert closed == [True]
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_releases_the_remote_read_when_it_is_not_cached():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        closed = []
+        one_terabyte = 1024**4
+        with (
+            patch.object(
+                object_store,
+                "_stream_remote",
+                return_value=_remote_stream([b"chunk1", b"chunk2"], on_close=lambda: closed.append(True)),
+            ),
+            patch.object(object_store, "_get_remote_size", return_value=one_terabyte),
+        ):
+            stream = object_store.get_data_stream(MockDataset(1))
+            assert stream is not None
+            # The bigger-than-cache path skips the tee entirely; it still owns the read.
+            assert b"".join(stream) == b"chunk1chunk2"
+            assert closed == [True]
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_returns_none_when_already_cached():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        cache_path = _cache_path_for(object_store, dataset)
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+        with open(cache_path, "wb") as f:
+            f.write(b"already cached")
+
+        with patch.object(object_store, "_stream_remote") as stream_remote:
+            # Cached objects are served from disk so that ranges and X-Accel still work.
+            assert object_store.get_data_stream(dataset) is None
+            stream_remote.assert_not_called()
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_returns_none_when_backend_cannot_stream():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        with patch.object(object_store, "_stream_remote", return_value=None):
+            assert object_store.get_data_stream(MockDataset(1)) is None
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_returns_none_when_opening_remote_stream_fails():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        # Failing to open the stream must fall back to the pull path, not raise.
+        with patch.object(object_store, "_stream_remote", side_effect=OSError("no such key")):
+            assert object_store.get_data_stream(MockDataset(1)) is None
+
+
+def test_get_data_stream_disk_store_returns_none():
+    with TestConfig(DISK_TEST_CONFIG) as (directory, object_store):
+        assert object_store.get_data_stream(MockDataset(1)) is None
+
+
+@patch_object_stores_to_skip_initialize
+def test_get_data_stream_concurrent_streams_do_not_corrupt_cache():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        with (
+            patch.object(
+                object_store, "_stream_remote", side_effect=lambda rel_path: _remote_stream([b"chunk1", b"chunk2"])
+            ),
+            patch.object(object_store, "_get_remote_size", return_value=12),
+        ):
+            first = object_store.get_data_stream(dataset)
+            second = object_store.get_data_stream(dataset)
+            assert first is not None and second is not None
+            # Interleave the two downloads of the same uncached object.
+            assert next(first) == b"chunk1"
+            assert next(second) == b"chunk1"
+            assert b"".join(first) == b"chunk2"
+            assert b"".join(second) == b"chunk2"
+
+        cache_path = _cache_path_for(object_store, dataset)
+        with open(cache_path, "rb") as f:
+            assert f.read() == b"chunk1chunk2"
+        assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
+def test_atomic_download_concurrent_downloads_do_not_share_a_temp_file():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        dataset = MockDataset(1)
+        cache_path = _cache_path_for(object_store, dataset)
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+
+        # Two downloads of the same uncached object overlap: sharing one temp file lets the second
+        # truncate what the first is still writing, publishing a corrupt object into the cache.
+        with object_store._atomic_download(cache_path) as first_tmp:
+            with object_store._atomic_download(cache_path) as second_tmp:
+                assert first_tmp != second_tmp
+                with open(second_tmp, "wb") as f:
+                    f.write(b"a complete object")
+            with open(first_tmp, "wb") as f:
+                f.write(b"a complete object")
+
+        with open(cache_path, "rb") as f:
+            assert f.read() == b"a complete object"
+        assert _leftover_temp_files(cache_path) == []
+
+
+@patch_object_stores_to_skip_initialize
+def test_stream_remote_boto3_reads_object_body_in_chunks():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        body = MagicMock()
+        body.iter_chunks.return_value = iter([b"chunk1", b"chunk2"])
+        object_store._client = MagicMock()
+        object_store._client.get_object.return_value = {"Body": body}
+
+        with object_store._stream_remote("000/dataset_1.dat") as chunks:
+            assert list(chunks) == [b"chunk1", b"chunk2"]
+
+        _, call_kwargs = object_store._client.get_object.call_args
+        assert call_kwargs["Bucket"] == object_store.bucket
+        assert call_kwargs["Key"] == "000/dataset_1.dat"
+
+
+@patch_object_stores_to_skip_initialize
+def test_stream_remote_boto3_closes_the_response_body_not_just_the_chunk_iterator():
+    with TestConfig(BOTO3_TEE_STREAMING_TEST_CONFIG_YAML) as (directory, object_store):
+        body = MagicMock()
+        # botocore builds iter_chunks as a plain generator over StreamingBody.read, so closing it
+        # ends the loop and leaves the response -- and its pooled connection -- open.
+        body.iter_chunks.return_value = iter([b"chunk1", b"chunk2"])
+        object_store._client = MagicMock()
+        object_store._client.get_object.return_value = {"Body": body}
+
+        with object_store._stream_remote("000/dataset_1.dat") as chunks:
+            assert next(chunks) == b"chunk1"
+            body.close.assert_not_called()
+
+        body.close.assert_called_once_with()
+
+
+@patch_object_stores_to_skip_initialize
+def test_stream_remote_azure_reads_blob_in_chunks():
+    with TestConfig(get_example("azure_simple.yml")) as (directory, object_store):
+        blob_client = MagicMock()
+        blob_client.download_blob.return_value.chunks.return_value = iter([b"chunk1", b"chunk2"])
+        with patch.object(object_store, "_blob_client", return_value=blob_client) as blob_client_for:
+            with object_store._stream_remote("000/dataset_1.dat") as chunks:
+                assert list(chunks) == [b"chunk1", b"chunk2"]
+
+            blob_client_for.assert_called_once_with("000/dataset_1.dat")
+
+
+@patch_object_stores_to_skip_initialize
+def test_stream_remote_cloud_reads_object_content_in_chunks():
+    with TestConfig(get_example("cloud_aws_simple.yml")) as (directory, object_store):
+        key = MagicMock()
+        content = MagicMock()
+        content.__iter__.return_value = iter([b"chunk1", b"chunk2"])
+        key.iter_content.return_value = content
+        object_store.bucket = MagicMock()
+        object_store.bucket.objects.get.return_value = key
+
+        with object_store._stream_remote("000/dataset_1.dat") as chunks:
+            assert list(chunks) == [b"chunk1", b"chunk2"]
+
+        object_store.bucket.objects.get.assert_called_once_with("000/dataset_1.dat")
+        # Chunk size is the caller's to set (cloudbridge >= 4.4.0); left to the provider it was
+        # 4 KiB on AWS, which costs a threadpool hop per 4 KiB of a multi-GB download.
+        key.iter_content.assert_called_once_with(chunk_size=STREAM_CHUNK_SIZE)
+        content.close.assert_called_once_with()
+
+
+@patch_object_stores_to_skip_initialize
+def test_stream_remote_s3_reads_key_in_chunks():
+    # boto2 backs both aws_s3 and generic_s3; #19255 reports generic_s3 truncating 4GB downloads to
+    # 3GB, which the tee's size check turns into a failure instead of a corrupt file.
+    with TestConfig(S3_TEST_CONFIG_YAML) as (directory, object_store):
+        key = MagicMock()
+        key.read.side_effect = [b"chunk1", b"chunk2", b""]
+        object_store._bucket = MagicMock()
+        object_store._bucket.get_key.return_value = key
+
+        with object_store._stream_remote("000/dataset_1.dat") as chunks:
+            assert list(chunks) == [b"chunk1", b"chunk2"]
+
+        object_store._bucket.get_key.assert_called_once_with("000/dataset_1.dat")
+        assert key.read.call_args_list == [call(STREAM_CHUNK_SIZE)] * 3
+        # fast=True, or releasing an abandoned key would first read the rest of the object.
+        key.close.assert_called_once_with(fast=True)
+
+
+@patch_object_stores_to_skip_initialize
+def test_stream_remote_s3_returns_none_for_a_missing_key():
+    with TestConfig(S3_TEST_CONFIG_YAML) as (directory, object_store):
+        object_store._bucket = MagicMock()
+        object_store._bucket.get_key.return_value = None
+
+        assert object_store._stream_remote("000/dataset_1.dat") is None
+
+
 @patch_object_stores_to_skip_initialize
 def test_config_parse_boto3_custom_connection():
     for config_str in [get_example("boto3_custom_connection.xml"), get_example("boto3_custom_connection.yml")]:
@@ -848,6 +1321,13 @@ def test_config_parse_boto3_separated_transfer_options():
 
 CLOUD_AWS_TEST_CONFIG = get_example("cloud_aws_simple.xml")
 CLOUD_AWS_TEST_CONFIG_YAML = get_example("cloud_aws_simple.yml")
+CLOUD_AWS_CUSTOM_ENDPOINT = "http://127.0.0.1:9000"
+CLOUD_AWS_CUSTOM_ENDPOINT_TEST_CONFIG = CLOUD_AWS_TEST_CONFIG.replace(
+    "<bucket ", f'<connection endpoint_url="{CLOUD_AWS_CUSTOM_ENDPOINT}" />\n     <bucket ', 1
+)
+CLOUD_AWS_CUSTOM_ENDPOINT_TEST_CONFIG_YAML = CLOUD_AWS_TEST_CONFIG_YAML.replace(
+    "\nbucket:\n", f"\nconnection:\n  endpoint_url: {CLOUD_AWS_CUSTOM_ENDPOINT}\n\nbucket:\n", 1
+)
 
 CLOUD_AZURE_TEST_CONFIG = get_example("cloud_azure_simple.xml")
 CLOUD_AZURE_TEST_CONFIG_YAML = get_example("cloud_azure_simple.yml")
@@ -912,6 +1392,32 @@ def test_config_parse_cloud():
 
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_aws_custom_endpoint():
+    for config_str in [CLOUD_AWS_CUSTOM_ENDPOINT_TEST_CONFIG, CLOUD_AWS_CUSTOM_ENDPOINT_TEST_CONFIG_YAML]:
+        with TestConfig(config_str) as (_, object_store):
+            assert object_store.endpoint_url == CLOUD_AWS_CUSTOM_ENDPOINT
+            assert object_store.to_dict()["connection"]["endpoint_url"] == CLOUD_AWS_CUSTOM_ENDPOINT
+
+            with (
+                patch("galaxy.objectstore.cloud.CloudProviderFactory") as provider_factory,
+                patch("galaxy.objectstore.cloud.ProviderList") as providers,
+            ):
+                connection = object_store._get_connection(
+                    object_store.provider, object_store.credentials, object_store.endpoint_url
+                )
+
+            assert connection is provider_factory.return_value.create_provider.return_value
+            provider_factory.return_value.create_provider.assert_called_once_with(
+                providers.AWS,
+                {
+                    "aws_access_key": "access_moo",
+                    "aws_secret_key": "secret_cow",
+                    "s3_endpoint_url": CLOUD_AWS_CUSTOM_ENDPOINT,
+                },
+            )
 
 
 CLOUD_AWS_NO_AUTH_TEST_CONFIG = get_example("cloud_aws_no_auth.xml")
@@ -1023,7 +1529,7 @@ def test_cache_monitor_thread(tmp_path):
     path.write_text("this is an example file")
 
     cache_target = CacheTarget(cache_dir, 1, 0.000000001)
-    monitor = InProcessCacheMonitor(cache_target, 30, 0)
+    monitor = InProcessCacheMonitor([cache_target], 30, 0)
 
     path_cleaned = False
     for _ in range(100):
@@ -1053,6 +1559,21 @@ def test_check_cache_sanity(tmp_path):
     small_cache_target = CacheTarget(cache_dir, 1, 0.000000001)
     check_cache(small_cache_target)
     assert not path.exists()
+
+
+def test_check_cache_treats_non_positive_size_as_unbounded(tmp_path):
+    # A non-positive cache size means "unbounded" everywhere else in this module
+    # (see CacheTarget.fits_in_cache), so the monitor must not treat it as a
+    # zero-byte budget and reap the whole directory.
+    cache_dir = tmp_path
+    path = cache_dir / "a_file_0"
+    path.write_text("this is an example file")
+
+    check_cache(CacheTarget(cache_dir, -1, 0.2))
+    assert path.exists()
+
+    check_cache(CacheTarget(cache_dir, 0, 0.2))
+    assert path.exists()
 
 
 def test_fits_in_cache_check(tmp_path):

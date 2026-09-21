@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { useDebounce } from "@vueuse/core";
-import { BButton, BFormCheckbox, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BFormCheckbox, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
 import { EMBED_LABELS } from "@/components/Page/constants";
 import { copy } from "@/utils/clipboard";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import PageView from "@/components/Page/PageView.vue";
 
 interface Props {
@@ -80,9 +81,9 @@ function onCopy() {
                 <BInputGroup id="embed-code">
                     <BFormInput class="embed-code-input" :value="embed" readonly />
                     <BInputGroupAppend>
-                        <BButton variant="primary" @click="onCopy">
+                        <GButton color="blue" @click="onCopy">
                             {{ copied ? "Copied!" : "Copy" }}
-                        </BButton>
+                        </GButton>
                     </BInputGroupAppend>
                 </BInputGroup>
             </label>

@@ -1,0 +1,24 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://w3id.org/ieee/ieee-2791-schema/error_domain.json",
+    "type": "object",
+    "title": "Error Domain",
+    "description": "Fields in the Error Domain are open-ended and not restricted nor defined by the IEEE-2791 standard. It is RECOMMENDED that the keys directly under empirical_error and algorithmic_error use a full URI. Resolving the URI SHOULD give a JSON Schema or textual definition of the field. Other keys are not allowed error_domain",
+    "additionalProperties": false,
+    "required": [
+        "empirical_error",
+        "algorithmic_error"
+    ],
+    "properties": {
+        "empirical_error": {
+            "type": "object",
+            "title": "Empirical Error",
+            "description": "empirically determined values such as limits of detectability, false positives, false negatives, statistical confidence of outcomes, etc. This can be measured by running the algorithm on multiple data samples of the usability domain or through the use of carefully designed in-silico data."
+        },
+        "algorithmic_error": {
+            "type": "object",
+            "title": "Algorithmic Error",
+            "description": "descriptive of errors that originate by fuzziness of the algorithms, driven by stochastic processes, in dynamically parallelized multi-threaded executions, or in machine learning methodologies where the state of the machine can affect the outcome."
+        }
+    }
+}

@@ -2,8 +2,9 @@ import datetime
 import logging
 import os
 import tempfile
+from collections.abc import Iterable
 
-from galaxy.job_execution.setup import create_working_directory_for_job
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.model import (
     History,
     Job,
@@ -40,6 +41,13 @@ class ImportHistoryToolAction(ToolAction):
     """Tool action used for importing a history to an archive."""
 
     produces_real_jobs: bool = True
+    file_source_uri_discovery_complete = True
+
+    def iter_referenced_file_source_uris(self, param_dict: ToolStateJobInstancePopulatedT) -> Iterable[str]:
+        if param_dict.get("__ARCHIVE_TYPE__") == "url":
+            archive_source = param_dict.get("__ARCHIVE_SOURCE__")
+            if isinstance(archive_source, str) and archive_source:
+                yield archive_source
 
     def execute(
         self,
@@ -117,6 +125,7 @@ class ExportHistoryToolAction(ToolAction):
     """Tool action used for exporting a history to an archive."""
 
     produces_real_jobs: bool = True
+    file_source_uri_discovery_complete = True
 
     def execute(
         self,
@@ -186,7 +195,7 @@ class ExportHistoryToolAction(ToolAction):
             # creating a dataset (like above for dataset export case).
             # ensure job.id is available
             trans.sa_session.commit()
-            job_directory = create_working_directory_for_job(trans.app.object_store, job)
+            job_directory = JobWorkingDirectory(job, trans.app.object_store).create()
             store_directory = os.path.join(job_directory, "working", "_object_export")
             os.makedirs(store_directory)
 

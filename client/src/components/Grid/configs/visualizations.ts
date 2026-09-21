@@ -2,8 +2,8 @@ import { faCopy, faEdit, faEye, faPlus, faShareAlt, faTrash, faTrashRestore } fr
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { GalaxyApi } from "@/api";
 import { updateTags } from "@/api/tags";
+import { loadVisualizations, type VisualizationSortByLiteral } from "@/api/visualizations";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
@@ -15,33 +15,23 @@ const { emit } = useEventBus<string>("grid-router-push");
 /**
  * Local types
  */
-type SortKeyLiteral = "create_time" | "title" | "update_time" | "username" | undefined;
 type VisualizationEntry = Record<string, unknown>;
 
 /**
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { response, data, error } = await GalaxyApi().GET("/api/visualizations", {
-        params: {
-            query: {
-                limit,
-                offset,
-                search,
-                sort_by: sort_by as SortKeyLiteral,
-                sort_desc,
-                show_published: false,
-                show_own: true,
-                show_shared: false,
-            },
-        },
+    const { data, totalMatches } = await loadVisualizations({
+        limit,
+        offset,
+        search,
+        sortBy: sort_by as VisualizationSortByLiteral,
+        sortDesc: sort_desc,
+        showOwn: true,
+        showPublished: false,
+        showShared: false,
     });
 
-    if (error) {
-        rethrowSimple(error);
-    }
-
-    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0");
     return [data, totalMatches];
 }
 

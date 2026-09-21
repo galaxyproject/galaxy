@@ -53,10 +53,7 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         self.assert_num_displayed_items_is(0)
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_user_import_dir)
 
-        # importing modal should be hidden
-        self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
-
-        # assert 'user import folder was not created' warning
+        # assert 'user import folder was not created' warning is shown inside the import modal
         self.components.libraries.folder.alert_not_exists_user_import_dir.wait_for_visible()
 
     @selenium_test

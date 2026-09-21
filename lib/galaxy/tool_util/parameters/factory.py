@@ -97,7 +97,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             optional = input_source.parse_optional()
             value = input_source.get("value")
             int_value: int | None
-            if value:
+            if value or (value == 0 and not isinstance(value, bool)):
                 int_value = int(value)
             elif optional:
                 int_value = None
@@ -156,7 +156,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             optional = input_source.parse_optional()
             value = input_source.get("value")
             float_value: float | None
-            if value:
+            if value or (value == 0 and not isinstance(value, bool)):
                 float_value = float(value)
             elif optional:
                 float_value = None
@@ -246,10 +246,10 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             )
         elif param_type == "select":
             # Function... example in devteam cummeRbund.
-            optional = input_source.parse_optional()
             dynamic_options_config = input_source.parse_dynamic_options()
             is_static = dynamic_options_config is None
             multiple = input_source.get_bool("multiple", False)
+            optional = input_source.parse_optional(multiple)
             options: list[LabelValue] | None = None
             if is_static:
                 options = []
@@ -282,6 +282,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             return DrillDownParameterModel(
                 type="drill_down",
                 name=input_source.parse_name(),
+                optional=input_source.parse_optional(),
                 multiple=multiple,
                 hierarchy=hierarchy,
                 options=static_options,
@@ -328,8 +329,8 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 **_common_param_kwargs(input_source),
             )
         elif param_type == "genomebuild":
-            optional = input_source.parse_optional()
             multiple = input_source.get_bool("multiple", False)
+            optional = input_source.parse_optional(multiple)
             return GenomeBuildParameterModel(
                 type="genomebuild",
                 name=input_source.parse_name(),
@@ -353,6 +354,10 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             BooleanParameterModel | SelectParameterModel,
             _from_input_source_galaxy(test_param_input_source, profile),
         )
+        if isinstance(test_parameter, BooleanParameterModel) and test_parameter.optional:
+            test_parameter.optional = False
+            if test_parameter.value is None:
+                test_parameter.value = False
         whens = []
         default_test_value = cond_test_parameter_default_value(test_parameter)
         for value, case_inputs_sources in input_source.parse_when_input_sources():
@@ -492,6 +497,25 @@ def tool_parameter_bundle_from_json(json: dict[str, Any]) -> ToolParameterBundle
     return ToolParameterBundleModel(**json)
 
 
+# Legacy input constructs with no parameter model representation. Only the two upload tools
+# (upload1 and __DATA_FETCH__) use them, and neither can be described by a partial model: dropping
+# these inputs and modelling the rest yields a bundle that *rejects* the tool's real requests,
+# because the generated state models are built with extra="forbid".
+UNMODELABLE_INPUT_TYPES = frozenset({"upload_dataset"})
+
+
+class UnmodelableToolInputs(Exception):
+    """A tool declares inputs the parameter model has no representation for.
+
+    Separate from a model that failed to build: there is nothing here to generate, so callers
+    should leave the tool without a parameter model rather than settle for an incomplete one.
+    """
+
+    def __init__(self, input_description: str):
+        self.input_description = input_description
+        super().__init__(f"Cannot generate a tool parameter model for {input_description} inputs")
+
+
 def input_models_for_tool_source(tool_source: ToolSource) -> ToolParameterBundleModel:
     pages = tool_source.parse_input_pages()
     profile = parse_profile_version(tool_source)
@@ -514,6 +538,11 @@ def input_models_for_page(page_source: PageSource, profile: float) -> list[ToolP
         if input_type == "display":
             # not a real input... just skip this. Should this be handled in the parser layer better?
             continue
+        if input_type in UNMODELABLE_INPUT_TYPES:
+            raise UnmodelableToolInputs(input_type)
+        if input_type == "conditional" and input_source.get("value_from"):
+            # whens are resolved at runtime from app state, so there is nothing static to model
+            raise UnmodelableToolInputs("conditional with value_from")
         tool_parameter_model = from_input_source(input_source, profile)
         input_models.append(tool_parameter_model)
     return input_models

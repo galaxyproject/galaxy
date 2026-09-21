@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCard } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -12,6 +12,7 @@ import { getShortToolId } from "@/utils/tool";
 import { createTopicUrl, type HelpForumPost, type HelpForumTopic, useHelpURLs } from "./helpForumUrls";
 
 import Alert from "@/components/Alert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 
@@ -91,9 +92,9 @@ const configStore = useConfigStore();
 
         <a v-if="hasMore" :href="searchTopicUrl.href" target="_blank" class="d-block mb-2">Show all...</a>
 
-        <BButton variant="primary" class="font-weight-bold" target="blank" :href="createNewTopicUrl.href">
+        <GButton color="blue" class="font-weight-bold" target="blank" :href="createNewTopicUrl.href">
             <FontAwesomeIcon :icon="galaxyLogo" /> Ask a new question
-        </BButton>
+        </GButton>
     </div>
 </template>
 

@@ -10,6 +10,7 @@ from abc import (
     ABC,
     abstractmethod,
 )
+from collections.abc import Sequence
 from typing import (
     Any,
     Generic,
@@ -25,6 +26,7 @@ from .has_driver_protocol import (
     TimeoutCallback,
     WaitTypeT,
 )
+from .keys import Key
 from .web_element_protocol import WebElementProtocol
 
 
@@ -323,6 +325,19 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         return self._driver_impl.action_chains()
 
     # Keyboard interactions
+
+    def active_element(self) -> WebElementProtocol:
+        """Return the element that currently has focus."""
+        return self._driver_impl.active_element()
+
+    def press(
+        self,
+        *keys: Key | str,
+        modifiers: Sequence[Key] = (),
+        element: WebElementProtocol | None = None,
+    ) -> None:
+        """Press keys in order, holding modifiers across the sequence."""
+        self._driver_impl.press(*keys, modifiers=modifiers, element=element)
 
     def send_enter(self, element: WebElementProtocol | None = None):
         """Send ENTER key to element or active element."""

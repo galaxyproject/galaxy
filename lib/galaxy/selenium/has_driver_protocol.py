@@ -5,7 +5,10 @@ allowing NavigatesGalaxy to work with either backend via composition.
 """
 
 from abc import abstractmethod
-from collections.abc import Callable
+from collections.abc import (
+    Callable,
+    Sequence,
+)
 from contextlib import AbstractContextManager
 from typing import (
     Any,
@@ -18,6 +21,7 @@ from typing import (
 
 from galaxy.navigation.components import Target
 from .axe_results import AxeResults
+from .keys import Key
 from .web_element_protocol import WebElementProtocol
 
 # Type for element locators - can be either a Target or a Selenium-style (locator_type, value) tuple
@@ -368,6 +372,27 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
 
     # Keyboard interactions
     @abstractmethod
+    def active_element(self) -> WebElementProtocol:
+        """Return the element that currently has focus."""
+        ...
+
+    @abstractmethod
+    def press(
+        self,
+        *keys: Key | str,
+        modifiers: Sequence[Key] = (),
+        element: WebElementProtocol | None = None,
+    ) -> None:
+        """Press named keys or single printable characters in order.
+
+        Focus element once if supplied, then send to the current focus. Hold
+        distinct modifier Keys across the sequence and release them afterward.
+        Invalid keys or modifiers raise ValueError before browser interaction.
+        A valid empty sequence does nothing.
+        """
+        ...
+
+    @abstractmethod
     def send_enter(self, element: WebElementProtocol | None = None):
         """Send ENTER key to element or active element."""
         ...
@@ -449,7 +474,13 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
 
     @abstractmethod
     def set_element_value(self, element: WebElementProtocol, value: str) -> None:
-        """Set input element value using JavaScript."""
+        """Set input element value using JavaScript.
+
+        The value is passed via arguments (not string-interpolated) so that
+        values containing quotes or special characters are handled correctly.
+        Both ``input`` and ``change`` events are dispatched so reactive
+        frameworks (e.g. Vue) detect the change.
+        """
         ...
 
     @abstractmethod

@@ -29,6 +29,7 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES: dict[str, safe_update] = {
     "Show tail1": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
     "sort1": safe_update(parse_version("1.1.0"), parse_version("1.2.0")),
     "Convert characters1": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
+    "comp1": safe_update(parse_version("1.0.2"), parse_version("1.0.3")),
     "CONVERTER_interval_to_bgzip_0": safe_update(parse_version("1.0.1"), parse_version("1.0.2")),
     "CONVERTER_Bam_Bai_0": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
     "CONVERTER_cram_to_bam_0": safe_update(parse_version("1.0.1"), parse_version("1.0.2")),
