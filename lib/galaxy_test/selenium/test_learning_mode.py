@@ -4,6 +4,8 @@ Uses the static agent backend for deterministic assertions -- no LLM calls.
 Skipped when agents are not configured (skip_without_agents decorator).
 """
 
+from contextlib import contextmanager
+
 from galaxy_test.base.populators import skip_without_agents
 from .framework import (
     retry_assertion_during_transitions,
@@ -28,19 +30,18 @@ class TestLearningMode(SeleniumTestCase):
 
         self.navigate_to_galaxyai()
         galaxyai._.wait_for_visible()
-        self.galaxyai_set_learning_mode(True)
+        with self._learning_mode_on():
+            galaxyai.learning_mode_scaffolding.wait_for_visible()
+            assert self.api_get("chat/tutor/state")["tutor_mode_enabled"] is True
 
-        galaxyai.learning_mode_scaffolding.wait_for_visible()
-        assert self.api_get("chat/tutor/state")["tutor_mode_enabled"] is True
+            # Full reload -- the toggle state comes back from the server, not the browser.
+            self.navigate_to_galaxyai()
+            galaxyai._.wait_for_visible()
+            self.galaxyai_wait_for_learning_mode(True)
 
-        # Full reload -- the toggle state comes back from the server, not the browser.
-        self.navigate_to_galaxyai()
-        galaxyai._.wait_for_visible()
-        self.galaxyai_wait_for_learning_mode(True)
-
-        self.galaxyai_set_learning_mode(False)
-        galaxyai.learning_mode_scaffolding.wait_for_absent_or_hidden()
-        assert self.api_get("chat/tutor/state")["tutor_mode_enabled"] is False
+            self.galaxyai_set_learning_mode(False)
+            galaxyai.learning_mode_scaffolding.wait_for_absent_or_hidden()
+            assert self.api_get("chat/tutor/state")["tutor_mode_enabled"] is False
 
     @skip_without_agents
     @selenium_test
@@ -51,25 +52,25 @@ class TestLearningMode(SeleniumTestCase):
 
         self.navigate_to_galaxyai()
         self.galaxyai_ensure_new_chat()
-        self.galaxyai_set_learning_mode(True)
-        self.galaxyai_send_message("Hello!")
+        with self._learning_mode_on():
+            self.galaxyai_send_message("Hello!")
 
-        @retry_assertion_during_transitions
-        def assert_tutor_answered():
-            assert galaxyai.agent_label.all()[-1].text == LEARNING_ASSISTANT_LABEL
-            assert TUTOR_RESPONSE in galaxyai.response_content.all()[-1].text
+            @retry_assertion_during_transitions
+            def assert_tutor_answered():
+                assert galaxyai.agent_label.all()[-1].text == LEARNING_ASSISTANT_LABEL
+                assert TUTOR_RESPONSE in galaxyai.response_content.all()[-1].text
 
-        assert_tutor_answered()
+            assert_tutor_answered()
 
-        self.galaxyai_set_learning_mode(False)
-        self.galaxyai_send_message("Hello!")
+            self.galaxyai_set_learning_mode(False)
+            self.galaxyai_send_message("Hello!")
 
-        @retry_assertion_during_transitions
-        def assert_router_answered():
-            assert len(galaxyai.agent_label.all()) == 2
-            assert galaxyai.agent_label.all()[-1].text == ROUTER_LABEL
+            @retry_assertion_during_transitions
+            def assert_router_answered():
+                assert len(galaxyai.agent_label.all()) == 2
+                assert galaxyai.agent_label.all()[-1].text == ROUTER_LABEL
 
-        assert_router_answered()
+            assert_router_answered()
 
     @skip_without_agents
     @selenium_test
@@ -90,18 +91,28 @@ class TestLearningMode(SeleniumTestCase):
         galaxyai.context_badge.assert_data_value("context-type", "job")
         galaxyai.context_badge.assert_data_value("context-id", job_id)
 
-        self.galaxyai_set_learning_mode(True)
-        self.galaxyai_send_message("Hello!")
+        with self._learning_mode_on():
+            self.galaxyai_send_message("Hello!")
 
-        @retry_assertion_during_transitions
-        def assert_tutor_answered():
-            assert galaxyai.agent_label.all()[-1].text == LEARNING_ASSISTANT_LABEL
+            @retry_assertion_during_transitions
+            def assert_tutor_answered():
+                assert galaxyai.agent_label.all()[-1].text == LEARNING_ASSISTANT_LABEL
 
-        assert_tutor_answered()
+            assert_tutor_answered()
 
-        galaxyai.context_dismiss.wait_for_and_click()
-        galaxyai.context_badge.wait_for_absent_or_hidden()
+            galaxyai.context_dismiss.wait_for_and_click()
+            galaxyai.context_badge.wait_for_absent_or_hidden()
 
     def _reset_learning_state(self):
         self.api_put("chat/tutor/state", {"tutor_mode_enabled": False})
         self.api_delete("chat/history")
+
+    @contextmanager
+    def _learning_mode_on(self):
+        self.galaxyai_set_learning_mode(True)
+        try:
+            yield
+        finally:
+            # A configured selenium account is shared by every module, so the tutor
+            # must come back off even when an assertion fails partway through.
+            self.api_put("chat/tutor/state", {"tutor_mode_enabled": False})

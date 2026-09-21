@@ -238,13 +238,17 @@ async def test_suggest_tutorials_orders_matches_easiest_first(markdown_db: Path)
     # The fixtures are written so relevance ranking is the reverse of difficulty.
     by_relevance = [r.difficulty for r in GTNSearchDB(db_path=str(markdown_db)).search("sequencing", limit=8)]
     assert by_relevance == ["advanced", "intermediate", "introductory"]
-    sources = _tool_returns(messages, "suggest_tutorials")[0].metadata["tutor_sources"]
-    assert [s["title"] for s in sources] == [
+    returned = _tool_returns(messages, "suggest_tutorials")[0]
+    sources = returned.metadata["tutor_sources"]
+    easiest_first = [
         "Quality Control of Raw Reads",
         "Reference based Transcriptome Analysis",
         "Somatic Variant Sequencing at Scale",
     ]
+    assert [s["title"] for s in sources] == easiest_first
     assert [s["difficulty"] for s in sources] == ["introductory", "intermediate", "advanced"]
+    # The model picks from the return value, so its order matters as much as the metadata's.
+    assert [s["title"] for s in returned.content["sources"]] == easiest_first
 
 
 async def test_query_matching_no_tutorial_cites_nothing(markdown_db: Path):
@@ -323,7 +327,7 @@ async def test_only_offsite_matches_report_no_usable_references(tmp_path: Path):
     assert "mirror.example.org" not in response.content
 
 
-async def test_missing_database_leaves_search_unavailable_without_a_download(tmp_path: Path):
+async def test_failed_local_download_leaves_search_unavailable(tmp_path: Path):
     missing_db = tmp_path / "absent" / "gtn_search.db"
     missing_source = tmp_path / "also-absent.db"
     deps = _make_deps(
