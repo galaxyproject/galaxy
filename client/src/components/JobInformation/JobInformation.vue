@@ -15,6 +15,7 @@ import type { JobMessage } from "../../api/jobs";
 
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import DetailBlock from "@/components/Common/DetailBlock.vue";
 import GCard from "@/components/Common/GCard.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
@@ -47,7 +48,7 @@ const toolStore = useToolStore();
 const fetchedInvocationId = ref<string | null | undefined>(props.invocationId);
 const invocationLookupError = ref<string | null>(null);
 
-const { job } = useJobDetails(toRef(props, "jobId"));
+const { job, error } = useJobDetails(toRef(props, "jobId"));
 
 const jobIsRunning = computed(() => job.value?.state === "running");
 
@@ -195,8 +196,9 @@ function onJobInfoLeave(el: Element, done: () => void) {
                         @enter="onJobInfoEnter"
                         @after-enter="onJobInfoAfterEnter"
                         @leave="onJobInfoLeave">
+                        <GAlert v-if="error" variant="danger">{{ errorMessageAsString(error) }}</GAlert>
                         <div
-                            v-if="!job"
+                            v-else-if="!job"
                             key="skeleton"
                             class="job-info-skeleton px-2 py-2"
                             data-description="job information loading">
