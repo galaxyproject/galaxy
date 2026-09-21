@@ -29,8 +29,9 @@ from typing import (
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 log = logging.getLogger(__name__)
 
-DB_VERSION = "1.1.0"
+DB_VERSION = "1.2.0"
 TOOL_MACRO_RE = re.compile(r"{%\s*tool\s+\[([^\]]+)\]\(([^)]+)\)", re.IGNORECASE)
+YAML_LIST_ITEM_RE = re.compile(r"^(?P<indent>[ \t]*)-(?:[ \t]+(?P<item>.*))?$")
 
 
 @dataclass
@@ -228,9 +229,17 @@ class GTNDatabaseBuilder:
                 except ValueError:
                     pass
 
-            questions = self.extract_section(content, "questions")
-            objectives = self.extract_section(content, "objectives")
-            key_points = self.extract_section(content, "keypoints") or self.extract_section(content, "key_points")
+            # These live in the tutorial's frontmatter; the body fallback only
+            # covers the rare tutorial that spells them out as a section.
+            questions = self.frontmatter_section(frontmatter, "questions") or self.extract_section(content, "questions")
+            objectives = self.frontmatter_section(frontmatter, "objectives") or self.extract_section(
+                content, "objectives"
+            )
+            key_points = (
+                self.frontmatter_section(frontmatter, "key_points", "keypoints")
+                or self.extract_section(content, "keypoints")
+                or self.extract_section(content, "key_points")
+            )
 
             base_url = "https://training.galaxyproject.org/training-material"
             url = f"{base_url}/topics/{topic}/tutorials/{tutorial_name}/tutorial.html"
@@ -274,20 +283,31 @@ class GTNDatabaseBuilder:
         """Simple YAML frontmatter parser (no external dependencies)."""
         result: dict[str, Any] = {}
         current_list: list[str] | None = None
+        # GTN frontmatter indents list items inconsistently (one, two and four
+        # spaces all occur), so the first item fixes the depth for its key.
+        # Anything deeper belongs to a nested mapping, not to this list.
+        current_list_indent: int | None = None
 
         for line in yaml_content.split("\n"):
             line = line.rstrip()
 
             # Skip empty lines and comments
-            if not line or line.startswith("#"):
+            if not line or line.lstrip().startswith("#"):
                 continue
 
             # Handle list items
-            if line.startswith("  - ") or line.startswith("- "):
-                if current_list is not None:
-                    item = line.strip("- ").strip()
-                    if item:
-                        current_list.append(item)
+            item_match = YAML_LIST_ITEM_RE.match(line)
+            if item_match:
+                if current_list is None:
+                    continue
+                indent = len(item_match.group("indent").expandtabs(4))
+                if current_list_indent is None:
+                    current_list_indent = indent
+                elif indent != current_list_indent:
+                    continue
+                item = self.strip_yaml_quotes((item_match.group("item") or "").strip())
+                if item:
+                    current_list.append(item)
                 continue
 
             # Handle key-value pairs (only top-level keys, not indented)
@@ -297,13 +317,9 @@ class GTNDatabaseBuilder:
                 str_value = parts[1].strip() if len(parts) > 1 else ""
 
                 # Remove quotes if present
-                was_quoted = False
-                if str_value.startswith('"') and str_value.endswith('"'):
-                    str_value = str_value[1:-1]
-                    was_quoted = True
-                elif str_value.startswith("'") and str_value.endswith("'"):
-                    str_value = str_value[1:-1]
-                    was_quoted = True
+                unquoted = self.strip_yaml_quotes(str_value)
+                was_quoted = unquoted != str_value
+                str_value = unquoted
 
                 # Check for boolean values
                 parsed_value: str | bool | list[str]
@@ -312,8 +328,9 @@ class GTNDatabaseBuilder:
                 elif str_value.lower() == "false":
                     parsed_value = False
                 elif str_value == "" and not was_quoted:
-                    # Unquoted empty value — this might be a list header
+                    # Unquoted empty value -- this might be a list header
                     current_list = []
+                    current_list_indent = None
                     result[key] = current_list
                     continue
                 else:
@@ -321,8 +338,30 @@ class GTNDatabaseBuilder:
 
                 result[key] = parsed_value
                 current_list = None
+                current_list_indent = None
 
         return result
+
+    def strip_yaml_quotes(self, value: str) -> str:
+        """Drop one layer of matching surrounding quotes."""
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            return value[1:-1]
+        return value
+
+    def frontmatter_section(self, frontmatter: dict[str, Any], *keys: str) -> str:
+        """Read a curriculum section from frontmatter as newline-separated entries.
+
+        GTN authors write ``questions``, ``objectives`` and ``key_points`` as
+        frontmatter lists, so entries never span lines and splitting the stored
+        text on newlines recovers the original list.
+        """
+        for key in keys:
+            if key not in frontmatter:
+                continue
+            entries = self.deduplicate_list(self.extract_list(frontmatter[key]))
+            if entries:
+                return "\n".join(entries)
+        return ""
 
     def extract_section(self, content: str, section_name: str) -> str:
         """Extract a section from markdown content."""
