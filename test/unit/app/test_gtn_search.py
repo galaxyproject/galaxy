@@ -448,3 +448,11 @@ def test_empty_frontmatter_key_yields_no_curriculum(tmp_path: Path):
     assert tutorial is not None
     assert tutorial.objectives == ""
     assert tutorial.questions == ""
+
+
+def test_long_tutorial_bodies_are_kept_past_the_old_50k_cutoff(tmp_path: Path):
+    body = "Section about mapping.\n" * 6000
+    tutorial = _parse_tutorial_text(tmp_path, f"---\ntitle: Long\n---\n\n{body}")
+
+    assert tutorial is not None
+    assert len(tutorial.content) > 100000

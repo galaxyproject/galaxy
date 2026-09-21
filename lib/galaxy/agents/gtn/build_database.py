@@ -33,6 +33,10 @@ DB_VERSION = "1.2.0"
 TOOL_MACRO_RE = re.compile(r"{%\s*tool\s+\[([^\]]+)\]\(([^)]+)\)", re.IGNORECASE)
 YAML_LIST_ITEM_RE = re.compile(r"^(?P<indent>[ \t]*)-(?:[ \t]+(?P<item>.*))?$")
 
+# Tutorial bodies are stored whole so later sections stay retrievable; the
+# longest tutorial in the GTN is around 200k characters.
+MAX_CONTENT_CHARS = 250000
+
 
 @dataclass
 class FAQ:
@@ -261,7 +265,7 @@ class GTNDatabaseBuilder:
                 difficulty=str(frontmatter.get("level", "intermediate")).lower(),
                 hands_on=frontmatter.get("hands_on", True) not in (False, "false", "False"),
                 time_estimation=frontmatter.get("time_estimation", ""),
-                content=content[:50000],
+                content=content[:MAX_CONTENT_CHARS],
                 questions=questions,
                 objectives=objectives,
                 key_points=key_points,
