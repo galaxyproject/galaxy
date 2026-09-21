@@ -8,13 +8,14 @@ import { fetchInvocationForJob } from "@/api/invocations";
 import type { CardAction } from "@/components/Common/GCard.types";
 import { useJobConsoleOutput, useJobDetails } from "@/composables/jobDetails";
 import { useToolStore } from "@/stores/toolStore";
-import { rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString } from "@/utils/simple-error";
 import { stateIsTerminal } from "@/utils/utils";
 
 import type { JobMessage } from "../../api/jobs";
 
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import DetailBlock from "@/components/Common/DetailBlock.vue";
 import GCard from "@/components/Common/GCard.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
@@ -46,7 +47,7 @@ const toolStore = useToolStore();
  */
 const fetchedInvocationId = ref<string | null | undefined>(props.invocationId);
 
-const { job } = useJobDetails(toRef(props, "jobId"));
+const { job, error } = useJobDetails(toRef(props, "jobId"));
 
 const jobIsRunning = computed(() => job.value?.state === "running");
 
@@ -194,6 +195,7 @@ function onJobInfoLeave(el: Element, done: () => void) {
                         @enter="onJobInfoEnter"
                         @after-enter="onJobInfoAfterEnter"
                         @leave="onJobInfoLeave">
+                        <GAlert v-if="error" variant="danger">{{ errorMessageAsString(error) }}</GAlert>
                         <div
                             v-if="!job"
                             key="skeleton"
