@@ -64,9 +64,8 @@ class MissingLocFixture(Linter[RepositoryDataTables]):
 class LocRowShape(Linter[RepositoryDataTables]):
     """A non-comment loc row cannot supply every declared column index.
 
-    Reuses the row-shape errors captured by ``TabularToolDataTable`` at load
-    time (too-few-fields / wrong-separator rows), which already name the offending
-    file line and table.
+    Reports row-shape errors captured by ``TabularToolDataTable`` while parsing
+    resolved loc files and sibling samples.
     """
 
     @classmethod
@@ -76,9 +75,8 @@ class LocRowShape(Linter[RepositoryDataTables]):
             for message in asset.errors:
                 lint_ctx.error(message, linter=cls.name())
                 found_error = True
-        # Only assets whose file resolved were actually parsed -- an unfound loc has
-        # no rows to check, so it must not license a "rows are fine" confirmation.
-        checked = [asset for asset in model.loc_assets if asset.found]
+        # A resolved loc or its sibling sample has rows to check; a missing file does not.
+        checked = [asset for asset in model.loc_assets if asset.found or asset.sample_backed]
         if checked and not found_error:
             lint_ctx.valid("All loc rows supply every declared column", linter=cls.name())
 

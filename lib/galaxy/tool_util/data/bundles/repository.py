@@ -67,14 +67,12 @@ class LocAsset:
     # unresolved only when ``not found and not sample_backed``.
     found: bool
     is_sample: bool
-    # Whether the repo ships a ``.sample`` backing this reference (a sibling
-    # ``<ref>.sample`` or the conventional ``tool-data/<basename>.sample``). On install
-    # Galaxy materializes the real ``.loc`` from it, so a sample-backed reference is not
-    # a missing loc even though the loader reports ``found=False``.
+    # Whether the repo ships a sibling ``<ref>.sample`` backing this reference.
+    # On install Galaxy materializes the real ``.loc`` from it, so a sample-backed
+    # reference is not a missing loc even though the loader reports ``found=False``.
     sample_backed: bool = False
-    # Row-shape errors captured by ``parse_file_fields`` at load time (too-few-fields /
-    # wrong-separator lines). Only populated when ``found`` (parsing only runs on a
-    # loader-resolved file), so "no errors" is not "clean" for an unfound reference.
+    # Row-shape errors captured by ``parse_file_fields`` for a resolved loc or its
+    # sibling sample. An unfound reference without a sample has no rows to check.
     errors: tuple[str, ...] = ()
     source: SourceLoc | None = None
 
@@ -339,21 +337,11 @@ def _has_column_conflict(raw_decls: list[RawTableDecl]) -> bool:
     return any(len(specs) > 1 for specs in by_name.values())
 
 
-def _sample_backed(repo_root: str, filename: str) -> bool:
-    """Whether the repo ships a ``.sample`` that backs a loc ``filename``.
-
-    The loader's own ``.sample`` fallback does not match the shed layout (see
-    ``LocAsset.found``), so resolve it the way the shed does: a reference is
-    sample-backed if a sibling ``<filename>.sample`` exists, or the conventional
-    ``tool-data/<basename>.sample`` does (samples ship there and the real ``.loc`` is
-    materialized on install). Basename matching mirrors that a table is keyed by name,
-    so ``test-data/x.loc`` in a ``.test`` conf is still backed by ``tool-data/x.loc.sample``.
-    """
-    sibling = filename if os.path.isabs(filename) else os.path.join(repo_root, filename)
-    if os.path.exists(f"{sibling}.sample"):
-        return True
-    tool_data_sample = os.path.join(repo_root, "tool-data", f"{os.path.basename(filename)}.sample")
-    return os.path.exists(tool_data_sample)
+def _sample_path(repo_root: str, filename: str) -> str | None:
+    """Return the sibling sample backing a loc reference, if present."""
+    reference = filename if os.path.isabs(filename) else os.path.join(repo_root, filename)
+    sample = f"{reference}.sample"
+    return sample if os.path.isfile(sample) else None
 
 
 def _classify_loc_file(path: str) -> LocFile:
@@ -409,14 +397,19 @@ def _build_tables(
         loc_paths = []
         for filename, info in table.filenames.items():
             loc_paths.append(filename)
+            found = bool(info.get("found"))
+            sample_path = _sample_path(repo_root, str(filename)) if not found else None
+            errors = list(info.get("errors") or ())
+            if sample_path:
+                table.parse_file_fields(sample_path, errors=errors)
             loc_assets.append(
                 LocAsset(
                     table_name=table.name,
                     path=str(filename),
-                    found=bool(info.get("found")),
+                    found=found,
                     is_sample=str(filename).endswith(".sample"),
-                    sample_backed=_sample_backed(repo_root, str(filename)),
-                    errors=tuple(info.get("errors") or ()),
+                    sample_backed=sample_path is not None,
+                    errors=tuple(errors),
                     source=SourceLoc(path=str(filename)),
                 )
             )

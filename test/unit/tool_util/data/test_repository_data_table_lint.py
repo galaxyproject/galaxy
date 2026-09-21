@@ -6,6 +6,7 @@ assert on the emitted :class:`~galaxy.tool_util.lint.LintContext` messages.
 """
 
 import os
+import shutil
 
 from galaxy.tool_util.data.bundles.lint import (
     ConflictingTableSchema,
@@ -114,6 +115,33 @@ def test_tool_data_sample_backed_loc_is_not_a_missing_fixture():
     assert any(not asset.found and asset.sample_backed for asset in model.loc_assets)
     lint_ctx = _lint(model)
     assert [e for e in lint_ctx.error_messages if e.linter == MissingLocFixture.name()] == []
+
+
+def test_missing_test_fixture_is_not_backed_by_production_sample(tmp_path):
+    repo = tmp_path / "repo"
+    shutil.copytree(FETCH_REPO, repo)
+    (repo / "test-data" / "all_fasta.loc").unlink()
+
+    lint_ctx = LintContext(level=LintLevel.SILENT)
+    find_and_lint_repository_data_tables(lint_ctx, str(repo))
+
+    missing = [e for e in lint_ctx.error_messages if e.linter == MissingLocFixture.name()]
+    assert len(missing) == 1
+    assert "test-data/all_fasta.loc" in missing[0].message
+
+
+def test_sample_backed_loc_rows_are_checked(tmp_path):
+    repo = tmp_path / "repo"
+    shutil.copytree(TOOL_DATA_SAMPLE_REPO, repo)
+    (repo / "tool-data" / "bar.loc.sample").write_text("# value\tname\tpath\nshort\trow\n")
+
+    lint_ctx = LintContext(level=LintLevel.SILENT)
+    find_and_lint_repository_data_tables(lint_ctx, str(repo))
+
+    assert [e for e in lint_ctx.error_messages if e.linter == MissingLocFixture.name()] == []
+    rows = [e for e in lint_ctx.error_messages if e.linter == LocRowShape.name()]
+    assert len(rows) == 1
+    assert "Line 2" in rows[0].message
 
 
 def test_multiple_missing_fixtures_each_error():
