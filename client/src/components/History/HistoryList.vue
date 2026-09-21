@@ -302,7 +302,7 @@ function validatedFilterText(): string {
         return filterText.value;
     }
     // there are valid filters derived from the `filterText`
-    return historyListFilters.value.getFilterText(validFilters.value, true);
+    return historyListFilters.value.getFilterText(validFilters.value, true, filterText.value);
 }
 
 /**

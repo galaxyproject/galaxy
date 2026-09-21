@@ -169,8 +169,8 @@ function onPopoverHidden() {
 }
 
 function onSearch() {
-    const newFilterText = props.filterClass.getFilterText(filters.value);
-    const newBackendFilter = props.filterClass.getFilterText(filters.value, true);
+    const newFilterText = props.filterClass.getFilterText(filters.value, false, props.filterText);
+    const newBackendFilter = props.filterClass.getFilterText(filters.value, true, props.filterText);
     if (props.menuType !== "linked") {
         emit("on-search", filters.value, newFilterText, newBackendFilter);
     } else {
