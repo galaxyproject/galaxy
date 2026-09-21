@@ -456,3 +456,76 @@ def test_long_tutorial_bodies_are_kept_past_the_old_50k_cutoff(tmp_path: Path):
 
     assert tutorial is not None
     assert len(tutorial.content) > 100000
+
+
+@pytest.fixture
+def curriculum_db(tmp_path: Path) -> Path:
+    """A database holding one tutorial with curriculum and one without."""
+    db_path = tmp_path / "curriculum_gtn.db"
+    builder = GTNDatabaseBuilder(gtn_path=tmp_path, output_path=db_path)
+    builder.tutorials = [
+        Tutorial(
+            topic="sequence-analysis",
+            tutorial="quality-control",
+            title="Quality Control",
+            url="https://training.galaxyproject.org/qc",
+            content="Run FastQC on your reads.",
+            questions="How do I check read quality?\nWhat does a per-base quality plot show?",
+            objectives="Run FastQC on a FASTQ dataset\nInterpret the per-base quality plot",
+            key_points="FastQC reports quality per position",
+            content_hash="qc1",
+        ),
+        Tutorial(
+            topic="admin",
+            tutorial="apptainer",
+            title="Apptainer",
+            url="https://training.galaxyproject.org/apptainer",
+            content="Containers for Galaxy.",
+            content_hash="adm1",
+        ),
+    ]
+    builder.create_database()
+    builder.insert_tutorials()
+    builder.add_metadata()
+    return db_path
+
+
+def test_get_tutorial_curriculum_returns_author_stated_entries(curriculum_db: Path):
+    db = GTNSearchDB(db_path=str(curriculum_db))
+
+    curriculum = db.get_tutorial_curriculum("sequence-analysis", "quality-control")
+
+    assert curriculum is not None
+    assert curriculum.objectives == [
+        "Run FastQC on a FASTQ dataset",
+        "Interpret the per-base quality plot",
+    ]
+    assert curriculum.questions == [
+        "How do I check read quality?",
+        "What does a per-base quality plot show?",
+    ]
+    assert curriculum.key_points == ["FastQC reports quality per position"]
+    assert curriculum.title == "Quality Control"
+    assert not curriculum.is_empty
+
+
+def test_get_tutorial_curriculum_distinguishes_missing_from_unstated(curriculum_db: Path):
+    """An unknown tutorial is None; a known one with nothing stated is empty."""
+    db = GTNSearchDB(db_path=str(curriculum_db))
+
+    assert db.get_tutorial_curriculum("sequence-analysis", "no-such-tutorial") is None
+
+    stated_nothing = db.get_tutorial_curriculum("admin", "apptainer")
+    assert stated_nothing is not None
+    assert stated_nothing.is_empty
+    assert stated_nothing.objectives == []
+
+
+def test_tutorial_curriculum_serializes_for_the_agent(curriculum_db: Path):
+    db = GTNSearchDB(db_path=str(curriculum_db))
+
+    payload = db.get_tutorial_curriculum("sequence-analysis", "quality-control").to_dict()
+
+    assert payload["url"] == "https://training.galaxyproject.org/qc"
+    assert len(payload["objectives"]) == 2
+    assert payload["tutorial"] == "quality-control"

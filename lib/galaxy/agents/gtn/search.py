@@ -10,7 +10,10 @@ import os
 import re
 import shutil
 import sqlite3
-from dataclasses import dataclass
+from dataclasses import (
+    dataclass,
+    field,
+)
 from datetime import (
     datetime,
     timedelta,
@@ -188,6 +191,46 @@ class FAQResult:
             "score": round(self.score, 2),
             "result_type": "faq",
         }
+
+
+@dataclass
+class TutorialCurriculum:
+    """The learning goals a tutorial's authors wrote for it.
+
+    GTN authors state these in tutorial frontmatter, so they are the
+    curriculum's own words rather than anything inferred from the body.
+    """
+
+    topic: str
+    tutorial: str
+    title: str
+    url: str
+    questions: list[str] = field(default_factory=list)
+    objectives: list[str] = field(default_factory=list)
+    key_points: list[str] = field(default_factory=list)
+
+    @property
+    def is_empty(self) -> bool:
+        return not (self.questions or self.objectives or self.key_points)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for JSON serialization."""
+        return {
+            "title": self.title,
+            "topic": self.topic,
+            "tutorial": self.tutorial,
+            "url": self.url,
+            "questions": self.questions,
+            "objectives": self.objectives,
+            "key_points": self.key_points,
+        }
+
+
+def _split_curriculum_entries(value: str | None) -> list[str]:
+    """Split a stored curriculum column back into its original entries."""
+    if not value:
+        return []
+    return [line.strip() for line in value.split("\n") if line.strip()]
 
 
 class GTNSearchDB:
@@ -540,6 +583,43 @@ class GTNSearchDB:
 
         except sqlite3.Error as e:
             log.warning(f"Failed to get tutorial content for {topic}/{tutorial}: {e}")
+            return None
+
+    def get_tutorial_curriculum(self, topic: str, tutorial: str) -> TutorialCurriculum | None:
+        """Retrieve a tutorial's stated questions, objectives and key points.
+
+        Returns ``None`` when the tutorial is unknown. A known tutorial whose
+        authors stated none of these comes back with empty lists, so callers
+        can tell "no such tutorial" from "nothing stated".
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+
+                result = cursor.execute(
+                    """
+                    SELECT title, url, questions, objectives, key_points
+                    FROM tutorials WHERE topic = ? AND tutorial = ?
+                    """,
+                    (topic, tutorial),
+                )
+
+                row = result.fetchone()
+                if row is None:
+                    return None
+
+                return TutorialCurriculum(
+                    topic=topic,
+                    tutorial=tutorial,
+                    title=row["title"],
+                    url=row["url"],
+                    questions=_split_curriculum_entries(row["questions"]),
+                    objectives=_split_curriculum_entries(row["objectives"]),
+                    key_points=_split_curriculum_entries(row["key_points"]),
+                )
+
+        except sqlite3.Error as e:
+            log.warning(f"Failed to get curriculum for {topic}/{tutorial}: {e}")
             return None
 
     def get_topics(self) -> list[str]:
