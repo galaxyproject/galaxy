@@ -12,6 +12,7 @@ from typing import (
 
 from packaging.version import Version
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tool_util.parser.interface import (
     TestCollectionDef,
     ToolSource,
@@ -66,6 +67,16 @@ class TestCaseStateAndWarnings:
     tool_state: TestCaseToolState
     warnings: list[str]
     unhandled_inputs: list[str]
+
+    def validate(self, tool_parameter_bundle: list[ToolParameterT], name: str | None = None) -> None:
+        """Run the full validation sequence against this built state.
+
+        Shared by ``test_case_state`` (the request parsing path) and ``test_case_validation``
+        (the reporting path) so the two cannot diverge on what makes a test case valid.
+        """
+        self.tool_state.validate(tool_parameter_bundle, name=name)
+        for input_name in self.unhandled_inputs:
+            raise RequestParameterInvalidException(f"Invalid parameter name found {input_name}")
 
 
 @dataclass
@@ -329,12 +340,10 @@ def test_case_state(
         ):
             unhandled_inputs.append(input_name)
 
-    tool_state = TestCaseToolState(state)
+    result = TestCaseStateAndWarnings(TestCaseToolState(state), warnings, unhandled_inputs)
     if validate:
-        tool_state.validate(tool_parameter_bundle, name=name)
-        for input_name in unhandled_inputs:
-            raise Exception(f"Invalid parameter name found {input_name}")
-    return TestCaseStateAndWarnings(tool_state, warnings, unhandled_inputs)
+        result.validate(tool_parameter_bundle, name=name)
+    return result
 
 
 def _input_name_was_handled_by_legacy_fallback(input_name: str, handled_inputs: set[str], profile: str) -> bool:
@@ -358,17 +367,16 @@ def _input_name_was_handled_by_legacy_fallback(input_name: str, handled_inputs: 
 def test_case_validation(
     test_dict: ToolSourceTest, tool_parameter_bundle: list[ToolParameterT], profile: str, name: str | None = None
 ) -> TestCaseStateValidationResult:
-    test_case_state_and_warnings = test_case_state(test_dict, tool_parameter_bundle, profile, validate=False)
     exception: Exception | None = None
+    built = TestCaseStateAndWarnings(TestCaseToolState({}), [], [])
     try:
-        test_case_state_and_warnings.tool_state.validate(tool_parameter_bundle, name=name)
-        for input_name in test_case_state_and_warnings.unhandled_inputs:
-            raise Exception(f"Invalid parameter name found {input_name}")
+        built = test_case_state(test_dict, tool_parameter_bundle, profile, validate=False)
+        built.validate(tool_parameter_bundle, name=name)
     except Exception as e:
         exception = e
     return TestCaseStateValidationResult(
-        test_case_state_and_warnings.tool_state,
-        test_case_state_and_warnings.warnings,
+        built.tool_state,
+        built.warnings,
         exception,
         tool_parameter_bundle,
         profile,
@@ -465,8 +473,13 @@ def _merge_into_state(
         if test_input is not None:
             input_value: Any
             if isinstance(tool_input, (DataCollectionParameterModel,)):
+                collection_def = test_input.get("attributes", {}).get("collection")
+                if collection_def is None:
+                    raise RequestParameterInvalidException(
+                        f"test for data_collection input '{input_name}' supplies a flat value but no <collection> definition"
+                    )
                 input_value = TestCollectionDef.from_dict(
-                    cast(XmlTestCollectionDefDict, test_input.get("attributes", {}).get("collection"))
+                    cast(XmlTestCollectionDefDict, collection_def)
                 ).test_format_to_dict()
             elif isinstance(tool_input, (DataParameterModel,)):
                 if tool_input.multiple:
@@ -565,7 +578,9 @@ def _select_which_when(
             return when, matched_name
         elif test_value == when.discriminator:
             return when, matched_name
-    raise Exception(f"Invalid conditional test value ({explicit_test_value}) for parameter ({test_parameter_name})")
+    raise RequestParameterInvalidException(
+        f"Invalid conditional test value ({explicit_test_value}) for parameter ({test_parameter_name})"
+    )
 
 
 def _leaf_param_short_names(parameters: list[ToolParameterT]) -> set[str]:
@@ -634,7 +649,7 @@ def _resolve_matching_inputs(
         for input in matching_inputs[1:]
     ):
         return first
-    raise Exception(ambiguity_message)
+    raise RequestParameterInvalidException(ambiguity_message)
 
 
 def _path_ends_with_param(qualified_path: str, param_name: str) -> bool:
