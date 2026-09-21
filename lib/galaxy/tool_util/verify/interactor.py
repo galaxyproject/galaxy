@@ -70,6 +70,7 @@ from galaxy.util.hash_util import (
     memory_bound_hexdigest,
     parse_checksum_hash,
 )
+from galaxy.util.json import restore_inf_nan
 from . import (
     verify,
     verify_job_metadata,
@@ -358,7 +359,14 @@ class GalaxyInteractorApi:
         params = {"tool_version": tool_version} if tool_version else None
         response = self._get(url, data=params)
         assert response.status_code == 200, f"Non 200 response from tool test API. [{response.content}]"
-        return response.json()
+        tool_tests = cast(list[ToolTestDescriptionDict], response.json())
+        for tool_test in tool_tests:
+            for output in tool_test["outputs"]:
+                attributes = output["attributes"]
+                for attribute_name in ("delta_frac", "eps"):
+                    if attribute_name in attributes:
+                        attributes[attribute_name] = restore_inf_nan(attributes[attribute_name])
+        return tool_tests
 
     def verify_output_collection(
         self, output_collection_def, output_collection_id, history, tool_id, tool_version=None
