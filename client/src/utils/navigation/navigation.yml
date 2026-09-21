@@ -847,6 +847,7 @@ workflow_run:
     history_target_link: '[data-description="switch to history link"]'
     runtime_setting_button: '.workflow-run-settings'
     runtime_setting_target: '[data-test-id="send-to-new-history-label"]'
+    new_history_name_input: '.history-name-input'
     simplified_input:
       type: xpath
       selector: //div[@data-label="${label}"]//input
