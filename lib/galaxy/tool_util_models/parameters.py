@@ -50,7 +50,6 @@ from typing_extensions import (
     Protocol,
 )
 
-from galaxy.util.json import restore_inf_nan
 from ._base import ToolSourceBaseModel
 from ._types import (
     dict_type,
@@ -477,6 +476,20 @@ class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 _INFINITY_SENTINEL = "__Infinity__"
 _NEG_INFINITY_SENTINEL = "__-Infinity__"
+_NAN_SENTINEL = "__NaN__"
+
+
+def _convert_infinity_sentinel(v: Any) -> Any:
+    """Restore non-finite floats without depending on the full Galaxy utility package."""
+    if not isinstance(v, str):
+        return v
+    if v == _NAN_SENTINEL:
+        return float("nan")
+    if v == _INFINITY_SENTINEL:
+        return float("inf")
+    if v == _NEG_INFINITY_SENTINEL:
+        return float("-inf")
+    return v
 
 
 class FloatParameterModel(BaseGalaxyToolParameterModelDefinition):
@@ -490,7 +503,7 @@ class FloatParameterModel(BaseGalaxyToolParameterModelDefinition):
     @field_validator("value", "min", "max", mode="before")
     @classmethod
     def convert_infinity_sentinels(cls, v: Any) -> Any:
-        return restore_inf_nan(v)
+        return _convert_infinity_sentinel(v)
 
     def field_kwargs(self) -> dict[str, Any]:
         kwargs = super().field_kwargs()
@@ -522,7 +535,7 @@ class FloatParameterModel(BaseGalaxyToolParameterModelDefinition):
         # before Pydantic validates the field. These sentinels appear when float('inf') values are
         # round-tripped through Galaxy's safe_dumps/json.loads path (e.g. GET /api/tools/{id}/test_data).
         dynamic_validators: dict[str, Any] = {
-            "infinity_sentinel": field_validator(safe_field_name(self.name), mode="before")(restore_inf_nan)
+            "infinity_sentinel": field_validator(safe_field_name(self.name), mode="before")(_convert_infinity_sentinel)
         }
         return dynamic_model_information_from_py_type(
             self, py_type, requires_value=requires_value, validators=dynamic_validators
