@@ -847,7 +847,6 @@ class HistoryExportManager:
         rval["download_url"] = api_url
         rval["external_download_latest_url"] = external_url
         rval["external_download_permanent_url"] = external_permanent_url
-        rval = trans.security.encode_all_ids(rval)
         return rval
 
     def get_ready_jeha(
