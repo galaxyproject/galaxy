@@ -205,6 +205,56 @@ describe("useJobStore", () => {
         expect(callCount).toBe(2);
         expect(lastFullParam).toBe("true");
     });
+
+    it("stops polling for good after a non-retryable fetch error (e.g. a malformed job id)", async () => {
+        let callCount = 0;
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response }) => {
+                callCount++;
+                return response("4XX").json(
+                    { err_msg: "Wrong id specified, unable to decode.", err_code: 400 },
+                    { status: 400 },
+                );
+            }),
+        );
+
+        const store = useJobStore();
+        store.pollJobUntilTerminal({ id: "bad-id" });
+        await flushPromises();
+        expect(callCount).toBe(1);
+
+        // A 400 will never succeed no matter how many times we ask -- must not keep polling.
+        await advanceTimersAndFlush(5000);
+        expect(callCount).toBe(1);
+    });
+
+    it("stops polling once a retryable fetch error has exhausted its retries", async () => {
+        let callCount = 0;
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response }) => {
+                callCount++;
+                return response("5XX").json({ err_msg: "Server error", err_code: 500 }, { status: 500 });
+            }),
+        );
+
+        const store = useJobStore();
+        store.pollJobUntilTerminal({ id: "flaky-id" });
+        await flushPromises();
+        expect(callCount).toBe(1);
+
+        // Keeps retrying a transient-looking error for a while...
+        await advanceTimersAndFlush(1000);
+        await advanceTimersAndFlush(1000);
+        await advanceTimersAndFlush(1000);
+        expect(callCount).toBeGreaterThan(1);
+
+        const callsAfterRetries = callCount;
+        // ...but eventually gives up rather than retrying forever.
+        await advanceTimersAndFlush(1000);
+        await advanceTimersAndFlush(1000);
+        await advanceTimersAndFlush(1000);
+        expect(callCount).toBe(callsAfterRetries);
+    });
 });
 
 describe("useJobStore eviction", () => {
