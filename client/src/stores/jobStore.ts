@@ -49,6 +49,7 @@ export const useJobStore = defineStore("jobStore", () => {
         getItemLoadError: getJobLoadError,
         isLoadingItem: isLoadingJob,
         removeItemById: removeJob,
+        canRetry: canRetryJob,
     } = useKeyedCache<ShowFullJobResponse>(fetchJobById);
 
     // LRU tracking for `MAX_CACHED_JOBS`: a Map's keys iterate oldest-to-newest, and re-`set`ting
@@ -167,6 +168,12 @@ export const useJobStore = defineStore("jobStore", () => {
                 if (job && TERMINAL_STATES.indexOf(job.state) !== -1) {
                     // Terminal jobs never poll again; dispose (not just stop) to release the
                     // watcher's listener, since a new watcher is made if this job is polled again.
+                    watcher.dispose();
+                    activePolls.delete(id);
+                    return;
+                }
+                if (!job && getJobLoadError.value(id) && !canRetryJob(id)) {
+                    // Stop fetching if the fetch failed with a non-retryable error
                     watcher.dispose();
                     activePolls.delete(id);
                 }
