@@ -38,17 +38,11 @@ try:
 except ImportError:
     GitLabARCFileSystem = None
 
-# arcfs separates the GitLab project path from the path inside the repository with this marker, e.g.
-# ``group/project:-:assays/data.csv``. Galaxy paths keep the marker, because the project boundary
-# cannot be recovered from a plain path without asking GitLab, but add a "/" after it so that the
-# usual assumptions about "/"-separated paths hold: an entry's name is its last segment, and a
-# project's path is a prefix of the paths of the entries inside it.
+# arcfs' separator between a project path and the path inside it: ``group/project:-:assays/x.csv``.
+# Galaxy keeps it, since the project boundary cannot be recovered from a plain path, but adds a "/"
+# after it so an entry's name is its last segment and a project's path a prefix of the paths in it.
 ROOT_MARKER = ":-:"
 
-#: What the caller was doing, for the messages that name it and the two branches of the error
-#: ladder that behave differently per operation. It reads as prose because it is spliced into
-#: "Problem {operation} file source path ...", but the ladder compares the value rather than
-#: parsing the sentence, so rewording a message cannot change which error a user gets.
 Operation = Literal["listing", "reading", "writing to"]
 
 
@@ -63,26 +57,18 @@ class GitLabFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
 
 
 class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration, GitLabFileSourceConfiguration]):
-    """File source for the projects of a GitLab instance.
+    """File source for the projects of a GitLab instance, backed by ``arcfs-fsspec``.
 
-    Backed by the ``arcfs-fsspec`` package, which exposes the GitLab projects reachable with the
-    configured credentials as top-level directories, with their repository trees below them.
-
-    Exports commit the file to the branch, which is what a GitLab user expects. ARCs take data
-    another way, so ``ARCFilesSource`` opens a filesystem that does that instead; the write path
-    itself is shared, because both take the same paths and need the same guard.
+    Projects reachable with the configured credentials are the top-level directories, with their
+    repository trees below them. Everything is read from the default branch; exports commit to it.
 
     Known limitations:
 
     - Entries carry no size, timestamp or hash; GitLab's tree API does not return them.
-    - Search is a plain substring match over at most ``MAX_ITEMS_LIMIT`` entries, so wildcards are
-      literal and a match beyond the cap is not found.
-    - The root listing is paged by offset over a list ordered by last activity, so a window
-      assembled from several pages can repeat one project and miss another.
+    - Search is a substring match over at most ``MAX_ITEMS_LIMIT`` entries.
+    - The root listing pages by offset over a list ordered by last activity, so a window assembled
+      from several pages can repeat one project and miss another.
     - An anonymous listing cannot page very deep; a token lifts GitLab's cap.
-    - Everything is read from each project's default branch. There is no branch or ref setting,
-      which is the only item here the backend does not impose: arcfs accepts a ``ref`` and this
-      plugin passes it on none of its calls.
     """
 
     plugin_type = "gitlab"
@@ -93,17 +79,12 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     template_config_class = GitLabFileSourceTemplateConfiguration
     resolved_config_class = GitLabFileSourceConfiguration
 
-    #: What a listing of the top level holds, for messages that have to name it.
+    # What a listing of the top level holds, for messages that have to name it.
     entity_name = "project"
 
     @staticmethod
     def _token_scope_for(operation: Operation) -> str:
-        """Classic-token scope the refused operation needs, not the widest this source might.
-
-        A writable source still serves users who only browse it, and a 403 on a listing that
-        told them to mint a token with push rights on every project they can reach would be
-        advice to over-privilege, contradicting this source's own template help.
-        """
+        """Classic-token scope the refused operation needs, not the widest this source might use."""
         return "api" if operation == "writing to" else "read_api"
 
     def _open_fs(
@@ -111,17 +92,15 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         context: FilesSourceRuntimeContext[GitLabFileSourceConfiguration],
         cache_options: CacheOptionsDictType,
     ) -> "GitLabARCFileSystem":
-        # Read the class off the source rather than naming it here, so a subclass opens a
-        # different filesystem by setting ``required_module`` alone. Which one it is decides how a
-        # write behaves, and that is the whole of the difference between an ARC and a project.
+        # Off the class, so a subclass swaps the filesystem - and with it write behaviour - by
+        # setting ``required_module`` alone.
         filesystem_class = self.required_module
         if filesystem_class is None:
             raise self.required_package_exception
 
         config = context.config
-        # Without a scheme aiohttp refuses the URL with an exception carrying only the URL, which
-        # reached the form as "Reason: gitlab.com/api/v4/projects". Stripped because whitespace
-        # pasted along with a URL survives into the hostname.
+        # Without a scheme aiohttp fails with an exception carrying only the URL, which reached the
+        # form as "Reason: gitlab.com/api/v4/projects". Stripped: pasted whitespace reaches the host.
         base_url = config.base_url.strip()
         parts = urlparse(base_url)
         if parts.scheme not in ("http", "https") or not parts.netloc:
@@ -136,9 +115,8 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 base_url=base_url,
                 token=config.token,
                 asynchronous=False,
-                # Without this, fsspec caches one instance per (base_url, token) for the whole
-                # process, so closing it at the end of one request would tear down the aiohttp
-                # session that other requests are still reading from.
+                # Else fsspec caches one instance per (base_url, token) process-wide, and closing
+                # it after one request tears down the aiohttp session others are still reading.
                 skip_instance_cache=True,
                 **cache_options,
             ),
@@ -147,13 +125,10 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     def _refuse_a_private_address(self, base_url: str, parts: "ParseResult") -> None:
         """Refuse a base_url that points into the network Galaxy itself sits on.
 
-        base_url is a template variable, so a user chooses which host Galaxy talks to and sends
-        their token to. ``validate_non_local`` cannot be handed the raw URL: it tests the scheme
-        with a case-sensitive ``startswith``, so ``HTTP://127.0.0.1`` returns unchecked, and it
-        resolves an IPv6 literal with its brackets attached, which fails and looks unresolvable.
-        yarl normalises both before aiohttp connects. The host therefore comes from ``urlparse``,
-        which lowercases it and strips the brackets; a literal needs no DNS and is checked
-        directly against the same allowlist.
+        ``validate_non_local`` cannot take the raw URL: it tests the scheme with a case-sensitive
+        ``startswith`` (``HTTP://127.0.0.1`` passes unchecked) and resolves IPv6 literals with their
+        brackets attached. yarl normalises both before aiohttp connects, so the host comes from
+        ``urlparse`` and a literal is checked against the allowlist directly.
         """
         allowlist = self._file_sources_config.fetch_url_allowlist or []
         host = parts.hostname or ""
@@ -166,15 +141,12 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
             try:
                 validate_non_local(f"{parts.scheme}://{host}", allowlist)
             except RequestParameterInvalidException:
-                # A name that does not resolve. Galaxy cannot reach it either, so there is
-                # nothing here to protect against, and the connection error that follows says
-                # more than "could not verify" does.
+                # Does not resolve, so Galaxy cannot reach it either; the connection error that
+                # follows says more than "could not verify" would.
                 pass
             except ConfigDoesNotAllowException as e:
-                # The shared check says only "Access to this address in not permitted by server
-                # configuration", which names neither the address nor the file source. A
-                # self-hosted GitLab on a private network is an ordinary thing to configure and
-                # lands here, so it has to say which setting to look at.
+                # The shared message names neither the address nor the file source, and a
+                # self-hosted GitLab on a private network lands here routinely.
                 raise ConfigDoesNotAllowException(self._private_address_message(base_url)) from e
             return
 
@@ -189,7 +161,6 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         raise ConfigDoesNotAllowException(self._private_address_message(base_url))
 
     def _private_address_message(self, base_url: str) -> str:
-        """Say which address was refused, for which source, and what an admin can do about it."""
         return (
             f"{self.label} is configured with '{base_url}', which is an address on this server's "
             "own network. Galaxy does not fetch from those unless an administrator lists them in "
@@ -204,10 +175,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     ) -> Iterator[tuple["GitLabARCFileSystem", GitLabFileSourceConfiguration]]:
         """Open a filesystem for one operation and translate arcfs failures into Galaxy exceptions.
 
-        ``_open_fs`` builds a fresh instance per operation, so closing it here cannot affect anything
-        else in flight. ``operation`` says what the caller was doing: it completes the "Problem ..."
-        message of unexpected failures, and the two branches that differ per operation compare it
-        rather than reading the sentence it ends up in.
+        ``_open_fs`` builds a fresh instance per operation, so closing it here affects nothing else.
         """
         description = f"{operation} file source path {path}"
         base_url_for_errors = (context.config.base_url or "").strip()
@@ -225,40 +193,30 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
             raise AuthenticationRequired(self._credentials_message(description, e)) from e
         except FileNotFoundError as e:
             if e.filename is not None:
-                # A local path that Galaxy staged, not anything in GitLab. Saying the project is missing
-                # would be wrong, and would put a server-side path in front of the user.
+                # A local path Galaxy staged, not anything in GitLab; a server-side path must not
+                # reach the user.
                 raise MessageException(f"Problem {description}. Reason: {e.strerror or e}") from e
-            # Raised for a project without any commit yet, for one that was removed, and for one that
-            # is invisible to these credentials. arcfs' own text is a numeric project id, a bare
-            # repo-internal path, or a whole sentence depending on the raise site, so none of it
-            # reads correctly inside a sentence. ``description`` already names what was asked for.
+            # Empty project, removed project, or one invisible to these credentials. arcfs' own text
+            # is a project id, a bare path or a sentence depending on the raise site, so it is dropped.
             raise ObjectNotFound(
                 f"Problem {description}. Not found in {self.label}. The {self.entity_name} may be empty, may "
                 "have been removed, or may not be visible with your credentials."
             ) from e
         except Exception as e:
-            # aiohttp reports HTTP failures as ClientResponseError, which is not an OSError, so they
-            # arrive here. Matching on the status keeps this module importable without aiohttp, which
-            # the standalone galaxy-files package does not depend on.
+            # aiohttp's ClientResponseError is not an OSError, so HTTP failures arrive here. Matching
+            # on the status keeps this importable without aiohttp, which galaxy-files does not need.
             if isinstance(e, OSError) and getattr(e, "filename", None):
-                # A local failure that is neither of the two named above: a directory where a file
-                # was expected, a read error, a symlink loop. Those two branches exist to keep a
-                # server-side staging path away from the user, and this keeps the rest of OSError
-                # from going around them.
+                # Any other local failure; keeps a server-side staging path away from the user.
                 raise MessageException(f"Problem {description}. Reason: {e.strerror or type(e).__name__}") from e
             status = getattr(e, "status", None)
-            # aiohttp leaves ``message`` empty when the server sends no reason phrase, and the
-            # exception itself stringifies to the full internal API URL, so it cannot stand in.
+            # The exception stringifies to the internal API URL, so it cannot stand in for the phrase.
             reason_phrase = getattr(e, "message", None)
             detail = f"{status} {reason_phrase}" if reason_phrase else str(status)
             if status == 401:
-                # A missing, invalid, expired or revoked token.
                 raise AuthenticationRequired(self._credentials_message(description, detail)) from e
             if status == 403:
-                # The token authenticated but is not allowed to do this. A classic token is missing
-                # the "api" scope; a fine-grained one is missing the resource permission this call
-                # needs. GitLab names which in the response body, but aiohttp keeps only the status
-                # and reason phrase on the error, so both causes have to be offered here.
+                # GitLab names the cause in the body, but aiohttp keeps only status and reason
+                # phrase, so both a missing scope and a missing permission have to be offered.
                 raise AuthenticationRequired(
                     self._credentials_message(
                         description,
@@ -268,21 +226,17 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                     )
                 ) from e
             if status == 200:
-                # The server answered, and the answer was not the JSON a GitLab API returns. The
-                # base_url points at something that is not an API root: most often the address of
-                # the page the user was looking at when they copied it. aiohttp reports this as
-                # a mimetype it could not decode, which explains nothing about the field to fix.
+                # Answered, but not as an API: usually the address of a page the user copied.
+                # aiohttp reports an undecodable mimetype, which says nothing about the field to fix.
                 raise RequestParameterInvalidException(
                     f"'{base_url_for_errors}' answered, but not as a GitLab API. Use the address of "
                     f"the server itself, as in '{self._server_example}', rather than the address "
                     "of a page on it."
                 ) from e
             if status == 400 and operation == "writing to":
-                # GitLab answers 400 for a commit it would not make, and aiohttp keeps only the
-                # status, so the body saying which is gone by the time this runs. The likeliest
-                # cause on a write is the one this source deliberately provokes: it sends the
-                # commit id the file was read at, so a file changed since then is refused rather
-                # than silently overwritten, and the user has to be told to try again.
+                # GitLab refuses a commit it will not make and aiohttp drops the body saying which.
+                # The likeliest cause is the one this source provokes: it sends the commit id the
+                # file was read at, so a file changed since is refused rather than overwritten.
                 raise MessageException(
                     f"Problem {description}. {self.label} refused the write. "
                     f"{self._write_refused_hint}{self._said(reason_phrase)}"
@@ -293,11 +247,8 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                     f"single request.{self._large_file_remedy}"
                 ) from e
             if status == 405 and operation == "listing":
-                # GitLab limits how far an offset listing may page and answers 405 once past it,
-                # with no hint that paging is what it objected to. It enforces this only for
-                # unauthenticated requests, so a token removes the limit entirely. The cap applies
-                # to listings, and this handler is shared with reading and writing, so only a
-                # listing gets this wording.
+                # GitLab caps how far an offset listing may page and answers 405 past it, with no
+                # hint that paging was the objection. Enforced only for unauthenticated requests.
                 raise MessageException(
                     f"Problem {description}. {self.label} would not list any further into the "
                     "catalogue. Some GitLab servers cap how deep an anonymous listing can page. "
@@ -308,13 +259,10 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                     f"Problem {description}. {self.label} is rate limiting these requests"
                     f"{self._retry_hint(e)}. Please wait and try again."
                 ) from e
-            # Statuses outside the ladder above still must not render the exception itself: for an
-            # aiohttp error that is the internal API URL and its query string. Errors with no text
-            # at all would otherwise leave a bare "Reason: ".
+            # Anything below still must not render the exception itself: for an aiohttp error that
+            # is the internal API URL and its query string.
             if type(e).__name__ == "FSTimeoutError":
                 # fsspec rewrites asyncio.TimeoutError to this, and it stringifies to nothing.
-                # The session's own budget covers the whole transfer, so a large file on a slow
-                # link runs out of it having committed nothing.
                 raise MessageException(
                     f"Problem {description}. {self.label} did not answer in time. A large file on "
                     f"a slow connection can exhaust the request budget.{self._timeout_hint}"
@@ -338,10 +286,8 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     ) -> tuple[list[AnyRemoteEntry], int]:
         """List the projects of a GitLab instance, or the entries inside one.
 
-        Listings are built from arcfs' ``list_page``, which paginates against GitLab and reports the
-        total number of entries that Galaxy needs for its pagination controls. ``fs.ls()`` reports no
-        total, and makes arcfs fetch and keep the whole project catalogue in one call, so it is only
-        used for recursion inside a project.
+        Built from arcfs' ``list_page``, which reports the total that Galaxy's pagination needs.
+        ``fs.ls()`` reports none and fetches the whole catalogue, so it is only used for recursion.
         """
         self._require_a_project(path)
         if recursive:
@@ -354,9 +300,8 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
             with self._filesystem(context, "listing", path) as (fs, config):
                 entries, total = self._list_recursive(fs, self._to_filesystem_path(path, config), config)
                 if query:
-                    # Without this the filter is silently dropped and the whole subtree comes back
-                    # looking like a result set. The cap in ``_list_recursive`` applies first, so a
-                    # match beyond it is still not found, exactly as on the non-recursive path.
+                    # Else the filter is silently dropped and the whole subtree comes back looking
+                    # like a result set.
                     entries = self._filter_by_name(entries, query)
                     total = len(entries)
                 return self._apply_pagination(entries, limit, offset), total
@@ -374,10 +319,8 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 return self._apply_pagination(matched, limit, offset), len(matched)
 
             if limit is None:
-                # The window has to start where the caller asked. Reading from zero and slicing
-                # afterwards returned nothing at all for any offset past MAX_ITEMS_LIMIT, and a
-                # short page before it, while the total reported the real size - so the same
-                # offset answered differently depending on whether a limit came with it.
+                # The window has to start where the caller asked: reading from zero and slicing
+                # afterwards returned nothing for any offset past MAX_ITEMS_LIMIT.
                 start = offset or 0
                 entries, total = self._read_window(fs, fs_path, config, start, MAX_ITEMS_LIMIT, write_intent)
                 if total > start + len(entries):
@@ -385,45 +328,34 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
                 return entries, total
 
             if limit > MAX_ITEMS_LIMIT:
-                # Nothing bounds the limit a caller may ask for, and arcfs will fetch as many
-                # GitLab pages as it takes to fill it.
+                # Nothing bounds the caller's limit, and arcfs fetches as many pages as it takes.
                 self._on_listing_exceeded()
             return self._read_window(fs, fs_path, config, offset or 0, min(limit, MAX_ITEMS_LIMIT), write_intent)
 
-    #: Appended to a 403 on a write. What a token needs in order to push is not the same thing
-    #: for a project as for an ARC, and an ARC never touches the branch this warns about.
+    # Overridden by ``ARCFilesSource``, whose exports are not plain commits.
+
     _push_refused_hint = (
         ". A token with every scope is still refused by a protected branch, which GitLab applies "
         "to the default branch"
     )
 
-    #: How a refused write is explained. A project export is one commit carrying the id the file
-    #: was read at, so a stale id is the likely cause and re-exporting resolves it. An ARC export
-    #: sends no such id and takes a different path entirely, so the same sentence would be wrong.
     _write_refused_hint = (
         "GitLab protects the default branch by default, so the token may not be allowed to push "
         "to it; otherwise the file may have changed since Galaxy read it, in which case exporting "
         "again will pick up the new version."
     )
 
-    #: Appended to a timeout. A project export is a single commit request, so a timeout before the
-    #: server answered usually means nothing landed, but the request may still have been processed.
     _timeout_hint = " Nothing was committed unless the server had already processed the request."
 
-    #: Stands in for the address of the server in the "this is not an API" message.
     _server_example = "https://gitlab.com"
 
-    #: Appended to the message for a file too large to commit. An ARC has somewhere else to put
-    #: it; a plain project does not, so only the GitLab source has something to suggest.
     _large_file_remedy = " An ARC file source, which uploads through Git LFS instead, can carry it."
 
     def _require_a_project(self, path: str) -> None:
         """Refuse a listing whose path carries the marker but names no project.
 
-        ``:-:`` with nothing before it reaches GitLab as a request for the project named "",
-        which is the endpoint that lists every project, and the result is then indexed as one
-        project's payload. The user saw ``list indices must be integers or slices, not str``.
-        Listing a project root is legitimate, so only the project side is checked here.
+        ``:-:`` with nothing before it asks GitLab for the project named "", which is the endpoint
+        that lists every project; the result was then indexed as one project's payload.
         """
         project, marker, _ = path.partition(ROOT_MARKER)
         if marker and not self._names_something(project):
@@ -436,12 +368,8 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     def _require_a_file_inside(self, path: str, what: str) -> None:
         """Refuse a path that does not name a file inside a project.
 
-        Each of the three ways it can fail reaches the backend as its own obscure failure: a
-        missing marker makes it probe prefixes and build the whole project index, nothing after
-        the marker comes back as the path repeated, and nothing before it asks GitLab for the
-        project named "" and fails on the shape of the answer.
-
-        ``what`` is "Exports" or "Imports", so the message names what the user was doing.
+        A missing marker makes the backend build the whole project index; nothing after the marker
+        repeats the path back. ``what`` is "Exports" or "Imports".
         """
         project, marker, inside = path.partition(ROOT_MARKER)
         if marker and self._names_something(project) and self._names_something(inside):
@@ -457,11 +385,10 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     ) -> tuple[list[AnyRemoteEntry], int]:
         """Recurse with failures raised rather than omitted.
 
-        Its own stack rather than ``fs.walk(on_error="raise")``: fsspec passes only ``**kwargs``
-        when it recurses, and ``on_error`` is a named parameter, so every level below the first
-        reverts to ``"omit"`` (fsspec 2026.7.0). ``walk`` swallows every ``OSError``, and
-        aiohttp's connection errors are ``OSError`` subclasses, so a reset partway through
-        returned the remaining folders empty with HTTP 200.
+        Its own stack rather than ``fs.walk(on_error="raise")``: fsspec passes only ``**kwargs`` when
+        it recurses and ``on_error`` is named, so every level below the first reverts to ``"omit"``
+        (fsspec 2026.7.0). ``walk`` swallows ``OSError``, which aiohttp's connection errors subclass,
+        so a reset partway through returned the remaining folders empty with HTTP 200.
         """
         entries: list[AnyRemoteEntry] = []
         to_entry = functools.partial(self._info_to_entry, config=config)
@@ -486,10 +413,8 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     ) -> tuple[list[AnyRemoteEntry], int]:
         """Return up to ``count`` entries from ``start``.
 
-        Since 0.1.11 arcfs serves any window from the pages that cover it, so this only converts
-        what comes back. ``membership`` narrows a root listing to projects the credentials belong
-        to, used when Galaxy asks where a file may be written: every visible project can be read,
-        only some can be pushed to.
+        ``membership`` narrows a root listing to projects the credentials belong to, for when Galaxy
+        asks where a file may be written: every visible project can be read, only some pushed to.
         """
         infos, total = fs.list_page(fs_path, True, offset=start, limit=count, membership=membership)
         return [self._info_to_entry(info, config) for info in infos], total
@@ -502,10 +427,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         return f"{project}{marker}/{inside.lstrip('/')}"
 
     def _to_filesystem_path(self, path: str, config: GitLabFileSourceConfiguration) -> str:
-        """Drop the "/" that ``_adapt_entry_path`` inserted, back to the path arcfs expects.
-
-        Paths recorded before that separator was introduced simply pass through unchanged.
-        """
+        """Drop the "/" that ``_adapt_entry_path`` inserted, back to the path arcfs expects."""
         project, marker, inside = path.partition(ROOT_MARKER)
         if not marker:
             return path
@@ -528,9 +450,8 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         context: FilesSourceRuntimeContext[GitLabFileSourceConfiguration],
     ):
         self._require_a_file_inside(target_path, "Exports")
-        # A push is never anonymous, so a writable source with no token cannot export at all.
-        # Saying that here beats letting it travel to the server and come back as a 401 about
-        # credentials, which reads as "your token is wrong" when there is no token to be wrong.
+        # A push is never anonymous. Caught here because the server's 401 reads as "your token is
+        # wrong" when there is no token to be wrong.
         if not (context.config.token or "").strip():
             raise AuthenticationRequired(
                 f"{self.label} has no access token, and exporting to {self.entity_name} requires "
@@ -544,22 +465,16 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     def _names_something(part: str) -> bool:
         """Whether one side of the marker names anything the backend will keep.
 
-        The backend strips whitespace and slashes and drops segments that navigate rather than
-        name, so a guard reading the raw text lets through targets it then fails on, reporting
-        the path as its own explanation. ``..`` is refused rather than normalized away: nothing
-        between the request and the API call bounds a target to inside the repository.
+        The backend strips whitespace and slashes, so a guard reading the raw text lets through
+        targets it then fails on. ``..`` is refused rather than normalized away: nothing between
+        here and the API call bounds a target to inside the repository.
         """
         segments = [segment for segment in part.strip().strip("/").split("/") if segment not in ("", ".")]
         return bool(segments) and ".." not in segments
 
     @staticmethod
     def _said(reason: str | None) -> str:
-        """Append GitLab's own words, when the backend passed them through.
-
-        A newer arcfs reads the body of a refused write, so ``reason`` can carry GitLab's actual
-        complaint. An older one leaves the HTTP reason phrase, which only repeats the status, so
-        those are dropped rather than shown twice.
-        """
+        """Append GitLab's own words, dropping the reason phrases that only repeat the status."""
         if not reason or reason.strip().lower() in ("bad request", "forbidden", "unauthorized"):
             return ""
         return f" GitLab said: {reason}"
@@ -574,8 +489,7 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
         return entry
 
     def _credentials_message(self, description: str, reason: object) -> str:
-        # Callers pass arcfs', the OS' or aiohttp's text, any of which may already end in a
-        # period, so the trim lives here rather than at each call site.
+        # Callers' text may already end in a period, so the trim lives here, not at each call site.
         return (
             f"Problem {description}. Permission Denied. Reason: {str(reason).rstrip(' .')}. "
             f"Please check your credentials in your preferences for {self.label}."
@@ -595,10 +509,9 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     def _is_source_root(path: str) -> bool:
         """Whether the path names the source itself rather than anything inside it.
 
-        arcfs resolves a path of blanks to the root project listing, so "/ /" has to count as the
-        root or a recursive listing of it walks every project on the instance. Slashes are removed
-        and the rest stripped, since the whitespace can sit between them and ``str.strip`` covers
-        every character Python calls whitespace, not just the ASCII ones.
+        arcfs resolves a path of blanks to the root listing, so "/ /" has to count as the root or a
+        recursive listing of it walks every project on the instance. Slashes go first: whitespace
+        can sit between them, and bare ``str.strip`` covers all of Unicode's.
         """
         return not path.replace("/", "").strip()
 
@@ -611,9 +524,8 @@ class GitLabFilesSource(FsspecFilesSource[GitLabFileSourceTemplateConfiguration,
     def _display_name(path: str) -> str:
         """Return the name to show for an arcfs path, hiding the ``:-:`` marker.
 
-        Projects (paths ending with the marker) keep their full ``group/project`` path so that
-        equally named projects in different groups stay distinguishable; entries inside a project
-        show only their last path component.
+        Projects keep their full ``group/project`` path, so equal names in different groups stay
+        distinguishable; entries inside one show only their last component.
         """
         project, marker, inside = path.partition(ROOT_MARKER)
         if not marker:

@@ -21,11 +21,9 @@ class ARCFileSourceConfiguration(GitLabFileSourceConfiguration):
 class ARCFilesSource(GitLabFilesSource):
     """File source for ARCs (Annotated Research Contexts) on a DataPLANT DataHUB.
 
-    A DataHUB is a GitLab instance and an ARC is one of its projects, so reading is inherited
-    unchanged. Only writing differs: the file goes to the instance's Git LFS store, a pointer is
-    committed on a ``run_results-*`` branch named from a hash of the token, and a merge request is
-    opened, so an export appears in a listing only once a maintainer merges it. A plain GitLab
-    user exporting a file expects a commit instead, which is why this class exists.
+    A DataHUB is a GitLab instance and an ARC one of its projects, so reading is inherited unchanged.
+    Only writing differs: the file goes to Git LFS, a pointer is committed on a ``run_results-*``
+    branch and a merge request is opened, so an export is visible only once a maintainer merges it.
     """
 
     plugin_type = "arc"
@@ -34,11 +32,11 @@ class ARCFilesSource(GitLabFilesSource):
 
     entity_name = "ARC"
 
-    #: This source is the alternative the GitLab one points at, so it has none of its own.
-    _large_file_remedy = ""
+    # These replace ``GitLabFilesSource``'s wording, which describes a plain commit: an ARC export
+    # never touches the default branch, sends no commit id, and takes several steps. It is itself
+    # the large-file alternative that source points at, so that remedy is empty here.
 
-    # The four hints below replace GitLab wording that describes a plain commit: an ARC export
-    # never touches the default branch, sends no commit id, and is several steps rather than one.
+    _large_file_remedy = ""
 
     _push_refused_hint = (
         ". Exporting to an ARC also needs permission to create a branch, commit to it and open a "

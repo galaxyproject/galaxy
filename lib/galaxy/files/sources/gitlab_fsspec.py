@@ -1,13 +1,9 @@
 """Writable fsspec filesystem for GitLab projects.
 
-``arcfs.fs.GitLabARCFileSystem`` reads any GitLab project but writes the way an ARC takes data:
-through Git LFS, onto a generated branch, behind a merge request. A GitLab user exporting a file
-expects a commit on the branch instead, so this subclass writes that way. Same shape as
-``github_fsspec.py``, which adds a write to fsspec's read-only GitHub filesystem for the same
-reason.
-
-The parts that decide what a commit contains are plain functions rather than methods, so they
-run without the optional ``arcfs-fsspec`` package, which CI does not install.
+``arcfs.fs.GitLabARCFileSystem`` writes the way an ARC takes data: through Git LFS, onto a generated
+branch, behind a merge request. A GitLab user exporting a file expects a commit instead, so this
+subclass writes that way - the same shape as ``github_fsspec.py``. The parts deciding what a commit
+contains are plain functions, so they import without the optional ``arcfs-fsspec`` package.
 """
 
 import asyncio
@@ -24,21 +20,18 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
-#: What a commit may carry. Far below GitLab's own 300 MB ceiling: the content is read,
-#: base64-encoded and serialised into the request body, so several copies of the file are
-#: resident at once, and GitLab rate limits requests above 20 MB anyway. An ARC file source
-#: streams through Git LFS and has no such limit.
+# What a commit may carry. Far below GitLab's 300 MB ceiling: the content is base64-encoded into
+# the request body, so several copies are resident, and GitLab rate limits requests above 20 MB.
 MAX_COMMIT_BYTES = 20 * 1024 * 1024
 
 
 def commit_actions(inside: str, content: str, existing: dict | None) -> list[dict]:
     """Build the commit actions that replace or create the file.
 
-    An existing file is deleted and created again in one commit rather than updated, because
-    GitLab runs its Git LFS transformer only for ``create``: an ``update`` onto a path
-    ``.gitattributes`` marks as LFS commits raw bytes where git expects a pointer, and nothing
-    can read the repository afterwards. Both actions ride in one commit, so the file is never
-    missing in between.
+    An existing file is deleted and created again rather than updated, because GitLab runs its Git
+    LFS transformer only for ``create``: an ``update`` onto a path ``.gitattributes`` marks as LFS
+    commits raw bytes where git expects a pointer, and the repository is then unreadable. Both
+    actions ride in one commit, so the file is never missing in between.
     """
     actions: list[dict] = []
     if existing is not None:
@@ -59,9 +52,9 @@ def commit_actions(inside: str, content: str, existing: dict | None) -> list[dic
 async def refuse_a_directory(client, repo_id: int, inside: str, branch: str) -> None:
     """Refuse a target naming a folder, which a commit would replace along with its contents.
 
-    The files endpoint answers 404 for a folder exactly as for a path that is not there. The tree
-    endpoint tells them apart, but differently per version: 404 from GitLab 17.7 on, ``200 []``
-    before it. Git has no empty trees, so the entries decide it either way.
+    The files endpoint 404s for a folder exactly as for a missing path. The tree endpoint tells them
+    apart, but differently per version: 404 from GitLab 17.7 on, ``200 []`` before. Git has no empty
+    trees, so the entries decide it either way.
     """
     try:
         entries, _ = await client.retrieve_project_level_page(repo_id, inside, ref=branch, per_page=1)
@@ -119,8 +112,8 @@ if GitLabARCFileSystem is not None:
         def _open(self, path, mode="rb", **kwargs):
             """Refuse a write through ``open``, which the inherited one sends the ARC way.
 
-            The inherited object commits only from ``__aexit__``, so an ordinary write-then-close
-            discards the data anyway. The test is for write intent, since "r+b" is read-write.
+            It commits only from ``__aexit__``, so write-then-close discards the data anyway. The
+            test is for write intent: "r+b" is read-write.
             """
             if set(mode) & set("wax+"):
                 raise NotImplementedError(
@@ -139,9 +132,7 @@ if GitLabARCFileSystem is not None:
         async def _existing_file(self, repo_id: int, inside: str, branch: str) -> dict | None:
             """Return what a replacement needs, or ``None`` if the branch has no such path.
 
-            HEAD rather than GET: the JSON files endpoint answers with the whole file
-            base64-encoded, so replacing a small dataset over a large existing blob read and
-            parsed hundreds of megabytes to obtain two header-sized fields.
+            HEAD rather than GET: the files endpoint answers with the whole file base64-encoded.
             """
             session = await self.client._ensure()
             url = self.client._repository_file_url(repo_id, inside)
