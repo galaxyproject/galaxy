@@ -372,17 +372,49 @@ class TestDatasetsApi(ApiTestCase):
             hda = self.dataset_populator.new_dataset(
                 history_id, name="Annotated alignment", content=source, file_type="bam", wait=True
             )
-        expected_disposition = (
-            f'attachment; filename="Galaxy{hda["hid"]}-[Annotated_alignment].bam"; '
+        expected_filename = (
+            f'filename="Galaxy{hda["hid"]}-[Annotated_alignment].bam"; '
             f"filename*=UTF-8''Galaxy{hda['hid']}-%5BAnnotated%20alignment%5D.bam"
         )
 
-        for params in ({}, {"to_ext": "data"}, {"to_ext": "bam"}):
-            response = self._get(f"datasets/{hda['id']}/download", params)
+        for path in (f"datasets/{hda['id']}", f"histories/{history_id}/contents/{hda['id']}"):
+            for params in ({}, {"to_ext": "data"}, {"to_ext": "bam"}):
+                response = self._get(f"{path}/download", params)
+                self._assert_status_code_is(response, 200)
+                assert response.headers["Content-Disposition"] == f"attachment; {expected_filename}"
+                assert response.headers["content-type"] == "application/octet-stream"
+                assert response.content == content
+
+                head_response = self._head(f"{path}/download", params)
+                self._assert_status_code_is(head_response, 200)
+                assert head_response.headers["Content-Disposition"] == response.headers["Content-Disposition"]
+
+            response = self._get(f"{path}/display")
             self._assert_status_code_is(response, 200)
-            assert response.headers["Content-Disposition"] == expected_disposition
-            assert response.headers["content-type"] == "application/octet-stream"
+            assert response.headers["Content-Disposition"] == f"inline; {expected_filename}"
             assert response.content == content
+
+        legacy_url = f"{self.url}datasets/{hda['id']}/display"
+        response = self._get(legacy_url)
+        self._assert_status_code_is(response, 200)
+        assert response.headers["Content-Disposition"] == f"inline; {expected_filename}"
+        assert response.content == content
+
+    def test_display_images_inline(self, history_id):
+        for extension, content_type in (("png", "image/png"), ("pdf", "application/pdf")):
+            with open(self.test_data_resolver.get_filename(f"454Score.{extension}"), "rb") as source:
+                content = source.read()
+                source.seek(0)
+                hda = self.dataset_populator.new_dataset(history_id, content=source, file_type=extension, wait=True)
+            download_response = self._get(f"datasets/{hda['id']}/download")
+            self._assert_status_code_is(download_response, 200)
+            expected_filename = download_response.headers["Content-Disposition"].removeprefix("attachment; ")
+            for preview in (False, True):
+                response = self._get(f"datasets/{hda['id']}/display", {"preview": preview})
+                self._assert_status_code_is(response, 200)
+                assert response.headers["Content-Disposition"] == f"inline; {expected_filename}"
+                assert response.headers["content-type"] == content_type
+                assert response.content == content
 
     def test_display_preview_binary_as_text_uses_text_plain(self, history_id):
         # Regression test for https://github.com/galaxyproject/galaxy/issues/22395
@@ -395,6 +427,7 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(display_response, 200)
         content_type = display_response.headers.get("content-type", "")
         assert content_type.startswith("text/plain"), content_type
+        assert display_response.headers["Content-Disposition"].startswith("inline; ")
         assert display_response.text == contents
 
     def test_display_preview_large_fasta_uses_text_plain(self, history_id):

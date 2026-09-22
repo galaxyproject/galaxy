@@ -215,7 +215,7 @@ describe("DatasetView", () => {
     });
 
     describe("Component mounting and basic functionality", () => {
-        it.each(["preview", "raw"])("requests the dataset filename when downloading from the %s tab", async (tab) => {
+        it.each(["preview", "raw"])("uses the download endpoint from the %s tab", async (tab) => {
             server.use(
                 http.get("/api/datatypes/:datatype_id", ({ response }) =>
                     response(200).json({
@@ -230,7 +230,7 @@ describe("DatasetView", () => {
 
             const downloadLink = wrapper.get(".auto-download-message a");
             expect(downloadLink.text()).toContain("Download File");
-            expect(downloadLink.attributes("href")).toBe(`/api/datasets/${DATASET_ID}/download?to_ext=mp4`);
+            expect(downloadLink.attributes("href")).toBe(`/api/datasets/${DATASET_ID}/download`);
         });
 
         it("mounts with correct props", async () => {

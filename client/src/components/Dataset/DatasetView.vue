@@ -43,9 +43,7 @@ const iframeLoading = ref(true);
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
 const loadError = computed(() => datasetStore.getDatasetError(props.datasetId));
-const downloadUrl = computed(() =>
-    withPrefix(`/api/datasets/${props.datasetId}/download?to_ext=${dataset.value?.file_ext}`),
-);
+const downloadUrl = computed(() => withPrefix(`/api/datasets/${props.datasetId}/download`));
 const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
 
 // Track datatype loading state
