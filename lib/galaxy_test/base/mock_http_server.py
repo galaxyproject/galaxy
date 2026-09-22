@@ -12,6 +12,7 @@ import os
 import re
 import threading
 import time
+from collections.abc import Generator
 from dataclasses import (
     dataclass,
     field,
@@ -216,3 +217,16 @@ def start_mock_http_server(host: str = "127.0.0.1", port: int = 0) -> tuple[HTTP
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return server, f"http://{host}:{actual_port}"
+
+
+@pytest.fixture(scope="session")
+def mock_http_server() -> Generator[MockHttpServer, None, None]:
+    """Session-scoped mock HTTP server, re-exported by the conftest of every suite that needs it."""
+    if os.environ.get("GALAXY_TEST_EXTERNAL"):
+        yield MockHttpServer(base_url=None, handler_class=None, is_remote=True)
+    else:
+        server, base_url = start_mock_http_server()
+        try:
+            yield MockHttpServer(base_url=base_url, handler_class=MockHTTPRequestHandler, is_remote=False)
+        finally:
+            server.shutdown()
