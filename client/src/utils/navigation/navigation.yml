@@ -1306,8 +1306,8 @@ admin:
   toolshed:
     selectors:
       repo_search: '#toolshed-repo-search'
-      search_results: '#shed-search-results'
-      upgrade_notification: '#repository-table .badge'
+      search_results: '#g-table-shed-search-results'
+      upgrade_notification: '#g-table-repository-table .badge'
 
   quota:
     selectors:
