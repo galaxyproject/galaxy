@@ -1,9 +1,4 @@
-"""Linter tests for the repository data-table bundle.
-
-These run the repository-level linters over :class:`RepositoryDataTables` models
-built from the real fixture repositories under ``repositories/`` (no mocks) and
-assert on the emitted :class:`~galaxy.tool_util.lint.LintContext` messages.
-"""
+"""Linter tests for repository data-table bundles."""
 
 import os
 import shutil
@@ -79,7 +74,6 @@ def test_missing_loc_fixture_is_an_error():
     errors = lint_ctx.error_messages
     assert len(errors) == 1
     assert errors[0].linter == MissingLocFixture.name()
-    # Assert on stable linter wording, not the fixture's ("absent") file name.
     assert "does not exist" in errors[0].message
 
 
@@ -94,25 +88,18 @@ def test_short_and_wrong_separator_rows_are_errors():
 
 
 def test_sample_fallback_is_not_a_missing_fixture():
-    # A production loc resolved via .sample fallback is found; the missing-fixture
-    # error must not fire on it (a P1 warning about the missing production loc is
-    # a separate, later check).
     conf = os.path.join(SAMPLE_FALLBACK_REPO, "tool_data_table_conf.xml.sample")
     model = build_repository_data_tables(SAMPLE_FALLBACK_REPO, tool_data_table_confs=[conf])
-    # Guard against the test passing vacuously: the asset must actually resolve via .sample.
+    # Ensure the loader exercised its sample fallback.
     assert any(asset.found and asset.is_sample for asset in model.loc_assets)
     lint_ctx = _lint(model)
     assert [e for e in lint_ctx.error_messages if e.linter == MissingLocFixture.name()] == []
 
 
 def test_tool_data_sample_backed_loc_is_not_a_missing_fixture():
-    # The real Tool Shed layout: conf references tool-data/bar.loc, the sample ships at
-    # tool-data/bar.loc.sample. The loader's own .sample fallback does NOT resolve this
-    # (found=False), so without repo_backed every reference-data repo would wrongly
-    # report a missing loc. repo_backed must recognize the shipped sample.
     conf = os.path.join(TOOL_DATA_SAMPLE_REPO, "tool_data_table_conf.xml.sample")
     model = build_repository_data_tables(TOOL_DATA_SAMPLE_REPO, tool_data_table_confs=[conf])
-    # Guard against a vacuous pass: the loader must genuinely miss it, and repo_backed catch it.
+    # The repository fallback, not the loader, must find this layout.
     assert any(not asset.found and asset.repo_backed for asset in model.loc_assets)
     lint_ctx = _lint(model)
     assert [e for e in lint_ctx.error_messages if e.linter == MissingLocFixture.name()] == []
@@ -155,9 +142,6 @@ def test_multiple_missing_fixtures_each_error():
 
 
 def test_missing_and_broken_together_no_contradictory_valid():
-    # A repo with one unfound loc AND one loc with short rows: the missing-fixture
-    # error and the row-shape errors must both fire, and LocRowShape must NOT also
-    # emit a green "all rows fine" check off the back of the unparsed missing file.
     conf = os.path.join(MISSING_AND_BROKEN_REPO, "tool_data_table_conf.xml.test")
     model = build_repository_data_tables(MISSING_AND_BROKEN_REPO, tool_data_table_confs=[conf])
     lint_ctx = _lint(model)
@@ -165,14 +149,10 @@ def test_missing_and_broken_together_no_contradictory_valid():
     row = [e for e in lint_ctx.error_messages if e.linter == LocRowShape.name()]
     assert len(missing) == 1
     assert len(row) == 2
-    # The point of this case: LocRowShape must not emit a green "rows are fine"
-    # check off the back of the unparsed missing file.
     assert [v for v in lint_ctx.valid_messages if v.linter == LocRowShape.name()] == []
 
 
 def test_full_bundle_names_all_resolve():
-    # Manager tables + consumer reference are all locally configured -> no errors,
-    # no warnings; both name-relationship linters confirm valid.
     model = build_repository_data_tables(
         FETCH_REPO,
         data_manager_conf=FETCH_DM_CONF,
@@ -185,7 +165,6 @@ def test_full_bundle_names_all_resolve():
 
 
 def test_manager_table_not_configured_is_an_error():
-    # Manager declares all_fasta + __dbkeys__ but no tool_data_table config is present.
     model = build_repository_data_tables(FETCH_REPO, data_manager_conf=FETCH_DM_CONF)
     lint_ctx = _lint(model)
     errors = [e for e in lint_ctx.error_messages if e.linter == ManagerTableConfigured.name()]
@@ -223,15 +202,12 @@ def test_consumer_of_externally_supplied_table_does_not_warn():
 
 
 def test_non_literal_consumer_table_is_not_checked():
-    # A from_data_table that stays non-literal after macro expansion must not be
-    # flagged as missing (galaxyproject/tools-iuc#5003 false-positive guard).
     model = build_repository_data_tables(FETCH_REPO, consumer_tool_sources=_consumer_sources(FETCH_DYNAMIC_CONSUMER))
-    # Precondition: the consumer's table name really is non-literal (guard is exercised).
+    # tools-iuc#5003: unresolved macro names are not evidence of a missing table.
     assert any("@" in c.table_name for c in model.consumers)
     lint_ctx = _lint(model)
     assert lint_ctx.error_messages == []
     assert lint_ctx.warn_messages == []
-    # Nothing literal was checked, so no green confirmation either.
     assert [v for v in lint_ctx.valid_messages if v.linter == ConsumerTableDefined.name()] == []
 
 
@@ -248,12 +224,10 @@ def test_output_ref_to_missing_output_is_an_error():
     errors = [e for e in lint_ctx.error_messages if e.linter == OutputRefValid.name()]
     assert len(errors) == 1
     assert "no_such_output" in errors[0].message
-    assert "out_file" in errors[0].message  # names the real declared output for the fix
+    assert "out_file" in errors[0].message
 
 
 def test_output_ref_flags_only_the_bad_ref_in_a_mixed_manager():
-    # One <data_table> has a valid output_ref, another a bad one; only the bad
-    # one is flagged (exercises per-table iteration within a single manager).
     model = build_repository_data_tables(FETCH_REPO, data_manager_conf=FETCH_DM_CONF_MIXED_OUTPUT_REF)
     errors = [e for e in _lint(model).error_messages if e.linter == OutputRefValid.name()]
     assert len(errors) == 1
@@ -262,11 +236,8 @@ def test_output_ref_flags_only_the_bad_ref_in_a_mixed_manager():
 
 
 def test_output_ref_not_checked_when_wrapper_unresolved():
-    # tool_file points at a wrapper that does not exist, so build resolves
-    # wrapper_resolved=False and the outputs are unknown; a bad-looking output_ref
-    # must not be reported as demonstrably missing.
     model = build_repository_data_tables(FETCH_REPO, data_manager_conf=FETCH_DM_CONF_MISSING_WRAPPER)
-    # Precondition: the wrapper genuinely failed to resolve (guard is exercised).
+    # Unknown outputs must not be treated as an empty output set.
     assert model.managers and all(not m.wrapper_resolved for m in model.managers)
     lint_ctx = _lint(model)
     assert [e for e in lint_ctx.error_messages if e.linter == OutputRefValid.name()] == []
@@ -283,9 +254,8 @@ def test_duplicate_column_names_is_an_error():
 
 def test_conflicting_columns_reported_without_crashing_assembly():
     conf = os.path.join(CONFLICT_COLUMNS_REPO, "tool_data_table_conf.xml.test")
-    # Assembly must not raise even though the loader's merge would on this conflict.
     model = build_repository_data_tables(CONFLICT_COLUMNS_REPO, tool_data_table_confs=[conf])
-    # Loader was skipped, but the name is still known from the raw declarations.
+    # Raw declarations remain usable when loader merging is skipped.
     assert "conflict_tbl" in model.configured_table_names
     errors = [e for e in _lint(model).error_messages if e.linter == ConflictingTableSchema.name()]
     assert len(errors) == 1
@@ -293,9 +263,7 @@ def test_conflicting_columns_reported_without_crashing_assembly():
 
 
 def test_conflicting_indexes_reported_without_crashing_assembly():
-    # Same column names but different index attributes: the raw name tuples match,
-    # so only the parsed columns-map catches the conflict -- and the loader would
-    # crash on it, so assembly must skip the loader and still not raise.
+    # Only the parsed name-to-index map exposes this conflict.
     conf = os.path.join(CONFLICT_INDEXES_REPO, "tool_data_table_conf.xml.test")
     model = build_repository_data_tables(CONFLICT_INDEXES_REPO, tool_data_table_confs=[conf])
     assert "idx_tbl" in model.configured_table_names
@@ -322,13 +290,8 @@ def test_clean_repo_has_no_schema_or_duplicate_errors():
 
 
 def test_empty_undocumented_loc_files_warn():
-    # Empty, comment-less loc files are flagged (Planemo #869), whether a shipped
-    # .loc.sample or a plain test-data *.loc; a sibling empty-but-documented
-    # (header-only) sample must NOT be flagged.
     conf = os.path.join(EMPTY_LOC_REPO, "tool_data_table_conf.xml.sample")
     model = build_repository_data_tables(EMPTY_LOC_REPO, tool_data_table_confs=[conf])
-    # Guard against a vacuous pass: bare loc files are present, and a documented
-    # (header-only) one is too.
     assert any(not f.has_data and not f.has_comment for f in model.loc_files)
     assert any(not f.has_data and f.has_comment for f in model.loc_files)
     warns = [w for w in _lint(model).warn_messages if w.linter == EmptyLocFile.name()]
@@ -337,9 +300,6 @@ def test_empty_undocumented_loc_files_warn():
 
 
 def test_loc_file_classification(tmp_path):
-    # The empty/documented distinction the linter keys on: whitespace-only and a
-    # lone UTF-8 BOM both count as empty-and-undocumented; a comment (even behind a
-    # BOM) documents the file; a data row is data.
     def classify(name, data, *, binary=False):
         p = tmp_path / name
         p.write_bytes(data) if binary else p.write_text(data)
@@ -354,8 +314,6 @@ def test_loc_file_classification(tmp_path):
 
 
 def test_documented_loc_files_do_not_warn():
-    # The clean fixture ships data rows and header-only samples only; the empty-loc
-    # linter must stay green and confirm valid (no false positive on documented files).
     model = build_repository_data_tables(FETCH_REPO, tool_data_table_confs=[FETCH_TABLE_TEST_CONF])
     lint_ctx = _lint(model)
     assert [w for w in lint_ctx.warn_messages if w.linter == EmptyLocFile.name()] == []
@@ -379,7 +337,6 @@ def _lint_bundle(repo_root, **kwargs):
 def test_bundle_clean_repository_has_no_errors():
     lint_ctx = _lint_bundle(FETCH_REPO, data_manager_conf=FETCH_DM_CONF, tool_data_table_confs=[FETCH_TABLE_TEST_CONF])
     assert lint_ctx.error_messages == []
-    # the per-table linters actually ran (not skipped)
     assert lint_ctx.valid_messages
 
 
@@ -395,7 +352,6 @@ def test_bundle_skips_when_no_configuration():
     lint_ctx = _lint_bundle(FETCH_REPO)
     assert lint_ctx.error_messages == []
     assert any("skipping data table linting" in m.message for m in lint_ctx.info_messages)
-    # nothing was assembled, so no per-table linter ran
     assert lint_ctx.valid_messages == []
 
 
@@ -413,11 +369,6 @@ CORE_CONSUMER_WRAPPER = os.path.join(CORE_CONSUMER_REPO, "data_manager", "bwa_me
 
 
 def test_find_and_lint_excludes_core_tables():
-    # An index-builder data manager that defines its own bwa_mem2_indexes table but
-    # consumes the core all_fasta table (supplied by Galaxy core) via from_data_table.
-    # The one-call find_and_lint entry seeds DEFAULT_EXTERNAL_TABLE_NAMES, so the core
-    # reference must not be flagged as an undefined consumer table -- and, because a
-    # literal reference was still checked, ConsumerTableDefined confirms valid.
     lint_ctx = LintContext(level=LintLevel.SILENT)
     find_and_lint_repository_data_tables(lint_ctx, CORE_CONSUMER_REPO)
     assert [w for w in lint_ctx.warn_messages if w.linter == ConsumerTableDefined.name()] == []
@@ -425,9 +376,7 @@ def test_find_and_lint_excludes_core_tables():
 
 
 def test_core_table_exclusion_is_what_suppresses_the_warning():
-    # Guard against a vacuous pass above: the same repo, linted WITHOUT the default
-    # core-table seeding, does warn on all_fasta -- so it really is consumed, not
-    # locally defined, and the DEFAULT_EXTERNAL_TABLE_NAMES seeding is doing the work.
+    # Without default external tables, the same reference warns.
     model = build_repository_data_tables(
         CORE_CONSUMER_REPO,
         tool_data_table_confs=[CORE_CONSUMER_SAMPLE_CONF],
@@ -441,9 +390,6 @@ def test_core_table_exclusion_is_what_suppresses_the_warning():
 
 
 def test_every_shipped_conf_variant_is_discovered():
-    # The .test conf describes the checked-in test bundle and the .sample conf the
-    # bundle the shed materializes on install. Preferring one would leave the other
-    # unvalidated, so discovery returns both.
     assert _find_tool_data_table_confs(FETCH_REPO) == [
         FETCH_TABLE_TEST_CONF,
         os.path.join(FETCH_REPO, "tool_data_table_conf.xml.sample"),
@@ -451,9 +397,6 @@ def test_every_shipped_conf_variant_is_discovered():
 
 
 def test_shipped_sample_bundle_is_linted_alongside_the_test_conf(tmp_path):
-    # A defect reachable only through the .sample conf: the production loc
-    # tool-data/all_fasta.loc has no shipped sample backing it any more, while the
-    # .test conf's own test-data/all_fasta.loc is untouched and still resolves.
     repo = tmp_path / "repo"
     shutil.copytree(FETCH_REPO, repo)
     (repo / "tool-data" / "all_fasta.loc.sample").unlink()
@@ -467,24 +410,17 @@ def test_shipped_sample_bundle_is_linted_alongside_the_test_conf(tmp_path):
 
 
 def test_checked_in_loc_under_tool_data_is_not_a_missing_fixture(tmp_path):
-    # A repository that checks the real loc in at tool-data/bar.loc rather than shipping
-    # only a sample. The loader resolves against tool_data_path, so it neither finds the
-    # relative path nor its own retry (which drops the tool-data/ subdirectory) -- the
-    # file is plainly there in the checkout, and must not be reported missing.
     repo = tmp_path / "repo"
     shutil.copytree(TOOL_DATA_SAMPLE_REPO, repo)
     (repo / "tool-data" / "bar.loc.sample").rename(repo / "tool-data" / "bar.loc")
 
     conf = str(repo / "tool_data_table_conf.xml.sample")
     model = build_repository_data_tables(str(repo), tool_data_table_confs=[conf])
-    # Guard against a vacuous pass: the loader must genuinely miss it, repo_backed catch it.
     assert any(not asset.found and asset.repo_backed for asset in model.loc_assets)
     assert [e for e in _lint(model).error_messages if e.linter == MissingLocFixture.name()] == []
 
 
 def test_checked_in_loc_rows_are_checked(tmp_path):
-    # ...and because the loader never parsed it, its rows are read here instead, so a
-    # checked-in loc is not exempt from the row-shape check.
     repo = tmp_path / "repo"
     shutil.copytree(TOOL_DATA_SAMPLE_REPO, repo)
     (repo / "tool-data" / "bar.loc.sample").unlink()

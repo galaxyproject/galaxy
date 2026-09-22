@@ -1,22 +1,4 @@
-"""Cross-file *lint view* of a repository's data-table bundle.
-
-This module assembles the producer/configuration/consumer artifacts of a
-data-manager / reference-data repository into a single :class:`RepositoryDataTables`
-model so repository-level linters can reason across files. It is deliberately
-*pure data assembly* -- it parses and resolves, it does not emit diagnostics.
-
-It composes existing galaxy-tool-util abstractions rather than duplicating them:
-
-- the data-manager ``<data_tables>`` block is parsed with
-  :func:`galaxy.tool_util.data.bundles.models.convert_data_tables_xml` into a
-  :class:`~galaxy.tool_util.data.bundles.models.DataTableBundleProcessorDescription`
-  (giving ``output_ref`` values, table names, and column mappings);
-- ``tool_data_table_conf.xml*`` files are loaded with
-  :class:`~galaxy.tool_util.data.ToolDataTableManager`, which already resolves
-  ``${__HERE__}`` / ``.sample`` fallback and records per-row parse errors; and
-- tool wrappers are read through :func:`galaxy.tool_util.parser.factory.get_tool_source`,
-  which expands macros before names are resolved.
-"""
+"""Assemble a repository's data-table bundle for cross-file linting."""
 
 import os
 from collections.abc import Iterable
@@ -47,7 +29,7 @@ from galaxy.util import (
 
 @dataclass
 class SourceLoc:
-    """Where a modeled element came from, for narrow skips and PR annotations."""
+    """Location of a modeled element."""
 
     path: str
     line: int | None = None
@@ -55,45 +37,27 @@ class SourceLoc:
 
 @dataclass
 class LocAsset:
-    """A resolved ``.loc`` / ``.loc.sample`` file referenced by a configured table."""
+    """A configured table's ``.loc`` reference."""
 
     table_name: str
     path: str
-    # ``found`` means the *loader* resolved and parsed a real file for this reference.
-    # It is resolution as a running Galaxy does it, against ``tool_data_path`` -- which
-    # is not how a repository checkout is laid out, so a perfectly good shed repo
-    # routinely comes back ``found=False``: a relative ``tool-data/x.loc`` is resolved
-    # against the process cwd, and the loader's retry drops the subdirectory and only
-    # looks for ``<tool_data_path>/x.loc`` (or ``.../x.loc.sample``). Use ``repo_backed``
-    # for "the repository ships a file satisfying this reference"; a reference is
-    # unresolved only when ``not found and not repo_backed``.
+    # ``found`` is loader resolution against ``tool_data_path``; a valid repository
+    # checkout may instead satisfy the reference through ``repo_backed``.
     found: bool
     is_sample: bool
-    # Whether the repository ships a file backing this reference -- the loc itself at
-    # its declared path, or a ``.sample`` Galaxy materializes the real loc from on
-    # install. Either way the reference is not a missing fixture, even though the
-    # loader reports ``found=False``. See :func:`_repo_backing_path`.
+    # The repository contains the declared loc or an installable sample for it.
     repo_backed: bool = False
-    # Row-shape errors captured by ``parse_file_fields`` for whichever file actually
-    # backs the reference -- the loader-resolved one, or the repo-shipped loc / sample.
-    # A reference nothing backs has no rows to check.
+    # Row-shape errors from the loader-resolved or repository-backed file.
     errors: tuple[str, ...] = ()
     source: SourceLoc | None = None
 
 
 @dataclass
 class LocFile:
-    """A ``.loc`` / ``.loc.sample`` file present in the repository tree.
-
-    Distinct from :class:`LocAsset`, which is a *configured-table reference*: many
-    ``.loc.sample`` files ship without any table referencing them, so the empty-file
-    check must look at the files on disk, not the resolved references. Records only
-    facts; the policy (an empty, undocumented file wants a format comment) lives in
-    the linter.
-    """
+    """A ``.loc`` file present in the repository, referenced or not."""
 
     path: str
-    # A non-blank, non-comment line -- i.e. an actual data row.
+    # A non-blank, non-comment line.
     has_data: bool
     # A ``#`` comment line documenting the expected column format.
     has_comment: bool
@@ -101,20 +65,12 @@ class LocFile:
 
 @dataclass
 class RawTableDecl:
-    """A single ``<table>`` element as declared, before the loader merges same-named tables.
-
-    Kept separate from :class:`TableDecl` because the loader collapses duplicate
-    column names into a dict and *raises* when two same-named tables declare
-    different columns -- so conflicting/duplicate schemas are only observable in
-    this pre-merge view.
-    """
+    """A ``<table>`` declaration captured before loader merging."""
 
     name: str
-    # Declared column names in order, keeping duplicates (the parsed ``columns``
-    # map collapses them) -- used to detect a table declaring one name twice.
+    # Ordered names preserve duplicates that the parsed map loses.
     column_names: tuple[str, ...]
-    # The name->index map the loader would parse; this is what it compares when
-    # merging same-named tables, so schema-conflict detection keys on this.
+    # The loader's name-to-index map, used to detect merge conflicts.
     columns: dict[str, int]
     separator: str
     comment_char: str
@@ -123,11 +79,7 @@ class RawTableDecl:
 
 @dataclass
 class TableDecl:
-    """A ``tool_data_table_conf.xml*`` ``<table>`` definition (name + parsed schema).
-
-    Only ``name`` is read today (via ``configured_table_names``); the parsed schema
-    fields are retained for the planned bundle-completeness check.
-    """
+    """A parsed ``tool_data_table_conf.xml*`` table definition."""
 
     name: str
     columns: dict[str, int]
@@ -156,12 +108,9 @@ class ManagerDecl:
     id: str
     tool_file: str
     tool_output_names: frozenset[str]
-    # Reused manager-side model: output_ref values, table names, column mappings.
     processor: DataTableBundleProcessorDescription
     source: SourceLoc
-    # Whether the wrapper was located and parsed. When False ``tool_output_names``
-    # is unknown (not "empty"), so output_ref checks must treat it as not-checked
-    # rather than reporting a demonstrably-missing output.
+    # False means the output names are unknown, not empty.
     wrapper_resolved: bool = False
 
 
@@ -172,22 +121,18 @@ class RepositoryDataTables:
     repo_root: str
     managers: list[ManagerDecl] = field(default_factory=list)
     configured_tables: list[TableDecl] = field(default_factory=list)
-    # Every ``<table>`` element as declared (pre-merge); may hold several entries
-    # for one name. Populated even when the loader is skipped over a conflict.
+    # Pre-merge declarations remain available when loader merging fails.
     raw_table_decls: list[RawTableDecl] = field(default_factory=list)
     loc_assets: list[LocAsset] = field(default_factory=list)
-    # Every ``.loc`` / ``.loc.sample`` file found in the repo tree (independent of
-    # whether a configured table resolves to it), for the empty-file check.
+    # Includes unreferenced files for the empty-file check.
     loc_files: list[LocFile] = field(default_factory=list)
     consumers: list[ConsumerRef] = field(default_factory=list)
-    # Tables validly supplied by Galaxy core or another installed repository; a
-    # consumer of one of these is not a demonstrably-missing definition (req #2).
+    # Tables supplied by Galaxy core or another repository.
     external_table_names: frozenset[str] = frozenset()
 
     @property
     def configured_table_names(self) -> frozenset[str]:
-        # Union of loader-enriched and raw declarations: names stay available for
-        # cross-component checks even when a schema conflict made the loader skip.
+        # Keep names available when a schema conflict prevents loader enrichment.
         names = {t.name for t in self.configured_tables}
         names |= {d.name for d in self.raw_table_decls}
         return frozenset(names)
@@ -216,11 +161,7 @@ def _xml_output_names(root: Element | None) -> frozenset[str]:
 
 
 def _tool_source_root(tool_source: ToolSource) -> Element | None:
-    """Root element of a (macro-expanded) XML wrapper, or None for a non-XML source.
-
-    Reads the ``xml_tree`` attribute the tool linters standardize on rather than the
-    equivalent ``root`` attribute.
-    """
+    """Return the expanded XML root, or ``None`` for a non-XML source."""
     xml_tree = getattr(tool_source, "xml_tree", None)
     return xml_tree.getroot() if xml_tree is not None else None
 
@@ -252,8 +193,7 @@ def _build_managers(data_manager_conf: str) -> list[ManagerDecl]:
     managers = []
     for dm_elem in root.findall("data_manager"):
         manager_id = dm_elem.get("guid") or dm_elem.get("id") or ""
-        # tool_file is either the attribute form or the nested <tool file="..."/> (shed/guid)
-        # form -- mirror DataManager._load_from_element in tools/data_manager/manager.py.
+        # Mirror the attribute and nested forms accepted by DataManager.
         tool_file = dm_elem.get("tool_file")
         if tool_file is None:
             tool_elem = dm_elem.find("tool")
@@ -281,14 +221,7 @@ def _build_managers(data_manager_conf: str) -> list[ManagerDecl]:
 
 
 def _raw_column_spec(table_elem: Element) -> tuple[tuple[str, ...], dict[str, int]]:
-    """Declared column names (with duplicates) and the parsed name->index map.
-
-    The name->index map is produced by the canonical
-    ``TabularToolDataTable.parse_column_spec_element`` so it matches exactly what the
-    loader compares when merging same-named tables. Only the ordered name list (which
-    keeps the duplicates ``DuplicateColumnNames`` needs, but the canonical map
-    collapses) is derived here.
-    """
+    """Return ordered names and the loader's parsed name-to-index map."""
     columns, _, _ = TabularToolDataTable.parse_column_spec_element(table_elem)
     columns_elem = table_elem.find("columns")
     if columns_elem is not None:
@@ -323,15 +256,7 @@ def _raw_table_decls(tool_data_table_confs: list[str]) -> list[RawTableDecl]:
 
 
 def _has_column_conflict(raw_decls: list[RawTableDecl]) -> bool:
-    """Whether any table name is declared with differing columns (what the loader's merge rejects).
-
-    Keys on the parsed name->index map, not the raw name list, because that map is
-    exactly what the loader compares -- ``merge_tool_data_table`` /
-    ``ToolDataTableManager.assert_data_table_consistency`` reject same-named tables
-    whose ``columns`` maps differ (two ``<column>`` forms can share names yet differ
-    by index). This is the pre-load counterpart of that check: same columns-equality
-    rule, applied to the raw declarations before the loader is invoked.
-    """
+    """Return whether loader merging would reject inconsistent column maps."""
     by_name: dict[str, list[dict[str, int]]] = {}
     for decl in raw_decls:
         specs = by_name.setdefault(decl.name, [])
@@ -341,21 +266,10 @@ def _has_column_conflict(raw_decls: list[RawTableDecl]) -> bool:
 
 
 def _repo_backing_path(repo_root: str, filename: str) -> str | None:
-    """The file the repository ships to satisfy a loc reference, or None.
+    """Find a checked-in loc or installable sample for ``filename``.
 
-    The loader resolves against ``tool_data_path`` the way a running Galaxy does, which
-    a repository checkout does not match (see ``LocAsset.found``), so resolve it the way
-    the shed does instead, in order of directness:
-
-    1. the declared path itself, taken relative to the repository root -- this is what
-       ``<file path="tool-data/x.loc"/>`` means in a checkout, and the loader misses it;
-    2. a sibling ``<ref>.sample``, which Galaxy materializes the real loc from on install;
-    3. for a reference that would resolve under ``tool_data_path`` -- a bare or
-       ``tool-data/``-rooted path -- the conventional ``tool-data/<basename>.sample``.
-
-    (3) is deliberately not applied to a reference anchored elsewhere
-    (``${__HERE__}/test-data/x.loc``): that names a different file, and a production
-    sample must not stand in for an absent test fixture.
+    The conventional ``tool-data`` sample fallback applies only to paths rooted at
+    ``tool_data_path``; it must not mask a missing ``test-data`` fixture.
     """
     reference = filename if os.path.isabs(filename) else os.path.join(repo_root, filename)
     for candidate in (reference, f"{reference}.sample"):
@@ -372,8 +286,7 @@ def _classify_loc_file(path: str) -> LocFile:
     """Record whether a loc file carries any data row and any format comment."""
     has_data = False
     has_comment = False
-    # utf-8-sig so a leading BOM is stripped rather than surviving str.strip() and
-    # masking an otherwise-empty file as a data row.
+    # Strip a BOM so it cannot make an empty file look like data.
     with open(path, encoding="utf-8-sig", errors="replace") as handle:
         for line in handle:
             stripped = line.strip()
@@ -399,16 +312,10 @@ def _discover_loc_files(repo_root: str) -> list[LocFile]:
 def _build_tables(
     repo_root: str, tool_data_table_confs: list[str], raw_decls: list[RawTableDecl]
 ) -> tuple[list[TableDecl], list[LocAsset]]:
-    # A same-named table declared with conflicting columns makes the loader's merge
-    # raise; skip enrichment in that case and let the linter report the conflict from
-    # the raw declarations (table names still come from those). Loc diagnostics for
-    # sibling tables are suppressed until the conflict is fixed and the loader re-runs.
+    # Preserve raw declarations for linting when loader merging would raise.
     if _has_column_conflict(raw_decls):
         return [], []
-    # ToolDataTableManager loads the confs, resolving ${__HERE__} / .sample fallback and
-    # recording per-file parse errors -- we read that resolved state back out.
-    # cast around list invariance: ToolDataTableManager takes list[str | PathLike]; our
-    # str paths are compatible element-wise, but List[str] is not List[str | PathLike].
+    # The cast works around invariant list types in ToolDataTableManager's signature.
     tdt_manager = ToolDataTableManager(
         repo_root, config_filename=cast("list[str | os.PathLike[str]]", tool_data_table_confs)
     )
@@ -425,9 +332,7 @@ def _build_tables(
             backing_path = _repo_backing_path(repo_root, str(filename)) if not found else None
             errors = list(info.get("errors") or ())
             if backing_path:
-                # The loader never parsed this one, so read its rows here -- with the
-                # same ``here`` anchoring extend_data_with uses, so ``${__HERE__}`` in a
-                # path column expands rather than surviving into the reported row.
+                # Match the loader's ``${__HERE__}`` expansion while parsing this file.
                 table.parse_file_fields(
                     backing_path, errors=errors, here=os.path.dirname(os.path.abspath(backing_path))
                 )
@@ -464,17 +369,7 @@ def build_repository_data_tables(
     consumer_tool_sources: Iterable[tuple[str, ToolSource]] | None = None,
     external_table_names: frozenset[str] = frozenset(),
 ) -> RepositoryDataTables:
-    """Assemble a :class:`RepositoryDataTables` from already-discovered repository assets.
-
-    ``repo_root`` anchors ``${__HERE__}`` resolution and shed path handling.
-    Discovery (which files to pass) is the caller's responsibility --
-    :func:`~galaxy.tool_util.data.bundles.lint.find_and_lint_repository_data_tables`
-    passes every ``tool_data_table_conf.xml*`` variant a repository ships, so the test
-    and shipped bundles are validated together. Same-named tables across the confs are
-    merged by the loader, which requires their schemas to agree.
-    ``consumer_tool_sources`` are ``(path, tool_source)`` pairs for ordinary
-    (non data-manager) tools that may reference the repository's tables.
-    """
+    """Assemble a data-table model from already-discovered repository assets."""
     model = RepositoryDataTables(repo_root=repo_root, external_table_names=external_table_names)
     model.loc_files = _discover_loc_files(repo_root)
     if data_manager_conf:

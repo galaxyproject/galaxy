@@ -1,9 +1,4 @@
-"""Tests for the ``galaxy-tool-data-lint`` CLI.
-
-These drive the command-line entry point over the real fixture repositories under
-``repositories/`` and assert on its exit code and output -- the standalone counterpart
-to the in-process linter tests in ``test_repository_data_table_lint.py``.
-"""
+"""Tests for the ``galaxy-tool-data-lint`` CLI."""
 
 import json
 import os
@@ -28,7 +23,6 @@ def test_clean_repository_exits_zero(capsys):
     code = _lint(CLEAN_REPO)
     assert code == 0
     out = capsys.readouterr().out
-    # Discovery found the bundle and every linter ran (all green checks printed).
     assert "MissingLocFixture" in out
     assert "ERROR" not in out
 
@@ -42,7 +36,6 @@ def test_missing_loc_repository_exits_one(capsys):
 
 
 def test_skip_suppresses_linter_and_exit_code(capsys):
-    # Skipping the only failing linter drops both its message and the failure.
     code = _lint(MISSING_LOC_REPO, skip="MissingLocFixture")
     assert code == 0
     assert "MissingLocFixture" not in capsys.readouterr().out

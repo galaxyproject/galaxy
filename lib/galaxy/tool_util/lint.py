@@ -70,9 +70,7 @@ from galaxy.util import (
 if TYPE_CHECKING:
     from galaxy.tool_util_models import UserToolSource
 
-# The object a linter classifies -- a ToolSource for the tool linters, a
-# RepositoryDataTables for the repository data-table linters, etc. LintContext.lint
-# dispatches over this generically, and Linter is generic over it.
+# The object classified by a linter.
 LintTargetType = TypeVar("LintTargetType")
 
 
@@ -90,11 +88,7 @@ class Linter(ABC, Generic[LintTargetType]):
     a linter. needs to define a lint method and the code property.
     optionally a fix method can be given
 
-    Generic over the lint target so non-tool linters (e.g. the repository
-    data-table linters, which lint a ``RepositoryDataTables``) can subclass
-    ``Linter[SomeTarget]`` without violating the override contract. A bare
-    ``class Foo(Linter)`` is ``Linter[Any]`` -- the ordinary tool linters,
-    which annotate their own ``tool_source: ToolSource``.
+    Generic over the lint target so non-tool linters can specialize it.
     """
 
     @classmethod
@@ -118,9 +112,7 @@ class Linter(ABC, Generic[LintTargetType]):
         list the names of all linter derived from Linter
         """
         submodules.import_submodules(galaxy.tool_util.linters)
-        # Repository data-table linters subclass Linter but live outside the
-        # tool_util.linters package; import here so they are always registered
-        # (function-level to avoid a circular import with this module).
+        # Register repository linters without introducing a module-level cycle.
         from galaxy.tool_util.data.bundles import lint as _repo_lint  # noqa: F401
 
         return [s.__name__ for s in cls.__subclasses__()]

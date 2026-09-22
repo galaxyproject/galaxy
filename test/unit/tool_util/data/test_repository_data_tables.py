@@ -1,8 +1,4 @@
-"""Parser tests for the repository data-table bundle model.
-
-These build :class:`RepositoryDataTables` from real fixture repositories (no mocks)
-under ``repositories/`` and assert the assembled cross-file model.
-"""
+"""Parser tests for the repository data-table bundle model."""
 
 import os
 
@@ -35,9 +31,7 @@ def test_manager_side_reuses_processor_description():
     assert len(model.managers) == 1
     manager = model.managers[0]
     assert manager.id == "fetch_genome_all_fasta_dbkeys"
-    # Output names come from the (macro-expanded) wrapper's <outputs>.
     assert "out_file" in manager.tool_output_names
-    # Reused manager-side model exposes declared tables + output_ref mapping.
     assert manager.processor.data_table_names == ["all_fasta", "__dbkeys__"]
     output_refs = manager.processor.output_ref_by_data_table
     assert output_refs["all_fasta"]["path"] == "out_file"
@@ -61,7 +55,6 @@ def test_configured_tables_from_test_conf():
 def test_loc_assets_resolved_and_clean():
     model = build_repository_data_tables(FETCH_REPO, tool_data_table_confs=[FETCH_TABLE_TEST_CONF])
     by_table = {loc.table_name: loc for loc in model.loc_assets}
-    # dbkeys.loc has one valid 3-field row; all_fasta.loc is empty. Both resolve, neither errors.
     assert by_table["__dbkeys__"].found is True
     assert by_table["__dbkeys__"].is_sample is False
     assert by_table["__dbkeys__"].errors == ()
@@ -89,7 +82,6 @@ def test_full_bundle_is_internally_consistent():
     )
     assert isinstance(model, RepositoryDataTables)
     configured = model.configured_table_names
-    # Every manager-produced and consumer-referenced table is locally configured in this repo.
     for manager in model.managers:
         for table_name in manager.processor.data_table_names:
             assert table_name in configured
@@ -98,8 +90,6 @@ def test_full_bundle_is_internally_consistent():
 
 
 def test_nested_tool_element_form_resolves_outputs():
-    # The shed/guid <data_manager><tool file="..."/></data_manager> form must resolve
-    # the wrapper's outputs just like the tool_file attribute form.
     model = build_repository_data_tables(FETCH_REPO, data_manager_conf=FETCH_DM_CONF_NESTED)
     assert len(model.managers) == 1
     manager = model.managers[0]
@@ -108,8 +98,6 @@ def test_nested_tool_element_form_resolves_outputs():
 
 
 def test_sample_conf_loc_reports_found_and_is_sample():
-    # A missing production loc that resolves via .sample fallback is found but sample-backed;
-    # step-2 checks must use `found and not is_sample`, not `found` alone.
     conf = os.path.join(SAMPLE_FALLBACK_REPO, "tool_data_table_conf.xml.sample")
     model = build_repository_data_tables(SAMPLE_FALLBACK_REPO, tool_data_table_confs=[conf])
     foo = {loc.table_name: loc for loc in model.loc_assets}["foo"]
@@ -123,7 +111,6 @@ def test_missing_loc_reports_not_found():
     model = build_repository_data_tables(MISSING_LOC_REPO, tool_data_table_confs=[conf])
     absent = {loc.table_name: loc for loc in model.loc_assets}["absent"]
     assert absent.found is False
-    # No parse runs on an unfound file, so empty errors here is not "clean".
     assert absent.errors == ()
 
 
@@ -132,6 +119,5 @@ def test_broken_loc_rows_are_captured():
     model = build_repository_data_tables(BROKEN_REPO, tool_data_table_confs=[conf])
     broken = {loc.table_name: loc for loc in model.loc_assets}["broken"]
     assert broken.found is True
-    # Short row (2 fields) and wrong-separator row (comma-joined) are both too short for index 2.
     assert len(broken.errors) == 2
     assert all("invalid" in message for message in broken.errors)

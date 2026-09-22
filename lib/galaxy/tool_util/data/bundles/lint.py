@@ -1,19 +1,4 @@
-"""Repository-level linters over a :class:`RepositoryDataTables` model.
-
-These are the deterministic bundle-contract checks a repository linter (e.g.
-Planemo's ``shed_lint``) runs across a data-manager / reference-data repository.
-Assembly and path/``.sample`` resolution live in :mod:`repository`; the linters
-here only classify the already-resolved model and report through a
-:class:`~galaxy.tool_util.lint.LintContext`.
-
-Every linter here is limited to conditions Planemo can *prove* from statically
-resolved evidence -- a referenced loc fixture that is absent, a declared table
-nothing configures, a row that cannot fill its columns. Advisory, unresolved, or
-externally-supplied conditions are reported as warnings or not at all; they are
-never reported here as demonstrably broken. The linters registered with
-:func:`lint_repository_data_tables` are listed in
-:data:`REPOSITORY_DATA_TABLE_LINTERS`.
-"""
+"""Repository-level linters for data-table bundles."""
 
 import os
 from collections.abc import Iterable
@@ -38,16 +23,7 @@ if TYPE_CHECKING:
 
 
 class MissingLocFixture(Linter[RepositoryDataTables]):
-    """A configured table references a loc file that resolves to no file on disk.
-
-    A reference the repository ships a file for (``LocAsset.repo_backed``) is not
-    reported -- either the loc is checked in at its declared path, or a ``.sample``
-    ships that Galaxy materializes the real loc from on install. Only a reference the
-    loader could not resolve *and* that nothing in the repository backs is a
-    demonstrably missing loc. (The loader's own ``found`` answers a different question
-    -- resolution against a deployment's ``tool_data_path`` -- so ``repo_backed`` is
-    resolved separately; see ``LocAsset.found``.)
-    """
+    """Report loc references absent from both the loader and repository."""
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
@@ -62,12 +38,7 @@ class MissingLocFixture(Linter[RepositoryDataTables]):
 
 
 class LocRowShape(Linter[RepositoryDataTables]):
-    """A non-comment loc row cannot supply every declared column index.
-
-    Reports row-shape errors captured by ``TabularToolDataTable`` while parsing
-    whichever file backs each reference -- the loader-resolved loc, or the one the
-    repository ships (see :func:`~galaxy.tool_util.data.bundles.repository._repo_backing_path`).
-    """
+    """Report loc rows that cannot supply every declared column."""
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
@@ -76,16 +47,12 @@ class LocRowShape(Linter[RepositoryDataTables]):
             for message in asset.errors:
                 lint_ctx.error(message, linter=cls.name())
                 found_error = True
-        # A backed reference has rows to check; a reference nothing backs does not.
         checked = [asset for asset in model.loc_assets if asset.found or asset.repo_backed]
         if checked and not found_error:
             lint_ctx.valid("All loc rows supply every declared column", linter=cls.name())
 
 
-# Markers that mean a table name did not fully resolve to a literal after macro /
-# token expansion (Cheetah ``$``/``${}``, an undefined ``@TOKEN@``). Such names are
-# reported as not-checked rather than demonstrably missing -- see galaxyproject/
-# tools-iuc#5003, where raw ``@IDX_DATA_TABLE@`` looks unconfigured but resolves.
+# Unexpanded Cheetah or XML-macro names cannot prove a table is missing.
 _DYNAMIC_MARKERS = ("$", "@", "{", "}")
 
 
@@ -94,12 +61,7 @@ def _is_literal(name: str) -> bool:
 
 
 class ManagerTableConfigured(Linter[RepositoryDataTables]):
-    """A data manager populates a table that nothing in the bundle configures.
-
-    The manager's ``<data_table name="...">`` entries must correspond to a
-    configured ``tool_data_table_conf`` table (or a known externally-supplied
-    one); an unconfigured target is a broken producer contract (Planemo #706).
-    """
+    """Report manager-produced tables with no known configuration."""
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
@@ -121,12 +83,7 @@ class ManagerTableConfigured(Linter[RepositoryDataTables]):
 
 
 class ConsumerTableDefined(Linter[RepositoryDataTables]):
-    """A tool references a data table that no local (or known-external) table defines.
-
-    Only literal, fully-expanded ``from_data_table`` names are checked. Because a
-    table may validly be supplied by Galaxy core or another installed repository,
-    an unknown reference is a warning, not an error.
-    """
+    """Warn about literal consumer references with no known definition."""
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
@@ -150,17 +107,7 @@ class ConsumerTableDefined(Linter[RepositoryDataTables]):
 
 
 class OutputRefValid(Linter[RepositoryDataTables]):
-    """A data-manager ``output_ref`` names an output the expanded wrapper does not declare.
-
-    Only checked when the manager wrapper was actually resolved; an unresolved
-    wrapper leaves its outputs unknown, so the reference is not-checked rather
-    than reported as demonstrably missing.
-
-    Coverage note: ``output_ref_by_data_table`` keys columns by name, so two
-    columns in one ``<data_table>`` sharing a name collapse (last wins) -- the
-    same duplicate-column limitation deferred alongside conflicting-schema
-    detection also caps output_ref coverage.
-    """
+    """Report ``output_ref`` values absent from a resolved manager wrapper."""
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
@@ -187,11 +134,7 @@ class OutputRefValid(Linter[RepositoryDataTables]):
 
 
 class DuplicateColumnNames(Linter[RepositoryDataTables]):
-    """A ``<table>`` declares the same column name more than once.
-
-    The parsed ``columns`` dict silently collapses duplicates, so this is checked
-    against the raw declared column list.
-    """
+    """Report duplicate column names in raw table declarations."""
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
@@ -215,12 +158,7 @@ class DuplicateColumnNames(Linter[RepositoryDataTables]):
 
 
 class ConflictingTableSchema(Linter[RepositoryDataTables]):
-    """The same table name is declared with different columns/separator/comment across the bundle.
-
-    A column conflict would make the loader raise, so this reads the pre-merge raw
-    declarations; a separator/comment-only conflict loads fine but is still
-    structurally ambiguous.
-    """
+    """Report incompatible schemas declared for the same table."""
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
@@ -242,14 +180,7 @@ class ConflictingTableSchema(Linter[RepositoryDataTables]):
 
 
 class EmptyLocFile(Linter[RepositoryDataTables]):
-    """A ``.loc`` / ``.loc.sample`` file is empty and carries no format comment.
-
-    An empty loc file with a leading ``#`` comment documenting the column format is
-    the accepted convention (a data manager fills the real rows on install), so a
-    documented-but-dataless file is fine; only an empty *and* undocumented file is
-    flagged. A warning, not an error: the file is present, just undocumented
-    (Planemo #869).
-    """
+    """Warn when an empty loc file has no format comment."""
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
@@ -276,20 +207,12 @@ REPOSITORY_DATA_TABLE_LINTERS = (
     EmptyLocFile,
 )
 
-# Tables that Galaxy core ships (config/tool_data_table_conf.xml.sample) or that a
-# stock data manager provides on essentially every deployment. A repository may consume
-# these via from_data_table without defining them locally, so they are treated as
-# externally supplied by default; callers extend this set through the
-# external_table_names argument (e.g. from a Tool Shed supplier index).
+# Common tables supplied outside the repository under lint.
 DEFAULT_EXTERNAL_TABLE_NAMES: frozenset[str] = frozenset({"all_fasta", "fasta_indexes", "__dbkeys__"})
 
 
 def lint_repository_data_tables(model: RepositoryDataTables, lint_ctx: "LintContext") -> None:
-    """Run the repository data-table linters over ``model``.
-
-    Each linter is dispatched through ``lint_ctx.lint`` so it is individually
-    skippable by name (matching how Planemo drives the tool linters).
-    """
+    """Run each skippable repository data-table linter over ``model``."""
     for linter in REPOSITORY_DATA_TABLE_LINTERS:
         lint_ctx.lint(linter.name(), linter.lint, model)
 
@@ -302,20 +225,7 @@ def lint_repository_data_tables_bundle(
     consumer_tool_sources: Iterable[tuple[str, "ToolSource"]] | None = None,
     external_table_names: frozenset[str] = frozenset(),
 ) -> None:
-    """Assemble a repository data-table model from already-discovered paths and lint it.
-
-    The convenience entry point for repository linters (e.g. Planemo's ``shed_lint``):
-    the caller does discovery -- which ``data_manager_conf`` / ``tool_data_table_conf``
-    files, which consumer tool sources -- and this builds the
-    :class:`~galaxy.tool_util.data.bundles.repository.RepositoryDataTables` and runs the
-    linters over it.
-
-    Assembly (the discovery-result build) runs inside its own ``lint_ctx.lint`` so its
-    skip / assembly-failure diagnostics are actually emitted -- ``LintContext`` only
-    flushes messages appended during a dispatched ``lint`` call. The per-table linters
-    are then dispatched by :func:`lint_repository_data_tables`, so they must not nest
-    inside that same call (which would print them twice).
-    """
+    """Assemble and lint a model from already-discovered repository assets."""
     model: RepositoryDataTables | None = None
 
     def assemble(_unused_target, lint_ctx: "LintContext") -> None:
@@ -340,12 +250,7 @@ def lint_repository_data_tables_bundle(
 
 
 DATA_MANAGER_CONF = "data_manager_conf.xml"
-# tool_data_table_conf variants a repository may ship. These describe *different*
-# bundles, not alternatives: the test conf points loc files at checked-in test-data,
-# the sample conf describes what the shed materializes on install, and a plain conf is
-# a checked-in deployment. Each one shipped is a contract the repository makes, so all
-# of them are linted -- picking one would leave the others, including the shipped
-# bundle that actually reaches a deployment, silently unvalidated.
+# Each shipped configuration describes a distinct bundle that must be linted.
 TOOL_DATA_TABLE_CONF_NAMES = (
     "tool_data_table_conf.xml.test",
     "tool_data_table_conf.xml.sample",
@@ -365,11 +270,7 @@ def _find_tool_data_table_confs(repo_root: str) -> list[str]:
 
 
 def _discover_consumer_tool_sources(repo_root: str) -> list[tuple[str, "ToolSource"]]:
-    """Walk ``repo_root`` for loadable tool wrappers that might consume a data table.
-
-    Uses the same directory loader Planemo's ``yield_tool_sources`` is built on;
-    tool files that fail to load or are not ordinary tool wrappers are skipped.
-    """
+    """Find loadable tool wrappers that might consume a data table."""
     sources: list[tuple[str, ToolSource]] = []
     for tool_path, tool_source in load_tool_sources_from_path(repo_root, recursive=True, register_load_errors=True):
         if is_tool_load_error(tool_source):
@@ -385,25 +286,7 @@ def find_and_lint_repository_data_tables(
     repo_root: str,
     external_table_names: frozenset[str] = frozenset(),
 ) -> None:
-    """Discover a repository's data-table bundle from ``repo_root`` and lint it.
-
-    The one-call entry point for a repository linter (Planemo's ``shed_lint``, the
-    ``galaxy-tool-data-lint`` CLI): it locates the ``data_manager_conf`` and every
-    ``tool_data_table_conf.xml*`` variant the repository ships, plus the consumer tool
-    sources, then hands them to :func:`lint_repository_data_tables_bundle`. Consumer
-    tools are only walked when the repository actually declares a data-table bundle.
-
-    All shipped conf variants are linted together (see
-    :data:`TOOL_DATA_TABLE_CONF_NAMES`): each describes a bundle the repository has to
-    honour, so a repository with a ``.test`` conf still gets its shipped ``.sample``
-    bundle validated. Same-named tables across the variants are merged by the loader
-    and must agree on schema -- a disagreement is itself reported, by
-    :class:`ConflictingTableSchema`.
-
-    The common Galaxy-core tables (:data:`DEFAULT_EXTERNAL_TABLE_NAMES`) are always
-    treated as externally supplied so a bare invocation does not warn on every stock
-    ``from_data_table`` reference; ``external_table_names`` adds to that set.
-    """
+    """Discover and lint every data-table configuration in ``repo_root``."""
     external_table_names = DEFAULT_EXTERNAL_TABLE_NAMES | external_table_names
     data_manager_conf = _find_data_manager_conf(repo_root)
     tool_data_table_confs = _find_tool_data_table_confs(repo_root)
