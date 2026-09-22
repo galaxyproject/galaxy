@@ -60,19 +60,23 @@ class LocAsset:
     table_name: str
     path: str
     # ``found`` means the *loader* resolved and parsed a real file for this reference.
-    # The loader's ``.sample`` fallback (data/__init__.py) strips the ``tool-data/``
-    # subdir and only looks in ``tool_data_path`` root, so it does *not* match a shed
-    # repo's ``tool-data/x.loc.sample`` -- those come back ``found=False``. Use
-    # ``sample_backed`` for "the repo ships a sample for this reference"; a reference is
-    # unresolved only when ``not found and not sample_backed``.
+    # It is resolution as a running Galaxy does it, against ``tool_data_path`` -- which
+    # is not how a repository checkout is laid out, so a perfectly good shed repo
+    # routinely comes back ``found=False``: a relative ``tool-data/x.loc`` is resolved
+    # against the process cwd, and the loader's retry drops the subdirectory and only
+    # looks for ``<tool_data_path>/x.loc`` (or ``.../x.loc.sample``). Use ``repo_backed``
+    # for "the repository ships a file satisfying this reference"; a reference is
+    # unresolved only when ``not found and not repo_backed``.
     found: bool
     is_sample: bool
-    # Whether the repo ships a sibling ``<ref>.sample`` backing this reference.
-    # On install Galaxy materializes the real ``.loc`` from it, so a sample-backed
-    # reference is not a missing loc even though the loader reports ``found=False``.
-    sample_backed: bool = False
-    # Row-shape errors captured by ``parse_file_fields`` for a resolved loc or its
-    # sibling sample. An unfound reference without a sample has no rows to check.
+    # Whether the repository ships a file backing this reference -- the loc itself at
+    # its declared path, or a ``.sample`` Galaxy materializes the real loc from on
+    # install. Either way the reference is not a missing fixture, even though the
+    # loader reports ``found=False``. See :func:`_repo_backing_path`.
+    repo_backed: bool = False
+    # Row-shape errors captured by ``parse_file_fields`` for whichever file actually
+    # backs the reference -- the loader-resolved one, or the repo-shipped loc / sample.
+    # A reference nothing backs has no rows to check.
     errors: tuple[str, ...] = ()
     source: SourceLoc | None = None
 
@@ -81,12 +85,11 @@ class LocAsset:
 class LocFile:
     """A ``.loc`` / ``.loc.sample`` file present in the repository tree.
 
-    Distinct from :class:`LocAsset`, which is a *configured-table reference* the
-    loader resolved: many ``.loc.sample`` files ship without ever appearing as a
-    resolved asset (the loader's ``.sample`` fallback misses the shed ``tool-data``
-    layout -- see ``LocAsset.found``), so the empty-file check must look at the files
-    on disk, not the resolved references. Records only facts; the policy (an empty,
-    undocumented file wants a format comment) lives in the linter.
+    Distinct from :class:`LocAsset`, which is a *configured-table reference*: many
+    ``.loc.sample`` files ship without any table referencing them, so the empty-file
+    check must look at the files on disk, not the resolved references. Records only
+    facts; the policy (an empty, undocumented file wants a format comment) lives in
+    the linter.
     """
 
     path: str
@@ -337,11 +340,32 @@ def _has_column_conflict(raw_decls: list[RawTableDecl]) -> bool:
     return any(len(specs) > 1 for specs in by_name.values())
 
 
-def _sample_path(repo_root: str, filename: str) -> str | None:
-    """Return the sibling sample backing a loc reference, if present."""
+def _repo_backing_path(repo_root: str, filename: str) -> str | None:
+    """The file the repository ships to satisfy a loc reference, or None.
+
+    The loader resolves against ``tool_data_path`` the way a running Galaxy does, which
+    a repository checkout does not match (see ``LocAsset.found``), so resolve it the way
+    the shed does instead, in order of directness:
+
+    1. the declared path itself, taken relative to the repository root -- this is what
+       ``<file path="tool-data/x.loc"/>`` means in a checkout, and the loader misses it;
+    2. a sibling ``<ref>.sample``, which Galaxy materializes the real loc from on install;
+    3. for a reference that would resolve under ``tool_data_path`` -- a bare or
+       ``tool-data/``-rooted path -- the conventional ``tool-data/<basename>.sample``.
+
+    (3) is deliberately not applied to a reference anchored elsewhere
+    (``${__HERE__}/test-data/x.loc``): that names a different file, and a production
+    sample must not stand in for an absent test fixture.
+    """
     reference = filename if os.path.isabs(filename) else os.path.join(repo_root, filename)
-    sample = f"{reference}.sample"
-    return sample if os.path.isfile(sample) else None
+    for candidate in (reference, f"{reference}.sample"):
+        if os.path.isfile(candidate):
+            return candidate
+    if os.path.dirname(os.path.relpath(reference, repo_root)) in ("", os.curdir, "tool-data"):
+        shed_sample = os.path.join(repo_root, "tool-data", f"{os.path.basename(filename)}.sample")
+        if os.path.isfile(shed_sample):
+            return shed_sample
+    return None
 
 
 def _classify_loc_file(path: str) -> LocFile:
@@ -398,17 +422,22 @@ def _build_tables(
         for filename, info in table.filenames.items():
             loc_paths.append(filename)
             found = bool(info.get("found"))
-            sample_path = _sample_path(repo_root, str(filename)) if not found else None
+            backing_path = _repo_backing_path(repo_root, str(filename)) if not found else None
             errors = list(info.get("errors") or ())
-            if sample_path:
-                table.parse_file_fields(sample_path, errors=errors)
+            if backing_path:
+                # The loader never parsed this one, so read its rows here -- with the
+                # same ``here`` anchoring extend_data_with uses, so ``${__HERE__}`` in a
+                # path column expands rather than surviving into the reported row.
+                table.parse_file_fields(
+                    backing_path, errors=errors, here=os.path.dirname(os.path.abspath(backing_path))
+                )
             loc_assets.append(
                 LocAsset(
                     table_name=table.name,
                     path=str(filename),
                     found=found,
                     is_sample=str(filename).endswith(".sample"),
-                    sample_backed=sample_path is not None,
+                    repo_backed=backing_path is not None,
                     errors=tuple(errors),
                     source=SourceLoc(path=str(filename)),
                 )
@@ -438,8 +467,11 @@ def build_repository_data_tables(
     """Assemble a :class:`RepositoryDataTables` from already-discovered repository assets.
 
     ``repo_root`` anchors ``${__HERE__}`` resolution and shed path handling.
-    Discovery (which files to pass) is the caller's responsibility -- e.g. Planemo's
-    ``shed_lint`` preferring ``tool_data_table_conf.xml.test`` over ``.sample``.
+    Discovery (which files to pass) is the caller's responsibility --
+    :func:`~galaxy.tool_util.data.bundles.lint.find_and_lint_repository_data_tables`
+    passes every ``tool_data_table_conf.xml*`` variant a repository ships, so the test
+    and shipped bundles are validated together. Same-named tables across the confs are
+    merged by the loader, which requires their schemas to agree.
     ``consumer_tool_sources`` are ``(path, tool_source)`` pairs for ordinary
     (non data-manager) tools that may reference the repository's tables.
     """

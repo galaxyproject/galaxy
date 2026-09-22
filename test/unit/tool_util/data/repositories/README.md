@@ -42,7 +42,7 @@ repo can drive the error cases without a repo-per-case:
 - `missing_loc/` — conf references a `.loc` that does not exist → one error
 - `missing_two/` — two missing locs → two errors
 - `sample_fallback/` — production loc resolved via the loader's own `.sample` fallback (`foo.loc.sample`); must **not** be reported missing
-- `tool_data_sample/` — Tool Shed layout: conf → `tool-data/bar.loc`, sample ships as `tool-data/bar.loc.sample`. The loader's `.sample` fallback misses this; `sample_backed` must recognize it so reference-data repos aren't falsely flagged.
+- `tool_data_sample/` — Tool Shed layout: conf → `tool-data/bar.loc`, sample ships as `tool-data/bar.loc.sample`. The loader resolves against `tool_data_path` and misses this; `repo_backed` must recognize it so reference-data repos aren't falsely flagged. Tests also mutate a copy of it to cover the loc being checked in at `tool-data/bar.loc` outright, which the loader misses the same way.
 
 ### Row-shape fixtures — `LocRowShape`
 

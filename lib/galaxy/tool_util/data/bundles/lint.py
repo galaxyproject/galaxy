@@ -42,16 +42,18 @@ if TYPE_CHECKING:
 class MissingLocFixture(Linter[RepositoryDataTables]):
     """A configured table references a loc file that resolves to no file on disk.
 
-    A reference backed by a shipped ``.sample`` (``LocAsset.sample_backed``) is not
-    reported: on install Galaxy materializes the real ``.loc`` from the sample, so
-    only a reference the loader could not resolve *and* that no sample backs is a
-    demonstrably missing loc. (The loader's own ``found`` misses ``tool-data`` samples,
-    hence ``sample_backed`` is resolved separately -- see ``LocAsset.found``.)
+    A reference the repository ships a file for (``LocAsset.repo_backed``) is not
+    reported -- either the loc is checked in at its declared path, or a ``.sample``
+    ships that Galaxy materializes the real loc from on install. Only a reference the
+    loader could not resolve *and* that nothing in the repository backs is a
+    demonstrably missing loc. (The loader's own ``found`` answers a different question
+    -- resolution against a deployment's ``tool_data_path`` -- so ``repo_backed`` is
+    resolved separately; see ``LocAsset.found``.)
     """
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
-        missing = [asset for asset in model.loc_assets if not asset.found and not asset.sample_backed]
+        missing = [asset for asset in model.loc_assets if not asset.found and not asset.repo_backed]
         for asset in missing:
             lint_ctx.error(
                 f"Data table '{asset.table_name}' references loc file [{asset.path}] which does not exist",
@@ -65,7 +67,8 @@ class LocRowShape(Linter[RepositoryDataTables]):
     """A non-comment loc row cannot supply every declared column index.
 
     Reports row-shape errors captured by ``TabularToolDataTable`` while parsing
-    resolved loc files and sibling samples.
+    whichever file backs each reference -- the loader-resolved loc, or the one the
+    repository ships (see :func:`~galaxy.tool_util.data.bundles.repository._repo_backing_path`).
     """
 
     @classmethod
@@ -75,8 +78,8 @@ class LocRowShape(Linter[RepositoryDataTables]):
             for message in asset.errors:
                 lint_ctx.error(message, linter=cls.name())
                 found_error = True
-        # A resolved loc or its sibling sample has rows to check; a missing file does not.
-        checked = [asset for asset in model.loc_assets if asset.found or asset.sample_backed]
+        # A backed reference has rows to check; a reference nothing backs does not.
+        checked = [asset for asset in model.loc_assets if asset.found or asset.repo_backed]
         if checked and not found_error:
             lint_ctx.valid("All loc rows supply every declared column", linter=cls.name())
 
@@ -339,8 +342,12 @@ def lint_repository_data_tables_bundle(
 
 
 DATA_MANAGER_CONF = "data_manager_conf.xml"
-# tool_data_table_conf variants, most-preferred first: the test conf points loc files
-# at real test-data, then the shipped sample, then a plain checked-in conf.
+# tool_data_table_conf variants a repository may ship. These describe *different*
+# bundles, not alternatives: the test conf points loc files at checked-in test-data,
+# the sample conf describes what the shed materializes on install, and a plain conf is
+# a checked-in deployment. Each one shipped is a contract the repository makes, so all
+# of them are linted -- picking one would leave the others, including the shipped
+# bundle that actually reaches a deployment, silently unvalidated.
 TOOL_DATA_TABLE_CONF_NAMES = (
     "tool_data_table_conf.xml.test",
     "tool_data_table_conf.xml.sample",
@@ -353,12 +360,10 @@ def _find_data_manager_conf(repo_root: str) -> str | None:
     return candidate if os.path.exists(candidate) else None
 
 
-def _find_tool_data_table_conf(repo_root: str) -> str | None:
-    for name in TOOL_DATA_TABLE_CONF_NAMES:
-        candidate = os.path.join(repo_root, name)
-        if os.path.exists(candidate):
-            return candidate
-    return None
+def _find_tool_data_table_confs(repo_root: str) -> list[str]:
+    """Every ``tool_data_table_conf.xml*`` variant the repository ships."""
+    candidates = [os.path.join(repo_root, name) for name in TOOL_DATA_TABLE_CONF_NAMES]
+    return [candidate for candidate in candidates if os.path.exists(candidate)]
 
 
 def _discover_consumer_tool_sources(repo_root: str) -> list[tuple[str, "ToolSource"]]:
@@ -385,10 +390,17 @@ def find_and_lint_repository_data_tables(
     """Discover a repository's data-table bundle from ``repo_root`` and lint it.
 
     The one-call entry point for a repository linter (Planemo's ``shed_lint``, the
-    ``galaxy-tool-data-lint`` CLI): it locates the ``data_manager_conf`` /
-    ``tool_data_table_conf`` files and the consumer tool sources, then hands them to
-    :func:`lint_repository_data_tables_bundle`. Consumer tools are only walked when the
-    repository actually declares a data-table bundle.
+    ``galaxy-tool-data-lint`` CLI): it locates the ``data_manager_conf`` and every
+    ``tool_data_table_conf.xml*`` variant the repository ships, plus the consumer tool
+    sources, then hands them to :func:`lint_repository_data_tables_bundle`. Consumer
+    tools are only walked when the repository actually declares a data-table bundle.
+
+    All shipped conf variants are linted together (see
+    :data:`TOOL_DATA_TABLE_CONF_NAMES`): each describes a bundle the repository has to
+    honour, so a repository with a ``.test`` conf still gets its shipped ``.sample``
+    bundle validated. Same-named tables across the variants are merged by the loader
+    and must agree on schema -- a disagreement is itself reported, by
+    :class:`ConflictingTableSchema`.
 
     The common Galaxy-core tables (:data:`DEFAULT_EXTERNAL_TABLE_NAMES`) are always
     treated as externally supplied so a bare invocation does not warn on every stock
@@ -396,15 +408,15 @@ def find_and_lint_repository_data_tables(
     """
     external_table_names = DEFAULT_EXTERNAL_TABLE_NAMES | external_table_names
     data_manager_conf = _find_data_manager_conf(repo_root)
-    tool_data_table_conf = _find_tool_data_table_conf(repo_root)
+    tool_data_table_confs = _find_tool_data_table_confs(repo_root)
     consumer_tool_sources = None
-    if data_manager_conf or tool_data_table_conf:
+    if data_manager_conf or tool_data_table_confs:
         consumer_tool_sources = _discover_consumer_tool_sources(repo_root)
     lint_repository_data_tables_bundle(
         lint_ctx,
         repo_root,
         data_manager_conf=data_manager_conf,
-        tool_data_table_confs=[tool_data_table_conf] if tool_data_table_conf else None,
+        tool_data_table_confs=tool_data_table_confs or None,
         consumer_tool_sources=consumer_tool_sources,
         external_table_names=external_table_names,
     )

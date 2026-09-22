@@ -9,6 +9,7 @@ import os
 import shutil
 
 from galaxy.tool_util.data.bundles.lint import (
+    _find_tool_data_table_confs,
     ConflictingTableSchema,
     ConsumerTableDefined,
     DuplicateColumnNames,
@@ -107,12 +108,12 @@ def test_sample_fallback_is_not_a_missing_fixture():
 def test_tool_data_sample_backed_loc_is_not_a_missing_fixture():
     # The real Tool Shed layout: conf references tool-data/bar.loc, the sample ships at
     # tool-data/bar.loc.sample. The loader's own .sample fallback does NOT resolve this
-    # (found=False), so without sample_backed every reference-data repo would wrongly
-    # report a missing loc. sample_backed must recognize the shipped sample.
+    # (found=False), so without repo_backed every reference-data repo would wrongly
+    # report a missing loc. repo_backed must recognize the shipped sample.
     conf = os.path.join(TOOL_DATA_SAMPLE_REPO, "tool_data_table_conf.xml.sample")
     model = build_repository_data_tables(TOOL_DATA_SAMPLE_REPO, tool_data_table_confs=[conf])
-    # Guard against a vacuous pass: the loader must genuinely miss it, and sample_backed catch it.
-    assert any(not asset.found and asset.sample_backed for asset in model.loc_assets)
+    # Guard against a vacuous pass: the loader must genuinely miss it, and repo_backed catch it.
+    assert any(not asset.found and asset.repo_backed for asset in model.loc_assets)
     lint_ctx = _lint(model)
     assert [e for e in lint_ctx.error_messages if e.linter == MissingLocFixture.name()] == []
 
@@ -437,3 +438,60 @@ def test_core_table_exclusion_is_what_suppresses_the_warning():
     warns = [w for w in _lint(model).warn_messages if w.linter == ConsumerTableDefined.name()]
     assert len(warns) == 1
     assert "all_fasta" in warns[0].message
+
+
+def test_every_shipped_conf_variant_is_discovered():
+    # The .test conf describes the checked-in test bundle and the .sample conf the
+    # bundle the shed materializes on install. Preferring one would leave the other
+    # unvalidated, so discovery returns both.
+    assert _find_tool_data_table_confs(FETCH_REPO) == [
+        FETCH_TABLE_TEST_CONF,
+        os.path.join(FETCH_REPO, "tool_data_table_conf.xml.sample"),
+    ]
+
+
+def test_shipped_sample_bundle_is_linted_alongside_the_test_conf(tmp_path):
+    # A defect reachable only through the .sample conf: the production loc
+    # tool-data/all_fasta.loc has no shipped sample backing it any more, while the
+    # .test conf's own test-data/all_fasta.loc is untouched and still resolves.
+    repo = tmp_path / "repo"
+    shutil.copytree(FETCH_REPO, repo)
+    (repo / "tool-data" / "all_fasta.loc.sample").unlink()
+
+    lint_ctx = LintContext(level=LintLevel.SILENT)
+    find_and_lint_repository_data_tables(lint_ctx, str(repo))
+
+    missing = [e for e in lint_ctx.error_messages if e.linter == MissingLocFixture.name()]
+    assert len(missing) == 1
+    assert "tool-data/all_fasta.loc" in missing[0].message
+
+
+def test_checked_in_loc_under_tool_data_is_not_a_missing_fixture(tmp_path):
+    # A repository that checks the real loc in at tool-data/bar.loc rather than shipping
+    # only a sample. The loader resolves against tool_data_path, so it neither finds the
+    # relative path nor its own retry (which drops the tool-data/ subdirectory) -- the
+    # file is plainly there in the checkout, and must not be reported missing.
+    repo = tmp_path / "repo"
+    shutil.copytree(TOOL_DATA_SAMPLE_REPO, repo)
+    (repo / "tool-data" / "bar.loc.sample").rename(repo / "tool-data" / "bar.loc")
+
+    conf = str(repo / "tool_data_table_conf.xml.sample")
+    model = build_repository_data_tables(str(repo), tool_data_table_confs=[conf])
+    # Guard against a vacuous pass: the loader must genuinely miss it, repo_backed catch it.
+    assert any(not asset.found and asset.repo_backed for asset in model.loc_assets)
+    assert [e for e in _lint(model).error_messages if e.linter == MissingLocFixture.name()] == []
+
+
+def test_checked_in_loc_rows_are_checked(tmp_path):
+    # ...and because the loader never parsed it, its rows are read here instead, so a
+    # checked-in loc is not exempt from the row-shape check.
+    repo = tmp_path / "repo"
+    shutil.copytree(TOOL_DATA_SAMPLE_REPO, repo)
+    (repo / "tool-data" / "bar.loc.sample").unlink()
+    (repo / "tool-data" / "bar.loc").write_text("# value\tname\tpath\nshort\trow\n")
+
+    conf = str(repo / "tool_data_table_conf.xml.sample")
+    model = build_repository_data_tables(str(repo), tool_data_table_confs=[conf])
+    rows = [e for e in _lint(model).error_messages if e.linter == LocRowShape.name()]
+    assert len(rows) == 1
+    assert "Line 2" in rows[0].message
