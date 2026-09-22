@@ -74,6 +74,8 @@ from galaxy.schema.schema import (
     ExportObjectResultMetadata,
     ExportObjectType,
     HDABasicInfo,
+    JobExportHistoryArchiveModel,
+    ObjectExportTaskResponse,
     ShareHistoryExtra,
     ShortTermStoreExportPayload,
     WriteStoreToPayload,
@@ -752,7 +754,7 @@ class HistoryExportManager:
 
     def get_task_exports(
         self, trans: ProvidesHistoryContext, history_id: int, limit: int | None = None, offset: int | None = None
-    ):
+    ) -> list[ObjectExportTaskResponse]:
         """Returns task-based exports associated with this history"""
         history = self._history(trans, history_id)
         export_associations = self.export_tracker.get_object_exports(
@@ -807,7 +809,9 @@ class HistoryExportManager:
             result_data=result_data,
         )
 
-    def _serialize_task_export(self, export: model.StoreExportAssociation, history: model.History):
+    def _serialize_task_export(
+        self, export: model.StoreExportAssociation, history: model.History
+    ) -> ObjectExportTaskResponse:
         task_uuid = export.task_uuid
         export_date = export.create_time
         assert history.update_time is not None, "History update time must be set"
@@ -815,23 +819,25 @@ class HistoryExportManager:
         export_metadata = self.get_record_metadata(export)
         is_ready = export_metadata is not None and export_metadata.is_ready()
         is_export_up_to_date = is_ready and not history_has_changed
-        return {
-            "id": export.id,
-            "ready": is_ready,
-            "preparing": export_metadata is None or export_metadata.result_data is None,
-            "up_to_date": is_export_up_to_date,
-            "task_uuid": task_uuid,
-            "create_time": export_date,
-            "export_metadata": export_metadata,
-        }
+        return ObjectExportTaskResponse(
+            id=export.id,
+            ready=is_ready,
+            preparing=export_metadata is None or export_metadata.result_data is None,
+            up_to_date=is_export_up_to_date,
+            task_uuid=task_uuid,
+            create_time=export_date,
+            export_metadata=export_metadata,
+        )
 
-    def get_exports(self, trans: ProvidesHistoryContext, history_id: int):
+    def get_exports(self, trans: ProvidesHistoryContext, history_id: int) -> list[JobExportHistoryArchiveModel]:
         """Returns job-based exports associated with this history"""
         history = self._history(trans, history_id)
         matching_exports = history.exports
         return [self.serialize(trans, history_id, e) for e in matching_exports]
 
-    def serialize(self, trans: ProvidesHistoryContext, history_id: int, jeha: model.JobExportHistoryArchive) -> dict:
+    def serialize(
+        self, trans: ProvidesHistoryContext, history_id: int, jeha: model.JobExportHistoryArchive
+    ) -> JobExportHistoryArchiveModel:
         rval = jeha.to_dict()
         rval["type"] = "job"
         encoded_jeha_id = Security.security.encode_id(jeha.id)
@@ -847,7 +853,7 @@ class HistoryExportManager:
         rval["download_url"] = api_url
         rval["external_download_latest_url"] = external_url
         rval["external_download_permanent_url"] = external_permanent_url
-        return rval
+        return JobExportHistoryArchiveModel(**rval)
 
     def get_ready_jeha(
         self, trans: ProvidesHistoryContext, history_id: int, jeha_id: int | Literal["latest"] = "latest"
