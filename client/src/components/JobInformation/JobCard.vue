@@ -7,6 +7,7 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import type { JobBaseModel } from "@/api/jobs";
+import type { CardAction } from "@/components/Common/GCard.types";
 import { useRerunnableTool } from "@/composables/rerunnableTool";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useToolStore } from "@/stores/toolStore";
@@ -30,7 +31,7 @@ const toolStore = useToolStore();
 const { canRerun: jobIsRerunnable } = useRerunnableTool(computed(() => props.job?.tool_id));
 
 const actions = computed(() => {
-    const actions = [];
+    const actions: CardAction[] = [];
     if (jobIsRerunnable.value) {
         actions.push({
             id: "rerun-job-action",
@@ -38,7 +39,7 @@ const actions = computed(() => {
             label: "Rerun",
             title: "Rerun this job",
             to: `/?job_id=${props.job.id}`,
-            disabled: route.fullPath === `/?job_id=${props.job.id}`,
+            variant: route.fullPath === `/?job_id=${props.job.id}` ? "primary" : undefined,
         });
     }
     return actions;
