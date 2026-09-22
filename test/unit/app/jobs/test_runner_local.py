@@ -1,4 +1,5 @@
 import os
+import signal
 import threading
 from typing import (
     cast,
@@ -7,6 +8,7 @@ from typing import (
 from unittest.mock import MagicMock
 
 import psutil
+import pytest
 
 from galaxy import job_metrics
 from galaxy.app_unittest_utils.job_runner_support import MockJobWrapper
@@ -29,11 +31,62 @@ class TestLocalJobRunner(TestCase, UsesTools):
     def tearDown(self):
         self.tear_down_app()
 
-    def test_run(self):
+    def test_run(self, caplog):
         self.job_wrapper.command_line = "echo HelloWorld"
         runner = local.LocalJobRunner(self.app, 1)
         runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert self.job_wrapper.stdout.strip() == "HelloWorld"
+        assert any("return code: 0" in message for message in caplog.messages)
+        assert not any(record.name == local.log.name and record.levelname == "ERROR" for record in caplog.records)
+
+    def test_early_process_exit_is_logged(self, caplog):
+        self.job_wrapper.dependency_shell_commands = ["echo setup stdout", "echo setup stderr >&2", "exit 7"]
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
+
+        assert not os.path.exists(local.default_exit_code_file(self.job_wrapper.working_directory, "1"))
+        assert any("(1) execution finished:" in message and "return code: 7" in message for message in caplog.messages)
+        assert any(
+            record.levelname == "ERROR" and record.message == "(1) job process exited with return code 7"
+            for record in caplog.records
+        )
+        assert not any("killed by signal" in message for message in caplog.messages)
+        assert self.job_wrapper.exit_code == 7
+        assert self.job_wrapper.fail_message == "job process exited with return code 7"
+        assert self.job_wrapper.fail_exception is False
+        assert self.job_wrapper.job_stdout == "setup stdout\n"
+        assert self.job_wrapper.job_stderr == "setup stderr\njob process exited with return code 7"
+
+    @pytest.mark.parametrize("has_limits", [False, True])
+    def test_signal_death_before_job_script_outputs_is_logged(self, caplog, has_limits):
+        self.job_wrapper.dependency_shell_commands = ["kill -TERM $$"]
+        self.job_wrapper.job_destination.params["embed_metadata_in_job"] = False
+        if has_limits:
+            self.tool.timelimit = 60
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
+
+        assert not os.path.exists(local.default_exit_code_file(self.job_wrapper.working_directory, "1"))
+        assert not os.path.exists(os.path.join(self.job_wrapper.working_directory, "outputs", "tool_stdout"))
+        assert any(f"return code: {-signal.SIGTERM}" in message for message in caplog.messages)
+        assert any(
+            record.levelname == "ERROR" and record.message == f"(1) job process was killed by signal {signal.SIGTERM}"
+            for record in caplog.records
+        )
+        assert self.job_wrapper.exit_code == -signal.SIGTERM
+        assert self.job_wrapper.fail_message == f"job process was killed by signal {signal.SIGTERM}"
+        assert self.job_wrapper.job_stderr == self.job_wrapper.fail_message
+        assert self.job_wrapper.fail_exception is False
+        assert not os.path.exists(self.job_wrapper.mock_metadata_path)
+
+    def test_signal_after_tool_exit_preserves_tool_exit_code(self):
+        self.job_wrapper.command_line = '''sh -c "exit 4"'''
+        self.job_wrapper.metadata_command = "kill -TERM $$"
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
+
+        assert self.job_wrapper.exit_code == 4
+        assert not hasattr(self.job_wrapper, "fail_message")
 
     def test_galaxy_lib_on_path(self):
         self.job_wrapper.command_line = '''python -c "import galaxy.util"'''

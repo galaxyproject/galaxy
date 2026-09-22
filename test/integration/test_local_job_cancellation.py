@@ -1,5 +1,7 @@
 """Integration test for the local job runner and cancelling jobs via API."""
 
+import os
+import signal
 import time
 
 import psutil
@@ -27,7 +29,7 @@ class CancelsJob:
 
     def _wait_for_job_running(self, job_id):
         self.galaxy_interactor.wait_for(
-            lambda: self._get(f"jobs/{job_id}").json()["state"] != "running",
+            lambda: self._get(f"jobs/{job_id}").json()["state"] == "running" or None,
             what="Wait for job to start running",
             maxseconds=60,
         )
@@ -104,6 +106,25 @@ class TestLocalJobCancellation(CancelsJob, integration_util.IntegrationTestCase)
             final_state = f"pid exists? {pid_exists}, final db job state {state}"
             assert state == Job.states.DELETED, final_state
             assert not pid_exists, final_state
+
+    def test_signal_failure_is_reported_in_api_and_database(self):
+        with self.dataset_populator.test_history() as history_id:
+            job_id = self._setup_cat_data_and_sleep(history_id)
+            self._wait_for_job_running(job_id)
+            job = self._get_job_by_tool("cat_data_and_sleep")
+            os.killpg(int(job.job_runner_external_id), signal.SIGTERM)
+
+            self.dataset_populator.wait_for_job(job_id, assert_ok=False)
+            details = self.dataset_populator.get_job_details(job_id, full=True).json()
+            message = f"job process was killed by signal {signal.SIGTERM}"
+            assert details["state"] == Job.states.ERROR
+            assert details["exit_code"] == -signal.SIGTERM
+            assert message in details["job_stderr"]
+
+            self._app.model.session.refresh(job)
+            assert job.exit_code == -signal.SIGTERM
+            assert job.info == message
+            assert message in job.job_stderr
 
     def _get_job_by_tool(self, tool_id):
         stmt = select(Job).filter_by(tool_id=tool_id).order_by(Job.create_time.desc()).limit(1)
