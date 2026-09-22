@@ -6,8 +6,10 @@ GTNDatabaseBuilder.
 """
 
 import gzip
+import io
 import os
 import sqlite3
+import tarfile
 from datetime import (
     datetime,
     timedelta,
@@ -330,6 +332,42 @@ def test_refresh_database_streams_http_download_and_stamps_timestamp(fixture_db:
     assert datetime.fromtimestamp(target.stat().st_mtime, tz=timezone.utc) == datetime(
         2025, 8, 20, 12, 0, tzinfo=timezone.utc
     )
+
+
+@responses.activate
+def test_vector_database_download_extracts_archive(tmp_path: Path):
+    archive_bytes = io.BytesIO()
+    with tarfile.open(fileobj=archive_bytes, mode="w:gz") as archive:
+        contents = b"vector database"
+        member = tarfile.TarInfo("gtn_vector_database/chroma.sqlite3")
+        member.size = len(contents)
+        archive.addfile(member, io.BytesIO(contents))
+
+    url = "https://example.com/gtn_vector_database.tar.gz"
+    responses.add(responses.GET, url, body=archive_bytes.getvalue())
+    vector_db_path = tmp_path / "vectors"
+
+    GTNSearchDB._download_vector_database_to_path(vector_db_path, url)
+
+    assert (vector_db_path / "chroma.sqlite3").read_bytes() == contents
+
+
+@responses.activate
+def test_vector_database_download_rejects_unsafe_archive_members(tmp_path: Path):
+    archive_bytes = io.BytesIO()
+    with tarfile.open(fileobj=archive_bytes, mode="w:gz") as archive:
+        contents = b"escaped"
+        member = tarfile.TarInfo("../escaped")
+        member.size = len(contents)
+        archive.addfile(member, io.BytesIO(contents))
+
+    url = "https://example.com/gtn_vector_database.tar.gz"
+    responses.add(responses.GET, url, body=archive_bytes.getvalue())
+
+    with pytest.raises(Exception, match="blocked.*illegal path"):
+        GTNSearchDB._download_vector_database_to_path(tmp_path / "vectors", url)
+
+    assert not (tmp_path / "escaped").exists()
 
 
 @responses.activate

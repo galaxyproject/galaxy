@@ -10,8 +10,7 @@ import os
 import re
 import shutil
 import sqlite3
-import tarfile
-import urllib.request
+import tempfile
 from dataclasses import dataclass
 from datetime import (
     datetime,
@@ -28,10 +27,11 @@ from urllib.parse import (
     urlparse,
 )
 
-from galaxy.util import requests
-
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
+
+from galaxy.util import requests
+from galaxy.util.compression_utils import CompressedFile
 
 GTN_DATABASE_URL = "https://depot.galaxyproject.org/chatgxy/gtn_search.db"
 GTN_VECTOR_DATABASE_URL = "https://zenodo.org/records/20707620/files/chroma_db.tar.gz"
@@ -399,28 +399,35 @@ class GTNSearchDB:
     @classmethod
     def _download_vector_database_to_path(cls, vector_db_path: Path, vector_db_url: str) -> None:
         vector_db_path.mkdir(parents=True, exist_ok=True)
-        tmp_path = vector_db_path.with_suffix(".tmp")
-        tmp_path.unlink(missing_ok=True)
         try:
             log.info(f"Downloading vector database from {vector_db_url} ...")
-            with urllib.request.urlopen(vector_db_url, timeout=GTN_DOWNLOAD_TIMEOUT_SECONDS) as response:
-                with tarfile.open(fileobj=response, mode="r:gz") as tar:
-                    tar.extractall(path=tmp_path)
-            items = list(tmp_path.iterdir())
-            if len(items) == 1 and items[0].is_dir():
-                source_dir = items[0]
-            else:
-                source_dir = tmp_path
-            for item in source_dir.iterdir():
-                target = vector_db_path / item.name
-                if item.is_dir():
-                    shutil.copytree(item, target, dirs_exist_ok=True)
-                else:
-                    shutil.copy2(item, target)
-            if tmp_path.exists():
-                shutil.rmtree(tmp_path)
-        except (OSError, tarfile.TarError) as e:
-            tmp_path.unlink(missing_ok=True)
+            with tempfile.NamedTemporaryFile(suffix=".archive") as archive_file:
+                with requests.Session() as session:
+                    with session.get(
+                        vector_db_url,
+                        stream=True,
+                        timeout=GTN_DOWNLOAD_TIMEOUT_SECONDS,
+                    ) as response:
+                        response.raise_for_status()
+                        response.raw.decode_content = True
+                        shutil.copyfileobj(response.raw, archive_file)
+                        archive_file.flush()
+
+                with tempfile.TemporaryDirectory(dir=vector_db_path.parent) as extraction_dir:
+                    with CompressedFile(archive_file.name) as archive:
+                        extracted_path = Path(archive.extract(extraction_dir))
+                    extracted_items = list(extracted_path.iterdir())
+                    if len(extracted_items) == 1 and extracted_items[0].is_dir():
+                        source_dir = extracted_items[0]
+                    else:
+                        source_dir = extracted_path
+                    for item in source_dir.iterdir():
+                        target = vector_db_path / item.name
+                        if item.is_dir():
+                            shutil.copytree(item, target, dirs_exist_ok=True)
+                        else:
+                            shutil.copy2(item, target)
+        except (OSError, requests.exceptions.RequestException) as e:
             raise FileNotFoundError(f"GTN vector database download failed for {vector_db_path}: {e}") from e
 
     @classmethod
