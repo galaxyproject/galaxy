@@ -7,6 +7,8 @@ import time
 import psutil
 from sqlalchemy import select
 
+from galaxy.job_execution.output_collect import default_exit_code_file
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.model import Job
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
@@ -106,6 +108,35 @@ class TestLocalJobCancellation(CancelsJob, integration_util.IntegrationTestCase)
             final_state = f"pid exists? {pid_exists}, final db job state {state}"
             assert state == Job.states.DELETED, final_state
             assert not pid_exists, final_state
+
+    def test_intentional_stop_preserves_outputs(self):
+        with self.dataset_populator.test_history() as history_id:
+            job_id = self._setup_cat_data_and_sleep(history_id)
+            self._wait_for_job_running(job_id)
+            job = self._get_job_by_tool("cat_data_and_sleep")
+            working_directory = JobWorkingDirectory(job, self._app.object_store).resolve()
+            self.galaxy_interactor.wait_for(
+                lambda: os.path.exists(os.path.join(working_directory, "outputs", "tool_stdout")) or None,
+                what="Wait for the tool to start sleeping",
+                maxseconds=60,
+            )
+            assert not os.path.exists(default_exit_code_file(working_directory, job.get_id_tag()))
+
+            # InteractiveToolManager.stop uses this path to end a session and
+            # collect its outputs without cancelling or failing the job.
+            job.mark_stopped(self._app.config.track_jobs_in_database)
+            self._app.job_manager.stop(job)
+            self._app.model.session.add(job)
+            self._app.model.session.commit()
+
+            self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+            details = self.dataset_populator.get_job_details(job_id, full=True).json()
+            assert details["state"] == Job.states.OK
+            assert details["exit_code"] == 0
+            assert "job process was killed" not in details["job_stderr"]
+            output_id = details["outputs"]["out_file1"]["id"]
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=output_id)
+            assert content.strip() == "1 2 3"
 
     def test_signal_failure_is_reported_in_api_and_database(self):
         with self.dataset_populator.test_history() as history_id:

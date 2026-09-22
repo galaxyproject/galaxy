@@ -156,7 +156,13 @@ class LocalJobRunner(BaseJobRunner):
         if (
             failure_message is not None
             and not os.path.exists(exit_code_path)
-            and job_wrapper.get_state() not in (model.Job.states.DELETING, model.Job.states.DELETED)
+            and job_wrapper.get_state()
+            not in (
+                model.Job.states.DELETING,
+                model.Job.states.DELETED,
+                model.Job.states.STOPPING,
+                model.Job.states.STOPPED,
+            )
         ):
             # The script died before recording the tool exit code. Preserve the
             # process failure instead of trying to collect missing tool outputs.
