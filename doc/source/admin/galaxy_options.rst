@@ -5859,8 +5859,8 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    API key for the OpenAI-compatible embedding provider used by vector
-    search agents.
+    API key for the OpenAI-compatible embedding provider used by
+    vector search agents.
 :Default: ``None``
 :Type: str
 
@@ -5895,6 +5895,8 @@
     mutable-data directory. The database archive is downloaded
     automatically on first use from ``vector_database_url`` if it does
     not exist.
+    The value of this option will be resolved with respect to
+    <data_dir>.
 :Default: ``gtn/chroma_db_composite``
 :Type: str
 
