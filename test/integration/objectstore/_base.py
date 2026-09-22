@@ -140,10 +140,11 @@ def wait_rucio_ready(container_name):
 
 def start_rucio(container_name):
     ports = [(OBJECT_STORE_PORT, 80)]
-    # The image serves the Rucio API from a SQLite database, which permits a single
-    # writer. Apache defaults to 4 WSGI processes of 4 threads each, so two overlapping
-    # uploads can reach SQLite through separate connections and one of them fails with a
-    # server-side DatabaseException. Serialize the API instead of racing for the write lock.
+    # The image serves the Rucio API from a SQLite database, which permits a single writer,
+    # and Apache defaults to 4 WSGI processes of 4 threads each. Requests here routinely
+    # stall for over five seconds, and a request that waits that long on the write lock
+    # exceeds the sqlite3 busy timeout and returns a server-side DatabaseException. One
+    # worker means a stalled request has no concurrent request to starve.
     env_vars = {"RUCIO_WSGI_DAEMON_PROCESSES": "1", "RUCIO_WSGI_DAEMON_THREADS": "1"}
     docker_run(OBJECT_STORE_RUCIO_IMAGE, container_name, ports=ports, env_vars=env_vars)
 
