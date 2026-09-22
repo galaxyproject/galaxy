@@ -5,6 +5,7 @@ from sqlalchemy import (
     select,
 )
 
+from galaxy.files.unittest_utils import base64_uri_for_file
 from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetCollectionAssociation,
@@ -344,15 +345,11 @@ class TestExtendedMetadataDeferredIntegration(integration_util.IntegrationTestCa
         config["object_store_store_by"] = "uuid"
         config["retry_metadata_internally"] = False
 
-    def test_deferred_upload_with_metadata_files(self, mock_http_server):
+    def test_deferred_upload_with_metadata_files(self):
         history_id = self.dataset_populator.new_history()
-        uri = mock_http_server.get_url(
-            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
-            file_path="test-data/1.bam",
-        )
         deferred_dataset = self.dataset_populator.create_deferred_hda(
             history_id=history_id,
-            uri=uri,
+            uri=base64_uri_for_file("test-data/1.bam"),
             ext="bam",
         )
         inputs = {"input1": {"src": "hda", "id": deferred_dataset["id"]}}
