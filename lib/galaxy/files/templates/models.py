@@ -23,6 +23,7 @@ from galaxy.util.config_templates import (
     OAuth2Configuration,
     populate_default_variables,
     SecretsDict,
+    split_ftp_host_path,
     StrictModel,
     TemplateEnvironmentEntry,
     TemplateExpansion,
@@ -159,7 +160,14 @@ class S3FSFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
-class FtpFileSourceTemplateConfiguration(StrictModel):
+class FtpConfigMixin:
+    @model_validator(mode="before")
+    @classmethod
+    def split_host_path(cls, data: Any) -> Any:
+        return split_ftp_host_path(data)
+
+
+class FtpFileSourceTemplateConfiguration(FtpConfigMixin, StrictModel):
     type: Literal["ftp"]
     host: Union[str, TemplateExpansion]
     port: Union[int, TemplateExpansion] = 21
@@ -167,11 +175,12 @@ class FtpFileSourceTemplateConfiguration(StrictModel):
     passwd: Optional[Union[str, TemplateExpansion]] = None
     writable: Union[bool, TemplateExpansion] = False
     tls: Union[bool, TemplateExpansion] = False
+    root: Optional[Union[str, TemplateExpansion]] = None
     template_start: Optional[str] = None
     template_end: Optional[str] = None
 
 
-class FtpFileSourceConfiguration(StrictModel):
+class FtpFileSourceConfiguration(FtpConfigMixin, StrictModel):
     type: Literal["ftp"]
     host: str
     port: int = 21
@@ -179,6 +188,7 @@ class FtpFileSourceConfiguration(StrictModel):
     passwd: Optional[str] = None
     writable: bool = False
     tls: bool = False
+    root: Optional[str] = None
 
 
 class SshFileSourceTemplateConfiguration(StrictModel):

@@ -2,6 +2,7 @@ from galaxy.celery import (
     celery_app,
     DEFAULT_TASK_QUEUE,
     GalaxyCelery,
+    PYDANTIC_AWARE_SERIALIZER_NAME,
     setup_periodic_tasks,
     TASKS_MODULES,
 )
@@ -16,6 +17,7 @@ def test_default_configuration():
     assert conf.include == TASKS_MODULES
     assert conf.task_create_missing_queues is True
     assert conf.timezone == "UTC"
+    assert conf.task_serializer == PYDANTIC_AWARE_SERIALIZER_NAME
     assert conf.broker_url == galaxy_conf.amqp_internal_connection
     assert conf.task_routes["galaxy.fetch_data"] == "galaxy.external"
     assert conf.task_routes["galaxy.set_job_metadata"] == "galaxy.external"

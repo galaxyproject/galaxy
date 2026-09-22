@@ -40,6 +40,9 @@ log = logging.getLogger(__name__)
 class CwlToolSource(ToolSource):
     language = "yaml"
 
+    def allows_tool_provided_metadata(self) -> bool:
+        return True
+
     def __init__(
         self,
         tool_file: Optional[str] = None,
@@ -134,6 +137,11 @@ class CwlToolSource(ToolSource):
 
     def parse_interactivetool(self):
         return []
+
+    def parse_provided_metadata_is_explicit(self) -> bool:
+        # Galaxy's CWL runtime always communicates its output mapping through
+        # the tool-provided metadata file.
+        return True
 
     def parse_input_pages(self) -> PagesSource:
         page_source = CwlPageSource(self.tool_proxy)

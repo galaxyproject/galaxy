@@ -162,6 +162,10 @@ class ToolSource(metaclass=ABCMeta):
         """Parse the class of the tool."""
         return None
 
+    def allows_tool_provided_metadata(self) -> bool:
+        """Return whether this source may enable tool-provided metadata."""
+        return False
+
     def parse_tool_module(self) -> Optional[Tuple[str, str]]:
         """Load Tool class from a custom module. (Optional).
 
@@ -357,6 +361,10 @@ class ToolSource(metaclass=ABCMeta):
     def parse_provided_metadata_file(self):
         """Return location of provided metadata file (e.g. galaxy.json)."""
         return "galaxy.json"
+
+    def parse_provided_metadata_is_explicit(self) -> bool:
+        """Return whether tool-provided metadata was explicitly configured."""
+        return False
 
     @abstractmethod
     def parse_outputs(

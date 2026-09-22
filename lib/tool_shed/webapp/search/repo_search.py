@@ -142,6 +142,9 @@ class RepoSearch:
                 results["page"] = str(page)
                 results["page_size"] = str(page_size)
                 results["hits"] = []
+                # Whoosh clamps out-of-range requests to the last available page.
+                if page > hits.pagecount:
+                    return results
                 for hit in hits:
                     log.debug(f"matched terms: {str(hit.matched_terms())}")
                     hit_dict = {}

@@ -1180,8 +1180,16 @@ export default {
                 proceed = true;
             }
             if (!proceed) {
+                if (forceSave) {
+                    // The save the modal asked for failed. Close it so the error is visible and
+                    // its `busy` latch -- only cleared when the modal is shown again -- doesn't
+                    // leave Cancel/Don't Save/Save disabled with no way back.
+                    this.showSaveChangesModal = false;
+                }
                 return;
             }
+
+            this.showSaveChangesModal = false;
 
             if (appendVersion && this.version !== undefined) {
                 url += `&version=${this.version}`;

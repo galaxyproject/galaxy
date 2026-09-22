@@ -671,26 +671,43 @@ def _collection_element_discriminator(value: Any) -> Optional[str]:
     return getattr(value, "class_", None)
 
 
+_COLLECTION_ELEMENT_MODELS_BY_TAG: Dict[str, Type[StrictModel]] = {
+    "Collection": CollectionElementCollectionRequestUri,
+    "File": CollectionElementDataRequestUri,
+}
+
+
+def _collection_element_discriminator_schema(schema: Dict[str, Any]) -> None:
+    """Attach the OpenAPI discriminator object for the collection element union.
+
+    The mapping targets are copied from the union's own ``$ref`` values so they
+    follow whichever ``ref_template`` the generator is using: ``#/$defs/...`` in
+    the standalone tool state schemas and ``#/components/schemas/...`` in OpenAPI.
+    """
+    mapping: Dict[str, str] = {}
+    for choice in schema.get("oneOf", []):
+        ref = choice.get("$ref")
+        if not isinstance(ref, str):
+            continue
+        definition_name = ref.rsplit("/", 1)[-1]
+        for tag, model in _COLLECTION_ELEMENT_MODELS_BY_TAG.items():
+            if model.__name__ in definition_name:
+                mapping[tag] = ref
+    if len(mapping) == len(_COLLECTION_ELEMENT_MODELS_BY_TAG):
+        schema["discriminator"] = {"propertyName": "class", "mapping": mapping}
+
+
 # A callable Discriminator avoids the PydanticJsonSchemaWarning emitted for
 # the recursive Field(discriminator="class_") on this self-referential union;
-# json_schema_extra restores the OpenAPI discriminator metadata.
+# json_schema_extra restores the OpenAPI discriminator metadata pydantic then
+# no longer emits.
 CollectionRequestUriElement = Annotated[
     Union[
         Annotated[CollectionElementCollectionRequestUri, Tag("Collection")],
         Annotated[CollectionElementDataRequestUri, Tag("File")],
     ],
     Discriminator(_collection_element_discriminator),
-    Field(
-        json_schema_extra={
-            "discriminator": {
-                "propertyName": "class",
-                "mapping": {
-                    "Collection": "#/components/schemas/CollectionElementCollectionRequestUri",
-                    "File": "#/components/schemas/CollectionElementDataRequestUri",
-                },
-            }
-        }
-    ),
+    Field(json_schema_extra=_collection_element_discriminator_schema),
 ]
 
 

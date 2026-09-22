@@ -256,7 +256,16 @@ class ToolPanelViewSearch:
                 if indexed_tool.is_latest_version:
                     continue
                 latest_version = indexed_tool.latest_version
-                if latest_version and latest_version.hidden:
+                # `Tool.latest_version` resolves the newest revision through the
+                # tool cache under the lineage id `<versionless id>/<version>`.
+                # That key only exists for tools whose id carries their version,
+                # i.e. toolshed guids. A tool whose revisions share one bare id
+                # (`filters/grep.xml` and `filters/grep_1.0.1.xml` both declare
+                # `Grep1`) resolves to None, and the tool cache hands back
+                # whichever revision was parsed last. Both revisions are indexed
+                # under that one id, so an unresolvable latest version means the
+                # entry is still current, not that the tool went away.
+                if latest_version is None or latest_version.hidden:
                     continue
             tool_ids_to_remove.add(indexed_tool_id)
 

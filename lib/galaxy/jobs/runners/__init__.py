@@ -48,6 +48,7 @@ from galaxy.tool_util.deps.dependencies import (
     ToolInfo,
 )
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
+from galaxy.tools.expressions import ExpressionTemplateError
 from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.util import (
     asbool,
@@ -201,7 +202,7 @@ class BaseJobRunner:
                 self.app.model.session().add(job)
 
     # Causes a runner's `queue_job` method to be called from a worker thread
-    def put(self, job_wrapper: "MinimalJobWrapper") -> None:
+    def put(self, job_wrapper: "MinimalJobWrapper") -> bool:
         """Add a job to the queue (by job identifier), indicate that the job is ready to run."""
         put_timer = ExecutionTimer()
         try:
@@ -213,10 +214,12 @@ class BaseJobRunner:
             message = e.client_message if hasattr(e, "client_message") else str(e)
             job_wrapper.fail(message, exception=e)
             log.debug(f"Job [{job_wrapper.job_id}] failed to queue {put_timer}")
-            return
+            return False
         if queue_job:
             self.mark_as_queued(job_wrapper)
             log.debug(f"Job [{job_wrapper.job_id}] queued {put_timer}")
+            return True
+        return False
 
     def mark_as_queued(self, job_wrapper: "MinimalJobWrapper"):
         self.work_queue.put((self.queue_job, job_wrapper))
@@ -309,8 +312,8 @@ class BaseJobRunner:
                 modify_command_for_container=modify_command_for_container,
                 stream_stdout_stderr=stream_stdout_stderr,
             )
-        except ParameterValueError as e:
-            log.info("(%s) parameter validation error preparing job: %s", job_id, unicodify(e))
+        except (ParameterValueError, ExpressionTemplateError) as e:
+            log.info("(%s) validation error preparing job: %s", job_id, unicodify(e))
             job_wrapper.fail(unicodify(e), exception=False)
             return False
         except Exception as e:

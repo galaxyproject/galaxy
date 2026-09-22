@@ -23,3 +23,15 @@ class TestVisualizationsPlugin(VisualizationsBase_TestCase):
         assert plugin.name == "myvis"
         assert plugin.path == vis_dir.root_path
         assert plugin.config == {}
+        assert plugin.url_prefix == ""
+
+    def test_href_without_url_prefix(self):
+        """Without a url_prefix, href is just the static path."""
+        plugin = VisualizationPlugin("/path", "myvis", {})
+        assert plugin.to_dict()["href"] == plugin.static_path
+        assert plugin.to_dict()["href"] == "/static/plugins/visualizations/myvis/static"
+
+    def test_href_with_url_prefix(self):
+        """A url_prefix is prepended to the static path when building href."""
+        plugin = VisualizationPlugin("/path", "myvis", {}, url_prefix="/galaxy")
+        assert plugin.to_dict()["href"] == "/galaxy/static/plugins/visualizations/myvis/static"

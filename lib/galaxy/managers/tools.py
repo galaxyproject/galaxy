@@ -29,6 +29,7 @@ from galaxy.tool_util.cwl import tool_proxy
 from galaxy.tool_util.lint import lint_user_tool_source
 from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.tool_util.toolbox import AbstractToolBox
+from galaxy.tool_util_models import UserToolSource
 from galaxy.tool_util_models.dynamic_tool_models import (
     DynamicToolPayload,
     DynamicUnprivilegedToolCreatePayload,
@@ -36,6 +37,10 @@ from galaxy.tool_util_models.dynamic_tool_models import (
 from galaxy.tools import (
     create_tool_from_source,
     Tool,
+)
+from galaxy.tools.expressions import (
+    ExpressionTemplateError,
+    validate_expression_template,
 )
 from .base import (
     ModelManager,
@@ -47,6 +52,17 @@ log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from galaxy.managers.base import OrmFilterParsersType
+
+
+def _validate_tool_templates(representation: UserToolSource) -> None:
+    """Refuse a tool whose templates cannot be evaluated, rather than storing one that cannot run."""
+    try:
+        validate_expression_template(representation.shell_command, "shell_command")
+        for index, configfile in enumerate(representation.configfiles or []):
+            name = configfile.name or configfile.filename or f"#{index + 1}"
+            validate_expression_template(configfile.content, f"configfile '{name}'")
+    except ExpressionTemplateError as exc:
+        raise exceptions.RequestParameterInvalidException(str(exc)) from exc
 
 
 def tool_payload_to_tool(app, tool_dict: dict[str, Any]) -> Optional[Tool]:
@@ -83,6 +99,12 @@ class DynamicToolManager(ModelManager[DynamicTool]):
     def ensure_can_use_unprivileged_tool(self, user: model.User):
         if not any(role.type == model.Role.types.USER_TOOL_EXECUTE and not role.deleted for role in user.all_roles()):
             raise exceptions.InsufficientPermissionsException("User is not allowed to run unprivileged tools")
+
+    def ensure_beta_tool_formats_enabled(self) -> None:
+        if not self.app.config.enable_beta_tool_formats:
+            raise exceptions.ConfigDoesNotAllowException(
+                "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
+            )
 
     def get_tool_by_id_or_uuid(self, id_or_uuid: Union[int, str]) -> Union[DynamicTool, None]:
         if isinstance(id_or_uuid, int):
@@ -121,10 +143,7 @@ class DynamicToolManager(ModelManager[DynamicTool]):
         return self.session().scalars(stmt).one_or_none()
 
     def create_tool(self, tool_payload: DynamicToolPayload):
-        if not getattr(self.app.config, "enable_beta_tool_formats", False):
-            raise exceptions.ConfigDoesNotAllowException(
-                "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
-            )
+        self.ensure_beta_tool_formats_enabled()
 
         uuid = model.get_uuid()
         tool_directory: Optional[str] = None
@@ -185,14 +204,12 @@ class DynamicToolManager(ModelManager[DynamicTool]):
     def create_unprivileged_tool(
         self, user: model.User, tool_payload: DynamicUnprivilegedToolCreatePayload
     ) -> DynamicTool:
-        if not getattr(self.app.config, "enable_beta_tool_formats", False):
-            raise exceptions.ConfigDoesNotAllowException(
-                "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
-            )
+        self.ensure_beta_tool_formats_enabled()
         self.ensure_can_use_unprivileged_tool(user)
         lint_errors = lint_user_tool_source(tool_payload.representation)
         if lint_errors:
             raise exceptions.RequestParameterInvalidException("Tool failed lint checks: " + "; ".join(lint_errors))
+        _validate_tool_templates(tool_payload.representation)
         dynamic_tool = self.create(
             tool_format=tool_payload.representation.class_,
             tool_id=tool_payload.representation.id,

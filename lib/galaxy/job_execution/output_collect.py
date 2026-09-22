@@ -15,6 +15,7 @@ from typing import (
     Union,
 )
 
+from galaxy.job_execution.output_format import resolve_format_source
 from galaxy.model import (
     Dataset,
     DatasetInstance,
@@ -29,17 +30,21 @@ from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DE
 from galaxy.model.store.discover import (
     discover_target_directory,
     DiscoveredFile,
+    ensure_path_in_directory,
     JsonCollectedDatasetMatch,
     MaxDiscoveredFilesExceededError,
     MetadataSourceProvider as AbstractMetadataSourceProvider,
     ModelPersistenceContext,
+    OutputCollectionSecurityError,
     PermissionProvider as AbstractPermissionProvider,
     persist_elements_to_folder,
     persist_elements_to_hdca,
     persist_hdas,
     RegexCollectedDatasetMatch,
+    safe_path_from_directory,
     SessionlessModelPersistenceContext,
     UNSET,
+    UntrustedToolProvidedMetadataError,
 )
 from galaxy.objectstore import (
     ObjectStore,
@@ -127,7 +132,7 @@ def collect_dynamic_outputs(
 ):
     # unmapped outputs do not correspond to explicit outputs of the tool, they were inferred entirely
     # from the tool provided metadata (e.g. galaxy.json).
-    for unnamed_output_dict in job_context.tool_provided_metadata.get_unnamed_outputs():
+    for unnamed_output_dict in validate_unnamed_outputs(job_context):
         assert "destination" in unnamed_output_dict
         assert "elements" in unnamed_output_dict
         destination = unnamed_output_dict["destination"]
@@ -203,6 +208,23 @@ def collect_dynamic_outputs(
             dataset_collectors = [
                 dataset_collector(description) for description in output_collection_def.dataset_collector_descriptions
             ]
+            if output_collection_def.format_source:
+                job = job_context.job
+                input_collections = {}
+                if job:
+                    input_collections = {
+                        association.name: association.dataset_collection
+                        for association in job.input_dataset_collections
+                    }
+                default_format = resolve_format_source(
+                    output_collection_def.format_source,
+                    job_context.input_datasets,
+                    input_collections,
+                    output_collection_def.default_format,
+                )
+                for collector in dataset_collectors:
+                    if collector.default_ext is None:
+                        collector.default_ext = default_format
             output_name = output_collection_def.name
             filenames = job_context.find_files(output_name, collection, dataset_collectors)
             job_context.populate_collection_elements(
@@ -225,6 +247,10 @@ def collect_dynamic_outputs(
             # FAILED collection state rather than leaving it stuck in NEW.
             job_context.add_dataset_collection(has_collection)
             raise
+        except OutputCollectionSecurityError:
+            collection.handle_population_failed("Problem building datasets for collection.")
+            job_context.add_dataset_collection(has_collection)
+            raise
         except Exception:
             log.exception("Problem gathering output collection.")
             collection.handle_population_failed("Problem building datasets for collection.")
@@ -237,6 +263,16 @@ class BaseJobContext(ModelPersistenceContext):
     max_discovered_files: Union[int, float]
     tool_provided_metadata: BaseToolProvidedMetadata
     job_working_directory: str
+    allows_unnamed_outputs: bool
+    allows_external_output_paths: bool
+
+    @property
+    def input_datasets(self) -> dict[str, Optional[DatasetInstance]]:
+        inputs: dict[str, Optional[DatasetInstance]] = {}
+        if job := self.job:
+            for association in job.input_datasets + job.input_library_datasets:
+                inputs.setdefault(association.name, association.dataset)
+        return inputs
 
     def add_dataset_collection(self, collection):
         pass
@@ -288,8 +324,16 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         max_discovered_files: Optional[int],
         job: Optional["Job"] = None,
     ):
-        # TODO: use a metadata source provider... (pop from inputs and add parameter)
-        super().__init__(object_store, export_store, working_directory)
+        # Missing capability keys identify params written by Galaxy versions
+        # that allowed these behaviors unconditionally. Preserve those jobs
+        # while ensuring all newly generated params carry explicit decisions.
+        allows_external_output_paths = metadata_params.get("allows_external_output_paths", True)
+        super().__init__(
+            object_store,
+            export_store,
+            working_directory,
+            allows_external_output_paths=allows_external_output_paths,
+        )
         self.metadata_params = metadata_params
         self.tool_provided_metadata = tool_provided_metadata
         self.import_store = import_store
@@ -297,6 +341,11 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         self.max_discovered_files = float("inf") if max_discovered_files is None else max_discovered_files
         self.discovered_file_count = 0
         self._job = job
+        self.allows_unnamed_outputs = metadata_params.get("allows_unnamed_outputs", True)
+
+    @property
+    def metadata_source_provider(self) -> MetadataSourceProvider:
+        return MetadataSourceProvider(self.input_datasets)
 
     @property
     def job(self):
@@ -413,6 +462,7 @@ def collect_primary_datasets(job_context: BaseJobContext, output: dict[str, Data
                 # Move data from temp location to dataset location
                 if not outdata.dataset.purged:
                     assert job_context.object_store
+                    ensure_path_in_directory(filename, job_working_directory)
                     job_context.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
                 primary_output_assigned = True
                 continue
@@ -432,7 +482,7 @@ def collect_primary_datasets(job_context: BaseJobContext, output: dict[str, Data
             if new_primary_datasets_attributes:
                 extra_files_path = new_primary_datasets_attributes.get("extra_files", None)
                 if extra_files_path:
-                    extra_files = os.path.join(job_working_directory, extra_files_path)
+                    extra_files = safe_path_from_directory(extra_files_path, job_working_directory)
             primary_data = job_context.create_dataset(
                 ext,
                 designation,
@@ -491,7 +541,7 @@ def discover_files(output_name, tool_provided_metadata, extra_file_collectors, j
         target_directory = discover_target_directory(extra_file_collector.directory, job_working_directory)
         for dataset in tool_provided_metadata.get_new_datasets(output_name):
             filename = dataset["filename"]
-            path = os.path.join(target_directory, filename)
+            path = safe_path_from_directory(filename, target_directory)
             yield DiscoveredFile(
                 path,
                 extra_file_collector,
@@ -535,11 +585,22 @@ def walk_over_extra_files(target_dir, extra_file_collector, job_working_director
                 else:
                     match = extra_file_collector.match(matchable, filename, path=path, parent_paths=parent_paths)
                     if match:
+                        # A matched path is part of the declared output. Reject an
+                        # escaping symlink instead of silently producing an incomplete
+                        # collection whose missing element is difficult to diagnose.
+                        ensure_path_in_directory(path, directory)
                         yield match
 
     yield from extra_file_collector.sort(
         _walk(target_dir, extra_file_collector, job_working_directory, matchable, parent_paths)
     )
+
+
+def validate_unnamed_outputs(job_context: BaseJobContext) -> list[dict[str, Any]]:
+    unnamed_outputs = job_context.tool_provided_metadata.get_unnamed_outputs()
+    if unnamed_outputs and not job_context.allows_unnamed_outputs:
+        raise UntrustedToolProvidedMetadataError()
+    return unnamed_outputs
 
 
 def dataset_collector(dataset_collection_description):

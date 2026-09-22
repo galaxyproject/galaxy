@@ -174,34 +174,17 @@ export default {
             }
             const optionsPagination = { [name]: { [src]: spec } };
             getTool(this.model.id, this.model.version, this.modelData, this.historyId, optionsPagination).then(
-                (newModel) => {
-                    const target = findInputByDottedName(this.modelInputs, name);
-                    const incoming = findInputByDottedName(newModel.inputs, name);
-                    if (!target || !incoming) {
-                        return;
-                    }
-                    const existing = (target.options && target.options[src]) || [];
-                    const newOptions = (incoming.options && incoming.options[src]) || [];
-                    const seen = new Set(existing.map((o) => `${o.id}_${o.src}`));
-                    const appended = existing.concat(newOptions.filter((o) => !seen.has(`${o.id}_${o.src}`)));
-                    target.options = { ...target.options, [src]: appended };
-                    if (incoming.options_meta && incoming.options_meta[src]) {
-                        target.options_meta = {
-                            ...(target.options_meta || {}),
-                            [src]: incoming.options_meta[src],
-                        };
-                    }
-                    this.modelInputs = JSON.parse(JSON.stringify(this.modelInputs));
-                },
+                (newModel) => this.mergeFetchedOptions(name, src, newModel),
                 (errorText) => {
                     this.errorText = errorText;
                 },
             );
         },
         /**
-         * Refetch the parameter's options filtered by the typed search query
-         * and **replace** (not append) the local options/meta — we want the
-         * narrowed list, not a union with whatever was previously loaded.
+         * Refetch the parameter's options filtered by the typed search query.
+         * The fetched matches are merged into the loaded options so the list
+         * cannot become empty and unmount the focused multiselect mid-typing;
+         * FormSelect's client-side filter still narrows the visible union.
          */
         onSearchChange({ name, src, query, limit }) {
             const spec = { offset: 0, limit };
@@ -210,25 +193,41 @@ export default {
             }
             const optionsPagination = { [name]: { [src]: spec } };
             getTool(this.model.id, this.model.version, this.modelData, this.historyId, optionsPagination).then(
-                (newModel) => {
-                    const target = findInputByDottedName(this.modelInputs, name);
-                    const incoming = findInputByDottedName(newModel.inputs, name);
-                    if (!target || !incoming) {
-                        return;
-                    }
-                    target.options = { ...target.options, [src]: incoming.options?.[src] || [] };
-                    if (incoming.options_meta && incoming.options_meta[src]) {
-                        target.options_meta = {
-                            ...(target.options_meta || {}),
-                            [src]: incoming.options_meta[src],
-                        };
-                    }
-                    this.modelInputs = JSON.parse(JSON.stringify(this.modelInputs));
-                },
+                (newModel) => this.mergeFetchedOptions(name, src, newModel),
                 (errorText) => {
                     this.errorText = errorText;
                 },
             );
+        },
+        mergeFetchedOptions(name, src, newModel) {
+            const target = findInputByDottedName(this.modelInputs, name);
+            const incoming = findInputByDottedName(newModel.inputs, name);
+            if (!target || !incoming) {
+                return;
+            }
+            const existing = (target.options && target.options[src]) || [];
+            const newOptions = (incoming.options && incoming.options[src]) || [];
+            const seen = new Set(existing.map((option) => `${option.id}_${option.src}`));
+            const merged = existing.concat(
+                newOptions.filter((option) => {
+                    const key = `${option.id}_${option.src}`;
+                    if (seen.has(key)) {
+                        return false;
+                    }
+                    seen.add(key);
+                    return true;
+                }),
+            );
+            target.options = { ...target.options, [src]: merged };
+            if (incoming.options_meta && incoming.options_meta[src]) {
+                target.options_meta = {
+                    ...(target.options_meta || {}),
+                    [src]: incoming.options_meta[src],
+                };
+            }
+            // FormDisplay renders from an internal clone and only syncs
+            // server-owned attributes when the inputs prop changes by identity.
+            this.modelInputs = [...this.modelInputs];
         },
     },
 };

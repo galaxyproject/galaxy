@@ -1,7 +1,6 @@
 import errno
 import logging
 import os
-import time
 from typing import (
     Any,
     Optional,
@@ -9,6 +8,7 @@ from typing import (
 
 from galaxy.tool_shed.galaxy_install.client import (
     DataManagerInterface,
+    INSTALLATION_RELOAD_TIMEOUT,
     InstallationTarget,
 )
 from galaxy.util import (
@@ -20,6 +20,10 @@ from galaxy.util import (
 from galaxy.util.path import StrPath
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.tool_shed.xml_util import parse_xml
+from galaxy.util.wait import (
+    TimeoutAssertionError,
+    wait_on,
+)
 from . import tool_panel_manager
 
 log = logging.getLogger(__name__)
@@ -36,6 +40,24 @@ class DataManagerHandler:
 
     def __init__(self, app: InstallationTarget):
         self.app = app
+
+    def _wait_for_data_managers_reload(
+        self, reload_count: int, timeout: int | float = INSTALLATION_RELOAD_TIMEOUT
+    ) -> None:
+        def data_managers_reloaded() -> Optional[bool]:
+            if self.app.data_managers._reload_count > reload_count:
+                return True
+            return None
+
+        try:
+            wait_on(
+                data_managers_reloaded,
+                "shed Data Manager configuration reload",
+                timeout,
+                delta=0.1,
+            )
+        except TimeoutAssertionError as exc:
+            raise TimeoutError(str(exc)) from exc
 
     @property
     def data_managers_path(self) -> Optional[str]:
@@ -180,8 +202,7 @@ class DataManagerHandler:
             if data_manager_config_has_changes:
                 reload_count = self.app.data_managers._reload_count
                 self._data_manager_config_elems_to_xml_file(config_elems, shed_data_manager_conf_filename)
-                while self.app.data_managers._reload_count <= reload_count:
-                    time.sleep(0.1)  # Wait for shed_data_manager watcher thread to pick up changes
+                self._wait_for_data_managers_reload(reload_count)
         return rval
 
     def remove_from_data_manager(self, repository):

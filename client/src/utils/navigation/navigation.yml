@@ -970,6 +970,7 @@ workflow_run:
     history_target_link: '[data-description="switch to history link"]'
     runtime_setting_button: '.workflow-run-settings'
     runtime_setting_target: '[data-test-id="send-to-new-history-label"]'
+    new_history_name_input: '.history-name-input'
     simplified_input:
       type: xpath
       selector: //div[@data-label="${label}"]//input
@@ -1111,15 +1112,11 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@data-label='Rename dataset']//input
-    change_datatype:
-      type: xpath
-      selector: >
-        //div[@data-label='Change datatype']//div[contains(@class, 'multiselect')]
-    select_datatype_text_search: "div[data-label='Change datatype'] .multiselect__input"
-    select_datatype:
-      type: xpath
-      selector: >
-        //div[@data-label='Change datatype']//li[contains(@class,"multiselect__element")]//span[normalize-space()="${datatype}"]
+    change_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [role='combobox']"
+    select_datatype_text_search: "#pja__${output}__ChangeDatatypeAction__newtype [role='combobox'] input"
+    select_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [data-option-value='${datatype}']"
+    select_datatype_option_not_matching: "#pja__${output}__ChangeDatatypeAction__newtype [data-option-value]:not([data-option-value*='${text}' i])"
+    selected_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [data-selected-value]"
     add_tags_button:
       type: xpath
       selector: >
@@ -1250,7 +1247,29 @@ custom_tools:
     save_button:
       selector: 'save custom tool'
       type: data-description
+    clear_button:
+      selector: 'clear custom tool'
+      type: data-description
+    editor: '.custom-tool-editor .monaco-editor'
+    editor_content: '.custom-tool-editor .view-lines'
     tool_link: "#g-card-custom-tool-${tool_uuid}"
+    documentation_button:
+      selector: 'toggle tool documentation'
+      type: data-description
+    documentation_panel: '#custom-tool-documentation-panel'
+    documentation_content: '[aria-label="Tool documentation"]'
+    editor_pane: '[aria-label="Tool editor"]'
+    documentation_expand_button:
+      selector: 'toggle expanded documentation'
+      type: data-description
+    help_section_toggle:
+      selector: 'toggle help section ${section_id}'
+      type: data-description
+    help_section: '#${section_id}'
+    help_section_link: '#${section_id} a[href="#${target_id}"]'
+    example: '#${section_id} .authoring-code-example'
+    example_label: '#${section_id} .authoring-code-example-label'
+    example_copy_button: '#${section_id} .authoring-code-example-copy'
 
 admin:
   allowlist:

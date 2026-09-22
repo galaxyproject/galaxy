@@ -44,6 +44,30 @@ from galaxy.util import (
 from galaxy.util.unittest_utils import skip_unless_environ
 
 
+def test_persist_extra_files_skips_symlink_outside_source_directory(tmp_path):
+    extra_files_path = tmp_path / "extra"
+    extra_files_path.mkdir()
+    valid_path = extra_files_path / "valid.txt"
+    valid_path.write_text("valid")
+    outside_path = tmp_path / "outside.txt"
+    outside_path.write_text("outside")
+    (extra_files_path / "escaped.txt").symlink_to(outside_path)
+
+    with TestConfig(DISK_TEST_CONFIG) as (_directory, object_store):
+        dataset = MockDataset(1)
+        object_store.create(dataset)
+        persist_extra_files_for_dataset(
+            object_store,
+            extra_files_path,
+            dataset,  # type: ignore[arg-type,unused-ignore]
+            dataset._extra_files_rel_path,
+        )
+
+        persisted_extra_files = _extra_file_path(object_store, dataset)
+        assert open(os.path.join(persisted_extra_files, "valid.txt")).read() == "valid"
+        assert not os.path.lexists(os.path.join(persisted_extra_files, "escaped.txt"))
+
+
 # Unit testing the cloud and advanced infrastructure object stores is difficult, but
 # we can at least stub out initializing and test the configuration of these things from
 # XML and dicts.

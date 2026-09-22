@@ -4,10 +4,12 @@ import { configureMonacoYaml } from "monaco-yaml";
 import { extractEmbeddedJs } from "./extractEmbeddedJs";
 import { monarchConfig } from "./MonarchYamlJs";
 import { fetchAndConvertSchemaToInterface } from "./runTimeModel";
+import { TOOL_SOURCE_SCHEMA_URI, withMarkdownDescriptions } from "./schemaMarkdown";
 import TOOL_SOURCE_SCHEMA from "./ToolSourceSchema.json";
 import { buildProviderFunctions } from "./yaml";
 
 const LANG = "yaml-with-js";
+const EDITOR_TOOL_SOURCE_SCHEMA = withMarkdownDescriptions(TOOL_SOURCE_SCHEMA);
 
 // Lazy-initialized monaco reference - set when setupMonaco is called
 let monacoInstance: MonacoEditor | null = null;
@@ -85,9 +87,9 @@ export async function setupMonaco(monaco: MonacoEditor) {
                 // If YAML file is opened matching this glob
                 fileMatch: ["tool.yml"],
                 // The following schema will be applied
-                schema: TOOL_SOURCE_SCHEMA,
+                schema: EDITOR_TOOL_SOURCE_SCHEMA,
                 // And the URI will be linked to as the source.
-                uri: "https://schema.galaxyproject.org/customTool.json",
+                uri: TOOL_SOURCE_SCHEMA_URI,
             },
         ],
     });
@@ -98,9 +100,9 @@ export async function setupMonaco(monaco: MonacoEditor) {
                 // If YAML file is opened matching this glob
                 fileMatch: ["tool.yml"],
                 // The following schema will be applied
-                schema: TOOL_SOURCE_SCHEMA,
+                schema: EDITOR_TOOL_SOURCE_SCHEMA,
                 // And the URI will be linked to as the source.
-                uri: "https://schema.galaxyproject.org/customTool.json",
+                uri: TOOL_SOURCE_SCHEMA_URI,
             },
         ],
     });

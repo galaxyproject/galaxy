@@ -533,11 +533,14 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     }
 
-    async function secureHistory(history: HistorySummary): Promise<{ sharingStatusChanged: boolean }> {
-        const { securedHistory, sharingStatusChanged } = await secureHistoryOnServer(history);
+    async function secureHistory(
+        history: HistorySummary,
+    ): Promise<{ sharingStatusChanged: boolean; skippedDatasets: number }> {
+        const { securedHistory, sharingStatusChanged, skippedDatasets } = await secureHistoryOnServer(history);
         setHistory(securedHistory);
         return {
             sharingStatusChanged,
+            skippedDatasets,
         };
     }
 

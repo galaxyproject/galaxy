@@ -42,9 +42,11 @@ from galaxy.managers import (
     sharable,
 )
 from galaxy.managers.base import (
+    apply_sort_column,
     combine_lists,
     ModelDeserializingError,
     Serializer,
+    sort_expression,
     SortableManager,
     StorageCleanerManager,
 )
@@ -230,12 +232,9 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         sort_column: Any
         if payload.sort_by == "username":
             sort_column = model.User.username
-            stmt = stmt.add_columns(sort_column)
         else:
             sort_column = getattr(model.History, payload.sort_by)
-        if payload.sort_desc:
-            sort_column = sort_column.desc()
-        stmt = stmt.order_by(sort_column)
+        stmt = apply_sort_column(stmt, sort_column, payload.sort_desc, model.History.id)
 
         if payload.limit is not None:
             stmt = stmt.limit(payload.limit)
@@ -357,9 +356,9 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         if order_by_string == "update_time-asc":
             return asc(self.model_class.update_time)
         if order_by_string in ("name", "name-asc"):
-            return asc(self.model_class.name)
+            return asc(sort_expression(self.model_class.name))
         if order_by_string == "name-dsc":
-            return desc(self.model_class.name)
+            return desc(sort_expression(self.model_class.name))
         # TODO: history columns
         if order_by_string in ("size", "size-dsc"):
             return desc(self.model_class.disk_size)
@@ -520,6 +519,44 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
                         log.warning(f"Unable to make dataset with id: {dataset.id} public")
                 else:
                     log.warning(f"User without permissions tried to make dataset with id: {dataset.id} public")
+
+    def make_private(self, trans: ProvidesUserContext, histories: list[model.History]) -> int:
+        """Make the datasets in ``histories`` private and set private default permissions.
+
+        Permissions live on the dataset, not on the history association, so a
+        dataset that the user cannot manage (typically one shared from another
+        user's history through an import) is left untouched. Returns the number
+        of such datasets that stayed shared.
+        """
+        user = trans.user
+        assert user
+        security_agent = self.app.security_agent
+        private_role = security_agent.get_private_user_role(user)
+        private_permissions = {
+            security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS: [private_role],
+            security_agent.permitted_actions.DATASET_ACCESS: [private_role],
+        }
+        user_roles = user.all_roles()
+        seen_datasets: set[int] = set()
+        skipped_datasets: set[int] = set()
+
+        for history in histories:
+            security_agent.history_set_default_permissions(history, private_permissions)
+            for hda in history.datasets:
+                dataset = hda.dataset
+                assert dataset
+                if dataset.id in seen_datasets:
+                    continue
+                seen_datasets.add(dataset.id)
+                if dataset.library_associations or security_agent.dataset_is_private_to_user(trans, dataset):
+                    continue
+                if not security_agent.can_manage_dataset(user_roles, dataset):
+                    skipped_datasets.add(dataset.id)
+                    continue
+                security_agent.set_all_dataset_permissions(dataset, private_permissions, flush=False)
+
+        self.session().commit()
+        return len(skipped_datasets)
 
     def archive_history(self, history: model.History, archive_export_id: Optional[int]):
         """Marks the history with the given id as archived and optionally associates it with the given archive export record.

@@ -50,7 +50,10 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,
 )
-from galaxy.util.wait import wait_on
+from galaxy.util.wait import (
+    TimeoutAssertionError,
+    wait_on,
+)
 from .has_driver import (
     exception_indicates_click_intercepted,
     exception_indicates_not_clickable,
@@ -586,9 +589,26 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.history_panel_create_new()
         self.history_panel_rename(name)
 
+        # A rename typed while the panel is still swapping histories is dropped silently,
+        # leaving "Unnamed history" behind to fail a name lookup in some later test.
+        def renamed(driver=None):
+            return True if self.current_history()["name"] == name else None
+
+        self._wait_on(renamed, f"current history name to become [{name}]", wait_type=WAIT_TYPES.DATABASE_OPERATION)
+
     def history_panel_create_new(self):
-        """Click create new and pause a bit for the history to begin to refresh."""
+        """Click create new and wait for the new history to become the current one."""
+        previous_history_id = self.current_history_id()
         self.history_click_create_new()
+
+        # Callers act on whichever history is current, so wait for the switch rather than
+        # trusting a fixed render delay.
+        def switched(driver=None):
+            return True if self.current_history_id() != previous_history_id else None
+
+        self._wait_on(
+            switched, "current history to switch to the newly created history", wait_type=WAIT_TYPES.DATABASE_OPERATION
+        )
         self.sleep_for(WAIT_TYPES.UX_RENDER)
 
     def history_panel_wait_for_hid_ok(self, hid, allowed_force_refreshes=0):
@@ -1076,7 +1096,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 setting.click()
 
         self.upload_start()
-
+        self.upload_wait_for_submission()
         self.components.upload.close_button.wait_for_and_click()
 
     def perform_upload_of_composite_dataset_pasted_data(self, ext, paste_content):
@@ -1178,6 +1198,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def upload_start(self, tab_id="regular"):
         self.wait_for_and_click_selector(f"div#{tab_id} button#btn-start")
+
+    def upload_wait_for_submission(self, tab_id="regular"):
+        """Wait until every started upload row has been sent to the server.
+
+        The client submits rows one request at a time and only sends the next row once
+        the previous request has returned. Rows are ``upload-init`` until the Start click
+        handler runs and ``upload-queued`` until their request completes, so leaving the
+        page while either is present drops the unsent rows.
+        """
+        self.wait_for_selector_absent(
+            f"div#{tab_id} .upload-row.upload-init, div#{tab_id} .upload-row.upload-queued",
+            wait_type=WAIT_TYPES.JOB_COMPLETION,
+        )
 
     @retry_during_transitions
     def upload_build(self, tab="collection"):
@@ -1496,6 +1529,35 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         license_selector_option = self.components.workflow_editor.license_selector_option
         license_selector_option.wait_for_and_click()
+
+    def workflow_editor_change_output_datatype(self, output: str, datatype: str) -> None:
+        """Pick ``datatype`` in the "Change datatype" multiselect of the output card for ``output``.
+
+        Typing into the search box re-filters the option list asynchronously and vue-multiselect
+        keys its option elements by index, so an option located before the filtered list is
+        rendered stays attached but ends up bound to whichever datatype occupies that index
+        afterwards. Only click once every option that does not match the search text is gone, then
+        check what the control reports as selected.
+        """
+        editor = self.components.workflow_editor
+        editor.change_datatype(output=output).wait_for_and_click()
+        editor.select_datatype_text_search(output=output).wait_for_and_send_keys(datatype)
+        editor.select_datatype_option_not_matching(output=output, text=datatype).wait_for_absent()
+        editor.select_datatype(output=output, datatype=datatype).wait_for_and_click()
+
+        selected = editor.selected_datatype(output=output)
+        selected.wait_for_present()
+        try:
+            self._wait_on(
+                lambda: selected.data_value("selected-value") == datatype or None,
+                f"'Change datatype' selection for output [{output}] to be [{datatype}]",
+                wait_type=WAIT_TYPES.UX_TRANSITION,
+            )
+        except TimeoutAssertionError as e:
+            raise AssertionError(
+                f"Selected [{selected.data_value('selected-value')}] in 'Change datatype' for "
+                f"output [{output}] instead of [{datatype}]"
+            ) from e
 
     def workflow_editor_license_text(self) -> str:
         editor = self.components.workflow_editor
@@ -2087,8 +2149,6 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         workflow_run.run_workflow.wait_for_visible()
         if workflow_run.expanded_form.is_absent:
             workflow_run.runtime_setting_button.wait_for_and_click()
-            # Wait for the settings panel slideDown animation (0.2s) to complete
-            self.sleep_for(self.wait_types.UX_RENDER)
             expand_link = workflow_run.expand_form_link.wait_for_clickable()
             # Use ActionChains for Selenium - regular click doesn't work reliably
             # on GButton components due to internal tooltip element.
