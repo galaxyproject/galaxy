@@ -365,6 +365,25 @@ class TestDatasetsApi(ApiTestCase):
         assert followed.status_code == 200
         assert "download-me" in followed.text
 
+    def test_binary_download_filename(self, history_id):
+        with open(self.test_data_resolver.get_filename("1.bam"), "rb") as source:
+            content = source.read()
+            source.seek(0)
+            hda = self.dataset_populator.new_dataset(
+                history_id, name="Annotated alignment", content=source, file_type="bam", wait=True
+            )
+        expected_disposition = (
+            f'attachment; filename="Galaxy{hda["hid"]}-[Annotated_alignment].bam"; '
+            f"filename*=UTF-8''Galaxy{hda['hid']}-%5BAnnotated%20alignment%5D.bam"
+        )
+
+        for params in ({}, {"to_ext": "data"}, {"to_ext": "bam"}):
+            response = self._get(f"datasets/{hda['id']}/download", params)
+            self._assert_status_code_is(response, 200)
+            assert response.headers["Content-Disposition"] == expected_disposition
+            assert response.headers["content-type"] == "application/octet-stream"
+            assert response.content == content
+
     def test_display_preview_binary_as_text_uses_text_plain(self, history_id):
         # Regression test for https://github.com/galaxyproject/galaxy/issues/22395
         # When previewing an unknown / binary dataset as text the response must use
