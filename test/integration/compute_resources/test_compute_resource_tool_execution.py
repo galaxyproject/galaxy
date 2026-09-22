@@ -43,6 +43,7 @@ from pulsar_relay_client import (
 from sqlalchemy import select
 
 from galaxy import model
+from galaxy.managers.compute_resources import RELAY_TOPIC_PREFIXES
 from galaxy.util.sockets import unused_port
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
@@ -154,7 +155,7 @@ class TestComputeResourceToolExecution(
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json",
         }
-        for prefix in ("job_setup", "job_status_request", "job_kill", "job_status_update"):
+        for prefix in RELAY_TOPIC_PREFIXES:
             topic_name = f"{prefix}_{cls._compute_resource_manager_name}"
             r = httpx.post(
                 f"{cls._relay.base_url}/api/v1/topics",
