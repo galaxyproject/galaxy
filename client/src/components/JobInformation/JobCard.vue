@@ -42,7 +42,7 @@ const actions = computed(() => {
             label: "Rerun",
             title: "Rerun this job",
             to: `/?job_id=${props.job.id}`,
-            disabled: route.fullPath === `/?job_id=${props.job.id}`,
+            variant: route.fullPath === `/?job_id=${props.job.id}` ? "primary" : undefined,
         });
     }
     return actions;
