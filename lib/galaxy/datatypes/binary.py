@@ -99,6 +99,7 @@ from galaxy.util.checkers import (
     is_gzip,
     is_xz,
 )
+from galaxy.util.warc import is_warc_chunk
 from . import (
     data,
     dataproviders,
@@ -415,6 +416,23 @@ class GzDynamicCompressedArchive(DynamicCompressedArchive):
 
 class Bz2DynamicCompressedArchive(DynamicCompressedArchive):
     compressed_format = "bz2"
+
+
+@build_sniff_from_prefix
+class Warc(CompressedArchive):
+    """Web ARChive, gzip-compressed and kept compressed."""
+
+    file_ext = "warc.gz"
+    compressed_format = "gzip"
+    is_binary = "maybe"
+    display_behavior = "download"
+    allow_datatype_change = False
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        return is_warc_chunk(file_prefix.contents_header_bytes)
+
+    def get_mime(self) -> str:
+        return "application/gzip"
 
 
 class CompressedZipArchive(CompressedArchive):
