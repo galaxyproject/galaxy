@@ -54,6 +54,7 @@ from galaxy.tool_util.parser.interface import (
     ToolSourceTestOutputs,
     XmlTestCollectionDefDict,
 )
+from galaxy.tool_util.parser.util import FLOAT_OUTPUT_ATTRIBUTES
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tool_util_models.testing_types import (
     AssertionList,
@@ -363,7 +364,7 @@ class GalaxyInteractorApi:
         for tool_test in tool_tests:
             for output in tool_test["outputs"]:
                 attributes = output["attributes"]
-                for attribute_name in ("delta_frac", "eps"):
+                for attribute_name in FLOAT_OUTPUT_ATTRIBUTES:
                     if attribute_name in attributes:
                         attributes[attribute_name] = restore_inf_nan(attributes[attribute_name])
         return tool_tests

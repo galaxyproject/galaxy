@@ -52,6 +52,7 @@ from .convert import (
     landing_encode,
     MappedCollectionInput,
     RequestInternalToWorkflowStateError,
+    restore_non_finite_floats,
     strictify,
     to_workflow_step_state,
 )
@@ -190,6 +191,7 @@ __all__ = (
     "landing_decode",
     "landing_encode",
     "dereference",
+    "restore_non_finite_floats",
     "strictify",
     "to_workflow_step_state",
     "from_workflow_execution_state",
