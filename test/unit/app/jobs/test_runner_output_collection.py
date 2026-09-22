@@ -17,13 +17,28 @@ from galaxy.tool_util.output_checker import AnyJobMessage
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
 
 
+class InMemoryJob(model.Job):
+    def set_final_state(self, final_state):
+        # Keep the state transition without updating workflow/collection rows in a database.
+        self.set_state(final_state)
+
+
+class InMemoryJobState(JobState):
+    exit_code = 0
+    cleanup_calls = 0
+
+    def read_exit_code(self):
+        return self.exit_code
+
+    def cleanup(self):
+        self.cleanup_calls += 1
+
+
 @pytest.fixture
-def finishing_job(tmp_path):
-    job = model.Job()
+def finishing_job(tmp_path, request):
+    job = getattr(request, "param", InMemoryJob)()
     job.id = 1
     job.state = job.states.RUNNING
-    # Keep the state transition, without updating workflow/collection rows in a database.
-    job.set_final_state = Mock(side_effect=job.set_state)
     wrapper = Mock()
     wrapper.get_job.return_value = job
     wrapper.working_directory = str(tmp_path)
@@ -35,9 +50,7 @@ def finishing_job(tmp_path):
     wrapper.tool.stdio_exit_codes = []
     wrapper.check_tool_output = MethodType(JobWrapper.check_tool_output, wrapper)
     wrapper.fail.side_effect = MethodType(JobWrapper.fail, wrapper)
-    state = JobState(wrapper, wrapper.job_destination)
-    state.read_exit_code = Mock(return_value=0)
-    state.cleanup = Mock()
+    state = InMemoryJobState(wrapper, wrapper.job_destination)
     runner = object.__new__(BaseJobRunner)
     runner.sa_session = wrapper.sa_session
     runner.app = Mock()
@@ -55,7 +68,7 @@ def finish(runner, state):
 def test_missing_streams_fail_with_diagnostics(finishing_job, tmp_path, missing, exit_code, legacy_directory):
     runner, state, job = finishing_job
     wrapper = state.job_wrapper
-    state.read_exit_code.return_value = exit_code
+    state.exit_code = exit_code
     wrapper.tool.stdio_exit_codes = [
         Mock(range_start=1, range_end=255, error_level=StdioErrorLevel.FATAL, desc="Tool failed")
     ]
@@ -86,7 +99,7 @@ def test_missing_streams_fail_with_diagnostics(finishing_job, tmp_path, missing,
     assert TypeAdapter(list[AnyJobMessage]).validate_python(messages) == messages
     wrapper.fail.assert_called_once()
     wrapper.finish.assert_not_called()
-    state.cleanup.assert_not_called()
+    assert state.cleanup_calls == 0
     wrapper.cleanup.assert_called_once_with(delete_files=False)
     runner.runner_state_handlers["failure"][0].assert_called_once_with(runner.app, runner, state)
 
@@ -148,7 +161,7 @@ def test_readable_empty_streams_finish_successfully(finishing_job, tmp_path):
     assert not job.job_messages
     state.job_wrapper.fail.assert_not_called()
     state.job_wrapper.finish.assert_called_once()
-    state.cleanup.assert_called_once()
+    assert state.cleanup_calls == 1
     runner.runner_state_handlers["failure"][0].assert_not_called()
 
 
@@ -175,14 +188,14 @@ def test_missing_stream_preserves_oom_resubmission(finishing_job, tmp_path):
 
     state.job_wrapper.fail.assert_not_called()
     state.job_wrapper.finish.assert_not_called()
-    state.cleanup.assert_not_called()
+    assert state.cleanup_calls == 0
 
 
+@pytest.mark.parametrize("finishing_job", [model.Job], indirect=True)
 def test_failure_diagnostics_survive_database_refresh(finishing_job, tmp_path):
     runner, state, job = finishing_job
     (tmp_path / "tool_stderr").write_text("Container failed to start")
-    state.read_exit_code.return_value = 127
-    job.set_final_state = MethodType(model.Job.set_final_state, job)
+    state.exit_code = 127
     engine = create_engine("sqlite:///:memory:")
     try:
         model.Base.metadata.create_all(engine)
