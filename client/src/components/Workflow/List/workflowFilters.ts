@@ -67,6 +67,10 @@ export function helpHtml(activeList = "my", isAnonymous = false) {
                 Shows workflows with the given workflow tag. You may also click
                 on a tag to filter on that tag directly.
             </dd>
+            <dt><code>tool_id:____</code></dt>
+            <dd>
+                Shows workflows that contain at least one step with the given tool ID.
+            </dd>
             ${extra}
         </dl>
     </div>`;
