@@ -1750,6 +1750,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     )
 
     @property
+    def implicit_collection_jobs_id(self) -> int | None:
+        """Id of the ImplicitCollectionJobs group this job belongs to, if it was mapped over."""
+        icj_assoc = self.implicit_collection_jobs_association
+        return icj_assoc.implicit_collection_jobs_id if icj_assoc is not None else None
+
+    @property
     def effective_workflow_invocation_step(self) -> Optional["WorkflowInvocationStep"]:
         """The WorkflowInvocationStep backing this job, including mapped steps.
 
@@ -1794,6 +1800,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         "tool_id",
         "tool_version",
         "history_id",
+        "implicit_collection_jobs_id",
     ]
 
     _numeric_metric = JobMetricNumeric
