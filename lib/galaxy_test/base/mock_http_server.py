@@ -6,6 +6,11 @@ HEAD requests, range requests, and response delays.
 
 When targeting a remote Galaxy server (GALAXY_TEST_EXTERNAL), falls back to
 the real external URLs with automatic skip-if-down behavior.
+
+Tests that only need a URI to yield some bytes should use a ``base64://`` URI instead --
+see ``galaxy.files.unittest_utils.base64_uri``. This server is for the cases base64 cannot
+cover: HTTP status codes, headers, HEAD and range requests, redirects, response delays, a
+name and extension in the URL path, and URLs a tool or a browser fetches for itself.
 """
 
 import os

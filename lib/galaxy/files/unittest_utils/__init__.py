@@ -1,13 +1,14 @@
+import base64
 import os
 import tempfile
-from functools import cache
+from pathlib import Path
 
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConf,
 )
 from galaxy.files.plugins import FileSourcePluginsConfig
-from galaxy.util.config_parsers import parse_allowlist_ips
+from galaxy.util import galaxy_directory
 
 
 class TestConfiguredFileSources(ConfiguredFileSources):
@@ -28,15 +29,14 @@ class TestPosixConfiguredFileSources(TestConfiguredFileSources):
         super().__init__(file_sources_config, {"test1": plugin}, root)
 
 
-@cache
-def stock_file_sources_allowing_loopback() -> ConfiguredFileSources:
-    """Stock file sources permitted to fetch from a mock HTTP server on the loopback interface.
+def base64_uri(content: bytes) -> str:
+    """A ``base64://`` URI carrying ``content``, realized by the stock base64 file source."""
+    return f"base64://{base64.b64encode(content).decode()}"
 
-    The stock HTTP file source refuses private addresses unless they are allowlisted, so
-    tests serving fixtures from a local mock server need this configuration.
-    """
-    file_sources_config = FileSourcePluginsConfig(fetch_url_allowlist=parse_allowlist_ips(["127.0.0.0/24"]))
-    return ConfiguredFileSources(file_sources_config, load_stock_plugins=True)
+
+def base64_uri_for_file(path: str) -> str:
+    """A ``base64://`` URI carrying the bytes of ``path``, relative to the Galaxy source root."""
+    return base64_uri(Path(galaxy_directory(), path).read_bytes())
 
 
 def setup_root():
