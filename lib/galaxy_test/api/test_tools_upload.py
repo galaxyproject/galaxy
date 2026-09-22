@@ -8,6 +8,11 @@ from typing import cast
 import pytest
 from tusclient import client
 
+from galaxy.tool_util.verify.interactor import (
+    InputStagingError,
+    JobDataT,
+    verify_tool,
+)
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import UNKNOWN
 from galaxy.util.compression_utils import decompress_bytes_to_directory
@@ -1019,6 +1024,46 @@ class TestToolsUpload(ApiTestCase):
         assert (
             dataset_details["state"] == "error"
         ), f"expected dataset state to be 'error', but got '{dataset_details['state']}'"
+
+    @pytest.mark.requires_tool_id("cat1")
+    @pytest.mark.parametrize("use_legacy_api", ["always", "never"])
+    @pytest.mark.parametrize("expect_failure", [False, True])
+    def test_tool_test_reports_failed_upload(self, history_id, mock_http_server, use_legacy_api, expect_failure):
+        interactor = self.galaxy_interactor
+        test = interactor.get_tool_tests("cat1")[0]
+        filename, attributes = test["required_files"][0]
+        attributes["location"] = mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/missing-staging-input.bed",
+            status=404,
+            body="Not Found",
+        )
+        test["expect_failure"] = expect_failure
+        reports: list[JobDataT] = []
+
+        with pytest.raises(InputStagingError) as exc:
+            verify_tool(
+                "cat1",
+                interactor,
+                test_history=history_id,
+                register_job_data=reports.append,
+                _tool_test_dicts=[test],
+                use_legacy_api=use_legacy_api,
+            )
+
+        dataset_id = interactor.uploads[filename]["id"]
+        dataset = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=dataset_id, assert_ok=False)
+        job = self.dataset_populator.get_job_details(dataset["creating_job"]).json()
+        assert job["state"] == "ok"
+        assert dataset["state"] == "error"
+        assert "404" in dataset["misc_info"]
+        assert dataset["misc_info"] in str(exc.value)
+        assert filename in str(exc.value)
+        assert dataset_id in str(exc.value)
+        assert exc.value.__cause__ is not None
+        assert reports[0]["status"] == "error"
+        assert "Input staging problem:" in reports[0]["execution_problem"]
+        assert dataset["misc_info"] in reports[0]["execution_problem"]
+        assert str(exc.value.__cause__) in reports[0]["execution_problem"]
 
     def test_upload_from_valid_url(self, mock_http_server):
         url = mock_http_server.get_url(

@@ -1151,7 +1151,7 @@ class GalaxyInteractorApi:
                 response.raise_for_status()
                 dataset = response.json()
                 if dataset["state"] == "error":
-                    info = dataset.get("info") or "No dataset error details available."
+                    info = dataset.get("misc_info") or "No dataset error details available."
                     problems.append(
                         f"Staged input '{name}': dataset '{dataset['name']}' (id: {reference['id']}) "
                         f"is in the error state:\n{info}"
