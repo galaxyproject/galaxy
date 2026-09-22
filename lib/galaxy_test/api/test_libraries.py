@@ -11,6 +11,7 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     FILE_URL,
     LibraryPopulator,
+    mock_file_url,
     skip_without_asgi,
 )
 from ._framework import ApiTestCase
@@ -288,8 +289,8 @@ class TestLibrariesApi(ApiTestCase):
         assert dataset["file_size"] == 61, dataset
 
     @requires_new_library
-    def test_fetch_single_url_to_folder(self):
-        library, response = self.library_populator.fetch_single_url_to_folder()
+    def test_fetch_single_url_to_folder(self, mock_http_server):
+        library, response = self.library_populator.fetch_single_url_to_folder(url=mock_file_url(mock_http_server))
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         assert dataset["file_size"] == 61, dataset
 

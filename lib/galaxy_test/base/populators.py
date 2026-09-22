@@ -134,9 +134,16 @@ from .api import (
 )
 from .api_util import random_name
 from .env import REQUIRE_ALL_NEEDED_TOOLS
+from .mock_http_server import MockHttpServer
 
 FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
+
+
+def mock_file_url(mock_http_server: MockHttpServer) -> str:
+    """Local stand-in for ``FILE_URL``, serving the same test-data/4.bed contents."""
+    return mock_http_server.get_url(remote_url=FILE_URL, file_path="test-data/4.bed")
+
 
 CWL_TOOL_DIRECTORY = os.path.join(galaxy_root_path, "test", "functional", "tools", "cwl_tools")
 
@@ -3655,12 +3662,12 @@ class LibraryPopulator:
         create_response = self.galaxy_interactor.post("libraries", data=data, admin=True, json=True)
         return create_response.json()
 
-    def fetch_single_url_to_folder(self, file_type="auto", assert_ok=True):
+    def fetch_single_url_to_folder(self, file_type="auto", assert_ok=True, url: str = FILE_URL):
         history_id, library, destination = self.setup_fetch_to_folder("single_url")
         items = [
             {
                 "src": "url",
-                "url": FILE_URL,
+                "url": url,
                 "MD5": FILE_MD5,
                 "ext": file_type,
             }
