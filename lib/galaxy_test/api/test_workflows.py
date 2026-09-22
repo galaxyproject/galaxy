@@ -76,8 +76,8 @@ from ._framework import ApiTestCase
 from .sharable import SharingApiTests
 
 
-def _default_file_location(mock_http_server) -> str:
-    return mock_http_server.get_url(remote_url=DEFAULT_FILE_DATASET_INPUT_LOCATION, file_path="test-data/1.bed")
+def _default_file_location(test_http_server) -> str:
+    return test_http_server.get_url(remote_url=DEFAULT_FILE_DATASET_INPUT_LOCATION, file_path="test-data/1.bed")
 
 
 WORKFLOW_SIMPLE = """
@@ -1519,8 +1519,8 @@ steps:
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 403)
 
-    def test_url_import(self, mock_http_server):
-        url = mock_http_server.get_url(
+    def test_url_import(self, test_http_server):
+        url = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga",
             file_path="lib/galaxy_test/base/data/test_workflow_1.ga",
             content_type="application/json",
@@ -7350,10 +7350,10 @@ data_input:
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert len(content.splitlines()) == 3, content
 
-    def test_run_with_default_file_dataset_input(self, mock_http_server):
+    def test_run_with_default_file_dataset_input(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
             run_response = self._run_workflow(
-                WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT.format(location=_default_file_location(mock_http_server)),
+                WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT.format(location=_default_file_location(test_http_server)),
                 history_id=history_id,
                 wait=True,
                 assert_ok=True,
@@ -7366,10 +7366,10 @@ data_input:
             assert dataset_details["file_ext"] == "txt"
             assert "chr1" in dataset_details["peek"]
 
-    def test_run_with_default_file_dataset_input_and_explicit_input(self, mock_http_server):
+    def test_run_with_default_file_dataset_input_and_explicit_input(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
             run_response = self._run_workflow(
-                WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT.format(location=_default_file_location(mock_http_server)),
+                WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT.format(location=_default_file_location(test_http_server)),
                 test_data="""
 default_file_input:
   value: 1.fasta
@@ -7390,10 +7390,10 @@ default_file_input:
                 in dataset_details["peek"]
             )
 
-    def test_run_with_default_file_in_step_inline(self, mock_http_server):
+    def test_run_with_default_file_in_step_inline(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
             self._run_workflow(
-                WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT.format(location=_default_file_location(mock_http_server)),
+                WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT.format(location=_default_file_location(test_http_server)),
                 history_id=history_id,
                 wait=True,
                 assert_ok=True,

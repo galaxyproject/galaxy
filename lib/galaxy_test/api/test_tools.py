@@ -817,9 +817,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert unversioned.json() == versioned.json()
 
     @skip_without_tool("test_data_source")
-    def test_data_source_ok_request(self, mock_http_server):
+    def test_data_source_ok_request(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
-            url = mock_http_server.get_url(
+            url = test_http_server.get_url(
                 remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
                 file_path="test-data/1.bed",
             )
@@ -846,9 +846,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert output_details["file_ext"] == "bed"
 
     @skip_without_tool("test_data_source")
-    def test_data_source_sniff_fastqsanger(self, mock_http_server):
+    def test_data_source_sniff_fastqsanger(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
-            url = mock_http_server.get_url(
+            url = test_http_server.get_url(
                 remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fastqsanger.gz",
                 file_path="test-data/1.fastqsanger.gz",
             )

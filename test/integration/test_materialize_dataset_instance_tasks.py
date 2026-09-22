@@ -38,14 +38,14 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
-    def _bed_uri(self, mock_http_server) -> str:
-        return mock_http_server.get_url(remote_url=TEST_SOURCE_URI, file_path="test-data/2.bed")
+    def _bed_uri(self, test_http_server) -> str:
+        return test_http_server.get_url(remote_url=TEST_SOURCE_URI, file_path="test-data/2.bed")
 
     @requires_new_history
-    def test_materialize_history_dataset(self, history_id: str, mock_http_server):
+    def test_materialize_history_dataset(self, history_id: str, test_http_server):
         as_list = self.dataset_populator.create_contents_from_store(
             history_id,
-            store_dict=deferred_hda_model_store_dict(source_uri=self._bed_uri(mock_http_server)),
+            store_dict=deferred_hda_model_store_dict(source_uri=self._bed_uri(test_http_server)),
         )
         assert len(as_list) == 1
         deferred_hda = as_list[0]
@@ -103,8 +103,8 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert not new_hda_details["deleted"]
 
     @requires_new_history
-    def test_materialize_history_dataset_bam(self, history_id: str, mock_http_server):
-        source_uri = mock_http_server.get_url(remote_url=TEST_SOURCE_URI_BAM, file_path="test-data/1.bam")
+    def test_materialize_history_dataset_bam(self, history_id: str, test_http_server):
+        source_uri = test_http_server.get_url(remote_url=TEST_SOURCE_URI_BAM, file_path="test-data/1.bam")
         as_list = self.dataset_populator.create_contents_from_store(
             history_id,
             store_dict=deferred_hda_model_store_dict_bam(source_uri=source_uri),
@@ -136,8 +136,8 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert "metadata_bam_index" in new_hda_details
 
     @requires_new_history
-    def test_materialize_library_dataset(self, history_id: str, mock_http_server):
-        store_dict = one_ld_library_deferred_model_store_dict(source_uri=self._bed_uri(mock_http_server))
+    def test_materialize_library_dataset(self, history_id: str, test_http_server):
+        store_dict = one_ld_library_deferred_model_store_dict(source_uri=self._bed_uri(test_http_server))
         response = self.library_populator.create_from_store(store_dict=store_dict)
         assert isinstance(response, list)
         assert len(response) == 1

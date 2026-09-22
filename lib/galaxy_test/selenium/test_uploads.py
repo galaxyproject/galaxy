@@ -27,7 +27,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
 
     @selenium_test
     def test_upload_pasted_url_content(self):
-        pasted_content = self.mock_http_server.get_url(
+        pasted_content = self.test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/LICENSE.txt",
             file_path="LICENSE.txt",
         )

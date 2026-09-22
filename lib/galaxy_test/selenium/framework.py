@@ -66,11 +66,11 @@ from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     get_ip_address,
 )
-from galaxy_test.base.mock_http_server import MockHttpServer
 from galaxy_test.base.populators import (
     load_data_dict,
     stage_inputs,
 )
+from galaxy_test.base.test_http_server import TestHttpServer
 from galaxy_test.base.testcase import FunctionalTestCase
 
 try:
@@ -420,12 +420,12 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     # tests or may be required if you have no external internet access
     axe_skip = GALAXY_TEST_SKIP_AXE
 
-    mock_http_server: MockHttpServer
+    test_http_server: TestHttpServer
 
     @pytest.fixture(autouse=True)
-    def _attach_mock_http_server(self, mock_http_server: MockHttpServer) -> None:
-        """Expose the session mock HTTP server to every Selenium test as ``self.mock_http_server``."""
-        self.mock_http_server = mock_http_server
+    def _attach_test_http_server(self, test_http_server: TestHttpServer) -> None:
+        """Expose the session test HTTP server to every Selenium test as ``self.test_http_server``."""
+        self.test_http_server = test_http_server
 
     def assert_baseline_accessibility(self):
         axe_results = self.axe_eval()
@@ -1288,8 +1288,8 @@ EXAMPLE_WORKFLOW_URL_1 = (
 
 
 class UsesWorkflowAssertions(NavigatesGalaxyMixin):
-    # Attached by TestWithSeleniumMixin._attach_mock_http_server.
-    mock_http_server: MockHttpServer
+    # Attached by TestWithSeleniumMixin._attach_test_http_server.
+    test_http_server: TestHttpServer
     _example_workflow_url: str | None = None
 
     @retry_assertion_during_transitions
@@ -1302,7 +1302,7 @@ class UsesWorkflowAssertions(NavigatesGalaxyMixin):
     def example_workflow_url(self) -> str:
         """URL the workflow import tests import from, served locally unless targeting a remote Galaxy."""
         if self._example_workflow_url is None:
-            self._example_workflow_url = self.mock_http_server.get_url(
+            self._example_workflow_url = self.test_http_server.get_url(
                 remote_url=EXAMPLE_WORKFLOW_URL_1,
                 file_path="lib/galaxy_test/base/data/test_workflow_1.ga",
                 content_type="application/json",

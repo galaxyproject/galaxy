@@ -36,13 +36,13 @@ CONTENTS_2_BED = resource_string(__name__, "model/2.bed")
 
 
 @pytest.fixture
-def bed_uri(mock_http_server) -> str:
-    return mock_http_server.get_url(remote_url=TEST_SOURCE_URI, file_path="test-data/2.bed")
+def bed_uri(test_http_server) -> str:
+    return test_http_server.get_url(remote_url=TEST_SOURCE_URI, file_path="test-data/2.bed")
 
 
 @pytest.fixture
-def simple_line_uri(mock_http_server) -> str:
-    return mock_http_server.get_url(remote_url=TEST_SOURCE_URI_SIMPLE_LINE, file_path="test-data/simple_line.txt")
+def simple_line_uri(test_http_server) -> str:
+    return test_http_server.get_url(remote_url=TEST_SOURCE_URI_SIMPLE_LINE, file_path="test-data/simple_line.txt")
 
 
 def test_undeferred_hdas_untouched(tmpdir):

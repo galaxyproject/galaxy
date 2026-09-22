@@ -1053,8 +1053,8 @@ class TestDatasetsApi(ApiTestCase):
         assert len(sources) == 1
         assert sources[0]["source_uri"] == TEST_SOURCE_URI
 
-    def test_display_application_link(self, history_id, mock_http_server):
-        url = mock_http_server.get_url(
+    def test_display_application_link(self, history_id, test_http_server):
+        url = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
             file_path="test-data/1.bam",
         )

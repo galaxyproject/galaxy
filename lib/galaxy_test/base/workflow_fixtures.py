@@ -1192,7 +1192,7 @@ outputs:
     outputSource: subworkflow/inner_output_2
 """
 
-# The location is templated so tests can serve 1.bed from the local mock HTTP server.
+# The location is templated so tests can serve 1.bed from the local test HTTP server.
 DEFAULT_FILE_DATASET_INPUT_LOCATION = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"
 
 WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT = """

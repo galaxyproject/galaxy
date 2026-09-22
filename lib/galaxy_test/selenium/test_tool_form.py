@@ -555,7 +555,7 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
         ]
         lines = []
         for name, identifier in rows:
-            url = self.mock_http_server.get_url(
+            url = self.test_http_server.get_url(
                 remote_url=f"{APPLY_RULES_TUTORIAL_DATA_BASE_URL}/{name}",
                 file_path=f"test-data/rules/{name}",
                 content_type="text/plain",

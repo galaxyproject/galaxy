@@ -42,9 +42,9 @@ DATA_MANAGER_MANUAL_INPUT = {
 }
 
 
-def fetch_genome_inputs(mock_http_server, **overrides) -> dict[str, str]:
+def fetch_genome_inputs(test_http_server, **overrides) -> dict[str, str]:
     inputs = dict(FETCH_GENOME_DBKEYS_ALL_FASTA_INPUT)
-    inputs["reference_source|user_url"] = mock_http_server.get_url(
+    inputs["reference_source|user_url"] = test_http_server.get_url(
         remote_url=REFERENCE_FASTA_URL, file_path="test-data/1.fasta"
     )
     inputs.update(overrides)
@@ -76,7 +76,7 @@ class TestDataManagerIntegration(integration_util.IntegrationTestCase, UsesShed)
         config["admin_users"] = f"{cls.username}@galaxy.org"
 
     @skip_if_toolshed_down
-    def test_data_manager_installation_table_reload(self, mock_http_server):
+    def test_data_manager_installation_table_reload(self, test_http_server):
         """
         Test that we can install data managers, create a new dbkey, and use that dbkey in a downstream data manager.
         """
@@ -86,7 +86,7 @@ class TestDataManagerIntegration(integration_util.IntegrationTestCase, UsesShed)
             with self.dataset_populator.test_history() as history_id:
                 run_response = self.dataset_populator.run_tool_raw(
                     tool_id=FETCH_TOOL_ID,
-                    inputs=fetch_genome_inputs(mock_http_server),
+                    inputs=fetch_genome_inputs(test_http_server),
                     history_id=history_id,
                 )
                 self.dataset_populator.wait_for_tool_run(
@@ -102,10 +102,10 @@ class TestDataManagerIntegration(integration_util.IntegrationTestCase, UsesShed)
                 )
 
     @skip_if_toolshed_down
-    def test_data_manager_hook_can_fail(self, mock_http_server):
+    def test_data_manager_hook_can_fail(self, test_http_server):
         self.install_repository("devteam", "data_manager_fetch_genome_dbkeys_all_fasta", "14eb0fc65c62")
         keys = ["dbkey_source|dbkey", "dbkey_source|dbkey_name", "sequence_id", "sequence_name"]
-        inputs = fetch_genome_inputs(mock_http_server, **dict.fromkeys(keys, "unique_dbkey_value"))
+        inputs = fetch_genome_inputs(test_http_server, **dict.fromkeys(keys, "unique_dbkey_value"))
         with self._different_user(email=f"{self.username}@galaxy.org"):
             with self.dataset_populator.test_history() as history_id:
                 # First run should work
@@ -158,13 +158,13 @@ class TestDataManagerIntegration(integration_util.IntegrationTestCase, UsesShed)
         entries = self._app.tool_data_tables.get("all_fasta").get_entries("dbkey", "dm6", "dbkey")
         assert not entries
 
-    def test_data_manager_manual_multiple(self, mock_http_server):
+    def test_data_manager_manual_multiple(self, test_http_server):
         """
         Test adding/removing on the same data table with multiple data managers
         """
         self.install_repository("devteam", "data_manager_fetch_genome_dbkeys_all_fasta", "14eb0fc65c62")
         self.install_repository("iuc", "data_manager_manual", "1ed87dee9e68")
-        inputs = fetch_genome_inputs(mock_http_server, **{"dbkey_source|dbkey": "another_unique_dbkey_value"})
+        inputs = fetch_genome_inputs(test_http_server, **{"dbkey_source|dbkey": "another_unique_dbkey_value"})
         with self._different_user(email=f"{self.username}@galaxy.org"):
             with self.dataset_populator.test_history() as history_id:
                 run_response = self.dataset_populator.run_tool_raw(

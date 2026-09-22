@@ -344,9 +344,9 @@ class TestExtendedMetadataDeferredIntegration(integration_util.IntegrationTestCa
         config["object_store_store_by"] = "uuid"
         config["retry_metadata_internally"] = False
 
-    def test_deferred_upload_with_metadata_files(self, mock_http_server):
+    def test_deferred_upload_with_metadata_files(self, test_http_server):
         history_id = self.dataset_populator.new_history()
-        uri = mock_http_server.get_url(
+        uri = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
             file_path="test-data/1.bam",
         )

@@ -134,15 +134,15 @@ from .api import (
 )
 from .api_util import random_name
 from .env import REQUIRE_ALL_NEEDED_TOOLS
-from .mock_http_server import MockHttpServer
+from .test_http_server import TestHttpServer
 
 FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
 
 
-def mock_file_url(mock_http_server: MockHttpServer) -> str:
+def local_file_url(test_http_server: TestHttpServer) -> str:
     """Local stand-in for ``FILE_URL``, serving the same test-data/4.bed contents."""
-    return mock_http_server.get_url(remote_url=FILE_URL, file_path="test-data/4.bed")
+    return test_http_server.get_url(remote_url=FILE_URL, file_path="test-data/4.bed")
 
 
 CWL_TOOL_DIRECTORY = os.path.join(galaxy_root_path, "test", "functional", "tools", "cwl_tools")

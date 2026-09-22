@@ -12,7 +12,7 @@ REMOTE_ZIP_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/tes
 class TestArchiveExplorer(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivity):
     @property
     def remote_zip_url(self) -> str:
-        return self.mock_http_server.get_url(
+        return self.test_http_server.get_url(
             remote_url=REMOTE_ZIP_URL,
             file_path="test-data/rocrate-test.zip",
             content_type="application/zip",

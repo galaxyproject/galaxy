@@ -25,7 +25,7 @@ class TestUploadActivityCollection(SeleniumTestCase, UsesHistoryItemAssertions):
 
     def _bed_urls(self) -> list[str]:
         return [
-            self.mock_http_server.get_url(remote_url=url, file_path=f"test-data/{url.rsplit('/', 1)[1]}")
+            self.test_http_server.get_url(remote_url=url, file_path=f"test-data/{url.rsplit('/', 1)[1]}")
             for url in BED_URLS
         ]
 
