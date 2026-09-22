@@ -633,11 +633,9 @@ class FastAPIHistories:
 
         Change the `accept` content type header to return the new task-based history exports.
         """
-        use_tasks = accept == ExportTaskListResponse.__accept_type__
-        exports = self.service.index_exports(trans, history_id, use_tasks, limit, offset)
-        if use_tasks:
-            return ExportTaskListResponse(root=exports)
-        return JobExportHistoryArchiveListResponse(root=exports)
+        if accept == ExportTaskListResponse.__accept_type__:
+            return ExportTaskListResponse(root=self.service.index_task_exports(trans, history_id, limit, offset))
+        return JobExportHistoryArchiveListResponse(root=self.service.index_job_exports(trans, history_id))
 
     @router.put(  # PUT instead of POST because multiple requests should just result in one object being created.
         "/api/histories/{history_id}/exports",
