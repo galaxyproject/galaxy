@@ -48,6 +48,13 @@ const isDifferentHistory = computed(
 
 const hasError = computed(() => props.file.status === "error");
 
+const sourceUrl = computed(() => {
+    if (props.file.uploadMode !== "paste-links" && props.file.uploadMode !== "remote-files") {
+        return undefined;
+    }
+    return props.file.url || undefined;
+});
+
 const isCancellable = computed(
     () =>
         !props.nested &&
@@ -156,6 +163,9 @@ function onCancel(event: Event) {
                     :aria-valuenow="props.file.progress"
                     aria-valuemin="0"
                     aria-valuemax="100"></div>
+            </div>
+            <div v-if="sourceUrl" class="source-url text-muted small mt-1 text-truncate" :title="sourceUrl">
+                {{ sourceUrl }}
             </div>
             <div v-if="props.file.error" class="error-message text-danger small mt-1">
                 {{ props.file.error }}
