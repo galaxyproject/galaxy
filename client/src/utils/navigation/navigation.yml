@@ -527,6 +527,15 @@ histories:
     bulk_delete_button: 'button[id="history-list-footer-bulk-delete-button"]'
     bulk_restore_button: 'button[id="history-list-footer-bulk-restore-button"]'
     bulk_open_multiview_button: 'button[id="history-list-footer-bulk-open-multiview-button"]'
+  multiview:
+    selectors:
+      activity: '#activity-multiview'
+      history_cards: '[data-description="Select Histories"] [id^="g-card-history-"]'
+      reset_button: '[data-description="reset multiview history selection"]'
+    history_card:
+      selectors:
+        _: '[data-description="Select Histories"] #g-card-history-${history_id}'
+        selected: '${_}.g-card-selected'
   sharing:
     selectors:
       unshare_user_button: '.share_with_view .multiselect__tag-icon'

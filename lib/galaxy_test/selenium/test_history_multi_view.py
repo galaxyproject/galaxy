@@ -3,6 +3,7 @@ from seletools.actions import drag_and_drop
 from galaxy.util.unittest_utils import transient_failure
 from .framework import (
     managed_history,
+    retry_assertion_during_transitions,
     selenium_only,
     selenium_test,
     SeleniumTestCase,
@@ -11,6 +12,40 @@ from .framework import (
 
 class TestHistoryMultiView(SeleniumTestCase):
     ensure_registered = True
+
+    @selenium_test
+    def test_history_selector_order_is_stable_until_explicit_reset(self):
+        oldest_id = self.dataset_populator.new_history("multiview order oldest")
+        newer_id = self.dataset_populator.new_history("multiview order newer")
+        newest_id = self.dataset_populator.new_history("multiview order newest")
+        recent_order = [newest_id, newer_id, oldest_id]
+
+        self.home()
+        self.open_history_multi_view()
+        multiview = self.components.histories.multiview
+        multiview.activity.wait_for_and_click()
+        oldest_card = multiview.history_card.selector(history_id=oldest_id)
+        oldest_card.wait_for_and_click()
+        oldest_card.selected.wait_for_visible()
+
+        # Remount the selector with the oldest history already pinned, which
+        # places it first even though the other histories are more recent.
+        self.refresh()
+        oldest_card.wait_for_visible()
+        pinned_order = [oldest_id, newest_id, newer_id]
+        self._assert_multiview_history_order(pinned_order)
+
+        # An individual unpin must not move the row out from under the cursor.
+        oldest_card.wait_for_and_click()
+        oldest_card.selected.wait_for_absent()
+        self._assert_multiview_history_order(pinned_order)
+
+        # Re-pin the row, then use the explicit reset action. Unlike an
+        # individual unpin, reset intentionally restores most-recent order.
+        oldest_card.wait_for_and_click()
+        oldest_card.selected.wait_for_visible()
+        multiview.reset_button.wait_for_and_click()
+        self._assert_multiview_history_order(recent_order)
 
     @selenium_test
     def test_display(self):
@@ -77,3 +112,10 @@ class TestHistoryMultiView(SeleniumTestCase):
         selector = self.history_panel_wait_for_hid_state(collection_hid, "ok", multi_history_panel=True)
         selector.wait_for_and_click()
         return selector
+
+    @retry_assertion_during_transitions
+    def _assert_multiview_history_order(self, expected_ids):
+        expected_id_set = set(expected_ids)
+        cards = self.components.histories.multiview.history_cards.all()
+        actual_ids = [card.get_attribute("id").removeprefix("g-card-history-") for card in cards]
+        assert [history_id for history_id in actual_ids if history_id in expected_id_set] == expected_ids
