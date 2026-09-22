@@ -6,15 +6,13 @@ Assembly and path/``.sample`` resolution live in :mod:`repository`; the linters
 here only classify the already-resolved model and report through a
 :class:`~galaxy.tool_util.lint.LintContext`.
 
-The set is intentionally limited to conditions Planemo can *prove* from
-statically resolved evidence:
-
-- a referenced loc fixture is absent (:class:`MissingLocFixture`); and
-- a non-comment loc row cannot supply every declared column index
-  (:class:`LocRowShape`).
-
-Advisory / unresolved / externally-supplied conditions are handled elsewhere so
-they are never reported here as demonstrably missing.
+Every linter here is limited to conditions Planemo can *prove* from statically
+resolved evidence -- a referenced loc fixture that is absent, a declared table
+nothing configures, a row that cannot fill its columns. Advisory, unresolved, or
+externally-supplied conditions are reported as warnings or not at all; they are
+never reported here as demonstrably broken. The linters registered with
+:func:`lint_repository_data_tables` are listed in
+:data:`REPOSITORY_DATA_TABLE_LINTERS`.
 """
 
 import os
