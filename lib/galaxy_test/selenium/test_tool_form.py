@@ -23,6 +23,10 @@ from .framework import (
 )
 from .upload_activity_helpers import UsesUploadActivity
 
+APPLY_RULES_TUTORIAL_DATA_BASE_URL = (
+    "https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules"
+)
+
 
 class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivity):
     @selenium_test
@@ -539,6 +543,26 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_USING_INDICES)
         self.screenshot("tool_apply_rules_example_flatten_with_indices_final")
 
+    def _apply_rules_tutorial_table(self) -> str:
+        rows = [
+            ("treated1fb.txt", "treated_single_1"),
+            ("treated2fb.txt", "treated_paired_2"),
+            ("treated3fb.txt", "treated_paired_3"),
+            ("untreated1fb.txt", "untreated_single_4"),
+            ("untreated2fb.txt", "untreated_single_5"),
+            ("untreated3fb.txt", "untreated_paired_6"),
+            ("untreated4fb.txt", "untreated_paired_7"),
+        ]
+        lines = []
+        for name, identifier in rows:
+            url = self.mock_http_server.get_url(
+                remote_url=f"{APPLY_RULES_TUTORIAL_DATA_BASE_URL}/{name}",
+                file_path=f"test-data/rules/{name}",
+                content_type="text/plain",
+            )
+            lines.append(f"{url} {identifier}")
+        return "\n".join(lines) + "\n"
+
     @selenium_test
     @managed_history
     @skip_if_github_down
@@ -547,14 +571,7 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
     def test_run_apply_rules_tutorial(self):
         self.home()
         self.upload_context("rule").creating("collections").from_source("pasted_table").paste_content(
-            """https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated1fb.txt treated_single_1
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated2fb.txt treated_paired_2
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated3fb.txt treated_paired_3
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated1fb.txt untreated_single_4
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated2fb.txt untreated_single_5
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated3fb.txt untreated_paired_6
-https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated4fb.txt untreated_paired_7
-"""
+            self._apply_rules_tutorial_table()
         )
         self.screenshot("rules_apply_rules_example_4_1_input_paste")
         rule_builder = self.components.rule_builder

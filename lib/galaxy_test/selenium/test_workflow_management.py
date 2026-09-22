@@ -1,7 +1,6 @@
 from selenium.webdriver.common.by import By
 
 from .framework import (
-    EXAMPLE_WORKFLOW_URL_1,
     retry_assertion_during_transitions,
     selenium_only,
     selenium_test,
@@ -58,7 +57,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self._workflow_import_from_url()
         self.workflow_index_view_external_link()
         self.driver.switch_to.window(self.driver.window_handles[1])
-        assert self.driver.current_url == EXAMPLE_WORKFLOW_URL_1
+        assert self.driver.current_url == self.example_workflow_url
         self.driver.close()
         self.driver.switch_to.window(self.driver.window_handles[0])
         self.components.workflows.external_link.wait_for_visible()
