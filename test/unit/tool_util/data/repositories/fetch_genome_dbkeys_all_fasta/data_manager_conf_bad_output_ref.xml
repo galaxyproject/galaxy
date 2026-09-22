@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!-- Same wrapper (whose only output is out_file), but the all_fasta path column
+     names output_ref="no_such_output". Fixture for OutputRefValid. -->
+<data_managers>
+    <data_manager tool_file="data_manager/data_manager_fetch_genome_all_fasta_dbkeys.xml" id="fetch_genome_all_fasta_dbkeys">
+        <data_table name="all_fasta">
+            <output>
+                <column name="value" />
+                <column name="dbkey" />
+                <column name="name" />
+                <column name="path" output_ref="no_such_output" />
+            </output>
+        </data_table>
+    </data_manager>
+</data_managers>
