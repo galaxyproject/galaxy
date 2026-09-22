@@ -23,7 +23,6 @@ const userStore = useUserStore();
 
 const downloadUrl = computed(() => withPrefix(`/api/workflows/${props.id}/download?format=json-download`));
 const importUrl = computed(() => withPrefix(`/workflow/imp?id=${props.id}`));
-const runUrl = computed(() => withPrefix(`/workflows/run?id=${props.id}`));
 
 const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`));
 
@@ -98,7 +97,7 @@ function logInTitle(title: string) {
 
         <GButton
             v-if="!props.embed"
-            :to="runUrl"
+            :to="`/workflows/run?id=${props.id}`"
             :disabled="userStore.isAnonymous"
             :title="logInTitle('Run Workflow')"
             color="blue">

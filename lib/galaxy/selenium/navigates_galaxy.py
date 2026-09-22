@@ -1889,8 +1889,6 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         workflow_run.run_workflow.wait_for_visible()
         if workflow_run.expanded_form.is_absent:
             workflow_run.runtime_setting_button.wait_for_and_click()
-            # Wait for the settings panel slideDown animation (0.2s) to complete
-            self.sleep_for(self.wait_types.UX_RENDER)
             expand_link = workflow_run.expand_form_link.wait_for_clickable()
             # A plain click doesn't work reliably on GButton components due to
             # an internal tooltip element - move to the element first.
