@@ -58,6 +58,27 @@ const {
 
 const { warningMessage: objectStoreWarningMessage, handlePrivateStoreSelection } = usePrivateObjectStoreConfirmation();
 
+const historyDiverged = computed(
+    () => !!targetHistoryId.value && !!currentHistoryId.value && targetHistoryId.value !== currentHistoryId.value,
+);
+const targetHistoryName = computed(() =>
+    targetHistoryId.value ? historyStore.getHistoryNameById(targetHistoryId.value) : "",
+);
+const currentHistoryName = computed(() =>
+    currentHistoryId.value ? historyStore.getHistoryNameById(currentHistoryId.value) : "",
+);
+const mismatchDismissed = ref(false);
+
+watch([targetHistoryId, currentHistoryId], () => {
+    mismatchDismissed.value = false;
+});
+
+const showMismatchAlert = computed(() => historyDiverged.value && !mismatchDismissed.value);
+
+function onMismatchDismissed() {
+    mismatchDismissed.value = true;
+}
+
 // Keep targetHistoryId in sync with currentHistoryId
 watch(
     currentHistoryId,
@@ -180,6 +201,20 @@ function handleReadyStateChange(ready: boolean) {
 
                 <GAlert v-if="objectStoreWarningMessage" show variant="warning" class="mb-0 mt-2 py-1">
                     {{ objectStoreWarningMessage }}
+                </GAlert>
+
+                <GAlert
+                    v-if="showMismatchAlert"
+                    show
+                    variant="warning"
+                    dismissible
+                    class="mb-0 mt-2 py-1"
+                    data-test-id="upload-history-mismatch-alert"
+                    @dismissed="onMismatchDismissed">
+                    <span v-localize>
+                        The current history changed. These uploads will go to "{{ targetHistoryName }}" (the target
+                        history), not to current history "{{ currentHistoryName }}".
+                    </span>
                 </GAlert>
             </div>
 
