@@ -3,8 +3,10 @@ import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { CreateElement } from "vue";
 import { nextTick, ref } from "vue";
 
+import type { HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -23,7 +25,7 @@ vi.mock("./uploadMethodRegistry", async (importOriginal: () => Promise<Record<st
             id: "local-file",
             name: "Upload from Computer",
             requiresTargetHistory: true,
-            component: { render: (h: never) => h("div") },
+            component: { render: (h: CreateElement) => h("div") },
         }),
     };
 });
@@ -34,16 +36,26 @@ const { server, http } = useServerMock();
 
 server.use(http.get("/api/configuration", ({ response }) => response(200).json({})));
 
-const TargetHistorySelectorStub = {
-    name: "TargetHistorySelector",
-    render(h: (tag: string) => unknown) {
-        return h("div");
-    },
-};
+function makeHistory(id: string, name: string): HistorySummary {
+    return {
+        id,
+        name,
+        archived: false,
+        deleted: false,
+        annotation: "",
+        count: 0,
+        model_class: "History",
+        published: false,
+        purged: false,
+        tags: [],
+        update_time: "2024-01-01T00:00:00Z",
+        url: `/api/histories/${id}`,
+    };
+}
 
 function seedHistories(historyStore: ReturnType<typeof useHistoryStore>) {
-    historyStore.setHistory({ id: "hist-a", name: "History A" } as never);
-    historyStore.setHistory({ id: "hist-b", name: "History B" } as never);
+    historyStore.setHistory(makeHistory("hist-a", "History A"));
+    historyStore.setHistory(makeHistory("hist-b", "History B"));
     historyStore.setCurrentHistoryId("hist-a");
 }
 
@@ -60,7 +72,7 @@ function mountView() {
         router,
         stubs: {
             GTip: true,
-            TargetHistorySelector: TargetHistorySelectorStub,
+            TargetHistorySelector: true,
             TargetObjectStoreSelector: true,
         },
     });
@@ -99,7 +111,7 @@ describe("UploadMethodView history mismatch alert", () => {
     it("dismisses the alert and shows it again after another history change", async () => {
         const { wrapper, historyStore } = mountView();
 
-        historyStore.setHistory({ id: "hist-c", name: "History C" } as never);
+        historyStore.setHistory(makeHistory("hist-c", "History C"));
         historyStore.setCurrentHistoryId("hist-b");
         await nextTick();
         expect(mismatchAlert(wrapper).exists()).toBe(true);

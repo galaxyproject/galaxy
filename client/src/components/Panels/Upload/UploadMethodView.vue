@@ -67,17 +67,7 @@ const targetHistoryName = computed(() =>
 const currentHistoryName = computed(() =>
     currentHistoryId.value ? historyStore.getHistoryNameById(currentHistoryId.value) : "",
 );
-const mismatchDismissed = ref(false);
-
-watch([targetHistoryId, currentHistoryId], () => {
-    mismatchDismissed.value = false;
-});
-
-const showMismatchAlert = computed(() => historyDiverged.value && !mismatchDismissed.value);
-
-function onMismatchDismissed() {
-    mismatchDismissed.value = true;
-}
+const mismatchAlertKey = computed(() => `${targetHistoryId.value}-${currentHistoryId.value}`);
 
 // Keep targetHistoryId in sync with currentHistoryId
 watch(
@@ -204,13 +194,12 @@ function handleReadyStateChange(ready: boolean) {
                 </GAlert>
 
                 <GAlert
-                    v-if="showMismatchAlert"
-                    show
+                    v-if="historyDiverged"
+                    :key="mismatchAlertKey"
                     variant="warning"
                     dismissible
                     class="mb-0 mt-2 py-1"
-                    data-test-id="upload-history-mismatch-alert"
-                    @dismissed="onMismatchDismissed">
+                    data-test-id="upload-history-mismatch-alert">
                     <span v-localize>
                         The current history changed. These uploads will go to "{{ targetHistoryName }}" (the target
                         history), not to current history "{{ currentHistoryName }}".
