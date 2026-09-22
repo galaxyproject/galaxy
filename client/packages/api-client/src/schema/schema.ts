@@ -23192,6 +23192,7 @@ export interface components {
                       | components["schemas"]["MaxDiscoveredFilesJobMessage"]
                       | components["schemas"]["OutputCollectionSecurityJobMessage"]
                       | components["schemas"]["OutputDiscoveryJobMessage"]
+                      | components["schemas"]["StdioReadErrorJobMessage"]
                   )[]
                 | null;
             /**
@@ -23334,6 +23335,24 @@ export interface components {
             range_end: number | ("-inf" | "inf");
             /** Range Start */
             range_start: number | ("-inf" | "inf");
+        };
+        /** StdioReadErrorJobMessage */
+        StdioReadErrorJobMessage: {
+            /** Code Desc */
+            code_desc?: string | null;
+            /** Desc */
+            desc: string | null;
+            /** Errno */
+            errno: number | null;
+            /** Error Level */
+            error_level: number;
+            /** Stream */
+            stream: string;
+            /**
+             * Type
+             * @constant
+             */
+            type: "stdio_read_error";
         };
         /** StdioRegex */
         StdioRegex: {

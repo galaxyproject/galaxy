@@ -46,7 +46,11 @@ from galaxy.tool_util.deps.dependencies import (
     JobInfo,
     ToolInfo,
 )
-from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
+from galaxy.tool_util.output_checker import (
+    DETECTED_JOB_STATE,
+    StdioReadErrorJobMessage,
+)
+from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.util import (
     asbool,
@@ -656,25 +660,35 @@ class BaseJobRunner:
             if not os.path.exists(outputs_directory):
                 outputs_directory = job_wrapper.working_directory
 
-            tool_stdout_path = os.path.join(outputs_directory, "tool_stdout")
-            tool_stderr_path = os.path.join(outputs_directory, "tool_stderr")
-            try:
-                with open(tool_stdout_path, "rb") as stdout_file:
-                    tool_stdout = self._job_io_for_db(stdout_file)
-                with open(tool_stderr_path, "rb") as stderr_file:
-                    tool_stderr = self._job_io_for_db(stderr_file)
-            except FileNotFoundError:
-                if job.state in (model.Job.states.DELETING, model.Job.states.DELETED):
-                    # We killed the job, so we may not even have the tool stdout / tool stderr
-                    tool_stdout = ""
-                    tool_stderr = "Job cancelled"
-                else:
-                    # Should we instead just move on ?
-                    # In the end the only consequence here is that we won't be able to determine
-                    # if the job failed for known tool reasons (check_tool_output).
-                    # OTOH I don't know if this can even be reached
-                    # Deal with it if we ever get reports about this.
-                    raise
+            tool_streams = {"stdout": "", "stderr": ""}
+            stdio_errors: list[StdioReadErrorJobMessage] = []
+            cancelled = False
+            for stream in tool_streams:
+                path = os.path.join(outputs_directory, f"tool_{stream}")
+                try:
+                    with open(path, "rb") as stream_file:
+                        tool_streams[stream] = self._job_io_for_db(stream_file)
+                except OSError as exc:
+                    if isinstance(exc, FileNotFoundError) and job.state in (
+                        model.Job.states.DELETING,
+                        model.Job.states.DELETED,
+                    ):
+                        # Cancellation can prevent the tool streams from being created.
+                        cancelled = True
+                        continue
+                    desc = f"Job failed because the tool {stream} file could not be read: {exc.strerror or type(exc).__name__}"
+                    stdio_errors.append(
+                        StdioReadErrorJobMessage(
+                            type="stdio_read_error",
+                            stream=stream,
+                            errno=exc.errno,
+                            desc=desc,
+                            error_level=StdioErrorLevel.FATAL,
+                        )
+                    )
+                    log.warning("(%s/%s) %s (%s)", job_id, external_job_id, desc, path)
+            tool_stdout = tool_streams["stdout"]
+            tool_stderr = tool_streams["stderr"] or ("Job cancelled" if cancelled else "")
 
             check_output_detected_state = job_wrapper.check_tool_output(
                 tool_stdout,
@@ -684,6 +698,11 @@ class BaseJobRunner:
                 job_stdout=job_stdout,
                 job_stderr=job_stderr,
             )
+            if stdio_errors:
+                # check_tool_output replaces job_messages, so append collection errors afterwards.
+                job.job_messages = [*(job.job_messages or []), *stdio_errors]
+                if check_output_detected_state == DETECTED_JOB_STATE.OK:
+                    check_output_detected_state = DETECTED_JOB_STATE.GENERIC_ERROR
             job_ok = check_output_detected_state == DETECTED_JOB_STATE.OK
 
             # clean up the job files
@@ -704,6 +723,19 @@ class BaseJobRunner:
                 # Was resubmitted or something - I think we are done with it.
                 if job_state.runner_state_handled:
                     return
+
+            if stdio_errors:
+                # Finishing may require metadata that was never produced. Fail with the
+                # collected diagnostics before another collection error can obscure them.
+                job_wrapper.fail(
+                    "\n".join(error["desc"] for error in stdio_errors if error["desc"]),
+                    tool_stdout=tool_stdout,
+                    tool_stderr=tool_stderr,
+                    exit_code=exit_code,
+                    job_stdout=job_stdout,
+                    job_stderr=job_stderr,
+                )
+                return
 
             job_wrapper.finish(
                 tool_stdout,
