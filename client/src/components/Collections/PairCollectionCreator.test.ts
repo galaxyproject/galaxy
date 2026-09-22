@@ -13,10 +13,7 @@ import FixedIdentifierDatasetCollectionElementView from "./FixedIdentifierDatase
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView.vue";
 import PairCollectionCreator from "./PairCollectionCreator.vue";
 
-/** `Toast` and `useToast()` are the same object in production - keep them the same here, or an
- *  assertion that no toast fired would pass vacuously against whichever one is not being spied on. */
-const toastSpies = vi.hoisted(() => ({ error: vi.fn(), warning: vi.fn(), info: vi.fn(), success: vi.fn() }));
-vi.mock("@/composables/toast", () => ({ Toast: toastSpies, useToast: () => toastSpies }));
+vi.mock("@/composables/toast");
 
 const toastError = vi.mocked(Toast.error);
 

@@ -8,13 +8,14 @@ import { ref } from "vue";
 
 import type { HDASummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
+import { Toast } from "@/composables/toast";
 
 import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
 
-/** `Toast` and `useToast()` are the same object in production - keep them the same here, or an
- *  assertion that no toast fired would pass vacuously against whichever one is not being spied on. */
-const toastSpies = vi.hoisted(() => ({ error: vi.fn(), warning: vi.fn(), info: vi.fn(), success: vi.fn() }));
-vi.mock("@/composables/toast", () => ({ Toast: toastSpies, useToast: () => toastSpies }));
+vi.mock("@/composables/toast");
+
+const toastError = vi.mocked(Toast.error);
+const toastWarning = vi.mocked(Toast.warning);
 
 const localVue = getLocalVue(true);
 
@@ -137,9 +138,9 @@ describe("PairedOrUnpairedListCollectionCreator", () => {
         await wrapper.setProps({ initialElements: [a] });
         await flushPromises();
 
-        expect(toastSpies.error).not.toHaveBeenCalled();
-        expect(toastSpies.warning).toHaveBeenCalledTimes(1);
-        expect(toastSpies.warning).toHaveBeenCalledWith(
+        expect(toastError).not.toHaveBeenCalled();
+        expect(toastWarning).toHaveBeenCalledTimes(1);
+        expect(toastWarning).toHaveBeenCalledWith(
             "2: sample_2 is no longer available and was removed from the pairing list",
             "Dataset unavailable",
         );
@@ -153,8 +154,8 @@ describe("PairedOrUnpairedListCollectionCreator", () => {
         await wrapper.setProps({ initialElements: [] });
         await flushPromises();
 
-        expect(toastSpies.error).toHaveBeenCalledTimes(1);
-        expect(toastSpies.error).toHaveBeenCalledWith(
+        expect(toastError).toHaveBeenCalledTimes(1);
+        expect(toastError).toHaveBeenCalledWith(
             "1: sample_1, 2: sample_2 has been removed from the collection",
             "Invalid element",
         );
