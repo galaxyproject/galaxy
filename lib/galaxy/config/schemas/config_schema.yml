@@ -4197,7 +4197,6 @@ mapping:
 
       user_tool_filters:
         type: str
-        default: examples:restrict_upload_to_admins, examples:restrict_encode
         required: false
         desc: |
           Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
@@ -4205,7 +4204,6 @@ mapping:
 
       user_tool_section_filters:
         type: str
-        default: examples:restrict_text
         required: false
         desc: |
           Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
@@ -4213,7 +4211,6 @@ mapping:
 
       user_tool_label_filters:
         type: str
-        default: examples:restrict_upload_to_admins, examples:restrict_encode
         required: false
         desc: |
           Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
