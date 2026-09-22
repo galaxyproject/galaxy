@@ -1,3 +1,5 @@
+from galaxy.files.unittest_utils import base64_uri_for_file
+
 WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES = """
 class: GalaxyWorkflow
 doc: |
@@ -1192,10 +1194,11 @@ outputs:
     outputSource: subworkflow/inner_output_2
 """
 
-# The location is templated so tests can serve 1.bed from the local mock HTTP server.
-DEFAULT_FILE_DATASET_INPUT_LOCATION = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"
+# The workflow default file is realized through the file sources, so it can carry its own
+# content instead of being fetched from github.
+DEFAULT_FILE_DATASET_INPUT_LOCATION = base64_uri_for_file("test-data/1.bed")
 
-WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT = """
+WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT = f"""
 class: GalaxyWorkflow
 inputs:
   default_file_input:
@@ -1203,7 +1206,7 @@ inputs:
       class: File
       basename: a file
       format: txt
-      location: {location}
+      location: {DEFAULT_FILE_DATASET_INPUT_LOCATION}
 steps:
   cat1:
     tool_id: cat1
@@ -1211,7 +1214,7 @@ steps:
       input1: default_file_input
 """
 
-WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT = """
+WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT = f"""
 class: GalaxyWorkflow
 steps:
   cat1:
@@ -1222,7 +1225,7 @@ steps:
           class: File
           basename: a file
           format: txt
-          location: {location}
+          location: {DEFAULT_FILE_DATASET_INPUT_LOCATION}
 """
 
 WORKFLOW_FLAT_CROSS_PRODUCT = """
