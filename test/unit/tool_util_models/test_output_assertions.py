@@ -59,6 +59,35 @@ def test_nested_collection_element_with_class_collection_validates():
     assert isinstance(inner, TestCollectionCollectionElementAssertions)
 
 
+def test_nested_collection_element_size_assertions_validate():
+    tests = Tests.model_validate(
+        _one_test(
+            {
+                "out": {
+                    "class": "Collection",
+                    "element_tests": {
+                        "inner": {
+                            "class": "Collection",
+                            "count": 3,
+                            "min": 2,
+                            "max": 4,
+                            "element_tests": {},
+                        }
+                    },
+                }
+            }
+        )
+    )
+    out = tests.root[0].outputs["out"]
+    assert isinstance(out, TestCollectionOutputAssertions)
+    assert out.element_tests is not None
+    inner = out.element_tests["inner"]
+    assert isinstance(inner, TestCollectionCollectionElementAssertions)
+    assert inner.count == 3
+    assert inner.min == 2
+    assert inner.max == 4
+
+
 def test_unknown_field_on_file_output_yields_single_error():
     with pytest.raises(ValidationError) as exc:
         Tests.model_validate(_one_test({"out": {"asserts": [], "garbage_key": 1}}))

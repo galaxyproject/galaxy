@@ -103,8 +103,13 @@ def test_user_tool_model_requires_top_level_container():
     source = _doc()
     del source["container"]
 
-    with pytest.raises(ValidationError, match="Field required"):
+    with pytest.raises(ValidationError, match="set the top-level container field"):
         UserToolSource.model_validate(source)
+
+
+def test_user_tool_model_rejects_null_container():
+    with pytest.raises(ValidationError, match="set the top-level container field"):
+        UserToolSource.model_validate(_doc(container=None))
 
 
 def test_parser_reads_top_level_container():

@@ -91,6 +91,7 @@ class TestWorkflowRunTargetSelectNewSeleniumIntegration(BaseWorkflowRunTargetTes
         workflow_run.expanded_form.wait_for_absent_or_hidden()
         workflow_run.runtime_setting_button.wait_for_and_click()
         workflow_run.runtime_setting_target.wait_for_and_click()
+        workflow_run.new_history_name_input.wait_for_visible()
         self.send_escape()
         workflow_run.runtime_setting_button.wait_for_and_click()
         workflow_run.runtime_setting_target.wait_for_absent_or_hidden()
