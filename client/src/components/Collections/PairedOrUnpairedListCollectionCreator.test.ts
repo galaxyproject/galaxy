@@ -11,6 +11,11 @@ import { useServerMock } from "@/api/client/__mocks__";
 
 import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
 
+/** `Toast` and `useToast()` are the same object in production - keep them the same here, or an
+ *  assertion that no toast fired would pass vacuously against whichever one is not being spied on. */
+const toastSpies = vi.hoisted(() => ({ error: vi.fn(), warning: vi.fn(), info: vi.fn(), success: vi.fn() }));
+vi.mock("@/composables/toast", () => ({ Toast: toastSpies, useToast: () => toastSpies }));
+
 const localVue = getLocalVue(true);
 
 vi.mock("@/composables/useAgGrid", () => ({
@@ -37,13 +42,14 @@ vi.mock("@/composables/useAgGrid", () => ({
 
 const { server, http } = useServerMock();
 beforeEach(() => {
+    vi.clearAllMocks();
     server.use(
         http.get("/api/configuration", ({ response }) => response(200).json({})),
         http.get("/api/genomes", ({ response }) => response(200).json([])),
     );
 });
 
-function buildFakeDataset(id: string, name: string): HDASummary {
+function buildFakeDataset(id: string, name: string, hid = 1): HDASummary {
     return {
         id,
         name,
@@ -55,7 +61,7 @@ function buildFakeDataset(id: string, name: string): HDASummary {
         create_time: "2024-01-01T00:00:00",
         update_time: "2024-01-01T00:00:00",
         history_id: "history-1",
-        hid: 1,
+        hid,
         type_id: "dataset",
         type: "file",
         tags: [],
@@ -119,6 +125,39 @@ describe("PairedOrUnpairedListCollectionCreator", () => {
         const [survivorRowId] = gridRowIds(wrapper);
         expect(survivorRowId).toBe("single:a");
         expect(survivorRowId).not.toBe(pairRowId);
+    });
+
+    it("warns rather than errors for the vanished half of a pair that could never have been one", async () => {
+        const a = buildFakeDataset("a", "sample_1", 1);
+        const b = buildFakeDataset("b", "sample_2", 2);
+
+        // list:paired - an unpaired survivor is not headed into the collection, so saying it was
+        // "removed from the collection" would overstate what happened to the half that vanished
+        const wrapper = await mountCreator([a, b]);
+        await wrapper.setProps({ initialElements: [a] });
+        await flushPromises();
+
+        expect(toastSpies.error).not.toHaveBeenCalled();
+        expect(toastSpies.warning).toHaveBeenCalledTimes(1);
+        expect(toastSpies.warning).toHaveBeenCalledWith(
+            "2: sample_2 is no longer available and was removed from the pairing list",
+            "Dataset unavailable",
+        );
+    });
+
+    it("describes a wholly vanished pair in one notification rather than one per side", async () => {
+        const a = buildFakeDataset("a", "sample_1", 1);
+        const b = buildFakeDataset("b", "sample_2", 2);
+
+        const wrapper = await mountCreator([a, b]);
+        await wrapper.setProps({ initialElements: [] });
+        await flushPromises();
+
+        expect(toastSpies.error).toHaveBeenCalledTimes(1);
+        expect(toastSpies.error).toHaveBeenCalledWith(
+            "1: sample_1, 2: sample_2 has been removed from the collection",
+            "Invalid element",
+        );
     });
 
     it("does not resurrect a discarded survivor after history-delete splits an auto-paired pair", async () => {

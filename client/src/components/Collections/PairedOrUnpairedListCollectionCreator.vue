@@ -19,6 +19,11 @@ import {
     type SupportedPairedOrPairedBuilderCollectionTypes,
     useCollectionCreator,
 } from "./common/useCollectionCreator";
+import {
+    invalidElementMessage,
+    toastNoLongerAvailable,
+    toastRemovedFromCollection,
+} from "./common/useElementReconciliation";
 import { usePairingSummary } from "./common/usePairingSummary";
 import {
     type AutoPairingResult,
@@ -34,7 +39,6 @@ import CollectionCreator from "@/components/Collections/common/CollectionCreator
 
 type CollectionElementIdentifier = components["schemas"]["CollectionElementIdentifier"];
 type CollectionSourceType = components["schemas"]["CollectionSourceType"];
-const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this collection");
 
 const { confirm } = useConfirmDialog();
 
@@ -391,28 +395,16 @@ function addNewElementsToRowData(elements: HistoryItemSummary[]) {
     }
 }
 
-/** Matches the wording ListCollectionCreator/PairCollectionCreator use for the same situation. */
-function toastRemovedFromCollection(...items: HistoryItemSummary[]) {
-    const description = items.map((item) => `${item.hid}: ${item.name}`).join(", ");
-    const invalidMsg = `${description} ${localize("has been removed from the collection")}`;
-    Toast.error(invalidMsg, localize("Invalid element"));
-}
-
-/**
- * A lesser-severity notice for datasets that disappeared but were never actually headed into
- * the final collection to begin with (see the `strictPairs` cases below), so "removed from the
- * collection" would overstate what happened.
- */
-function toastNoLongerAvailable(item: HistoryItemSummary) {
-    const msg = `${item.hid}: ${item.name} ${localize("is no longer available and was removed from the pairing list")}`;
-    Toast.warning(msg, localize("Dataset unavailable"));
-}
-
 /**
  * Reconcile `rowData` with a changed `initialElements` without disturbing existing pairs:
  * add rows for newly-seen elements, drop rows for elements no longer present (splitting
  * a pair back to unpaired if only one side of it was removed), and leave everything
  * else (manual or auto pairs, identifiers, etc.) untouched.
+ *
+ * The sibling creators reconcile a flat selection and hand it to `reconcileRetainedElements`;
+ * here the retained state is rows carrying the user's pairings, so only the notifications are
+ * shared - a vanished pair has to read as one event, not two. Note this reconciles on presence
+ * alone: unlike the siblings it never asks `isElementInvalid`, here or at `initialize()`.
  */
 function reconcileWithInitialElements(newInitialElements: HistoryItemSummary[]) {
     const validIds = new Set(newInitialElements.map((el) => el.id));
@@ -472,7 +464,7 @@ function addUploadedFiles(files: HDASummary[]) {
     files.forEach((file) => {
         const problem = isElementInvalid(file);
         if (problem) {
-            const invalidMsg = `${file.hid}: ${file.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+            const invalidMsg = invalidElementMessage(file, problem);
             Toast.error(invalidMsg, localize("Uploaded item invalid for pair"));
         } else {
             addedFiles.push(file);

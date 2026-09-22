@@ -8,6 +8,7 @@ import localize from "@/utils/localization";
 import type ListCollectionCreator from "./ListCollectionCreator.vue";
 import type PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
 import { useCollectionCreation } from "./useCollectionCreation";
+import { useElementReconciliation } from "./useElementReconciliation";
 import { useExtensionFiltering } from "./useExtensionFilter";
 
 export type Mode = "modal" | "wizard";
@@ -115,6 +116,8 @@ export function useCollectionCreator(props: CommonCollectionBuilderProps, emit?:
         return null;
     }
 
+    const { reconcileRetainedElements, reconcileRetainedSlot } = useElementReconciliation(isElementInvalid);
+
     return {
         collectionName,
         removeExtensions,
@@ -122,6 +125,8 @@ export function useCollectionCreator(props: CommonCollectionBuilderProps, emit?:
         hasInvalidExtension,
         onUpdateHideSourceItems,
         isElementInvalid,
+        reconcileRetainedElements,
+        reconcileRetainedSlot,
         showElementExtension,
         onUpdateCollectionName,
         validInput,
