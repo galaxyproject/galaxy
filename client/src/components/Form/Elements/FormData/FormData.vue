@@ -29,7 +29,7 @@ import { type EventData, useEventStore } from "@/stores/eventStore";
 import { orList } from "@/utils/strings";
 
 import type { DataOption, ExtendedCollectionType } from "./types";
-import { containsDataOption, isDataOption } from "./types";
+import { containsDataOption, DEFAULT_OPTIONS_PAGE_SIZE, isDataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
@@ -49,7 +49,7 @@ type SingleOrMultipleHistoryItems = HistoryOrCollectionItem | HistoryOrCollectio
 
 /**
  * Response types from the data dialog callback.
- * DataOption[] is returned by the beta upload path for fresh uploads.
+ * DataOption[] is returned by the upload modal path for fresh uploads.
  * SingleOrMultipleHistoryItems (HistoryItemSummary and DCESummary) are returned for dataset/collection selection.
  */
 type DialogResponse = DataOption[] | SingleOrMultipleHistoryItems;
@@ -112,8 +112,8 @@ const $emit = defineEmits(["input", "alert", "focus", "load-more", "search-chang
 
 /** Active backend search query for this parameter. Updated when the user types
  * in the dropdown's search box (debounced upstream by ``FormSelect``). Sent in
- * both ``search-change`` (replace-merge) and subsequent ``load-more``
- * (append-merge) payloads so the server keeps filtering as the user paginates. */
+ * both the ``search-change`` and the subsequent ``load-more`` payloads so the
+ * server keeps filtering as the user paginates. */
 const searchQuery = ref("");
 
 // Determines wether values should be processed as linked or unlinked
@@ -304,8 +304,7 @@ const hasMoreInCurrentSource = computed(() => {
 });
 
 /**
- * Total count of options for the current source — used to label the sentinel
- * and to compute the next page offset.
+ * Count of options loaded for the current source — used to label the sentinel.
  */
 const currentSourceLoadedCount = computed(() => {
     if (!currentSource.value) {
@@ -326,11 +325,16 @@ function onLoadMore() {
         return;
     }
     const src = currentSource.value;
-    const limit = props.optionsMeta?.[src]?.limit ?? 50;
+    const meta = props.optionsMeta?.[src];
+    const limit = meta?.limit ?? DEFAULT_OPTIONS_PAGE_SIZE;
+    // Advance the server's cursor rather than measuring ``options`` — the
+    // loaded list is a union of every page fetched so far (including pages
+    // fetched under a different search), so its length is not an offset into
+    // the currently filtered result set.
     $emit("load-more", {
         name: props.name,
         src,
-        offset: currentSourceLoadedCount.value,
+        offset: (meta?.offset ?? 0) + limit,
         limit,
         search: searchQuery.value || undefined,
     });
@@ -345,7 +349,7 @@ function onSearchChange(query: string) {
     }
     searchQuery.value = query;
     const src = currentSource.value;
-    const limit = props.optionsMeta?.[src]?.limit ?? 50;
+    const limit = props.optionsMeta?.[src]?.limit ?? DEFAULT_OPTIONS_PAGE_SIZE;
     $emit("search-change", {
         name: props.name,
         src,
@@ -721,7 +725,7 @@ function isInKeepOptions(keepKey: string, newValue: DataOption): boolean {
  * @param response - The response from the data dialog
  */
 function onDataDialogResponse(response: DialogResponse): void {
-    // The data dialog's beta upload path returns DataOption[] directly
+    // The data dialog's upload modal path returns DataOption[] directly
     if (isDataOptionArray(response)) {
         handleUploadedDataOptions(response);
         return;
@@ -1000,13 +1004,13 @@ function onDragEnter(evt: DragEvent) {
         currentHighlighting.value = highlightingState;
         dragTarget.value = evt.target;
         dragData.value = eventData;
-    } else if (props.workflowRun && evt.dataTransfer?.items && workflowTab.value !== "create") {
+    } else if (props.workflowRun && evt.dataTransfer?.items && workflowTab.value !== "upload") {
         // if any item in DataTransfer is a file
         const hasFiles = Array.from(evt.dataTransfer.items).some((item) => item.kind === "file");
         if (hasFiles) {
             currentHighlighting.value = "success";
             $emit("alert", "Drop files in the upload area below to create datasets.");
-            workflowTab.value = "create";
+            workflowTab.value = "upload";
             dragTarget.value = evt.target;
         }
     }
@@ -1274,7 +1278,7 @@ const noOptionsWarningMessage = computed(() => {
             :step-title="props.userDefinedTitle"
             :workflow-tab.sync="workflowTab"
             @focus="$emit('focus')"
-            @uploaded-data="($event) => handleIncoming($event, !$event?.length || $event.length <= 1)" />
+            @uploaded-data="handleUploadedDataOptions" />
     </div>
 </template>
 

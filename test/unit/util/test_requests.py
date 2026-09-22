@@ -1,6 +1,8 @@
 import socket
+import ssl
 import threading
 
+import certifi
 import pytest
 import responses
 from requests.adapters import HTTPAdapter
@@ -12,6 +14,15 @@ from galaxy.util.user_agent import get_default_headers
 EXPECTED_USER_AGENT = get_default_headers()["user-agent"]
 
 
+def test_create_ssl_context_uses_certifi_ca_bundle():
+    context = galaxy_requests.create_ssl_context()
+    certifi_context = ssl.create_default_context(cafile=certifi.where())
+    assert context.get_ca_certs()
+    assert context.get_ca_certs() == certifi_context.get_ca_certs()
+    assert context.verify_mode == ssl.CERT_REQUIRED
+    assert context.check_hostname
+
+
 # --- User-Agent header injection ---
 
 
@@ -21,6 +32,15 @@ def test_user_agent_and_caller_headers_are_set(method: str):
     """All methods inject the Galaxy user-agent and preserve caller-supplied headers."""
     responses.add(getattr(responses, method.upper()), "https://example.com/", status=200)
     getattr(galaxy_requests, method)("https://example.com/", headers={"X-Custom": "value"})
+    req_headers = responses.calls[0].request.headers
+    assert req_headers["user-agent"] == EXPECTED_USER_AGENT
+    assert req_headers["X-Custom"] == "value"
+
+
+@responses.activate
+def test_request_injects_user_agent_and_preserves_caller_headers():
+    responses.add(responses.GET, "https://example.com/", status=200)
+    galaxy_requests.request("GET", "https://example.com/", headers={"X-Custom": "value"})
     req_headers = responses.calls[0].request.headers
     assert req_headers["user-agent"] == EXPECTED_USER_AGENT
     assert req_headers["X-Custom"] == "value"

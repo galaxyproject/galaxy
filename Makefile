@@ -43,7 +43,7 @@ docs: ## Generate HTML documentation.
 	$(IN_VENV) $(MAKE) -C doc html
 
 docs-develop: ## Fast doc generation and more warnings (for development)
-	$(IN_VENV) GALAXY_DOCS_SKIP_VIEW_CODE=1 SPHINXOPTS='-j 4' $(MAKE) -C doc html
+	$(IN_VENV) GALAXY_DOCS_SKIP_VIEW_CODE=1 $(MAKE) -C doc html
 
 setup-venv:
 	if [ ! -f $(VENV)/bin/activate ]; then bash scripts/common_startup.sh --dev-wheels; fi
@@ -90,18 +90,6 @@ tool-shed-config-convert-dry-run: ## convert old style tool shed ini to yaml (dr
 tool-shed-config-convert: ## convert old style tool shed ini to yaml
 	$(CONFIG_MANAGE) convert tool_shed
 
-reports-config-validate: ## validate reports YAML configuration file
-	$(CONFIG_MANAGE) validate reports
-
-reports-config-convert-dry-run: ## convert old style reports ini to yaml (dry run)
-	$(CONFIG_MANAGE) convert reports --dry-run
-
-reports-config-convert: ## convert old style reports ini to yaml
-	$(CONFIG_MANAGE) convert reports
-
-reports-config-lint: ## lint reports YAML configuration file
-	$(CONFIG_MANAGE) lint reports
-
 config-validate: ## validate galaxy YAML configuration file
 	$(CONFIG_MANAGE) validate galaxy
 
@@ -115,9 +103,6 @@ config-rebuild: ## Rebuild all sample YAML, RST files, and type stubs from confi
 	$(CONFIG_MANAGE) build_sample_yaml galaxy --add-comments
 	$(CONFIG_MANAGE) build_rst galaxy > doc/source/admin/galaxy_options.rst
 	$(CONFIG_MANAGE) build_config_types galaxy
-	$(CONFIG_MANAGE) build_sample_yaml reports --add-comments
-	$(CONFIG_MANAGE) build_rst reports > doc/source/admin/reports_options.rst
-	$(CONFIG_MANAGE) build_config_types reports
 	$(CONFIG_MANAGE) build_sample_yaml tool_shed --add-comments
 	$(CONFIG_MANAGE) build_config_types tool_shed
 

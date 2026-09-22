@@ -1116,7 +1116,9 @@ class BaseDatasetPopulator(BasePopulator):
 
     @contextlib.contextmanager
     def test_history(self, require_new: bool = True, name: str | None = None) -> Generator[str, None, None]:
-        with self._test_history(require_new=require_new, cleanup_callback=self._cleanup_history) as history_id:
+        with self._test_history(
+            require_new=require_new, cleanup_callback=self._cleanup_history, name=name
+        ) as history_id:
             yield history_id
 
     @contextlib.contextmanager
@@ -2758,7 +2760,7 @@ class BaseWorkflowPopulator(BasePopulator):
     def validate_biocompute_object(
         self, bco, expected_schema_version="https://w3id.org/ieee/ieee-2791-schema/2791object.json"
     ):
-        JsonSchemaValidator.validate_using_schema_url(bco, expected_schema_version)
+        JsonSchemaValidator.validate_using_vendored_schema(bco, expected_schema_version)
 
     def get_ro_crate(self, invocation_id, include_files=False):
         crate_response = self.download_invocation_to_store(
@@ -4501,6 +4503,7 @@ def wait_on_state(
             "stop",
             "stopped",
             "setting_metadata",
+            "finishing",
             "waiting",
             "cancelling",
             "deleting",
@@ -4649,10 +4652,10 @@ class DescribeJob:
         self._job_id = job_id
         self._final_details: dict[str, Any] | None = None
 
-    def _wait_for(self):
+    def _wait_for(self) -> None:
         if self._final_details is None:
             self._dataset_populator.wait_for_job(self._job_id, assert_ok=False)
-            self._final_details = self._dataset_populator.get_job_details(self._job_id).json()
+            self._final_details = self._dataset_populator.get_job_details(self._job_id, full=True).json()
 
     @property
     def final_details(self) -> dict[str, Any]:

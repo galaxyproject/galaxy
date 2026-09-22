@@ -1,4 +1,5 @@
 <script setup>
+import { faConnectdevelop } from "@fortawesome/free-brands-svg-icons";
 import { faQuestion, faSignOutAlt, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
@@ -27,6 +28,26 @@ const { isAnonymous, currentUser } = storeToRefs(useUserStore());
 
 const router = useRouter();
 const { config, isConfigLoaded } = useConfig();
+
+const subdomainSwitcherMenu = computed(() => {
+    const currentOrigin = window.location.origin;
+    return (config.value.subdomain_switcher ?? [])
+        .filter((site) => {
+            if (typeof site?.label !== "string" || !site.label.trim()) {
+                return false;
+            }
+            try {
+                const { protocol, origin } = new URL(site.url);
+                return (protocol === "http:" || protocol === "https:") && origin !== currentOrigin;
+            } catch {
+                return false;
+            }
+        })
+        .map((site) => ({
+            title: site.label,
+            href: site.url,
+        }));
+});
 
 const hasOIDCRegistration = computed(() => {
     const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
@@ -162,6 +183,12 @@ onMounted(() => {
                 :tooltip="tab.tooltip"
                 :target="tab.target"
                 @click="extensionTabClick(tab)" />
+            <MastheadDropdown
+                v-if="subdomainSwitcherMenu.length"
+                id="subdomain_switcher"
+                :icon="faConnectdevelop"
+                tooltip="Switch sites"
+                :menu="subdomainSwitcherMenu" />
             <MastheadItem
                 id="help"
                 :icon="faQuestion"

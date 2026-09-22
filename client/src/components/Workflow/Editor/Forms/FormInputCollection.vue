@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, toRef } from "vue";
+import { computed, ref, toRef } from "vue";
 
 import type { FieldDict, SampleSheetColumnDefinitions } from "@/api";
 import type { SampleSheetCollectionType } from "@/api/datasetCollections";
@@ -17,7 +17,7 @@ import FormRecordFieldDefinitions from "@/components/Workflow/Editor/Forms/FormR
 interface ToolState {
     collection_type: string | null;
     optional: boolean;
-    format: string | null;
+    format: string | string[] | null;
     tag: string | null;
     fields: FieldDict[] | null;
     column_definitions: SampleSheetColumnDefinitions;
@@ -28,62 +28,64 @@ const props = defineProps<{
     datatypes: DatatypesMapperModel["datatypes"];
 }>();
 
-function asToolState(toolState: unknown) {
-    return toolState as ToolState;
-}
-
 const stepRef = toRef(props, "step");
-const { toolState } = useToolState(stepRef);
+const { toolState: stepToolState } = useToolState(stepRef);
+
+const DEFAULT_TOOL_STATE: Readonly<ToolState> = Object.freeze({
+    collection_type: null,
+    optional: false,
+    tag: null,
+    format: null,
+    fields: null,
+    column_definitions: null,
+});
+
+/**
+ * The form owns its values, like `FormDisplay` does for tool steps. Edits are
+ * sent to the server as a full snapshot and only reach the step store once the
+ * server has echoed them back, so reading the store on every edit would resend
+ * the previous value of a field whose request is still pending. The state is
+ * seeded from the step when the component mounts; `FormDefault` re-keys the
+ * component on undo and redo so it is seeded again from the restored step.
+ */
+const toolState = ref<ToolState>({
+    ...DEFAULT_TOOL_STATE,
+    ...(stepToolState.value as Partial<ToolState>),
+});
 
 function cleanToolState(): ToolState {
-    if (toolState.value) {
-        return asToolState({ ...toolState.value });
-    } else {
-        return {
-            collection_type: null,
-            optional: false,
-            tag: null,
-            format: null,
-            fields: null,
-            column_definitions: null,
-        };
-    }
+    return { ...toolState.value };
 }
 
 const emit = defineEmits(["onChange"]);
 
+function emitChange(edit: Partial<ToolState>) {
+    toolState.value = { ...toolState.value, ...edit };
+    emit("onChange", cleanToolState());
+}
+
 function onDatatype(newDatatype: string[]) {
-    const state = cleanToolState();
-    state.format = newDatatype.join(",");
-    emit("onChange", state);
+    emitChange({ format: newDatatype.join(",") });
 }
 
 function onTags(newTags: string | null) {
-    const state = cleanToolState();
-    state.tag = newTags;
-    emit("onChange", state);
+    emitChange({ tag: newTags });
 }
 
 function onOptional(newOptional: boolean) {
-    const state = cleanToolState();
-    state.optional = newOptional;
-    emit("onChange", state);
+    emitChange({ optional: newOptional });
 }
 
 function onCollectionType(newCollectionType: string | null) {
-    const state = cleanToolState();
-    state.collection_type = newCollectionType;
-    emit("onChange", state);
+    emitChange({ collection_type: newCollectionType });
 }
 
 function onRecordFieldDefinitions(newRecordFieldDefinitions: FieldDict[]) {
-    const state = cleanToolState();
-    state.fields = newRecordFieldDefinitions;
-    emit("onChange", state);
+    emitChange({ fields: newRecordFieldDefinitions });
 }
 
 const isRecordType = computed(() => {
-    const collectionType = asToolState(toolState.value).collection_type;
+    const collectionType = toolState.value.collection_type;
     return collectionType == "record" || collectionType == "list:record" || collectionType == "sample_sheet:record";
 });
 
@@ -97,15 +99,13 @@ function onColumnDefinitions(newColumnDefinitions: SampleSheetColumnDefinitions)
     }
 
     columnDefinitionsTimer = setTimeout(() => {
-        const state = cleanToolState();
-        state.column_definitions = newColumnDefinitions;
-        emit("onChange", state);
+        emitChange({ column_definitions: newColumnDefinitions });
         columnDefinitionsTimer = null;
     }, 500);
 }
 
 const formatsAsList = computed(() => {
-    const formatStr = toolState.value?.format as string | string[] | null;
+    const formatStr = toolState.value.format;
     if (formatStr && typeof formatStr === "string") {
         return formatStr.split(/\s*,\s*/);
     } else if (formatStr) {
@@ -116,7 +116,7 @@ const formatsAsList = computed(() => {
 });
 
 const collectionType = computed(() => {
-    return toolState.value.collection_type as string | undefined;
+    return toolState.value.collection_type ?? undefined;
 });
 
 const isSampleSheetType = computed(() => {
@@ -135,7 +135,7 @@ emit("onChange", cleanToolState());
 <template>
     <div>
         <FormCollectionType :value="collectionType" :optional="true" @onChange="onCollectionType" />
-        <FormElement id="optional" :value="toolState?.optional" title="Optional" type="boolean" @input="onOptional" />
+        <FormElement id="optional" :value="toolState.optional" title="Optional" type="boolean" @input="onOptional" />
         <FormDatatype
             id="format"
             :value="formatsAsList"
@@ -146,7 +146,7 @@ emit("onChange", cleanToolState());
             @onChange="onDatatype" />
         <FormElement
             id="tag"
-            :value="toolState?.tag"
+            :value="toolState.tag"
             title="Tag filter"
             :optional="true"
             type="text"
@@ -155,11 +155,11 @@ emit("onChange", cleanToolState());
         <FormColumnDefinitions
             v-if="isSampleSheetType"
             :collection-type="sampleSheetCollectionType"
-            :value="asToolState(toolState).column_definitions"
+            :value="toolState.column_definitions"
             @onChange="onColumnDefinitions" />
         <FormRecordFieldDefinitions
             v-if="isRecordType"
-            :value="asToolState(toolState).fields || []"
+            :value="toolState.fields || []"
             @onChange="onRecordFieldDefinitions" />
     </div>
 </template>

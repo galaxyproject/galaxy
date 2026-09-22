@@ -7,15 +7,16 @@ import {
     faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { components } from "@/api/schema";
+import { variantToColor } from "@/components/BaseComponents/variantToColor";
 import { useMarkdown } from "@/composables/markdown";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 import { ensureDefined } from "@/utils/assertions";
 import { match } from "@/utils/utils";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 type BroadcastNotificationCreateRequest = components["schemas"]["BroadcastNotificationCreateRequest"];
@@ -134,13 +135,16 @@ function dismiss() {
             warning: displayedBroadcast.variant === 'warning',
             urgent: displayedBroadcast.variant === 'urgent',
         }">
-        <BButton
+        <GButton
             v-if="multiple"
             class="arrow left inline-icon-button area-l"
+            transparent
+            icon-only
+            color="blue"
             title="Previous"
             @click="currentPage -= 1">
             <FontAwesomeIcon fixed-width :icon="faChevronLeft" />
-        </BButton>
+        </GButton>
 
         <div class="info-icon area-i">
             <FontAwesomeIcon
@@ -158,26 +162,40 @@ function dismiss() {
             <div class="message mb-1" v-html="renderMarkdown(displayedBroadcast.content.message)"></div>
             <div class="bottom-row">
                 <div class="action-links">
-                    <BButton
+                    <GButton
                         v-for="(actionLink, index) in displayedBroadcast.content.action_links"
                         :key="`${displayedBroadcast.id}-${index}`"
-                        :variant="displayedBroadcast.variant === 'urgent' ? 'danger' : 'primary'"
-                        v-bind="actionLinkBind(actionLink.link)">
+                        v-bind="{
+                            ...variantToColor(displayedBroadcast.variant === 'urgent' ? 'danger' : 'primary'),
+                            ...actionLinkBind(actionLink.link),
+                        }">
                         {{ actionLink.action_name }}
-                    </BButton>
+                    </GButton>
                 </div>
 
                 <div v-if="multiple" class="page-indicator">{{ currentPage + 1 }} / {{ sortedBroadcasts.length }}</div>
             </div>
         </section>
 
-        <BButton v-if="multiple" class="arrow right inline-icon-button area-r" title="Next" @click="currentPage += 1">
+        <GButton
+            v-if="multiple"
+            class="arrow right inline-icon-button area-r"
+            transparent
+            icon-only
+            color="blue"
+            title="Next"
+            @click="currentPage += 1">
             <FontAwesomeIcon fixed-width :icon="faChevronRight" />
-        </BButton>
+        </GButton>
 
-        <BButton class="dismiss-button inline-icon-button area-x" title="Dismiss" @click="dismiss">
+        <GButton
+            class="dismiss-button inline-icon-button area-x"
+            transparent
+            icon-only
+            title="Dismiss"
+            @click="dismiss">
             <FontAwesomeIcon fixed-width :icon="faTimes" />
-        </BButton>
+        </GButton>
     </div>
 </template>
 
@@ -251,7 +269,10 @@ $margin: 1rem;
         }
     }
 
-    .dismiss-button {
+    // The `.g-button.g-transparent:not(.g-pressed)` part is not decoration: it is what
+    // lets these rules out-rank GButton's own scoped transparent rules, which are more
+    // specific than a plain `.dismiss-button` selector.
+    .dismiss-button.g-button.g-transparent:not(.g-pressed) {
         font-size: 1.5rem;
         color: $border-color;
 

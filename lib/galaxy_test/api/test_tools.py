@@ -131,6 +131,13 @@ class TestToolsApi(ApiTestCase, TestsTools):
         tool_ids = self.__tool_ids()
         assert "upload1" in tool_ids
 
+    def test_direct_data_fetch_tool_execution_is_blocked(self, history_id):
+        response = self.dataset_populator.run_tool_raw("__DATA_FETCH__", {}, history_id)
+        assert_status_code_is(response, 400)
+        assert response.json()["err_msg"] == (
+            "Cannot execute tool [__DATA_FETCH__] directly, must use alternative endpoint."
+        )
+
     @skip_without_tool("cat1")
     def test_search_cat(self):
         url = self._api_url("tools")

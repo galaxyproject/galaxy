@@ -43,7 +43,7 @@ schema = Schema(
 )
 
 
-class RepoWeighting(scoring.BM25F):
+class RepoWeighting(scoring.BM25F):  # type: ignore[misc]  # whoosh is untyped
     """
     Affect the BM25G scoring model through the final method.
     source: https://groups.google.com/forum/#!msg/whoosh/1AKNbW8R_l8/XySW0OecH6gJ

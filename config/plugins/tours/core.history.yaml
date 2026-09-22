@@ -2,39 +2,41 @@ name: History Introduction
 description: A detailed introduction to the Galaxy History
 title_default: "Galaxy History Introduction"
 tags:
-  - "core"
-  - "history"
+    - "core"
+    - "history"
 
 steps:
     - content: "This short tour will guide you through <b>Galaxy's History</b> and datasets."
 
-    - title: "Open the Upload Dialog"
-      component: upload.start
+    - title: "Open the Upload Activity"
+      component: upload_activity.activity
       intro: |
-            At first we upload some data into your Galaxy history.<br>
-            Use this button to upload your data.
+          At first we upload some data into your Galaxy history.<br>
+          Use this button to open the upload activity.
+      preclick:
+          - ".activity-bar-header-badge"
       postclick: true
 
-    - title: "Upload your data"
-      component: upload.create_button
-      intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data."
-      postclick: true
+    - title: "Choose Paste Links"
+      component: upload_activity.method_card(method_id=paste-links)
+      intro: "Select the Paste Links method to upload data via URL."
+      preclick: true
 
     - title: "Insert URLs"
-      component: upload.paste_content(n=0)
-      intro: "URLs separated by a line break are automatically downloaded by Galaxy."
+      component: upload_activity.paste_textarea
+      intro: "Paste one or more URLs, separated by line breaks."
       textinsert: |
-        https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta
-        https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
+          https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta
+          https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
 
-    - title: "Start the upload"
-      component: upload.start_button
-      intro: "Upload the data into your Galaxy <b>History</b>."
+    - title: "Add URLs"
+      component: upload_activity.add_urls_button
+      intro: "Click Add URLs to stage the URLs for upload."
       postclick: true
 
-    - title: Close Upload
-      component: upload.close_button
-      intro: Hit the close button to close the upload dialog.
+    - title: "Start the upload"
+      component: upload_activity.start_button
+      intro: "Upload the data into your Galaxy <b>History</b>."
       postclick: true
 
     - title: "History"
@@ -82,8 +84,8 @@ steps:
     - element: "#current-history-panel div.content-item .undelete-btn"
       title: "Undeleting a dataset"
       intro: |
-            Galaxy datasets are only marked as deleted and can be recovered by clicking this link.
-            Please note that datasets marked as deleted can be purged by your administrator at any time.
+          Galaxy datasets are only marked as deleted and can be recovered by clicking this link.
+          Please note that datasets marked as deleted can be purged by your administrator at any time.
       postclick: true
 
     - element: "#current-history-panel .content-operations-filters input[data-description='filter text input']"

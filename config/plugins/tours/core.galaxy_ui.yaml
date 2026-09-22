@@ -2,8 +2,8 @@ name: Galaxy UI
 description: A gentle introduction to the Galaxy User Interface
 title_default: Welcome to Galaxy
 tags:
-  - "core"
-  - "UI"
+    - "core"
+    - "UI"
 
 # A tour is made of several steps, each of them beginning with a dash '-'
 steps:
@@ -16,36 +16,40 @@ steps:
     # 'element' is the JQuery Selector (http://api.jquery.com/category/selectors/) of the element you want to describe.
     # We could highlight the Upload button using `#activity-upload` or, alternatively specify a `component` using the navigation interface.
     - title: "Upload your data"
-      component: upload.start
-      intro: "Galaxy supports many ways to get in your data. Use this button to upload your data."
+      component: upload_activity.activity
+      intro: "Galaxy supports many ways to get in your data. Use this button to open the upload activity."
+      # Close any open activity panel before opening upload
+      preclick:
+          - ".activity-bar-header-badge"
       # You can trigger click() events on arbitrary elements before (preclick) or after (postclick) the element is shown
       postclick: true
 
-    - title: "Upload your data"
-      component: upload.local_button
-      intro: "You can upload data from your computer."
-
-    - title: "Upload your data"
-      component: upload.create_button
-      intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data"
+    - title: "Choose Paste Links"
+      component: upload_activity.method_card(method_id=paste-links)
+      intro: "Select the Paste Links method to upload data via URL."
       preclick: true
 
     - title: "Insert URLs"
-      component: upload.paste_content(n=0)
-      intro: "URLs separated by a line break are automatically downloaded by Galaxy."
+      component: upload_activity.paste_textarea
+      intro: "Paste one or more URLs, separated by line breaks."
       textinsert: |
-        https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/augustus/test-data/human_augustus.fa
-        https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/sailfish/test-data/reads_2.fastq
-        https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
+          https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/augustus/test-data/human_augustus.fa
+          https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/sailfish/test-data/reads_2.fastq
+          https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
+
+    - title: "Add URLs"
+      component: upload_activity.add_urls_button
+      intro: "Click Add URLs to stage the URLs for upload."
+      postclick: true
 
     - title: "Start the upload"
-      component: upload.start_button
+      component: upload_activity.start_button
       intro: "Upload the data into your Galaxy history."
       postclick: true
 
-    - title: "Close upload/download manager"
-      component: upload.close_button
-      intro: "Close the upload manager with this button or with a click outside of the manager window."
+    - title: "Switch to Tools"
+      component: tools.activity
+      intro: "Switch to the tools activity to access your toolbox."
       postclick: true
 
     - title: "Tools"
@@ -59,7 +63,7 @@ steps:
     - title: "Tool search bar"
       component: tools.search
       intro: "You can search for tools by keywords."
-      textinsert: 'filter'
+      textinsert: "filter"
 
     - title: "Select a tool"
       component: tool_panel.tool_link(tool_id=Filter1)
@@ -77,19 +81,20 @@ steps:
     - title: "Tool help"
       component: tools.help
       intro: "Every Galaxy tool has a help section with detailed information about the tool and its parameters.
-              Have a look and study your tool in depth by reading it."
+          Have a look and study your tool in depth by reading it."
 
     - title: "Run your tool"
       component: tools.execute
       intro: "Click on 'Execute' to run your tool and send it to the compute cluster.
-              Don't be afraid to test different settings in parallel. Galaxy can handle multiple runs of the same tool."
+          Don't be afraid to test different settings in parallel. Galaxy can handle multiple runs of the same tool."
       postclick: true
 
     - title: "History"
       component: history_panel
-      intro: "This is your Galaxy history! All analysis steps with results of the tools and their parameters will be recorded here and can be redone at any time.<br>
-              A running tool is shown in yellow and if your calculation is done, it turns green. If your dataset is
-              grey this means you are queued and need to wait until your tool can be started. If your dataset turns into red, an error has occurred. Please report the bug to the Galaxy team with the bug report button."
+      intro:
+          "This is your Galaxy history! All analysis steps with results of the tools and their parameters will be recorded here and can be redone at any time.<br>
+          A running tool is shown in yellow and if your calculation is done, it turns green. If your dataset is
+          grey this means you are queued and need to wait until your tool can be started. If your dataset turns into red, an error has occurred. Please report the bug to the Galaxy team with the bug report button."
 
     - title: "Dataset information"
       element: "div.content-item .content-title"

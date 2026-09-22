@@ -5,8 +5,8 @@ import { computed, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
 import type { CardAction } from "@/components/Common/GCard.types";
-import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToast } from "@/composables/toast";
+import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import { useUserStore } from "@/stores/userStore";
 import ariaAlert from "@/utils/ariaAlert";
 import { copy } from "@/utils/clipboard";
@@ -25,7 +25,7 @@ export function useToolsListCardActions(
 
     const Toast = useToast();
 
-    const { openGlobalUploadModal } = useGlobalUploadModal();
+    const { openUploadModal } = useUploadMethodModal();
 
     const canBeRun = computed(() => formStyle === "regular" || !local);
 
@@ -91,7 +91,7 @@ export function useToolsListCardActions(
     /** For the upload tool, we have no `to` or `href`, and we open the modal instead */
     function openUploadIfNeeded() {
         if (toolId === "upload1") {
-            openGlobalUploadModal();
+            void openUploadModal();
         }
     }
 

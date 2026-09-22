@@ -12,6 +12,7 @@ from typing import (
 
 from packaging.version import Version
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tool_util.parser.interface import (
     TestCollectionDef,
     ToolSource,
@@ -66,6 +67,16 @@ class TestCaseStateAndWarnings:
     tool_state: TestCaseToolState
     warnings: list[str]
     unhandled_inputs: list[str]
+
+    def validate(self, tool_parameter_bundle: list[ToolParameterT], name: str | None = None) -> None:
+        """Run the full validation sequence against this built state.
+
+        Shared by ``test_case_state`` (the request parsing path) and ``test_case_validation``
+        (the reporting path) so the two cannot diverge on what makes a test case valid.
+        """
+        self.tool_state.validate(tool_parameter_bundle, name=name)
+        for input_name in self.unhandled_inputs:
+            raise RequestParameterInvalidException(f"Invalid parameter name found {input_name}")
 
 
 @dataclass
@@ -324,16 +335,15 @@ def test_case_state(
 
     for test_input in inputs:
         input_name = test_input["name"]
-        if input_name not in handled_inputs:
+        if input_name not in handled_inputs and not _input_name_was_handled_by_legacy_fallback(
+            input_name, handled_inputs, profile
+        ):
             unhandled_inputs.append(input_name)
 
-    tool_state = TestCaseToolState(state)
+    result = TestCaseStateAndWarnings(TestCaseToolState(state), warnings, unhandled_inputs)
     if validate:
-        tool_state.validate(tool_parameter_bundle, name=name)
-        for input_name in unhandled_inputs:
-            if not _input_name_was_handled_by_legacy_fallback(input_name, handled_inputs, profile):
-                raise Exception(f"Invalid parameter name found {input_name}")
-    return TestCaseStateAndWarnings(tool_state, warnings, unhandled_inputs)
+        result.validate(tool_parameter_bundle, name=name)
+    return result
 
 
 def _input_name_was_handled_by_legacy_fallback(input_name: str, handled_inputs: set[str], profile: str) -> bool:
@@ -357,17 +367,16 @@ def _input_name_was_handled_by_legacy_fallback(input_name: str, handled_inputs: 
 def test_case_validation(
     test_dict: ToolSourceTest, tool_parameter_bundle: list[ToolParameterT], profile: str, name: str | None = None
 ) -> TestCaseStateValidationResult:
-    test_case_state_and_warnings = test_case_state(test_dict, tool_parameter_bundle, profile, validate=False)
     exception: Exception | None = None
+    built = TestCaseStateAndWarnings(TestCaseToolState({}), [], [])
     try:
-        test_case_state_and_warnings.tool_state.validate(tool_parameter_bundle, name=name)
-        for input_name in test_case_state_and_warnings.unhandled_inputs:
-            raise Exception(f"Invalid parameter name found {input_name}")
+        built = test_case_state(test_dict, tool_parameter_bundle, profile, validate=False)
+        built.validate(tool_parameter_bundle, name=name)
     except Exception as e:
         exception = e
     return TestCaseStateValidationResult(
-        test_case_state_and_warnings.tool_state,
-        test_case_state_and_warnings.warnings,
+        built.tool_state,
+        built.warnings,
         exception,
         tool_parameter_bundle,
         profile,
@@ -417,7 +426,7 @@ def _merge_into_state(
         handled_inputs.update(_merge_into_state(test_parameter, context, conditional_state, state_path))
         # If the discriminator was omitted, record the when _select_which_when chose so the state
         # validates against that branch rather than the phantom __absent__ branch.
-        if test_parameter.name not in conditional_state and when.discriminator is not None:
+        if when.discriminator is not None and conditional_state.get(test_parameter.name) is None:
             conditional_state[test_parameter.name] = when.discriminator
         # Mark this conditional's discriminator consumed so a nested conditional's loose fallbacks
         # do not re-match it.
@@ -431,7 +440,8 @@ def _merge_into_state(
         if input_name not in state_at_level:
             state_at_level[input_name] = repeat_state_array
 
-        repeat_instance_inputs = _repeat_inputs_to_array(state_path, tool_input.parameters, context.inputs)
+        repeat_instance_inputs = _repeat_inputs_to_array(state_path, context.inputs)
+        supplied_instances = len(repeat_instance_inputs)
         if tool_input.min is not None:
             while len(repeat_instance_inputs) < tool_input.min:
                 repeat_instance_inputs.append([])
@@ -440,14 +450,18 @@ def _merge_into_state(
                 repeat_state_array.append({})
 
             repeat_instance_prefix = f"{state_path}_{i}"
-            handled_inputs.update(
-                _merge_level_into_state(
-                    tool_input.parameters,
-                    context.for_inputs(repeat_instance_inputs[i]),
-                    repeat_state_array[i],
-                    repeat_instance_prefix,
-                )
+            instance_handled_inputs = _merge_level_into_state(
+                tool_input.parameters,
+                context.for_inputs(repeat_instance_inputs[i]),
+                repeat_state_array[i],
+                repeat_instance_prefix,
             )
+            # Instances past the ones the test actually supplied exist only to satisfy min.
+            # Nothing resolved into them, so their paths must not count as handling a raw
+            # input - the legacy suffix match would otherwise read queries_0|input2 as
+            # covering a bare input2 that was in fact dropped.
+            if i < supplied_instances:
+                handled_inputs.update(instance_handled_inputs)
     elif isinstance(tool_input, (SectionParameterModel,)):
         section_state = state_at_level.get(input_name, {})
         if input_name not in state_at_level:
@@ -459,8 +473,13 @@ def _merge_into_state(
         if test_input is not None:
             input_value: Any
             if isinstance(tool_input, (DataCollectionParameterModel,)):
+                collection_def = test_input.get("attributes", {}).get("collection")
+                if collection_def is None:
+                    raise RequestParameterInvalidException(
+                        f"test for data_collection input '{input_name}' supplies a flat value but no <collection> definition"
+                    )
                 input_value = TestCollectionDef.from_dict(
-                    cast(XmlTestCollectionDefDict, test_input.get("attributes", {}).get("collection"))
+                    cast(XmlTestCollectionDefDict, collection_def)
                 ).test_format_to_dict()
             elif isinstance(tool_input, (DataParameterModel,)):
                 if tool_input.multiple:
@@ -504,9 +523,7 @@ def _merge_into_state(
     return handled_inputs
 
 
-def _repeat_inputs_to_array(
-    state_path: str, parameters: list[ToolParameterT], inputs: ToolSourceTestInputs
-) -> list[ToolSourceTestInputs]:
+def _repeat_inputs_to_array(state_path: str, inputs: ToolSourceTestInputs) -> list[ToolSourceTestInputs]:
     inputs_as_dict = _inputs_as_dict(inputs)
     repeat_instance_input_dicts = repeat_inputs_to_array(state_path, inputs_as_dict)
     if not repeat_instance_input_dicts and "|" in state_path:
@@ -520,21 +537,7 @@ def _repeat_inputs_to_array(
             repeat_instance_input_dicts = repeat_inputs_to_array(candidate_path, inputs_as_dict)
             if repeat_instance_input_dicts:
                 break
-    repeat_instance_inputs = [list(instance_inputs.values()) for instance_inputs in repeat_instance_input_dicts]
-    if repeat_instance_inputs:
-        return repeat_instance_inputs
-
-    legacy_repeat_inputs: list[ToolSourceTestInputs] = []
-    for parameter in parameters:
-        parameter_name = parameter.name
-        matching_inputs = [input for input in inputs if input["name"] == parameter_name]
-        for i, input in enumerate(matching_inputs):
-            while len(legacy_repeat_inputs) <= i:
-                legacy_repeat_inputs.append([])
-            synthetic_input = cast(ToolSourceTestInput, dict(input))
-            synthetic_input["name"] = f"{state_path}_{i}|{parameter_name}"
-            legacy_repeat_inputs[i].append(synthetic_input)
-    return legacy_repeat_inputs
+    return [list(instance_inputs.values()) for instance_inputs in repeat_instance_input_dicts]
 
 
 def _select_which_when(
@@ -555,7 +558,14 @@ def _select_which_when(
     matched_name = test_input["name"] if test_input else None
     explicit_test_value = test_input["value"] if test_input else None
     if is_boolean and isinstance(explicit_test_value, str):
-        explicit_test_value = asbool(explicit_test_value)
+        truevalue = getattr(test_parameter, "truevalue", None)
+        falsevalue = getattr(test_parameter, "falsevalue", None)
+        if truevalue is not None and explicit_test_value == truevalue:
+            explicit_test_value = True
+        elif falsevalue is not None and explicit_test_value == falsevalue:
+            explicit_test_value = False
+        else:
+            explicit_test_value = asbool(explicit_test_value)
     test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
     if test_value is None:
         # Discriminator omitted: infer the active when from the params the test provides (like
@@ -568,7 +578,9 @@ def _select_which_when(
             return when, matched_name
         elif test_value == when.discriminator:
             return when, matched_name
-    raise Exception(f"Invalid conditional test value ({explicit_test_value}) for parameter ({test_parameter_name})")
+    raise RequestParameterInvalidException(
+        f"Invalid conditional test value ({explicit_test_value}) for parameter ({test_parameter_name})"
+    )
 
 
 def _leaf_param_short_names(parameters: list[ToolParameterT]) -> set[str]:
@@ -637,7 +649,7 @@ def _resolve_matching_inputs(
         for input in matching_inputs[1:]
     ):
         return first
-    raise Exception(ambiguity_message)
+    raise RequestParameterInvalidException(ambiguity_message)
 
 
 def _path_ends_with_param(qualified_path: str, param_name: str) -> bool:
@@ -668,13 +680,16 @@ def validate_test_cases_for_tool_source(
     tool_source: ToolSource, use_latest_profile: bool = False, name: str | None = None
 ) -> list[TestCaseStateValidationResult]:
     name = name or f"PydanticModelFor[{tool_source.parse_id()}]"
-    tool_parameter_bundle = input_models_for_tool_source(tool_source)
     if use_latest_profile:
         # this might get old but it is fine, just needs to be updated when test case changes are made
         profile = "26.1"
     else:
         profile = tool_source.parse_profile()
-    test_cases: list[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
+    try:
+        tool_parameter_bundle = input_models_for_tool_source(tool_source)
+        test_cases: list[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
+    except Exception as e:
+        return [TestCaseStateValidationResult(TestCaseToolState({}), [], e, [], profile)]
     results_by_test: list[TestCaseStateValidationResult] = []
     for test_case in test_cases:
         validation_result = test_case_validation(test_case, tool_parameter_bundle.parameters, profile, name=name)

@@ -30,7 +30,6 @@ Galaxy Deployment & Administration
    conda_faq
    user_defined_tools
    db_migration
-   reports
    useful_scripts
    ga4gh
    options

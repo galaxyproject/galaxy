@@ -37,6 +37,20 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
         for x in range(2):
             assert index_ids.index(ids[x]) < index_ids.index(ids[x + 1])
 
+    def test_index_sort_by_title_is_case_insensitive(self):
+        # Codepoint ordering would sort every capitalised title ahead of every lowercase one.
+        unique = uuid.uuid4().hex
+        for index, title in enumerate([f"Zeta_{unique}", f"alpha_{unique}", f"Beta_{unique}"]):
+            self._new_viz(title=title, slug=f"slug-case-{unique}-{index}")
+
+        params = dict(search=unique, sort_by="title", sort_desc=False)
+        titles = [entry["title"] for entry in self._index(params)]
+        assert titles == [f"alpha_{unique}", f"Beta_{unique}", f"Zeta_{unique}"]
+
+        params["sort_desc"] = True
+        titles = [entry["title"] for entry in self._index(params)]
+        assert titles == [f"Zeta_{unique}", f"Beta_{unique}", f"alpha_{unique}"]
+
     def test_index_filtering(self):
         ids = []
         for x in range(3):

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faAngleUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { type ComponentPublicInstance, computed, onMounted, ref } from "vue";
 
 import { useToast } from "@/composables/toast";
@@ -12,6 +11,7 @@ import { VALID_TAG_RE } from "../Tags/model";
 
 import HeadlessMultiselect from "./HeadlessMultiselect.vue";
 import Tag from "./Tag.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GTooltip from "@/components/BaseComponents/GTooltip.vue";
 
 interface StatelessTagsProps {
@@ -112,25 +112,27 @@ function onTagClicked(tag: string) {
                     @deleted="onDelete"
                     @click="onTagClicked" />
 
-                <BButton
+                <GButton
                     v-if="slicedTags.length > 0 && !toggledOpen"
                     :id="toggleButtonId"
-                    variant="link"
+                    color="blue"
+                    transparent
                     class="toggle-link show-more-tags"
                     @click.stop="() => (toggledOpen = true)">
                     {{ slicedTags.length }} more...
-                </BButton>
-                <BButton
+                </GButton>
+                <GButton
                     v-else-if="slicedTags.length > 0 && toggledOpen"
                     :id="toggleButtonId"
                     v-g-tooltip.hover
-                    variant="link"
+                    color="blue"
+                    transparent
                     title="Show fewer tags"
                     class="toggle-link show-less-tags"
                     @click.stop="() => (toggledOpen = false)">
                     <FontAwesomeIcon :icon="faAngleUp" fixed-width />
                     Fewer tags
-                </BButton>
+                </GButton>
             </div>
 
             <HeadlessMultiselect
@@ -153,15 +155,16 @@ function onTagClicked(tag: string) {
                     :clickable="props.clickable"
                     @click="onTagClicked" />
 
-                <BButton
+                <GButton
                     v-if="slicedTags.length > 0 && !toggledOpen"
                     :id="toggleButtonId"
                     ref="moreButtonRef"
-                    variant="link"
+                    color="blue"
+                    transparent
                     class="toggle-link"
                     @click.stop="() => (toggledOpen = true)">
                     {{ slicedTags.length }} more...
-                </BButton>
+                </GButton>
 
                 <GTooltip v-if="slicedTags.length > 0 && !toggledOpen" :reference="moreButtonEl" placement="bottom">
                     <Tag
@@ -179,13 +182,19 @@ function onTagClicked(tag: string) {
 
 <style lang="scss" scoped>
 .stateless-tags {
-    .toggle-link {
+    // The `.g-button.g-transparent:not(.g-pressed)` part is what lifts these rules above
+    // GButton's own scoped rules, which are otherwise the more specific of the two: on a
+    // plain `.toggle-link` selector the padding tie is decided by bundle order and the
+    // hover paints a solid blue pill instead of leaving a bare link.
+    .toggle-link.g-button.g-transparent:not(.g-pressed) {
         padding: 0;
         border: none;
 
         &:hover {
             background-color: transparent;
             border: none;
+            color: var(--color-blue-700);
+            text-decoration: underline;
         }
     }
 }

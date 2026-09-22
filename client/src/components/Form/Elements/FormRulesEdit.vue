@@ -1,37 +1,41 @@
-<script setup>
+<script setup lang="ts">
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import type { HDCADetailed } from "@/api";
 import { fetchCollectionDetails } from "@/api/datasetCollections";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import RuleCollectionBuilder from "@/components/RuleCollectionBuilder.vue";
 import RulesDisplay from "@/components/RulesDisplay/RulesDisplay.vue";
 
-const props = defineProps({
-    id: {
-        type: String,
-        default: undefined,
-    },
-    value: {
-        type: Object,
-    },
-    target: {
-        type: Object,
-        default: null,
-    },
+interface Rules {
+    rules: any[];
+    mapping: any[];
+}
+
+interface Props {
+    id: string;
+    value?: Rules;
+    target?: { id: string } | null;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    value: undefined,
+    target: null,
 });
 
-const modal = ref(null);
-const elements = ref(null);
+const elements = ref<HDCADetailed | null>(null);
+const showModal = ref(false);
 const loading = ref(false);
-const loadError = ref();
+const loadError = ref<string | undefined>(undefined);
 
-const initialRules = {
+const initialRules: Rules = {
     rules: [],
     mapping: [],
 };
@@ -48,28 +52,26 @@ async function onEdit() {
                 throw result.error;
             }
             elements.value = result.data;
-            modal.value.show();
+            showModal.value = true;
         } catch (e) {
             loadError.value = errorMessageAsString(e);
-            console.error(e);
-            console.log("problem fetching collection");
         } finally {
             loading.value = false;
         }
     } else {
-        modal.value.show();
+        showModal.value = true;
     }
 }
 
 const emit = defineEmits(["input"]);
 
-function onSaveRules(rules) {
-    modal.value.hide();
+function onSaveRules(rules: Rules) {
+    showModal.value = false;
     emit("input", rules);
 }
 
 function onCancel() {
-    modal.value.hide();
+    showModal.value = false;
 }
 </script>
 
@@ -80,15 +82,15 @@ function onCancel() {
             <FontAwesomeIcon :icon="faEdit" />
             <span>Edit</span>
         </GButton>
-        <LoadingSpan v-if="loading" message="Loading collection details"> </LoadingSpan>
-        <BAlert v-if="loadError" show variant="danger" dismissible @dismissed="loadError = undefined">
+        <LoadingSpan v-if="loading" message="Loading collection details" />
+        <GAlert v-if="loadError" variant="danger" dismissible @dismissed="loadError = undefined">
             {{ loadError }}
-        </BAlert>
-        <b-modal ref="modal" modal-class="ui-form-rules-edit-modal" hide-footer>
-            <template v-slot:modal-title>
-                <h2 class="mb-0">Build Rules for Applying to Existing Collection</h2>
-            </template>
+        </GAlert>
+        <GModal :show.sync="showModal" title="Build Rules for Applying to Existing Collection" size="medium">
+            <!-- Note: We need the v-if="showModal" here because the rules do not appear inline with 
+            the table otherwise. -->
             <RuleCollectionBuilder
+                v-if="showModal"
                 elements-type="collection_contents"
                 import-type="collections"
                 :initial-elements="elements"
@@ -96,15 +98,6 @@ function onCancel() {
                 :save-rules-fn="onSaveRules"
                 :oncancel="onCancel"
                 :oncreate="() => {}" />
-        </b-modal>
+        </GModal>
     </div>
 </template>
-
-<style lang="scss">
-.ui-form-rules-edit-modal {
-    .modal-dialog {
-        width: 100%;
-        max-width: 85%;
-    }
-}
-</style>

@@ -49,8 +49,9 @@ export default {
             return `${this.query.m_c}/${this.query.m_a}`;
         },
         toolParams() {
-            const result = { ...this.query };
+            const result = {};
             result.uuid = this.query.tool_uuid;
+            result.jobId = this.query.job_id;
             const tool_id = this.query.tool_id;
             if (tool_id) {
                 result.id = tool_id.indexOf("+") >= 0 ? tool_id : decodeUriComponent(tool_id);
@@ -86,7 +87,11 @@ export default {
         // re-fire it.
         if (this.query.notification === "tool-submitted") {
             this.$nextTick(() => {
-                Toast.info("Check your history panel for progress.", "Data import queued");
+                Toast.addToast("Check your history panel for progress.", {
+                    title: "Data import queued",
+                    variant: "info",
+                    duration: 0,
+                });
             });
             const newQuery = { ...this.$route.query };
             delete newQuery.notification;

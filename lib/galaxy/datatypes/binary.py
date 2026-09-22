@@ -714,7 +714,8 @@ class BamNative(CompressedArchive, _BamOrSam):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
         # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
         try:
-            header = gzip.open(filename).read(4)
+            with gzip.open(filename) as compressed_file:
+                header = compressed_file.read(4)
             if header == b"BAM\1":
                 return True
             return False
@@ -1205,7 +1206,8 @@ class Bcf(BaseBcf):
     def sniff(self, filename: str) -> bool:
         # BCF is compressed in the BGZF format, and must not be uncompressed in Galaxy.
         try:
-            header = gzip.open(filename).read(3)
+            with gzip.open(filename) as compressed_file:
+                header = compressed_file.read(3)
             # The first 3 bytes of any BCF file are 'BCF', and the file is binary.
             if header == b"BCF":
                 return True
@@ -1655,6 +1657,46 @@ class H5(Binary):
         return Exception(status_code, message)
 
 
+class NetCDF4(H5):
+    """
+    Class describing a netCDF4 file (HDF5-based).
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test_tas.netcdf4')
+    >>> NetCDF4().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mz5')
+    >>> NetCDF4().sniff(fname)
+    False
+    """
+
+    file_ext = "netcdf4"
+    edam_format = "format_3650"
+
+    def sniff(self, filename):
+        if not super().sniff(filename):
+            return False
+        try:
+            with h5py.File(filename, "r", locking=False) as f:
+                return "_NCProperties" in f.attrs
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary netCDF4 file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return f"Binary netCDF4 file ({nice_size(dataset.get_size())})"
+
+
 class Loom(H5):
     """
     Class describing a Loom file: http://loompy.org/
@@ -1910,10 +1952,24 @@ class Anndata(H5):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         with h5py.File(dataset.get_file_name(), "r", locking=False) as anndata_file:
+            root_encoding_type = anndata_file.attrs.get("encoding-type")
+            if isinstance(root_encoding_type, np.ndarray):
+                root_encoding_type = root_encoding_type[0] if root_encoding_type.size else None
+            if isinstance(root_encoding_type, bytes):
+                root_encoding_type = root_encoding_type.decode()
+            root_encoding_version = anndata_file.attrs.get("encoding-version")
+            if isinstance(root_encoding_version, np.ndarray):
+                root_encoding_version = root_encoding_version[0] if root_encoding_version.size else None
+            if isinstance(root_encoding_version, bytes):
+                root_encoding_version = root_encoding_version.decode()
+
             dataset.metadata.title = anndata_file.attrs.get("title")
             dataset.metadata.description = anndata_file.attrs.get("description")
             dataset.metadata.url = anndata_file.attrs.get("url")
             dataset.metadata.doi = anndata_file.attrs.get("doi")
+            dataset.metadata.anndata_spec_version = (
+                root_encoding_version if root_encoding_type == "anndata" and root_encoding_version else ""
+            )
             dataset.metadata.creation_date = anndata_file.attrs.get("creation_date")
             dataset.metadata.shape = anndata_file.attrs.get("shape", dataset.metadata.shape)
             # none of the above appear to work in any dataset tested, but could be useful for
@@ -2014,7 +2070,7 @@ class Anndata(H5):
                     # if X matrix has actual data
                     shape = anndata_file["X"].attrs.get("shape")
                     if shape is not None:
-                        dataset.metadata.shape = tuple(shape)
+                        dataset.metadata.shape = tuple(int(dim) for dim in shape)
                     elif hasattr(anndata_file["X"], "shape") and anndata_file["X"].shape is not None:
                         dataset.metadata.shape = tuple(anndata_file["X"].shape)
 
@@ -3111,6 +3167,25 @@ class MzSQlite(SQlite):
                 "SpectraData",
                 "Spectrum",
                 "SpectrumIdentification",
+            ]
+            return self.sniff_table_names(filename, table_names)
+        return False
+
+
+class Mzlite(SQlite):
+    """Class describing a Proteomics mzlite database"""
+
+    file_ext = "mzlite"
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
+
+    def sniff(self, filename: str) -> bool:
+        if super().sniff(filename):
+            table_names = [
+                "Chromatogram",
+                "Model",
+                "Spectrum",
             ]
             return self.sniff_table_names(filename, table_names)
         return False

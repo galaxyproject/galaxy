@@ -143,6 +143,13 @@ This only matters when running on SQLite or in setups where PostgreSQL
 
 ## What to monitor
 
+In deployments with multiple independent Gunicorn masters on the same hostname, configure a
+distinct `server_name` for each master as described in
+[Scaling and Load Balancing](scaling.md#unique-server-names-for-independent-gunicorn-instances).
+Each worker holds its own browser connections in memory and needs its own control queue.
+Workers sharing a queue compete for messages instead of each receiving a copy, so SSE updates
+can disappear even when the broker reports healthy consumers and empty queues.
+
 When statsd is configured (via `statsd_host` and friends), the SSE
 plumbing emits the following metrics. Capture these on the same dashboard
 you use for Gunicorn worker health:
@@ -291,6 +298,12 @@ stream is healthy end-to-end:
    `galaxy.sse.connections.active` should reflect roughly one connection
    per open browser tab (summed across the reporting processes).
 
-If the connection opens but no events arrive, the most common causes
-are: a proxy buffering responses (revisit the NGINX section), or a
-producer that can't reach AMQP (see `galaxy.sse.dispatch.skipped_no_qw`).
+If the connection opens but no events arrive, check for proxy buffering (revisit the NGINX
+section), a producer unable to dispatch control tasks (see `galaxy.sse.dispatch.skipped_no_qw`), and workers
+sharing control queues because their server names collide.
+
+Use the process manager and worker startup logs to verify that only one live Galaxy worker
+process uses each `server_name` on a given hostname. For Gunicorn, check the final name including
+the worker ID, such as `web_0.1`. This requirement applies regardless of the control-queue
+transport. See [unique server names](scaling.md#unique-server-names-for-independent-gunicorn-instances)
+for configuration guidance.

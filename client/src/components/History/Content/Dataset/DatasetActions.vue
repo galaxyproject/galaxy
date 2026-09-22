@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -12,6 +11,7 @@ import { absPath, prependPath } from "@/utils/redirect";
 
 import type { ItemUrls } from ".";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import DatasetDownload from "@/components/History/Content/Dataset/DatasetDownload.vue";
 
 interface Props {
@@ -95,77 +95,77 @@ function onRerun() {
     <div class="dataset-actions mb-1">
         <div class="clearfix">
             <div class="btn-group float-left">
-                <BButton
+                <GButton
                     v-if="showError"
                     v-g-tooltip.hover
                     class="px-1"
                     title="Error"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
                     :href="reportErrorUrl"
                     @click.prevent.stop="onError">
                     <FontAwesomeIcon :icon="faBug" />
-                </BButton>
+                </GButton>
 
                 <DatasetDownload v-if="showDownloads" :item="item" @on-download="onDownload" />
 
-                <BButton
+                <GButton
                     v-if="showDownloads"
                     v-g-tooltip.hover
                     class="px-1"
                     title="Copy Link"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
                     @click.stop="onCopyLink">
                     <FontAwesomeIcon :icon="faLink" />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="showInfo"
                     v-g-tooltip.hover
                     class="info-btn px-1"
                     title="Dataset Details"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
                     :href="showDetailsUrl"
                     @click.prevent.stop="onInfo">
                     <FontAwesomeIcon :icon="faInfoCircle" />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="showVisualizations"
                     v-g-tooltip.hover
                     class="visualize-btn px-1"
                     title="Visualize"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
                     :href="visualizeUrl"
                     @click.prevent.stop="onVisualize">
                     <FontAwesomeIcon :icon="faChartBar" />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="showHighlight"
                     v-g-tooltip.hover
                     class="highlight-btn px-1"
                     title="Show Related Items"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
                     @click.stop="onHighlight">
                     <FontAwesomeIcon :icon="faSitemap" />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="writable && showRerun"
                     v-g-tooltip.hover
                     class="rerun-btn px-1"
                     title="Run Job Again"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
                     :href="rerunUrl"
                     @click.prevent.stop="onRerun">
                     <FontAwesomeIcon :icon="faRedo" />
-                </BButton>
+                </GButton>
             </div>
         </div>
     </div>

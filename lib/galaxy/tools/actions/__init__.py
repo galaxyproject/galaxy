@@ -1,9 +1,9 @@
 import json
 import logging
 import os
-import re
 from abc import abstractmethod
 from collections.abc import (
+    Iterable,
     Mapping,
     MutableMapping,
 )
@@ -24,6 +24,10 @@ from galaxy.exceptions import (
     ToolInputsNotReadyException,
 )
 from galaxy.job_execution.actions.post import ActionBox
+from galaxy.job_execution.output_format import (
+    get_ext_or_implicit_ext,
+    resolve_format_source,
+)
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
@@ -98,6 +102,15 @@ class ToolAction:
     """
 
     produces_real_jobs: bool
+    file_source_uri_discovery_complete = False
+
+    def has_complete_file_source_uri_discovery(self) -> bool:
+        """Return whether this concrete action has audited URI discovery."""
+        return type(self).__dict__.get("file_source_uri_discovery_complete", False)
+
+    def iter_referenced_file_source_uris(self, param_dict: ToolStateJobInstancePopulatedT) -> Iterable[str]:
+        """Yield file source URIs embedded in action-specific parameters."""
+        return ()
 
     @abstractmethod
     def execute(
@@ -141,6 +154,7 @@ class DefaultToolAction(ToolAction):
     """Default tool action is to run an external command"""
 
     produces_real_jobs: bool = True
+    file_source_uri_discovery_complete = True
 
     def _collect_input_datasets(
         self,
@@ -1262,16 +1276,6 @@ class OutputCollections:
             self.out_collection_instances[name] = hdca
 
 
-def get_ext_or_implicit_ext(hda):
-    if hda.implicitly_converted_parent_datasets:
-        # implicitly_converted_parent_datasets is a list of ImplicitlyConvertedDatasetAssociation
-        # objects, and their type is the target_ext, so this should be correct even if there
-        # are multiple ImplicitlyConvertedDatasetAssociation objects (meaning 2 datasets had been converted
-        # to produce a dataset with the required datatype)
-        return hda.implicitly_converted_parent_datasets[0].type
-    return hda.ext
-
-
 def determine_output_format(
     output: "ToolOutput",
     parameter_context,
@@ -1300,51 +1304,8 @@ def determine_output_format(
                 pass
         ext = random_input_ext
     format_source = output.format_source
-    if format_source is not None and format_source in input_datasets:
-        try:
-            input_dataset = input_datasets[output.format_source]
-            ext = get_ext_or_implicit_ext(input_dataset)
-        except Exception:
-            pass
-    elif format_source is not None:
-        element_index = None
-        collection_name = format_source
-        if re.match(r"^[^\[\]]*\[[^\[\]]*\]$", format_source):
-            collection_name, element_index = format_source[0:-1].split("[")
-            # Treat as json to interpret "forward" vs 0 with type
-            # Make it feel more like Python, single quote better in XML also.
-            element_index = element_index.replace("'", '"')
-            element_index = json.loads(element_index)
-
-        if collection_name in input_dataset_collections:
-            try:
-                input_collection = input_dataset_collections[collection_name]
-                input_collection_collection = input_collection.collection
-                if element_index is None:
-                    # just pick the first HDA
-                    input_dataset = input_collection_collection.dataset_instances[0]
-                else:
-                    try:
-                        input_element = input_collection_collection[element_index]
-                    except KeyError:
-                        if execution_cache:
-                            dataset_elements = execution_cache.cached_collection_elements.get(
-                                input_collection_collection.id
-                            )
-                            if dataset_elements is None:
-                                dataset_elements = execution_cache.cached_collection_elements[
-                                    input_collection_collection.id
-                                ] = input_collection_collection.dataset_elements
-                        else:
-                            dataset_elements = input_collection_collection.dataset_elements
-                        for element in dataset_elements:
-                            if element.element_identifier == element_index:
-                                input_element = element
-                                break
-                    input_dataset = input_element.element_object
-                ext = get_ext_or_implicit_ext(input_dataset)
-            except Exception as e:
-                log.debug("Exception while trying to determine format_source: %s", e)
+    if format_source is not None:
+        ext = resolve_format_source(format_source, input_datasets, input_dataset_collections, ext, execution_cache)
 
     # process change_format tags
     if output.change_format:

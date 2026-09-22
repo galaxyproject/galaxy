@@ -1,3 +1,5 @@
+import json
+from collections.abc import Iterator
 from datetime import (
     datetime,
     timezone,
@@ -6,6 +8,7 @@ from typing import Any
 
 from galaxy.authnz.psa_authnz import locate_token_expiration
 from galaxy.model import User
+from galaxy.tools._types import ToolStateJobInstancePopulatedT
 
 
 def iter_fetch_urls(value: Any):
@@ -17,6 +20,15 @@ def iter_fetch_urls(value: Any):
     elif isinstance(value, list):
         for child in value:
             yield from iter_fetch_urls(child)
+
+
+def iter_fetch_request_urls(param_dict: ToolStateJobInstancePopulatedT) -> Iterator[str]:
+    """Yield URLs from a data-fetch tool's serialized request."""
+    request_json = param_dict.get("request_json")
+    if request_json:
+        for url in iter_fetch_urls(json.loads(request_json)):
+            if isinstance(url, str) and url:
+                yield url
 
 
 def fetch_uses_authorization_header(request: dict[str, Any], file_sources, user_context) -> bool:

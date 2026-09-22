@@ -17,9 +17,15 @@ except ImportError:
     boto = None  # type: ignore[assignment]
 
 from galaxy.util import string_as_bool
-from ._caching_base import CachingConcreteObjectStore
+from ._caching_base import (
+    CachingConcreteObjectStore,
+    RemoteDataStream,
+    STREAM_CHUNK_SIZE,
+)
 from ._util import UsesAxel
 from .caching import (
+    CacheShardManager,
+    CacheTarget,
     enable_cache_monitor,
     parse_caching_config_dict_from_xml,
 )
@@ -32,22 +38,6 @@ NO_BOTO_ERROR_MESSAGE = (
 
 log = logging.getLogger(__name__)
 logging.getLogger("boto").setLevel(logging.INFO)  # Otherwise boto is quite noisy
-
-
-def download_directory(bucket, remote_folder, local_path):
-    objects = bucket.list(prefix=remote_folder)
-    for obj in objects:
-        remote_file_path = obj.key
-        local_file_path = os.path.join(local_path, os.path.relpath(remote_file_path, remote_folder))
-        os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-        tmp_file_path = local_file_path + ".tmp"
-        try:
-            obj.get_contents_to_filename(tmp_file_path)
-            os.rename(tmp_file_path, local_file_path)
-        except Exception:
-            if os.path.exists(tmp_file_path):
-                os.remove(tmp_file_path)
-            raise
 
 
 def parse_config_xml(config_xml):
@@ -140,11 +130,7 @@ class CloudConfigMixin:
                 "conn_path": self.conn_path,
                 "region": self.region,
             },
-            "cache": {
-                "size": self.cache_size,
-                "path": self.staging_path,
-                "cache_updated_data": self.cache_updated_data,
-            },
+            "cache": self._cache_config_to_dict(),
         }
 
 
@@ -184,9 +170,8 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
         self.conn_path = connection_dict.get("conn_path", "/")
         self.region = connection_dict.get("region", None)
 
-        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
-        self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         self.cache_updated_data = cache_dict.get("cache_updated_data", True)
+        self._cache_shards = CacheShardManager.from_config(cache_dict, self.config)
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         self.extra_dirs.update(extra_dirs)
@@ -305,8 +290,8 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
     def _transfer_cb(self, complete, total):
         self.transfer_progress += 10
 
-    def _download(self, rel_path):
-        local_destination = self._get_cache_path(rel_path)
+    def _download(self, rel_path, *, cache_path: str, cache_target: CacheTarget):
+        local_destination = cache_path
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, local_destination)
             key = self._bucket.get_key(rel_path)
@@ -315,23 +300,34 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
                 log.critical(message)
                 raise Exception(message)
             remote_size = key.size
-            if not self._caching_allowed(rel_path, remote_size):
+            if not self._caching_allowed(rel_path, cache_target=cache_target, remote_size=remote_size):
                 return False
             if self.use_axel:
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, local_destination)
                 url = key.generate_url(7200)
-                return self._axel_download(url, local_destination)
+                with self._atomic_download(local_destination, remote_size) as tmp:
+                    if not self._axel_download(url, tmp):
+                        raise OSError(f"Failed to download key '{rel_path}' with axel")
+                return True
             else:
                 log.debug("Pulled key '%s' into cache to %s", rel_path, local_destination)
                 self.transfer_progress = 0  # Reset transfer progress counter
-                with self._atomic_download(local_destination) as tmp:
+                with self._atomic_download(local_destination, remote_size) as tmp:
                     key.get_contents_to_filename(tmp, cb=self._transfer_cb, num_cb=10)
                 return True
         except S3ResponseError:
             log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self._bucket.name)
         return False
 
-    def _push_to_storage(self, rel_path, source_file=None, from_string=None):
+    def _stream_remote(self, rel_path: str) -> RemoteDataStream | None:
+        key = self._bucket.get_key(rel_path)
+        if key is None:
+            return None
+        # fast=True: a client that hung up should not make Galaxy read the rest of the object off
+        # the wire before the connection can be released.
+        return RemoteDataStream(iter(lambda: key.read(STREAM_CHUNK_SIZE), b""), lambda: key.close(fast=True))
+
+    def _push_to_storage(self, rel_path, source_file=None, from_string=None, *, cache_path: str):
         """
         Push the file pointed to by ``rel_path`` to the object store naming the key
         ``rel_path``. If ``source_file`` is provided, push that file instead while
@@ -340,7 +336,7 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
         the string.
         """
         try:
-            source_file = source_file if source_file else self._get_cache_path(rel_path)
+            source_file = source_file if source_file else cache_path
             if os.path.exists(source_file):
                 key = Key(self._bucket, rel_path)
                 if os.path.getsize(source_file) == 0 and key.exists():
@@ -409,7 +405,11 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
             return False
 
     def _download_directory_into_cache(self, rel_path, cache_path):
-        download_directory(self._bucket, rel_path, cache_path)
+        for obj in self._bucket.list(prefix=rel_path):
+            local_file_path = os.path.join(cache_path, os.path.relpath(obj.key, rel_path))
+            os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+            with self._atomic_download(local_file_path, obj.size) as tmp:
+                obj.get_contents_to_filename(tmp)
 
     def _get_object_url(self, obj, content_disposition=None, content_type=None, **kwargs):
         if self._exists(obj, **kwargs):

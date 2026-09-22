@@ -18,9 +18,9 @@
                             title="Editor"
                             :options="editorOptions" />
                         <slot name="buttons" />
-                        <b-button v-g-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
+                        <GButton v-g-tooltip.hover.bottom title="Help" transparent icon-only @click="onHelp">
                             <FontAwesomeIcon :icon="faQuestion" />
-                        </b-button>
+                        </GButton>
                     </div>
                 </div>
             </div>
@@ -54,6 +54,7 @@ import { computed, ref } from "vue";
 import type { DirectiveMode } from "./directives";
 import type { WorkflowLabel } from "./Editor/types";
 
+import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
 import CellEditor from "./Editor/CellEditor.vue";
 import TextEditor from "./Editor/TextEditor.vue";

@@ -5,6 +5,7 @@ result types against tiny in-memory fixture databases built via
 GTNDatabaseBuilder.
 """
 
+import gzip
 import os
 import sqlite3
 from datetime import (
@@ -15,6 +16,7 @@ from datetime import (
 from pathlib import Path
 
 import pytest
+import responses
 
 from galaxy.agents.gtn import (
     FAQResult,
@@ -307,3 +309,38 @@ def test_download_stamps_local_mtime_to_remote_last_modified(tmp_path: Path):
     GTNSearchDB.refresh_database(local_path, remote_path.as_uri())
 
     assert int(local_path.stat().st_mtime) == int(pinned)
+
+
+@responses.activate
+def test_refresh_database_streams_http_download_and_stamps_timestamp(fixture_db: Path, tmp_path: Path):
+    url = "https://example.com/gtn_search.db"
+    last_modified = "Wed, 20 Aug 2025 12:00:00 GMT"
+    responses.add(
+        responses.GET,
+        url,
+        body=gzip.compress(fixture_db.read_bytes(), mtime=0),
+        headers={"Content-Encoding": "gzip", "Last-Modified": last_modified},
+    )
+    target = tmp_path / "downloaded.db"
+
+    metadata = GTNSearchDB.refresh_database(target, url)
+
+    assert metadata["tutorial_count"] == 2
+    assert target.read_bytes() == fixture_db.read_bytes()
+    assert datetime.fromtimestamp(target.stat().st_mtime, tz=timezone.utc) == datetime(
+        2025, 8, 20, 12, 0, tzinfo=timezone.utc
+    )
+
+
+@responses.activate
+def test_refresh_database_if_stale_uses_http_head(fixture_db: Path, tmp_path: Path):
+    url = "https://example.com/gtn_search.db"
+    target = tmp_path / "current.db"
+    target.write_bytes(fixture_db.read_bytes())
+    current = datetime(2025, 8, 21, 12, 0, tzinfo=timezone.utc).timestamp()
+    os.utime(target, (current, current))
+    responses.add(responses.HEAD, url, headers={"Last-Modified": "Wed, 20 Aug 2025 12:00:00 GMT"})
+
+    assert GTNSearchDB.refresh_database_if_stale(target, url) is None
+    assert len(responses.calls) == 1
+    assert responses.calls[0].request.method == "HEAD"

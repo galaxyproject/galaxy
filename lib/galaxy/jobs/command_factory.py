@@ -33,6 +33,14 @@ CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 SETUP_GALAXY_FOR_METADATA = """
 [ "$GALAXY_VIRTUAL_ENV" = "None" ] && GALAXY_VIRTUAL_ENV="$_GALAXY_VIRTUAL_ENV"; _galaxy_setup_environment True"""
+REMOTE_TOOL_EVAL_SOURCE_COMMAND = (
+    'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" "${GALAXY_PYTHON:-python}" "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py'
+)
+REMOTE_TOOL_EVAL_PACKAGE_COMMAND = "galaxy-remote-tool-eval"
+REMOTE_TOOL_EVAL_PULSAR_COMMAND = (
+    'if [ "$GALAXY_LIB" != "None" ] && [ -f "$GALAXY_LIB/galaxy/tools/remote_tool_eval.py" ]; '
+    f"then {REMOTE_TOOL_EVAL_SOURCE_COMMAND}; else {REMOTE_TOOL_EVAL_PACKAGE_COMMAND}; fi"
+)
 
 
 def build_command(
@@ -208,14 +216,16 @@ def __externalize_commands(
 def __handle_remote_command_line_building(commands_builder, job_wrapper: "MinimalJobWrapper", for_pulsar=False):
     if job_wrapper.remote_command_line:
         sep = "" if for_pulsar else "&&"
-        command = (
-            'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" '
-            '"${GALAXY_PYTHON:-python}" "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py'
-        )
         if for_pulsar:
+            # Pulsar sets GALAXY_LIB from its own galaxy_home, so this Galaxy's layout says
+            # nothing about the remote's - let the remote pick between the two forms.
             # TODO: that's not how to do this, pulsar doesn't execute an externalized script by default.
             # This also breaks rewriting paths etc, so it doesn't really work if there are no shared paths
-            command = f"{command} && bash ../tool_script.sh"
+            command = f"{REMOTE_TOOL_EVAL_PULSAR_COMMAND} && bash ../tool_script.sh"
+        elif job_wrapper.galaxy_lib_dir:
+            command = REMOTE_TOOL_EVAL_SOURCE_COMMAND
+        else:
+            command = REMOTE_TOOL_EVAL_PACKAGE_COMMAND
         commands_builder.prepend_command(command, sep=sep)
 
 

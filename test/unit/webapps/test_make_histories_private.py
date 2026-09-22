@@ -10,6 +10,7 @@ from unittest.mock import MagicMock
 
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
+from galaxy.managers.histories import HistoryManager
 from galaxy.managers.users import UserManager
 from galaxy.util.unittest import TestCase
 from galaxy.webapps.galaxy.controllers.history import HistoryController
@@ -33,6 +34,7 @@ class TestMakeHistoriesPrivateController(TestCase):
         self.app.model.session.commit()
 
         controller = HistoryController(self.app)
+        controller.history_manager = self.app[HistoryManager]
         mock_link_access = MagicMock()
         mock_link_access.importable = False
         controller.service = MagicMock()
@@ -41,6 +43,13 @@ class TestMakeHistoriesPrivateController(TestCase):
         result = json.loads(controller.make_private(self.trans, all_histories=True))
 
         assert "all histories" in result["message"]
+        private_role = self.app.security_agent.get_private_user_role(self.user)
+        for history in (history1, history2):
+            assert {permission.role for permission in history.default_permissions} == {private_role}
+            assert {permission.action for permission in history.default_permissions} == {
+                model.Dataset.permitted_actions.DATASET_ACCESS.action,
+                model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action,
+            }
 
         calls = controller.service.shareable_service.disable_link_access.call_args_list
         called_ids = [call.args[1] for call in calls]

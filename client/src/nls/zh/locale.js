@@ -33,6 +33,8 @@ export default {
     "Saved Histories": "保存的历史",
     "Saved Datasets": "保存的数据集",
     "Saved Pages": "保存的页面",
+    Saved: "已保存",
+    Unsaved: "未保存",
 
     //Tooltip
     "Account and saved data": "账户与已保存数据",

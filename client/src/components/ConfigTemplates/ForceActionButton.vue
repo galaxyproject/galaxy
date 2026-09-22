@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BButton } from "bootstrap-vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     action: string;
@@ -13,5 +13,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <BButton variant="link" @click="emit('click')">I know what I am doing, force {{ action.toLowerCase() }}.</BButton>
+    <GButton color="blue" transparent @click="emit('click')"
+        >I know what I am doing, force {{ action.toLowerCase() }}.</GButton
+    >
 </template>

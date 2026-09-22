@@ -1,17 +1,24 @@
 import copy
 import logging
+from typing import TYPE_CHECKING
+
+from galaxy.util import Element
+
+if TYPE_CHECKING:
+    from tool_shed.dependencies.attribute_handlers import RepositoryDependencyAttributeHandler
+    from tool_shed.structured_app import ToolShedApp
 
 log = logging.getLogger(__name__)
 
 
 class TagAttributeHandler:
-    def __init__(self, app, rdd, unpopulate):
+    def __init__(self, app: "ToolShedApp", rdd: "RepositoryDependencyAttributeHandler", unpopulate: bool) -> None:
         self.app = app
         self.altered = False
         self.rdd = rdd
         self.unpopulate = unpopulate
 
-    def process_action_tag_set(self, elem, message):
+    def process_action_tag_set(self, elem: Element, message: str) -> tuple[bool, Element, str]:
         # Here we're inside of an <actions> tag set.  See http://localhost:9009/view/devteam/package_r_2_11_0 .
         # <action>
         #    <repository name="package_readline_6_2" owner="devteam">
@@ -20,7 +27,7 @@ class TagAttributeHandler:
         # </action>
         elem_altered = False
         new_elem = copy.deepcopy(elem)
-        for sub_index, sub_elem in enumerate(elem):
+        for sub_index, sub_elem in enumerate(iter(elem)):
             altered = False
             error_message = ""
             if sub_elem.tag == "repository":
@@ -37,14 +44,16 @@ class TagAttributeHandler:
                 new_elem[sub_index] = new_sub_elem
         return elem_altered, new_elem, message
 
-    def process_actions_tag_set(self, elem, message, skip_actions_tags=True):
+    def process_actions_tag_set(
+        self, elem: Element, message: str, skip_actions_tags: bool = True
+    ) -> tuple[bool, Element, str]:
         # <actions>
         #     <package name="libgtextutils" version="0.6">
         #         <repository name="package_libgtextutils_0_6" owner="test" prior_installation_required="True" />
         #     </package>
         elem_altered = False
         new_elem = copy.deepcopy(elem)
-        for sub_index, sub_elem in enumerate(elem):
+        for sub_index, sub_elem in enumerate(iter(elem)):
             altered = False
             error_message = ""
             if sub_elem.tag == "package":
@@ -74,14 +83,16 @@ class TagAttributeHandler:
                 new_elem[sub_index] = new_sub_elem
         return elem_altered, new_elem, message
 
-    def process_actions_group_tag_set(self, elem, message, skip_actions_tags=False):
+    def process_actions_group_tag_set(
+        self, elem: Element, message: str, skip_actions_tags: bool = False
+    ) -> tuple[bool, Element, str]:
         # Inspect all entries in the <actions_group> tag set, skipping <actions>
         # tag sets that define os and architecture attributes.  We want to inspect
         # only the last <actions> tag set contained within the <actions_group> tag
         # set to see if a complex repository dependency is defined.
         elem_altered = False
         new_elem = copy.deepcopy(elem)
-        for sub_index, sub_elem in enumerate(elem):
+        for sub_index, sub_elem in enumerate(iter(elem)):
             altered = False
             error_message = ""
             if sub_elem.tag == "actions":
@@ -104,11 +115,11 @@ class TagAttributeHandler:
                 new_elem[sub_index] = new_sub_elem
         return elem_altered, new_elem, message
 
-    def process_config(self, root, skip_actions_tags=True):
+    def process_config(self, root: Element, skip_actions_tags: bool = True) -> tuple[bool, Element, str]:
         error_message = ""
         new_root = copy.deepcopy(root)
         if root.tag == "tool_dependency":
-            for elem_index, elem in enumerate(root):
+            for elem_index, elem in enumerate(iter(root)):
                 altered = False
                 if elem.tag == "package":
                     # <package name="eigen" version="2.0.17">
@@ -123,11 +134,13 @@ class TagAttributeHandler:
             error_message = "Invalid tool_dependencies.xml file."
         return self.altered, new_root, error_message
 
-    def process_install_tag_set(self, elem, message, skip_actions_tags=True):
+    def process_install_tag_set(
+        self, elem: Element, message: str, skip_actions_tags: bool = True
+    ) -> tuple[bool, Element, str]:
         # <install version="1.0">
         elem_altered = False
         new_elem = copy.deepcopy(elem)
-        for sub_index, sub_elem in enumerate(elem):
+        for sub_index, sub_elem in enumerate(iter(elem)):
             altered = False
             error_message = ""
             if sub_elem.tag == "actions_group":
@@ -154,10 +167,12 @@ class TagAttributeHandler:
                 new_elem[sub_index] = new_sub_elem
         return elem_altered, new_elem, message
 
-    def process_package_tag_set(self, elem, message, skip_actions_tags=True):
+    def process_package_tag_set(
+        self, elem: Element, message: str, skip_actions_tags: bool = True
+    ) -> tuple[bool, Element, str]:
         elem_altered = False
         new_elem = copy.deepcopy(elem)
-        for sub_index, sub_elem in enumerate(elem):
+        for sub_index, sub_elem in enumerate(iter(elem)):
             altered = False
             error_message = ""
             if sub_elem.tag == "install":
@@ -178,7 +193,9 @@ class TagAttributeHandler:
                 new_elem[sub_index] = new_sub_elem
         return elem_altered, new_elem, message
 
-    def process_repository_tag_set(self, parent_elem, elem_index, elem, message):
+    def process_repository_tag_set(
+        self, parent_elem: Element, elem_index: int, elem: Element, message: str
+    ) -> tuple[bool, Element, str]:
         # We have a complex repository dependency.
         altered, new_elem, error_message = self.rdd.handle_complex_dependency_elem(
             parent_elem=parent_elem, elem_index=elem_index, elem=elem

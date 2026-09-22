@@ -113,6 +113,7 @@ See Also
 
 import abc
 import logging
+from collections.abc import Sequence
 from contextlib import contextmanager
 from typing import (
     Any,
@@ -152,6 +153,10 @@ from .has_driver_protocol import (
     TimeoutCallback,
     WaitTypeT,
 )
+from .keys import (
+    Key,
+    validate_key_press,
+)
 from .playwright_element import PlaywrightElement
 from .wait_methods_mixin import WaitMethodsMixin
 from .web_element_protocol import WebElementProtocol
@@ -179,20 +184,6 @@ class PlaywrightResources(NamedTuple):
     page: Page
 
 
-class PlaywrightKeys:
-    """Mapping of Selenium Keys to Playwright key names."""
-
-    ENTER = "Enter"
-    ESCAPE = "Escape"
-    BACKSPACE = "Backspace"
-    TAB = "Tab"
-    SPACE = " "
-    ARROW_DOWN = "ArrowDown"
-    ARROW_UP = "ArrowUp"
-    ARROW_LEFT = "ArrowLeft"
-    ARROW_RIGHT = "ArrowRight"
-
-
 class PlaywrightBy:
     """Locator strategy constants matching Selenium's By class."""
 
@@ -210,7 +201,6 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
     """Playwright-backed implementation of HasDriver interface."""
 
     by: type[PlaywrightBy] = PlaywrightBy
-    keys: type[PlaywrightKeys] = PlaywrightKeys
     axe_script_url: str = DEFAULT_AXE_SCRIPT_URL
     axe_skip: bool = False
     _current_frame: Frame | FrameLocator | None = None
@@ -704,6 +694,34 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         self._frame_or_page.locator(selector).first.click()
 
+    def active_element(self) -> WebElementProtocol:
+        handle = self._frame_or_page.evaluate_handle("document.activeElement").as_element()
+        assert handle is not None, "No element currently has focus"
+        return PlaywrightElement(handle, self)
+
+    def press(
+        self,
+        *keys: Key | str,
+        modifiers: Sequence[Key] = (),
+        element: WebElementProtocol | None = None,
+    ) -> None:
+        validate_key_press(keys, modifiers)
+        if not keys:
+            return
+        if element is not None:
+            self._unwrap_element(element).focus()
+        keyboard = self.page.keyboard
+        held: list[Key] = []
+        try:
+            for modifier in modifiers:
+                keyboard.down(modifier.value)
+                held.append(modifier)
+            for key in keys:
+                keyboard.press(key.value if isinstance(key, Key) else key)
+        finally:
+            for modifier in reversed(held):
+                keyboard.up(modifier.value)
+
     def send_enter(self, element: WebElementProtocol | None = None) -> None:
         """
         Send ENTER key.
@@ -711,10 +729,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         Args:
             element: Optional element to send key to. If None, sends to page.
         """
-        if element is None:
-            self.page.keyboard.press(self.keys.ENTER)
-        else:
-            self._send_key_to_element(self.keys.ENTER, self._unwrap_element(element))
+        self.press(Key.ENTER, element=element)
 
     def send_escape(self, element: WebElementProtocol | None = None) -> None:
         """
@@ -723,10 +738,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         Args:
             element: Optional element to send key to. If None, sends to page.
         """
-        if element is None:
-            self.page.keyboard.press(self.keys.ESCAPE)
-        else:
-            self._send_key_to_element(self.keys.ESCAPE, self._unwrap_element(element))
+        self.press(Key.ESCAPE, element=element)
 
     def send_backspace(self, element: WebElementProtocol | None = None) -> None:
         """
@@ -735,10 +747,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         Args:
             element: Optional element to send key to. If None, sends to page.
         """
-        if element is None:
-            self.page.keyboard.press(self.keys.BACKSPACE)
-        else:
-            self._send_key_to_element(self.keys.BACKSPACE, self._unwrap_element(element))
+        self.press(Key.BACKSPACE, element=element)
 
     def aggressive_clear(self, element: WebElementProtocol) -> None:
         """
@@ -755,17 +764,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         self.page.evaluate("element => element.value = ''", unwrapped)
         # Then send backspaces to trigger any input events
         for _ in range(25):
-            unwrapped.press(self.keys.BACKSPACE)
-
-    def _send_key_to_element(self, key: str, element: ElementHandle) -> None:
-        """
-        Internal: Send a key press to a specific element.
-
-        Args:
-            key: The key to send
-            element: ElementHandle to send key to
-        """
-        element.press(key)
+            self.press(Key.BACKSPACE, element=element)
 
     def hover(self, element: WebElementProtocol) -> None:
         """
@@ -972,7 +971,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """Internal implementation of scroll_into_view."""
         # Playwright has a built-in scroll_into_view_if_needed, but for consistency
         # with Selenium implementation, we'll use JavaScript
-        self.execute_script("arguments[0].scrollIntoView(true);", element)
+        self.execute_script('arguments[0].scrollIntoView({block: "center", inline: "nearest"});', element)
 
     def set_element_value(self, element: WebElementProtocol, value: str) -> None:
         """
@@ -985,8 +984,20 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         self._set_element_value(self._unwrap_element(element), value)
 
     def _set_element_value(self, element: ElementHandle, value: str) -> None:
-        """Internal implementation of set_element_value."""
-        self.execute_script(f"arguments[0].value = '{value}';", element)
+        """Internal implementation of set_element_value.
+
+        The value is passed via ``arguments[1]`` (not interpolated into the JS
+        string) so that values containing quotes or other special characters
+        are handled correctly. Both ``input`` and ``change`` events are
+        dispatched so that reactive frameworks (e.g. Vue) detect the change.
+        """
+        self.execute_script(
+            "arguments[0].value = arguments[1];"
+            "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));"
+            "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));",
+            element,
+            value,
+        )
 
     def execute_script_click(self, element: WebElementProtocol) -> None:
         """

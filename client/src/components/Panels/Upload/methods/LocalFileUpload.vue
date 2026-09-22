@@ -45,6 +45,8 @@ interface Props {
     multiple?: boolean;
     /** When true, do not persist staging to the shared store (modal use). */
     transient?: boolean;
+    /** Files to pre-stage when the component is opened in modal mode. */
+    initialFiles?: File[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -52,6 +54,7 @@ const props = withDefaults(defineProps<Props>(), {
     formats: undefined,
     multiple: true,
     transient: false,
+    initialFiles: undefined,
 });
 
 const emit = defineEmits<{
@@ -182,14 +185,39 @@ function addFiles(files: FileList | File[] | null) {
     }
 }
 
+watch(
+    () => props.initialFiles,
+    (files) => {
+        if (!files || files.length === 0) {
+            return;
+        }
+
+        const existingSignatures = new Set(
+            selectedFiles.value.map((item) => `${item.file.name}:${item.file.size}:${item.file.lastModified}`),
+        );
+        const filesToAdd = files.filter(
+            (file) => !existingSignatures.has(`${file.name}:${file.size}:${file.lastModified}`),
+        );
+        if (filesToAdd.length > 0) {
+            addFiles(filesToAdd);
+        }
+    },
+    { immediate: true },
+);
+
 function removeFile(index: number) {
     selectedFiles.value.splice(index, 1);
 }
 
 function addFileFromInput(eventTarget: EventTarget | null) {
-    const files = (eventTarget as HTMLInputElement)?.files;
+    const input = eventTarget as HTMLInputElement | null;
+    const files = input?.files;
     if (files) {
         addFiles(files);
+    }
+    // Reset the input so subsequent selections don't accumulate files
+    if (input) {
+        input.value = "";
     }
 }
 

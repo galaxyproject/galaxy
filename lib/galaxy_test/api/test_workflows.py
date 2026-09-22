@@ -1437,6 +1437,33 @@ steps:
             step_annotations = {step["annotation"] for step in imported_workflow["steps"].values()}
             assert "input1 description" in step_annotations
 
+    def test_long_annotations_round_trip(self):
+        # Multibyte on purpose: the bound counts characters, the dropped indexes counted bytes.
+        annotation = "\u00e9" * 30_000
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_SIMPLE)
+        editable = self._download_workflow(workflow_id, style="editor")
+        editable["annotation"] = annotation
+        next(iter(editable["steps"].values()))["annotation"] = annotation
+        self._assert_status_code_is(self._update_workflow(workflow_id, editable), 200)
+
+        updated = self._download_workflow(workflow_id)
+        assert updated["annotation"] == annotation
+        assert annotation in {step["annotation"] for step in updated["steps"].values()}
+
+    @pytest.mark.parametrize("target", ["workflow", "step"])
+    def test_annotation_size_limit(self, target):
+        # Exact bound lives in galaxy.model; this covers the error reaching the client as a 400.
+        oversized = "a" * 100_000
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_SIMPLE)
+        editable = self._download_workflow(workflow_id, style="editor")
+        if target == "workflow":
+            editable["annotation"] = oversized
+        else:
+            next(iter(editable["steps"].values()))["annotation"] = oversized
+        response = self._update_workflow(workflow_id, editable)
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Annotation too large")
+
     def test_import_subworkflows(self):
         def get_subworkflow_content_id(workflow_id):
             workflow_contents = self._download_workflow(workflow_id, style="editor")
@@ -4521,17 +4548,6 @@ input_1:
             assert "History dataset collection association not found" in error_entry["error"]
 
     @skip_without_tool("cat1")
-    def test_export_invocation_bco(self):
-        with self.dataset_populator.test_history() as history_id:
-            summary = self._run_workflow(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
-            invocation_id = summary.invocation_id
-            bco_path = self.workflow_populator.download_invocation_to_store(invocation_id, extension="bco.json")
-            with open(bco_path) as f:
-                bco = json.load(f)
-            self.workflow_populator.validate_biocompute_object(bco)
-            assert bco["provenance_domain"]["name"] == "Simple Workflow"
-
-    @skip_without_tool("cat1")
     def test_export_invocation_ro_crate(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
@@ -5907,6 +5923,42 @@ test_data:
                 history_id=history_id, content_id=inv["output_collections"]["output"]["id"]
             )
             assert details["elements"][0]["object"]["file_ext"] == "csv"
+
+    @skip_without_tool("collection_creates_pair")
+    def test_change_datatype_static_collection_output(self):
+        # The collection here is structured up front, so its elements already exist when the
+        # action runs - the counterpart to test_change_datatype_discovered_outputs, where they
+        # do not and the action has to be deferred to discovery instead.
+        with self.dataset_populator.test_history() as history_id:
+            jobs_summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input: data
+steps:
+  split:
+    tool_id: collection_creates_pair
+    in:
+      input1: input
+    out:
+        paired_output:
+          change_datatype: csv
+outputs:
+  output:
+    outputSource: split/paired_output
+test_data:
+  input: "1\n2\n3\n4"
+""",
+                history_id=history_id,
+            )
+            inv = self.workflow_populator.get_invocation(jobs_summary.invocation_id, step_details=True)
+            details = self.dataset_populator.get_history_collection_details(
+                history_id=history_id, content_id=inv["output_collections"]["output"]["id"]
+            )
+            # Both, so that changing only the first element would still fail.
+            forward, reverse = details["elements"]
+            assert forward["object"]["file_ext"] == "csv"
+            assert reverse["object"]["file_ext"] == "csv"
 
     @skip_without_tool("collection_type_source_map_over")
     def test_mapping_and_subcollection_mapping(self):

@@ -72,4 +72,31 @@ describe("router push changes", () => {
         push.call(mockContext, "/test/forceroute", { force: true });
         expect(currentLocation).toMatch(new RegExp(`/test/forceroute?.*vkey.*`));
     });
+
+    it("does not double the router base for forced object routes", () => {
+        const base = "/galaxy";
+        let pushed = null;
+        const mockContext = {
+            confirmation: false,
+            app: { $emit: vi.fn() },
+            resolve(location) {
+                const rel = typeof location === "object" ? location.path : location;
+                return { href: `${base}${rel}`, route: { fullPath: rel } };
+            },
+        };
+        const mockRouter = {
+            prototype: {
+                push: (location) => {
+                    pushed = location;
+                    return { catch: vi.fn() };
+                },
+            },
+        };
+        patchRouterPush(mockRouter);
+
+        mockRouter.prototype.push.call(mockContext, { path: "/collection/new_list?advanced=false" }, { force: true });
+
+        expect(pushed.fullPath).not.toContain(base);
+        expect(pushed.fullPath).toContain("__vkey__");
+    });
 });

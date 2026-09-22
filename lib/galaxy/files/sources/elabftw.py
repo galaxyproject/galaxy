@@ -178,16 +178,9 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
     def get_prefix(self) -> str | None:
         endpoint: ParseResult = self._get_endpoint()
         return self.id if self.scheme not in {"elabftw", DEFAULT_SCHEME} else (endpoint.netloc or None)
-        # it would make better sense to return
-        # `self.id if self.scheme == USER_FILE_SOURCES_SCHEME else (endpoint.netloc or None)`, where
-        # `USER_FILE_SOURCES_SCHEME` comes from `galaxy.managers.file_source_instances`; however, that would lead to a
-        # circular import (maybe `USER_FILE_SOURCES_SCHEME` should be moved to a module in a layer deeper than
-        # `galaxy.managers`)
 
     def get_scheme(self) -> str:
         return self.scheme if self.scheme and self.scheme != DEFAULT_SCHEME else "elabftw"
-        # it would make better sense to return `self.scheme if self.scheme == USER_FILE_SOURCES_SCHEME else "elabftw"`,
-        # but the same circular import issue as above arises
 
     def score_url_match(self, url: str) -> int:
         parsed_url = urlparse(url)
@@ -218,7 +211,7 @@ class eLabFTWFilesSource(BaseFilesSource[eLabFTWFileSourceTemplateConfiguration,
         """
         Create an ``aiohttp`` session.
         """
-        connector = aiohttp.TCPConnector(limit=MAX_CONCURRENT_REQUESTS)
+        connector = aiohttp.TCPConnector(limit=MAX_CONCURRENT_REQUESTS, ssl=requests.create_ssl_context())
         return aiohttp.ClientSession(
             connector=connector,
             raise_for_status=True,

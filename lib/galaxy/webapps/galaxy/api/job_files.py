@@ -11,6 +11,7 @@ from galaxy import (
     exceptions,
     util,
 )
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import (
     Job,
@@ -244,7 +245,5 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         return False
 
     def __in_working_directory(self, job: Job, path: str, app: MinimalManagerApp):
-        working_directory = app.object_store.get_filename(
-            job, base_dir="job_work", dir_only=True, extra_dir=str(job.id)
-        )
+        working_directory = JobWorkingDirectory(job, app.object_store).resolve()
         return util.in_directory(path, working_directory)

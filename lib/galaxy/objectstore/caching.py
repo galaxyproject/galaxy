@@ -1,10 +1,12 @@
 """ """
 
+import hashlib
 import logging
 import os
 import threading
 import time
 from math import inf
+from uuid import UUID
 
 from typing_extensions import NamedTuple
 
@@ -22,10 +24,15 @@ ONE_GIGA_BYTE = 1024 * 1024 * 1024
 
 FileListT = list[tuple[time.struct_time, str, int]]
 
+#: The type of an object identifier used for cache shard selection.
+#: Can be a numeric id (``store_by="id"``) or a UUID object / its
+#: string representation (``store_by="uuid"``).
+ObjectId = int | UUID | str
+
 
 class CacheTarget(NamedTuple):
     path: str
-    size: int  # cache size in gigabytes
+    size: float  # cache size in gigabytes
     limit: float  # cache limit as a percent
 
     def fits_in_cache(self, bytes: int) -> bool:
@@ -43,6 +50,115 @@ class CacheTarget(NamedTuple):
         return f"{self.limit} percent of {self.size} gigabytes"
 
 
+class CacheShard(NamedTuple):
+    path: str
+    weight: int
+    size: float
+
+
+def parse_cache_dirs_from_xml(cache_element) -> list[dict] | None:
+    """Parse <dirs><dir .../></dirs> from a cache XML element.
+
+    Returns a list of dicts with keys ``path``, ``weight``, ``size``
+    (size may be ``None``), or ``None`` if no ``<dirs>`` element is present.
+    """
+    dirs_els = cache_element.findall("dirs")
+    if not dirs_els:
+        return None
+    dir_els = dirs_els[0].findall("dir")
+    if not dir_els:
+        return None
+    return [
+        {
+            "path": d.get("path"),
+            "weight": int(d.get("weight", 1)),
+            "size": float(d.get("size", -1)) if d.get("size") is not None else None,
+        }
+        for d in dir_els
+    ]
+
+
+class CacheShardManager:
+    def __init__(self, shards: list[CacheShard]):
+        if not shards:
+            raise ValueError("CacheShardManager requires at least one shard")
+        self.shards = shards
+        total_weight = sum(s.weight for s in shards)
+        self._weighted_index: list[tuple[int, CacheShard]] = []
+        cumulative = 0
+        for shard in shards:
+            cumulative += shard.weight
+            self._weighted_index.append((cumulative, shard))
+        self._total_weight = total_weight
+
+    def _select_shard(self, object_id: ObjectId) -> CacheShard:
+        if len(self.shards) == 1:
+            # Non-sharded deployments short-circuit — no hashing needed.
+            return self.shards[0]
+        key = str(object_id)
+        digest = hashlib.sha256(key.encode()).digest()
+        hash_value = int.from_bytes(digest, "big")
+        point = hash_value % self._total_weight
+        for cumulative, shard in self._weighted_index:
+            if point < cumulative:
+                return shard
+        return self.shards[-1]
+
+    def get_cache_path(self, object_id: ObjectId, rel_path: str) -> str:
+        shard = self._select_shard(object_id)
+        return os.path.abspath(os.path.join(shard.path, rel_path))
+
+    def get_cache_target(self, object_id: ObjectId) -> CacheTarget:
+        shard = self._select_shard(object_id)
+        return CacheTarget(shard.path, shard.size, 0.9)
+
+    @property
+    def paths(self) -> list[str]:
+        return [s.path for s in self.shards]
+
+    @property
+    def cache_targets(self) -> list[CacheTarget]:
+        return [CacheTarget(s.path, s.size, 0.9) for s in self.shards]
+
+    def to_config_dict(self) -> dict:
+        """Serialize shard config for backend ``to_dict`` / reconstruction.
+
+        Emits ``dirs`` when there are multiple shards, otherwise the legacy
+        single ``path`` / ``size`` keys.  ``weight`` is intentionally omitted
+        for the single-shard case because it is meaningless with only one shard.
+        """
+        if len(self.shards) == 1:
+            s = self.shards[0]
+            return {"path": s.path, "size": s.size}
+        return {
+            "dirs": [{"path": s.path, "weight": s.weight, "size": s.size} for s in self.shards],
+        }
+
+    @classmethod
+    def from_config(cls, cache_dict: dict, config) -> "CacheShardManager":
+        default_size = cache_dict.get("size") or config.object_store_cache_size
+        default_path = cache_dict.get("path") or config.object_store_cache_path
+
+        dirs = cache_dict.get("dirs")
+        if dirs:
+            shards: list[CacheShard] = []
+            for d in dirs:
+                path = d.get("path")
+                if not path:
+                    continue
+                weight = d.get("weight", 1)
+                if weight <= 0:
+                    continue
+                size = d.get("size")
+                if size is None:
+                    size = default_size
+                shards.append(CacheShard(path=path, weight=weight, size=size))
+            if shards:
+                return cls(shards)
+
+        return cls([CacheShard(path=default_path, weight=1, size=default_size)])
+
+
 def check_caches(targets: list[CacheTarget]):
     for target in targets:
         check_cache(target)
@@ -50,6 +166,11 @@ def check_caches(targets: list[CacheTarget]):
 
 def check_cache(cache_target: CacheTarget):
     """Run a step of the cache monitor."""
+    if not (cache_target.size > 0):
+        # Matches CacheTarget.fits_in_cache - a non-positive size is an unbounded
+        # cache, not a zero-byte budget. Without this the limit below goes negative,
+        # every directory looks over budget, and the whole path gets reaped.
+        return
     total_size, file_list = _get_cache_size_files(cache_target.path)
     # Sort the file list (based on access time)
     file_list.sort()
@@ -135,18 +256,13 @@ def parse_caching_config_dict_from_xml(config_xml):
             "monitor": monitor,
             "cache_updated_data": cache_updated_data,
         }
+
+        dirs = parse_cache_dirs_from_xml(c_xml)
+        if dirs:
+            cache_dict["dirs"] = dirs
     else:
         cache_dict = {}
     return cache_dict
-
-
-def configured_cache_size(config, config_dict) -> int:
-    cache_config_dict = config_dict.get("cache") or {}
-    cache_size = cache_config_dict.get("size") or config.object_store_cache_size
-    if cache_size != -1:
-        # Convert admin-set GBs to bytes internally for quick comparison
-        cache_size = cache_size * ONE_GIGA_BYTE
-    return cache_size
 
 
 def enable_cache_monitor(config, config_dict) -> tuple[bool, int]:
@@ -170,7 +286,7 @@ def enable_cache_monitor(config, config_dict) -> tuple[bool, int]:
 
 
 class InProcessCacheMonitor:
-    def __init__(self, cache_target: CacheTarget, interval: int = 30, initial_sleep: int | None = 2):
+    def __init__(self, cache_targets: list[CacheTarget], interval: int = 30, initial_sleep: int | None = 2):
         # This Event object is initialized to False
         # It is set to True in shutdown(), causing
         # the cache monitor thread to return/terminate
@@ -178,7 +294,7 @@ class InProcessCacheMonitor:
         # Helper for interruptable sleep
         self.sleeper = Sleeper()
 
-        self.cache_target = cache_target
+        self.cache_targets = cache_targets
         self.interval = interval
         self.initial_sleep = initial_sleep
 
@@ -194,7 +310,7 @@ class InProcessCacheMonitor:
                 self.initial_sleep
             )  # startup sleep hack - probably originally implemented to prevent contention at app startup
         while not self.stop_cache_monitor_event.is_set():
-            check_cache(self.cache_target)
+            check_caches(self.cache_targets)
             self.sleeper.sleep(self.interval)
 
     def shutdown(self):

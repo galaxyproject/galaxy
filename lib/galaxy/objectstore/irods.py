@@ -2,11 +2,13 @@
 Object Store plugin for the Integrated Rule-Oriented Data System (iRODS)
 """
 
+import functools
 import logging
 import os
 import shutil
 import ssl
 import threading
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -16,10 +18,12 @@ try:
     from irods.exception import (
         CollectionDoesNotExist,
         DataObjectDoesNotExist,
+        NetworkException,
     )
     from irods.session import iRODSSession
 except ImportError:
     irods = None
+
 
 from galaxy.util import (
     ExecutionTimer,
@@ -27,12 +31,51 @@ from galaxy.util import (
     unlink,
 )
 from ._caching_base import CachingConcreteObjectStore
+from .caching import (
+    CacheShardManager,
+    CacheTarget,
+    parse_cache_dirs_from_xml,
+)
 
 IRODS_IMPORT_MESSAGE = "The Python irods package is required to use this feature, please install it"
 # 1 MB
 CHUNK_SIZE = 2**20
 log = logging.getLogger(__name__)
 logging.getLogger("irods.connection").setLevel(logging.INFO)  # irods logging generates gigabytes of logs
+
+
+_IRODS_RETRY_ATTEMPTS = 3
+_IRODS_RETRY_BACKOFF = 0.5
+
+# python-irodsclient is optional; fall back to ssl errors when NetworkException is unavailable.
+_RETRYABLE_CONNECTION_ERRORS: "tuple[type[BaseException], ...]"
+if irods is None:
+    _RETRYABLE_CONNECTION_ERRORS = (ssl.SSLError,)
+else:
+    _RETRYABLE_CONNECTION_ERRORS = (NetworkException, ssl.SSLError)
+
+
+def _retry_on_connection_error(func):
+    """Retry an iRODS operation on a transient connection error."""
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        for attempt in range(1, _IRODS_RETRY_ATTEMPTS + 1):
+            try:
+                return func(*args, **kwargs)
+            except _RETRYABLE_CONNECTION_ERRORS as exc:
+                if attempt == _IRODS_RETRY_ATTEMPTS:
+                    raise
+                log.warning(
+                    "Transient iRODS error in %s (attempt %d/%d), retrying on a fresh connection: %s",
+                    func.__name__,
+                    attempt,
+                    _IRODS_RETRY_ATTEMPTS,
+                    exc,
+                )
+                time.sleep(_IRODS_RETRY_BACKOFF * attempt)
+
+    return wrapper
 
 
 def _config_xml_error(tag):
@@ -105,6 +148,16 @@ def parse_config_xml(config_xml):
         staging_path = c_xml[0].get("path", None)
         cache_updated_data = string_as_bool(c_xml[0].get("cache_updated_data", "True"))
 
+        cache_dict = {
+            "size": cache_size,
+            "path": staging_path,
+            "cache_updated_data": cache_updated_data,
+        }
+
+        dirs = parse_cache_dirs_from_xml(c_xml[0])
+        if dirs:
+            cache_dict["dirs"] = dirs
+
         attrs = ("type", "path")
         e_xml = config_xml.findall("extra_dir")
         if not e_xml:
@@ -142,11 +195,7 @@ def parse_config_xml(config_xml):
             "logical": {
                 "path": logical_path,
             },
-            "cache": {
-                "size": cache_size,
-                "path": staging_path,
-                "cache_updated_data": cache_updated_data,
-            },
+            "cache": cache_dict,
             "extra_dirs": extra_dirs,
             "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
         }
@@ -227,9 +276,8 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         self.logical_path = logical_dict.get("path") or f"/{self.zone}/home/{self.username}"
 
         cache_dict = config_dict.get("cache") or {}
-        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
-        self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         self.cache_updated_data = cache_dict.get("cache_updated_data", True)
+        self._cache_shards = CacheShardManager.from_config(cache_dict, self.config)
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         self.extra_dirs.update(extra_dirs)
 
@@ -368,14 +416,11 @@ class IRODSObjectStore(CachingConcreteObjectStore):
             "logical": {
                 "path": self.logical_path,
             },
-            "cache": {
-                "size": self.cache_size,
-                "path": self.staging_path,
-                "cache_updated_data": self.cache_updated_data,
-            },
+            "cache": self._cache_config_to_dict(),
         }
 
     # rel_path is file or folder?
+    @_retry_on_connection_error
     def _get_remote_size(self, rel_path):
         ipt_timer = ExecutionTimer()
         p = Path(rel_path)
@@ -396,6 +441,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
             log.debug("irods_pt _get_remote_size: %s", ipt_timer)
 
     # rel_path is file or folder?
+    @_retry_on_connection_error
     def _exists_remotely(self, rel_path):
         ipt_timer = ExecutionTimer()
         p = Path(rel_path)
@@ -415,9 +461,9 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _exists_remotely: %s", ipt_timer)
 
-    def _download(self, rel_path):
+    @_retry_on_connection_error
+    def _download(self, rel_path, *, cache_path: str, cache_target: CacheTarget):
         ipt_timer = ExecutionTimer()
-        cache_path = self._get_cache_path(rel_path)
         log.debug("Pulling data object '%s' into cache to %s", rel_path, cache_path)
 
         p = Path(rel_path)
@@ -442,7 +488,8 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _download: %s", ipt_timer)
 
-    def _push_to_storage(self, rel_path, source_file=None, from_string=None):
+    @_retry_on_connection_error
+    def _push_to_storage(self, rel_path, source_file=None, from_string=None, *, cache_path: str):
         """
         Push the file pointed to by ``rel_path`` to the iRODS. Extract folder name
         from rel_path as iRODS collection name, and extract file name from rel_path
@@ -456,7 +503,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         data_object_name = p.stem + p.suffix
         subcollection_name = p.parent
 
-        source_file = source_file if source_file else self._get_cache_path(rel_path)
+        source_file = source_file if source_file else cache_path
         options = {kw.FORCE_FLAG_KW: "", kw.DEST_RESC_NAME_KW: self.resource}
 
         if not os.path.exists(source_file):
@@ -521,9 +568,12 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _push_to_storage: %s", ipt_timer)
 
+    @_retry_on_connection_error
     def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         ipt_timer = ExecutionTimer()
         rel_path = self._construct_path(obj, **kwargs)
+        object_id = self._get_object_id(obj)
+        cache_path = self._get_cache_path(rel_path, object_id)
         extra_dir = kwargs.get("extra_dir", None)
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)
@@ -542,7 +592,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
             # with all the files in it. This is easy for the local file system,
             # but requires iterating through each individual key in irods and deleing it.
             if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
+                shutil.rmtree(cache_path, ignore_errors=True)
 
                 col_path = f"{self.logical_path}/{rel_path}"
                 col = None
@@ -566,7 +616,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
 
             else:
                 # Delete from cache first
-                unlink(self._get_cache_path(rel_path), ignore_errors=True)
+                unlink(cache_path, ignore_errors=True)
                 # Delete from irods as well
                 p = Path(rel_path)
                 data_object_name = p.stem + p.suffix
@@ -583,6 +633,10 @@ class IRODSObjectStore(CachingConcreteObjectStore):
                 except (DataObjectDoesNotExist, CollectionDoesNotExist):
                     log.info("Collection or data object (%s) does not exist", data_object_path)
                     return True
+        except _RETRYABLE_CONNECTION_ERRORS:
+            # ssl.SSLError is an OSError subclass; re-raise before the generic
+            # OSError handler below so @_retry_on_connection_error can retry it.
+            raise
         except OSError:
             log.exception("%s delete error", self._get_filename(obj, **kwargs))
         finally:

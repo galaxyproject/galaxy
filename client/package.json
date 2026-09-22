@@ -34,6 +34,18 @@
     "onlyBuiltDependencies": [
       "esbuild",
       "vue-demi"
+    ],
+    "ignoredBuiltDependencies": [
+      "@fortawesome/fontawesome-common-types",
+      "@fortawesome/fontawesome-free",
+      "@fortawesome/fontawesome-svg-core",
+      "@fortawesome/free-brands-svg-icons",
+      "@fortawesome/free-regular-svg-icons",
+      "@fortawesome/free-solid-svg-icons",
+      "@parcel/watcher",
+      "bootstrap-vue",
+      "core-js-pure",
+      "msw"
     ]
   },
   "dependencies": {
@@ -72,7 +84,7 @@
     "d3-zoom": "^3.0.0",
     "d3v3": "npm:d3@3",
     "date-fns": "^2.30.0",
-    "decode-uri-component": "^0.4.1",
+    "decode-uri-component": "^0.5.0",
     "dexie": "^3.2.5",
     "diff": "^8.0.3",
     "dom-to-image": "^2.6.0",
@@ -161,11 +173,12 @@
     "test:ui": "vitest --ui",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "eslint-precommit": "eslint -c .eslintrc.js --quiet --ext .js,.vue,.ts src",
-    "eslint": "eslint -c .eslintrc.js --ext .js,.vue,.ts src",
+    "eslint-precommit": "eslint -c .eslintrc.js --quiet --ext .js,.vue,.ts src packages/ui/src",
+    "eslint": "eslint -c .eslintrc.js --ext .js,.vue,.ts src packages/ui/src",
     "type-check": "vue-tsc --noEmit"
   },
   "devDependencies": {
+    "@galaxyproject/galaxy-ui": "workspace:*",
     "@modyfi/vite-plugin-yaml": "^1.1.1",
     "@pinia/testing": "0.1.5",
     "@rollup/plugin-inject": "^5.0.5",

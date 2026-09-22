@@ -100,6 +100,9 @@ class BaseJobRunner:
     runner_name = "BaseJobRunner"
 
     start_methods = ["_init_monitor_thread", "_init_worker_threads"]
+    #: Whether ``recover()`` knows how to resume a job left in the FINISHING state by an
+    #: interrupted ``_handle_metadata_externally``.
+    recovers_finishing_jobs = False
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs) -> None:
@@ -200,7 +203,7 @@ class BaseJobRunner:
                 self.app.model.session().add(job)
 
     # Causes a runner's `queue_job` method to be called from a worker thread
-    def put(self, job_wrapper: "MinimalJobWrapper") -> None:
+    def put(self, job_wrapper: "MinimalJobWrapper") -> bool:
         """Add a job to the queue (by job identifier), indicate that the job is ready to run."""
         put_timer = ExecutionTimer()
         try:
@@ -212,10 +215,12 @@ class BaseJobRunner:
             message = e.client_message if hasattr(e, "client_message") else str(e)
             job_wrapper.fail(message, exception=e)
             log.debug(f"Job [{job_wrapper.job_id}] failed to queue {put_timer}")
-            return
+            return False
         if queue_job:
             self.mark_as_queued(job_wrapper)
             log.debug(f"Job [{job_wrapper.job_id}] queued {put_timer}")
+            return True
+        return False
 
     def mark_as_queued(self, job_wrapper: "MinimalJobWrapper"):
         self.work_queue.put((self.queue_job, job_wrapper))
@@ -467,9 +472,12 @@ class BaseJobRunner:
                 self._verify_celery_config()
                 from galaxy.celery.tasks import set_job_metadata
 
+                if self.recovers_finishing_jobs:
+                    job_wrapper.change_state(model.Job.states.FINISHING, update_output_states=False)
                 # We're synchronously waiting for a task here. This means we have to have a result backend.
                 # That is bad practice and also means this can never become part of another task.
                 try:
+                    log.debug("Dispatching external metadata execution to celery for job: %d", job_wrapper.job_id)
                     set_job_metadata.delay(
                         tool_job_working_directory=job_wrapper.working_directory,
                         job_id=job_wrapper.job_id,
@@ -500,7 +508,7 @@ class BaseJobRunner:
                     shell=True,
                     cwd=job_wrapper.working_directory,
                     env=os.environ,
-                    preexec_fn=os.setpgrp,
+                    start_new_session=True,
                 )
             log.debug("execution of external set_meta for job %d finished", job_wrapper.job_id)
 
@@ -862,6 +870,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors, Generic[T]):
 
     monitor_queue: Queue[T]
     watched: list[T]
+    always_handle_metadata_externally = False
 
     def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs) -> None:
         super().__init__(app, nworkers, **kwargs)
@@ -970,9 +979,19 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors, Generic[T]):
         return collect_output_success, stdout, stderr
 
     def finish_job(self, job_state: T) -> None:
+        """Handle external metadata (if needed), then call _finish_job."""
+        external_metadata = self.always_handle_metadata_externally or not asbool(
+            job_state.job_wrapper.job_destination.params.get("embed_metadata_in_job", True)
+        )
+        if external_metadata:
+            self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
+        self._finish_job(job_state)
+
+    def _finish_job(self, job_state: T) -> None:
         """
         Get the output/error for a finished job, pass to `job_wrapper.finish`
         and cleanup all the job's temporary files.
+        Subclasses override this for post-metadata work.
         """
         galaxy_id_tag = job_state.job_wrapper.get_id_tag()
         external_job_id = job_state.job_id

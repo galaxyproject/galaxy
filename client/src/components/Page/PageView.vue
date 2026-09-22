@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -12,6 +12,7 @@ import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import { urlData } from "@/utils/url";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import PublishedItem from "@/components/Common/PublishedItem.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -106,10 +107,10 @@ function stsUrl(config: any) {
             <div
                 v-if="props.displayOnly && page && !loading"
                 class="page-display-toolbar d-flex align-items-center p-2 border-bottom">
-                <BButton variant="link" size="sm" data-description="page view edit button" @click="onEdit">
+                <GButton transparent color="blue" size="small" data-description="page view edit button" @click="onEdit">
                     <FontAwesomeIcon :icon="faArrowLeft" />
                     {{ PUBLISHED_LABELS.editButton }}
-                </BButton>
+                </GButton>
                 <span class="flex-grow-1 text-center font-weight-bold">
                     {{ page.title || page.name }}
                 </span>

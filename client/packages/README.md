@@ -2,9 +2,10 @@
 
 Workspace packages consumed by the main client as `workspace:*` deps. The main client (`client/package.json`, `client/src/`) is the workspace root.
 
-| Package                        | Published                                | Purpose                                                    |
-| ------------------------------ | ---------------------------------------- | ---------------------------------------------------------- |
-| [`api-client/`](./api-client/) | Yes (`@galaxyproject/galaxy-api-client`) | OpenAPI schema types, typed fetch client, error utilities. |
+| Package                        | Published                                   | Purpose                                                                                                                                                                                |
+| ------------------------------ | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`api-client/`](./api-client/) | Yes (`@galaxyproject/galaxy-api-client`)    | OpenAPI schema types, typed fetch client, error utilities.                                                                                                                             |
+| [`ui/`](./ui/)                 | No -- internal (`@galaxyproject/galaxy-ui`) | G-prefixed base components and supporting composables. Source-consumed by the main client via a Vite alias; flips to a library build + publish when the interface stabilizes on Vue 3. |
 
 ## Criteria for adding a package
 

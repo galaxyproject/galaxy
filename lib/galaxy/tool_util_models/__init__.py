@@ -45,6 +45,7 @@ from .tool_outputs import (
     IncomingToolOutput,
     IncomingToolOutputCollection,
     IncomingToolOutputDataset,
+    IncomingUserToolOutput,
     ToolOutput,
 )
 from .tool_source import (
@@ -62,6 +63,17 @@ from .tool_source import (
     YamlTemplateConfigFile,
 )
 from .yaml_parameters import YamlGalaxyToolParameter
+
+UserToolOutputs = Annotated[
+    list[IncomingUserToolOutput],
+    Field(
+        description=(
+            "Datasets and dataset collections Galaxy collects after the command finishes. A data output "
+            "identifies its produced file with `from_work_dir` or `discover_datasets`; a collection output "
+            "uses `discover_datasets`."
+        )
+    ),
+]
 
 
 def normalize_dict(values, keys: list[str]):
@@ -292,6 +304,12 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
     container: Annotated[
         str, Field(description="Container image to use for this tool.", examples=["quay.io/biocontainers/python:3.13"])
     ]
+    requirements: Annotated[
+        list[JavascriptRequirement | ResourceRequirement] | None,
+        Field(
+            description="JavaScript helpers and compute resource requests needed to execute this tool. Set the container image with the top-level container field."
+        ),
+    ] = []  # type: ignore[assignment]  # Deliberately narrow the UDT schema inherited from the general YAML model.
     # Required here (it's optional on the base for stored/legacy rows). Galaxy's
     # linter rejects a versionless tool, so forcing it into the structured-output
     # ``required`` set stops the model dropping it -- notably on a retry, where the
@@ -306,7 +324,9 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
     # API-authored tools may still omit them. An empty list is allowed -- this forces the
     # key to be present, not non-empty.
     inputs: list[YamlGalaxyToolParameter]
-    outputs: list[IncomingToolOutput]
+    # Pydantic intentionally narrows the mutable base-model list so the
+    # user-tool schema exposes only dataset and collection outputs.
+    outputs: UserToolOutputs  # type: ignore[assignment]
 
     # Field declaration order puts subclass fields (class_, container) after
     # parent ones, which serializes them at the end. Re-order on dump so the
@@ -340,6 +360,20 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
             raise PydanticCustomError(
                 "dynamic_tool.blank_container",
                 "container must not be empty",
+            )
+        return value
+
+    @field_validator("requirements", mode="before")
+    @classmethod
+    def _reject_container_requirements(cls, value):
+        if isinstance(value, list) and any(
+            isinstance(requirement, ContainerRequirement)
+            or (isinstance(requirement, dict) and requirement.get("type") == "container")
+            for requirement in value
+        ):
+            raise PydanticCustomError(
+                "dynamic_tool.container_requirement",
+                "container requirements are not supported for user-defined tools; set the top-level container field",
             )
         return value
 
@@ -383,7 +417,7 @@ class UserToolSource(UserToolSourceAuthoringView):
     # authoring view is a structured-output nudge for the LLM only. The canonical
     # model (API surface, stored rows) must still accept tools that omit them.
     inputs: list[YamlGalaxyToolParameter] = []
-    outputs: list[IncomingToolOutput] = []
+    outputs: UserToolOutputs = []
 
 
 class YamlToolSource(_DynamicToolSourceBase):
@@ -549,6 +583,17 @@ class BaseTestOutputModel(StrictModel):
             description=(
                 "If specified, this value is checked against the corresponding output's data type. "
                 "If these do not match, the test will fail."
+            ),
+        ),
+    ] = None
+    visible: Annotated[
+        bool | None,
+        Field(
+            title="Visible",
+            description=(
+                "If specified, this value is checked against whether the corresponding output is shown "
+                "in the history. Use to test outputs a tool or workflow is expected to hide, for "
+                "instance via a `HideDatasetAction` post job action."
             ),
         ),
     ] = None

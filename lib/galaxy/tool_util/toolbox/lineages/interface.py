@@ -10,7 +10,7 @@ from galaxy.tool_util.version import parse_version
 from galaxy.util.tool_version import remove_version_from_guid
 
 if TYPE_CHECKING:
-    from galaxy.tools import Tool
+    from galaxy.tool_util.abstract_tool import AbstractTool
 
 
 class ToolLineageVersion:
@@ -57,7 +57,7 @@ class ToolLineage:
         return [f"{tool_id}/{version}" for version in self.tool_versions]
 
     @classmethod
-    def from_tool(cls, tool: "Tool") -> "ToolLineage":
+    def from_tool(cls, tool: "AbstractTool") -> "ToolLineage":
         tool_id = tool.id
         assert tool_id is not None
         lineages_by_id = cls.lineages_by_id

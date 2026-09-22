@@ -18,7 +18,7 @@ const UNUSABLE_FROM_UPLOAD_STATES = Object.values(STATES.READY_STATES).filter(
 /**
  * For given uploaded items, monitor the states of those items from the history.
  *
- * @param uploadValues - The uploaded values from the upload `DefaultBox`
+ * @param uploadValues - The uploaded values returned by the upload modal flow
  * @param historyId - The ID of the history being uploaded to
  * @param enableStart - If an upload is enabled to start
  * @param creatingPairedType - If the user has selected to create a `paired`

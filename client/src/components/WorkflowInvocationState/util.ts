@@ -54,7 +54,7 @@ export function runningCount(jobSummary: InvocationJobsSummary): number {
     return countStates(jobSummary, ["running"]);
 }
 
-export function numTerminal(jobSummary: InvocationJobsSummary): number {
+export function numTerminal(jobSummary: InvocationJobsSummary | StepJobSummary): number {
     return countStates(jobSummary, TERMINAL_STATES);
 }
 
@@ -62,11 +62,11 @@ export function errorCount(jobSummary: InvocationJobsSummary | StepJobSummary): 
     return countStates(jobSummary, ERROR_STATES);
 }
 
-function isNew(jobSummary: InvocationJobsSummary) {
+function isNew(jobSummary: InvocationJobsSummary | StepJobSummary) {
     return jobSummary.populated_state && jobSummary.populated_state == "new";
 }
 
-function anyWithStates(jobSummary: InvocationJobsSummary, queryStates: string[]) {
+function anyWithStates(jobSummary: InvocationJobsSummary | StepJobSummary, queryStates: string[]) {
     const states = jobSummary.states;
     for (const index in queryStates) {
         const state: string = queryStates[index] as string;
@@ -77,7 +77,7 @@ function anyWithStates(jobSummary: InvocationJobsSummary, queryStates: string[])
     return false;
 }
 
-export function isTerminal(jobSummary: InvocationJobsSummary) {
+export function isTerminal(jobSummary: InvocationJobsSummary | StepJobSummary) {
     if (isNew(jobSummary)) {
         return false;
     } else {

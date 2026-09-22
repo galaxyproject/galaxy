@@ -288,11 +288,15 @@ def test_fill_defaults():
     assert with_defaults["parameter"] == 1
     with_defaults = fill_state_for({}, "parameters/gx_float")
     assert with_defaults["parameter"] == 1.0
+    with_defaults = fill_state_for({}, "parameters/gx_numeric_zero_user_y")
+    assert with_defaults == {"integer": 0, "float": 0.0, "optional_integer": 0, "optional_float": 0.0}
     with_defaults = fill_state_for({}, "parameters/gx_boolean")
     assert with_defaults["parameter"] is False
     with_defaults = fill_state_for({}, "parameters/gx_boolean_optional")
-    # This is False unfortunately - see comments in gx_boolean_optional XML.
+    # Profiles before 26.2 keep reporting false for an unset optional boolean.
     assert with_defaults["parameter"] is False
+    with_defaults = fill_state_for({}, "parameters/gx_boolean_optional_26_2")
+    assert with_defaults["parameter"] is None
     with_defaults = fill_state_for({}, "parameters/gx_boolean_checked")
     assert with_defaults["parameter"] is True
     with_defaults = fill_state_for({}, "parameters/gx_boolean_optional_checked")

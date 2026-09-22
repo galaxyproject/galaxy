@@ -13,6 +13,10 @@ from typing import (
 from sqlalchemy import select
 
 from galaxy.agents import iwc
+from galaxy.agents.base import (
+    JOB_LOG_EXCERPT_CHARS,
+    truncate_middle,
+)
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.model import UserDynamicToolAssociation
@@ -823,9 +827,6 @@ class AgentOperationsManager:
                 "error": "No creating job found for this dataset",
             }
 
-        # Truncate large outputs to avoid overwhelming the LLM
-        max_output_length = 4000
-
         stderr = job.stderr or ""
         stdout = job.stdout or ""
         info = job.info or ""
@@ -837,10 +838,16 @@ class AgentOperationsManager:
             "tool_version": job.tool_version,
             "state": job.state,
             "exit_code": job.exit_code,
-            "info": info[:max_output_length] if info else None,
-            "stderr": stderr[:max_output_length] if stderr else None,
-            "stdout": stdout[:max_output_length] if stdout else None,
-            "truncated": len(stderr) > max_output_length or len(stdout) > max_output_length,
+            # Job.info is a TrimmedString(255), but that only trims on the way to the
+            # database -- a live ORM object can still hold a full exception message.
+            "info": truncate_middle(info, JOB_LOG_EXCERPT_CHARS) if info else None,
+            "stderr": truncate_middle(stderr, JOB_LOG_EXCERPT_CHARS) if stderr else None,
+            "stdout": truncate_middle(stdout, JOB_LOG_EXCERPT_CHARS) if stdout else None,
+            "truncated": (
+                len(stderr) > JOB_LOG_EXCERPT_CHARS
+                or len(stdout) > JOB_LOG_EXCERPT_CHARS
+                or len(info) > JOB_LOG_EXCERPT_CHARS
+            ),
         }
 
     def peek_dataset_content(self, dataset_id: str) -> dict[str, Any]:

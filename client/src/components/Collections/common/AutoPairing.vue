@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BButton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { HistoryItemSummary } from "@/api";
@@ -10,6 +9,7 @@ import { useExtensionFiltering } from "./useExtensionFilter";
 import { usePairingSummary } from "./usePairingSummary";
 
 import PairingFilterInputGroup from "./PairingFilterInputGroup.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 type ElementType = HistoryItemSummary | HasName;
 type ElementsType = HistoryItemSummary[] | HasName[];
@@ -153,13 +153,13 @@ function onApply() {
         </div>
         <div v-if="mode == 'modal'" class="footer flex-row">
             <div class="actions vertically-spaced d-flex justify-content-between">
-                <BButton tabindex="-1" @click="emit('on-cancel')">
+                <GButton tabindex="-1" @click="emit('on-cancel')">
                     {{ localize("Cancel") }}
-                </BButton>
+                </GButton>
 
-                <BButton variant="primary" @click="onApply">
+                <GButton color="blue" @click="onApply">
                     {{ localize("Apply Auto Pairing") }}
-                </BButton>
+                </GButton>
             </div>
         </div>
     </div>

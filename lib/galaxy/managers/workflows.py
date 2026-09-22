@@ -54,6 +54,7 @@ from galaxy.managers import (
     sharable,
 )
 from galaxy.managers.base import (
+    apply_sort_column,
     decode_id,
     security_check,
 )
@@ -290,9 +291,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             stmt = stmt.order_by(desc(StoredWorkflow.update_time))
         else:
             sort_column = getattr(StoredWorkflow, payload.sort_by)
-            if payload.sort_desc:
-                sort_column = sort_column.desc()
-            stmt = stmt.order_by(sort_column)
+            stmt = apply_sort_column(stmt, sort_column, payload.sort_desc, StoredWorkflow.id)
         if payload.limit is not None:
             stmt = stmt.limit(payload.limit)
         if payload.offset is not None:
@@ -709,7 +708,7 @@ class WorkflowContentsManager(UsesAnnotations):
         self,
         trans: ProvidesHistoryContext,
         raw_workflow_description,
-        workflow_create_options,
+        workflow_create_options: "WorkflowCreateOptions",
         source=None,
         add_to_menu=False,
         hidden=False,
@@ -846,7 +845,7 @@ class WorkflowContentsManager(UsesAnnotations):
         self,
         trans: ProvidesHistoryContext,
         raw_workflow_description,
-        workflow_state_resolution_options,
+        workflow_state_resolution_options: "WorkflowCreateOptions | WorkflowUpdateOptions",
         name,
         is_subworkflow: bool = False,
         **kwds,
@@ -885,7 +884,10 @@ class WorkflowContentsManager(UsesAnnotations):
         except ValueError as e:
             raise exceptions.RequestParameterInvalidException(str(e))
 
-        if getattr(workflow_state_resolution_options, "archive_source", None):
+        if (
+            isinstance(workflow_state_resolution_options, WorkflowCreateOptions)
+            and workflow_state_resolution_options.archive_source
+        ):
             source_metadata = {}
             if workflow_state_resolution_options.archive_source in ("trs_tool", "trs_url"):
                 source_metadata["trs_tool_id"] = workflow_state_resolution_options.trs_tool_id
@@ -1993,7 +1995,7 @@ class WorkflowContentsManager(UsesAnnotations):
         trans: ProvidesHistoryContext,
         step_dict,
         subworkflow_id_map,
-        workflow_state_resolution_options,
+        workflow_state_resolution_options: "WorkflowCreateOptions | WorkflowUpdateOptions",
         dry_run=False,
         resolving_urls: frozenset[str] = frozenset(),
     ):
@@ -2020,6 +2022,8 @@ class WorkflowContentsManager(UsesAnnotations):
         """Create a WorkflowStep model object and corresponding module
         representing type-specific functionality from the incoming dictionary.
         """
+        if "id" not in step_dict:
+            raise exceptions.ObjectAttributeMissingException("Workflow step is missing required 'id' attribute.")
         dry_run = kwds.get("dry_run", False)
         step = model.WorkflowStep()
         step.position = step_dict.get("position", model.WorkflowStep.DEFAULT_POSITION)
@@ -2100,7 +2104,7 @@ class WorkflowContentsManager(UsesAnnotations):
         trans: ProvidesHistoryContext,
         step_dict,
         subworkflow_id_map,
-        workflow_state_resolution_options,
+        workflow_state_resolution_options: "WorkflowCreateOptions | WorkflowUpdateOptions",
         dry_run=False,
         resolving_urls: frozenset[str] = frozenset(),
     ):
@@ -2244,14 +2248,22 @@ class WorkflowContentsManager(UsesAnnotations):
         self,
         trans: ProvidesHistoryContext,
         data,
-        workflow_state_resolution_options,
+        workflow_state_resolution_options: "WorkflowCreateOptions | WorkflowUpdateOptions",
         resolving_urls: frozenset[str] = frozenset(),
-    ):
+    ) -> model.Workflow:
         raw_workflow_description = self.ensure_raw_description(data)
+        if isinstance(workflow_state_resolution_options, WorkflowCreateOptions):
+            workflow_create_options = workflow_state_resolution_options
+        else:
+            workflow_create_options = WorkflowCreateOptions(
+                fill_defaults=workflow_state_resolution_options.fill_defaults,
+                from_tool_form=workflow_state_resolution_options.from_tool_form,
+                exact_tools=workflow_state_resolution_options.exact_tools,
+            )
         subworkflow = self.build_workflow_from_raw_description(
             trans,
             raw_workflow_description,
-            workflow_state_resolution_options,
+            workflow_create_options,
             hidden=True,
             is_subworkflow=True,
             resolving_urls=resolving_urls,
