@@ -67,11 +67,6 @@ the following considerations:
 - Cookies: get_cookies
 - Storage: set_local_storage, remove_local_storage
 
-**Known Limitations:**
-1. wait_for_element_count_of_at_least() - Not implemented (raises NotImplementedError)
-   - Playwright doesn't have an equivalent to Selenium's element count waiting
-   - Use wait_for_present() and then check length of find_elements() instead
-
 Implementation Details
 ----------------------
 **Locator Strategy:**
@@ -526,6 +521,20 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             selector = self._selenium_locator_to_playwright_selector(*selector_template)
         self._frame_or_page.locator(selector).first.select_option(value=value)
 
+    def select_by_visible_text(self, selector_template: HasElementLocator, text: str) -> None:
+        """
+        Select an option from a <select> element by the text shown to the user.
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple for the select element
+            text: The visible text of the option to select
+        """
+        if isinstance(selector_template, Target):
+            selector = self._target_to_playwright_selector(selector_template)
+        else:
+            selector = self._selenium_locator_to_playwright_selector(*selector_template)
+        self._frame_or_page.locator(selector).first.select_option(label=text)
+
     def _timeout_in_ms(self, timeout=UNSPECIFIED_TIMEOUT, wait_type: WaitTypeT | None = None, **kwds) -> float:
         """
         Convert timeout from seconds to milliseconds.
@@ -618,7 +627,18 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
     def _wait_on_condition_count(self, locator_tuple: tuple, n: int, message: str, **kwds) -> None:
         """Wait for at least N elements."""
-        raise NotImplementedError("wait_for_element_count_of_at_least not yet implemented for Playwright")
+        timeout_ms = self._timeout_in_ms(**kwds)
+        selector = self._selenium_locator_to_playwright_selector(*locator_tuple)
+        locator = self._frame_or_page.locator(selector)
+
+        def enough_elements() -> bool:
+            return locator.count() >= n
+
+        try:
+            wait_on(enough_elements, message, timeout=timeout_ms / 1000)
+        except TimeoutAssertionError as e:
+            raise PlaywrightTimeoutException(self._timeout_message(message)) from e
+        return None
 
     # TODO: typevar here Any needs to be return type of condition_func thunk.
     def _wait_on_custom(self, condition_func, message: str, **kwds) -> Any:
@@ -929,6 +949,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             # Assume it's an ElementHandle representing a frame
             # Get the content_frame from the element
             self._current_frame = frame_reference.content_frame()
+        return self._current_frame
 
     def switch_to_default_content(self):
         """

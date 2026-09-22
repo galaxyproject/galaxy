@@ -1,6 +1,3 @@
-from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.common.by import By
-
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
@@ -43,6 +40,9 @@ class TestToolboxFiltersSeleniumIntegration(SeleniumIntegrationTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.home()
         self.components.tool_panel.tool_box.wait_for_visible()
-        # But now it should raise NoSuchElementException
-        with self.assertRaises(NoSuchElementException):
-            self.driver.find_element(By.LINK_TEXT, "Test Section")
+        # But now the section should be gone from the panel entirely
+        assert "Test Section" not in self._tool_section_titles()
+
+    def _tool_section_titles(self):
+        links = self.find_elements_by_selector(".tool-panel-section .title-link")
+        return [link.text for link in links]

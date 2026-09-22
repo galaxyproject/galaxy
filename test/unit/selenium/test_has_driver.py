@@ -620,6 +620,41 @@ class TestSelectByValue:
         assert select_element.get_attribute("value") == "durian"
 
 
+class TestSelectByVisibleText:
+    """Tests for select_by_visible_text method."""
+
+    def test_select_by_visible_text_basic(self, has_driver_instance, base_url):
+        """Option text is what the user sees, which differs from the value attribute."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        fruit_select = SimpleTarget(element_locator=(By.CSS_SELECTOR, "#fruit-select"), description="fruit select")
+        has_driver_instance.select_by_visible_text(fruit_select, "Banana")
+
+        select_element = has_driver_instance.find_element_by_id("fruit-select")
+        assert select_element.get_attribute("value") == "banana"
+
+    def test_select_by_visible_text_multiple_options(self, has_driver_instance, base_url):
+        """Test selecting different options sequentially."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        select_element = has_driver_instance.find_element_by_id("fruit-select")
+        fruit_select = SimpleTarget(element_locator=(By.CSS_SELECTOR, "#fruit-select"), description="fruit select")
+
+        has_driver_instance.select_by_visible_text(fruit_select, "Apple")
+        assert select_element.get_attribute("value") == "apple"
+
+        has_driver_instance.select_by_visible_text(fruit_select, "Cherry")
+        assert select_element.get_attribute("value") == "cherry"
+
+    def test_select_by_visible_text_with_tuple(self, has_driver_instance, base_url):
+        """Test select by visible text using a (locator_type, value) tuple."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        has_driver_instance.select_by_visible_text((By.CSS_SELECTOR, "#fruit-select"), "Durian")
+
+        select_element = has_driver_instance.find_element_by_id("fruit-select")
+        assert select_element.get_attribute("value") == "durian"
+
+
 class TestFindElementWithTuple:
     """Tests for find_element with tuple-based locators."""
 

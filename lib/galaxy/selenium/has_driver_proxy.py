@@ -394,6 +394,16 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """
         return self._driver_impl.select_by_value(selector_template, value)
 
+    def select_by_visible_text(self, selector_template: HasElementLocator, text: str) -> None:
+        """
+        Select an option from a <select> element by the text shown to the user.
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple for the select element
+            text: The visible text of the option to select
+        """
+        return self._driver_impl.select_by_visible_text(selector_template, text)
+
     # Frame switching
 
     def switch_to_frame(self, frame_reference: str | int | Any = "frame"):

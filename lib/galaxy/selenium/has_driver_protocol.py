@@ -458,6 +458,17 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         """
         ...
 
+    @abstractmethod
+    def select_by_visible_text(self, selector_template: HasElementLocator, text: str) -> None:
+        """
+        Select an option from a <select> element by the text shown to the user.
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple for the select element
+            text: The visible text of the option to select
+        """
+        ...
+
     # Frame switching
     @abstractmethod
     def switch_to_frame(self, frame_reference: str | int | Any = "frame"):
