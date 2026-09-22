@@ -14,7 +14,9 @@ import logging
 from fsspec import AbstractFileSystem
 
 from galaxy.files.models import (
+    AnyRemoteEntry,
     FilesSourceRuntimeContext,
+    RemoteFile,
 )
 from galaxy.files.sources._fsspec import (
     CacheOptionsDictType,
@@ -63,6 +65,30 @@ class CommonCrawlFilesSource(
     def get_writable(self) -> bool:
         """Common Crawl is a public read-only dataset."""
         return False
+
+    def _enrich_entries(
+        self,
+        fs: AbstractFileSystem,
+        entries: list[AnyRemoteEntry],
+        config: CommonCrawlFileSourceConfiguration,
+    ) -> None:
+        """Fetch exact metadata for the visible page of file entries.
+
+        Listing a manifest-backed directory returns entries without size or
+        timestamps (computing them requires one HEAD request per file, which is
+        too slow for a full listing). Since pagination is applied before this
+        hook, we only pay for one HEAD request per entry on the current page.
+        """
+        for entry in entries:
+            if not isinstance(entry, RemoteFile):
+                continue
+            try:
+                info = fs.info(entry.path)
+            except Exception:
+                log.warning("Could not fetch metadata for '%s'", entry.path, exc_info=True)
+                continue
+            entry.size = int(info.get("size", entry.size))
+            entry.ctime = self._get_formatted_timestamp(info)
 
     def _open_fs(
         self,

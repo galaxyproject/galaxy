@@ -1,0 +1,64 @@
+name: Generated config files
+# Inputs are the schemas the generators read, the generators themselves, and the
+# gravity pin, since settings_to_sample() writes the gravity section of
+# galaxy.yml.sample. Globbing the whole config package rather than listing files
+# keeps a newly added schema or helper from slipping past the check. Outputs are
+# listed too, so a hand-edit to a generated file is caught on its own.
+on:
+  push:
+    paths:
+      - 'lib/galaxy/config/**'
+      - 'lib/galaxy/dependencies/pinned-requirements.txt'
+      - 'Makefile'
+      - 'doc/source/admin/galaxy_options.rst'
+      - '.github/workflows/config_drift.yaml'
+  pull_request:
+    paths:
+      - 'lib/galaxy/config/**'
+      - 'lib/galaxy/dependencies/pinned-requirements.txt'
+      - 'Makefile'
+      - 'doc/source/admin/galaxy_options.rst'
+      - '.github/workflows/config_drift.yaml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+defaults:
+  run:
+    working-directory: 'galaxy root'
+permissions: {}
+jobs:
+  check:
+    name: Check generated config files are up to date
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10']
+    steps:
+      - uses: actions/checkout@v7.0.0
+        with:
+          path: 'galaxy root'
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.3.2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Python
+        run: uv python install
+      - name: Install dependencies
+        run: ./scripts/common_startup.sh --dev-wheels --skip-client-build
+      - name: Rebuild config files
+        run: make config-rebuild
+      - name: Diff...
+        run: git diff
+      - name: Check for changes
+        run: |
+          if [[ `git status --porcelain` ]]; then
+            echo "Rebuilding the generated config files resulted in changes, run 'make config-rebuild' and commit results"
+            exit 1
+          fi

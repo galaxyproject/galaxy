@@ -2888,7 +2888,9 @@ class MinimalJobWrapper(HasResourceParameters):
 
     def _report_error(self):
         job = self.get_job()
-        tool = self.app.toolbox.tool_for_job(job, check_access=False)
+        tool = self.tool
+        if tool is None and (toolbox := self.app.toolbox_or_none) is not None:
+            tool = toolbox.tool_for_job(job, check_access=False)
         for dataset in job.output_datasets:
             self.app.error_reports.default_error_plugin.submit_report(dataset, job, tool, user_submission=False)
 

@@ -98,17 +98,15 @@ class LocalJobRunner(BaseJobRunner):
             stdout_file = tempfile.NamedTemporaryFile(mode="wb+", suffix="_stdout", dir=job_wrapper.working_directory)
             stderr_file = tempfile.NamedTemporaryFile(mode="wb+", suffix="_stderr", dir=job_wrapper.working_directory)
             log.debug(f"({job_id}) executing job script: {job_file}")
-            # The preexec_fn argument of Popen() is used to call os.setpgrp() in
-            # the child process just before the child is executed. This will set
-            # the PGID of the child process to its PID (i.e. ensures that it is
-            # the root of its own process group instead of Galaxy's one).
+            # A new session gives the child a PGID equal to its PID, which is
+            # what check_pg() and kill_pg() are passed.
             proc = subprocess.Popen(
                 args=[job_file],
                 cwd=job_wrapper.working_directory,
                 stdout=stdout_file,
                 stderr=stderr_file,
                 env=self._environ,
-                preexec_fn=os.setpgrp,
+                start_new_session=True,
             )
 
             # Add custom attribute to track if the job was terminated by a shutdown

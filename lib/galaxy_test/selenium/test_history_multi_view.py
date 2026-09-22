@@ -55,8 +55,6 @@ class TestHistoryMultiView(SeleniumTestCase):
         # We just create a new history with the dropped element here.
         drop_target = self.find_element_by_selector("div.history-picker-box.select-picker")
         dataset_element = self.history_panel_wait_for_hid_state(list_of_list_source_hid, None).wait_for_visible()
-        ac = self.action_chains()
-        ac = ac.move_to_element(dataset_element).click_and_hold()
         drag_and_drop(self.driver, source=dataset_element, target=drop_target)
         self._wait_on(lambda *driver: self.current_history_id() != source_history_id)
         target_history_id = self.current_history_id()

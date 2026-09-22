@@ -65,7 +65,6 @@ const runItemFilterClass = new Filtering(
     },
     undefined,
     true,
-    false,
 );
 
 const breadcrumbItems = computed(() => [

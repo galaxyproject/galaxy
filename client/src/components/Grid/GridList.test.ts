@@ -74,7 +74,7 @@ function createTestGrid(): GridConfig {
                 ],
             },
         ],
-        filtering: new Filtering({}, undefined, false, false),
+        filtering: new Filtering({}, undefined, false),
         getData: vi.fn(async (offset: number, limit: number): Promise<[RowData[], number]> => {
             const data: RowData[] = [];
             for (let i = offset; i < offset + limit; i++) {

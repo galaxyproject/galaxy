@@ -341,6 +341,7 @@ class GalaxyAppConfigurationAttributes:
     flush_per_n_datasets: int
     max_discovered_files: int
     history_local_serial_workflow_scheduling: bool
+    expression_evaluation_isolation_command: str
     enable_oidc: bool
     oidc_config_file: str
     oidc_backends_config_file: str
