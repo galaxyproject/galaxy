@@ -243,6 +243,46 @@ class TestRemoteFilesIntegration(ConfiguresRemoteFilesIntegrationTestCase):
             with open(os.path.join(ftp_dir, "space%20dir", "my_cool", "utf8_name_😻.txt")) as f:
                 assert "example content\n" == f.read()
 
+    def _run_named_export(self, history_id, name, invalid_chars=None):
+        dataset_populator = self.dataset_populator
+        dataset = dataset_populator.new_dataset(history_id, content="example content", wait=True, name="foo")
+        inputs = {
+            "d_uri": "gxftp://",
+            "export_type|export_type_selector": "datasets_named",
+            "export_type|datasets_0|infile": {"src": "hda", "id": dataset["id"]},
+            "export_type|datasets_0|name": name,
+        }
+        if invalid_chars is not None:
+            inputs["invalid_chars"] = invalid_chars
+        response = dataset_populator.run_tool("export_remote", inputs, history_id)
+        dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+
+    def test_export_remote_tool_named_sanitize_spaces(self):
+        ftp_dir = self.user_ftp_dir
+        _write_file_fixtures(self.root, ftp_dir)
+        with self.dataset_populator.test_history() as history_id:
+            self._run_named_export(history_id, "my cool/utf8 name.txt", invalid_chars=" ")
+            with open(os.path.join(ftp_dir, "my_cool", "utf8_name.txt")) as f:
+                assert "example content\n" == f.read()
+
+    def test_export_remote_tool_named_slash_never_sanitized(self):
+        # "/" is the documented subdirectory syntax for user-supplied names, so it
+        # survives even when the sanitize option asks for it to be stripped.
+        ftp_dir = self.user_ftp_dir
+        _write_file_fixtures(self.root, ftp_dir)
+        with self.dataset_populator.test_history() as history_id:
+            self._run_named_export(history_id, "my cool/utf8 name.txt", invalid_chars="/ ")
+            with open(os.path.join(ftp_dir, "my_cool", "utf8_name.txt")) as f:
+                assert "example content\n" == f.read()
+
+    def test_export_remote_tool_named_no_sanitizing(self):
+        ftp_dir = self.user_ftp_dir
+        _write_file_fixtures(self.root, ftp_dir)
+        with self.dataset_populator.test_history() as history_id:
+            self._run_named_export(history_id, "my cool/utf8 name.txt", invalid_chars="")
+            with open(os.path.join(ftp_dir, "my cool", "utf8 name.txt")) as f:
+                assert "example content\n" == f.read()
+
     def test_export_remote_tool_default_duplicate_name_fails(self):
         dataset_populator = self.dataset_populator
         ftp_dir = self.user_ftp_dir
