@@ -21,7 +21,8 @@ export type JobMessage =
     | components["schemas"]["RegexJobMessage"]
     | components["schemas"]["MaxDiscoveredFilesJobMessage"]
     | components["schemas"]["OutputCollectionSecurityJobMessage"]
-    | components["schemas"]["OutputDiscoveryJobMessage"];
+    | components["schemas"]["OutputDiscoveryJobMessage"]
+    | components["schemas"]["StdioReadErrorJobMessage"];
 
 export const NON_TERMINAL_STATES = [
     "new",

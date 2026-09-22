@@ -37,6 +37,7 @@ JobMessageTypeLiteral = Literal[
     "max_discovered_files",
     "output_collection_security",
     "output_discovery",
+    "stdio_read_error",
 ]
 
 
@@ -69,12 +70,19 @@ class OutputDiscoveryJobMessage(JobMessage):
     type: Literal["output_discovery"]
 
 
+class StdioReadErrorJobMessage(JobMessage):
+    type: Literal["stdio_read_error"]
+    stream: str
+    errno: int | None
+
+
 AnyJobMessage = (
     ExitCodeJobMessage
     | RegexJobMessage
     | MaxDiscoveredFilesJobMessage
     | OutputCollectionSecurityJobMessage
     | OutputDiscoveryJobMessage
+    | StdioReadErrorJobMessage
 )
 
 
