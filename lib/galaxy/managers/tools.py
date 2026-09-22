@@ -29,6 +29,7 @@ from galaxy.tool_util.cwl import tool_proxy
 from galaxy.tool_util.lint import lint_user_tool_source
 from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.tool_util.toolbox import AbstractToolBox
+from galaxy.tool_util_models import UserToolSource
 from galaxy.tool_util_models.dynamic_tool_models import (
     DynamicToolPayload,
     DynamicUnprivilegedToolCreatePayload,
@@ -36,6 +37,10 @@ from galaxy.tool_util_models.dynamic_tool_models import (
 from galaxy.tools import (
     create_tool_from_source,
     Tool,
+)
+from galaxy.tools.expressions import (
+    ExpressionTemplateError,
+    validate_expression_template,
 )
 from .base import (
     ModelManager,
@@ -47,6 +52,17 @@ log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from galaxy.managers.base import OrmFilterParsersType
+
+
+def _validate_tool_templates(representation: UserToolSource) -> None:
+    """Refuse a tool whose templates cannot be evaluated, rather than storing one that cannot run."""
+    try:
+        validate_expression_template(representation.shell_command, "shell_command")
+        for index, configfile in enumerate(representation.configfiles or []):
+            name = configfile.name or configfile.filename or f"#{index + 1}"
+            validate_expression_template(configfile.content, f"configfile '{name}'")
+    except ExpressionTemplateError as exc:
+        raise exceptions.RequestParameterInvalidException(str(exc)) from exc
 
 
 def tool_payload_to_tool(app, tool_dict: dict[str, Any]) -> Optional[Tool]:
@@ -193,6 +209,7 @@ class DynamicToolManager(ModelManager[DynamicTool]):
         lint_errors = lint_user_tool_source(tool_payload.representation)
         if lint_errors:
             raise exceptions.RequestParameterInvalidException("Tool failed lint checks: " + "; ".join(lint_errors))
+        _validate_tool_templates(tool_payload.representation)
         dynamic_tool = self.create(
             tool_format=tool_payload.representation.class_,
             tool_id=tool_payload.representation.id,
