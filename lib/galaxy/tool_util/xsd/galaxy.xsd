@@ -628,11 +628,11 @@ serve as complete descriptions of the runtime of a tool.
 
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:sequence>
-      <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="container" type="Container" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="resource" type="Resource" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="credentials" type="Credentials" minOccurs="0" maxOccurs="unbounded">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="requirement" type="Requirement"/>
+      <xs:element name="container" type="Container"/>
+      <xs:element name="resource" type="Resource"/>
+      <xs:element name="credentials" type="Credentials">
         <!-- Ensure unique credential names across variables and secrets -->
         <xs:unique name="uniqueCredentialNames">
           <xs:selector xpath="variable|secret"/>
@@ -644,7 +644,7 @@ serve as complete descriptions of the runtime of a tool.
           <xs:field xpath="@inject_as_env"/>
         </xs:unique>
       </xs:element>
-    </xs:sequence>
+    </xs:choice>
   </xs:complexType>
   <xs:complexType name="Requirement">
     <xs:annotation>
@@ -824,7 +824,7 @@ machine that is executing the job. Additionally, users could supply characters t
 In modern versions of the ``aws`` interface credentials can only be supplied via a file.
 
 In the postgres example we deliberately used environment variables that are picked up automatically by ``psql``,
-i.e. we do not need to set it on the command line (which would expose them on the process list). 
+i.e. we do not need to set it on the command line (which would expose them on the process list).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
