@@ -3,6 +3,7 @@
 from copy import deepcopy
 
 import pytest
+from pydantic import ValidationError
 
 from galaxy.tool_util.lint import (
     get_lint_context_for_tool_source,
@@ -76,3 +77,22 @@ def test_lint_user_tool_source_surfaces_container_shape_failure():
     bullets = lint_user_tool_source(user_tool)
     assert any("does not match a recognized shape" in b for b in bullets)
     assert any(b.startswith(f"{ContainerImageShape.name()}:") for b in bullets)
+
+
+def test_user_tool_source_rejects_container_requirement():
+    source = _doc(
+        requirements=[
+            {
+                "type": "container",
+                "container": {"type": "docker", "container_id": "busybox"},
+            }
+        ],
+    )
+    with pytest.raises(ValidationError, match="Input should be 'javascript'"):
+        UserToolSource.model_validate(source)
+
+
+def test_user_tool_source_requires_top_level_container():
+    source = _doc(container=None)
+    with pytest.raises(ValidationError, match="set the top-level container field"):
+        UserToolSource.model_validate(source)
