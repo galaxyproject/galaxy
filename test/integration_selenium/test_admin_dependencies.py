@@ -1,5 +1,3 @@
-from selenium.webdriver.common.by import By
-
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
@@ -18,8 +16,8 @@ class TestAdminDependencyContainers(SeleniumIntegrationTestCase):
         admin_component.index.dependencies.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         # Make sure the tabs are visible
-        self.driver.find_element(By.LINK_TEXT, "Dependencies")
-        self.driver.find_element(By.LINK_TEXT, "Unused")
+        self.find_element_by_link_text("Dependencies")
+        self.find_element_by_link_text("Unused")
         containers_link = self.find_element_by_link_text("Containers")
         # Ensure that #manage-resolver-type is visible.
         admin_component.manage_dependencies.resolver_type.wait_for_visible()

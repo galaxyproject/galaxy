@@ -1,7 +1,5 @@
 import os
 
-from selenium.webdriver.support.ui import Select
-
 from galaxy.util.unittest_utils import skip_if_workflowhub_down
 from .framework import SeleniumIntegrationTestCase
 
@@ -78,8 +76,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self._import_workflow_by_url(import_url)
 
     def _import_workflow_by_url(self, import_url):
-        full_url = self.build_url(import_url)
-        self.driver.get(full_url)
+        self.get(import_url)
         self.components.workflows.workflow_trs_import.wait_for_visible()
         self._click_wizard_import_button()
         self.sleep_for(self.wait_types.UX_RENDER)
@@ -102,8 +99,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.trs_search.search.wait_for_and_send_keys("organization: iwc-workflows")
         self.components.trs_search.search_result(workflow_name=TRS_NAME).wait_for_and_click()
         # Select version from dropdown
-        version_select = self.components.trs_search.version_select.wait_for_visible()
-        Select(version_select).select_by_visible_text("v0.4")
+        self.components.trs_search.version_select.select_by_visible_text("v0.4")
         self._click_wizard_import_button(wait_for_validation=True)
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open()
@@ -152,8 +148,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.trs_import.select_server(server=server).wait_for_and_click()
         self.components.trs_import.input.wait_for_and_send_keys(trs_id)
         # Select version from dropdown
-        version_select = self.components.trs_import.version_select.wait_for_visible()
-        Select(version_select).select_by_visible_text("v0.4")
+        self.components.trs_import.version_select.select_by_visible_text("v0.4")
         self._click_wizard_import_button(wait_for_validation=True)
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open()

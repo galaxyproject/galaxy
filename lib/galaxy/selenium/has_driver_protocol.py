@@ -28,6 +28,9 @@ from .web_element_protocol import WebElementProtocol
 ElementLocatorTuple = tuple[str, str]  # e.g., ("css selector", "#id") or ("id", "test")
 HasElementLocator = Target | ElementLocatorTuple
 
+# Pixels of clearance hover_away() puts between the pointer and the element it left.
+HOVER_AWAY_OFFSET = 100
+
 
 class Cookie(TypedDict, total=False):
     """Cookie dictionary structure compatible with both Selenium and Playwright."""
@@ -346,6 +349,11 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         ...
 
     @abstractmethod
+    def hover_away(self) -> None:
+        """Move the mouse off whatever element it is currently over."""
+        ...
+
+    @abstractmethod
     def move_to_and_click(self, element: WebElementProtocol) -> None:
         """Move mouse to element and click."""
         ...
@@ -447,6 +455,17 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         Args:
             selector_template: Either a Target or a (locator_type, value) tuple for the select element
             value: The value attribute of the option to select
+        """
+        ...
+
+    @abstractmethod
+    def select_by_visible_text(self, selector_template: HasElementLocator, text: str) -> None:
+        """
+        Select an option from a <select> element by the text shown to the user.
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple for the select element
+            text: The visible text of the option to select
         """
         ...
 

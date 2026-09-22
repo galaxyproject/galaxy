@@ -40,6 +40,7 @@ from .axe_results import (
 from .has_driver_protocol import (
     Cookie,
     HasElementLocator,
+    HOVER_AWAY_OFFSET,
     TimeoutCallback,
     WaitTypeT,
 )
@@ -398,6 +399,14 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
             chain = chain.key_up(KEY_TO_SELENIUM[modifier])
         chain.perform()
 
+    def hover_away(self) -> None:
+        """
+        Move the mouse off whatever element it is currently over.
+
+        Used to dismiss hover-triggered UI such as tooltips.
+        """
+        self.action_chains().move_by_offset(HOVER_AWAY_OFFSET, HOVER_AWAY_OFFSET).perform()
+
     def send_enter(self, element: WebElement | None = None):
         self.press(Key.ENTER, element=element)
 
@@ -622,6 +631,23 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         select_element = _protocol_to_webelement(self.find_element(selector_template))
         select = Select(select_element)
         select.select_by_value(value)
+
+    def select_by_visible_text(self, selector_template: HasElementLocator, text: str) -> None:
+        """
+        Select an option from a <select> element by the text shown to the user.
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple for the select element
+            text: The visible text of the option to select
+        """
+        if isinstance(selector_template, Target):
+            locator = selector_template.element_locator
+        else:
+            locator = selector_template
+        self._wait_on_condition_visible(locator, f"select element {locator} to become visible")
+        select_element = _protocol_to_webelement(self.find_element(selector_template))
+        select = Select(select_element)
+        select.select_by_visible_text(text)
 
     def axe_eval(self, context: str | None = None, write_to: str | None = None) -> AxeResults:
         if self.axe_skip:

@@ -1,12 +1,9 @@
 from typing import TYPE_CHECKING
 
-from selenium.webdriver.common.by import By
-
 from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
 from galaxy_test.selenium.framework import (
     managed_history,
     RunsWorkflows,
-    selenium_only,
     UsesHistoryItemAssertions,
 )
 from galaxy_test.selenium.upload_activity_helpers import UsesUploadActivity
@@ -32,7 +29,6 @@ class TestWorkflowRunNotificationSeleniumIntegration(BaseWorkflowRunTargetTestCa
         super().handle_galaxy_config_kwds(config)
         config["enable_notification_system"] = True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_on_complete_notification_action(self):
@@ -44,14 +40,14 @@ class TestWorkflowRunNotificationSeleniumIntegration(BaseWorkflowRunTargetTestCa
         self.sleep_for(self.wait_types.UX_RENDER)
 
         # Open the runtime settings panel by clicking the gear button
-        settings_button = self.driver.find_element(By.CSS_SELECTOR, "[data-test-id='workflow-run-settings-button']")
+        settings_button = self.find_element_by_selector("[data-test-id='workflow-run-settings-button']")
         settings_button.click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_run_settings_panel_open")
 
         # Find and click the send notification checkbox
         # GCheckbox root element is a clickable label
-        notification_checkbox = self.driver.find_element(By.CSS_SELECTOR, "[data-test-id='send-notification-checkbox']")
+        notification_checkbox = self.find_element_by_selector("[data-test-id='send-notification-checkbox']")
         notification_checkbox.click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_run_on_complete_notification_enabled")
