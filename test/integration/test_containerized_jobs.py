@@ -8,6 +8,7 @@ from typing import Any
 
 from galaxy.tool_util.deps.container_resolvers.mulled import list_docker_cached_mulled_images
 from galaxy.util.commands import which
+from galaxy.version import VERSION
 from galaxy_test.base.populators import (
     CredentialsPopulator,
     DatasetPopulator,
@@ -46,7 +47,11 @@ def build_metadata_container():
             "docker",
             "build",
             "-t",
-            "galaxyproject/galaxy-job-execution",
+            "galaxyproject/galaxy-job-execution:integration",
+            "--build-arg",
+            "RUNTIME_SOURCE=source",
+            "--build-arg",
+            f"GALAXY_VERSION={VERSION}",
             "-f",
             os.path.join(galaxy_root, "packages", "job_execution", "Dockerfile"),
             galaxy_root,

@@ -554,6 +554,15 @@ execution:
       # that docker image.
       #docker_container_id_override: busybox:1.36.1-glibc
 
+      # Run metadata collection in its own Galaxy runtime image. Use an image
+      # matching the server release, preferably pinned by digest. See the admin
+      # guide's "Containerized metadata collection" page for building and
+      # publishing images, optional datatype dependencies and Pulsar staging.
+      #metadata_config:
+      #  containerize: true
+      #  engine: docker
+      #  image: quay.io/galaxyproject/galaxy-job-execution:26.1.1
+
       # Likewise, if deployer wants to use docker for isolation and
       # does trust tool's specified container - but also wants tool's not
       # configured to run in a container the following option can provide

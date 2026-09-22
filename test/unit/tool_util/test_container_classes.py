@@ -11,6 +11,7 @@ from galaxy.tool_util.deps.dependencies import (
     JobInfo,
     ToolInfo,
 )
+from galaxy.version import VERSION_MAJOR
 
 
 def _build(container_class, container_id):
@@ -52,7 +53,7 @@ def test_pulsar_defaults_do_not_mount_galaxy_storage(container_class, metadata, 
     container = container_class(
         container_id="metadata-image",
         app_info=AppInfo(galaxy_root_dir="/galaxy", outputs_to_working_directory=True),
-        tool_info=ToolInfo(tool_id="__SET_METADATA__" if metadata else "tool", profile=23.2),
+        tool_info=ToolInfo(tool_id="__SET_METADATA__" if metadata else "tool", profile=float(VERSION_MAJOR)),
         destination_info={},
         job_info=JobInfo(
             working_directory="/pulsar/staging/1",

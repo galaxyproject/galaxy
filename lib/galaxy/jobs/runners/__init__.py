@@ -67,6 +67,10 @@ from galaxy.util import (
 )
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
+from galaxy.version import (
+    VERSION,
+    VERSION_MAJOR,
+)
 from .state_handler_factory import build_state_handlers
 
 if TYPE_CHECKING:
@@ -614,7 +618,9 @@ class BaseJobRunner:
     ):
         destination_info = job_wrapper.job_destination.params
         if destination_info.get("metadata_config", {}).get("containerize"):
-            image = destination_info["metadata_config"].get("image", "galaxyproject/galaxy-job-execution")
+            image = destination_info["metadata_config"].get(
+                "image", f"quay.io/galaxyproject/galaxy-job-execution:{VERSION}"
+            )
             container_type = destination_info["metadata_config"].get("engine", "docker")
             tool_info = ToolInfo(
                 [ContainerDescription(image, type=container_type)],
@@ -623,8 +629,8 @@ class BaseJobRunner:
                 [],
                 guest_ports=None,
                 tool_id="__SET_METADATA__",
-                tool_version="1.0.3",
-                profile=23.2,
+                tool_version=VERSION,
+                profile=float(VERSION_MAJOR),
             )
             job_info = JobInfo(
                 working_directory=working_directory or job_wrapper.working_directory,

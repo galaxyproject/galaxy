@@ -25,7 +25,7 @@ DOCKERIZED_METADATA_JOB_CONFIG = {
                 "metadata_config": {
                     "containerize": True,
                     "engine": "docker",
-                    "image": "galaxyproject/galaxy-job-execution",
+                    "image": "galaxyproject/galaxy-job-execution:integration",
                 },
             },
             "pulsar_embed": {
@@ -39,7 +39,7 @@ DOCKERIZED_METADATA_JOB_CONFIG = {
                 "metadata_config": {
                     "containerize": True,
                     "engine": "docker",
-                    "image": "galaxyproject/galaxy-job-execution",
+                    "image": "galaxyproject/galaxy-job-execution:integration",
                 },
             },
         },

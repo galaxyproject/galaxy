@@ -8,6 +8,8 @@ This document is a reference for the job configuration file. [Detailed documenta
 
 Configuration of where to run jobs is performed in the `job_conf.yml` file in `$GALAXY_ROOT/config/`.  The path to the config file can be overridden by setting the value of `job_config_file` in `config/galaxy.yml`.  Sample configurations can be found at `config/job_conf.sample.yml`.  The job configuration file is not required - if it does not exist, a default configuration that runs jobs on the local system (with a maximum of 4 concurrent jobs) will be used. Examples of XML job configuration files are also available in [basic](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.xml.sample_basic) and [advanced](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.xml.sample_advanced) forms. 
 
+For metadata runtime images, including Pulsar staging, versioning and custom datatype dependencies, see [Containerized metadata collection](containerized_metadata.md).
+
 ## job_conf.xml Syntax
 
 The root element is `<job_conf>`.

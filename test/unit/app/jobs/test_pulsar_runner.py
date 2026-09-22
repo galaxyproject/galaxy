@@ -191,3 +191,32 @@ def test_metadata_container_uses_execution_host_paths(monkeypatch, remote):
     assert job_info.working_directory == expected_directory
     assert job_info.job_directory == expected_directory
     assert job_info.output_paths == (set() if remote else storage_paths)
+
+
+@pytest.mark.parametrize("version", ["26.1.1", "26.2.dev0"])
+@pytest.mark.parametrize("image", [None, "registry.example/metadata@sha256:custom"])
+def test_metadata_container_tracks_galaxy_release(monkeypatch, version, image):
+    profile = float(".".join(version.split(".")[:2]))
+    monkeypatch.setattr("galaxy.jobs.runners.VERSION", version)
+    monkeypatch.setattr("galaxy.jobs.runners.VERSION_MAJOR", str(profile))
+    runner = _runner()
+    captured = []
+
+    def find_container(tool_info, destination_info, job_info):
+        captured.append(tool_info)
+
+    runner.app = SimpleNamespace(container_finder=SimpleNamespace(find_container=find_container))
+    config = {"containerize": True}
+    if image is not None:
+        config["image"] = image
+    wrapper = SimpleNamespace(
+        working_directory="/galaxy/jobs/1",
+        job_destination=SimpleNamespace(params={"metadata_config": config}),
+    )
+    runner._get_metadata_container(wrapper, job_directory_type="pulsar", working_directory="/pulsar/staging/1")
+    tool_info = captured[0]
+    assert tool_info.profile == profile
+    assert tool_info.tool_version == version
+    assert tool_info.container_descriptions[0].identifier == (
+        image or f"quay.io/galaxyproject/galaxy-job-execution:{version}"
+    )
