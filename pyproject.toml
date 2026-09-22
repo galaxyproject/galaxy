@@ -194,6 +194,7 @@ typecheck = [
     "types-requests",
     "types-setuptools",
     "types-six",
+    "types-webob",
 ]
 
 [tool.black]

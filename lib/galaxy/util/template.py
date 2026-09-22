@@ -85,7 +85,7 @@ class InputNotFoundSyntaxError(SyntaxError):
     pass
 
 
-class FixedModuleCodeCompiler(Compiler):
+class FixedModuleCodeCompiler(Compiler):  # type: ignore[misc]  # Cheetah is untyped
     module_code = None
 
     def getModuleCode(self):

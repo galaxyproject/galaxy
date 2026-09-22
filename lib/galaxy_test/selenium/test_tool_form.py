@@ -17,7 +17,6 @@ from galaxy_test.base.populators import (
 from .framework import (
     managed_history,
     retry_assertion_during_transitions,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesHistoryItemAssertions,
@@ -26,7 +25,6 @@ from .upload_activity_helpers import UsesUploadActivity
 
 
 class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivity):
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_tool_verify_contents_by_peek(self):
         self._run_environment_test_tool()
@@ -35,14 +33,12 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         self.history_panel_click_item_title(hid=1)
         self.assert_item_peek_includes(1, "42")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_tool_verify_dataset_details(self):
         self._run_environment_test_tool()
         self.history_panel_wait_for_hid_ok(1)
         self._check_dataset_details_for_inttest_value(1)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_verify_dataset_details_tables(self):
         self._run_environment_test_tool()
@@ -78,7 +74,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         generic_item.find_element(By.CSS_SELECTOR, "[title='Run Job Again']").click()
         self.components.tool_form.execute.wait_for_visible()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_drilldown_tool(self):
         self._open_drilldown_test_tool()
@@ -107,6 +102,8 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
 
     def _table_to_key_value_elements(self, table_selector):
         tool_parameters_table = self.wait_for_selector_visible(table_selector)
+        # the table renders its header before its body is populated
+        self.wait_for_selector_visible(f"{table_selector} tbody tr")
         tbody_element = tool_parameters_table.find_element(By.CSS_SELECTOR, "tbody")
         trs = tbody_element.find_elements(By.CSS_SELECTOR, "tr")
         assert trs
@@ -118,7 +115,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
 
         return key_value_pairs
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_repeat_reordering(self):
         self.home()
@@ -155,7 +151,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
 
         assert details == ["texttest", "Text C", "texttest", "Text B", "texttest", "Text A"]
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_repeat_cloning(self):
         self.home()
@@ -201,7 +196,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
             "Text C",
         ]
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rerun(self):
         self._run_environment_test_tool()
@@ -223,7 +217,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         self.history_panel_wait_for_hid_ok(2)
         self._check_dataset_details_for_inttest_value(2)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rerun_with_non_latest_version(self):
         version = "0.1+galaxy6"
@@ -238,7 +231,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
                 return
         raise Exception("Tool version does not match job version")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rerun_deleted_dataset(self):
         # upload a first dataset that should not become selected on re-run
@@ -283,7 +275,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         )
         assert error_col.text == "Parameter 'col': an invalid option ('3') was selected (valid options: 1)"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rerun_dataset_collection_element(self):
         # upload a first dataset that should not become selected on re-run
@@ -429,7 +420,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
 
         assert_pinned_value_selected()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_bibtex_rendering(self):
         self.home()
@@ -463,6 +453,8 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
         self.hda_click_details(hid)
         self.components.dataset_details._.wait_for_visible()
         tool_parameters_table = self.components.dataset_details.tool_parameters.wait_for_visible()
+        # the table renders its header before its body is populated
+        self.components.dataset_details.tool_parameters_row.wait_for_visible()
         tbody_element = tool_parameters_table.find_element(By.CSS_SELECTOR, "tbody")
         tds = tbody_element.find_elements(By.CSS_SELECTOR, "td")
         return tds
@@ -484,7 +476,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivi
 class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_dataset_state_filtering(self):
         # upload an ok (HID 1) and a discarded (HID 2) dataset and run a tool
@@ -512,31 +503,26 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
         assert latest_hda["hid"] == 3
         assert latest_hda["name"] == "Select first on dataset 1"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_apply_rules_1(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_1)
         self.screenshot("tool_apply_rules_example_1_final")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_apply_rules_2(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_2)
         self.screenshot("tool_apply_rules_example_2_final")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_apply_rules_3(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_3)
         self.screenshot("tool_apply_rules_example_3_final")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_apply_rules_4(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_4)
         self.screenshot("tool_apply_rules_example_4_final")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_apply_rules_paired_unpaired_flatten(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_PAIRED_OR_UNPAIRED)
@@ -548,13 +534,11 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_CREATE_PAIRED_OR_UNPAIRED_COLLECTION)
         self.screenshot("tool_apply_rules_example_flatten_paired_unpaired_final")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_apply_rules_flatten_with_indices(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_FLATTEN_USING_INDICES)
         self.screenshot("tool_apply_rules_example_flatten_with_indices_final")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     @skip_if_github_down

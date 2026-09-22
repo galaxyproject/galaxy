@@ -64,6 +64,7 @@ if TYPE_CHECKING:
     from galaxy.tools import ToolBox
     from galaxy.tools.cache import ToolCache
     from galaxy.tools.error_reports import ErrorReports
+    from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
     from galaxy.visualization.genomes import Genomes
 
 
@@ -122,6 +123,7 @@ class MinimalApp(BasicSharedApp):
     security_agent: GalaxyRBACAgent
     host_security_agent: HostAgent
     server_starttime: int
+    trace_logger: "FluentTraceLogger | None"
 
 
 class MinimalManagerApp(MinimalApp):
@@ -149,7 +151,7 @@ class MinimalManagerApp(MinimalApp):
     job_metrics: JobMetrics
     dynamic_tool_manager: "DynamicToolManager"
     genomes: "Genomes"
-    error_reports: "ErrorReports"
+    tool_cache: "ToolCache"
     notification_manager: Any  # 'galaxy.managers.notification.NotificationManager'
     object_store: BaseObjectStore
     tool_shed_registry: ToolShedRegistry
@@ -157,6 +159,10 @@ class MinimalManagerApp(MinimalApp):
     @property
     @abc.abstractmethod
     def is_job_handler(self) -> bool: ...
+
+    @property
+    @abc.abstractmethod
+    def error_reports(self) -> "ErrorReports": ...
 
     def wait_for_toolbox_reload(self, old_toolbox: "ToolBox") -> None: ...
 
@@ -185,7 +191,6 @@ class StructuredApp(MinimalManagerApp):
     webhooks_registry: WebhooksRegistry
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
-    tool_cache: "ToolCache"
     tool_shed_repository_cache: ToolShedRepositoryCache | None
     watchers: "ConfigWatchers"
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'

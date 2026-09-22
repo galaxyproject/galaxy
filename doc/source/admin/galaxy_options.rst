@@ -4432,10 +4432,10 @@
     parent-side JSON decoding also adds overhead. Simple parameter
     references resolve in Python without starting a worker. When empty
     (the default), the worker runs without an OS-level jail.
-    Full JavaScript evaluation requires Python 3.10+ and the quickjs-ng
-    package. Without QuickJS, expressions requiring JavaScript fail with
-    an error; literals and simple parameter references continue to work
-    without it.
+    Full JavaScript evaluation requires Python 3.10+ and the
+    quickjs-ng package. Without QuickJS, expressions requiring
+    JavaScript fail with an error; literals and simple parameter
+    references continue to work without it.
     Set this to ``bubblewrap`` to use a built-in bubblewrap jail. It
     clears the environment, unshares the PID/IPC/UTS namespaces, and
     read-only-binds only what the worker needs to run: the Python
@@ -5211,11 +5211,19 @@
 
 :Description:
     If your network filesystem's caching prevents the Galaxy server
-    from seeing the job's stdout and stderr files when it completes,
-    you can retry reading these files.  The job runner will retry the
-    number of times specified below, waiting 1 second between tries.
-    For NFS, you may want to try the -noac mount option (Linux) or
-    -actimeo=0 (Solaris).
+    from seeing a job's output when it completes, you can retry
+    reading it.  This covers both the job's stdout and stderr files
+    and its output datasets, waiting 1 second between tries.  0 means
+    no retries: stdout and stderr are still read once, but the
+    cache-busting stat of each output dataset is skipped entirely, so
+    raise this if you see datasets marked ok with empty or truncated
+    content. This is most likely on a deployment where a job's output
+    is written by a host other than the one running Galaxy, since
+    nothing guarantees Galaxy's client has a coherent view of the file
+    the moment the job reports done.  For NFS, you may also want to
+    try the -noac mount option (Linux) or -actimeo=0 (Solaris), or a
+    low -actimeo to shrink the staleness window without disabling
+    caching.
 :Default: ``0``
 :Type: int
 
@@ -6467,6 +6475,3 @@
     for user defined tools.
 :Default: ``false``
 :Type: bool
-
-
-

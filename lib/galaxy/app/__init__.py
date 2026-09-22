@@ -857,6 +857,12 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self._register_singleton(tool_shed_registry.Registry, self.tool_shed_registry)
         self._register_celery_galaxy_task_components()
 
+        # Celery manager apps also finish jobs and submit automatic error reports.
+        self._error_reports = self._register_singleton(
+            ErrorReports, ErrorReports(self.config.error_report_file, app=self)
+        )
+        self.tool_cache = self._register_singleton(ToolCache)
+
     def _register_celery_galaxy_task_components(self):
         """
         Register subtype class instances for user rate limiting and concurrency
@@ -921,10 +927,17 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
             self.config.track_jobs_in_database and self.job_config.is_handler
         ) or not self.config.track_jobs_in_database
 
+    @property
+    def error_reports(self) -> ErrorReports:
+        return self._error_reports
+
     def reindex_tool_search(self) -> None:
         # Call this when tools are added or removed. Defined here rather than on
         # MinimalGalaxyApplication so it wins over the MinimalManagerApp
         # interface stub in the MRO, the same way is_job_handler does.
+        # Celery manager apps intentionally have no toolbox or search index.
+        if self.toolbox_or_none is None:
+            return
         self.toolbox_search.build_index(
             tool_cache=self.tool_cache,
             toolbox=self.toolbox,
@@ -996,13 +1009,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # Data providers registry.
         self.data_provider_registry = self._register_singleton(DataProviderRegistry)
 
-        # Initialize error report plugins.
-        self.error_reports = self._register_singleton(
-            ErrorReports, ErrorReports(self.config.error_report_file, app=self)
-        )
-
-        # Setup a Tool Cache
-        self.tool_cache = self._register_singleton(ToolCache)
         self.tool_shed_repository_cache = self._register_singleton(ToolShedRepositoryCache)
         # Watch various config files for immediate reload
         self.watchers = self._register_singleton(ConfigWatchers)

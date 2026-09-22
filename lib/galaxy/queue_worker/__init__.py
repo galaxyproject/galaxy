@@ -600,7 +600,7 @@ control_message_to_task = {
 }
 
 
-class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
+class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):  # type: ignore[misc]  # kombu is untyped
     """
     This is a flexible worker for galaxy's queues.  Each process, web or
     handler, will have one of these used for dispatching so called 'control'

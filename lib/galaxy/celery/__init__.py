@@ -61,7 +61,7 @@ serialization.register(
 )
 
 
-class GalaxyCelery(Celery):
+class GalaxyCelery(Celery):  # type: ignore[misc]  # celery is untyped
     fork_pool: pebble.ProcessPool
 
     def __init__(self, *args, **kwargs):
@@ -82,7 +82,7 @@ class GalaxyCelery(Celery):
         return module
 
 
-class GalaxyTask(Task):
+class GalaxyTask(Task):  # type: ignore[misc]  # celery is untyped
     """
     Custom celery task used to enforce per-user rate limits and
     concurrency limits on task executions.

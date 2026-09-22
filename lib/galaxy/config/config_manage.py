@@ -260,7 +260,9 @@ def _to_rst(args: Namespace, app_desc: App) -> None:
         option = schema.get_app_option(key)
         option_value = OptionValue(key, default, option)
         _write_option_rst(args, rst, key, "~", option_value)
-    print(rst.getvalue())
+    # print() supplies the single trailing newline; the per-option blank lines would
+    # otherwise leave the file ending in blanks that end-of-file-fixer strips back out.
+    print(rst.getvalue().rstrip("\n"))
 
 
 def _write_option_rst(args: Namespace, rst: StringIO, key: str, heading_level: str, option_value: OptionValue) -> None:
@@ -430,7 +432,9 @@ def _build_sample_yaml(args: Namespace, app_desc: App) -> None:
     f = StringIO()
     if description := getattr(schema, "description", None):
         description = description.lstrip()
-        as_comment = "\n".join(f"# {line}" for line in description.split("\n")) + "\n"
+        # rstrip so blank description lines do not become "# " - trailing whitespace the
+        # trailing-whitespace hook would strip right back out.
+        as_comment = "\n".join(f"# {line}".rstrip() for line in description.split("\n")) + "\n"
         f.write(as_comment)
     if app_desc.app_name == "galaxy":
         if settings_to_sample is None:
@@ -442,7 +446,8 @@ def _build_sample_yaml(args: Namespace, app_desc: App) -> None:
 
 
 def _write_to_file(args: Namespace, f: StringIO, path: str) -> None:
-    contents = f.getvalue()
+    # Exactly one trailing newline, so regenerating does not fight end-of-file-fixer.
+    contents = f.getvalue().rstrip("\n") + "\n"
     if args.dry_run:
         contents_indented = "\n".join(f" |{line}" for line in contents.splitlines())
         print(f"Overwriting {path} with the following contents:\n{contents_indented}")

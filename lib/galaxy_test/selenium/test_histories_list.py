@@ -9,14 +9,12 @@ from .framework import (
 
 
 class TestSavedHistories(SharedStateSeleniumTestCase):
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_histories_list(self):
         self._login()
         self.navigate_to_histories_page()
         self.assert_histories_in_list([self.history2_name, self.history3_name])
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_history_switch(self):
         self._login()
@@ -31,7 +29,6 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         assert_history_name_switched()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_history_view(self):
         self._login()
@@ -40,7 +37,6 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         history_name = self.wait_for_selector("[data-description='name display']")
         assert history_name.text == self.history2_name
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_history_publish(self):
         self._login()
@@ -57,7 +53,6 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         self.assert_histories_in_list([self.history2_name])
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rename_history(self):
         self._login()
@@ -71,7 +66,6 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         self.assert_histories_in_list([self.history1_name, self.history2_name, self.history3_name])
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_delete_and_undelete_history(self):
         self._login()
@@ -96,7 +90,6 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         self.assert_histories_in_list([self.history2_name])
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_permanently_delete_history(self):
         self._login()
@@ -117,7 +110,6 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         self.assert_histories_in_list([self.history4_name])
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_delete_and_undelete_multiple_histories(self):
         self._login()
@@ -146,7 +138,6 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.components.histories.reset_input.wait_for_and_click()
         self.assert_histories_in_list([self.history2_name, self.history3_name])
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_bulk_open_in_multiview(self):
         self._login()
@@ -169,7 +160,6 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         present_history_names = [self.get_history_name(history) for history in present_histories]
         assert set(present_history_names) == {self.history2_name, self.history3_name}
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_bulk_open_in_multiview_limit_confirmation(self):
         self._login()
@@ -219,7 +209,6 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         history_name_element = history.find_element(By.CSS_SELECTOR, "[data-description='name display']")
         return history_name_element.text
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_sort_by_name(self):
         self._login()
@@ -242,7 +231,6 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         assert actual_histories == expected_histories
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_standard_search(self):
         self._login()
@@ -253,7 +241,6 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.components.histories.search_input.wait_for_and_send_keys(self.history4_name)
         self.assert_histories_sorted_in_list([])
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_advanced_search(self):
         self._login()
@@ -294,7 +281,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         return self.components.histories.history_cards.all()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
+    @selenium_only("Tag editor never renders under Playwright - no .stateless-tags button")
     @selenium_test
     def test_tags(self):
         self._login()
