@@ -3083,17 +3083,17 @@ galaxy:
   # Define toolbox filters
   # (https://galaxyproject.org/user-defined-toolbox-filters/) that users
   # may use to restrict the tools to display.
-  #user_tool_filters: examples:restrict_upload_to_admins, examples:restrict_encode
+  #user_tool_filters: null
 
   # Define toolbox filters
   # (https://galaxyproject.org/user-defined-toolbox-filters/) that users
   # may use to restrict the tool sections to display.
-  #user_tool_section_filters: examples:restrict_text
+  #user_tool_section_filters: null
 
   # Define toolbox filters
   # (https://galaxyproject.org/user-defined-toolbox-filters/) that users
   # may use to restrict the tool labels to display.
-  #user_tool_label_filters: examples:restrict_upload_to_admins, examples:restrict_encode
+  #user_tool_label_filters: null
 
   # The base module(s) that are searched for modules for toolbox
   # filtering (https://galaxyproject.org/user-defined-toolbox-filters/)

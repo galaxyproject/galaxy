@@ -1178,6 +1178,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             function = factory.build_filter_function(filter_name)
             if function is None:
                 errors[f"{filter_type}|{filter_name}"] = "Filter function not found."
+                continue
 
             short_description, description = None, None
             doc_string = docstring_trim(function.__doc__)
