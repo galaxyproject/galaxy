@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { HDASummary } from "@/api";
+import type { HDASummary, HDCASummary, HistoryItemSummary } from "@/api";
 import { loadDatasets, type LoadDatasetsResult } from "@/api/datasets";
 
 import { useDatasetListStore } from "./datasetListStore";
@@ -25,7 +25,7 @@ function mockSummary(id: string, name = `dataset ${id}`): HDASummary {
     } as HDASummary;
 }
 
-function mockResult(data: HDASummary[], totalMatches = data.length): LoadDatasetsResult {
+function mockResult(data: HistoryItemSummary[], totalMatches = data.length): LoadDatasetsResult {
     return { data, totalMatches };
 }
 
@@ -54,6 +54,22 @@ describe("useDatasetListStore", () => {
         expect(store.totalLatestMatches).toBe(7);
         expect(store.hasLoadedLatest).toBe(true);
         expect(store.isLoading).toBe(false);
+    });
+
+    it("does not put collection summaries in the dataset-only cache", async () => {
+        const collection = {
+            id: "collection-1",
+            name: "collection",
+            history_content_type: "dataset_collection",
+        } as HDCASummary;
+        mockLoadDatasets.mockResolvedValue(mockResult([mockSummary("1"), collection]));
+        const store = useDatasetListStore();
+
+        const fetched = await store.fetchDatasets();
+
+        expect(fetched.map((dataset) => dataset.id)).toEqual(["1"]);
+        expect(store.latestDatasetIds).toEqual(["1"]);
+        expect(store.getDatasetSummary("collection-1")).toBeUndefined();
     });
 
     it("merges repeated fetches into the cache without duplicating entries", async () => {
