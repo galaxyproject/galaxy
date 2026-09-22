@@ -124,10 +124,7 @@ class TestLocalJobCancellation(CancelsJob, integration_util.IntegrationTestCase)
 
             # InteractiveToolManager.stop uses this path to end a session and
             # collect its outputs without cancelling or failing the job.
-            job.mark_stopped(self._app.config.track_jobs_in_database)
-            self._app.job_manager.stop(job)
-            self._app.model.session.add(job)
-            self._app.model.session.commit()
+            self._app.job_manager.stop_without_failing(job)
 
             self.dataset_populator.wait_for_job(job_id, assert_ok=True)
             details = self.dataset_populator.get_job_details(job_id, full=True).json()
