@@ -13,6 +13,7 @@ import pytest
 from galaxy import job_metrics
 from galaxy.app_unittest_utils.job_runner_support import MockJobWrapper
 from galaxy.app_unittest_utils.tools_support import UsesTools
+from galaxy.job_execution.output_collect import default_exit_code_file
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.jobs.runners import local
 from galaxy.util.unittest import TestCase
@@ -44,7 +45,7 @@ class TestLocalJobRunner(TestCase, UsesTools):
         runner = local.LocalJobRunner(self.app, 1)
         runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
 
-        assert not os.path.exists(local.default_exit_code_file(self.job_wrapper.working_directory, "1"))
+        assert not os.path.exists(default_exit_code_file(self.job_wrapper.working_directory, "1"))
         assert any("(1) execution finished:" in message and "return code: 7" in message for message in caplog.messages)
         assert any(
             record.levelname == "ERROR" and record.message == "(1) job process exited with return code 7"
@@ -66,7 +67,7 @@ class TestLocalJobRunner(TestCase, UsesTools):
         runner = local.LocalJobRunner(self.app, 1)
         runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
 
-        assert not os.path.exists(local.default_exit_code_file(self.job_wrapper.working_directory, "1"))
+        assert not os.path.exists(default_exit_code_file(self.job_wrapper.working_directory, "1"))
         assert not os.path.exists(os.path.join(self.job_wrapper.working_directory, "outputs", "tool_stdout"))
         assert any(f"return code: {-signal.SIGTERM}" in message for message in caplog.messages)
         assert any(
