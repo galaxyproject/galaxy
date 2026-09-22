@@ -431,3 +431,22 @@ def test_checked_in_loc_rows_are_checked(tmp_path):
     rows = [e for e in _lint(model).error_messages if e.linter == LocRowShape.name()]
     assert len(rows) == 1
     assert "Line 2" in rows[0].message
+
+
+def test_relative_loc_is_not_resolved_from_working_directory(tmp_path, monkeypatch):
+    repo = tmp_path / "repo"
+    shutil.copytree(TOOL_DATA_SAMPLE_REPO, repo)
+    (repo / "tool-data" / "bar.loc.sample").unlink()
+
+    cwd = tmp_path / "cwd"
+    (cwd / "tool-data").mkdir(parents=True)
+    (cwd / "tool-data" / "bar.loc").write_text("value\tname\t/path\n")
+    monkeypatch.chdir(cwd)
+
+    conf = str(repo / "tool_data_table_conf.xml.sample")
+    model = build_repository_data_tables(str(repo), tool_data_table_confs=[conf])
+    asset = model.loc_assets[0]
+    assert not asset.found
+    assert not asset.repo_backed
+    errors = [e for e in _lint(model).error_messages if e.linter == MissingLocFixture.name()]
+    assert len(errors) == 1

@@ -287,6 +287,13 @@ def find_and_lint_repository_data_tables(
     external_table_names: frozenset[str] = frozenset(),
 ) -> None:
     """Discover and lint every data-table configuration in ``repo_root``."""
+    if not os.path.isdir(repo_root):
+
+        def report_invalid_repository(_unused_target, lint_ctx: "LintContext") -> None:
+            lint_ctx.error(f"Repository path [{repo_root}] is not a directory", linter="RepositoryPath")
+
+        lint_ctx.lint("RepositoryPath", report_invalid_repository, None)
+        return
     external_table_names = DEFAULT_EXTERNAL_TABLE_NAMES | external_table_names
     data_manager_conf = _find_data_manager_conf(repo_root)
     tool_data_table_confs = _find_tool_data_table_confs(repo_root)

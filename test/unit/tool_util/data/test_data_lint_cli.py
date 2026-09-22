@@ -47,6 +47,18 @@ def test_no_configuration_is_skipped(tmp_path, capsys):
     assert "skipping data table linting" in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("target_type", ["missing", "file"])
+def test_invalid_repository_exits_one(tmp_path, capsys, target_type):
+    repository = tmp_path / target_type
+    if target_type == "file":
+        repository.write_text("")
+
+    code = _lint(str(repository))
+
+    assert code == 1
+    assert "not a directory" in capsys.readouterr().out
+
+
 def test_json_output_lists_messages(capsys):
     code = _lint(MISSING_LOC_REPO, json=True)
     assert code == 1

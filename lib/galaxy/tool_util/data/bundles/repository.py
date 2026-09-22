@@ -328,9 +328,10 @@ def _build_tables(
         loc_paths = []
         for filename, info in table.filenames.items():
             loc_paths.append(filename)
-            found = bool(info.get("found"))
+            # A relative loader hit came from the process CWD, not ``repo_root``.
+            found = bool(info.get("found")) and os.path.isabs(filename)
             backing_path = _repo_backing_path(repo_root, str(filename)) if not found else None
-            errors = list(info.get("errors") or ())
+            errors = list(info.get("errors") or ()) if found else []
             if backing_path:
                 # Match the loader's ``${__HERE__}`` expansion while parsing this file.
                 table.parse_file_fields(
