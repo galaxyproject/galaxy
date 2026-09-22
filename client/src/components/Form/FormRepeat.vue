@@ -73,6 +73,8 @@ const emit = defineEmits<{
     (e: "delete", index: number): void;
     (e: "clone", index: number): void;
     (e: "swap", a: number, b: number): void;
+    (e: "load-more", payload: { name: string; src: string; offset: number; limit: number; search?: string }): void;
+    (e: "search-change", payload: { name: string; src: string; query: string; limit: number }): void;
 }>();
 
 function onInsert() {
@@ -156,7 +158,12 @@ const { keyObject } = useKeyedObjects();
             </template>
 
             <template v-slot:body>
-                <FormNode v-bind="props.passthroughProps" :inputs="cache" :prefix="getPrefix(cacheId)" />
+                <FormNode
+                    v-bind="props.passthroughProps"
+                    :inputs="cache"
+                    :prefix="getPrefix(cacheId)"
+                    @load-more="emit('load-more', $event)"
+                    @search-change="emit('search-change', $event)" />
             </template>
         </FormCard>
 
