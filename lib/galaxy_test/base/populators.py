@@ -528,10 +528,9 @@ class BaseDatasetPopulator(BasePopulator):
     def new_bam_dataset(self, history_id: str, test_data_resolver):
         return self.new_dataset_from_test_data(history_id, test_data_resolver, "1.bam", "bam")
 
-    def new_dataset_from_test_data(self, history_id: str, test_data_resolver, filename: str, file_type: str):
-        return self.new_dataset(
-            history_id, content=open(test_data_resolver.get_filename(filename), "rb"), file_type=file_type, wait=True
-        )
+    def new_dataset_from_test_data(self, history_id: str, test_data_resolver, filename: str, file_type: str, **kwds):
+        with open(test_data_resolver.get_filename(filename), "rb") as content:
+            return self.new_dataset(history_id, content=content, file_type=file_type, wait=True, **kwds)
 
     def new_directory_dataset(
         self, test_data_resolver: TestDataResolver, history_id: str, directory: str, format: str = "directory"
@@ -1297,6 +1296,18 @@ class BaseDatasetPopulator(BasePopulator):
     def get_history_dataset_content(
         self, history_id: str, wait=True, filename=None, type="text", to_ext=None, raw=False, **kwds
     ):
+        display_response = self.get_history_dataset_content_raw(
+            history_id, wait=wait, filename=filename, to_ext=to_ext, raw=raw, **kwds
+        )
+        assert display_response.status_code == 200, display_response.text
+        if type == "text":
+            return display_response.text
+        else:
+            return display_response.content
+
+    def get_history_dataset_content_raw(
+        self, history_id: str, wait=True, filename=None, to_ext=None, raw=False, preview: bool | None = None, **kwds
+    ) -> Response:
         dataset_id = self.__history_content_id(history_id, wait=wait, **kwds)
         data = {}
         if filename:
@@ -1305,12 +1316,9 @@ class BaseDatasetPopulator(BasePopulator):
             data["raw"] = True
         if to_ext is not None:
             data["to_ext"] = to_ext
-        display_response = self._get_contents_request(history_id, f"/{dataset_id}/display", data=data)
-        assert display_response.status_code == 200, display_response.text
-        if type == "text":
-            return display_response.text
-        else:
-            return display_response.content
+        if preview is not None:
+            data["preview"] = preview
+        return self._get_contents_request(history_id, f"/{dataset_id}/display", data=data)
 
     def display_chunk(self, dataset_id: str, offset: int = 0, ck_size: int | None = None) -> dict[str, Any]:
         # use the dataset display API endpoint with the offset parameter to enable chunking

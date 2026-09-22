@@ -676,7 +676,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         content_type = None
         if to_ext is not None:
             # Match the filename/content-type a streamed download would produce.
-            content_disposition = datatype.download_content_disposition(dataset_instance, to_ext)
+            content_disposition = datatype.content_disposition(dataset_instance, to_ext)
             content_type = "application/octet-stream"
         return trans.app.object_store.get_direct_download_url(
             dataset_instance.dataset, content_disposition=content_disposition, content_type=content_type
@@ -700,7 +700,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         datatype = dataset_instance.datatype
         headers = {
             "content-type": "application/octet-stream",
-            "Content-Disposition": datatype.download_content_disposition(dataset_instance, to_ext),
+            "Content-Disposition": datatype.content_disposition(dataset_instance, to_ext),
             "accept-ranges": "bytes",
         }
         # Composite/archived downloads are zipped on the fly, so their size is not known up front.
@@ -732,7 +732,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         headers = {
             # Force octet-stream so Safari doesn't append mime extensions to the filename.
             "content-type": "application/octet-stream",
-            "Content-Disposition": datatype.download_content_disposition(dataset_instance, to_ext),
+            "Content-Disposition": datatype.content_disposition(dataset_instance, to_ext),
         }
         size = trans.app.object_store.size(dataset_instance.dataset)
         if size:

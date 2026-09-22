@@ -237,9 +237,10 @@ def test_ready_name_for_url(input_name, expected_output):
         ("Galaxy102-[name].fastqsanger.gz ", 'filename="Galaxy102-[name].fastqsanger.gz"'),
     ],
 )
-def test_to_content_disposition(target, expected_substring):
-    result = util.to_content_disposition(target)
-    assert result.startswith("attachment; ")
+@pytest.mark.parametrize("disposition", ["attachment", "inline"])
+def test_to_content_disposition(target, expected_substring, disposition):
+    result = util.to_content_disposition(target, disposition=disposition)
+    assert result.startswith(f"{disposition}; ")
     assert expected_substring in result
     # Ensure no trailing whitespace in the header value
     assert result == result.strip()
