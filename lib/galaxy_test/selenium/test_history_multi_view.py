@@ -22,10 +22,11 @@ class TestHistoryMultiView(SeleniumTestCase):
 
         self.home()
         self.open_history_multi_view()
-        self.components.histories.multiview_activity.wait_for_and_click()
-        oldest_card = self.components.histories.multiview_history_card(history_id=oldest_id)
+        multiview = self.components.histories.multiview
+        multiview.activity.wait_for_and_click()
+        oldest_card = multiview.history_card.selector(history_id=oldest_id)
         oldest_card.wait_for_and_click()
-        self.wait_for_selector(f"#g-card-history-{oldest_id}.g-card-selected")
+        oldest_card.selected.wait_for_visible()
 
         # Remount the selector with the oldest history already pinned, which
         # places it first even though the other histories are more recent.
@@ -36,14 +37,14 @@ class TestHistoryMultiView(SeleniumTestCase):
 
         # An individual unpin must not move the row out from under the cursor.
         oldest_card.wait_for_and_click()
-        self.wait_for_selector_absent(f"#g-card-history-{oldest_id}.g-card-selected")
+        oldest_card.selected.wait_for_absent()
         self._assert_multiview_history_order(pinned_order)
 
         # Re-pin the row, then use the explicit reset action. Unlike an
         # individual unpin, reset intentionally restores most-recent order.
         oldest_card.wait_for_and_click()
-        self.wait_for_selector(f"#g-card-history-{oldest_id}.g-card-selected")
-        self.components.histories.multiview_reset_button.wait_for_and_click()
+        oldest_card.selected.wait_for_visible()
+        multiview.reset_button.wait_for_and_click()
         self._assert_multiview_history_order(recent_order)
 
     @selenium_test
@@ -115,6 +116,6 @@ class TestHistoryMultiView(SeleniumTestCase):
     @retry_assertion_during_transitions
     def _assert_multiview_history_order(self, expected_ids):
         expected_id_set = set(expected_ids)
-        cards = self.find_elements_by_selector('[data-description="Select Histories"] [id^="g-card-history-"]')
+        cards = self.components.histories.multiview.history_cards.all()
         actual_ids = [card.get_attribute("id").removeprefix("g-card-history-") for card in cards]
         assert [history_id for history_id in actual_ids if history_id in expected_id_set] == expected_ids

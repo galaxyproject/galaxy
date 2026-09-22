@@ -98,17 +98,4 @@ describe("HistoryScrollList pinned ordering", () => {
 
         expect(renderedIds(wrapper)[0]).not.toBe("h0");
     });
-
-    it("re-sorts when the parent explicitly resets the pinned order", async () => {
-        const { wrapper, store } = mountList(["h0"]);
-        await flushPromises();
-        store.pinnedHistories = [];
-        await flushPromises();
-        expect(renderedIds(wrapper)[0]).toBe("h0");
-
-        await wrapper.setProps({ pinnedOrderResetKey: 1 });
-        await flushPromises();
-
-        expect(renderedIds(wrapper)).toEqual(["h2", "h1", "h0"]);
-    });
 });
