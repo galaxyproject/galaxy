@@ -15,6 +15,7 @@ from galaxy.managers.compute_resources import (
     RegistrationRateLimited,
     RegistrationTokenExpired,
     RegistrationTokenInvalid,
+    RELAY_TOPIC_PREFIXES,
     RelayVerificationFailed,
     ResourceHasRunningJobs,
     STATUS_ACTIVE,
@@ -47,6 +48,18 @@ def _fake_relay_client(sub: str = "default-sub", rotated_refresh_token: str = "R
         rotated_access_token=_signed_jwt(sub),
         rotated_refresh_token=rotated_refresh_token,
     )
+
+
+class _AllTopicsOwnedByAnotherUser(dict):
+    """``preclaimed`` stand-in that reports every topic as held by someone else.
+
+    ``FakeRelayClient`` looks ownership up with ``preclaimed.get(topic_name)``;
+    the manager_name is minted randomly inside ``complete_registration`` so the
+    test cannot name the topics up front.
+    """
+
+    def get(self, key, default=None):
+        return "some-other-relay-user"
 
 
 class TestComputeResourceManager(BaseTestCase):
@@ -169,6 +182,38 @@ class TestComputeResourceManager(BaseTestCase):
             f"compute_resource/{resource.id}/relay_refresh_token"
         )
         assert stored == "RT-ROTATED"
+
+    def test_complete_registration_pins_every_topic_pulsar_uses(self):
+        user = self.user_manager.create(email="reg2b@example.test", username="reg2b", password="x" * 8)
+        ticket = self.compute_resource_manager.start_registration(user)
+        self._stub_relay_exchange(sub="relay-user-reg2b")
+
+        resource = self.compute_resource_manager.complete_registration(
+            bootstrap_token=ticket.bootstrap_token,
+            refresh_token="RT-ORIGINAL",
+            relay_url="https://relay.example.test",
+        )
+
+        assert RELAY_TOPIC_PREFIXES == ("job_setup", "job_status_request", "job_kill", "job_status_update")
+        assert set(self.fake_relay_client.created) == {
+            f"{prefix}_{resource.manager_name}" for prefix in RELAY_TOPIC_PREFIXES
+        }
+
+    def test_complete_registration_refused_when_a_topic_is_squatted(self):
+        user = self.user_manager.create(email="reg2c@example.test", username="reg2c", password="x" * 8)
+        ticket = self.compute_resource_manager.start_registration(user)
+        self._stub_relay_exchange(sub="relay-user-reg2c")
+        # Claim every candidate name for a different relay user. The minted
+        # manager_name is random, so pre-claim by prefix at verification time
+        # rather than guessing the full topic name.
+        self.fake_relay_client.preclaimed = _AllTopicsOwnedByAnotherUser()
+
+        with pytest.raises(RelayVerificationFailed):
+            self.compute_resource_manager.complete_registration(
+                bootstrap_token=ticket.bootstrap_token,
+                refresh_token="RT-ORIGINAL",
+                relay_url="https://relay.example.test",
+            )
 
     def test_complete_registration_rejects_unknown_bootstrap_token(self):
         self.user_manager.create(email="reg3@example.test", username="reg3", password="x" * 8)
