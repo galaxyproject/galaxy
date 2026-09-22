@@ -86,11 +86,17 @@ REGISTRATION_TOKEN_TTL = timedelta(minutes=15)
 RATE_LIMIT_PER_HOUR = 5
 RATE_LIMIT_WINDOW = timedelta(hours=1)
 
-#: Pulsar subscribes to ``{prefix}_{manager_name}`` for each of these
-#: three topic prefixes — the wire contract between Galaxy (publisher,
-#: of job_setup / job_kill) and the user's Pulsar daemon (publisher of
-#: job_status_update; consumer of the other two).
-RELAY_TOPIC_PREFIXES = ("job_setup", "job_kill", "job_status_update")
+#: Pulsar subscribes to ``{prefix}_{manager_name}`` for each of these four
+#: topic prefixes — the wire contract between Galaxy (publisher of job_setup /
+#: job_status_request / job_kill) and the user's Pulsar daemon (publisher of
+#: job_status_update; consumer of the other three).
+#:
+#: All four are claimed at registration even though the relay auto-creates a
+#: topic on first publish: creating them up front makes the publisher the
+#: owner, so a name already held by a different relay user surfaces as a
+#: ``TopicOwnershipConflictError`` that refuses the registration rather than
+#: as a job that silently never gets picked up.
+RELAY_TOPIC_PREFIXES = ("job_setup", "job_status_request", "job_kill", "job_status_update")
 
 #: Prefix for Galaxy-minted ``manager_name`` values. A readable marker that
 #: the name is Galaxy-generated (vs. an operator-chosen pulsar manager name).
