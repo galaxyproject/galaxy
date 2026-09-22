@@ -17,6 +17,7 @@ from typing_extensions import Protocol
 
 from galaxy import util
 from galaxy.util.image_util import image_type
+from galaxy.util.warc import is_warc_chunk
 
 HTML_CHECK_LINES = 100
 CHUNK_SIZE = 2**15  # 32Kb
@@ -55,6 +56,14 @@ def check_html(name, file_path: bool = True) -> bool:
     finally:
         temp.close()
     return False
+
+
+def _decompressed_chunk_is_valid(chunk: bytes | None) -> bool:
+    if is_warc_chunk(chunk):
+        return True
+    if check_html(chunk, file_path=False):
+        return False
+    return True
 
 
 def check_binary(name, file_path: bool = True) -> bool:
@@ -110,10 +119,7 @@ def check_gzip(file_path: str, check_content: bool = True) -> tuple[bool, bool]:
 
     with gzip.open(file_path, mode="rb") as gzipped_file:
         chunk = gzipped_file.read(CHUNK_SIZE)
-    # See if we have a compressed HTML file
-    if check_html(chunk, file_path=False):
-        return (True, False)
-    return (True, True)
+    return (True, _decompressed_chunk_is_valid(chunk))
 
 
 def check_xz(file_path: str, check_content: bool = True) -> tuple[bool, bool]:
@@ -130,10 +136,7 @@ def check_xz(file_path: str, check_content: bool = True) -> tuple[bool, bool]:
 
     with lzma.LZMAFile(file_path, mode="rb") as xzipped_file:
         chunk = xzipped_file.read(CHUNK_SIZE)
-    # See if we have a compressed HTML file
-    if check_html(chunk, file_path=False):
-        return (True, False)
-    return (True, True)
+    return (True, _decompressed_chunk_is_valid(chunk))
 
 
 def check_bz2(file_path: str, check_content: bool = True) -> tuple[bool, bool]:
@@ -150,10 +153,7 @@ def check_bz2(file_path: str, check_content: bool = True) -> tuple[bool, bool]:
 
     with bz2.BZ2File(file_path, mode="rb") as bzipped_file:
         chunk = bzipped_file.read(CHUNK_SIZE)
-    # See if we have a compressed HTML file
-    if check_html(chunk, file_path=False):
-        return (True, False)
-    return (True, True)
+    return (True, _decompressed_chunk_is_valid(chunk))
 
 
 def check_zip(file_path: str, check_content: bool = True, files=1) -> tuple[bool, bool]:
@@ -167,7 +167,7 @@ def check_zip(file_path: str, check_content: bool = True, files=1) -> tuple[bool
     for filect, member in enumerate(iter_zip(file_path)):
         handle, name = member
         chunk = handle.read(CHUNK_SIZE)
-        if chunk and check_html(chunk, file_path=False):
+        if chunk and not _decompressed_chunk_is_valid(chunk):
             return (True, False)
         if filect >= files:
             break
@@ -234,6 +234,7 @@ __all__ = (
     "COMPRESSION_CHECK_FUNCTIONS",
     "is_gzip",
     "is_bz2",
+    "is_warc_chunk",
     "is_xz",
     "is_zip",
 )
