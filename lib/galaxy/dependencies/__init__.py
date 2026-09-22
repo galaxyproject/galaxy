@@ -402,6 +402,9 @@ class ConditionalDependencies(BaseConditionalDependencies):
     def check_arcfs_fsspec(self):
         return "gitlab" in self.file_sources or "arc" in self.file_sources
 
+    def check_galaxy_fsspec(self):
+        return "galaxy2galaxy" in self.file_sources
+
 
 def strip_comment(line):
     # lifted from https://github.com/tox-dev/tox/commit/3c6b4f204e89852c4b7536b246a66d20be6d39ec
