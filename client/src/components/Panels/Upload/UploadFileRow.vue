@@ -48,12 +48,7 @@ const isDifferentHistory = computed(
 
 const hasError = computed(() => props.file.status === "error");
 
-const sourceUrl = computed(() => {
-    if (props.file.uploadMode !== "paste-links" && props.file.uploadMode !== "remote-files") {
-        return undefined;
-    }
-    return props.file.url || undefined;
-});
+const sourceUrl = computed(() => displayInfo.value.sourceUrl);
 
 const isCancellable = computed(
     () =>
