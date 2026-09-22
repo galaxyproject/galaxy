@@ -18,6 +18,7 @@ import { bytesToString } from "@/utils/utils";
 import { getFileProgressUi, getUploadItemDisplayInfo } from "./uploadProgressUi";
 
 import UploadItemCard from "./UploadItemCard.vue";
+import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
@@ -47,6 +48,8 @@ const isDifferentHistory = computed(
 );
 
 const hasError = computed(() => props.file.status === "error");
+
+const sourceUrl = computed(() => displayInfo.value.sourceUrl);
 
 const isCancellable = computed(
     () =>
@@ -157,6 +160,14 @@ function onCancel(event: Event) {
                     aria-valuemin="0"
                     aria-valuemax="100"></div>
             </div>
+            <div v-if="sourceUrl" class="source-url text-muted small mt-1">
+                <span class="source-url-text text-truncate" :title="sourceUrl">{{ sourceUrl }}</span>
+                <CopyToClipboard
+                    class="copy-url-icon ml-1"
+                    :text="sourceUrl"
+                    message="Link copied to clipboard"
+                    title="Copy link" />
+            </div>
             <div v-if="props.file.error" class="error-message text-danger small mt-1">
                 {{ props.file.error }}
             </div>
@@ -205,6 +216,25 @@ function onCancel(event: Event) {
 
 .slot-row + .slot-row {
     border-top: 1px solid $border-color;
+}
+
+.source-url {
+    display: flex;
+    align-items: center;
+
+    .source-url-text {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .copy-url-icon {
+        flex-shrink: 0;
+        visibility: hidden;
+    }
+
+    &:hover .copy-url-icon {
+        visibility: visible;
+    }
 }
 
 @include cancel-button;
