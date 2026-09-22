@@ -49,6 +49,8 @@ dependencies = [
     "packaging",
     "paramiko!=2.9.0,!=2.9.1",
     "pebble!=5.2.1,!=5.2.2",
+    # Keep this floor at or above 0.15.16: earlier clients ignore the manager_name
+    # Galaxy mints for a compute resource (galaxyproject/pulsar#514).
     "pulsar-galaxy-lib>=0.16.0",
     "pulsar-relay-client>=0.2.2",
     "pydantic>=2.7.4",
