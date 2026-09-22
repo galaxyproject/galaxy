@@ -1,3 +1,5 @@
+import gzip
+
 import pytest
 import requests
 
@@ -119,14 +121,20 @@ class TestProxyApi(ApiTestCase):
         self._assert_status_code_is(response, 400)
         assert response.json()["err_msg"] == "Invalid URL format."
 
-    def test_proxy_handles_encoding(self):
+    def test_proxy_handles_encoding(self, mock_http_server):
         """Test handling of responses with content-encoding and proper header filtering.
 
         The TRAINING_URL URL triggered the 'Too much data for declared Content-Length' error because
         the response included a content-encoding header (gzip) even though the content was
         already decompressed by the requests library.
         """
-        response = self._get(f"proxy?url={TRAINING_URL}")
+        url = mock_http_server.get_url(
+            remote_url=TRAINING_URL,
+            body=gzip.compress(b"<!DOCTYPE html>\n<html><body>Galaxy Training Network</body></html>"),
+            content_type="text/html",
+            response_headers={"Content-Encoding": "gzip"},
+        )
+        response = self._get(f"proxy?url={url}")
         self._assert_status_code_is_ok(response)
         # Verify we got HTML content
         assert b"<!DOCTYPE" in response.content or b"<html" in response.content.lower()

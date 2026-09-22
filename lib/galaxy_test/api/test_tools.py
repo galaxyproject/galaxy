@@ -846,12 +846,16 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert output_details["file_ext"] == "bed"
 
     @skip_without_tool("test_data_source")
-    def test_data_source_sniff_fastqsanger(self):
+    def test_data_source_sniff_fastqsanger(self, mock_http_server):
         with self.dataset_populator.test_history() as history_id:
+            url = mock_http_server.get_url(
+                remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fastqsanger.gz",
+                file_path="test-data/1.fastqsanger.gz",
+            )
             payload = self.dataset_populator.run_tool_payload(
                 tool_id="test_data_source",
                 inputs={
-                    "URL": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fastqsanger.gz",
+                    "URL": url,
                     "URL_method": "get",
                 },
                 history_id=history_id,
