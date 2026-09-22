@@ -1,4 +1,9 @@
-"""Assemble a repository's data-table bundle for cross-file linting."""
+"""Assemble a repository's data-table bundle for cross-file linting.
+
+The model joins data-manager declarations, configured tables and loc files, and
+macro-expanded consumer references using Galaxy's existing loaders. It records
+resolved facts only; lint policy and diagnostics live in :mod:`.lint`.
+"""
 
 import os
 from collections.abc import Iterable

@@ -1,4 +1,9 @@
-"""Repository-level linters for data-table bundles."""
+"""Repository-level linters for data-table bundles.
+
+These linters classify an assembled :class:`RepositoryDataTables` model. Errors
+are reserved for broken contracts proven from repository files; unresolved or
+potentially external conditions are warnings or are left unchecked.
+"""
 
 import os
 from collections.abc import Iterable
@@ -23,7 +28,11 @@ if TYPE_CHECKING:
 
 
 class MissingLocFixture(Linter[RepositoryDataTables]):
-    """Report loc references absent from both the loader and repository."""
+    """Report loc references absent from both the loader and repository.
+
+    Loader resolution reflects a deployed ``tool_data_path``; ``repo_backed``
+    separately recognizes checked-in loc files and installable samples.
+    """
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
@@ -38,7 +47,11 @@ class MissingLocFixture(Linter[RepositoryDataTables]):
 
 
 class LocRowShape(Linter[RepositoryDataTables]):
-    """Report loc rows that cannot supply every declared column."""
+    """Report loc rows that cannot supply every declared column.
+
+    Both loader-resolved and repository-backed files are checked; missing files
+    are handled by :class:`MissingLocFixture`.
+    """
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
@@ -61,7 +74,10 @@ def _is_literal(name: str) -> bool:
 
 
 class ManagerTableConfigured(Linter[RepositoryDataTables]):
-    """Report manager-produced tables with no known configuration."""
+    """Report manager-produced tables with no known configuration.
+
+    A producer target must be configured locally or declared as externally supplied.
+    """
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
@@ -83,7 +99,11 @@ class ManagerTableConfigured(Linter[RepositoryDataTables]):
 
 
 class ConsumerTableDefined(Linter[RepositoryDataTables]):
-    """Warn about literal consumer references with no known definition."""
+    """Warn about literal consumer references with no known definition.
+
+    Another installed repository may supply the table, so an unknown reference
+    is advisory rather than a proven error.
+    """
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
@@ -107,7 +127,10 @@ class ConsumerTableDefined(Linter[RepositoryDataTables]):
 
 
 class OutputRefValid(Linter[RepositoryDataTables]):
-    """Report ``output_ref`` values absent from a resolved manager wrapper."""
+    """Report ``output_ref`` values absent from a resolved manager wrapper.
+
+    An unresolved wrapper leaves its outputs unknown and is not checked.
+    """
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
@@ -134,7 +157,11 @@ class OutputRefValid(Linter[RepositoryDataTables]):
 
 
 class DuplicateColumnNames(Linter[RepositoryDataTables]):
-    """Report duplicate column names in raw table declarations."""
+    """Report duplicate column names in raw table declarations.
+
+    The parsed column map collapses duplicates, so this check uses the ordered
+    pre-merge names.
+    """
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
@@ -158,7 +185,10 @@ class DuplicateColumnNames(Linter[RepositoryDataTables]):
 
 
 class ConflictingTableSchema(Linter[RepositoryDataTables]):
-    """Report incompatible schemas declared for the same table."""
+    """Report incompatible schemas declared for the same table.
+
+    Raw declarations retain conflicts that would make loader merging raise.
+    """
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
@@ -180,7 +210,11 @@ class ConflictingTableSchema(Linter[RepositoryDataTables]):
 
 
 class EmptyLocFile(Linter[RepositoryDataTables]):
-    """Warn when an empty loc file has no format comment."""
+    """Warn when an empty loc file has no format comment.
+
+    A comment-only file is a valid placeholder for data installed later; a fully
+    empty file leaves its expected format undocumented.
+    """
 
     @classmethod
     def lint(cls, model: RepositoryDataTables, lint_ctx: "LintContext"):
