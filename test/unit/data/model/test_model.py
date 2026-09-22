@@ -8,7 +8,7 @@ import pytest
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import add_item_annotation
-from galaxy.util import MAX_ANNOTATION_SIZE
+from galaxy.schema.schema import MAX_ANNOTATION_SIZE
 
 
 @pytest.fixture(scope="module")

@@ -16,13 +16,13 @@ from galaxy.schema.fields import (
 )
 from galaxy.schema.schema import (
     CreateTimeField,
+    MAX_ANNOTATION_SIZE,
     Model,
     SanitizedString,
     TagCollection,
     UpdateTimeField,
     WithModelClass,
 )
-from galaxy.util import MAX_ANNOTATION_SIZE
 
 VisualizationSortByEnum = Literal["create_time", "title", "update_time", "username"]
 

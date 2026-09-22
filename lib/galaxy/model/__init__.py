@@ -188,6 +188,7 @@ from galaxy.schema.schema import (
     DatasetValidatedState,
     InvocationsStateCounts,
     JobState,
+    MAX_ANNOTATION_SIZE,
     ToolRequestState,
 )
 from galaxy.schema.workflow.comments import WorkflowCommentModel
@@ -204,7 +205,6 @@ from galaxy.util import (
     enum_values,
     hex_to_lowercase_alphanum,
     listify,
-    MAX_ANNOTATION_SIZE,
     now,
     ready_name_for_url,
     unicodify,

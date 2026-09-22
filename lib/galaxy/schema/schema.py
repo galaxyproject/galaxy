@@ -58,10 +58,11 @@ from galaxy.tool_util_models.sample_sheet import (
     SampleSheetRows,
 )
 from galaxy.tool_util_models.tool_source import FieldDict
-from galaxy.util import MAX_ANNOTATION_SIZE
 from galaxy.util.config_templates import partial_model
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
+
+MAX_ANNOTATION_SIZE = 65536  # Unicode characters, not UTF-8 bytes.
 
 USER_MODEL_CLASS = Literal["User"]
 GROUP_MODEL_CLASS = Literal["Group"]
