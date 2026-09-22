@@ -28,14 +28,18 @@ import os
 import shutil
 import tempfile
 import threading
+from collections.abc import Callable
 from pathlib import Path
 from typing import (
     Any,
     ClassVar,
 )
+from unittest import mock
 
 import httpx
+import pulsar_relay_client
 import pytest
+from pulsar.client.galaxy_byoc import register_with_galaxy
 from pulsar_relay_client import (
     CredentialsFile,
     RelayDeviceFlowAuthenticator,
@@ -95,12 +99,13 @@ class TestComputeResourceToolExecution(
     _keycloak: ClassVar[KeycloakHandle | None] = None
     _relay: ClassVar[RelayHandle | None] = None
     _pulsar: ClassVar[PulsarHandle | None] = None
-    _secondary_refresh_token: ClassVar[str]
-    # Stashed from the device flow in _prepare_galaxy for use in setUp, where
-    # the Pulsar daemon is brought up (it needs the Galaxy-minted manager_name,
-    # which doesn't exist until registration completes).
-    _primary_refresh_token: ClassVar[str]
+    # The bootstrap device flow in _prepare_galaxy only exists to get an access
+    # token for pre-creating the relay topics; the registration proper runs in
+    # setUp through Pulsar's client, which drives its own device flow.
     _relay_access_token: ClassVar[str]
+    # Stashed so setUp can drive the Keycloak operator login for that second
+    # device flow.
+    _keycloak_setup: ClassVar[KeycloakSetup | None] = None
     _compute_resource_manager_name: ClassVar[str]
     _resource_id: ClassVar[int | None] = None  # genuinely None until setUp() inserts the row
     _tmp_dir: ClassVar[Path]
@@ -136,15 +141,13 @@ class TestComputeResourceToolExecution(
             keycloak_setup=keycloak_setup,
             log_path=cls._tmp_dir / "relay.log",
         )
-        tokens = cls._drive_device_flow(keycloak_setup, client_hint="compute-resource-tool-execution")
-        # Galaxy now mints the manager_name during registration, so the Pulsar
+        cls._keycloak_setup = keycloak_setup
+        # Galaxy mints the manager_name during registration, so the Pulsar
         # daemon (which is configured with it) can only be started in setUp,
-        # after the registration callback returns the generated name. Stash the
-        # device-flow tokens for that step. Both refresh tokens belong to the
-        # same relay user; the relay scopes topic ownership by that user, so the
-        # name is just a label and need not match any relay id.
-        cls._secondary_refresh_token = tokens["refresh_token_secondary"]
-        cls._primary_refresh_token = tokens["refresh_token"]
+        # once registration has run. This first device flow just yields an
+        # access token to pre-create the relay topics with; every login here
+        # resolves to the same relay user, which is what owns them.
+        tokens = cls._drive_device_flow(keycloak_setup, client_hint="compute-resource-tool-execution")
         cls._relay_access_token = tokens["access_token"]
         cls._render_galaxy_config_files()
 
@@ -196,27 +199,38 @@ class TestComputeResourceToolExecution(
         api_asserts.assert_status_code_is_ok(reg_resp)
         bootstrap_token = reg_resp.json()["bootstrap_token"]
 
-        complete_resp = self.dataset_populator._post(
-            "compute_resources/registrations/complete",
-            data={
-                "bootstrap_token": bootstrap_token,
-                "refresh_token": cls._secondary_refresh_token,
-                "relay_url": cls._relay.base_url,
-            },
-            json=True,
+        # Complete the registration the way a real user does: through Pulsar's
+        # own client, which runs its own device flow and POSTs the secondary
+        # token to Galaxy. The manager_name it hands back is what a real
+        # deployment writes into app.yml, so configuring the daemon from it is
+        # what makes this test able to fail on Galaxy/Pulsar name drift.
+        outcome = self._register_via_pulsar_client(
+            galaxy_url=self.url,
+            bootstrap_token=bootstrap_token,
         )
-        api_asserts.assert_status_code_is_ok(complete_resp)
-        # Galaxy minted the manager_name; the user (here, the test) configures
-        # their Pulsar with it. Pin the topics pulsar subscribes to and start
-        # the daemon now that the name exists.
-        cls._compute_resource_manager_name = complete_resp.json()["manager_name"]
-        cls._resource_id = complete_resp.json()["id"]
+        cls._compute_resource_manager_name = outcome["manager_name"]
+
+        index_resp = self.dataset_populator._get("compute_resources")
+        api_asserts.assert_status_code_is_ok(index_resp)
+        resources = index_resp.json()
+        assert len(resources) == 1, resources
+        # The name Pulsar will listen on must be the name Galaxy publishes to.
+        assert resources[0]["manager_name"] == cls._compute_resource_manager_name, (
+            f"Pulsar registered as manager {cls._compute_resource_manager_name!r} but Galaxy minted "
+            f"{resources[0]['manager_name']!r}; jobs would be published to topics the daemon never reads. "
+            "Needs a pulsar-galaxy-lib that takes manager_name from the registration response."
+        )
+        cls._resource_id = resources[0]["id"]
+
+        primary = CredentialsFile(str(self._pulsar_credentials_path())).load()
+        assert primary is not None, "register_with_galaxy did not write the relay credentials file"
+
         cls._pre_create_topics(access_token=cls._relay_access_token)
         cls._pulsar = bring_up_pulsar(
             tmp_dir=cls._tmp_dir,
             relay_base_url=cls._relay.base_url,
             manager_name=cls._compute_resource_manager_name,
-            primary_token=cls._primary_refresh_token,
+            primary_token=primary["refresh_token"],
             access_token=cls._relay_access_token,
             app_template=PULSAR_APP_TEMPLATE,
         )
@@ -252,17 +266,20 @@ class TestComputeResourceToolExecution(
         return provision(redirect_uris=[callback], setup=KeycloakSetup(base_url=cls._keycloak.base_url))
 
     @classmethod
-    def _drive_device_flow(cls, keycloak_setup: KeycloakSetup, *, client_hint: str) -> dict[str, Any]:
-        """Drive RFC 8628 device flow via ``pulsar_relay_client``, completing
-        the Keycloak operator login automatically from a worker thread.
+    def _keycloak_operator_hook(
+        cls, keycloak_setup: KeycloakSetup
+    ) -> tuple[Callable[[str, str], None], Callable[[], None]]:
+        """Build an ``on_user_code`` hook that plays the human operator.
 
-        ``RelayDeviceFlowAuthenticator``'s ``on_user_code`` hook lets us
-        substitute the human-points-a-browser step with ``login_via_keycloak``
-        against the same Keycloak the relay's OIDC provider is wired to.
+        RFC 8628 expects a person to open ``verification_uri_complete`` and
+        authenticate. We do that from a worker thread against the same
+        Keycloak the relay's OIDC provider is wired to. Returns the hook plus
+        a ``wait`` callable that joins the worker and re-raises whatever it hit
+        (exceptions on a daemon thread would otherwise be swallowed, leaving
+        the device flow to fail with an unhelpful timeout).
         """
         assert cls._relay is not None
         relay_url = cls._relay.base_url
-        cred_path = cls._tmp_dir / "device_flow_credentials.json"
         operator_error: list[Exception] = []
         op_thread: list[threading.Thread] = []
 
@@ -289,19 +306,83 @@ class TestComputeResourceToolExecution(
             t.start()
             op_thread.append(t)
 
+        def wait() -> None:
+            if op_thread:
+                op_thread[0].join(timeout=10)
+            if operator_error:
+                raise operator_error[0]
+
+        return on_user_code, wait
+
+    @classmethod
+    def _drive_device_flow(cls, keycloak_setup: KeycloakSetup, *, client_hint: str) -> dict[str, Any]:
+        """Drive RFC 8628 device flow via ``pulsar_relay_client``, completing
+        the Keycloak operator login automatically from a worker thread.
+        """
+        assert cls._relay is not None
+        cred_path = cls._tmp_dir / "device_flow_credentials.json"
+        on_user_code, wait_for_operator = cls._keycloak_operator_hook(keycloak_setup)
+
         flow = RelayDeviceFlowAuthenticator(
-            relay_url=relay_url,
+            relay_url=cls._relay.base_url,
             credentials_file=CredentialsFile(str(cred_path)),
             client_hint=client_hint,
             pair=True,
             on_user_code=on_user_code,
         )
         creds = flow.run()
-        if op_thread:
-            op_thread[0].join(timeout=10)
-        if operator_error:
-            raise operator_error[0]
+        wait_for_operator()
         return creds
+
+    @classmethod
+    def _register_via_pulsar_client(cls, *, galaxy_url: str, bootstrap_token: str) -> dict[str, Any]:
+        """Register through Pulsar's own ``register_with_galaxy``.
+
+        This is the code path a BYOC user actually runs (``pulsar-config
+        register-with-galaxy``), and the only thing that catches a Pulsar
+        client which writes the wrong ``manager_name`` into app.yml — Galaxy
+        mints the name, so a client that keeps using the relay ``sub`` binds
+        its daemon to topics Galaxy never publishes to and every job queues
+        forever. Posting to the completion endpoint from the test instead
+        would exercise Galaxy alone and miss exactly that.
+
+        ``register_with_galaxy`` constructs its own
+        ``RelayDeviceFlowAuthenticator`` and exposes no hook for the browser
+        step, so substitute a subclass that injects our Keycloak-driving
+        ``on_user_code``. The lazy ``from pulsar_relay_client import ...``
+        inside the function resolves the name at call time, so patching the
+        module attribute is enough.
+        """
+        assert cls._relay is not None
+        assert cls._keycloak_setup is not None
+        on_user_code, wait_for_operator = cls._keycloak_operator_hook(cls._keycloak_setup)
+
+        class AutoLoginAuthenticator(RelayDeviceFlowAuthenticator):
+            def __init__(self, **kwargs: Any) -> None:
+                kwargs["on_user_code"] = on_user_code
+                super().__init__(**kwargs)
+
+        with mock.patch.object(pulsar_relay_client, "RelayDeviceFlowAuthenticator", AutoLoginAuthenticator):
+            outcome = register_with_galaxy(
+                galaxy_url=galaxy_url,
+                bootstrap_token=bootstrap_token,
+                relay_url=cls._relay.base_url,
+                credentials_path=str(cls._pulsar_credentials_path()),
+                client_hint="compute-resource-tool-execution-pulsar",
+            )
+        wait_for_operator()
+        return outcome
+
+    @classmethod
+    def _pulsar_credentials_path(cls) -> Path:
+        """Where ``register_with_galaxy`` parks the primary refresh token.
+
+        ``CredentialsFile`` refuses to read through a group- or world-writable
+        parent, so create the directory with tight permissions up front.
+        """
+        path = cls._tmp_dir / "pulsar_registration" / "relay_credentials.json"
+        path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        return path
 
     @classmethod
     def _render_galaxy_config_files(cls) -> None:
