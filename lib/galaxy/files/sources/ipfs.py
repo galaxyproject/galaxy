@@ -54,9 +54,17 @@ class IPFSFilesSource(FsspecFilesSource[IPFSFileSourceTemplateConfiguration, IPF
         )
 
     def _to_filesystem_path(self, path: str, config: IPFSFileSourceConfiguration) -> str:
-        if path in ("", "/"):
-            return config.root.strip("/")
-        return path.lstrip("/")
+        root = config.root.strip("/")
+        relative_path = path.lstrip("/")
+        return f"{root}/{relative_path}" if relative_path else root
+
+    def _adapt_entry_path(self, filesystem_path: str, config: IPFSFileSourceConfiguration) -> str:
+        root = config.root.strip("/")
+        normalized_path = filesystem_path.lstrip("/")
+        if normalized_path == root:
+            return "/"
+        root_prefix = f"{root}/"
+        return f"/{normalized_path.removeprefix(root_prefix)}"
 
     def _write_from(
         self,
