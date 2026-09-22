@@ -629,12 +629,12 @@ class BaseJobRunner:
             job_info = JobInfo(
                 working_directory=working_directory or job_wrapper.working_directory,
                 tool_directory=None,
-                job_directory=job_wrapper.working_directory,
+                job_directory=working_directory or job_wrapper.working_directory,
                 tmp_directory=None,
                 home_directory=None,
                 job_directory_type=job_directory_type,
                 job_type="epilog",
-                output_paths=get_disk_paths(self.app.object_store),
+                output_paths=get_disk_paths(self.app.object_store) if job_directory_type == "galaxy" else set(),
             )
 
             return self.app.container_finder.find_container(tool_info, destination_info, job_info)

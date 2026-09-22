@@ -6,6 +6,8 @@ from typing import (
     cast,
 )
 
+import pytest
+
 from galaxy.jobs.runners.pulsar import PulsarJobRunner
 
 
@@ -161,3 +163,31 @@ def test_stop_job_supplies_recorded_external_id_to_kill_client():
     _destination_params, kill_kwargs = runner.client_manager.calls[-1]
     assert kill_kwargs["external_id"] == external_id
     assert runner.client_manager.clients[-1].killed
+
+
+@pytest.mark.parametrize("remote", [False, True])
+def test_metadata_container_uses_execution_host_paths(monkeypatch, remote):
+    """Pulsar's staging directory need not exist on the Galaxy host, or vice versa."""
+    storage_paths = {"/galaxy/objects"}
+
+    def get_disk_paths(object_store):
+        assert not remote, "Remote metadata must not query Galaxy's disk object store"
+        return storage_paths
+
+    monkeypatch.setattr("galaxy.jobs.runners.get_disk_paths", get_disk_paths)
+    finder = SimpleNamespace(find_container=lambda tool_info, destination_info, job_info: job_info)
+    runner = _runner()
+    runner.app = SimpleNamespace(container_finder=finder, object_store=object())
+    wrapper = SimpleNamespace(
+        working_directory="/galaxy/jobs/1",
+        job_destination=SimpleNamespace(params={"metadata_config": {"containerize": True}}),
+    )
+    job_info = runner._get_metadata_container(
+        wrapper,
+        job_directory_type="pulsar" if remote else "galaxy",
+        working_directory="/pulsar/staging/1" if remote else None,
+    )
+    expected_directory = "/pulsar/staging/1" if remote else "/galaxy/jobs/1"
+    assert job_info.working_directory == expected_directory
+    assert job_info.job_directory == expected_directory
+    assert job_info.output_paths == (set() if remote else storage_paths)

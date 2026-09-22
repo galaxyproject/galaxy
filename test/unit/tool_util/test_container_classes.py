@@ -47,7 +47,7 @@ def test_singularity_library_uri_is_not_a_path():
 @pytest.mark.parametrize("container_class", [DockerContainer, SingularityContainer])
 @pytest.mark.parametrize("metadata", [False, True])
 @pytest.mark.parametrize("has_storage", [False, True])
-def test_pulsar_metadata_storage_mounts(container_class, metadata, has_storage):
+def test_pulsar_defaults_do_not_mount_galaxy_storage(container_class, metadata, has_storage):
     storage_paths = {"/storage/objects", "/storage/cache"} if has_storage else set()
     container = container_class(
         container_id="metadata-image",
@@ -57,7 +57,7 @@ def test_pulsar_metadata_storage_mounts(container_class, metadata, has_storage):
         job_info=JobInfo(
             working_directory="/pulsar/staging/1",
             tool_directory=None,
-            job_directory="/galaxy/jobs/1",
+            job_directory="/pulsar/staging/1",
             tmp_directory=None,
             home_directory=None,
             job_directory_type="pulsar",
@@ -71,5 +71,5 @@ def test_pulsar_metadata_storage_mounts(container_class, metadata, has_storage):
     assert "/galaxy:ro" not in volumes
     assert "$storage" not in volumes
     for path in storage_paths:
-        assert (f"{path}:rw" in volumes) is metadata
+        assert f"{path}:rw" not in volumes
         assert f"{path}:ro" not in volumes

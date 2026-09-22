@@ -355,8 +355,9 @@ class HasDockerLikeVolumes:
         add_var("galaxy_data_manager_data_path", self.app_info.galaxy_data_manager_data_path)
         add_var("shed_tool_data_path", self.app_info.shed_tool_data_path)
 
-        # Provide storage to Galaxy jobs and Pulsar metadata epilogs, which can
-        # write discovered outputs directly to the shared object store.
+        # Provide storage template variable to both pulsar and galaxy,
+        # but only add it to defaults for galaxy. Only makes sense
+        # if embedded pulsar is used without path rewriting.
         outputs_to_working_directory = self.app_info.outputs_to_working_directory
         if "outputs_to_working_directory" in self.destination_info:
             outputs_to_working_directory = asbool(self.destination_info["outputs_to_working_directory"])
@@ -378,8 +379,6 @@ class HasDockerLikeVolumes:
             if self.job_info.tool_directory:
                 defaults += ",$tool_directory:ro"
             defaults += ",$job_directory/outputs:rw,$working_directory:rw"
-            if self.job_info.job_type == "epilog" and storage_mounts:
-                defaults += ",$storage"
         else:
             if self.job_info.tmp_directory is not None:
                 defaults = "$tmp_directory:rw"

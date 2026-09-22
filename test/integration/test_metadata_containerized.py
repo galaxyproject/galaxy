@@ -32,6 +32,10 @@ DOCKERIZED_METADATA_JOB_CONFIG = {
                 "runner": "pulsar_embed",
                 "docker_enabled": True,
                 "remote_metadata": True,
+                # Return outputs through Pulsar staging; extended metadata writes
+                # directly to the object store and requires remote access to it.
+                "metadata_strategy": "directory",
+                "default_file_action": "copy",
                 "metadata_config": {
                     "containerize": True,
                     "engine": "docker",
@@ -58,6 +62,7 @@ class ContainerizedMetadataIntegrationTestCase(integration_util.IntegrationTestC
         config["job_config"] = DOCKERIZED_METADATA_JOB_CONFIG
         config["enable_celery_tasks"] = False
         config["metadata_strategy"] = "extended"
+        config["retry_metadata_internally"] = False
         disable_dependency_resolution(config)
 
     def setUp(self) -> None:
