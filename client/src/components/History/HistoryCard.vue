@@ -217,7 +217,7 @@ const { historyCardExtraActions, historyCardSecondaryActions, historyCardPrimary
  */
 const { historyCardIndicators } = useHistoryCardIndicators(
     computed(() => props.history),
-    props.archivedView,
+    props.archivedView || props.publishedView,
     (k, v) => emit("updateFilter", k, v),
 );
 
