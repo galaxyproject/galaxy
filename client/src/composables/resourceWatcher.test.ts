@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useResourceWatcher, type WatchOptions, type WatchResourceHandler } from "./resourceWatcher";
 
 // Mock the global document object
-const mockAddEventListener = vi.fn();
-const mockRemoveEventListener = vi.fn();
+const mockAddEventListener = vi.fn<typeof document.addEventListener>();
+const mockRemoveEventListener = vi.fn<typeof document.removeEventListener>();
 
 interface MockDocument {
     addEventListener: MockedFunction<typeof document.addEventListener>;
