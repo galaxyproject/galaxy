@@ -481,7 +481,7 @@ def test_search_curated_collection_term_is_substring_unless_quoted() -> None:
 
 
 def test_count_collections_orders_by_size_then_name() -> None:
-    entries = [
+    entries: list[dict[str, Any]] = [
         {"collections": ["Proteomics", "Metaproteomics"]},
         {"collections": ["metabolomics"]},
         {"collections": ["Proteomics"]},
