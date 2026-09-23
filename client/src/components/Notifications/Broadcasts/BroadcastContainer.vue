@@ -269,9 +269,7 @@ $margin: 1rem;
         }
     }
 
-    // The `.g-button.g-transparent:not(.g-pressed)` part is not decoration: it is what
-    // lets these rules out-rank GButton's own scoped transparent rules, which are more
-    // specific than a plain `.dismiss-button` selector.
+    // Extra classes out-rank GButton's scoped transparent rules.
     .dismiss-button.g-button.g-transparent:not(.g-pressed) {
         font-size: 1.5rem;
         color: $border-color;
