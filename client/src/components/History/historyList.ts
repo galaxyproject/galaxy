@@ -14,7 +14,20 @@ export function getHistoryListFilters(activeList = "my"): Filtering<string | boo
             handler: contains("tag", "tag", expandNameTag),
             menuItem: true,
         },
-        tool_id: { placeholder: "tool ID", type: String, handler: contains("tool_id"), menuItem: true },
+        tool_id: {
+            placeholder: "tool ID",
+            type: String,
+            handler: contains("tool_id"),
+            menuItem: true,
+            disablesFilters: { tool_name: null },
+        },
+        tool_name: {
+            placeholder: "tool name",
+            type: String,
+            handler: contains("tool_name"),
+            menuItem: true,
+            disablesFilters: { tool_id: null },
+        },
         published: {
             placeholder: "Published",
             type: Boolean,
