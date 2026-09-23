@@ -1801,19 +1801,21 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         name = name or self._get_random_name()
         description = description or f"quota description for {name}"
-        amount = amount or ""
+        amount = amount or "unlimited"
         self.fill(
             form,
             {
-                "name": name,
-                "description": description,
-                "amount": amount,
+                "admin-quota-name": name,
+                "admin-quota-description": description,
+                "admin-quota-amount": amount,
             },
         )
         if quota_source_label:
-            self.select_set_value("#quota_source_label", quota_source_label)
+            self.select_set_value(quota_component.source_label, quota_source_label)
         if user:
-            self.select_set_value("#in_users", user, multiple=True)
+            quota_component.users.wait_for_and_click()
+            quota_component.users_input.wait_for_and_send_keys(user)
+            quota_component.user_option(email=user).wait_for_and_click()
         quota_component.add_form_submit.wait_for_and_click()
 
     def select_dataset_from_lib_import_modal(self, filenames):

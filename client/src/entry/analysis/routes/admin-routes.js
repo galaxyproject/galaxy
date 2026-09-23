@@ -21,7 +21,7 @@ import JobsList from "@/components/admin/JobsList.vue";
 import BroadcastForm from "@/components/admin/Notifications/BroadcastForm.vue";
 import NotificationForm from "@/components/admin/Notifications/NotificationForm.vue";
 import NotificationsManagement from "@/components/admin/Notifications/NotificationsManagement.vue";
-import QuotaUsersGroupsForm from "@/components/admin/QuotaUsersGroupsForm.vue";
+import QuotaForm from "@/components/admin/QuotaForm.vue";
 import ResetMetadata from "@/components/admin/ResetMetadata.vue";
 import RoleForm from "@/components/admin/RoleForm.vue";
 import SanitizeAllow from "@/components/admin/SanitizeAllow.vue";
@@ -215,7 +215,7 @@ export default [
             },
             {
                 path: "form/manage_users_and_groups_for_quota",
-                component: QuotaUsersGroupsForm,
+                component: QuotaForm,
                 props: (route) => ({
                     quotaId: route.query.id,
                 }),
@@ -230,11 +230,7 @@ export default [
             },
             {
                 path: "form/create_quota",
-                component: FormGeneric,
-                props: {
-                    url: "/admin/create_quota",
-                    redirect: "/admin/quotas",
-                },
+                component: QuotaForm,
             },
             {
                 path: "form/rename_role",
