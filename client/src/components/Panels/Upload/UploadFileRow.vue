@@ -70,6 +70,9 @@ const compositeSlots = computed<CompositeSlotQueueItem[]>(() =>
 /** True when at least one slot has no known size (plain URL slots). The total is therefore an estimate. */
 const hasSizeUncertainty = computed(() => compositeSlots.value.some((s) => s.fileSize === undefined));
 
+/** Size is unknown for URL uploads (size is 0) — hide it rather than showing "0 bytes". */
+const showSize = computed(() => props.file.size > 0);
+
 const sizeLabel = computed(() => {
     const label = bytesToString(props.file.size);
     return hasSizeUncertainty.value ? `~${label}` : label;
@@ -129,7 +132,11 @@ function onCancel(event: Event) {
         </template>
 
         <template v-slot:indicators>
-            <span class="text-muted small mr-2" :class="{ 'font-italic': hasSizeUncertainty }" :title="sizeTooltip">
+            <span
+                v-if="showSize"
+                class="text-muted small mr-2"
+                :class="{ 'font-italic': hasSizeUncertainty }"
+                :title="sizeTooltip">
                 {{ sizeLabel }}
             </span>
             <span class="text-muted small mr-2">
@@ -194,6 +201,7 @@ function onCancel(event: Event) {
                         {{ slot.displayName || "Not provided" }}
                     </span>
                     <span
+                        v-if="slot.fileSize !== 0"
                         class="small flex-shrink-0 text-muted"
                         :class="{ 'font-italic': slot.fileSize === undefined }">
                         {{ slotSizeLabel(slot.fileSize) }}
