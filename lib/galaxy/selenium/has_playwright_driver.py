@@ -578,8 +578,8 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             self._frame_or_page.wait_for_selector(selector, state="visible", timeout=timeout_ms)
 
             # Wait for element to be enabled
-            def is_enabled() -> bool:
-                return locator.is_enabled()
+            def is_enabled() -> Optional[bool]:
+                return True if locator.is_enabled() else None
 
             wait_on(is_enabled, "locator to be enabled", timeout=timeout_ms / 1000)
 
