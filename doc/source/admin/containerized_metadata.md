@@ -194,6 +194,11 @@ composite outputs with nested files, and metadata files such as BAM indexes.
 Check the resulting metadata values, not only the final job state: some datatype
 implementations tolerate missing optional libraries or executables.
 
+When `metadata_config.containerize` is enabled, failing to resolve a container
+is a configuration error; Galaxy does not silently construct a host metadata
+command. Check that the requested engine is enabled on the destination and that
+its container resolvers can resolve the image.
+
 During validation, set `retry_metadata_internally: false` in `galaxy.yml` so that
 server-side metadata fallback cannot conceal a failing remote runtime. Decide
 whether to retain that setting in production; fallback can keep jobs usable,
@@ -204,33 +209,19 @@ executables, and inaccessible paths. A disk object-store permission error on
 Pulsar is a reason to check the metadata strategy and transfer configuration,
 not to mount Galaxy's entire storage into every remote container.
 
-## Publishing and updates
+## Image versions and updates
 
-`.github/workflows/metadata_image.yaml` defines publication to
-`quay.io/galaxyproject/galaxy-job-execution`, using the existing upstream
-`QUAY_USERNAME` and `QUAY_PASSWORD` credentials. Registry maintainers must create
-the repository, allow those credentials to push, and make images readable by
-execution hosts. Pull requests and forks build without publishing or accessing
-registry credentials.
-
-- Pushes to `dev`, release branches and release tags build the corresponding
-  source checkout. PR checks build both the checkout and the default stable
-  PyPI runtime; integration tests always build the checkout.
-- Manual dispatch rebuilds a specified published stable package version. Use
-  this for the initial 26.1.1 image and for runtime/base-image updates after
-  packages are available on PyPI.
-- Each publication writes a moving Galaxy-version alias (for example `26.1.1`
-  or `26.2.dev0`) and a unique build tag
-  `<version>-r<workflow-run-number>.<attempt>`. Do not reuse build tags. Pin the
-  digest for deployment; the version alias can advance after rebuilds.
-- Images record the Galaxy version, source revision and build date in OCI
-  labels. The workflow also produces provenance and an SBOM. The installed
-  Python package manifest records the resolved runtime dependencies.
+Official images use a moving Galaxy-version alias (for example `26.1.1` or
+`26.2.dev0`) and a unique build tag `<version>-r<workflow-run-number>.<attempt>`.
+Pin a digest for deployment: a version alias can advance after rebuilds.
+Images record the Galaxy version, source revision and build date in OCI labels,
+and include the installed Python package manifest in `/etc/galaxy/requirements.txt`.
 
 A pinned Galaxy version alone does not make successive builds byte-identical:
-base images, OS packages and other Python dependencies can change. Rebuild and
-validate for security updates, retain the previous digest for rollback, and
-update deployment references deliberately. Update the Dockerfile's stable
-Galaxy/Python defaults and the manual-dispatch default when adopting a new
-stable release. Do not silently substitute a new Galaxy release in an existing
-server deployment.
+base images, OS packages and other Python dependencies can change. Validate
+updates with representative jobs, retain the previous digest for rollback, and
+update deployment references deliberately. Do not silently substitute a new
+Galaxy release in an existing server deployment.
+
+The [developer guide](../dev/metadata_image.md) describes how maintainers publish
+official images and update the stable runtime defaults.

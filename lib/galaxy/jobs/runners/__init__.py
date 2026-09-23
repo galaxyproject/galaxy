@@ -643,7 +643,14 @@ class BaseJobRunner:
                 output_paths=get_disk_paths(self.app.object_store) if job_directory_type == "galaxy" else set(),
             )
 
-            return self.app.container_finder.find_container(tool_info, destination_info, job_info)
+            container = self.app.container_finder.find_container(tool_info, destination_info, job_info)
+            if container is None:
+                raise ConfigurationError(
+                    f"Cannot resolve metadata container {image!r} using {container_type!r}. "
+                    "Check that the container engine is enabled and the destination's container resolvers "
+                    "can resolve the metadata image. Disable metadata_config.containerize to use host metadata."
+                )
+            return container
 
     def _handle_runner_state(self, runner_state, job_state: "JobState"):
         try:

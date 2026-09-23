@@ -8,6 +8,7 @@ from typing import (
 
 import pytest
 
+from galaxy.exceptions import ConfigurationError
 from galaxy.jobs.runners.pulsar import PulsarJobRunner
 
 
@@ -204,6 +205,7 @@ def test_metadata_container_tracks_galaxy_release(monkeypatch, version, image):
 
     def find_container(tool_info, destination_info, job_info):
         captured.append(tool_info)
+        return object()
 
     runner.app = SimpleNamespace(container_finder=SimpleNamespace(find_container=find_container))
     config = {"containerize": True}
@@ -220,3 +222,26 @@ def test_metadata_container_tracks_galaxy_release(monkeypatch, version, image):
     assert tool_info.container_descriptions[0].identifier == (
         image or f"quay.io/galaxyproject/galaxy-job-execution:{version}"
     )
+
+
+@pytest.mark.parametrize("remote", [False, True])
+def test_requested_metadata_container_must_resolve(monkeypatch, remote):
+    monkeypatch.setattr("galaxy.jobs.runners.get_disk_paths", lambda _: set())
+    runner = _runner()
+    runner.app = SimpleNamespace(
+        object_store=object(),
+        container_finder=SimpleNamespace(find_container=lambda *args: None),
+    )
+    wrapper = SimpleNamespace(
+        working_directory="/jobs/1",
+        job_destination=SimpleNamespace(params={"metadata_config": {"containerize": True, "image": "site/metadata:1"}}),
+    )
+    with pytest.raises(ConfigurationError, match="Cannot resolve metadata container 'site/metadata:1' using 'docker'"):
+        runner._get_metadata_container(wrapper, job_directory_type="pulsar" if remote else "galaxy")
+
+
+@pytest.mark.parametrize("config", [{}, {"metadata_config": {"containerize": False}}])
+def test_host_metadata_does_not_resolve_container(config):
+    runner = _runner()
+    wrapper = SimpleNamespace(job_destination=SimpleNamespace(params=config))
+    assert runner._get_metadata_container(wrapper) is None
