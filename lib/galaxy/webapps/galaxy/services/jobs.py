@@ -294,6 +294,7 @@ class JobsService(ServiceBase):
             send_email_notification=job_request.send_email_notification,
             credentials_context=job_request.credentials_context,
             dynamic_tool_id=tool.dynamic_tool.id if tool.dynamic_tool else None,
+            handler=tool.get_configured_job_handler() or trans.app.job_config.default_handler_id,
         )
         result = queue_jobs.delay(request=task_request)
         return JobCreateResponse(
