@@ -49,6 +49,26 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
 
     @selenium_test
     @managed_history
+    def test_history_dataset_display_tabular_loads_chunks_on_scroll(self):
+        # About three of the server's 64 KiB display chunks; wide rows keep the table small enough for axe.
+        content = "".join(f"{i}\t{'x' * 240}\n" for i in range(800))
+        hda = self.dataset_populator.new_dataset(
+            self.current_history_id(), content=content, file_type="tabular", wait=True
+        )
+        self.history_panel_wait_for_hid_ok(hda["hid"])
+        self.display_dataset(hid=hda["hid"])
+
+        dataset_display = self.components.dataset_display
+        dataset_display.tabular_row(index=1).wait_for_visible()
+        rows = dataset_display.tabular_rows.all()
+        initial_rows = len(rows)
+        assert 0 < initial_rows < 800
+
+        self.scroll_into_view(rows[-1])
+        dataset_display.tabular_row(index=initial_rows + 1).wait_for_present()
+
+    @selenium_test
+    @managed_history
     def test_history_dataset_rename(self):
         original_name = "1.txt"
         new_name = "newname.txt"
