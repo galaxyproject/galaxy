@@ -194,6 +194,14 @@ describe("CuratedWorkflowList", () => {
         expect(catalogQueries[1]!.get("search")).toBe("name:foo");
     });
 
+    it("sends free text typed alongside a filter", async () => {
+        const wrapper = await mountCuratedList(iwcPage(["a"]));
+
+        await setFilterText(wrapper, "flye name:assembly");
+
+        expect(catalogQueries.at(-1)!.get("search")).toBe("flye name:assembly");
+    });
+
     it("reports an invalid filter without sending it to the server", async () => {
         const wrapper = await mountCuratedList(iwcPage(["a"]));
 

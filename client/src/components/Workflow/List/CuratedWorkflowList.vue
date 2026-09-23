@@ -102,7 +102,7 @@ async function load(overlayLoading = false) {
 
     try {
         const data = await loadCuratedWorkflows({
-            search: validatedFilterText(),
+            search: searchText(),
             sortBy: explicitSort.value?.sortBy,
             sortDesc: explicitSort.value?.sortDesc,
             limit: limit.value,
@@ -141,6 +141,12 @@ async function load(overlayLoading = false) {
             loading.value = false;
         }
     }
+}
+
+/** Only called once invalid filters are ruled out. The server parses the whole query itself, and
+ * rebuilding it from the parsed filters would drop any free text typed alongside them. */
+function searchText() {
+    return isSurroundedByQuotes.value ? filterText.value.slice(1, -1) : filterText.value;
 }
 
 function validatedFilterText() {
