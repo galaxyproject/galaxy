@@ -4,6 +4,7 @@ import { computed, onMounted, ref, watch } from "vue";
 
 import {
     type CuratedWorkflow,
+    type CuratedWorkflowCollection,
     type CuratedWorkflowSortBy,
     type CuratedWorkflowSource,
     loadCuratedWorkflows,
@@ -50,6 +51,7 @@ const overlay = ref(false);
 const filterText = ref("");
 const showAdvanced = ref(false);
 const workflows = ref<CuratedWorkflow[]>([]);
+const collections = ref<CuratedWorkflowCollection[]>([]);
 const totalWorkflows = ref(0);
 const source = ref<CuratedWorkflowSource | null>(null);
 const message = ref<string | null>(null);
@@ -65,6 +67,17 @@ const validFilters = computed(() => workflowFilters.getValidFilters(rawFilters.v
 const invalidFilters = computed(() => workflowFilters.getValidFilters(rawFilters.value, true).invalidFilters);
 const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
 const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0);
+
+// A `collection:` term or its `c:` alias, with a quoted or bare value.
+const COLLECTION_TERM = /(^|\s)(?:collection|c):(?:'[^']*'|"[^"]*"|\S+)/gi;
+
+/** The collection the filter text narrows to, if any, without quotes and case-folded for comparison. */
+const activeCollection = computed(() => {
+    const value =
+        workflowFilters.getFilterValue(filterText.value, "collection") ??
+        workflowFilters.getFilterValue(filterText.value, "c");
+    return typeof value === "string" ? value.replace(/^(['"])(.*)\1$/, "$2").toLowerCase() : null;
+});
 
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 const currentListViewMode = computed(() => userStore.currentListViewPreferences.workflows || "grid");
@@ -114,6 +127,7 @@ async function load(overlayLoading = false) {
         }
 
         workflows.value = data.workflows ?? [];
+        collections.value = data.collections ?? [];
         totalWorkflows.value = data.total_matches;
         source.value = data.source;
         message.value = data.message ?? null;
@@ -162,6 +176,15 @@ function updateFilterValue(filterKey: string, newValue: any) {
     filterText.value = workflowFilters.setFilterValue(filterText.value, filterKey, newValue);
 }
 
+/** One collection at a time, as on iwc.galaxyproject.org: picking the active one again clears it.
+ * Edits the text directly rather than through `setFilterValue`, which rebuilds the query from its
+ * parsed filters and so would drop free text and leave a `c:` term behind. */
+function toggleCollection(name: string) {
+    const wasActive = activeCollection.value === name.toLowerCase();
+    const rest = filterText.value.replace(COLLECTION_TERM, "$1").replace(/\s+/g, " ").trim();
+    filterText.value = wasActive ? rest : `${rest} collection:'${name}'`.trim();
+}
+
 async function onPageChange(page: number) {
     offset.value = (page - 1) * limit.value;
     await load(true);
@@ -202,6 +225,27 @@ onMounted(() => load());
             </div>
             <div v-else-if="source === 'local'" id="curated-workflows-source-note" class="text-muted mb-2">
                 <span v-localize>Workflows curated for this Galaxy.</span>
+            </div>
+
+            <div
+                v-if="source === 'iwc' && collections.length"
+                id="curated-workflow-collections"
+                class="curated-workflow-collections d-flex flex-wrap mb-2"
+                role="group"
+                :aria-label="localize('Filter by IWC collection')">
+                <GButton
+                    v-for="collection in collections"
+                    :key="collection.name"
+                    class="curated-workflow-collection"
+                    :data-collection="collection.name"
+                    size="small"
+                    color="blue"
+                    outline
+                    :pressed="activeCollection === collection.name.toLowerCase()"
+                    @click="toggleCollection(collection.name)">
+                    {{ collection.name }}
+                    <span class="curated-workflow-collection-count">{{ collection.count }}</span>
+                </GButton>
             </div>
 
             <FilterMenu
@@ -300,7 +344,8 @@ onMounted(() => load());
                     :key="workflow.id"
                     :workflow="workflow"
                     :grid-view="currentListViewMode === 'grid'"
-                    @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)" />
+                    @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)"
+                    @collectionClick="toggleCollection" />
             </div>
         </GOverlay>
 
@@ -345,6 +390,15 @@ onMounted(() => load());
 
         overflow-y: auto;
         overflow-x: hidden;
+    }
+
+    .curated-workflow-collections {
+        gap: 0.25rem;
+
+        .curated-workflow-collection-count {
+            margin-left: 0.25rem;
+            opacity: 0.7;
+        }
     }
 
     .curated-workflow-card-list {

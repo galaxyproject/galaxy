@@ -26,6 +26,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "tagClick", tag: string): void;
+    (e: "collectionClick", collection: string): void;
 }>();
 
 const router = useRouter();
@@ -49,9 +50,10 @@ const titleBadges = computed<CardBadge[]>(() =>
     (workflow.value.collections ?? []).map((collection: string) => ({
         id: `curated-collection-${collection}`,
         label: collection,
-        title: `Part of the ${collection} collection`,
+        title: `Part of the ${collection} collection. Click to show the whole collection.`,
         type: "badge",
         variant: "outline-secondary",
+        handler: () => emit("collectionClick", collection),
     })),
 );
 

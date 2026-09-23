@@ -2,7 +2,8 @@ import Filtering, { contains, expandNameTag } from "@/utils/filtering";
 
 /**
  * Deliberately decoupled from `workflowFilters.ts`: the curated endpoint only
- * honours name and tag, and `hasInvalidFilters` correctly rejects anything else.
+ * honours name, tag and collection, and `hasInvalidFilters` correctly rejects
+ * anything else.
  */
 export function curatedWorkflowFilters() {
     const curatedFilters = {
@@ -15,6 +16,8 @@ export function curatedWorkflowFilters() {
             menuItem: true,
         },
         t: { type: "MultiTags", handler: contains("t", "t", expandNameTag), menuItem: false },
+        collection: { placeholder: "collection", type: String, handler: contains("collection"), menuItem: true },
+        c: { handler: contains("c"), menuItem: false },
     } as const;
 
     return new Filtering({ ...curatedFilters }, undefined, false);
@@ -25,8 +28,8 @@ export function curatedHelpHtml() {
         <p>This menu can be used to filter the curated workflows displayed.</p>
 
         <p>
-            Text entered here will be searched against workflow names, descriptions and
-            tags. Additionally, advanced filtering tags can be used to refine the search
+            Text entered here will be searched against workflow names, descriptions,
+            tags and collections. Additionally, advanced filtering tags can be used to refine the search
             more precisely. Filtering tags are of the form
             <code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or
             <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>. For instance to search
@@ -47,6 +50,11 @@ export function curatedHelpHtml() {
             <dd>
                 Shows workflows with the given workflow tag. You may also click
                 on a tag to filter on that tag directly.
+            </dd>
+            <dt><code>collection:____</code></dt>
+            <dd>
+                Shows workflows in the given IWC collection. The collection buttons above
+                the search, or a collection badge on a card, set this for you.
             </dd>
         </dl>
     </div>`;

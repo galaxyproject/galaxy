@@ -259,6 +259,16 @@ describe("CuratedWorkflowCard", () => {
         expect(toastError).toHaveBeenCalled();
     });
 
+    it("asks to filter by a collection when its badge is clicked", async () => {
+        const wrapper = mountCard(iwcWorkflow());
+
+        const badge = wrapper.find("[id^='g-card-badge-curated-collection-']");
+        expect(badge.text()).toContain("Single Cell");
+        await badge.trigger("click");
+
+        expect(wrapper.emitted("collectionClick")).toEqual([["Single Cell"]]);
+    });
+
     it("says a workflow is ready to run when nothing is missing", () => {
         const wrapper = mountCard(iwcWorkflow({ missing_tools: [] }));
 

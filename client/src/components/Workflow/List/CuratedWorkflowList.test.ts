@@ -330,6 +330,120 @@ describe("CuratedWorkflowList", () => {
         expect(wrapper.find("#sortby-default").classes()).toContain("g-pressed");
     });
 
+    it("offers the catalog's collections as chips that filter one collection at a time", async () => {
+        const wrapper = await mountCuratedList({
+            ...iwcPage(["a"]),
+            collections: [
+                { name: "Genome assembly", count: 3 },
+                { name: "Transcriptomics", count: 2 },
+            ],
+        });
+
+        const chips = wrapper.findAll(".curated-workflow-collection");
+        expect(chips).toHaveLength(2);
+        expect(chips.at(0).text()).toContain("Genome assembly");
+        expect(chips.at(0).text()).toContain("3");
+        expect(chips.at(0).classes()).not.toContain("g-pressed");
+
+        await chips.at(0).trigger("click");
+        await flushPromises();
+
+        expect(catalogQueries[1]!.get("search")).toBe("collection:'Genome assembly'");
+        expect(wrapper.find('[data-collection="Genome assembly"]').classes()).toContain("g-pressed");
+
+        // Another chip replaces the selection rather than stacking on it.
+        await wrapper.find('[data-collection="Transcriptomics"]').trigger("click");
+        await flushPromises();
+
+        expect(catalogQueries[2]!.get("search")).toBe("collection:'Transcriptomics'");
+        expect(wrapper.find('[data-collection="Genome assembly"]').classes()).not.toContain("g-pressed");
+        expect(wrapper.find('[data-collection="Transcriptomics"]').classes()).toContain("g-pressed");
+
+        // And the active chip clears it.
+        await wrapper.find('[data-collection="Transcriptomics"]').trigger("click");
+        await flushPromises();
+
+        expect(catalogQueries[3]!.get("search") ?? "").toBe("");
+        expect(wrapper.findAll(".g-pressed.curated-workflow-collection")).toHaveLength(0);
+    });
+
+    it("keeps other filters when a collection chip is toggled", async () => {
+        const wrapper = await mountCuratedList({
+            ...iwcPage(["a"]),
+            collections: [{ name: "Genome assembly", count: 3 }],
+        });
+        await setFilterText(wrapper, "name:flye");
+
+        await wrapper.find('[data-collection="Genome assembly"]').trigger("click");
+        await flushPromises();
+        expect(catalogQueries.at(-1)!.get("search")).toBe("name:flye collection:'Genome assembly'");
+
+        await wrapper.find('[data-collection="Genome assembly"]').trigger("click");
+        await flushPromises();
+        expect(catalogQueries.at(-1)!.get("search")).toBe("name:flye");
+    });
+
+    it("keeps free text when a collection chip is toggled", async () => {
+        const wrapper = await mountCuratedList({
+            ...iwcPage(["a"]),
+            collections: [{ name: "Genome assembly", count: 3 }],
+        });
+        await setFilterText(wrapper, "flye");
+
+        await wrapper.find('[data-collection="Genome assembly"]').trigger("click");
+        await flushPromises();
+        expect(catalogQueries.at(-1)!.get("search")).toBe("flye collection:'Genome assembly'");
+
+        await wrapper.find('[data-collection="Genome assembly"]').trigger("click");
+        await flushPromises();
+        expect(catalogQueries.at(-1)!.get("search")).toBe("flye");
+    });
+
+    it("treats a typed c: term as the selected collection", async () => {
+        const wrapper = await mountCuratedList({
+            ...iwcPage(["a"]),
+            collections: [
+                { name: "Genome assembly", count: 3 },
+                { name: "Transcriptomics", count: 2 },
+            ],
+        });
+        await setFilterText(wrapper, "c:'Genome assembly'");
+
+        expect(wrapper.find('[data-collection="Genome assembly"]').classes()).toContain("g-pressed");
+
+        // Switching replaces the alias rather than ANDing a second collection onto it.
+        await wrapper.find('[data-collection="Transcriptomics"]').trigger("click");
+        await flushPromises();
+        expect(catalogQueries.at(-1)!.get("search")).toBe("collection:'Transcriptomics'");
+
+        await setFilterText(wrapper, "c:'Genome assembly'");
+        await wrapper.find('[data-collection="Genome assembly"]').trigger("click");
+        await flushPromises();
+        expect(catalogQueries.at(-1)!.get("search") ?? "").toBe("");
+    });
+
+    it("filters to a collection when a card's collection badge is clicked", async () => {
+        const wrapper = await mountCuratedList({
+            ...iwcPage(["a"]),
+            collections: [{ name: "single-cell", count: 1 }],
+        });
+
+        await wrapper
+            .find(".curated-workflow-card")
+            .find("#g-card-badge-curated-collection-single-cell-a")
+            .trigger("click");
+        await flushPromises();
+
+        expect(catalogQueries[1]!.get("search")).toBe("collection:'single-cell'");
+    });
+
+    it("shows no collection chips in local mode", async () => {
+        configSource = "local";
+        const wrapper = await mountCuratedList({ source: "local", total_matches: 1, workflows: [localWorkflow()] });
+
+        expect(wrapper.find("#curated-workflow-collections").exists()).toBe(false);
+    });
+
     it("offers no Recommended sort in local mode, where the server default is newest first", async () => {
         configSource = "local";
         const wrapper = await mountCuratedList({ source: "local", total_matches: 1, workflows: [localWorkflow()] });

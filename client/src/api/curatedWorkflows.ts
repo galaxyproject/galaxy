@@ -4,6 +4,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 import { GalaxyApi } from "./client";
 
 export type CuratedWorkflow = components["schemas"]["CuratedWorkflow"];
+export type CuratedWorkflowCollection = components["schemas"]["CuratedWorkflowCollection"];
 export type CuratedWorkflowsIndexResponse = components["schemas"]["CuratedWorkflowsIndexResponse"];
 export type CuratedWorkflowSource = CuratedWorkflowsIndexResponse["source"];
 
