@@ -54,6 +54,15 @@ export const JobsFiltersByName = new Filtering(validFiltersByName, undefined, tr
 export function jobsFilterParams(filterText: string, useNameFilter = false): UserJobsQueryParams {
     const JobsFilters = useNameFilter ? JobsFiltersByName : JobsFiltersById;
 
+    // Ensure that any invalid filters are detected and reported, because otherwise `Filtering` just
+    // drops invalid filters
+    const rawFilters = Object.fromEntries(JobsFilters.getFiltersForText(filterText, true, false));
+    const { invalidFilters } = JobsFilters.getValidFilters(rawFilters, true);
+    const invalidKeys = Object.keys(invalidFilters);
+    if (invalidKeys.length > 0) {
+        throw new Error(`Invalid filter(s) in query: ${invalidKeys.join(", ")}`);
+    }
+
     const params: UserJobsQueryParams = {};
 
     const queryDict = JobsFilters.getQueryDict(filterText);
