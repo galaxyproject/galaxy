@@ -2,7 +2,7 @@ import axios from "axios";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useToolStore } from "./toolStore";
+import { type Tool, useToolStore } from "./toolStore";
 
 vi.mock("axios", () => ({
     default: {
@@ -51,5 +51,12 @@ describe("toolStore", () => {
         await store.fetchHelpForId("test-tool");
         expect(axios.get).toHaveBeenCalledTimes(2);
         expect(store.helpDataCached["test-tool"]).toMatchObject({ help: "Recovered help" });
+    });
+
+    it("does not resolve an uncached query through the prototype chain", () => {
+        const store = useToolStore();
+        store.saveToolForId("fastqc", { id: "fastqc", name: "FastQC" } as Tool);
+
+        expect(store.getToolsById("constructor")).toEqual({});
     });
 });

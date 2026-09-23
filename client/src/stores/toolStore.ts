@@ -161,7 +161,10 @@ export const useToolStore = defineStore("toolStore", () => {
             if (!q?.trim()) {
                 return toolsById.value;
             } else {
-                return filterTools(toolsById.value, toolResults.value[q] || []);
+                // Own-property check: a query like "constructor" must not resolve
+                // through the prototype chain and reach filterTools as a non-array.
+                const results = Object.hasOwn(toolResults.value, q) ? toolResults.value[q] : undefined;
+                return filterTools(toolsById.value, results || []);
             }
         };
     });
