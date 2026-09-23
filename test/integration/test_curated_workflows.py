@@ -386,6 +386,15 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
         assert no_match["total_matches"] == 0
         assert no_match["workflows"] == []
 
+    def test_curated_route_is_served_like_its_sibling_tabs(self):
+        # Checks the server side of the tab's URL, not the client: bookmarking
+        # or hard-refreshing it asks the server for this path, which 404s
+        # without an add_client_route registration while every other workflow
+        # tab loads. No API-level test would notice.
+        for path in ("workflows/list_published", "workflows/list_curated"):
+            response = requests.get(urljoin(self.url, path))
+            api_asserts.assert_status_code_is(response, 200)
+
     def test_catalog_anonymous_access(self):
         index = self._curated_index(anon=True, limit=10)
         assert index["source"] == "iwc"
@@ -455,20 +464,3 @@ class TestCuratedWorkflowsUnavailable(_CuratedWorkflowsTestCase):
         second = self._curated_index()
         assert second["source"] == "unavailable"
         assert second["message"] == UNAVAILABLE_MESSAGE
-
-
-class TestCuratedWorkflowsClientRoute(_CuratedWorkflowsTestCase):
-    """The tab's URL has to be served by the SPA, not just exist in the Vue router."""
-
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        super().handle_galaxy_config_kwds(config)
-        config["curated_workflows_source"] = "iwc"
-
-    def test_curated_route_is_served_like_its_sibling_tabs(self):
-        # Bookmarking or hard-refreshing the tab hits the server for this path.
-        # Without an add_client_route registration it 404s while every other
-        # workflow tab loads, which no API-level test would notice.
-        for path in ("workflows/list_published", "workflows/list_curated"):
-            response = requests.get(urljoin(self.url, path))
-            api_asserts.assert_status_code_is(response, 200)
