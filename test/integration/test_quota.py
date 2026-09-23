@@ -126,6 +126,21 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
         put_response.raise_for_status()
         assert self._quota_user_emails(quota_id) == []
 
+    def test_show_with_group(self):
+        group_name = "test-show-quota-group"
+        group_response = self._post("groups", data={"name": group_name}, json=True)
+        group_response.raise_for_status()
+        group_id = group_response.json()[0]["id"]
+        payload = self._build_quota_payload_with_name("test-show-quota-with-group")
+        payload["in_groups"].append(group_id)
+        create_response = self._post("quotas", data=payload, json=True)
+        create_response.raise_for_status()
+
+        show_response = self._get(f"quotas/{create_response.json()['id']}")
+        show_response.raise_for_status()
+        groups = [association["group"] for association in show_response.json()["groups"]]
+        assert [(group["id"], group["name"]) for group in groups] == [(group_id, group_name)]
+
     def test_delete(self):
         quota_name = "test-delete-quota"
         quota = self._create_quota_with_name(quota_name)
