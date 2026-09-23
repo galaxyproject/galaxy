@@ -692,14 +692,12 @@ class WorkflowModule:
 
         return []
 
-    def compute_collection_info(
-        self, progress: "WorkflowProgress", step, all_inputs
-    ) -> "matching.MatchingCollections | None":
+    def plan_map_over(self, progress: "WorkflowProgress", step, all_inputs) -> "matching.MatchingCollections | None":
         """Build the map-over plan for this step.
 
         See :mod:`galaxy.workflow.map_over` for the model and the algorithm.
         """
-        return MapOverPlanner(self.trans).compute_collection_info(progress, step, all_inputs)
+        return MapOverPlanner(self.trans).plan_map_over(progress, step, all_inputs)
 
 
 class SubWorkflowModule(WorkflowModule):
@@ -865,7 +863,7 @@ class SubWorkflowModule(WorkflowModule):
         """
         step = invocation_step.workflow_step
         all_inputs = self.get_all_inputs()
-        collection_info = self.compute_collection_info(progress, step, all_inputs)
+        collection_info = self.plan_map_over(progress, step, all_inputs)
 
         if collection_info:
             iteration_elements_iter = collection_info.slice_collections()
@@ -2128,7 +2126,7 @@ class PickValueModule(WorkflowModule):
         mode = step.tool_inputs.get("mode", "first_non_null") if step.tool_inputs else "first_non_null"
         all_inputs = self.get_all_inputs()
 
-        collection_info = self.compute_collection_info(progress, step, all_inputs)
+        collection_info = self.plan_map_over(progress, step, all_inputs)
 
         if collection_info:
             output = self._execute_mapped(trans, invocation_step, mode, all_inputs, collection_info)
@@ -2989,7 +2987,7 @@ class ToolModule(WorkflowModule):
         all_inputs_by_name = {}
         for input_dict in all_inputs:
             all_inputs_by_name[input_dict["name"]] = input_dict
-        collection_info = self.compute_collection_info(progress, step, all_inputs)
+        collection_info = self.plan_map_over(progress, step, all_inputs)
 
         param_combinations = []
         if collection_info:

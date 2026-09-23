@@ -3,7 +3,7 @@
 When a step's data inputs are connected to collections with deeper structure
 than the input consumes, Galaxy runs the step once per matching coordinate and
 collects the results - the step is "mapped over" its inputs.
-``MapOverPlanner.compute_collection_info`` builds that plan for one step: the
+``MapOverPlanner.plan_map_over`` builds that plan for one step: the
 resulting ``MatchingCollections`` (called ``collection_info`` throughout the
 workflow run code) records how each input is sliced.
 """
@@ -27,9 +27,7 @@ class MapOverPlanner:
     def __init__(self, trans: "ProvidesHistoryContext"):
         self.trans = trans
 
-    def compute_collection_info(
-        self, progress: "WorkflowProgress", step, all_inputs
-    ) -> matching.MatchingCollections | None:
+    def plan_map_over(self, progress: "WorkflowProgress", step, all_inputs) -> matching.MatchingCollections | None:
         """
         Use get_all_inputs (if implemented) to determine collection mapping for execution.
         """
