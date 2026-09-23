@@ -233,13 +233,10 @@ function consumeSeededQuestion() {
         return;
     }
     query.value = props.initialQuestion;
-    // Consumed: the same path without the parameter, and without a history
-    // entry. Deliberately not a router navigation — `Analysis.vue` renders its
-    // `<router-view :key="$route.fullPath">`, so dropping `?q=` through the
-    // router would change that key, destroy this component and take the just
-    // seeded question with it. Rewriting the address bar keeps the route (and
-    // therefore the key) untouched, and a reload still starts empty.
-    window.history.replaceState(window.history.state, "", window.location.pathname);
+    // Consumed: `Analysis.vue` keys every `/galaxyai` route alike, so dropping
+    // `?q=` keeps this component (and the prefilled question) mounted.
+    const { q: _seeded, ...otherQuery } = route.query;
+    router.replace({ path: route.path, query: otherQuery });
 }
 
 function showWelcome() {

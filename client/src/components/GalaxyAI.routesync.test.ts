@@ -9,10 +9,11 @@ import { useChatStore } from "@/stores/chatStore";
 
 import GalaxyAI from "./GalaxyAI.vue";
 
-const { mockGet, mockPost, mockPut, routerMock, ChatMessageCellStub, ChatInputStub } = vi.hoisted(() => ({
+const { mockGet, mockPost, mockPut, routeMock, routerMock, ChatMessageCellStub, ChatInputStub } = vi.hoisted(() => ({
     mockGet: vi.fn(),
     mockPost: vi.fn(),
     mockPut: vi.fn(),
+    routeMock: { path: "/galaxyai", params: {}, query: {} as Record<string, string> },
     routerMock: { push: vi.fn(), replace: vi.fn() },
     // render functions because the test environment uses the runtime-only Vue build
     ChatMessageCellStub: {
@@ -41,7 +42,7 @@ vi.mock("@/api/client", () => ({
 
 // Center (route) mode: the component keeps the /galaxyai/<exchange> path in sync.
 vi.mock("vue-router/composables", () => ({
-    useRoute: () => ({ path: "/galaxyai", params: {}, query: {} }),
+    useRoute: () => routeMock,
     useRouter: () => routerMock,
 }));
 
@@ -127,6 +128,8 @@ describe("GalaxyAI route sync", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockGet.mockResolvedValue({ data: [], error: undefined });
+        routeMock.path = "/galaxyai";
+        routeMock.query = {};
     });
 
     async function mountFreshChat() {
@@ -150,13 +153,14 @@ describe("GalaxyAI route sync", () => {
     });
 
     it("prefills a question seeded through the route and drops the parameter", async () => {
-        const replaceState = vi.spyOn(window.history, "replaceState");
+        routeMock.path = "/galaxyai/new";
+        routeMock.query = { compact: "true", q: "trim my reads" };
         const pinia = createPinia();
         setActivePinia(pinia);
         const wrapper = mount(GalaxyAI as object, {
             localVue,
             pinia,
-            propsData: { panel: true, exchangeId: "new", initialQuestion: "trim my reads" },
+            propsData: { compact: true, panel: true, exchangeId: "new", initialQuestion: "trim my reads" },
             stubs: { FontAwesomeIcon: true, BSkeleton: true },
         });
         await flushPromises();
@@ -164,12 +168,14 @@ describe("GalaxyAI route sync", () => {
         expect(wrapper.findComponent(ChatInputStub).props("value")).toBe("trim my reads");
         // the seeded question is only prefilled, never sent on the user's behalf
         expect(mockPost).not.toHaveBeenCalled();
-        // the parameter is dropped by rewriting the address bar: a router
-        // navigation would change `$route.fullPath`, which the analysis
-        // `<router-view>` keys on — the remount would wipe the seeded question
-        expect(replaceState).toHaveBeenCalledWith(window.history.state, "", window.location.pathname);
-        expect(routerMock.replace).not.toHaveBeenCalled();
-        replaceState.mockRestore();
+        // only `?q=` is dropped, in place, so a reload starts empty
+        expect(routerMock.replace).toHaveBeenCalledTimes(1);
+        expect(routerMock.replace).toHaveBeenCalledWith({ path: "/galaxyai/new", query: { compact: "true" } });
+
+        // the navigation clears the prop but leaves the prefilled question in place
+        await wrapper.setProps({ initialQuestion: undefined });
+        await flushPromises();
+        expect(wrapper.findComponent(ChatInputStub).props("value")).toBe("trim my reads");
     });
 
     it("does not route back to the previous exchange when a new chat is started", async () => {
