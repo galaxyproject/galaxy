@@ -214,12 +214,14 @@ class TestWorkflowProgress(TestCase):
         collection = model.DatasetCollection(collection_type="list:list")
         populated_child = model.DatasetCollection(collection_type="list")
         unpopulated_child = model.DatasetCollection(collection_type="list", populated=False)
-        unpopulated_child.id = 11
         for identifier, child in (("a", populated_child), ("b", unpopulated_child)):
             model.DatasetCollectionElement(collection=collection, element=child, element_identifier=identifier)
+        session = self.app.model.session
+        session.add(collection)
+        session.commit()
 
         assert modules.unpopulated_collection_dependencies(collection) == [
-            modules.SchedulingDependency(modules.DependencyType.DATASET_COLLECTION, 11)
+            modules.SchedulingDependency(modules.DependencyType.DATASET_COLLECTION, unpopulated_child.id)
         ]
 
     def test_delay_inherited_from_delayed_step_is_not_untracked(self):

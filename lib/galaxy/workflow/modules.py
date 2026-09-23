@@ -3524,8 +3524,8 @@ class SchedulingDependencies:
 
 def unpopulated_collection_dependencies(collection: DatasetCollection) -> list[SchedulingDependency]:
     return [
-        SchedulingDependency(DependencyType.DATASET_COLLECTION, unpopulated.id)
-        for unpopulated in collection.unpopulated_collections()
+        SchedulingDependency(DependencyType.DATASET_COLLECTION, collection_id)
+        for collection_id in collection.unpopulated_collection_ids()
     ]
 
 
