@@ -343,7 +343,7 @@ class WorkflowRequestMonitor(Monitors):
 
         # Always allow scheduling if maximum duration has been exceeded,
         # so invoke() can fail the invocation with the appropriate state.
-        maximum_duration = getattr(self.app.config, "maximum_workflow_invocation_duration", -1)
+        maximum_duration = self.app.config.maximum_workflow_invocation_duration
         if maximum_duration > 0 and invocation.seconds_since_created > maximum_duration:
             return True
 
@@ -381,15 +381,16 @@ class WorkflowRequestMonitor(Monitors):
         step_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.WORKFLOW_INVOCATION_STEP}
 
         if job_ids:
-            terminal_count = session.execute(
+            # Mirrors Job.finished, which is what delayed the step.
+            finished_count = session.execute(
                 select(func.count())
                 .select_from(model.Job)
                 .where(
                     model.Job.id.in_(job_ids),
-                    model.Job.state.in_(model.Job.terminal_states),
+                    model.Job.state.in_(model.Job.finished_states),
                 )
             ).scalar()
-            if terminal_count:
+            if finished_count:
                 return True
 
         if hda_ids:
@@ -413,13 +414,15 @@ class WorkflowRequestMonitor(Monitors):
                 return True
 
         if hdca_ids:
+            # A collection that failed to populate must be rescheduled too, so the
+            # invocation can fail instead of waiting forever.
             populated_count = session.execute(
                 select(func.count())
                 .select_from(model.HistoryDatasetCollectionAssociation)
                 .join(model.DatasetCollection)
                 .where(
                     model.HistoryDatasetCollectionAssociation.id.in_(hdca_ids),
-                    model.DatasetCollection.populated_state == model.DatasetCollection.populated_states.OK,
+                    model.DatasetCollection.populated_state != model.DatasetCollection.populated_states.NEW,
                 )
             ).scalar()
             if populated_count:
