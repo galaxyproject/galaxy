@@ -392,7 +392,7 @@ function unexpandedClick(event: Event) {
                         <span class="indicator">{{ item.sub_items?.length }}</span>
                     </GButton>
                     <ContentOptions
-                        v-if="!isPlaceholder && !item.purged"
+                        v-if="!isPlaceholder && !item.purged && props.item.accessible !== false"
                         :writable="writable"
                         :is-dataset="isDataset"
                         :is-deleted="item.deleted"
