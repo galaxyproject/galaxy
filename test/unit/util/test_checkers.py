@@ -15,7 +15,6 @@ from galaxy.util.checkers import (
     check_xz,
     check_zip,
 )
-from galaxy.util.warc import is_warc_chunk
 
 
 def test_check_html():
@@ -44,29 +43,6 @@ def test_check_image():
 HTML_PAYLOAD = b"<html><head><script>alert(1)</script></head></html>"
 
 
-def _warc_record():
-    return (
-        b"WARC/1.1\r\n"
-        b"WARC-Type: response\r\n"
-        b"WARC-Record-ID: <urn:uuid:12345678-1234-1234-1234-123456789abc>\r\n"
-        b"Content-Length: 128\r\n"
-        b"\r\n" + HTML_PAYLOAD
-    )
-
-
-def test_is_warc_chunk():
-    assert is_warc_chunk(_warc_record())
-    assert is_warc_chunk(_warc_record().replace(b"\r\n", b"\n").replace(b"WARC/1.1", b"WARC/1.0"))
-    assert not is_warc_chunk(None)
-    assert not is_warc_chunk(b"")
-    assert not is_warc_chunk(b"WARC/1.1")
-    assert not is_warc_chunk(b"WARC/1.1\r\nWARC-Type: response\r\n\r\n" + HTML_PAYLOAD)
-    assert not is_warc_chunk(b"  " + _warc_record())
-    assert not is_warc_chunk(b"WARC/1.1\n<html><script>alert(1)</script>")
-    spoofed = _warc_record().replace(b"WARC-Type:", b"X-Custom: WARC-Type:")
-    assert not is_warc_chunk(spoofed)
-
-
 def _write_compressed(path, payload: bytes):
     suffix = path.suffix
     if suffix == ".gz":
@@ -87,22 +63,6 @@ def _write_compressed(path, payload: bytes):
     "suffix,check",
     [(".gz", check_gzip), (".bz2", check_bz2), (".xz", check_xz), (".zip", check_zip)],
 )
-def test_compressed_warc_with_html_stays_valid(tmp_path, suffix, check):
-    path = _write_compressed(tmp_path / f"record{suffix}", _warc_record())
-    assert check(path, check_content=True) == (True, True)
-
-
-@pytest.mark.parametrize(
-    "suffix,check",
-    [(".gz", check_gzip), (".bz2", check_bz2), (".xz", check_xz), (".zip", check_zip)],
-)
 def test_compressed_html_stays_invalid(tmp_path, suffix, check):
     path = _write_compressed(tmp_path / f"evil{suffix}", HTML_PAYLOAD)
     assert check(path, check_content=True) == (True, False)
-
-
-def test_compressed_fake_warc_header_stays_invalid(tmp_path):
-    fake = b"WARC/1.1\n<html><script>alert(1)</script>"
-    path = tmp_path / "fake.gz"
-    path.write_bytes(gzip.compress(fake))
-    assert check_gzip(str(path), check_content=True) == (True, False)

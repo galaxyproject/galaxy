@@ -12,7 +12,6 @@ from galaxy.util.checkers import (
     check_zip,
     is_bz2,
     is_gzip,
-    is_warc_chunk,
 )
 
 __all__ = (
@@ -24,5 +23,4 @@ __all__ = (
     "check_zip",
     "is_gzip",
     "is_bz2",
-    "is_warc_chunk",
 )

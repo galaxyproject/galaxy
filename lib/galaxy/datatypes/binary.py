@@ -99,7 +99,6 @@ from galaxy.util.checkers import (
     is_gzip,
     is_xz,
 )
-from galaxy.util.warc import is_warc_chunk
 from . import (
     data,
     dataproviders,
@@ -418,6 +417,11 @@ class Bz2DynamicCompressedArchive(DynamicCompressedArchive):
     compressed_format = "bz2"
 
 
+WARC_VERSION_PREFIXES = (b"WARC/1.0", b"WARC/1.1")
+WARC_REQUIRED_FIELDS = (b"WARC-Type:", b"WARC-Record-ID:", b"Content-Length:")
+WARC_HEADER_LIMIT = 8192
+
+
 @build_sniff_from_prefix
 class Warc(CompressedArchive):
     """Web ARChive, gzip-compressed and kept compressed."""
@@ -427,9 +431,21 @@ class Warc(CompressedArchive):
     is_binary = "maybe"
     display_behavior = "download"
     allow_datatype_change = False
+    allow_compressed_html_content = True
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
-        return is_warc_chunk(file_prefix.contents_header_bytes)
+        """
+        The version line must be at byte 0 and every required field must start
+        a line of the first header block (up to the first blank line, max 8K,
+        so payload bytes past the blank line never match). Truncated headers
+        and indented fields do not match.
+        """
+        header = file_prefix.contents_header_bytes[:WARC_HEADER_LIMIT]
+        if not header.startswith(WARC_VERSION_PREFIXES):
+            return False
+        header_block = header.split(b"\r\n\r\n", 1)[0].split(b"\n\n", 1)[0]
+        lines = header_block.splitlines()[1:]
+        return all(any(line.startswith(field) for line in lines) for field in WARC_REQUIRED_FIELDS)
 
     def get_mime(self) -> str:
         return "application/gzip"
