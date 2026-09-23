@@ -134,7 +134,7 @@
         </div>
 
         <!-- Peek View -->
-        <div v-if="dataset.peek" data-test-id="peek-view" class="break-word" v-html="dataset.peek" />
+        <div v-if="dataset.peek" v-sanitize-html="dataset.peek" data-test-id="peek-view" class="break-word" />
     </div>
 </template>
 

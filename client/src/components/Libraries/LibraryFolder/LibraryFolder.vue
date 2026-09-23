@@ -117,23 +117,18 @@
                                 getMessage(row.item).length > maxDescriptionLength &&
                                 !expandedMessage.includes(row.item.id)
                             ">
-                            <!-- eslint-disable vue/no-v-html -->
                             <span
+                                v-sanitize-html="linkify(getMessage(row.item).substring(0, maxDescriptionLength))"
                                 class="shrinked-description"
-                                :title="getMessage(row.item)"
-                                v-html="
-                                    linkify(purify.sanitize(getMessage(row.item).substring(0, maxDescriptionLength)))
-                                ">
+                                :title="getMessage(row.item)">
                             </span>
 
-                            <!-- eslint-enable vue/no-v-html -->
                             <span :title="getMessage(row.item)"> ...</span>
                             <a class="more-text-btn" href="javascript:void(0)" @click="expandMessage(row.item)">
                                 (more)
                             </a>
                         </div>
-                        <!-- eslint-disable-next-line vue/no-v-html -->
-                        <div v-else v-html="linkify(purify.sanitize(getMessage(row.item)))" />
+                        <div v-else v-sanitize-html="linkify(getMessage(row.item))" />
                     </div>
                 </div>
             </template>
@@ -144,7 +139,7 @@
             </template>
 
             <template v-slot:cell(raw_size)="row">
-                <div v-if="row.item.type === 'file'" v-html="bytesToString(row.item.raw_size)" />
+                <div v-if="row.item.type === 'file'">{{ bytesToString(row.item.raw_size) }}</div>
             </template>
 
             <template v-slot:cell(state)="row">
@@ -274,13 +269,13 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCol, BContainer, BFormInput, BLink, BPagination, BRow } from "bootstrap-vue";
-import purify from "dompurify";
 import linkifyHtml from "linkify-html";
 import { mapState } from "pinia";
 
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "@/components/Libraries/library-utils";
 import { usePersistentRef } from "@/composables/persistentRef";
 import { Toast } from "@/composables/toast";
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useUserStore } from "@/stores/userStore";
 import Utils from "@/utils/utils";
@@ -333,9 +328,6 @@ export default {
             default: 1,
             required: false,
         },
-    },
-    setup() {
-        return { purify };
     },
     data() {
         return {
@@ -585,7 +577,9 @@ export default {
             this.isBusy = value;
         },
         linkify(raw_text) {
-            return linkifyHtml(raw_text);
+            // Clean before linkifying: linkify-html tokenizes its input as HTML, so a
+            // bare "<" in plain text would otherwise be read as the start of a tag.
+            return linkifyHtml(sanitizeHtml(raw_text));
         },
         toggleEditMode(item) {
             item.editMode = !item.editMode;

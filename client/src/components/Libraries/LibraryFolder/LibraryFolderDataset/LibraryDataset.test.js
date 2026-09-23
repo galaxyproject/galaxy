@@ -4,6 +4,7 @@ import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import { useUserStore } from "@/stores/userStore";
 
 import cannotManageDatasetResponse from "./testData/cannotManageDataset.json";
@@ -148,6 +149,13 @@ describe("Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue", () =
         const peek = wrapper.find(PEEK_VIEW);
 
         expect(peek.text()).toBe(EXPECTED_DATASET_DATA.peek);
+    });
+
+    it("renders the dataset peek through v-sanitize-html", async () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        await mountLibraryDatasetWrapper(localVue, UNRESTRICTED_DATASET_ID);
+
+        expect(sanitizeHtml).toHaveBeenCalledWith(EXPECTED_DATASET_DATA.peek, "default");
     });
 
     it("should display input fields when `Modify` button is clicked", async () => {
