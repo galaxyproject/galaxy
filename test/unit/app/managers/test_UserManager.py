@@ -40,6 +40,10 @@ user4_data = dict(email="user4@user4.user4", username="user4", password=default_
 uppercase_email_user = dict(email="USER5@USER5.USER5", username="USER5", password=default_password)
 
 
+def assert_user_display_name_is(user: model.User, display_name: str | None) -> None:
+    assert user.display_name == display_name
+
+
 # =============================================================================
 class TestUserManager(BaseTestCase):
     def test_framework(self):
@@ -314,29 +318,26 @@ class TestUserManager(BaseTestCase):
         assert message is None
 
     def test_update_display_name(self):
-        # No assertion on the initial value here: asserting `is None` would narrow
-        # the attribute to None for the rest of the function, and mypy would then
-        # read every later comparison as always-false. The default is covered by
-        # test_display_name_defaults_to_none.
         user = self.user_manager.create(**user2_data)
+        assert_user_display_name_is(user, None)
 
         self.log("display names should be updatable")
         self.user_manager.update_display_name(user, "Ada Lovelace")
-        assert user.display_name == "Ada Lovelace"
+        assert_user_display_name_is(user, "Ada Lovelace")
 
         self.log("surrounding whitespace should be stripped rather than rejected")
         self.user_manager.update_display_name(user, "  Ada Lovelace  ")
-        assert user.display_name == "Ada Lovelace"
+        assert_user_display_name_is(user, "Ada Lovelace")
 
         self.log("an empty display name should clear the field")
         self.user_manager.update_display_name(user, "")
-        assert user.display_name is None
+        assert_user_display_name_is(user, None)
         self.user_manager.update_display_name(user, "Ada Lovelace")
         self.user_manager.update_display_name(user, "   ")
-        assert user.display_name is None
+        assert_user_display_name_is(user, None)
         self.user_manager.update_display_name(user, "Ada Lovelace")
         self.user_manager.update_display_name(user, None)
-        assert user.display_name is None
+        assert_user_display_name_is(user, None)
 
     def test_update_display_name_validation(self):
         user = self.user_manager.create(**user2_data)
@@ -349,7 +350,7 @@ class TestUserManager(BaseTestCase):
         with self.assertRaises(exceptions.RequestParameterInvalidException):
             self.user_manager.update_display_name(user, "N" * 256)
 
-        assert user.display_name is None
+        assert_user_display_name_is(user, None)
 
     def test_display_names_need_not_be_unique(self):
         self.log("unlike usernames, two users may share a display name")
@@ -357,7 +358,8 @@ class TestUserManager(BaseTestCase):
         user3 = self.user_manager.create(**user3_data)
         self.user_manager.update_display_name(user2, "Ada Lovelace")
         self.user_manager.update_display_name(user3, "Ada Lovelace")
-        assert user2.display_name == user3.display_name == "Ada Lovelace"
+        assert_user_display_name_is(user2, "Ada Lovelace")
+        assert_user_display_name_is(user3, "Ada Lovelace")
 
     def test_get_user_by_identity(self):
         # return None if username/email not found
