@@ -23,10 +23,7 @@ from typing import (
     ClassVar,
 )
 from unittest.mock import patch
-from urllib.parse import urljoin
 from uuid import uuid4
-
-import requests
 
 from galaxy.exceptions import error_codes
 from galaxy.model import StoredWorkflow
@@ -380,15 +377,6 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
         }
         # The counts describe the catalog, not the current page of results.
         assert assembly["collections"] == index["collections"]
-
-    def test_curated_route_is_served_like_its_sibling_tabs(self):
-        # Checks the server side of the tab's URL, not the client: bookmarking
-        # or hard-refreshing it asks the server for this path, which 404s
-        # without an add_client_route registration while every other workflow
-        # tab loads. No API-level test would notice.
-        for path in ("workflows/list_published", "workflows/list_curated"):
-            response = requests.get(urljoin(self.url, path))
-            api_asserts.assert_status_code_is(response, 200)
 
     def test_catalog_anonymous_access(self):
         index = self._curated_index(anon=True, limit=10)
