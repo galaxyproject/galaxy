@@ -22,7 +22,7 @@
 import { BAlert } from "bootstrap-vue";
 import { type Ref, ref, watch } from "vue";
 
-import { stringify } from "@/components/Markdown/Utilities/stringify";
+import { parseBlockContent, serializeBlockContent } from "@/components/Markdown/Utilities/blockContent";
 import type { OptionType } from "@/components/SelectionField/types";
 import { getAppRoot } from "@/onload";
 
@@ -128,12 +128,12 @@ function onHeight(newHeight: number) {
 }
 
 function onOk() {
-    emit("change", stringify(contentObject.value));
+    emit("change", serializeBlockContent(contentObject.value));
 }
 
 function parseContent() {
     try {
-        contentObject.value = JSON.parse(props.content);
+        contentObject.value = parseBlockContent(props.content) as VitessceType;
         height.value = contentObject.value.__gx_height || DEFAULT_HEIGHT;
         urlReferences.value = findAllUrlFields(contentObject.value);
         errorMessage.value = "";
