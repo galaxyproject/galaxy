@@ -116,9 +116,6 @@ class TestUsersApi(ApiTestCase):
 
     @requires_new_user
     def test_update_display_name(self):
-        # This suite runs with public profile pages disabled, which is the point:
-        # a display name has to be settable on every instance, not only on the
-        # ones that expose profile pages.
         user = self._setup_user(TEST_USER_EMAIL)
         with self._different_user(email=TEST_USER_EMAIL):
             update_response = self.__update(user, data={"display_name": "Carl von Linné"})
