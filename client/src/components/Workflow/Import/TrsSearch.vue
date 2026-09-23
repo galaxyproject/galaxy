@@ -221,7 +221,7 @@ defineExpose({ triggerImport });
                 </template>
 
                 <template v-slot:cell(description)="row">
-                    <span class="trs-description" v-html="renderMarkdown(row.item.data.description)" />
+                    <span v-sanitize-html:links="renderMarkdown(row.item.data.description)" class="trs-description" />
                 </template>
             </GTable>
         </div>

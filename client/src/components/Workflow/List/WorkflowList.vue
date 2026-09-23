@@ -426,8 +426,7 @@ onMounted(() => {
                 :placeholder="localize(searchPlaceHolder)"
                 :show-advanced.sync="showAdvanced">
                 <template v-slot:menu-help-text>
-                    <!-- eslint-disable-next-line vue/no-v-html -->
-                    <div v-html="helpHtml(activeList, userStore.isAnonymous)"></div>
+                    <div v-sanitize-html="helpHtml(activeList, userStore.isAnonymous)"></div>
                 </template>
             </FilterMenu>
 
