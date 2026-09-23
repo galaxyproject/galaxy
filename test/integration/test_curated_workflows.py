@@ -29,6 +29,10 @@ import requests
 from galaxy.exceptions import error_codes
 from galaxy.model import StoredWorkflow
 from galaxy.model.item_attrs import add_item_annotation
+from galaxy.webapps.galaxy.services.workflows import (
+    PREPARING_MESSAGE,
+    UNAVAILABLE_MESSAGE,
+)
 from galaxy.workflow import (
     curated,
     iwc_manifest,
@@ -441,7 +445,7 @@ class TestCuratedWorkflowsUnavailable(_CuratedWorkflowsTestCase):
 
         first = self._curated_index()
         assert first["source"] == "preparing"
-        assert first["message"]
+        assert first["message"] == PREPARING_MESSAGE
 
         self._wait_for_refresh_to_settle()
         self.refresh_mock.assert_called()
@@ -450,7 +454,7 @@ class TestCuratedWorkflowsUnavailable(_CuratedWorkflowsTestCase):
         # than spawning a fetch per page view.
         second = self._curated_index()
         assert second["source"] == "unavailable"
-        assert "iwc.galaxyproject.org" in second["message"]
+        assert second["message"] == UNAVAILABLE_MESSAGE
 
 
 class TestCuratedWorkflowsClientRoute(_CuratedWorkflowsTestCase):
