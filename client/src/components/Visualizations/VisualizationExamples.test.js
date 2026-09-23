@@ -5,7 +5,7 @@ import { createPinia, defineStore, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
-import { useToast } from "@/composables/toast";
+import { Toast } from "@/composables/toast";
 import { createUrlUploadItem, uploadDatasets } from "@/utils/upload";
 
 import UploadExamples from "./VisualizationExamples.vue";
@@ -22,12 +22,9 @@ vi.mock("@/utils/upload", () => ({
 }));
 
 vi.mock("@/composables/toast");
-const toastSuccess = vi.fn();
-const toastError = vi.fn();
-useToast.mockReturnValue({
-    success: toastSuccess,
-    error: toastError,
-});
+
+const toastSuccess = vi.mocked(Toast.success);
+const toastError = vi.mocked(Toast.error);
 
 let mockedStore;
 vi.mock("@/stores/historyStore", () => ({

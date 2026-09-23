@@ -14,10 +14,7 @@ vi.mock("@/components/Workflow/workflows.services", () => ({
     updateWorkflow: vi.fn(),
 }));
 
-vi.mock("@/composables/toast", () => ({
-    Toast: { success: vi.fn(), error: vi.fn() },
-    useToast: () => ({ success: vi.fn(), error: vi.fn() }),
-}));
+vi.mock("@/composables/toast");
 
 const localVue = getLocalVue();
 

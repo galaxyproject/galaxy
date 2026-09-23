@@ -27,12 +27,7 @@ vi.mock("@/api/datasets", async (importOriginal) => {
     };
 });
 
-vi.mock("@/composables/toast", () => ({
-    Toast: {
-        success: vi.fn(),
-        error: vi.fn(),
-    },
-}));
+vi.mock("@/composables/toast");
 
 const mockHistoryStore = reactive({
     currentHistoryId: "current_history_id",
