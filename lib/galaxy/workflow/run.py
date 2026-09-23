@@ -460,7 +460,7 @@ class WorkflowProgress:
         return remaining_steps
 
     def replacement_for_input(
-        self, trans: "ProvidesHistoryContext", step: "WorkflowStep", input_dict: dict[str, Any]
+        self, trans: "ProvidesHistoryContext", step: "WorkflowStep", input_dict: modules.InputDescription
     ) -> modules.StepInputReplacement:
         replacement: modules.StepInputReplacement = NO_REPLACEMENT
         prefixed_name = input_dict["name"]

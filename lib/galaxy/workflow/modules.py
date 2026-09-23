@@ -20,7 +20,10 @@ from typing import (
     TypeAlias,
 )
 
-from typing_extensions import TypedDict
+from typing_extensions import (
+    NotRequired,
+    TypedDict,
+)
 
 from galaxy import (
     exceptions,
@@ -183,6 +186,26 @@ class OptionDict(TypedDict):
     label: str
     value: str
     selected: bool
+
+
+class InputDescription(TypedDict):
+    """One input description as returned by ``WorkflowModule.get_all_inputs``."""
+
+    name: str
+    label: str
+    input_type: str  # "dataset", "dataset_collection" or "parameter"
+    multiple: bool
+    optional: NotRequired[bool]
+    # PauseModule supplies the bare string "input" and get_filter_set()
+    # compares against that string form, so both shapes are load-bearing.
+    extensions: NotRequired[list[str] | str]
+    # dataset_collection inputs
+    collection_type: NotRequired[str | None]
+    collection_types: NotRequired[list[str] | None]
+    # parameter inputs
+    type: NotRequired[str]
+    # subworkflow inputs
+    input_subworkflow_step_id: NotRequired[int]
 
 
 class ConditionalStepWhen(BooleanToolParameter):
@@ -531,10 +554,10 @@ class WorkflowModule:
         """This returns inputs displayed in the workflow editor"""
         return {}
 
-    def get_all_inputs(self, data_only=False, connectable_only=False):
+    def get_all_inputs(self, data_only=False, connectable_only=False) -> list[InputDescription]:
         return []
 
-    def get_data_inputs(self):
+    def get_data_inputs(self) -> list[InputDescription]:
         """Get configure time data input descriptions."""
         return self.get_all_inputs(data_only=True)
 
@@ -692,7 +715,9 @@ class WorkflowModule:
 
         return []
 
-    def plan_map_over(self, progress: "WorkflowProgress", step, all_inputs) -> "matching.MatchingCollections | None":
+    def plan_map_over(
+        self, progress: "WorkflowProgress", step: WorkflowStep, all_inputs: list[InputDescription]
+    ) -> "matching.MatchingCollections | None":
         """Build the map-over plan for this step.
 
         See :mod:`galaxy.workflow.map_over` for the model and the algorithm.
@@ -742,17 +767,17 @@ class SubWorkflowModule(WorkflowModule):
             return self.subworkflow.name
         return self.name
 
-    def get_all_inputs(self, data_only=False, connectable_only=False):
+    def get_all_inputs(self, data_only=False, connectable_only=False) -> list[InputDescription]:
         """Get configure time data input descriptions."""
         # Filter subworkflow steps and get inputs
-        inputs = []
+        inputs: list[InputDescription] = []
         if hasattr(self.subworkflow, "input_steps"):
             for step in self.subworkflow.input_steps:
                 name = step.label
                 if not name:
                     step_module = module_factory.from_workflow_step(self.trans, step)
                     name = f"{step.order_index}:{step_module.get_name()}"
-                input = dict(
+                input = InputDescription(
                     input_subworkflow_step_id=step.order_index,
                     name=name,
                     label=name,
@@ -1036,7 +1061,7 @@ class InputModule(WorkflowModule):
         state.inputs = dict(input=NO_REPLACEMENT)
         return state
 
-    def get_all_inputs(self, data_only=False, connectable_only=False):
+    def get_all_inputs(self, data_only=False, connectable_only=False) -> list[InputDescription]:
         return []
 
     def execute(
@@ -1903,8 +1928,8 @@ class PauseModule(WorkflowModule):
     type = "pause"
     name = "Pause for dataset review"
 
-    def get_all_inputs(self, data_only=False, connectable_only=False):
-        input = dict(
+    def get_all_inputs(self, data_only=False, connectable_only=False) -> list[InputDescription]:
+        input = InputDescription(
             name="input",
             label="Dataset for Review",
             multiple=False,
@@ -2028,12 +2053,12 @@ class PickValueModule(WorkflowModule):
             num_from_connections = len(self.workflow_step.input_connections_by_name)
         return max(2, num_from_state, num_from_connections)
 
-    def get_all_inputs(self, data_only=False, connectable_only=False):
-        inputs = []
+    def get_all_inputs(self, data_only=False, connectable_only=False) -> list[InputDescription]:
+        inputs: list[InputDescription] = []
         # N connected terminals + 1 empty terminal for grow-on-connect
         for i in range(self._num_inputs + 1):
             inputs.append(
-                dict(
+                InputDescription(
                     name=f"input_{i}",
                     label=f"Input {i}",
                     multiple=False,
@@ -2668,11 +2693,11 @@ class ToolModule(WorkflowModule):
     def get_inputs(self):
         return self.tool.inputs if self.tool else {}
 
-    def get_all_inputs(self, data_only=False, connectable_only=False):
+    def get_all_inputs(self, data_only=False, connectable_only=False) -> list[InputDescription]:
         if data_only and connectable_only:
             raise Exception("Must specify at most one of data_only and connectable_only as True.")
 
-        inputs = []
+        inputs: list[InputDescription] = []
         if self.tool:
 
             def callback(input, prefixed_name, prefixed_label, value=None, **kwargs):
@@ -2691,7 +2716,7 @@ class ToolModule(WorkflowModule):
                 if not skip:
                     if isinstance(input, DataToolParameter):
                         inputs.append(
-                            dict(
+                            InputDescription(
                                 name=prefixed_name,
                                 label=prefixed_label,
                                 multiple=input.multiple,
@@ -2707,7 +2732,7 @@ class ToolModule(WorkflowModule):
                             # that we should probably want to represent as a None.
                             raw_collection_types = None
                         inputs.append(
-                            dict(
+                            InputDescription(
                                 name=prefixed_name,
                                 label=prefixed_label,
                                 multiple=input.multiple,
@@ -2719,7 +2744,7 @@ class ToolModule(WorkflowModule):
                         )
                     else:
                         inputs.append(
-                            dict(
+                            InputDescription(
                                 name=prefixed_name,
                                 label=prefixed_label,
                                 multiple=False,

@@ -18,6 +18,8 @@ from galaxy.model.dataset_collections.query import HistoryQuery
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesHistoryContext
+    from galaxy.model import WorkflowStep
+    from galaxy.workflow.modules import InputDescription
     from galaxy.workflow.run import WorkflowProgress
 
 
@@ -27,7 +29,9 @@ class MapOverPlanner:
     def __init__(self, trans: "ProvidesHistoryContext"):
         self.trans = trans
 
-    def plan_map_over(self, progress: "WorkflowProgress", step, all_inputs) -> matching.MatchingCollections | None:
+    def plan_map_over(
+        self, progress: "WorkflowProgress", step: "WorkflowStep", all_inputs: "list[InputDescription]"
+    ) -> matching.MatchingCollections | None:
         """
         Use get_all_inputs (if implemented) to determine collection mapping for execution.
         """
@@ -45,7 +49,9 @@ class MapOverPlanner:
                 collection_info.when_values = progress.when_values
         return collection_info or progress.subworkflow_collection_info
 
-    def _find_collections_to_match(self, progress: "WorkflowProgress", step, all_inputs) -> matching.CollectionsToMatch:
+    def _find_collections_to_match(
+        self, progress: "WorkflowProgress", step: "WorkflowStep", all_inputs: "list[InputDescription]"
+    ) -> matching.CollectionsToMatch:
         collections_to_match = matching.CollectionsToMatch()
         dataset_collection_type_descriptions = self.trans.app.dataset_collection_manager.collection_type_descriptions
 
