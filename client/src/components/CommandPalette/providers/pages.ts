@@ -1,11 +1,10 @@
 import { faFileAlt } from "@fortawesome/free-solid-svg-icons";
-import { format } from "date-fns";
 
 import type { PageSummary } from "@/api/pages";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { type PageListVariant, usePageStore } from "@/stores/pageStore";
 import { useUserStore } from "@/stores/userStore";
-import { galaxyTimeToDate } from "@/utils/dates";
+import { shortDateLabel } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
@@ -32,17 +31,6 @@ export function pageEditorPath(pageId: string): string {
     return `/pages/editor?id=${pageId}`;
 }
 
-function formatUpdateTime(updateTime: unknown): string {
-    if (typeof updateTime !== "string" || !updateTime) {
-        return "";
-    }
-    try {
-        return format(galaxyTimeToDate(updateTime), "MMM d, yyyy");
-    } catch {
-        return "";
-    }
-}
-
 /**
  * Whether the page editor may be offered for this row. The `p:` listing is
  * requested with `showOwn` alone, so everything it returns is the user's own;
@@ -60,7 +48,7 @@ function pageToItem(page: PageSummary, variant: PageListVariant): PaletteItem {
         icon: faFileAlt,
         keywords: [page.slug, page.username].filter(Boolean).join(" "),
         mru: { type: PAGE_MRU_TYPE, id: page.id },
-        subtitle: [page.slug, formatUpdateTime(page.update_time)].filter(Boolean).join(" · "),
+        subtitle: [page.slug, shortDateLabel(page.update_time)].filter(Boolean).join(" · "),
         title: page.title,
         to: pageDisplayPath(page.id),
     };

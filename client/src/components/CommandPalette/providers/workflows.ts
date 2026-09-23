@@ -1,11 +1,10 @@
 import { faSitemap } from "@fortawesome/free-solid-svg-icons";
-import { formatDistanceToNow } from "date-fns";
 
 import type { WorkflowSummary } from "@/api/workflows";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore, type WorkflowListVariant } from "@/stores/workflowStore";
-import { galaxyTimeToDate } from "@/utils/dates";
+import { relativeUpdatedLabel } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
@@ -57,18 +56,6 @@ function itemId(sectionId: string, workflowId: string): string {
     return `workflows:${sectionId}:${workflowId}`;
 }
 
-function updatedLabel(updateTime?: string): string | undefined {
-    if (!updateTime) {
-        return undefined;
-    }
-    try {
-        return `updated ${formatDistanceToNow(galaxyTimeToDate(updateTime), { addSuffix: true })}`;
-    } catch {
-        // a malformed timestamp must not cost the user the whole result row
-        return undefined;
-    }
-}
-
 /**
  * One result row. Enter runs the workflow; workflows the current user owns
  * additionally offer their editor on shift+enter.
@@ -77,7 +64,10 @@ function workflowItem(workflow: WorkflowSummary, sectionId: string): PaletteItem
     const userStore = useUserStore();
     const owned = userStore.matchesCurrentUsername(workflow.owner);
     // the owner is only worth a line for workflows that are not the user's own
-    const subtitle = [owned ? undefined : workflow.owner && `by ${workflow.owner}`, updatedLabel(workflow.update_time)]
+    const subtitle = [
+        owned ? undefined : workflow.owner && `by ${workflow.owner}`,
+        relativeUpdatedLabel(workflow.update_time),
+    ]
         .filter(Boolean)
         .join(" · ");
     return {

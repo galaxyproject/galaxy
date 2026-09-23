@@ -1,4 +1,4 @@
-import { format, parseISO } from "date-fns";
+import { format, formatDistanceToNow, parseISO } from "date-fns";
 
 /**
  * Converts a Galaxy time string to a Date object.
@@ -36,4 +36,36 @@ export function localizeUTCPretty(utcDate: Date): string {
 export function formatGalaxyPrettyDateString(galaxyTime: string): string {
     const date = galaxyTimeToDate(galaxyTime);
     return localizeUTCPretty(date);
+}
+
+/**
+ * Relative label for a Galaxy update time, e.g. "updated 3 days ago".
+ * @param {string} galaxyTime - The Galaxy time string in ISO format.
+ * @returns {string | undefined} The label, or `undefined` for a missing or malformed time.
+ */
+export function relativeUpdatedLabel(galaxyTime?: string | null): string | undefined {
+    if (!galaxyTime) {
+        return undefined;
+    }
+    try {
+        return `updated ${formatDistanceToNow(galaxyTimeToDate(galaxyTime), { addSuffix: true })}`;
+    } catch {
+        return undefined;
+    }
+}
+
+/**
+ * Short local date label for a Galaxy time string, e.g. "Aug 31, 2026".
+ * @param {string} galaxyTime - The Galaxy time string in ISO format.
+ * @returns {string | undefined} The label, or `undefined` for a missing or malformed time.
+ */
+export function shortDateLabel(galaxyTime?: string | null): string | undefined {
+    if (!galaxyTime) {
+        return undefined;
+    }
+    try {
+        return format(galaxyTimeToDate(galaxyTime), "MMM d, yyyy");
+    } catch {
+        return undefined;
+    }
 }

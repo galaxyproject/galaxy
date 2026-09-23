@@ -1,10 +1,9 @@
 import { faChartBar } from "@fortawesome/free-solid-svg-icons";
-import { format } from "date-fns";
 
 import type { VisualizationSummary } from "@/api/visualizations";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { useVisualizationStore } from "@/stores/visualizationStore";
-import { galaxyTimeToDate } from "@/utils/dates";
+import { shortDateLabel } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
@@ -31,25 +30,13 @@ export function visualizationDisplayPath(visualization: { id: string; type?: str
     )}`;
 }
 
-/** "Aug 31, 2026", or nothing when the backend sent no (or a broken) date */
-function formatUpdated(updateTime: string | null | undefined): string {
-    if (!updateTime) {
-        return "";
-    }
-    try {
-        return format(galaxyTimeToDate(updateTime), "MMM d, yyyy");
-    } catch {
-        return "";
-    }
-}
-
 function visualizationToItem(visualization: VisualizationSummary): PaletteItem {
     return {
         id: `visualizations:${visualization.id}`,
         icon: faChartBar,
         keywords: visualization.type,
         mru: { type: VISUALIZATION_RECENT_TYPE, id: visualization.id },
-        subtitle: [visualization.type, formatUpdated(visualization.update_time)].filter(Boolean).join(" · "),
+        subtitle: [visualization.type, shortDateLabel(visualization.update_time)].filter(Boolean).join(" · "),
         title: visualization.title,
         to: visualizationDisplayPath(visualization),
     };

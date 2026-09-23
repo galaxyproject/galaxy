@@ -1,11 +1,10 @@
 import { faHdd } from "@fortawesome/free-solid-svg-icons";
-import { formatDistanceToNow } from "date-fns";
 
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { type HistoryListVariant, useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
-import { galaxyTimeToDate } from "@/utils/dates";
+import { relativeUpdatedLabel } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
@@ -89,18 +88,6 @@ function ownsHistory(history: HistoryEntryLike, variant: HistoryVariant): boolea
     return variant === "my" || variant === "archived";
 }
 
-function updatedLabel(updateTime?: string): string | undefined {
-    if (!updateTime) {
-        return undefined;
-    }
-    try {
-        return `updated ${formatDistanceToNow(galaxyTimeToDate(updateTime), { addSuffix: true })}`;
-    } catch {
-        // a malformed timestamp must not cost the user the whole result row
-        return undefined;
-    }
-}
-
 /** The annotation says more than a bare item count, so it wins when present */
 function describeContents(history: HistoryEntryLike): string | undefined {
     const annotation = history.annotation?.trim();
@@ -126,7 +113,7 @@ function historyItem(history: HistoryEntryLike, sectionId: string, variant: Hist
         describeContents(history),
         // the owner is only worth a line for histories that are not the user's own
         owned ? undefined : (history.owner ?? history.username) && `by ${history.owner ?? history.username}`,
-        updatedLabel(history.update_time),
+        relativeUpdatedLabel(history.update_time),
     ]
         .filter(Boolean)
         .join(" · ");

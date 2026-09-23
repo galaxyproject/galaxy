@@ -1,12 +1,11 @@
 import { faSitemap } from "@fortawesome/free-solid-svg-icons";
-import { format } from "date-fns";
 
 import type { WorkflowInvocation } from "@/api/invocations";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
-import { galaxyTimeToDate } from "@/utils/dates";
+import { shortDateLabel } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
@@ -29,17 +28,6 @@ function invocationRoute(invocationId: string): string {
     return `/workflows/invocations/${invocationId}`;
 }
 
-function formatCreateTime(createTime: string | null | undefined): string | undefined {
-    if (!createTime) {
-        return undefined;
-    }
-    try {
-        return format(galaxyTimeToDate(createTime), "MMM d, yyyy");
-    } catch {
-        return undefined;
-    }
-}
-
 /**
  * Names come from the history and workflow stores, which
  * `fetchLatestInvocationsWithNames` populates before it resolves -- never fetched
@@ -55,7 +43,7 @@ function invocationNames(invocation: WorkflowInvocation) {
 
 function invocationToItem(invocation: WorkflowInvocation): PaletteItem {
     const { workflowName, historyName } = invocationNames(invocation);
-    const subtitle = [invocation.state, formatCreateTime(invocation.create_time), historyName]
+    const subtitle = [invocation.state, shortDateLabel(invocation.create_time), historyName]
         .filter(Boolean)
         .join(" · ");
     return {
