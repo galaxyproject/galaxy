@@ -28,7 +28,7 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
-import { rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
@@ -100,15 +100,19 @@ async function resumePausedJobs() {
         const response = await axios.get(url);
         toast.success(response.data.message);
     } catch (e) {
-        rethrowSimple(e);
+        toast.error(errorMessageAsString(e), "Could not resume paused jobs");
     }
 }
 
-function onDelete() {
-    if (purgeHistory.value) {
-        historyStore.deleteHistory(props.history.id, true);
-    } else {
-        historyStore.deleteHistory(props.history.id, false);
+async function onDelete() {
+    try {
+        if (purgeHistory.value) {
+            await historyStore.deleteHistory(props.history.id, true);
+        } else {
+            await historyStore.deleteHistory(props.history.id, false);
+        }
+    } catch (e) {
+        toast.error(errorMessageAsString(e), "Could not delete history");
     }
 }
 
