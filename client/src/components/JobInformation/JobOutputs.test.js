@@ -72,8 +72,7 @@ describe("JobInformation/JobOutputs.vue", () => {
             title: "Job Outputs",
             paginate: true,
         };
-        // The paginate button is rendered for real, so the click has to travel through
-        // the template's ``@click`` binding and GButton's own click guard.
+        // Real GButton so the click runs through its handler.
         wrapper = shallowMount(JobOutputs, {
             propsData,
             stubs: { GButton },
