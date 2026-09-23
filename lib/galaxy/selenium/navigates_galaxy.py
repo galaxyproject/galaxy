@@ -1824,6 +1824,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         quota_component.users_input.wait_for_and_send_keys(email)
         quota_component.user_option(email=email).wait_for_and_click()
 
+    def quota_form_add_group(self, name: str):
+        quota_component = self.components.admin.quota
+        quota_component.groups.wait_for_and_click()
+        quota_component.groups_input.wait_for_and_send_keys(name)
+        quota_component.group_option(name=name).wait_for_and_click()
+
     def select_dataset_from_lib_import_modal(self, filenames):
         self.wait_for_selector_visible(".directory-dataset-picker-list")
         for name in filenames:

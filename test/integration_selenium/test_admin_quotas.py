@@ -49,7 +49,7 @@ class TestAdminQuotasSeleniumIntegration(SeleniumIntegrationTestCase):
         quota_component.remove_selected_user(email=removed_email).wait_for_and_click()
         quota_component.selected_user(email=removed_email).wait_for_absent()
         self.quota_form_add_user(added_email)
-        self.select_set_value(quota_component.groups, group_name, multiple=True)
+        self.quota_form_add_group(group_name)
         self.screenshot("admin_quota_manage_users_and_groups")
         quota_component.submit.wait_for_and_click()
         quota_component.items.wait_for_element_count_of_at_least(1)
