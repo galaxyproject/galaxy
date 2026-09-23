@@ -344,11 +344,15 @@ class TestExtendedMetadataDeferredIntegration(integration_util.IntegrationTestCa
         config["object_store_store_by"] = "uuid"
         config["retry_metadata_internally"] = False
 
-    def test_deferred_upload_with_metadata_files(self):
+    def test_deferred_upload_with_metadata_files(self, test_http_server):
         history_id = self.dataset_populator.new_history()
+        uri = test_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+            file_path="test-data/1.bam",
+        )
         deferred_dataset = self.dataset_populator.create_deferred_hda(
             history_id=history_id,
-            uri="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+            uri=uri,
             ext="bam",
         )
         inputs = {"input1": {"src": "hda", "id": deferred_dataset["id"]}}

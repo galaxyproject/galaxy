@@ -343,12 +343,12 @@ class TestToolsUpload(ApiTestCase):
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         assert not content.startswith(">hg17")
 
-    def test_upload_multiple_mixed_success(self, history_id, mock_http_server):
-        url_ok = mock_http_server.get_url(
+    def test_upload_multiple_mixed_success(self, history_id, test_http_server):
+        url_ok = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
             file_path="test-data/1.bed",
         )
-        url_error = mock_http_server.get_url(
+        url_error = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
             status=404,
             body="Not Found",
@@ -378,8 +378,8 @@ class TestToolsUpload(ApiTestCase):
         assert output0["state"] == "ok"
         assert output1["state"] == "error"
 
-    def test_fetch_bam_file_from_url_with_extension_set(self, history_id, mock_http_server):
-        url = mock_http_server.get_url(
+    def test_fetch_bam_file_from_url_with_extension_set(self, history_id, test_http_server):
+        url = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
             file_path="test-data/1.bam",
         )
@@ -391,8 +391,8 @@ class TestToolsUpload(ApiTestCase):
         output = self.dataset_populator.fetch_hda(history_id, item)
         self.dataset_populator.get_history_dataset_details(history_id, dataset=output, assert_ok=True)
 
-    def test_fetch_html_from_url(self, history_id, mock_http_server):
-        url = mock_http_server.get_url(
+    def test_fetch_html_from_url(self, history_id, test_http_server):
+        url = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/html_file.txt",
             file_path="test-data/html_file.txt",
         )
@@ -422,10 +422,10 @@ class TestToolsUpload(ApiTestCase):
         assert dataset["state"] == "error"
         assert dataset["name"] == "html_file.txt"
 
-    def test_abort_fetch_job(self, history_id, mock_http_server):
+    def test_abort_fetch_job(self, history_id, test_http_server):
         # This should probably be an integration test that also verifies
         # that the celery chord is properly canceled.
-        url = mock_http_server.get_url(
+        url = test_http_server.get_url(
             remote_url="https://httpstat.us/200?sleep=10000",
             status=200,
             body="OK",
@@ -1011,8 +1011,8 @@ class TestToolsUpload(ApiTestCase):
         with pytest.raises(AssertionError):
             self._upload("https://foo.invalid", assert_ok=False)
 
-    def test_upload_from_404_url(self, mock_http_server):
-        url = mock_http_server.get_url(
+    def test_upload_from_404_url(self, test_http_server):
+        url = test_http_server.get_url(
             remote_url="https://usegalaxy.org/bla123",
             status=404,
             body="Not Found",
@@ -1028,11 +1028,11 @@ class TestToolsUpload(ApiTestCase):
     @pytest.mark.requires_tool_id("cat1")
     @pytest.mark.parametrize("use_legacy_api", ["always", "never"])
     @pytest.mark.parametrize("expect_failure", [False, True])
-    def test_tool_test_reports_failed_upload(self, history_id, mock_http_server, use_legacy_api, expect_failure):
+    def test_tool_test_reports_failed_upload(self, history_id, test_http_server, use_legacy_api, expect_failure):
         interactor = self.galaxy_interactor
         test = interactor.get_tool_tests("cat1")[0]
         filename, attributes = test["required_files"][0]
-        attributes["location"] = mock_http_server.get_url(
+        attributes["location"] = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/missing-staging-input.bed",
             status=404,
             body="Not Found",
@@ -1065,8 +1065,8 @@ class TestToolsUpload(ApiTestCase):
         assert dataset["misc_info"] in reports[0]["execution_problem"]
         assert str(exc.value.__cause__) in reports[0]["execution_problem"]
 
-    def test_upload_from_valid_url(self, mock_http_server):
-        url = mock_http_server.get_url(
+    def test_upload_from_valid_url(self, test_http_server):
+        url = test_http_server.get_url(
             remote_url="https://usegalaxy.org/api/version",
             status=200,
             body='{"version_major": "mock"}',
@@ -1075,8 +1075,8 @@ class TestToolsUpload(ApiTestCase):
         history_id, new_dataset = self._upload(url)
         self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=True)
 
-    def test_upload_from_valid_url_spaces(self, mock_http_server):
-        url = mock_http_server.get_url(
+    def test_upload_from_valid_url_spaces(self, test_http_server):
+        url = test_http_server.get_url(
             remote_url="https://usegalaxy.org/api/version",
             status=200,
             body='{"version_major": "mock"}',

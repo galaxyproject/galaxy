@@ -46,9 +46,9 @@ class TestToolExecution(ApiTestCase):
             self.dataset_populator.wait_for_jobs(jobs, assert_ok=True)
 
     @skip_without_tool("gx_data")
-    def test_execution_with_src_urls(self, mock_http_server):
+    def test_execution_with_src_urls(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
-            url = self._hello_url(mock_http_server)
+            url = self._hello_url(test_http_server)
             response = self._run(
                 "gx_data",
                 history_id,
@@ -85,9 +85,9 @@ class TestToolExecution(ApiTestCase):
             assert input_dataset_details["state"] == "ok", input_dataset_details
 
     @skip_without_tool("gx_data")
-    def test_execution_with_deferred_src_urls(self, mock_http_server):
+    def test_execution_with_deferred_src_urls(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
-            url = self._hello_url(mock_http_server)
+            url = self._hello_url(test_http_server)
             response = self._run(
                 "gx_data",
                 history_id,
@@ -243,8 +243,8 @@ class TestToolExecution(ApiTestCase):
         response = self._run(tool_id, history_id, inputs)
         assert response.status_code == 400
 
-    def _hello_url(self, mock_http_server) -> str:
-        return mock_http_server.get_url(
+    def _hello_url(self, test_http_server) -> str:
+        return test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt",
             body="Hello World!",
             content_type="text/plain",
