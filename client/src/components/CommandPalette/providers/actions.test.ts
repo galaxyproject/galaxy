@@ -13,7 +13,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { usePageStore } from "@/stores/pageStore";
 
 import type { PaletteContext, PaletteItem } from "../types";
-import { actionsProvider, slugify } from "./actions";
+import { actionsProvider } from "./actions";
 
 vi.mock("@/api/pages", async (importOriginal) => ({
     ...(await importOriginal<typeof PagesApi>()),
@@ -252,16 +252,5 @@ describe("actionsProvider", () => {
         const items = await argumentItems("actions:galaxy-ai", "trim my reads", ctx);
         expect(loadHistory).toHaveBeenCalled();
         expect(items[0]?.to).toBe("/galaxyai/new?q=trim%20my%20reads");
-    });
-});
-
-describe("slugify", () => {
-    it("lowercases, collapses non alphanumeric runs and trims dashes", () => {
-        expect(slugify("  My New Page!! ")).toBe("my-new-page");
-        expect(slugify("RNA-seq 2026 — draft")).toBe("rna-seq-2026-draft");
-    });
-
-    it("falls back for a title without a single usable character", () => {
-        expect(slugify("???")).toBe("page");
     });
 });

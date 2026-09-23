@@ -15,6 +15,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { usePageStore } from "@/stores/pageStore";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { slugify } from "@/utils/slug";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem } from "../types";
 import { rankPaletteItems } from "../utilities";
@@ -70,26 +71,14 @@ function namedHistoryItems(argQuery: string): PaletteItem[] {
     ];
 }
 
-/**
- * Page identifier the backend accepts: lowercase, every run of other characters
- * turned into a single dash, no dash at either end.
- */
-export function slugify(title: string): string {
-    const slug = title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
-    // a title made of punctuation alone would leave nothing to send
-    return slug || "page";
-}
-
 /** The backend rejects a slug that the user already has with this message */
 function isSlugConflict(error: unknown): boolean {
     return /must be unique/i.test(String(errorMessageAsString(error, "")));
 }
 
 async function createTitledPage(title: string, ctx: PaletteContext) {
-    const slug = slugify(title);
+    // a title made of punctuation alone would leave no slug to send
+    const slug = slugify(title, "page");
     try {
         let page;
         try {
