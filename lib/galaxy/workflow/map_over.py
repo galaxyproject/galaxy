@@ -78,9 +78,7 @@ class MapOverPlanner:
                         continue
                 else:
                     consumed_collection_types = self._declared_collection_input_types(progress, input_dict)
-                consumed_collection_types, remaining_outer_types = self._reserve_outer_structure(
-                    progress, consumed_collection_types
-                )
+                remaining_outer_types = self._reserve_outer_structure(progress)
                 history_query = HistoryQuery.from_collection_types(
                     consumed_collection_types,
                     dataset_collection_type_descriptions,
@@ -120,14 +118,13 @@ class MapOverPlanner:
                 declared = [collection_type]
         return declared
 
-    def _reserve_outer_structure(self, progress: "WorkflowProgress", consumed_collection_types):
+    def _reserve_outer_structure(self, progress: "WorkflowProgress") -> list[str]:
         """Set aside collection levels owned by a mapped-over subworkflow invocation.
 
         When mapping a subworkflow invocation over a higher-dimension input -
         e.g. an outer list:list over an inner list - the inner workflow cannot
-        reduce the outer list. Returns the (possibly adjusted) collection
-        types the input consumes and the outer levels still to be accounted
-        for by ``_consume_outer_structure``.
+        reduce the outer list. Returns the outer levels below the outermost,
+        to be accounted for by ``_consume_outer_structure``.
         """
         remaining_outer_types: list[str] = []
         if progress.subworkflow_structure:
@@ -135,10 +132,7 @@ class MapOverPlanner:
                 ":"
             )
             remaining_outer_types.pop(0)
-            if remaining_outer_types and remaining_outer_types[-1] == consumed_collection_types:
-                joined = ":".join(remaining_outer_types[:-1])
-                consumed_collection_types = [joined] if joined else []
-        return consumed_collection_types, remaining_outer_types
+        return remaining_outer_types
 
     def _concrete_subcollection_type(self, subcollection_type_description, data):
         """Translate paired_or_unpaired to a concrete mapping type for flat collections.
