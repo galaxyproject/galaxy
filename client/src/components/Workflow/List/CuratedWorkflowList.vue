@@ -16,6 +16,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import CuratedCollectionChips from "./CuratedCollectionChips.vue";
 import CuratedWorkflowCard from "./CuratedWorkflowCard.vue";
 import WorkflowListTabs from "./WorkflowListTabs.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
@@ -227,26 +228,13 @@ onMounted(() => load());
                 <span v-localize>Workflows curated for this Galaxy.</span>
             </div>
 
-            <div
+            <CuratedCollectionChips
                 v-if="source === 'iwc' && collections.length"
                 id="curated-workflow-collections"
-                class="curated-workflow-collections d-flex flex-wrap mb-2"
-                role="group"
-                :aria-label="localize('Filter by IWC collection')">
-                <GButton
-                    v-for="collection in collections"
-                    :key="collection.name"
-                    class="curated-workflow-collection"
-                    :data-collection="collection.name"
-                    size="small"
-                    color="blue"
-                    outline
-                    :pressed="activeCollection === collection.name.toLowerCase()"
-                    @click="toggleCollection(collection.name)">
-                    {{ collection.name }}
-                    <span class="curated-workflow-collection-count">{{ collection.count }}</span>
-                </GButton>
-            </div>
+                class="mb-2"
+                :collections="collections"
+                :active="activeCollection ?? undefined"
+                @toggle="toggleCollection" />
 
             <FilterMenu
                 id="curated-workflow-list-filter"
@@ -390,15 +378,6 @@ onMounted(() => load());
 
         overflow-y: auto;
         overflow-x: hidden;
-    }
-
-    .curated-workflow-collections {
-        gap: 0.25rem;
-
-        .curated-workflow-collection-count {
-            margin-left: 0.25rem;
-            opacity: 0.7;
-        }
     }
 
     .curated-workflow-card-list {
