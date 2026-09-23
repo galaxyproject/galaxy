@@ -86,7 +86,7 @@ describe("DatasetInformation/DatasetInformation", () => {
     it("file size should be formatted", async () => {
         const fileSize = datasetInfoTable.find("#file-size > strong");
 
-        expect(fileSize.html()).toBe(`<strong>${datasetResponse.file_size}</strong>`);
+        expect(fileSize.html()).toBe(`<strong>${datasetResponse.file_size} b</strong>`);
     });
 
     it("Date should be formatted", async () => {
