@@ -12,6 +12,9 @@ format:
 lint:
 	pnpm typecheck && pnpm lint
 
+test:
+	pnpm test:run
+
 # These next two tasks don't really belong here, but they do demonstrate
 # how to get a test server running and populated with some initial data
 # for the new tool shed frontend.

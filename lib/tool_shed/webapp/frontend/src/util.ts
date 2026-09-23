@@ -33,7 +33,7 @@ export async function copyAndNotify(value: string, notification: string) {
 
 export function errorMessageAsString(
     e: Error | ApiMessageException | string | unknown,
-    defaultMessage = "Request failed."
+    defaultMessage = "Request failed.",
 ): string {
     if (e instanceof Error) {
         if (e.cause) {
