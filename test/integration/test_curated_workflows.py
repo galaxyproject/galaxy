@@ -11,7 +11,9 @@ its data from a projection file written to ``curated_workflows_path`` before
 Galaxy starts, which is exactly what the celery task would have produced.
 """
 
+import json
 import os
+import shutil
 from time import (
     monotonic,
     sleep,
@@ -57,54 +59,25 @@ MALICIOUS_ANNOTATION = '<img src=x onerror="alert(1)"><script>alert(2)</script>S
 
 DOCKSTORE_TRS_TOOLS = "https://dockstore.org/api/ga4gh/trs/v2/tools"
 
+SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
+# A real slice of the IWC catalog, as the refresh task writes it. Regenerate it
+# with curated_workflows/sync_iwc_catalog.py.
+IWC_CATALOG_FIXTURE = os.path.join(SCRIPT_DIRECTORY, "curated_workflows", "iwc_catalog", "iwc_workflows.json")
+with open(IWC_CATALOG_FIXTURE) as fixture:
+    CATALOG_ENTRIES: list[dict[str, Any]] = json.load(fixture)["workflows"]
 
-# An integration Galaxy loads only the upload tool; this Tool Shed tool is installed on none.
+# An integration Galaxy loads only the upload tool. The sync script points a
+# couple of entries at it so something in the catalog runs here.
 PRESENT_TOOL_ID = "upload1"
-ABSENT_TOOL_ID = "toolshed.g2.bx.psu.edu/repos/iuc/not_installed_here/not_installed_here/1.0"
-
-
-def _catalog_entry(
-    slug: str, name: str, tags: list[str], updated: str, tool_ids: list[str] | None = None
-) -> dict[str, Any]:
-    """Build one projected catalog row in the shape ``project_manifest`` emits."""
-    return {
-        "id": slug,
-        "name": name,
-        "description": "Example curated workflow.",
-        "tags": tags,
-        "collections": ["examples"],
-        "number_of_steps": 4,
-        "update_time": updated,
-        "release": "0.1",
-        "doi": "10.0000/zenodo.0000000",
-        "external_url": f"https://iwc.galaxyproject.org/workflow/{slug}/",
-        "owner": None,
-        "stored_workflow_id": None,
-        "trs_url": f"{DOCKSTORE_TRS_TOOLS}/%23workflow%2Fgithub.com%2Fiwc-workflows%2F{slug}%2Fmain/versions/v0.1",
-        "trs_fallback_url": f"{DOCKSTORE_TRS_TOOLS}/%23workflow%2Fgithub.com%2Fiwc-workflows%2F{slug}%2Fmain/versions/main",
-        "tool_ids": [PRESENT_TOOL_ID] if tool_ids is None else tool_ids,
-    }
-
-
-# Ordered newest-first. Two of them need a tool this Galaxy lacks.
-CATALOG_ENTRIES = [
-    _catalog_entry("assembly-hifi", "HiFi genome assembly", ["assembly"], "2024-05-01T00:00:00"),
-    _catalog_entry(
-        "assembly-flye",
-        "Flye long read assembly",
-        ["assembly"],
-        "2024-04-01T00:00:00",
-        tool_ids=[PRESENT_TOOL_ID, ABSENT_TOOL_ID],
-    ),
-    _catalog_entry(
-        "variant-calling", "Variant calling", ["variants"], "2024-03-01T00:00:00", tool_ids=[ABSENT_TOOL_ID]
-    ),
-    _catalog_entry("rnaseq-counts", "RNA-seq counts", ["transcriptomics"], "2024-02-01T00:00:00"),
-    _catalog_entry("chipseq-peaks", "ChIP-seq peaks", ["epigenetics"], "2024-01-01T00:00:00", tool_ids=[]),
+RUNNABLE_IDS = {entry["id"] for entry in CATALOG_ENTRIES if entry["tool_ids"] == [PRESENT_TOOL_ID]}
+NEWEST_FIRST_IDS = [
+    entry["id"]
+    for entry in sorted(CATALOG_ENTRIES, key=lambda entry: (entry["update_time"], entry["id"]), reverse=True)
 ]
-NEWEST_FIRST_IDS = [entry["id"] for entry in CATALOG_ENTRIES]
 # The default ordering: what will run here first, newest-first within each group.
-CATALOG_IDS = ["assembly-hifi", "rnaseq-counts", "chipseq-peaks", "assembly-flye", "variant-calling"]
+CATALOG_IDS = [i for i in NEWEST_FIRST_IDS if i in RUNNABLE_IDS] + [
+    i for i in NEWEST_FIRST_IDS if i not in RUNNABLE_IDS
+]
 
 
 class _CuratedWorkflowsTestCase(integration_util.IntegrationTestCase):
@@ -320,10 +293,10 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        cls.projection_path = os.path.join(cls._test_driver.mkdtemp(), "curated", "iwc_workflows.json")
-        # Stand in for what the celery task writes, so the endpoint has a
-        # catalog to serve without anything downloading one.
-        curated.write_projection(cls.projection_path, CATALOG_ENTRIES)
+        # Served from a copy: a fresh mtime keeps the projection from looking
+        # stale, and nothing Galaxy does can then write into the source tree.
+        cls.projection_path = os.path.join(cls._test_driver.mkdtemp(), "iwc_workflows.json")
+        shutil.copyfile(IWC_CATALOG_FIXTURE, cls.projection_path)
         config["curated_workflows_source"] = "iwc"
         # Owners only count in local mode. Setting them here pins that they don't
         # quietly switch an iwc Galaxy over to listing local accounts.
@@ -347,20 +320,20 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
             assert workflow["stored_workflow_id"] is None
             assert workflow["owner"] is None
             assert workflow["trs_url"].startswith(DOCKSTORE_TRS_TOOLS)
-            assert workflow["trs_url"].endswith("/versions/v0.1")
+            assert workflow["trs_url"].endswith(f"/versions/v{workflow['release']}")
             assert workflow["trs_fallback_url"].endswith("/versions/main")
             assert workflow["external_url"].startswith("https://iwc.galaxyproject.org/workflow/")
 
     def test_catalog_reports_missing_tools(self):
         index = self._curated_index(limit=10)
-        missing = {workflow["id"]: workflow["missing_tools"] for workflow in index["workflows"]}
-        assert missing == {
-            "assembly-hifi": [],
-            "assembly-flye": [ABSENT_TOOL_ID],
-            "variant-calling": [ABSENT_TOOL_ID],
-            "rnaseq-counts": [],
-            "chipseq-peaks": [],
-        }
+        tool_ids = {entry["id"]: set(entry["tool_ids"]) for entry in CATALOG_ENTRIES}
+        for workflow in index["workflows"]:
+            if workflow["id"] in RUNNABLE_IDS:
+                assert workflow["missing_tools"] == []
+            else:
+                # Real Tool Shed tools, none of them installed here.
+                assert workflow["missing_tools"]
+                assert set(workflow["missing_tools"]) <= tool_ids[workflow["id"]]
 
     def test_catalog_explicit_sort_ignores_runnability(self):
         index = self._curated_index(sort_by="update_time", sort_desc=True, limit=10)
@@ -377,11 +350,14 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
 
     def test_catalog_search_name_and_tag(self):
         by_name = self._curated_index(search="name:assembly", limit=10)
-        assert {workflow["id"] for workflow in by_name["workflows"]} == {"assembly-hifi", "assembly-flye"}
+        assert {workflow["id"] for workflow in by_name["workflows"]} == {
+            "bacterial-genome-assembly-main",
+            "assembly-with-flye-main",
+        }
         assert by_name["total_matches"] == 2
 
         exact_tag = self._curated_index(search="tag:'assembly'", limit=10)
-        assert exact_tag["total_matches"] == 2
+        assert [workflow["id"] for workflow in exact_tag["workflows"]] == ["bacterial-genome-assembly-main"]
         no_match = self._curated_index(search="tag:'assem'", limit=10)
         assert no_match["total_matches"] == 0
         assert no_match["workflows"] == []

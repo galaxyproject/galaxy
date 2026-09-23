@@ -1,0 +1,164 @@
+{
+  "version": 2,
+  "workflows": [
+    {
+      "collections": [
+        "Variant Calling"
+      ],
+      "description": "This workflow performs variant and genotype calling on whole-genome paired-end sequencing data from organisms of any ploidy to produce annotated VCF and TSV files",
+      "doi": "10.5281/zenodo.18990566",
+      "external_url": "https://iwc.galaxyproject.org/workflow/ploidy-aware-genotype-calling-main/",
+      "id": "ploidy-aware-genotype-calling-main",
+      "name": "Paired end variant and ploidy-aware genotype calling",
+      "number_of_steps": 16,
+      "owner": null,
+      "release": "0.1.4",
+      "stored_workflow_id": null,
+      "tags": [
+        "VeuPath",
+        "Diploid",
+        "FreeBayes"
+      ],
+      "tool_ids": [
+        "toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa_mem/0.7.19+galaxy1",
+        "toolshed.g2.bx.psu.edu/repos/devteam/freebayes/freebayes/1.3.10+galaxy1",
+        "toolshed.g2.bx.psu.edu/repos/devteam/picard/picard_MarkDuplicates/3.1.1.0",
+        "toolshed.g2.bx.psu.edu/repos/devteam/samtools_stats/samtools_stats/2.0.9",
+        "toolshed.g2.bx.psu.edu/repos/iuc/bcftools_norm/bcftools_norm/1.24+galaxy0",
+        "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/1.3.7+galaxy0",
+        "toolshed.g2.bx.psu.edu/repos/iuc/multiqc/multiqc/1.35+galaxy4",
+        "toolshed.g2.bx.psu.edu/repos/iuc/samtools_view/samtools_view/1.22+galaxy2",
+        "toolshed.g2.bx.psu.edu/repos/iuc/snpeff/snpEff/5.4+galaxy0",
+        "toolshed.g2.bx.psu.edu/repos/iuc/snpeff/snpEff_build_gb/5.4+galaxy0",
+        "toolshed.g2.bx.psu.edu/repos/iuc/snpsift/snpSift_extractFields/5.4.0c+galaxy0",
+        "toolshed.g2.bx.psu.edu/repos/nml/collapse_collections/collapse_dataset/5.1.0"
+      ],
+      "trs_fallback_url": "https://dockstore.org/api/ga4gh/trs/v2/tools/%23workflow%2Fgithub.com%2Fiwc-workflows%2Fploidy-aware-genotype-calling%2Fmain/versions/main",
+      "trs_url": "https://dockstore.org/api/ga4gh/trs/v2/tools/%23workflow%2Fgithub.com%2Fiwc-workflows%2Fploidy-aware-genotype-calling%2Fmain/versions/v0.1.4",
+      "update_time": "2026-09-21T00:00:00"
+    },
+    {
+      "collections": [
+        "Epigenetics",
+        "Transcriptomics"
+      ],
+      "description": "Calculates average signal values across replicate BigWig files to generate a single consolidated track. Requires input file identifiers formatted as \"sample_name_replicateID\". The tool automatically groups files by sample name, computes the mean signal at each position, and outputs consolidated BigWig files named after the common sample prefix (without the replicate ID suffix).",
+      "doi": "10.5281/zenodo.15078852",
+      "external_url": "https://iwc.galaxyproject.org/workflow/average-bigwig-between-replicates-main/",
+      "id": "average-bigwig-between-replicates-main",
+      "name": "BigWig Replicates Averaging Workflow",
+      "number_of_steps": 4,
+      "owner": null,
+      "release": "0.3",
+      "stored_workflow_id": null,
+      "tags": [],
+      "tool_ids": [
+        "__APPLY_RULES__",
+        "toolshed.g2.bx.psu.edu/repos/bgruening/deeptools_bigwig_average/deeptools_bigwig_average/4.0.0+galaxy0"
+      ],
+      "trs_fallback_url": "https://dockstore.org/api/ga4gh/trs/v2/tools/%23workflow%2Fgithub.com%2Fiwc-workflows%2Faverage-bigwig-between-replicates%2Fmain/versions/main",
+      "trs_url": "https://dockstore.org/api/ga4gh/trs/v2/tools/%23workflow%2Fgithub.com%2Fiwc-workflows%2Faverage-bigwig-between-replicates%2Fmain/versions/v0.3",
+      "update_time": "2026-09-18T00:00:00"
+    },
+    {
+      "collections": [
+        "Transcriptomics"
+      ],
+      "description": "Identifies differentially expressed genes between exactly two experimental conditions from count tables. The workflow performs statistical testing, applies filters based on adjusted p-value and log2 fold change thresholds, and generates publication-quality visualizations including volcano plots, MA plots, and heatmaps. Takes two collections of count tables as input and produces filtered gene lists and interactive plots for interpreting expression differences. Optimal for simple two-condition experimental designs.",
+      "doi": "10.5281/zenodo.15078905",
+      "external_url": "https://iwc.galaxyproject.org/workflow/rnaseq-de-main/",
+      "id": "rnaseq-de-main",
+      "name": "RNA-Seq Differential Expression Analysis with Visualization",
+      "number_of_steps": 23,
+      "owner": null,
+      "release": "0.12",
+      "stored_workflow_id": null,
+      "tags": [
+        "transcriptomics",
+        "RNAseq"
+      ],
+      "tool_ids": [
+        "upload1"
+      ],
+      "trs_fallback_url": "https://dockstore.org/api/ga4gh/trs/v2/tools/%23workflow%2Fgithub.com%2Fiwc-workflows%2Frnaseq-de%2Fmain/versions/main",
+      "trs_url": "https://dockstore.org/api/ga4gh/trs/v2/tools/%23workflow%2Fgithub.com%2Fiwc-workflows%2Frnaseq-de%2Fmain/versions/v0.12",
+      "update_time": "2026-08-24T00:00:00"
+    },
+    {
+      "collections": [
+        "Genome assembly"
+      ],
+      "description": "Assembly of bacterial paired-end short read data",
+      "doi": "10.5281/zenodo.15078808",
+      "external_url": "https://iwc.galaxyproject.org/workflow/bacterial-genome-assembly-main/",
+      "id": "bacterial-genome-assembly-main",
+      "name": "Bacterial Genome Assembly using Shovill",
+      "number_of_steps": 7,
+      "owner": null,
+      "release": "2.0.2",
+      "stored_workflow_id": null,
+      "tags": [
+        "fastq",
+        "Genomics",
+        "bacterial-genomics",
+        "paired-end",
+        "assembly",
+        "quality",
+        "ABRomics"
+      ],
+      "tool_ids": [
+        "toolshed.g2.bx.psu.edu/repos/iuc/bandage/bandage_image/2022.09+galaxy4",
+        "toolshed.g2.bx.psu.edu/repos/iuc/bandage/bandage_info/2022.09+galaxy2",
+        "toolshed.g2.bx.psu.edu/repos/iuc/shovill/shovill/1.1.0+galaxy2",
+        "toolshed.g2.bx.psu.edu/repos/iuc/tooldistillator/tooldistillator/1.0.6+galaxy0",
+        "toolshed.g2.bx.psu.edu/repos/iuc/tooldistillator_summarize/tooldistillator_summarize/1.0.6+galaxy0"
+      ],
+      "trs_fallback_url": "https://dockstore.org/api/ga4gh/trs/v2/tools/%23workflow%2Fgithub.com%2Fiwc-workflows%2Fbacterial-genome-assembly%2Fmain/versions/main",
+      "trs_url": "https://dockstore.org/api/ga4gh/trs/v2/tools/%23workflow%2Fgithub.com%2Fiwc-workflows%2Fbacterial-genome-assembly%2Fmain/versions/v2.0.2",
+      "update_time": "2026-06-22T00:00:00"
+    },
+    {
+      "collections": [
+        "Genome assembly"
+      ],
+      "description": "Assemble long reads with Flye, then view assembly statistics and assembly graph",
+      "doi": "10.5281/zenodo.15078846",
+      "external_url": "https://iwc.galaxyproject.org/workflow/assembly-with-flye-main/",
+      "id": "assembly-with-flye-main",
+      "name": "Genome assembly with Flye",
+      "number_of_steps": 5,
+      "owner": null,
+      "release": "0.4",
+      "stored_workflow_id": null,
+      "tags": [],
+      "tool_ids": [
+        "toolshed.g2.bx.psu.edu/repos/bgruening/flye/flye/2.9.6+galaxy0",
+        "toolshed.g2.bx.psu.edu/repos/iuc/bandage/bandage_image/2022.09+galaxy4",
+        "toolshed.g2.bx.psu.edu/repos/iuc/fasta_stats/fasta-stats/2.0",
+        "toolshed.g2.bx.psu.edu/repos/iuc/quast/quast/5.3.0+galaxy1"
+      ],
+      "trs_fallback_url": "https://dockstore.org/api/ga4gh/trs/v2/tools/%23workflow%2Fgithub.com%2Fiwc-workflows%2Fassembly-with-flye%2Fmain/versions/main",
+      "trs_url": "https://dockstore.org/api/ga4gh/trs/v2/tools/%23workflow%2Fgithub.com%2Fiwc-workflows%2Fassembly-with-flye%2Fmain/versions/v0.4",
+      "update_time": "2025-10-06T00:00:00"
+    },
+    {
+      "collections": [],
+      "description": "This workflow performs functional annotation of protein and nucleotide sequences (including CDS, genomes and metagenomes) using eggNOG-mapper and InterProScan, supports collection inputs and optional analysis steps, and can assess KEGG pathway completeness.",
+      "doi": "10.5281/zenodo.19187248",
+      "external_url": "https://iwc.galaxyproject.org/workflow/functional-annotation-of-sequences-main/",
+      "id": "functional-annotation-of-sequences-main",
+      "name": "Functional annotation of sequences",
+      "number_of_steps": 16,
+      "owner": null,
+      "release": "0.3",
+      "stored_workflow_id": null,
+      "tags": [],
+      "tool_ids": [
+        "upload1"
+      ],
+      "trs_fallback_url": "https://dockstore.org/api/ga4gh/trs/v2/tools/%23workflow%2Fgithub.com%2Fiwc-workflows%2Ffunctional-annotation-of-sequences%2Fmain/versions/main",
+      "trs_url": "https://dockstore.org/api/ga4gh/trs/v2/tools/%23workflow%2Fgithub.com%2Fiwc-workflows%2Ffunctional-annotation-of-sequences%2Fmain/versions/v0.3",
+      "update_time": "2026-03-27T00:00:00"
+    }
+  ]
+}
