@@ -923,7 +923,10 @@ CuratedSearchQueryParam: str | None = search_query_param(
 CuratedSortByQueryParam: WorkflowSortByEnum | None = Query(
     default=None,
     title="Sort By",
-    description="Sort curated workflows by this attribute. Defaults to most recently updated.",
+    description=(
+        "Sort curated workflows by this attribute. Without it, most recently updated first -- and "
+        "in IWC catalog mode, workflows whose tools are all available here come before the rest."
+    ),
 )
 
 CuratedLimitQueryParam: int = Query(

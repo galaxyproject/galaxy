@@ -54,7 +54,14 @@ MALICIOUS_ANNOTATION = '<img src=x onerror="alert(1)"><script>alert(2)</script>S
 DOCKSTORE_TRS_TOOLS = "https://dockstore.org/api/ga4gh/trs/v2/tools"
 
 
-def _catalog_entry(slug: str, name: str, tags: list[str], updated: str) -> dict[str, Any]:
+# An integration Galaxy loads only the upload tool; this Tool Shed tool is installed on none.
+PRESENT_TOOL_ID = "upload1"
+ABSENT_TOOL_ID = "toolshed.g2.bx.psu.edu/repos/iuc/not_installed_here/not_installed_here/1.0"
+
+
+def _catalog_entry(
+    slug: str, name: str, tags: list[str], updated: str, tool_ids: list[str] | None = None
+) -> dict[str, Any]:
     """Build one projected catalog row in the shape ``project_manifest`` emits."""
     return {
         "id": slug,
@@ -71,19 +78,29 @@ def _catalog_entry(slug: str, name: str, tags: list[str], updated: str) -> dict[
         "stored_workflow_id": None,
         "trs_url": f"{DOCKSTORE_TRS_TOOLS}/%23workflow%2Fgithub.com%2Fiwc-workflows%2F{slug}%2Fmain/versions/v0.1",
         "trs_fallback_url": f"{DOCKSTORE_TRS_TOOLS}/%23workflow%2Fgithub.com%2Fiwc-workflows%2F{slug}%2Fmain/versions/main",
+        "tool_ids": [PRESENT_TOOL_ID] if tool_ids is None else tool_ids,
     }
 
 
-# Ordered newest-first, which is the endpoint's default sort, so the expected
-# pagination order is just this list.
+# Ordered newest-first. Two of them need a tool this Galaxy lacks.
 CATALOG_ENTRIES = [
     _catalog_entry("assembly-hifi", "HiFi genome assembly", ["assembly"], "2024-05-01T00:00:00"),
-    _catalog_entry("assembly-flye", "Flye long read assembly", ["assembly"], "2024-04-01T00:00:00"),
-    _catalog_entry("variant-calling", "Variant calling", ["variants"], "2024-03-01T00:00:00"),
+    _catalog_entry(
+        "assembly-flye",
+        "Flye long read assembly",
+        ["assembly"],
+        "2024-04-01T00:00:00",
+        tool_ids=[PRESENT_TOOL_ID, ABSENT_TOOL_ID],
+    ),
+    _catalog_entry(
+        "variant-calling", "Variant calling", ["variants"], "2024-03-01T00:00:00", tool_ids=[ABSENT_TOOL_ID]
+    ),
     _catalog_entry("rnaseq-counts", "RNA-seq counts", ["transcriptomics"], "2024-02-01T00:00:00"),
-    _catalog_entry("chipseq-peaks", "ChIP-seq peaks", ["epigenetics"], "2024-01-01T00:00:00"),
+    _catalog_entry("chipseq-peaks", "ChIP-seq peaks", ["epigenetics"], "2024-01-01T00:00:00", tool_ids=[]),
 ]
-CATALOG_IDS = [entry["id"] for entry in CATALOG_ENTRIES]
+NEWEST_FIRST_IDS = [entry["id"] for entry in CATALOG_ENTRIES]
+# The default ordering: what will run here first, newest-first within each group.
+CATALOG_IDS = ["assembly-hifi", "rnaseq-counts", "chipseq-peaks", "assembly-flye", "variant-calling"]
 
 
 class _CuratedWorkflowsTestCase(integration_util.IntegrationTestCase):
@@ -236,6 +253,8 @@ class TestCuratedWorkflowsLocal(_CuratedWorkflowsTestCase):
             assert workflow["trs_url"] is None
             assert workflow["trs_fallback_url"] is None
             assert workflow["collections"] == []
+            # Not computed for local rows: their steps would be an N+1 query.
+            assert workflow["missing_tools"] is None
 
     def test_local_excludes_unpublished(self):
         index = self._curated_index(limit=10)
@@ -327,6 +346,21 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
             assert workflow["trs_url"].endswith("/versions/v0.1")
             assert workflow["trs_fallback_url"].endswith("/versions/main")
             assert workflow["external_url"].startswith("https://iwc.galaxyproject.org/workflow/")
+
+    def test_catalog_reports_missing_tools(self):
+        index = self._curated_index(limit=10)
+        missing = {workflow["id"]: workflow["missing_tools"] for workflow in index["workflows"]}
+        assert missing == {
+            "assembly-hifi": [],
+            "assembly-flye": [ABSENT_TOOL_ID],
+            "variant-calling": [ABSENT_TOOL_ID],
+            "rnaseq-counts": [],
+            "chipseq-peaks": [],
+        }
+
+    def test_catalog_explicit_sort_ignores_runnability(self):
+        index = self._curated_index(sort_by="update_time", sort_desc=True, limit=10)
+        assert [workflow["id"] for workflow in index["workflows"]] == NEWEST_FIRST_IDS
 
     def test_catalog_pagination_is_consistent(self):
         seen: list[str] = []

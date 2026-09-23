@@ -1769,6 +1769,14 @@ class CuratedWorkflow(Model):
             "the release that trs_url pins."
         ),
     )
+    missing_tools: list[str] | None = Field(
+        default=None,
+        title="Missing Tools",
+        description=(
+            "Ids of the tools this workflow uses that are not installed on this Galaxy in any version. Empty when "
+            "the workflow will run here after import; null when this Galaxy did not check."
+        ),
+    )
 
 
 class CuratedWorkflowsIndexResponse(Model):

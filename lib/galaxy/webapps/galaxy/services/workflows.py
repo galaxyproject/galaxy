@@ -226,6 +226,8 @@ class WorkflowsService(ServiceBase):
             offset=payload.offset,
             limit=payload.limit,
             max_age_seconds=config.iwc_manifest_refresh_interval,
+            toolbox=trans.app.toolbox_or_none,
+            is_admin=trans.user_is_admin,
         )
         source = CuratedWorkflowSourceEnum(page.source)
         return CuratedWorkflowsIndexResponse(

@@ -2,7 +2,7 @@
 
 The manifest published at iwc.galaxyproject.org is ~15 MB of JSON, far too
 much to parse on a request thread or to retain in every web worker. This
-module projects it down to the handful of fields a card needs (~100 KB),
+module projects it down to the fields a card needs plus each workflow's tool ids (~250 KB),
 writes that projection to disk, and serves it back from an in-process cache
 keyed on the file's identity. Reading is pure disk I/O; the network is only
 ever touched by the celery-beat task or by a single-flight daemon thread that
@@ -21,7 +21,11 @@ import os
 import threading
 import urllib.parse
 import uuid
-from collections.abc import Iterator
+from collections.abc import (
+    Callable,
+    Iterable,
+    Iterator,
+)
 from datetime import datetime
 from pathlib import Path
 from time import (
@@ -32,6 +36,7 @@ from typing import (
     Any,
     Literal,
     NamedTuple,
+    Protocol,
 )
 
 from galaxy.util.sanitize_html import sanitize_html
@@ -46,7 +51,9 @@ from galaxy.workflow import iwc_manifest
 
 log = logging.getLogger(__name__)
 
-CURATED_PROJECTION_VERSION = 1
+# Bumped whenever the entry shape changes: load_projection treats any other
+# version as missing, so the next refresh re-downloads rather than HEAD-skipping.
+CURATED_PROJECTION_VERSION = 2
 IWC_WORKFLOW_URL_TEMPLATE = "https://iwc.galaxyproject.org/workflow/{iwc_id}/"
 # A full URL rather than a TrsProxy server id: a custom trs_servers_config_file
 # replaces the default server list wholesale, so an instance can lack the
@@ -134,6 +141,54 @@ def _trs_urls(trs_id: str | None, release: str | None) -> tuple[str | None, str 
     return _dockstore_trs_url(trs_id, f"v{release}"), branch_url
 
 
+def extract_tool_ids(definition: dict[str, Any]) -> list[str] | None:
+    """Return the distinct tool ids a workflow definition's steps use, sorted.
+
+    Walks subworkflows too, since their tools have to be installed just the same:
+    both inline ones and ``#``/``$`` references into the definition's own
+    ``subworkflows`` map, which is how the workflow importer resolves them. None
+    means unknown -- a subworkflow referenced by URL, TRS id or database id, or a
+    dangling reference, can't be resolved offline, and a partial list would let
+    the card claim the workflow runs here. Iterative rather than recursive so a
+    pathologically nested definition can't blow the stack on the refresh thread,
+    and each definition is visited once so a self-referencing map terminates.
+    """
+    tool_ids: set[str] = set()
+    visited: set[int] = set()
+    pending = [definition]
+    while pending:
+        current = pending.pop()
+        if id(current) in visited:
+            continue
+        visited.add(id(current))
+        local_subworkflows = current.get("subworkflows")
+        if not isinstance(local_subworkflows, dict):
+            local_subworkflows = {}
+        steps = current.get("steps")
+        if isinstance(steps, dict):
+            steps = list(steps.values())
+        if not isinstance(steps, list):
+            continue
+        for step in steps:
+            if not isinstance(step, dict):
+                continue
+            tool_id = step.get("tool_id")
+            if isinstance(tool_id, str) and tool_id:
+                tool_ids.add(tool_id)
+            subworkflow = step.get("subworkflow")
+            if isinstance(subworkflow, dict):
+                pending.append(subworkflow)
+            elif step.get("type") == "subworkflow":
+                content_id = step.get("content_id")
+                referenced = None
+                if not step.get("content_source") and isinstance(content_id, str) and content_id[:1] in ("#", "$"):
+                    referenced = local_subworkflows.get(content_id[1:])
+                if not isinstance(referenced, dict):
+                    return None
+                pending.append(referenced)
+    return sorted(tool_ids)
+
+
 def _iter_manifest_workflows(manifest: Any) -> Iterator[dict[str, Any]]:
     """Yield workflow objects from the manifest, skipping malformed containers.
 
@@ -211,6 +266,10 @@ def project_manifest(manifest: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "stored_workflow_id": None,
                 "trs_url": trs_url,
                 "trs_fallback_url": trs_fallback_url,
+                # Full ids rather than short names: resolving them against the
+                # toolbox is what tells a card whether it will run here. None
+                # when a subworkflow can't be resolved offline.
+                "tool_ids": extract_tool_ids(definition),
             }
         )
     return entries
@@ -457,8 +516,104 @@ def search_curated(entries: list[dict[str, Any]], search: str | None) -> list[di
     return [item.entry for item in matched]
 
 
-def sort_curated(entries: list[dict[str, Any]], sort_by: str | None, sort_desc: bool | None) -> list[dict[str, Any]]:
-    """Order projected entries, defaulting to most-recently-updated first."""
+class CuratedToolbox(Protocol):
+    """The slice of ``ToolBox`` the missing-tools check reads."""
+
+    @property
+    def data_manager_tools(self) -> Iterable[str]: ...
+
+    def has_tool(self, tool_id: str) -> bool: ...
+
+
+def toolbox_availability(toolbox: CuratedToolbox, is_admin: bool) -> Callable[[str], bool]:
+    """Whether a workflow using a tool id would run here for this user.
+
+    Non-exact on purpose: a workflow imported through the UI runs with
+    require_exact_tool_versions off, and ToolModule then binds any installed
+    version of the same lineage (with a warning) -- so only a tool with no
+    version installed at all stops it running. has_tool resolves from the
+    toolbox's id and lineage maps (the index, on a CachedToolBox) without
+    materialising tools.
+    """
+    return hide_data_manager_tools(toolbox.has_tool, toolbox.data_manager_tools, is_admin)
+
+
+def find_missing_tools(
+    entries: list[dict[str, Any]], tool_is_available: Callable[[str], bool]
+) -> dict[str, list[str] | None]:
+    """Map each entry id to the tool ids it needs that ``tool_is_available`` rejects.
+
+    None means unknown -- an entry with no usable ``tool_ids`` list. Lookups are
+    memoized for the call because the catalog shares most of its tools: ~1500
+    references collapse to ~600 distinct ids.
+    """
+    available: dict[str, bool] = {}
+    missing: dict[str, list[str] | None] = {}
+    for entry in entries:
+        tool_ids = entry.get("tool_ids")
+        if not isinstance(tool_ids, list):
+            missing[entry.get("id") or ""] = None
+            continue
+        entry_missing = []
+        for tool_id in tool_ids:
+            if not isinstance(tool_id, str):
+                continue
+            if tool_id not in available:
+                available[tool_id] = tool_is_available(tool_id)
+            if not available[tool_id]:
+                entry_missing.append(tool_id)
+        missing[entry.get("id") or ""] = entry_missing
+    return missing
+
+
+def hide_data_manager_tools(
+    tool_is_available: Callable[[str], bool], data_manager_tool_ids: Iterable[str], is_admin: bool
+) -> Callable[[str], bool]:
+    """Wrap ``tool_is_available`` so data manager tools read as missing for non-admins.
+
+    ``ToolBox.has_tool`` counts them as installed, but only an admin may run one
+    (``DataManagerTool.allow_user_access``). Matched by lineage as well as exact
+    id, like has_tool's own non-exact lookup. The toolbox registers data manager
+    tools eagerly in ``data_manager_tools``, so this never loads a tool.
+    """
+    if is_admin:
+        return tool_is_available
+    restricted = {_tool_lineage(tool_id) for tool_id in data_manager_tool_ids}
+    if not restricted:
+        return tool_is_available
+
+    def available(tool_id: str) -> bool:
+        return _tool_lineage(tool_id) not in restricted and tool_is_available(tool_id)
+
+    return available
+
+
+def _tool_lineage(tool_id: str) -> str:
+    # A guid (``host/repos/owner/repo/tool/version``) ends in its version; a
+    # plain id like ``cat1`` has no version to strip and is its own lineage.
+    return tool_id.rsplit("/", 1)[0] if "/" in tool_id else tool_id
+
+
+def sort_curated(
+    entries: list[dict[str, Any]],
+    sort_by: str | None,
+    sort_desc: bool | None,
+    missing_tools: dict[str, list[str] | None] | None = None,
+) -> list[dict[str, Any]]:
+    """Order projected entries, defaulting to most-recently-updated first.
+
+    When ``missing_tools`` is given and no explicit sort was asked for, entries
+    that will run here as-is come first, each group keeping the default order.
+    """
+    ordered = _sort_curated(entries, sort_by, sort_desc)
+    if sort_by is None and missing_tools is not None:
+        # Stable, so the id tiebreaker inside each group survives and pagination
+        # stays deterministic. Unknown counts as not runnable: no badge vouches for it.
+        ordered.sort(key=lambda entry: missing_tools.get(entry.get("id") or "") != [])
+    return ordered
+
+
+def _sort_curated(entries: list[dict[str, Any]], sort_by: str | None, sort_desc: bool | None) -> list[dict[str, Any]]:
     descending = True if sort_desc is None else sort_desc
     # Every key ends in the id. Two thirds of the real catalog shares an
     # update_time, and a stable sort would otherwise fall back to manifest order
@@ -497,12 +652,16 @@ def list_catalog(
     offset: int,
     limit: int,
     max_age_seconds: float,
+    toolbox: CuratedToolbox | None = None,
+    is_admin: bool = False,
 ) -> CatalogPage:
     """Search, sort and page the projection at ``path`` for one request.
 
     Never performs network I/O. A missing projection kicks the background
     refresh and reports ``preparing`` (or ``unavailable`` while the cooldown
-    from a failed attempt is still running) with no entries.
+    from a failed attempt is still running) with no entries. Each returned
+    entry carries ``missing_tools`` as checked against ``toolbox`` for this
+    user, or None throughout when there is no toolbox to check against.
     """
     entries = load_projection(path)
     if entries is None:
@@ -518,8 +677,13 @@ def list_catalog(
         request_background_refresh(path)
 
     matched = search_curated(entries, search)
-    ordered = sort_curated(matched, sort_by, sort_desc)
-    return CatalogPage("iwc", len(ordered), ordered[offset : offset + limit])
+    missing = find_missing_tools(matched, toolbox_availability(toolbox, is_admin)) if toolbox is not None else None
+    ordered = sort_curated(matched, sort_by, sort_desc, missing)
+    page = [
+        {**entry, "missing_tools": (missing or {}).get(entry.get("id") or "")}
+        for entry in ordered[offset : offset + limit]
+    ]
+    return CatalogPage("iwc", len(ordered), page)
 
 
 def clear_caches() -> None:

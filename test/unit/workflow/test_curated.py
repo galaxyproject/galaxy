@@ -912,3 +912,306 @@ def test_list_catalog_without_a_projection_is_unavailable_during_the_cooldown(
     monkeypatch.setattr(curated, "request_background_refresh", lambda path: False)
 
     assert list_sample_catalog(projection_path) == curated.CatalogPage("unavailable", 0, [])
+
+
+def test_extract_tool_ids_walks_subworkflows_and_dedups() -> None:
+    definition: dict[str, Any] = {
+        "steps": {
+            "0": {"type": "data_input", "tool_id": None},
+            "1": {"tool_id": "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/0.23.4+galaxy0"},
+            "2": {
+                "type": "subworkflow",
+                "subworkflow": {
+                    "steps": {
+                        "0": {"tool_id": "cat1"},
+                        "1": {
+                            "subworkflow": {
+                                "steps": {"0": {"tool_id": "toolshed.g2.bx.psu.edu/repos/iuc/multiqc/multiqc/1.11"}}
+                            }
+                        },
+                    }
+                },
+            },
+            "3": {"tool_id": "cat1"},
+        }
+    }
+
+    assert curated.extract_tool_ids(definition) == [
+        "cat1",
+        "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/0.23.4+galaxy0",
+        "toolshed.g2.bx.psu.edu/repos/iuc/multiqc/multiqc/1.11",
+    ]
+
+
+@pytest.mark.parametrize(
+    "steps",
+    [
+        None,
+        "not-steps",
+        {"0": "not-a-step", "1": {"tool_id": ""}, "2": {"tool_id": 42}, "3": {"subworkflow": "nope"}},
+        {"0": {"subworkflow": {"steps": ["not-a-step"]}}},
+    ],
+)
+def test_extract_tool_ids_skips_malformed_steps(steps: Any) -> None:
+    assert curated.extract_tool_ids({"steps": steps}) == []
+
+
+def test_extract_tool_ids_accepts_a_step_list_alongside_malformed_siblings() -> None:
+    steps = [{"tool_id": "cat1"}, "junk", {"tool_id": None}, {"subworkflow": {"steps": {"0": {"tool_id": "sort1"}}}}]
+    assert curated.extract_tool_ids({"steps": steps}) == ["cat1", "sort1"]
+
+
+@pytest.mark.parametrize("prefix", ["#", "$"])
+def test_extract_tool_ids_follows_references_into_the_subworkflows_map(prefix: str) -> None:
+    definition: dict[str, Any] = {
+        "subworkflows": {
+            "trim": {
+                "steps": {
+                    "0": {"tool_id": "trimmer"},
+                    "1": {"type": "subworkflow", "content_id": "#inner"},
+                },
+                # Scoped to the subworkflow that declares it, as the importer does.
+                "subworkflows": {"inner": {"steps": {"0": {"tool_id": "sort1"}}}},
+            },
+        },
+        "steps": {
+            "0": {"tool_id": "cat1"},
+            "1": {"type": "subworkflow", "content_id": f"{prefix}trim"},
+            "2": {"type": "subworkflow", "content_id": f"{prefix}trim"},
+        },
+    }
+
+    assert curated.extract_tool_ids(definition) == ["cat1", "sort1", "trimmer"]
+
+
+@pytest.mark.parametrize(
+    "step",
+    [
+        {"type": "subworkflow", "content_id": "https://example.org/workflow.ga", "content_source": "url"},
+        # content_source wins over a map key the id happens to match, as in the importer.
+        {"type": "subworkflow", "content_id": "#present", "content_source": "trs_url"},
+        {"type": "subworkflow", "trs_tool_id": "#workflow/github.com/iwc/x", "trs_version_id": "v1"},
+        {"type": "subworkflow", "content_id": "f2db41e1fa331b3e"},
+        {"type": "subworkflow", "content_id": "#not-in-the-map"},
+        {"type": "subworkflow", "content_id": "#malformed"},
+        {"type": "subworkflow"},
+    ],
+)
+def test_extract_tool_ids_is_unknown_when_a_subworkflow_cannot_be_resolved_offline(step: dict[str, Any]) -> None:
+    """Listing only the tools we could see would let the card claim the workflow runs here."""
+    definition = {
+        "subworkflows": {"malformed": "not-a-definition", "present": {"steps": {"0": {"tool_id": "sort1"}}}},
+        "steps": {"0": {"tool_id": "cat1"}, "1": step},
+    }
+    assert curated.extract_tool_ids(definition) is None
+
+
+def test_extract_tool_ids_terminates_on_a_self_referencing_subworkflow() -> None:
+    looping: dict[str, Any] = {"steps": {"0": {"tool_id": "sort1"}}}
+    looping["steps"]["1"] = {"type": "subworkflow", "content_id": "#self"}
+    looping["subworkflows"] = {"self": looping}
+
+    assert curated.extract_tool_ids(looping) == ["sort1"]
+
+
+def test_project_manifest_marks_unresolvable_subworkflows_unknown() -> None:
+    manifest: Any = [
+        {
+            "workflows": [
+                {
+                    "iwcID": "external",
+                    "definition": {
+                        "name": "External subworkflow",
+                        "steps": {"0": {"type": "subworkflow", "content_id": "https://example.org/sub.ga"}},
+                    },
+                }
+            ]
+        }
+    ]
+
+    entries = curated.project_manifest(manifest)
+
+    assert entries[0]["tool_ids"] is None
+    assert curated.find_missing_tools(entries, lambda tool_id: True) == {"external": None}
+
+
+def test_hide_data_manager_tools_reports_them_missing_to_non_admins() -> None:
+    dm_guid = "toolshed.g2.bx.psu.edu/repos/iuc/data_manager_fetch_genome/data_manager_fetch_genome/0.0.4"
+    other_version = "toolshed.g2.bx.psu.edu/repos/iuc/data_manager_fetch_genome/data_manager_fetch_genome/0.0.3"
+    installed = {dm_guid, "cat1"}
+
+    def has_tool(tool_id: str) -> bool:
+        return tool_id in installed or tool_id == other_version
+
+    user_view = curated.hide_data_manager_tools(has_tool, [dm_guid], is_admin=False)
+    assert user_view(dm_guid) is False
+    assert user_view(other_version) is False, "another version of the same data manager is just as off limits"
+    assert user_view("cat1") is True
+    assert user_view("absent") is False
+
+    admin_view = curated.hide_data_manager_tools(has_tool, [dm_guid], is_admin=True)
+    assert admin_view(dm_guid) is True
+
+
+def test_project_manifest_records_tool_ids() -> None:
+    manifest: Any = [
+        {
+            "workflows": [
+                {
+                    "iwcID": "with-tools",
+                    "definition": {
+                        "name": "With tools",
+                        "steps": {
+                            "0": {"tool_id": "cat1"},
+                            "1": {"subworkflow": {"steps": {"0": {"tool_id": "sort1"}}}},
+                        },
+                    },
+                },
+                {"iwcID": "no-steps", "definition": {"name": "No steps"}},
+            ]
+        }
+    ]
+
+    by_id = projected_by_id(curated.project_manifest(manifest))
+
+    assert by_id["with-tools"]["tool_ids"] == ["cat1", "sort1"]
+    assert by_id["no-steps"]["tool_ids"] == []
+
+
+def test_refresh_projection_redownloads_an_old_version_file_even_when_upstream_is_unchanged(
+    projection_path: str, monkeypatch
+) -> None:
+    """A v1 file on disk has no tool_ids, so it must read as missing and be refetched."""
+    os.makedirs(os.path.dirname(projection_path))
+    with open(projection_path, "w") as out:
+        json.dump({"version": 1, "workflows": [{"id": "old", "name": "Old"}]}, out)
+    monkeypatch.setattr(iwc_manifest, "manifest_modified_since", lambda mtime, timeout=None: False)
+    monkeypatch.setattr(iwc_manifest, "download_manifest", lambda timeout: SAMPLE_MANIFEST)
+
+    assert curated.load_projection(projection_path) is None
+    assert curated.refresh_projection(projection_path) == len(curated.project_manifest(SAMPLE_MANIFEST))
+    assert all("tool_ids" in entry for entry in curated.load_projection(projection_path) or [])
+
+
+def test_find_missing_tools_reports_unavailable_tools_per_entry() -> None:
+    entries: list[dict[str, Any]] = [
+        {"id": "ready", "tool_ids": ["cat1", "sort1"]},
+        {"id": "needs-one", "tool_ids": ["cat1", "absent_tool"]},
+        {"id": "no-tools", "tool_ids": []},
+        {"id": "unknown"},
+        {"id": "garbled", "tool_ids": "cat1"},
+    ]
+
+    missing = curated.find_missing_tools(entries, lambda tool_id: tool_id != "absent_tool")
+
+    assert missing == {
+        "ready": [],
+        "needs-one": ["absent_tool"],
+        "no-tools": [],
+        "unknown": None,
+        "garbled": None,
+    }
+
+
+def test_find_missing_tools_looks_each_tool_up_once() -> None:
+    lookups: list[str] = []
+
+    def available(tool_id: str) -> bool:
+        lookups.append(tool_id)
+        return True
+
+    entries = [{"id": str(index), "tool_ids": ["cat1", "sort1"]} for index in range(50)]
+    curated.find_missing_tools(entries, available)
+
+    assert sorted(lookups) == ["cat1", "sort1"]
+
+
+RUNNABLE_ENTRIES: list[dict[str, Any]] = [
+    {"id": "old-ready", "name": "Delta", "update_time": "2020-01-01T00:00:00"},
+    {"id": "new-blocked", "name": "alpha", "update_time": "2026-01-01T00:00:00"},
+    {"id": "tie-b", "name": "Charlie", "update_time": "2024-01-01T00:00:00"},
+    {"id": "tie-a", "name": "bravo", "update_time": "2024-01-01T00:00:00"},
+    {"id": "unknown", "name": "Echo", "update_time": "2027-01-01T00:00:00"},
+]
+RUNNABLE_MISSING: dict[str, list[str] | None] = {
+    "old-ready": [],
+    "new-blocked": ["absent_tool"],
+    "tie-b": [],
+    "tie-a": [],
+    "unknown": None,
+}
+
+
+def test_sort_curated_puts_runnable_entries_first_by_default() -> None:
+    ordered = curated.sort_curated(RUNNABLE_ENTRIES, None, None, RUNNABLE_MISSING)
+    # Runnable group, newest first with the id tiebreaker; then the rest in the same order.
+    assert [entry["id"] for entry in ordered] == ["tie-b", "tie-a", "old-ready", "unknown", "new-blocked"]
+
+
+def test_sort_curated_runnable_first_is_independent_of_input_order() -> None:
+    reordered = list(reversed(RUNNABLE_ENTRIES))
+    assert [e["id"] for e in curated.sort_curated(reordered, None, None, RUNNABLE_MISSING)] == [
+        e["id"] for e in curated.sort_curated(RUNNABLE_ENTRIES, None, None, RUNNABLE_MISSING)
+    ]
+
+
+@pytest.mark.parametrize("sort_by", ["name", "update_time"])
+def test_sort_curated_explicit_sort_ignores_runnability(sort_by: str) -> None:
+    for desc in (True, False):
+        with_missing = curated.sort_curated(RUNNABLE_ENTRIES, sort_by, desc, RUNNABLE_MISSING)
+        without = curated.sort_curated(RUNNABLE_ENTRIES, sort_by, desc)
+        assert [e["id"] for e in with_missing] == [e["id"] for e in without]
+
+
+def test_sort_curated_without_missing_tools_keeps_the_default_order() -> None:
+    ordered = curated.sort_curated(RUNNABLE_ENTRIES, None, None)
+    assert [entry["id"] for entry in ordered] == ["unknown", "new-blocked", "tie-b", "tie-a", "old-ready"]
+
+
+TOOLED_ENTRIES: list[dict[str, Any]] = [
+    {"id": "newest-missing", "name": "Newest", "update_time": "2026-03-01T00:00:00Z", "tool_ids": ["absent"]},
+    {"id": "middle-runs", "name": "Middle", "update_time": "2026-02-01T00:00:00Z", "tool_ids": ["cat1"]},
+    {"id": "oldest-unknown", "name": "Oldest", "update_time": "2026-01-01T00:00:00Z", "tool_ids": None},
+    {"id": "dm-only", "name": "Data manager", "update_time": "2025-12-01T00:00:00Z", "tool_ids": ["dm_fetch"]},
+]
+
+
+def fake_toolbox(installed: set[str], data_managers: tuple[str, ...] = ()) -> Any:
+    return SimpleNamespace(has_tool=lambda tool_id: tool_id in installed, data_manager_tools=list(data_managers))
+
+
+def test_list_catalog_reports_missing_tools_and_puts_runnable_entries_first(
+    projection_path: str, recorded_refreshes: list[str]
+) -> None:
+    curated.write_projection(projection_path, TOOLED_ENTRIES)
+    toolbox = fake_toolbox({"cat1", "dm_fetch"}, data_managers=("dm_fetch",))
+
+    as_user = list_sample_catalog(projection_path, toolbox=toolbox, is_admin=False)
+    assert [(entry["id"], entry["missing_tools"]) for entry in as_user.entries] == [
+        ("middle-runs", []),
+        ("newest-missing", ["absent"]),
+        ("oldest-unknown", None),
+        ("dm-only", ["dm_fetch"]),
+    ]
+
+    as_admin = list_sample_catalog(projection_path, toolbox=toolbox, is_admin=True)
+    assert [entry["id"] for entry in as_admin.entries][:2] == ["middle-runs", "dm-only"]
+
+    # Paging happens after the runnable-first ordering, not before it.
+    second = list_sample_catalog(projection_path, toolbox=toolbox, offset=1, limit=1)
+    assert [entry["id"] for entry in second.entries] == ["newest-missing"]
+
+    # An explicit sort is taken literally.
+    by_update = list_sample_catalog(projection_path, toolbox=toolbox, sort_by="update_time")
+    assert [entry["id"] for entry in by_update.entries][0] == "newest-missing"
+
+
+def test_list_catalog_without_a_toolbox_leaves_runnability_unknown(
+    projection_path: str, recorded_refreshes: list[str]
+) -> None:
+    curated.write_projection(projection_path, TOOLED_ENTRIES)
+
+    page = list_sample_catalog(projection_path)
+
+    assert [entry["id"] for entry in page.entries] == [entry["id"] for entry in TOOLED_ENTRIES]
+    assert all(entry["missing_tools"] is None for entry in page.entries)

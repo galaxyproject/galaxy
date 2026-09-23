@@ -10353,6 +10353,11 @@ export interface components {
              */
             id: string;
             /**
+             * Missing Tools
+             * @description Ids of the tools this workflow uses that are not installed on this Galaxy in any version. Empty when the workflow will run here after import; null when this Galaxy did not check.
+             */
+            missing_tools?: string[] | null;
+            /**
              * Name
              * @description The name of the workflow.
              */
@@ -53842,7 +53847,7 @@ export interface operations {
                  *     Curated Workflows: `name`, `description`, `tag`.
                  */
                 search?: string | null;
-                /** @description Sort curated workflows by this attribute. Defaults to most recently updated. */
+                /** @description Sort curated workflows by this attribute. Without it, most recently updated first -- and in IWC catalog mode, workflows whose tools are all available here come before the rest. */
                 sort_by?: ("create_time" | "update_time" | "name") | null;
                 /** @description Sort in descending order? */
                 sort_desc?: boolean | null;
