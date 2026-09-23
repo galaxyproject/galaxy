@@ -200,7 +200,7 @@
                         Edit
                     </b-button>
                     <b-button
-                        v-if="currentUser.is_admin"
+                        v-if="currentUser && currentUser.is_admin"
                         size="sm"
                         class="lib-btn permission_lib_btn"
                         :title="`Permissions of ${row.item.name}`"
@@ -269,7 +269,8 @@ import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "components/Libraries/l
 import UtcDate from "components/UtcDate";
 import { usePersistentRef } from "composables/persistentRef";
 import { Toast } from "composables/toast";
-import { sanitize } from "dompurify";
+import DOMPurify from 'dompurify';
+const sanitize = DOMPurify.sanitize;
 import linkifyHtml from "linkify-html";
 import { getAppRoot } from "onload/loadConfig";
 import { mapState } from "pinia";
