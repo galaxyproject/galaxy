@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BNavItem, VBTooltipPlugin } from "bootstrap-vue";
-import Vue, { type PropType } from "vue";
+import { BNavItem } from "bootstrap-vue";
+import type { PropType } from "vue";
 
 import type { IconLike } from "@/components/icons/galaxyIcons";
 import { withPrefix } from "@/utils/redirect";
-
-Vue.use(VBTooltipPlugin);
 
 /* props */
 defineProps({
@@ -24,7 +22,7 @@ defineProps({
 <template>
     <BNavItem
         :id="id"
-        v-b-tooltip.noninteractive.hover.bottom
+        v-g-tooltip.hover.bottom
         :href="url ? withPrefix(url) : undefined"
         :target="target || '_parent'"
         :link-classes="{ 'nav-icon': !!icon, toggle: toggle }"

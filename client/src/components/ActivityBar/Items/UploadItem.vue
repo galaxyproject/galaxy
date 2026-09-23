@@ -3,7 +3,7 @@ import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { storeToRefs } from "pinia";
 import { onMounted } from "vue";
 
-import { useGlobalUploadModal } from "@/composables/globalUploadModal.js";
+import { useActivityStore } from "@/stores/activityStore";
 import { useUploadStore } from "@/stores/uploadStore";
 import Query from "@/utils/query-string-parsing.js";
 
@@ -23,18 +23,25 @@ const emit = defineEmits<{
     (e: "click"): void;
 }>();
 
-const { openGlobalUploadModal } = useGlobalUploadModal();
+const activityStore = useActivityStore(props.activityBarId);
 const { percentage, status } = storeToRefs(useUploadStore());
+const { toggledSideBar } = storeToRefs(activityStore);
+
+function openUploadPanel() {
+    activityStore.ensureVisible("upload");
+    activityStore.toggleSideBar("upload");
+}
 
 onMounted(() => {
     if (Query.get("tool_id") == "upload1") {
-        openGlobalUploadModal();
+        activityStore.ensureVisible("upload");
+        activityStore.ensureSideBarOpen("upload");
     }
 });
 
 function onUploadModal() {
     emit("click");
-    openGlobalUploadModal();
+    openUploadPanel();
 }
 </script>
 
@@ -45,6 +52,7 @@ function onUploadModal() {
         :title="title"
         :tooltip="tooltip"
         :icon="icon"
+        :is-active="toggledSideBar === 'upload'"
         :progress-percentage="percentage"
         :progress-status="status"
         @click="onUploadModal" />

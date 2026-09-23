@@ -1,11 +1,7 @@
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from typing_extensions import TypedDict
@@ -86,11 +82,9 @@ class _CommonParamKwargs(TypedDict, total=False):
 def _common_param_kwargs(input_source: InputSource) -> _CommonParamKwargs:
     """Extract common metadata (label, help) from InputSource for parameter models."""
     kwargs = _CommonParamKwargs()
-    label = input_source.parse_label()
-    if label:
+    if label := input_source.parse_label():
         kwargs["label"] = label
-    help_text = input_source.parse_help()
-    if help_text:
+    if help_text := input_source.parse_help():
         kwargs["help"] = help_text
     return kwargs
 
@@ -102,8 +96,8 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         if param_type == "integer":
             optional = input_source.parse_optional()
             value = input_source.get("value")
-            int_value: Optional[int]
-            if value:
+            int_value: int | None
+            if value or (value == 0 and not isinstance(value, bool)):
                 int_value = int(value)
             elif optional:
                 int_value = None
@@ -113,7 +107,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             else:
                 raise ParameterDefinitionError()
             static_validator_models = static_validators(input_source.parse_validators())
-            int_validators: List[NumberCompatiableValidators] = []
+            int_validators: list[NumberCompatiableValidators] = []
             for static_validator in static_validator_models:
                 if static_validator.type == "in_range":
                     int_validators.append(static_validator)
@@ -134,18 +128,22 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         elif param_type == "boolean":
             nullable = input_source.parse_optional()
             value = input_source.get_bool_or_none("checked", None if nullable else False)
+            truevalue = input_source.get("truevalue", None)
+            falsevalue = input_source.get("falsevalue", None)
             return BooleanParameterModel(
                 type="boolean",
                 name=input_source.parse_name(),
                 optional=nullable,
                 value=value,
+                truevalue=truevalue,
+                falsevalue=falsevalue,
                 **_common_param_kwargs(input_source),
             )
         elif param_type == "text":
             optional, optionality_inferred = text_input_is_optional(input_source)
             implicit_default = None if optional else ""
             default_value = input_source.get("value", implicit_default)
-            text_validators: List[TextCompatiableValidators] = _text_validators(input_source)
+            text_validators: list[TextCompatiableValidators] = _text_validators(input_source)
             return TextParameterModel(
                 type="text",
                 name=input_source.parse_name(),
@@ -157,8 +155,8 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         elif param_type == "float":
             optional = input_source.parse_optional()
             value = input_source.get("value")
-            float_value: Optional[float]
-            if value:
+            float_value: float | None
+            if value or (value == 0 and not isinstance(value, bool)):
                 float_value = float(value)
             elif optional:
                 float_value = None
@@ -168,7 +166,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             else:
                 raise ParameterDefinitionError()
             static_validator_models = static_validators(input_source.parse_validators())
-            float_validators: List[NumberCompatiableValidators] = []
+            float_validators: list[NumberCompatiableValidators] = []
             for static_validator in static_validator_models:
                 if static_validator.type == "in_range":
                     float_validators.append(static_validator)
@@ -189,7 +187,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         elif param_type == "hidden":
             optional = input_source.parse_optional()
             value = input_source.get("value")
-            hidden_validators: List[TextCompatiableValidators] = _text_validators(input_source)
+            hidden_validators: list[TextCompatiableValidators] = _text_validators(input_source)
             return HiddenParameterModel(
                 type="hidden",
                 name=input_source.parse_name(),
@@ -200,11 +198,16 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             )
         elif param_type == "color":
             optional = input_source.parse_optional()
+            color_value: str | None = get_color_value(input_source)
+            # A color default must be a valid color or None. The legacy ``value=""``
+            # on an optional color means "unset".
+            if optional and color_value == "":
+                color_value = None
             return ColorParameterModel(
                 type="color",
                 name=input_source.parse_name(),
                 optional=optional,
-                value=get_color_value(input_source),
+                value=color_value,
                 **_common_param_kwargs(input_source),
             )
         elif param_type == "rules":
@@ -213,14 +216,21 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 name=input_source.parse_name(),
                 **_common_param_kwargs(input_source),
             )
-        elif param_type == "data":
-            optional = input_source.parse_optional()
+        elif param_type in ("data", "hidden_data"):
+            # hidden_data is broken without optional="true" (job runner rejects
+            # missing datasets); only known user is cufflinks which sets it.
+            optional = input_source.parse_optional() if param_type == "data" else True
             multiple = input_source.get_bool("multiple", False)
+            url_default = None
+            default_value = input_source.parse_default()
+            if isinstance(default_value, dict) and default_value.get("location"):
+                url_default = default_value["location"]
             return DataParameterModel(
                 type="data",
                 name=input_source.parse_name(),
                 optional=optional,
                 multiple=multiple,
+                url_default=url_default,
                 **_common_param_kwargs(input_source),
             )
         elif param_type == "data_collection":
@@ -236,17 +246,17 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             )
         elif param_type == "select":
             # Function... example in devteam cummeRbund.
-            optional = input_source.parse_optional()
             dynamic_options_config = input_source.parse_dynamic_options()
             is_static = dynamic_options_config is None
             multiple = input_source.get_bool("multiple", False)
-            options: Optional[List[LabelValue]] = None
+            optional = input_source.parse_optional(multiple)
+            options: list[LabelValue] | None = None
             if is_static:
                 options = []
                 for option_label, option_value, selected in input_source.parse_static_options():
                     options.append(LabelValue(label=option_label, value=option_value, selected=selected))
             static_validator_models = static_validators(input_source.parse_validators())
-            select_validators: List[SelectCompatiableValidators] = []
+            select_validators: list[SelectCompatiableValidators] = []
             for static_validator in static_validator_models:
                 if static_validator.type == "no_options":
                     # test case test_tool_execute::test_select_optional_null_by_default verifies
@@ -272,6 +282,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             return DrillDownParameterModel(
                 type="drill_down",
                 name=input_source.parse_name(),
+                optional=input_source.parse_optional(),
                 multiple=multiple,
                 hierarchy=hierarchy,
                 options=static_options,
@@ -318,8 +329,8 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 **_common_param_kwargs(input_source),
             )
         elif param_type == "genomebuild":
-            optional = input_source.parse_optional()
             multiple = input_source.get_bool("multiple", False)
+            optional = input_source.parse_optional(multiple)
             return GenomeBuildParameterModel(
                 type="genomebuild",
                 name=input_source.parse_name(),
@@ -328,7 +339,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 **_common_param_kwargs(input_source),
             )
         elif param_type == "directory_uri":
-            directory_uri_validators: List[TextCompatiableValidators] = _text_validators(input_source)
+            directory_uri_validators: list[TextCompatiableValidators] = _text_validators(input_source)
             return DirectoryUriParameterModel(
                 type="directory",
                 name=input_source.parse_name(),
@@ -340,9 +351,13 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
     elif input_type == "conditional":
         test_param_input_source = input_source.parse_test_input_source()
         test_parameter = cast(
-            Union[BooleanParameterModel, SelectParameterModel],
+            BooleanParameterModel | SelectParameterModel,
             _from_input_source_galaxy(test_param_input_source, profile),
         )
+        if isinstance(test_parameter, BooleanParameterModel) and test_parameter.optional:
+            test_parameter.optional = False
+            if test_parameter.value is None:
+                test_parameter.value = False
         whens = []
         default_test_value = cond_test_parameter_default_value(test_parameter)
         for value, case_inputs_sources in input_source.parse_when_input_sources():
@@ -441,9 +456,9 @@ def _simple_cwl_type_to_model(simple_type: str, input_source: "CwlInputSource"):
     )
 
 
-def _text_validators(input_source: InputSource) -> List[TextCompatiableValidators]:
+def _text_validators(input_source: InputSource) -> list[TextCompatiableValidators]:
     static_validator_models = static_validators(input_source.parse_validators())
-    text_validators: List[TextCompatiableValidators] = []
+    text_validators: list[TextCompatiableValidators] = []
     for static_validator in static_validator_models:
         if static_validator.type == "length":
             text_validators.append(static_validator)
@@ -474,12 +489,31 @@ def _from_input_source_cwl(input_source: "CwlInputSource") -> ToolParameterT:
         raise NotImplementedError("Cannot generate tool parameter model for this CWL artifact yet.")
 
 
-def input_models_from_json(json: List[Dict[str, Any]]) -> ToolParameterBundle:
+def input_models_from_json(json: list[dict[str, Any]]) -> ToolParameterBundle:
     return ToolParameterBundleModel(parameters=json)
 
 
-def tool_parameter_bundle_from_json(json: Dict[str, Any]) -> ToolParameterBundleModel:
+def tool_parameter_bundle_from_json(json: dict[str, Any]) -> ToolParameterBundleModel:
     return ToolParameterBundleModel(**json)
+
+
+# Legacy input constructs with no parameter model representation. Only the two upload tools
+# (upload1 and __DATA_FETCH__) use them, and neither can be described by a partial model: dropping
+# these inputs and modelling the rest yields a bundle that *rejects* the tool's real requests,
+# because the generated state models are built with extra="forbid".
+UNMODELABLE_INPUT_TYPES = frozenset({"upload_dataset"})
+
+
+class UnmodelableToolInputs(Exception):
+    """A tool declares inputs the parameter model has no representation for.
+
+    Separate from a model that failed to build: there is nothing here to generate, so callers
+    should leave the tool without a parameter model rather than settle for an incomplete one.
+    """
+
+    def __init__(self, input_description: str):
+        self.input_description = input_description
+        super().__init__(f"Cannot generate a tool parameter model for {input_description} inputs")
 
 
 def input_models_for_tool_source(tool_source: ToolSource) -> ToolParameterBundleModel:
@@ -488,7 +522,7 @@ def input_models_for_tool_source(tool_source: ToolSource) -> ToolParameterBundle
     return ToolParameterBundleModel(parameters=input_models_for_pages(pages, profile))
 
 
-def input_models_for_pages(pages: PagesSource, profile: float) -> List[ToolParameterT]:
+def input_models_for_pages(pages: PagesSource, profile: float) -> list[ToolParameterT]:
     input_models = []
     if pages.inputs_style != "none":
         for page_source in pages.page_sources:
@@ -497,13 +531,18 @@ def input_models_for_pages(pages: PagesSource, profile: float) -> List[ToolParam
     return input_models
 
 
-def input_models_for_page(page_source: PageSource, profile: float) -> List[ToolParameterT]:
+def input_models_for_page(page_source: PageSource, profile: float) -> list[ToolParameterT]:
     input_models = []
     for input_source in page_source.parse_input_sources():
         input_type = input_source.parse_input_type()
         if input_type == "display":
             # not a real input... just skip this. Should this be handled in the parser layer better?
             continue
+        if input_type in UNMODELABLE_INPUT_TYPES:
+            raise UnmodelableToolInputs(input_type)
+        if input_type == "conditional" and input_source.get("value_from"):
+            # whens are resolved at runtime from app state, so there is nothing static to model
+            raise UnmodelableToolInputs("conditional with value_from")
         tool_parameter_model = from_input_source(input_source, profile)
         input_models.append(tool_parameter_model)
     return input_models

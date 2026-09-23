@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import (
     Annotated,
     Literal,
-    Optional,
 )
 
 from pydantic import (
@@ -30,7 +29,7 @@ class CredentialResponse(Model):
 
 class VariableResponse(CredentialResponse):
     value: Annotated[
-        Optional[str],
+        str | None,
         Field(
             None,
             description="The value of the variable (for variables, not secrets).",
@@ -141,7 +140,7 @@ class UserServiceCredentialsResponse(Model):
         ),
     ]
     current_group_id: Annotated[
-        Optional[EncodedDatabaseIdField],
+        EncodedDatabaseIdField | None,
         Field(
             None,
             description="The ID of the currently active credential group.",
@@ -174,7 +173,7 @@ class ServiceCredentialsDefinition(Model):
         ),
     ]
     label: Annotated[
-        Optional[str],
+        str | None,
         Field(
             None,
             description="A human-readable label for the service.",
@@ -207,7 +206,7 @@ class CredentialPayload(Model):
         ),
     ]
     value: Annotated[
-        Optional[str],
+        str | None,
         Field(
             None,
             description="The value of the credential.",
@@ -296,7 +295,7 @@ class SelectCurrentGroupPayload(Model):
         ),
     ]
     current_group_id: Annotated[
-        Optional[DecodedDatabaseIdField],
+        DecodedDatabaseIdField | None,
         Field(
             None,
             description="The ID of the group to set as current (None to unset).",
@@ -330,7 +329,7 @@ class SelectedGroup(Model):
 
 class SelectedGroupResponse(Model):
     id: Annotated[
-        Optional[EncodedDatabaseIdField],
+        EncodedDatabaseIdField | None,
         Field(
             description="The encoded ID of the user credentials. If null, the group has been deleted by the user.",
         ),
@@ -373,7 +372,7 @@ class ServiceCredentialsContext(Model):
 
 class ServiceCredentialsContextResponse(Model):
     user_credentials_id: Annotated[
-        Optional[EncodedDatabaseIdField],
+        EncodedDatabaseIdField | None,
         Field(
             description="The encoded ID of the user credentials. If null, the credentials have been deleted by the user.",
         ),

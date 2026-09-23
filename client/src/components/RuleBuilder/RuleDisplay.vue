@@ -2,8 +2,8 @@
     <li class="rule">
         <span class="rule-display">
             <span class="mr-1">{{ title }}</span>
-            <span v-b-tooltip.hover :title="editTitle" class="fa fa-edit mr-1" @click="edit"></span>
-            <span v-b-tooltip.hover :title="removeTitle" class="fa fa-times map" @click="remove"></span>
+            <span v-g-tooltip.hover :title="editTitle" class="fa fa-edit mr-1" @click="edit"></span>
+            <span v-g-tooltip.hover :title="removeTitle" class="fa fa-times map" @click="remove"></span>
         </span>
         <span v-if="rule.warn" class="rule-warning">
             {{ rule.warn }}

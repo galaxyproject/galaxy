@@ -1,6 +1,8 @@
+from typing import cast
 from unittest import mock
 
 from galaxy import model
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.markdown_parse import validate_galaxy_markdown
 from galaxy.managers.markdown_util import (
     populate_invocation_markdown,
@@ -158,7 +160,9 @@ def populate_markdown(workflow_markdown):
     # Add invocation ids to internal Galaxy markdown
     trans = MockTrans()
     validate_galaxy_markdown(workflow_markdown)
-    galaxy_markdown = populate_invocation_markdown(trans, example_invocation(trans), workflow_markdown)
+    galaxy_markdown = populate_invocation_markdown(
+        cast(ProvidesHistoryContext, trans), example_invocation(trans), workflow_markdown
+    )
     return galaxy_markdown
 
 
@@ -170,7 +174,7 @@ def resolve_markdown(workflow_markdown):
     trans.app.workflow_manager = mock.MagicMock()
     invocation = example_invocation(trans)
     trans.app.workflow_manager.get_invocation.side_effect = [invocation, invocation]
-    galaxy_markdown = resolve_invocation_markdown(trans, workflow_markdown)
+    galaxy_markdown = resolve_invocation_markdown(cast(ProvidesHistoryContext, trans), workflow_markdown)
     return galaxy_markdown
 
 

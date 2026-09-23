@@ -25,7 +25,7 @@ execution:
                 GALAXY_SLOTS: '{cores}'
               scheduling:
                 accept:
-                  - support_user_defined
+                  - tool_type_user_defined
               params:
                 remote_metadata: true
                 docker_enabled: true
@@ -41,4 +41,4 @@ execution:
             user_defined-*:
               scheduling:
                 require:
-                  - support_user_defined
+                  - tool_type_user_defined

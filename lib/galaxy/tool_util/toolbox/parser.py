@@ -39,6 +39,15 @@ class ToolConfSource(metaclass=ABCMeta):
         """Monitor the toolbox configuration source for changes and reload."""
         return DEFAULT_MONITOR
 
+    def parse_store_name(self) -> str | None:
+        """Return the named tool source store this conf routes to, or None.
+
+        Lets a single tool_conf opt into a non-default store (e.g. a
+        CVMFS-resident sqlite bundle) by setting ``store="..."`` on the
+        XML root or ``store: ...`` in YAML.
+        """
+        return None
+
 
 class XmlToolConfSource(ToolConfSource):
     def __init__(self, config_filename: StrPath):
@@ -59,6 +68,9 @@ class XmlToolConfSource(ToolConfSource):
     def parse_monitor(self):
         return string_as_bool(self.root.get("monitor", DEFAULT_MONITOR))
 
+    def parse_store_name(self) -> str | None:
+        return self.root.get("store") or None
+
 
 class YamlToolConfSource(ToolConfSource):
     def __init__(self, config_filename: StrPath):
@@ -77,6 +89,10 @@ class YamlToolConfSource(ToolConfSource):
 
     def is_shed_tool_conf(self):
         return False
+
+    def parse_store_name(self) -> str | None:
+        store = self.as_dict.get("store")
+        return store or None
 
 
 class ToolConfItem:

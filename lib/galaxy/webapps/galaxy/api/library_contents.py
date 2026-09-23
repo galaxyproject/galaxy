@@ -5,7 +5,6 @@ API operations on the contents of a data library.
 import logging
 from typing import (
     cast,
-    Optional,
 )
 
 from fastapi import (
@@ -63,7 +62,7 @@ class JsonApiRoute(APIContentTypeRoute):
 LibraryContentsCreateForm = as_form(LibraryContentsFileCreatePayload)
 
 
-async def get_files(request: Request, files: Optional[list[UploadFile]] = None):
+async def get_files(request: Request, files: list[UploadFile] | None = None):
     # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
     files2: list[StarletteUploadFile] = cast(list[StarletteUploadFile], files or [])
     if not files2:
@@ -161,7 +160,7 @@ class FastAPILibraryContents:
         self,
         library_id: LibraryIdPathParam,
         id: LibraryDatasetIdPathParam,
-        payload: Optional[LibraryContentsDeletePayload] = Body(None),
+        payload: LibraryContentsDeletePayload | None = Body(None),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> LibraryContentsDeleteResponse:
         """This endpoint is deprecated. Please use DELETE /api/libraries/datasets/{id} instead."""

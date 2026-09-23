@@ -1,4 +1,7 @@
-from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
+from galaxy_test.base.workflow_fixtures import (
+    WORKFLOW_OPTIONAL_TRUE_INPUT_DATA,
+    WORKFLOW_SIMPLE_CAT_TWICE,
+)
 from .framework import (
     managed_history,
     retry_assertion_during_transitions,
@@ -7,16 +10,30 @@ from .framework import (
     SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
+from .upload_activity_helpers import UsesUploadActivity
+
+WORKFLOW_BOOLEAN_PARAMETER_DEFAULT_TRUE = """
+class: GalaxyWorkflow
+inputs:
+  bool_param:
+    type: boolean
+    default: true
+steps:
+  echo_bool:
+    tool_id: gx_boolean
+    in:
+      parameter: bool_param
+"""
 
 
-class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows):
+class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows, UsesUploadActivity):
     ensure_registered = True
 
     @selenium_test
     @managed_history
     def test_workflow_rerun(self):
         # Run a workflow first
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.screenshot("workflow_run_before_rerun_ready")
@@ -41,7 +58,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self.components.invocations.workflow_rerun_button.wait_for_and_click()
 
         # Will trigger confirmation modal
-        self.components.invocations.change_history_rerun_confirm.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
 
         # Arriving on the rerun page, the history should have switched back to the original history
@@ -62,6 +79,116 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         # Find that the changed input badge exists
         form_element.changed_value_badge.wait_for_visible()
         self.screenshot("workflow_rerun_changed_input")
+
+    @selenium_test
+    @managed_history
+    def test_workflow_rerun_preserves_false_boolean_parameter(self):
+        """Regression test for boolean workflow parameters reverting to default on rerun.
+
+        Setting a boolean ``parameter_input`` to ``false`` (overriding a
+        ``default: true``), running the workflow, and re-running the invocation
+        previously caused the form to silently fall back to the default value
+        because of a falsy-value check in WorkflowRunFormSimple.vue. The form
+        should instead show the value the user actually used.
+        """
+        invocations = self.components.invocations
+
+        self.workflow_run_open_workflow(WORKFLOW_BOOLEAN_PARAMETER_DEFAULT_TRUE)
+
+        # Override the boolean default of true to false before submitting.
+        # The boolean is the workflow's only input, hence step_index 0.
+        self._toggle_workflow_run_boolean(parameter="0", target=False)
+        self.screenshot("workflow_run_boolean_false_before_submit")
+
+        self.workflow_run_submit()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.workflow_run_wait_for_ok(hid=1)
+
+        # Submitting lands us on the new invocation page; the rerun button is
+        # right there on the invocation state details. We're still in the
+        # invocation's history, so no "switch history" confirmation appears.
+        invocations.state_details.wait_for_visible()
+        invocations.workflow_rerun_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+
+        # The boolean should be preserved as false on the rerun form rather than
+        # silently reset to the workflow's default of true.
+        checkbox = self.components.tool_form.parameter_checkbox_input(parameter="0").wait_for_present()
+        assert (
+            not checkbox.is_selected()
+        ), "Boolean parameter input was reset to its default 'true' instead of preserving the previous run's 'false' value"
+
+        # Without changes, the boolean should not be flagged as a changed input.
+        form_element = self.components.workflow_run.form_element._(index=0)
+        form_element.changed_value_badge.assert_absent()
+        self.screenshot("workflow_rerun_boolean_preserved_false")
+
+        # Toggling the value back to true should flag it as changed.
+        self._toggle_workflow_run_boolean(parameter="0", target=True)
+        form_element.changed_value_badge.wait_for_visible()
+        self.screenshot("workflow_rerun_boolean_changed_input")
+
+        # Submit the rerun and verify the new invocation actually recorded the
+        # value shown in the form (true) on its Inputs tab.
+        self.workflow_run_submit()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.workflow_run_wait_for_ok(hid=2)
+        invocations.state_details.wait_for_visible()
+        invocations.invocation_tab(label="Inputs").wait_for_and_click()
+        self._assert_input_table_has_parameter("bool_param", "true")
+        self.screenshot("workflow_rerun_boolean_inputs_tab")
+
+    @selenium_test
+    @managed_history
+    def test_workflow_rerun_with_unset_optional_data_input(self):
+        """Regression test for workflow rerun crashing when an optional data_input was left empty.
+
+        When a workflow has an optional ``data_input`` step that the user did
+        not provide on the original run, ``WorkflowInvocationRequestModel.inputs``
+        returns ``null`` for that step. WorkflowRunFormSimple.vue used to wrap
+        the value as ``{values: [null]}`` regardless, which crashed the
+        ``FormData`` mounted hook on ``"src" in null``. Because the mounted
+        hook never completed, the bad wrapper survived in formData and was
+        sent to the server, which rejected it with a ``DataOrCollectionRequest``
+        union ValidationError ("Extra inputs are not permitted in 'values'").
+        Reported on a "1 or 2 haplotypes" workflow where the second haplotype
+        was left empty.
+        """
+        invocations = self.components.invocations
+
+        # Upload one HDA so the history isn't empty (the workflow form needs a
+        # current history); the optional input is intentionally left unselected.
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
+        self.wait_for_history()
+        self.workflow_run_open_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
+        self.workflow_run_submit()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.workflow_run_wait_for_ok(hid=2, expand=True)
+
+        # Submitting lands us on the new invocation page; click rerun directly.
+        invocations.state_details.wait_for_visible()
+        invocations.workflow_rerun_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+
+        # Submit the rerun without touching anything. Pre-fix this raises a
+        # "Workflow submission failed: ... 'values' not permitted ..." toast
+        # because formData carries the poisoned `{values: [null]}` wrapper.
+        self.workflow_run_submit()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.workflow_run_wait_for_ok(hid=3, expand=True)
+        self.screenshot("workflow_rerun_unset_optional_data_input_submitted")
+
+    @retry_assertion_during_transitions
+    def _assert_input_table_has_parameter(self, label: str, value: str):
+        table = self.wait_for_selector('[data-description="input table"]')
+        text = table.text
+        assert label in text, f"Expected input label '{label}' in inputs table, got: {text!r}"
+        assert value in text, f"Expected input value '{value}' in inputs table, got: {text!r}"
+
+    def _toggle_workflow_run_boolean(self, parameter: str, target: bool):
+        checkbox = self.components.tool_form.parameter_checkbox_input(parameter=parameter).wait_for_present()
+        if checkbox.is_selected() != target:
+            self.execute_script("arguments[0].click();", checkbox)
 
     @retry_assertion_during_transitions
     def _assert_history_name_is(self, expected_name=None):

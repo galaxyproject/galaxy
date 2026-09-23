@@ -6,7 +6,7 @@ from paste.httpheaders import ETAG
 from paste.urlparser import StaticURLParser
 
 
-class CacheableStaticURLParser(StaticURLParser):
+class CacheableStaticURLParser(StaticURLParser):  # type: ignore[misc]  # paste is untyped
     def __init__(self, directory, cache_seconds=None, directory_per_host=None):
         StaticURLParser.__init__(self, directory)
         self.cache_seconds = cache_seconds
@@ -54,7 +54,7 @@ class CacheableStaticURLParser(StaticURLParser):
                 headers: list[tuple[str, str]] = []
                 ETAG.update(headers, mytime)
                 start_response("304 Not Modified", headers)
-                return [""]  # empty body
+                return [b""]  # empty body
         app = FileApp(full)
         if self.cache_seconds:
             app.cache_control(max_age=int(self.cache_seconds))

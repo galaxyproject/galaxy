@@ -4,10 +4,128 @@ History
 .. to_doc
 
 ---------
-26.1.dev0
+26.2.dev0
 ---------
 
 
+
+-------------------
+26.1.1 (2026-08-04)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+26.1.0 (2026-08-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Remove unused enable_beta_workflow_modules config option by `@jmchilton <https://github.com/jmchilton>`_ in `#22050 <https://github.com/galaxyproject/galaxy/pull/22050>`_
+* Remove dual load of cutWrapper.xml by `@natefoo <https://github.com/natefoo>`_ in `#22266 <https://github.com/galaxyproject/galaxy/pull/22266>`_
+* Revert \`\`galaxy.yml.sample\`\` changes by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22569 <https://github.com/galaxyproject/galaxy/pull/22569>`_
+* Make GalaxyAI agent retry budget configurable (fix "Exceeded maximum output retries") by `@dannon <https://github.com/dannon>`_ in `#22896 <https://github.com/galaxyproject/galaxy/pull/22896>`_
+* Custom-tool agent: verified container resolution + authoring safeguards (with a reusable mulled-recommend CLI) by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22981 <https://github.com/galaxyproject/galaxy/pull/22981>`_
+* Add configurable activation for OIDC accounts by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23109 <https://github.com/galaxyproject/galaxy/pull/23109>`_
+* Disable tool request by default by `@guerler <https://github.com/guerler>`_ in `#23113 <https://github.com/galaxyproject/galaxy/pull/23113>`_
+* Support multipart upload for Invenio-based file sources by `@martenson <https://github.com/martenson>`_ in `#23118 <https://github.com/galaxyproject/galaxy/pull/23118>`_
+
+============
+Enhancements
+============
+
+* Add a new "htcondor" job runner that uses the Python HTCondor version 2 bindings by `@bgruening <https://github.com/bgruening>`_ in `#21528 <https://github.com/galaxyproject/galaxy/pull/21528>`_
+* Add ASCII Raster (.asc) datatype by `@tStehling <https://github.com/tStehling>`_ in `#21937 <https://github.com/galaxyproject/galaxy/pull/21937>`_
+* First pass in unifying and clarifying collection operation interfaces and help sections by `@nekrut <https://github.com/nekrut>`_ in `#21939 <https://github.com/galaxyproject/galaxy/pull/21939>`_
+* Update config sample files after \`make config-rebuild\` by `@davelopez <https://github.com/davelopez>`_ in `#21940 <https://github.com/galaxyproject/galaxy/pull/21940>`_
+* Migrate Python packages to \`src\` layout and pure namespace packages by `@mr-c <https://github.com/mr-c>`_ in `#21977 <https://github.com/galaxyproject/galaxy/pull/21977>`_
+* More concise test logging by `@jmchilton <https://github.com/jmchilton>`_ in `#21983 <https://github.com/galaxyproject/galaxy/pull/21983>`_
+* Refactor Agent Registry Wiring and Fix Config Options by `@jmchilton <https://github.com/jmchilton>`_ in `#22011 <https://github.com/galaxyproject/galaxy/pull/22011>`_
+* Replace mocked agent tests with static YAML backend for deterministic API/E2E testing by `@jmchilton <https://github.com/jmchilton>`_ in `#22070 <https://github.com/galaxyproject/galaxy/pull/22070>`_
+* Add GTN training agent to ChatGXY by `@dannon <https://github.com/dannon>`_ in `#22097 <https://github.com/galaxyproject/galaxy/pull/22097>`_
+* Improve celery rate limit and concurrency handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22189 <https://github.com/galaxyproject/galaxy/pull/22189>`_
+* Test against psycopg3 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22210 <https://github.com/galaxyproject/galaxy/pull/22210>`_
+* Extend the favorite tool panel concept by `@bgruening <https://github.com/bgruening>`_ in `#22212 <https://github.com/galaxyproject/galaxy/pull/22212>`_
+* Upgrade Sentry JS SDK to v10, add opt-in session replay by `@dannon <https://github.com/dannon>`_ in `#22233 <https://github.com/galaxyproject/galaxy/pull/22233>`_
+* Add egapx_local_cache datatype, a subclass of Directory by `@richard-burhans <https://github.com/richard-burhans>`_ in `#22268 <https://github.com/galaxyproject/galaxy/pull/22268>`_
+* Add Hashicorp Vault token renewal support by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22281 <https://github.com/galaxyproject/galaxy/pull/22281>`_
+* Add bwa_index datatype by `@Delphine-L <https://github.com/Delphine-L>`_ in `#22310 <https://github.com/galaxyproject/galaxy/pull/22310>`_
+* Add IIIF File Source Support by `@davelopez <https://github.com/davelopez>`_ in `#22420 <https://github.com/galaxyproject/galaxy/pull/22420>`_
+* Require logging in again when OIDC tokens can't be refreshed by `@marius-mather <https://github.com/marius-mather>`_ in `#22449 <https://github.com/galaxyproject/galaxy/pull/22449>`_
+* Migrate WebDAV file source to fsspec/webdav4 by `@PlushZ <https://github.com/PlushZ>`_ in `#22477 <https://github.com/galaxyproject/galaxy/pull/22477>`_
+* Server-Sent Events for history + notification updates by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22513 <https://github.com/galaxyproject/galaxy/pull/22513>`_
+* Add legacy job submission fallback by `@guerler <https://github.com/guerler>`_ in `#22555 <https://github.com/galaxyproject/galaxy/pull/22555>`_
+* Add bulk dataset storage migration by `@davelopez <https://github.com/davelopez>`_ in `#22606 <https://github.com/galaxyproject/galaxy/pull/22606>`_
+* Replace agent structured-output denylist with capability table by `@dannon <https://github.com/dannon>`_ in `#22609 <https://github.com/galaxyproject/galaxy/pull/22609>`_
+* Add rmd filetype by `@jdavcs <https://github.com/jdavcs>`_ in `#22746 <https://github.com/galaxyproject/galaxy/pull/22746>`_
+* Refresh agent-ops data (GTN database + IWC manifest) on a celery beat schedule by `@dannon <https://github.com/dannon>`_ in `#22783 <https://github.com/galaxyproject/galaxy/pull/22783>`_
+* Add namespace stripping to \`\`CachedExplicitSingularityContainerResolver\`\` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22878 <https://github.com/galaxyproject/galaxy/pull/22878>`_
+* Add new datatypes for the tool vg giraffe by `@Maed0x <https://github.com/Maed0x>`_ in `#22935 <https://github.com/galaxyproject/galaxy/pull/22935>`_
+* Emit SSE/queue metrics as gauges, sample SSE counts in web workers by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22960 <https://github.com/galaxyproject/galaxy/pull/22960>`_
+* Add PAGE XML, AbbyyXML, hOCR, mlmodel and Apache Arrow IPC datatype support in datatypes_conf.xml.sample by `@IvoLeist <https://github.com/IvoLeist>`_ in `#23088 <https://github.com/galaxyproject/galaxy/pull/23088>`_
+
+=============
+Other changes
+=============
+
+* Add a shared operations layer for internal and external AI agents by `@dannon <https://github.com/dannon>`_ in `#21942 <https://github.com/galaxyproject/galaxy/pull/21942>`_
+* Add \`enable_statsd_middleware\` option to send backend execution timing to statsd without enabling web request timing by `@natefoo <https://github.com/natefoo>`_ in `#22557 <https://github.com/galaxyproject/galaxy/pull/22557>`_
+
+-------------------
+26.0.1 (2026-06-04)
+-------------------
+
+
+============
+Enhancements
+============
+
+* add TEI XML datatype by `@bgruening <https://github.com/bgruening>`_ in `#22718 <https://github.com/galaxyproject/galaxy/pull/22718>`_
+
+-------------------
+26.0.0 (2026-04-08)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Infer type from extension for mzml by `@bgruening <https://github.com/bgruening>`_ in `#21033 <https://github.com/galaxyproject/galaxy/pull/21033>`_
+* Update config samples from schema by `@davelopez <https://github.com/davelopez>`_ in `#21053 <https://github.com/galaxyproject/galaxy/pull/21053>`_
+* remove a tool from sample that is no longer included in dist by `@martenson <https://github.com/martenson>`_ in `#21371 <https://github.com/galaxyproject/galaxy/pull/21371>`_
+* Various fixes around ascp file source by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21372 <https://github.com/galaxyproject/galaxy/pull/21372>`_
+* Add tool_shed_url config for explicit hostname setting by `@jmchilton <https://github.com/jmchilton>`_ in `#21499 <https://github.com/galaxyproject/galaxy/pull/21499>`_
+* Use inference_services config for plugin chat proxy by `@dannon <https://github.com/dannon>`_ in `#21986 <https://github.com/galaxyproject/galaxy/pull/21986>`_
+* Silence social_core's noisy handle_http_errors logging by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22403 <https://github.com/galaxyproject/galaxy/pull/22403>`_
+
+============
+Enhancements
+============
+
+* Improve docs for `invalidjobexception_state` and `_retry` of DRMAA runners by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20612 <https://github.com/galaxyproject/galaxy/pull/20612>`_
+* Add Support for HTTP Headers in URL Fetch Requests with Secure Storage for Landing Requests by `@davelopez <https://github.com/davelopez>`_ in `#20924 <https://github.com/galaxyproject/galaxy/pull/20924>`_
+* Remove Trackster by `@guerler <https://github.com/guerler>`_ in `#20974 <https://github.com/galaxyproject/galaxy/pull/20974>`_
+* Remove legacy Visualization Mako and Controllers by `@guerler <https://github.com/guerler>`_ in `#21133 <https://github.com/galaxyproject/galaxy/pull/21133>`_
+* Reimplement keycloak/cilogon as PSA providers and remove custos by `@nuwang <https://github.com/nuwang>`_ in `#21234 <https://github.com/galaxyproject/galaxy/pull/21234>`_
+* Slight improvement of mztab2 datatype by `@nguilhot <https://github.com/nguilhot>`_ in `#21258 <https://github.com/galaxyproject/galaxy/pull/21258>`_
+* Link to an external profile when user accounts are managed by a single OIDC provider by `@marius-mather <https://github.com/marius-mather>`_ in `#21356 <https://github.com/galaxyproject/galaxy/pull/21356>`_
+* Ascp plugin by `@d-callan <https://github.com/d-callan>`_ in `#21357 <https://github.com/galaxyproject/galaxy/pull/21357>`_
+* Add initial support for the DICOM format by `@kostrykin <https://github.com/kostrykin>`_ in `#21385 <https://github.com/galaxyproject/galaxy/pull/21385>`_
+* Add AI Agent Framework and ChatGXY 2.0 by `@dannon <https://github.com/dannon>`_ in `#21434 <https://github.com/galaxyproject/galaxy/pull/21434>`_
+* Implement workflow completion monitoring with extensible hooks by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21532 <https://github.com/galaxyproject/galaxy/pull/21532>`_
+* Drop support for Python 3.9 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21583 <https://github.com/galaxyproject/galaxy/pull/21583>`_
+* Update to gravity 1.2.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21608 <https://github.com/galaxyproject/galaxy/pull/21608>`_
+* Add new datatypes: .taf and .taf.gz by `@Maed0x <https://github.com/Maed0x>`_ in `#22242 <https://github.com/galaxyproject/galaxy/pull/22242>`_
+
+=============
+Other changes
+=============
+
+* Backport of 21939 by `@jdavcs <https://github.com/jdavcs>`_ in `#22265 <https://github.com/galaxyproject/galaxy/pull/22265>`_
 
 -------------------
 25.1.2 (2026-03-09)

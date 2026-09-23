@@ -1,22 +1,25 @@
 <script setup lang="ts">
-import { faLink, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faLink, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormInput } from "bootstrap-vue";
 import { computed, nextTick, ref, watch } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
+import { urlUploadOptionVisibility } from "@/components/Panels/Upload/shared/uploadOptionVisibility";
+import { getUploadSettingsColumnWidth } from "@/components/Panels/Upload/shared/uploadTableOptionsWidth";
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
 import { useCollectionCreation } from "@/composables/upload/collectionCreation";
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
 import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
+import { useUploadOptionBindings } from "@/composables/upload/uploadOptionBindings";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
-import { useUploadQueue } from "@/composables/uploadQueue";
+import { buildPreparedUpload } from "@/utils/upload";
 import { mapToPasteUrlUpload } from "@/utils/upload/itemMappers";
 import { extractNameFromUrl, isValidUrl, validateUrl } from "@/utils/url";
 
-import type { UploadMethodComponent, UploadMethodConfig } from "../types";
+import type { PreparedUpload, UploadMethodComponent, UploadMethodConfig } from "../types";
 import type { PasteUrlItem } from "../types/uploadItem";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
@@ -32,10 +35,24 @@ import GTable from "@/components/Common/GTable.vue";
 
 interface Props {
     method: UploadMethodConfig;
+    /** History ID where uploaded datasets will be added. */
     targetHistoryId: string;
+    /** Allow creating dataset collections from pasted URLs. */
+    allowCollections?: boolean;
+    /** Optional list of allowed formats to constrain selectable extensions. */
+    formats?: string[];
+    /** When false, restrict to a single URL entry. */
+    multiple?: boolean;
+    /** When true, do not persist staging to the shared store (modal use). */
+    transient?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    allowCollections: true,
+    formats: undefined,
+    multiple: true,
+    transient: false,
+});
 
 const emit = defineEmits<{
     (e: "ready", ready: boolean): void;
@@ -43,14 +60,14 @@ const emit = defineEmits<{
 
 const { advancedMode } = useUploadAdvancedMode();
 
-const uploadQueue = useUploadQueue();
+const optionVisibility = computed(() => urlUploadOptionVisibility(advancedMode.value));
 
-const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults();
+const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults(props.formats);
 
 const tableContainerRef = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
 
-const { collectionState, handleCollectionStateChange, buildCollectionConfig, resetCollection } =
+const { buildCollectionConfig, collectionState, handleCollectionStateChange, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
 
 let nextId = 1;
@@ -67,16 +84,33 @@ function createPasteUrlItem(id: number, url: string, name: string): PasteUrlItem
 
 const urlItems = ref<PasteUrlItem[]>([]);
 const urlText = ref("");
-const showInputArea = ref(true);
-const { clear: clearStaging } = useUploadStaging<PasteUrlItem>(props.method.id, urlItems);
+const showInputOverride = ref(false);
+const showInputArea = computed(() => {
+    if (urlItems.value.length > 0) {
+        return showInputOverride.value;
+    }
+    return true;
+});
+const { clear: clearStaging } = useUploadStaging<PasteUrlItem>(props.method.id, urlItems, {
+    disableStore: props.transient,
+});
 
 const placeholder = "https://example.org/data1.txt\nhttps://example.org/data2.txt";
 
 const hasItems = computed(() => urlItems.value.length > 0);
+const isSingleMode = computed(() => props.multiple === false);
+const addMoreUrlsTitle = computed(() =>
+    isSingleMode.value ? "Change selected URL" : "Add more URLs to the upload list",
+);
+const addMoreUrlsLabel = computed(() => (isSingleMode.value ? "Change selected URL" : "Add More URLs"));
 
 const { isNameValid, restoreOriginalName } = useUploadItemValidation();
 
 const bulk = useBulkUploadOperations(urlItems, effectiveExtensions);
+const { headerOptionProps, headerOptionEvents, getRowOptionProps, getRowOptionEvents } = useUploadOptionBindings(
+    bulk,
+    optionVisibility,
+);
 
 // Additional validation for URL items
 const hasInvalidUrls = computed(() => urlItems.value.some((item) => !isValidUrl(item.url)));
@@ -103,21 +137,28 @@ function addUrlsFromText() {
         .map((u) => u.trim())
         .filter((u) => u.length > 0);
 
-    for (const url of urls) {
+    // Enforce single URL when multiple is false
+    const urlsToAdd = isSingleMode.value ? urls.slice(0, 1) : urls;
+
+    if (isSingleMode.value) {
+        urlItems.value = [];
+    }
+
+    for (const url of urlsToAdd) {
         urlItems.value.push(createPasteUrlItem(nextId++, url, extractNameFromUrl(url)));
     }
 
     urlText.value = "";
-    showInputArea.value = false;
+    showInputOverride.value = false;
     scrollToBottom();
 }
 
 function showUrlInput() {
-    showInputArea.value = true;
+    showInputOverride.value = true;
 }
 
 function showUrlList() {
-    showInputArea.value = false;
+    showInputOverride.value = false;
 }
 
 function scrollToBottom() {
@@ -131,9 +172,14 @@ function scrollToBottom() {
 
 function removeItem(id: number) {
     urlItems.value = urlItems.value.filter((item) => item.id !== id);
+
+    if (urlItems.value.length === 0) {
+        showInputOverride.value = false;
+        resetCollection();
+    }
 }
 
-const tableFields: TableField[] = [
+const tableFields = computed<TableField[]>(() => [
     {
         key: "name",
         label: "Name",
@@ -165,6 +211,7 @@ const tableFields: TableField[] = [
         key: "options",
         label: "Upload Settings",
         sortable: false,
+        width: getUploadSettingsColumnWidth(optionVisibility.value),
         align: "center",
     },
     {
@@ -174,35 +221,27 @@ const tableFields: TableField[] = [
         width: "50px",
         align: "center",
     },
-];
+]);
 
-function clearAll() {
+function reset() {
     urlItems.value = [];
     urlText.value = "";
-    showInputArea.value = true;
+    clearStaging();
+    showInputOverride.value = false;
     resetCollection();
 }
 
-function startUpload() {
+function prepareUpload(): PreparedUpload | null {
     const validItems = urlItems.value.filter((item) => item.url.trim().length > 0);
     if (validItems.length === 0) {
-        return;
+        return null;
     }
 
     const uploads = validItems.map((item) => mapToPasteUrlUpload(item, props.targetHistoryId));
-    const collectionConfig = buildCollectionConfig(props.targetHistoryId);
-
-    uploadQueue.enqueue(uploads, collectionConfig);
-
-    // Reset state
-    urlItems.value = [];
-    clearStaging();
-    urlText.value = "";
-    showInputArea.value = true;
-    resetCollection();
+    return buildPreparedUpload(uploads, buildCollectionConfig(props.targetHistoryId));
 }
 
-defineExpose<UploadMethodComponent>({ startUpload });
+defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 </script>
 
 <template>
@@ -242,8 +281,9 @@ defineExpose<UploadMethodComponent>({ startUpload });
             <div ref="tableContainerRef" class="url-table-container">
                 <GTable hover striped fixed compact :items="urlItems" :fields="tableFields" class="url-table">
                     <!-- Name column -->
-                    <template v-slot:cell(name)="{ item }">
+                    <template v-slot:cell(name)="{ item, index }">
                         <UploadTableNameCell
+                            :data-test-id="`upload-row-${index + 1}-name`"
                             :value="item.name"
                             :state="isNameValid(item.name)"
                             @input="item.name = $event"
@@ -255,7 +295,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         <div class="d-flex align-items-center">
                             <BFormInput
                                 v-model="item.url"
-                                v-b-tooltip.hover.noninteractive
+                                v-g-tooltip.hover
                                 size="sm"
                                 :state="isValidUrl(item.url)"
                                 :title="getUrlValidationMessage(item.url)"
@@ -274,8 +314,9 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             @input="bulk.setAllExtensions" />
                     </template>
 
-                    <template v-slot:cell(extension)="{ item }">
+                    <template v-slot:cell(extension)="{ item, index }">
                         <UploadTableExtensionCell
+                            :data-test-id="`upload-row-${index + 1}-extension`"
                             :value="item.extension"
                             :extensions="effectiveExtensions"
                             :warning="bulk.getExtensionWarning(item.extension)"
@@ -293,8 +334,9 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             @input="bulk.setAllDbKeys" />
                     </template>
 
-                    <template v-slot:cell(dbKey)="{ item }">
+                    <template v-slot:cell(dbKey)="{ item, index }">
                         <UploadTableDbKeyCell
+                            :data-test-id="`upload-row-${index + 1}-dbkey`"
                             :value="item.dbkey"
                             :db-keys="listDbKeys"
                             :disabled="!configurationsReady"
@@ -303,60 +345,40 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                     <!-- Options column with bulk checkboxes -->
                     <template v-slot:head(options)>
-                        <UploadTableOptionsHeader
-                            :all-space-to-tab="bulk.allSpaceToTab.value"
-                            :space-to-tab-indeterminate="bulk.spaceToTabIndeterminate.value"
-                            :show-posix="advancedMode"
-                            :all-to-posix-lines="bulk.allToPosixLines.value"
-                            :to-posix-lines-indeterminate="bulk.toPosixLinesIndeterminate.value"
-                            :show-deferred="true"
-                            :all-deferred="bulk.allDeferred.value"
-                            :deferred-indeterminate="bulk.deferredIndeterminate.value"
-                            @toggle-space-to-tab="bulk.toggleAllSpaceToTab"
-                            @toggle-to-posix-lines="bulk.toggleAllToPosixLines"
-                            @toggle-deferred="bulk.toggleAllDeferred" />
+                        <UploadTableOptionsHeader v-bind="headerOptionProps" v-on="headerOptionEvents" />
                     </template>
 
                     <template v-slot:cell(options)="{ item }">
-                        <UploadTableOptionsCell
-                            :space-to-tab="item.spaceToTab"
-                            :show-posix="advancedMode"
-                            :to-posix-lines="item.toPosixLines"
-                            :show-deferred="true"
-                            :deferred="item.deferred"
-                            @updateSpaceToTab="item.spaceToTab = $event"
-                            @updateToPosixLines="item.toPosixLines = $event"
-                            @updateDeferred="item.deferred = $event" />
+                        <UploadTableOptionsCell v-bind="getRowOptionProps(item)" v-on="getRowOptionEvents(item)" />
                     </template>
 
                     <!-- Actions column -->
-                    <template v-slot:cell(actions)="{ item }">
-                        <button
-                            v-b-tooltip.hover.noninteractive
-                            class="btn btn-link text-danger remove-btn"
+                    <template v-slot:cell(actions)="{ item, index }">
+                        <GButton
+                            v-g-tooltip.hover
+                            class="remove-btn"
+                            :data-test-id="`upload-row-${index + 1}-remove`"
+                            outline
+                            transparent
                             title="Remove URL from list"
                             @click="removeItem(item.id)">
-                            <FontAwesomeIcon :icon="faTimes" />
-                        </button>
+                            <FontAwesomeIcon :icon="faTrash" />
+                        </GButton>
                     </template>
                 </GTable>
             </div>
 
             <!-- Collection Creation Section -->
             <CollectionCreationConfig
+                v-if="props.allowCollections !== false"
                 ref="collectionConfigComponent"
                 :files="urlItems"
                 @update:state="handleCollectionStateChange" />
 
             <div class="url-list-actions mt-2">
-                <GButton
-                    color="grey"
-                    tooltip
-                    tooltip-placement="top"
-                    title="Add more URLs to the upload list"
-                    @click="showUrlInput">
+                <GButton color="grey" tooltip tooltip-placement="top" :title="addMoreUrlsTitle" @click="showUrlInput">
                     <FontAwesomeIcon :icon="faPlus" class="mr-1" />
-                    Add More URLs
+                    {{ addMoreUrlsLabel }}
                 </GButton>
                 <GButton
                     outline
@@ -364,7 +386,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     tooltip
                     tooltip-placement="top"
                     title="Remove all URLs from the upload list"
-                    @click="clearAll">
+                    @click="reset">
                     Clear All
                 </GButton>
             </div>

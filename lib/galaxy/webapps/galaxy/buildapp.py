@@ -7,7 +7,6 @@ import logging
 import sys
 import threading
 import traceback
-from typing import Optional
 
 from paste import httpexceptions
 
@@ -16,7 +15,6 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework
-import galaxy.webapps.base.webapp
 from galaxy import util
 from galaxy.security.validate_user_input import VALID_PUBLICNAME_RE
 from galaxy.structured_app import MinimalApp
@@ -25,18 +23,19 @@ from galaxy.util.properties import load_app_properties
 from galaxy.web.framework.middleware.error import ErrorMiddleware
 from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
 from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
-from galaxy.webapps.base.webapp import build_url_map
+from galaxy.webapps.base.webapp import (
+    build_url_map,
+    WebApplication,
+)
 from galaxy.webapps.util import wrap_if_allowed
 
 log = logging.getLogger(__name__)
 
 
-class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
+class GalaxyWebApplication(WebApplication):
     injection_aware = True
 
-    def __init__(
-        self, galaxy_app: MinimalApp, session_cookie: str = "galaxysession", name: Optional[str] = None
-    ) -> None:
+    def __init__(self, galaxy_app: MinimalApp, session_cookie: str = "galaxysession", name: str | None = None) -> None:
         super().__init__(galaxy_app, session_cookie, name)
         self.session_factories.append(galaxy_app.install_model)
 
@@ -194,6 +193,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     # The following routes don't bootstrap any information, simply provide the
     # base analysis interface at which point the application takes over.
     webapp.add_client_route("/")
+    webapp.add_client_route("/root")
     webapp.add_client_route("/index")
     webapp.add_client_route("/about")
     webapp.add_client_route("/admin")
@@ -234,8 +234,8 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/workflow_landings/{uuid}")
     webapp.add_client_route("/tours")
     webapp.add_client_route("/tours/{tour_id}")
-    webapp.add_client_route("/chatgxy")
-    webapp.add_client_route("/chatgxy/{exchange_id}")
+    webapp.add_client_route("/galaxyai")
+    webapp.add_client_route("/galaxyai/{exchange_id}")
     webapp.add_client_route("/user")
     webapp.add_client_route("/user/notifications{path:.*?}")
     webapp.add_client_route("/user/{form_id}")
@@ -272,8 +272,15 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/histories/list")
     webapp.add_client_route("/histories/import")
     webapp.add_client_route("/histories/{history_id}/export")
+    webapp.add_client_route("/histories/{history_id}/extract_workflow")
     webapp.add_client_route("/histories/{history_id}/archive")
     webapp.add_client_route("/histories/{history_id}/invocations")
+    webapp.add_client_route("/histories/{history_id}/graph")
+    webapp.add_client_route("/histories/{history_id}/graph/{path:.*?}")
+    webapp.add_client_route("/histories/{history_id}/pages")
+    webapp.add_client_route("/histories/{history_id}/pages/{page_id}")
+    webapp.add_client_route("/histories/{history_id}/storage/runs")
+    webapp.add_client_route("/histories/{history_id}/storage/runs/{path:.*?}")
     webapp.add_client_route("/histories/archived")
     webapp.add_client_route("/histories/list_published")
     webapp.add_client_route("/histories/list_shared")
@@ -305,7 +312,6 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/workflows/list_shared_with_me")
     webapp.add_client_route("/workflows/edit")
     webapp.add_client_route("/workflows/export")
-    webapp.add_client_route("/workflows/create")
     webapp.add_client_route("/workflows/rerun")
     webapp.add_client_route("/workflows/run")
     webapp.add_client_route("/workflows/import")
@@ -353,7 +359,7 @@ def postfork_setup():
     app.application_stack.log_startup()
 
 
-def populate_api_routes(webapp, app):
+def populate_api_routes(webapp: WebApplication, app: MinimalApp):
     webapp.add_api_controllers("galaxy.webapps.galaxy.api", app)
 
     _add_item_annotation_controller(
@@ -1021,7 +1027,8 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # other middleware):
     app = wrap_if_allowed(app, stack, httpexceptions.make_middleware, name="paste.httpexceptions", args=(conf,))
     # Statsd request timing and profiling
-    if statsd_host := conf.get("statsd_host", None):
+    statsd_host = conf.get("statsd_host", None)
+    if statsd_host and conf.get("enable_statsd_middleware", statsd_host is not None):
         from galaxy.web.framework.middleware.statsd import StatsdMiddleware
 
         app = wrap_if_allowed(

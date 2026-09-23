@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useDebounce } from "@vueuse/core";
-import { BButton, BFormCheckbox, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BFormCheckbox, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
+import { EMBED_LABELS } from "@/components/Page/constants";
 import { copy } from "@/utils/clipboard";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import PageView from "@/components/Page/PageView.vue";
 
 interface Props {
@@ -34,7 +36,9 @@ const embedStyle = computed(() => {
     return " ";
 });
 
-const embed = computed(() => `<iframe title="Galaxy Page Embed"${embedStyle.value}src="${embedUrl.value}"></iframe>`);
+const embed = computed(
+    () => `<iframe title="${EMBED_LABELS.iframeTitle}"${embedStyle.value}src="${embedUrl.value}"></iframe>`,
+);
 
 const showEmbed = ref(false);
 const showEmbedDebounced = useDebounce(showEmbed, 100);
@@ -55,7 +59,7 @@ function onCopy() {
         <div class="settings">
             <h4>Settings</h4>
 
-            <BFormCheckbox v-model="settings.showHeading" switch> Show page title </BFormCheckbox>
+            <BFormCheckbox v-model="settings.showHeading" switch> {{ EMBED_LABELS.showTitle }} </BFormCheckbox>
 
             <BFormCheckbox v-model="settings.applyStyle" switch> Apply default styling </BFormCheckbox>
 
@@ -77,9 +81,9 @@ function onCopy() {
                 <BInputGroup id="embed-code">
                     <BFormInput class="embed-code-input" :value="embed" readonly />
                     <BInputGroupAppend>
-                        <BButton variant="primary" @click="onCopy">
+                        <GButton color="blue" @click="onCopy">
                             {{ copied ? "Copied!" : "Copy" }}
-                        </BButton>
+                        </GButton>
                     </BInputGroupAppend>
                 </BInputGroup>
             </label>

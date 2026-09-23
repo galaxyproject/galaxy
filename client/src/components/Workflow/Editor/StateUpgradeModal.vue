@@ -1,76 +1,80 @@
+<script setup lang="ts">
+import { computed, ref, watch } from "vue";
+
+import type { UpgradeMessage } from "./modules/utilities";
+
+import GModal from "@/components/BaseComponents/GModal.vue";
+
+interface RenderedStateMessage extends UpgradeMessage {
+    humanIndex: string;
+    nodeTitle: string;
+    iconClass: string;
+}
+
+interface Props {
+    stateMessages: UpgradeMessage[];
+    title?: string;
+    message?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    title: "Issues loading this workflow",
+    message: "Please review the following issues, possibly resulting from tool upgrades or changes.",
+});
+
+const show = ref(props.stateMessages.length > 0);
+
+watch(
+    () => props.stateMessages,
+    (newMessages) => {
+        if (newMessages.length > 0) {
+            show.value = true;
+        }
+    },
+);
+
+const computedStateMessages = computed<RenderedStateMessage[]>(() => {
+    return props.stateMessages.map((stateMessage) => {
+        const humanIndex = `${parseInt(stateMessage.stepIndex, 10) + 1}`;
+        const nodeTitle = stateMessage.label ? stateMessage.label : stateMessage.name;
+        let iconClass = "";
+        if (stateMessage.iconType) {
+            // TODO: stolen from Node.vue, so when modernizing that to use `IconDefinition`, fix this
+            iconClass = `icon fa fa-fw ${stateMessage.iconType}`;
+        }
+        return {
+            ...stateMessage,
+            humanIndex,
+            nodeTitle,
+            iconClass,
+        };
+    });
+});
+</script>
+
 <template>
-    <BModal v-model="show" :title="title" scrollable ok-only ok-title="Continue">
-        <div class="state-upgrade-modal">
+    <GModal :show.sync="show" :title="title" size="medium" fixed-height data-description="workflow state upgrade modal">
+        <div v-if="show" data-description="workflow state upgrade modal content">
             {{ message }}
             <ul class="workflow-state-upgrade-step-summaries">
-                <li v-for="(stateMessage, index) in stateMessages" :key="index">
+                <li v-for="(stateMessage, index) in computedStateMessages" :key="index">
                     <b>
-                        <i :class="iconClass(stateMessage)" />
-                        Step {{ humanIndex(stateMessage) }}: {{ nodeTitle(stateMessage) }}
+                        <i :class="stateMessage.iconClass" />
+                        Step {{ stateMessage.humanIndex }}: {{ stateMessage.nodeTitle }}
                     </b>
                     <ul class="workflow-state-upgrade-step-details">
                         <li v-for="(detail, detailIndex) in stateMessage.details" :key="detailIndex">
-                            - <span v-html="detail" />
+                            <!-- eslint-disable-next-line vue/no-v-html -->
+                            <span v-html="detail" />
                         </li>
                     </ul>
                 </li>
             </ul>
         </div>
-    </BModal>
+    </GModal>
 </template>
 
-<script>
-import { BModal } from "bootstrap-vue";
-
-export default {
-    components: { BModal },
-    props: {
-        stateMessages: {
-            type: Array,
-            required: true,
-        },
-        title: {
-            type: String,
-            default: "Issues loading this workflow",
-        },
-        message: {
-            type: String,
-            default: "Please review the following issues, possibly resulting from tool upgrades or changes.",
-        },
-    },
-    data() {
-        return {
-            show: this.stateMessages.length > 0,
-        };
-    },
-    watch: {
-        stateMessages() {
-            if (this.stateMessages.length > 0) {
-                this.show = true;
-            }
-        },
-    },
-    methods: {
-        humanIndex(stateMessage) {
-            return `${parseInt(stateMessage.stepIndex, 10) + 1}`;
-        },
-        nodeTitle(stateMessage) {
-            return stateMessage.label ? stateMessage.label : stateMessage.name;
-        },
-        iconClass(stateMessage) {
-            let iconClassStr = "";
-            if (stateMessage.iconType) {
-                // stolen from Node.vue.
-                iconClassStr = `icon fa fa-fw ${stateMessage.iconType}`;
-            }
-            return iconClassStr;
-        },
-    },
-};
-</script>
-
-<style>
-/* scoped styles not working because of modal, using long names instead. */
+<style scoped>
 ul.workflow-state-upgrade-step-summaries {
     margin-top: 10px;
     padding: 10px;

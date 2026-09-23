@@ -11,14 +11,13 @@ from urllib.parse import (
     urlparse,
 )
 
-import requests
-
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
     FilesSourceRuntimeContext,
 )
 from galaxy.files.uris import validate_uri_access
+from galaxy.util import requests
 from . import (
     DefaultBaseFilesSource,
     PluginKind,

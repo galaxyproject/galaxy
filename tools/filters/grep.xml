@@ -24,7 +24,7 @@
   </configfiles>
   <inputs>
     <param format="txt" name="input" type="data" label="Select lines from"/>
-    <param name="invert" type="select" label="that">
+    <param name="invert" type="select" label="that are">
       <option value="">Matching</option>
       <option value="-v">NOT Matching</option>
     </param>

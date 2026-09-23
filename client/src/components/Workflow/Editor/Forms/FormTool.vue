@@ -163,10 +163,20 @@ export default {
                         input.is_workflow =
                             (input.options && input.options.length === 0) ||
                             ["integer", "float"].indexOf(input.type) != -1;
+
+                        if (isRules) {
+                            // Do not descend into the rule-builder payload; its nested
+                            // mapping/rules entries carry a `.type` and would otherwise be
+                            // stamped with UI-only metadata that leaks into tool_state.
+                            return false;
+                        }
                     }
                 }
             });
             Utils.deepEach(inputs, (input) => {
+                if (input.type === "rules") {
+                    return false;
+                }
                 if (input.type === "conditional") {
                     input.connectable = false;
                     input.test_param.collapsible_value = undefined;

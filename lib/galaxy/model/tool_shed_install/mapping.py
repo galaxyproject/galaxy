@@ -1,7 +1,6 @@
 from typing import (
     Any,
     TYPE_CHECKING,
-    Union,
 )
 
 from galaxy.model import tool_shed_install as install_model
@@ -15,7 +14,7 @@ if TYPE_CHECKING:
 metadata = mapper_registry.metadata
 
 
-def init(url: str, engine_options: Union[dict[str, Any], None] = None, create_tables: bool = False) -> ModelMapping:
+def init(url: str, engine_options: dict[str, Any] | None = None, create_tables: bool = False) -> ModelMapping:
     engine = build_engine(url, engine_options)
     if create_tables:
         create_database_objects(engine)

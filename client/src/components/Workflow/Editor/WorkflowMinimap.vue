@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { useDraggable, type UseElementBoundingReturn } from "@vueuse/core";
+import type { UseElementBoundingReturn } from "@vueuse/core";
 import type { Ref } from "vue";
 import { computed, nextTick, onMounted, ref, unref, watch } from "vue";
 
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
-import { useAnimationFrameThrottle } from "@/composables/throttle";
+import { useMinimapInteraction } from "@/composables/useMinimapInteraction";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type {
     FrameWorkflowComment,
@@ -14,10 +14,17 @@ import type {
     WorkflowComment,
 } from "@/stores/workflowEditorCommentStore";
 import type { Step, Steps } from "@/stores/workflowStepStore";
+import { AxisAlignedBoundingBox } from "@/utils/geometry";
 
 import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
-import { drawBoxComments, drawFreehandComments, drawSteps } from "./modules/canvasDraw";
-import { type AxisAlignedBoundingBox, Transform } from "./modules/geometry";
+import {
+    drawBoxComments,
+    drawFreehandComments,
+    drawStepBorders,
+    drawSteps,
+    getStepColor,
+    initStateColors,
+} from "./modules/canvasDraw";
 
 const props = defineProps<{
     steps: Steps;
@@ -38,10 +45,6 @@ const { isJustCreated } = commentStore;
 const canvas: Ref<HTMLCanvasElement | null> = ref(null);
 let redraw = false;
 
-// it is important these throttles are defined before useAnimationFrame,
-// so that they are executed first in the frame loop
-const { throttle: dragThrottle } = useAnimationFrameThrottle();
-
 watch(
     () => props.viewportBoundingBox,
     () => (redraw = true),
@@ -52,20 +55,14 @@ const { getWorkflowBoundingBox } = useWorkflowBoundingBox();
 
 let aabbChanged = false;
 
-/** transform mapping workflow coordinates to minimap coordinates */
-let canvasTransform = new Transform();
+// Workflow-specific: compute padded, squared content bounds
+const workflowContentBounds = ref(new AxisAlignedBoundingBox());
 
 function recalculateAABB() {
     const aabb = getWorkflowBoundingBox();
-
     aabb.squareCenter();
     aabb.expand(120);
-
-    // transform canvas to show entire workflow bounding box
-    if (canvas.value) {
-        const scale = canvas.value.width / aabb.width;
-        canvasTransform = new Transform().translate([-aabb.x * scale, -aabb.y * scale]).scale([scale, scale]);
-    }
+    workflowContentBounds.value = aabb;
 }
 
 // redraw if any steps or comments change
@@ -81,7 +78,6 @@ watch(
 );
 
 // these settings are controlled via css, so they can be defined in one common place
-// this ensures future style changes wont break the minimap's behavior
 const colors = {
     node: "#000",
     error: "#000",
@@ -108,6 +104,8 @@ onMounted(async () => {
     colors.view = style.getPropertyValue("--view-color");
     colors.viewOutline = style.getPropertyValue("--view-outline-color");
 
+    initStateColors(style);
+
     size.default = parseInt(style.getPropertyValue("--workflow-overview-size"));
     size.min = parseInt(style.getPropertyValue("--workflow-overview-min-size"));
     size.max = parseInt(style.getPropertyValue("--workflow-overview-max-size"));
@@ -120,10 +118,42 @@ onMounted(async () => {
     redraw = true;
 });
 
+// ── Shared interaction ──
+
+const minimap: Ref<HTMLElement | null> = ref(null);
+
+const viewportBoundsRef = computed(() => props.viewportBoundingBox);
+const parentRight = computed(() => unref(props.viewportBounds.right));
+const parentBottom = computed(() => unref(props.viewportBounds.bottom));
+
+const { getCanvasTransform, recomputeTransform, minimapSize } = useMinimapInteraction({
+    canvasRef: canvas,
+    containerRef: minimap,
+    parentRight,
+    parentBottom,
+    contentBounds: workflowContentBounds,
+    viewportBounds: viewportBoundsRef,
+    panBy: (delta) => {
+        if (Object.values(props.steps).length > 0) {
+            emit("panBy", delta);
+        }
+    },
+    moveTo: (pos) => {
+        if (Object.values(props.steps).length > 0) {
+            emit("moveTo", pos);
+        }
+    },
+    storageKey: "overview-size",
+    minSize: size.min,
+    maxSize: size.max,
+    defaultSize: size.default,
+});
+
 // for performance reasons, only draw and calculate on animation frames.
 useAnimationFrame(() => {
     if (aabbChanged) {
         recalculateAABB();
+        recomputeTransform();
         aabbChanged = false;
     }
 
@@ -135,6 +165,7 @@ useAnimationFrame(() => {
 
 /** Renders the entire minimap to the canvas */
 function renderMinimap() {
+    const canvasTransform = getCanvasTransform();
     const ctx = canvas.value!.getContext("2d") as CanvasRenderingContext2D;
     ctx.resetTransform();
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -162,22 +193,20 @@ function renderMinimap() {
         }
     });
 
-    // sort steps by error state
+    // group steps by their display color
     const allSteps = Object.values(props.steps);
-    const okSteps: Step[] = [];
-    const errorSteps: Step[] = [];
+    const stepsByColor = new Map<string, Step[]>();
     let selectedStep: Step | undefined;
 
     allSteps.forEach((step) => {
         if (stateStore.activeNodeId === step.id) {
             selectedStep = step;
         }
-
-        if (step.errors) {
-            errorSteps.push(step);
-        } else {
-            okSteps.push(step);
+        const color = getStepColor(step, colors.node, colors.error);
+        if (!stepsByColor.has(color)) {
+            stepsByColor.set(color, []);
         }
+        stepsByColor.get(color)?.push(step);
     });
 
     // draw rects
@@ -186,8 +215,10 @@ function renderMinimap() {
     drawBoxComments(ctx, markdownComments, 2 / canvasTransform.scaleX, colors.node);
     ctx.fillStyle = "rgba(0, 0, 0, 0)";
     drawBoxComments(ctx, textComments, 1 / canvasTransform.scaleX, colors.node);
-    drawSteps(ctx, okSteps, colors.node, stateStore);
-    drawSteps(ctx, errorSteps, colors.error, stateStore);
+    stepsByColor.forEach((stepsForColor, color) => {
+        drawSteps(ctx, stepsForColor, color, stateStore);
+    });
+    drawStepBorders(ctx, allSteps, colors.node, stateStore);
 
     drawFreehandComments(ctx, freehandComments, colors.node);
 
@@ -226,80 +257,6 @@ function renderMinimap() {
     ctx.fill();
     ctx.stroke();
 }
-
-// -- Resizing --
-const minimap: Ref<HTMLCanvasElement | null> = ref(null);
-const { position: dragHandlePosition, isDragging: isHandleDragging } = useDraggable(minimap, {
-    preventDefault: true,
-    exact: true,
-});
-const minimapSize = ref(parseInt(localStorage.getItem("overview-size") || size.default.toString()));
-
-watch(dragHandlePosition, () => {
-    // resize
-    minimapSize.value = Math.max(
-        unref(props.viewportBounds.right) - dragHandlePosition.value.x,
-        unref(props.viewportBounds.bottom) - dragHandlePosition.value.y,
-    );
-
-    // clamp
-    minimapSize.value = Math.min(Math.max(minimapSize.value, size.min), size.max);
-});
-
-watch(isHandleDragging, () => {
-    if (!isHandleDragging.value) {
-        localStorage.setItem("overview-size", minimapSize.value.toString());
-    }
-});
-
-// -- Repositioning Viewport --
-
-/** Scaling factor of the canvas element. Draw size in relation to actual size on screen */
-const scaleFactor = computed(() => size.max / minimapSize.value);
-let dragViewport = false;
-
-useDraggable(canvas, {
-    onStart: (_position, event) => {
-        // minimap coordinates to global coordinates
-        const [x, y] = canvasTransform
-            .inverse()
-            .scale([scaleFactor.value, scaleFactor.value])
-            .apply([event.offsetX, event.offsetY]);
-
-        if (props.viewportBoundingBox.isPointInBounds({ x, y })) {
-            dragViewport = true;
-        }
-    },
-    onMove: (_position, event) => {
-        dragThrottle(() => {
-            if (!dragViewport || Object.values(props.steps).length === 0) {
-                return;
-            }
-
-            // minimap coordinates to global coordinates, without translation
-            const [x, y] = canvasTransform
-                .resetTranslation()
-                .inverse()
-                .scale([scaleFactor.value, scaleFactor.value])
-                .apply([-event.movementX, -event.movementY]);
-
-            emit("panBy", { x, y });
-        });
-    },
-    onEnd(_position, event) {
-        // minimap coordinates to global coordinates
-        const [x, y] = canvasTransform
-            .inverse()
-            .scale([scaleFactor.value, scaleFactor.value])
-            .apply([event.offsetX, event.offsetY]);
-
-        if (!dragViewport && Object.values(props.steps).length > 0) {
-            emit("moveTo", { x, y });
-        }
-
-        dragViewport = false;
-    },
-});
 </script>
 
 <template>

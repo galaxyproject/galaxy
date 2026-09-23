@@ -1,10 +1,10 @@
 import { faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
-import { faPencilAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCodeBranch, faPencilAlt } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "font-awesome-6";
 
 export interface WorkflowInput {
     id?: string; // unique ID. defaults to module ID
-    moduleId: string;
+    moduleId: "data_input" | "data_collection_input" | "parameter_input" | "pick_value";
     title: string;
     description: string;
     stateOverwrites?: {
@@ -95,6 +95,12 @@ export function getWorkflowInputs(): WorkflowInput[] {
             stateOverwrites: {
                 parameter_type: "directory_uri",
             },
+        },
+        {
+            moduleId: "pick_value",
+            title: "Pick Value",
+            description: "Select among conditional branch outputs",
+            icon: faCodeBranch,
         },
     ];
 }

@@ -1,8 +1,8 @@
 import { suppressExpectedErrorMessages } from "@tests/vitest/helpers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { UploadCollectionConfig } from "@/composables/upload/collectionTypes";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
-import type { CollectionConfig } from "@/composables/uploadQueue";
 
 import { useUploadState } from "./uploadState";
 
@@ -20,11 +20,12 @@ function makePastedItem(name = "file.txt", content = "hello world"): NewUploadIt
         extension: "auto",
         spaceToTab: false,
         toPosixLines: false,
+        autoDecompress: true,
         deferred: false,
     };
 }
 
-const BATCH_CONFIG: CollectionConfig = {
+const BATCH_CONFIG: UploadCollectionConfig = {
     name: "My Collection",
     type: "list",
     hideSourceItems: false,

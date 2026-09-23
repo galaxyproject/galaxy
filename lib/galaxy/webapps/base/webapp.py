@@ -7,13 +7,16 @@ import os
 import re
 import socket
 import time
+from collections.abc import Hashable
 from contextlib import ExitStack
 from http.cookies import CookieError
 from typing import (
     Any,
-    Optional,
 )
-from urllib.parse import urlparse
+from urllib.parse import (
+    quote,
+    urlparse,
+)
 
 import mako.lookup
 import mako.runtime
@@ -40,6 +43,7 @@ from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
 from galaxy.model import History
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.model.orm.now import now as utc_now
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalApp,
@@ -109,9 +113,7 @@ class WebApplication(base.WebApplication):
 
     injection_aware: bool = False
 
-    def __init__(
-        self, galaxy_app: MinimalApp, session_cookie: str = "galaxysession", name: Optional[str] = None
-    ) -> None:
+    def __init__(self, galaxy_app: MinimalApp, session_cookie: str = "galaxysession", name: str | None = None) -> None:
         super().__init__()
         self.name = name
         galaxy_app.is_webapp = True
@@ -200,7 +202,7 @@ class WebApplication(base.WebApplication):
                 directories=paths, module_directory=galaxy_app.config.template_cache_path, collection_size=500
             )
 
-    def handle_controller_exception(self, e, trans, method, **kwargs):
+    def handle_controller_exception(self, e, trans: "GalaxyWebTransaction", method, kwargs):
         if not isinstance(e, HTTPException):
             # We're still logging too much here but at least it's not logging webob.exc.HTTPFound and friends
             log.debug(f"Encountered exception in controller method: {method}", exc_info=True)
@@ -222,7 +224,7 @@ class WebApplication(base.WebApplication):
             trans.response.status = e.status_code
             return trans.show_message(sanitize_html(e.err_msg), e.type)
 
-    def make_body_iterable(self, trans, body):
+    def make_body_iterable(self, trans: "base.DefaultWebTransaction", body):
         return base.WebApplication.make_body_iterable(self, trans, body)
 
     def transaction_chooser(self, environ, galaxy_app: BasicSharedApp, session_cookie: str):
@@ -277,6 +279,10 @@ class WebApplication(base.WebApplication):
         return controller
 
 
+def _is_embed_request(path: str, query_string: str) -> bool:
+    return path.startswith("/published/") and "embed=true" in query_string
+
+
 def config_allows_origin(origin_raw, config):
     # boil origin header down to hostname
     origin = urlparse(origin_raw).hostname
@@ -313,7 +319,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     """
 
     def __init__(
-        self, environ: dict[str, Any], app: BasicSharedApp, webapp: WebApplication, session_cookie: Optional[str] = None
+        self, environ: dict[str, Any], app: BasicSharedApp, webapp: WebApplication, session_cookie: str | None = None
     ) -> None:
         self._app = app
         self.webapp = webapp
@@ -323,7 +329,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         config = self.app.config
         self.debug = asbool(config.get("debug", False))
         if x_frame_options := getattr(config, "x_frame_options", None):
-            self.response.headers["X-Frame-Options"] = x_frame_options
+            if not _is_embed_request(self.request.path_info, self.environ.get("QUERY_STRING", "")):
+                self.response.headers["X-Frame-Options"] = x_frame_options
         # Flag indicating whether we are in workflow building mode (means
         # that the current history should not be used for parameter values
         # and such).
@@ -332,7 +339,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.galaxy_session = None
         self.error_message = None
         self.host = self.request.host
-        self._short_term_cache: dict[tuple[str, ...], Any] = {}
+        self._short_term_cache: dict[tuple[Hashable, ...], Any] = {}
 
         # set any cross origin resource sharing headers if configured to do so
         self.set_cors_headers()
@@ -353,7 +360,12 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             self._ensure_valid_session(session_cookie)
 
         if hasattr(self.app, "authnz_manager") and self.app.authnz_manager:
-            self.app.authnz_manager.refresh_expiring_oidc_tokens(self)
+            # Check for expiring tokens and refresh them. If configured (at the individual provider
+            # level), require a reauthentication on failed refresh.
+            reauth_provider = self.app.authnz_manager.refresh_expiring_oidc_tokens(self)
+            if reauth_provider:
+                self.handle_user_reauthentication(reauth_provider)
+                return
 
         if self.galaxy_session:
             # When we've authenticated by session, we have to check the
@@ -372,7 +384,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 #
                 # Make sure we're not past the duration, and either log out or
                 # update timestamp.
-                now = datetime.datetime.now()
+                now = utc_now()
                 if self.galaxy_session.last_action:
                     expiration_time = self.galaxy_session.last_action + datetime.timedelta(
                         minutes=config.session_duration
@@ -536,7 +548,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         if self.app.config.cookie_domain is not None:
             self.response.cookies[name]["domain"] = self.app.config.cookie_domain
 
-    def _authenticate_api(self, session_cookie: str) -> Optional[str]:
+    def _authenticate_api(self, session_cookie: str) -> str | None:
         """
         Authenticate for the API via key or session (if available).
         """
@@ -743,7 +755,16 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 return
             # redirect to root if the path is not in the list above
             if self.request.path not in allowed_paths:
-                login_url = url_for("/login", redirect=self.request.path)
+                # Everything downstream re-applies the app root -- url_for on the way
+                # back out of the OIDC callback, withPrefix and the client router on the
+                # way through the login page -- so hand on a root-relative destination
+                # (path_info) or a prefixed deployment ends up with the prefix twice.
+                # The query string is part of where the user was headed; landing
+                # requests carry "?public=true".
+                destination = quote(self.request.path_info)
+                if self.request.query_string:
+                    destination = f"{destination}?{self.request.query_string}"
+                login_url = url_for("/login", redirect=destination)
                 self.response.send_redirect(login_url)
 
     def __create_new_session(self, prev_galaxy_session=None, user_for_new_session=None):
@@ -887,6 +908,21 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             self.__update_session_cookie(name="galaxysession")
         elif self.webapp.name == "tool_shed":
             self.__update_session_cookie(name="galaxycommunitysession")
+
+    def handle_user_reauthentication(self, reauth_provider: str) -> None:
+        """
+        Handle user being required to log in again after failed OIDC refresh
+        """
+        log.info("OIDC refresh failed terminally for provider `%s`, forcing re-login", reauth_provider)
+        if self.galaxy_session:
+            self.handle_user_logout()
+        if self.environ.get("is_api_request", False):
+            self.response.status = 401
+            self.error_message = "Authentication session expired. Please log in again."
+            self.user = None
+            self.galaxy_session = None
+        else:
+            self.response.send_redirect(url_for(f"/authnz/{reauth_provider}/login", redirect="true", next="/"))
 
     def get_galaxy_session(self):
         """
@@ -1104,7 +1140,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         return url_for(path, qualified=True)
 
 
-def create_new_session(trans, prev_galaxy_session=None, user_for_new_session=None):
+def create_new_session(trans: "GalaxyWebTransaction", prev_galaxy_session=None, user_for_new_session=None):
     """
     Create a new GalaxySession for this request, possibly with a connection
     to a previous session (in `prev_galaxy_session`) and an existing user

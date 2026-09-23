@@ -13,7 +13,8 @@
             "@tests/*": ["tests/*"],
             "@fortawesome/fontawesome-common-types": [
                 "./node_modules/@fortawesome/fontawesome-common-types/index"
-            ]
+            ],
+            "vite": ["./node_modules/vite/dist/node/index"]
         },
         "outDir": "./dist/build",
 

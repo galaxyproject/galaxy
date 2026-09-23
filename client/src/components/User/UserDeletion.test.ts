@@ -10,6 +10,7 @@ import { useUserStore } from "@/stores/userStore";
 import { userLogoutClient } from "@/utils/logout";
 
 import UserDeletion from "./UserDeletion.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 
 vi.mock("@/utils/logout", () => ({
     userLogoutClient: vi.fn(),
@@ -59,8 +60,8 @@ describe("UserDeletion.vue", () => {
         const input = wrapper.find("#name-input");
         expect(input.exists()).toBe(true);
 
-        const deleteButton = wrapper.find(".btn-danger");
-        expect(deleteButton.attributes("disabled")).toBe("disabled");
+        const deleteButton = wrapper.find("button.g-red");
+        expect(deleteButton.attributes("aria-disabled")).toBe("true");
     });
 
     it("enables delete button when email matches exactly", async () => {
@@ -69,8 +70,8 @@ describe("UserDeletion.vue", () => {
         const input = wrapper.find("#name-input");
         await input.setValue(TEST_EMAIL);
 
-        const deleteButton = wrapper.find(".btn-danger");
-        expect(deleteButton.attributes("disabled")).toBeUndefined();
+        const deleteButton = wrapper.find("button.g-red");
+        expect(deleteButton.attributes("aria-disabled")).toBeUndefined();
     });
 
     it("shows validation state after input blur", async () => {
@@ -78,6 +79,7 @@ describe("UserDeletion.vue", () => {
 
         const input = wrapper.find("#name-input");
         await input.setValue("wrong@email.com");
+        await input.trigger("blur");
 
         expect(wrapper.text()).toContain("Email does not match the current user email");
     });
@@ -94,8 +96,8 @@ describe("UserDeletion.vue", () => {
         const input = wrapper.find("#name-input");
         await input.setValue(TEST_EMAIL);
 
-        const deleteButton = wrapper.find(".btn-danger");
-        await deleteButton.trigger("click");
+        // jsdom doesn't support <dialog>.close(), so emit "ok" directly on GModal
+        wrapper.findComponent(GModal).vm.$emit("ok");
 
         await flushPromises();
 

@@ -4,7 +4,6 @@ API operations on Group objects.
 
 import logging
 
-from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.group_users import GroupUsersManager
 from galaxy.schema.fields import Security
 from galaxy.schema.schema import (
@@ -20,13 +19,14 @@ from galaxy.webapps.galaxy.api.common import (
     GroupIDPathParam,
     UserIdPathParam,
 )
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["group_users"])
 
 
-def group_user_to_model(trans, group_id, user) -> GroupUserResponse:
+def group_user_to_model(trans: SessionRequestContext, group_id, user) -> GroupUserResponse:
     encoded_group_id = Security.security.encode_id(group_id)
     encoded_user_id = Security.security.encode_id(user.id)
     url = trans.url_builder("group_user", group_id=encoded_group_id, user_id=encoded_user_id)
@@ -46,7 +46,7 @@ class FastAPIGroupUsers:
     def index(
         self,
         group_id: GroupIDPathParam,
-        trans: ProvidesAppContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> GroupUserListResponse:
         """
         GET /api/groups/{encoded_group_id}/users
@@ -66,7 +66,7 @@ class FastAPIGroupUsers:
         self,
         group_id: GroupIDPathParam,
         user_id: UserIdPathParam,
-        trans: ProvidesAppContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> GroupUserResponse:
         """
         Displays information about a group user.
@@ -84,7 +84,7 @@ class FastAPIGroupUsers:
         self,
         group_id: GroupIDPathParam,
         user_id: UserIdPathParam,
-        trans: ProvidesAppContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> GroupUserResponse:
         """
         PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
@@ -103,7 +103,7 @@ class FastAPIGroupUsers:
         self,
         group_id: GroupIDPathParam,
         user_id: UserIdPathParam,
-        trans: ProvidesAppContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> GroupUserResponse:
         """
         DELETE /api/groups/{encoded_group_id}/users/{encoded_user_id}

@@ -13,7 +13,14 @@ from decimal import Decimal
 
 from . import unicodify
 
-__all__ = ("safe_dumps", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response")
+__all__ = (
+    "restore_inf_nan",
+    "safe_dumps",
+    "validate_jsonrpc_request",
+    "validate_jsonrpc_response",
+    "jsonrpc_request",
+    "jsonrpc_response",
+)
 
 log = logging.getLogger(__name__)
 
@@ -46,6 +53,19 @@ def swap_inf_nan(val):
         return str(val)
     else:
         return val
+
+
+def restore_inf_nan(val):
+    """Restore a non-finite float encoded by :func:`safe_dumps`."""
+    if not isinstance(val, str):
+        return val
+    if val == "__NaN__":
+        return float("nan")
+    if val == "__Infinity__":
+        return float("inf")
+    if val == "__-Infinity__":
+        return float("-inf")
+    return val
 
 
 def safe_loads(arg):
@@ -110,7 +130,7 @@ def validate_jsonrpc_request(request, regular_methods, notification_methods):
         ), 'This server requires JSON-RPC 2.0 and no "jsonrpc" member was sent with the Request object as per the JSON-RPC 2.0 Specification.'
         assert (
             request["jsonrpc"] == "2.0"
-        ), f"Requested JSON-RPC version \"{request['jsonrpc']}\" != required version \"2.0\"."
+        ), f'Requested JSON-RPC version "{request["jsonrpc"]}" != required version "2.0".'
         assert "method" in request, 'No "method" member was sent with the Request object'
     except AssertionError as e:
         return (
@@ -137,7 +157,7 @@ def validate_jsonrpc_request(request, regular_methods, notification_methods):
         if request["method"] in regular_methods:
             assert (
                 "id" in request
-            ), f"No \"id\" member was sent with the Request object and the requested method \"{request['method']}\" is not a notification method"
+            ), f'No "id" member was sent with the Request object and the requested method "{request["method"]}" is not a notification method'
     except AssertionError as e:
         return (
             False,
@@ -174,7 +194,7 @@ def validate_jsonrpc_response(response, id=None):
         try:
             assert "id" in response and response["id"] == id
         except Exception:
-            log.error(f"The response id \"{response['id']}\" does not match the request id \"{id}\"")
+            log.error(f'The response id "{response["id"]}" does not match the request id "{id}"')
             return False, response
     return True, response
 

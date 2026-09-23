@@ -1,19 +1,26 @@
 from logging import getLogger
+from typing import (
+    Any,
+    TYPE_CHECKING,
+)
 
 import galaxy.model
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesHistoryContext
 
 log = getLogger(__name__)
 
 
-def set_dataset_matcher_factory(trans, tool):
+def set_dataset_matcher_factory(trans: "ProvidesHistoryContext", tool):
     trans.dataset_matcher_factory = DatasetMatcherFactory(trans, tool)
 
 
-def unset_dataset_matcher_factory(trans):
+def unset_dataset_matcher_factory(trans: "ProvidesHistoryContext"):
     trans.dataset_matcher_factory = None
 
 
-def get_dataset_matcher_factory(trans):
+def get_dataset_matcher_factory(trans: "ProvidesHistoryContext"):
     dataset_matcher_factory = getattr(trans, "dataset_matcher_factory", None)
     return dataset_matcher_factory or DatasetMatcherFactory(trans)
 
@@ -21,11 +28,11 @@ def get_dataset_matcher_factory(trans):
 class DatasetMatcherFactory:
     """"""
 
-    def __init__(self, trans, tool=None):
+    def __init__(self, trans: "ProvidesHistoryContext", tool=None):
         self._trans = trans
         self._tool = tool
-        self._data_inputs = []
-        self._matches_format_cache = {}
+        self._data_inputs: list[Any] = []
+        self._matches_format_cache: dict[str, dict[str, bool]] = {}
         if tool:
             valid_input_states = tool.valid_input_states
         else:
@@ -96,7 +103,7 @@ class DatasetMatcher:
     and permission handling.
     """
 
-    def __init__(self, dataset_matcher_factory, trans, param, other_values):
+    def __init__(self, dataset_matcher_factory, trans: "ProvidesHistoryContext", param, other_values):
         self.dataset_matcher_factory = dataset_matcher_factory
         self.trans = trans
         self.param = param
@@ -202,7 +209,7 @@ class HdcaImplicitMatch:
 
 
 class SummaryDatasetCollectionMatcher:
-    def __init__(self, dataset_matcher_factory, trans, dataset_matcher):
+    def __init__(self, dataset_matcher_factory, trans: "ProvidesHistoryContext", dataset_matcher):
         self.dataset_matcher_factory = dataset_matcher_factory
         self._trans = trans
         self.dataset_matcher = dataset_matcher
@@ -238,7 +245,7 @@ class SummaryDatasetCollectionMatcher:
 
 
 class DatasetCollectionMatcher:
-    def __init__(self, trans, dataset_matcher):
+    def __init__(self, trans: "ProvidesHistoryContext", dataset_matcher):
         self.dataset_matcher = dataset_matcher
         self._trans = trans
 

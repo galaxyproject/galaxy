@@ -12,9 +12,6 @@ import argparse
 import os
 import sys
 import traceback
-from typing import (
-    Optional,
-)
 
 import yaml
 
@@ -93,7 +90,7 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def find_galaxy_config(config_file: Optional[str] = None) -> Optional[str]:
+def find_galaxy_config(config_file: str | None = None) -> str | None:
     """Find the Galaxy configuration file"""
     if config_file and os.path.exists(config_file):
         return config_file

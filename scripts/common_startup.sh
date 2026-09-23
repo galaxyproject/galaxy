@@ -187,6 +187,9 @@ fi
 
 : "${GALAXY_WHEELS_INDEX_URL:=https://wheels.galaxyproject.org/simple}"
 : "${GALAXY_DEV_REQUIREMENTS:=./lib/galaxy/dependencies/dev-requirements.txt}"
+# Which app's config decides the conditional dependencies to install. Set by the
+# launcher (run_tool_shed.sh exports tool_shed) since this script is shared.
+: "${GALAXY_CONDITIONAL_DEPENDENCIES_APP:=galaxy}"
 
 requirement_args="-r requirements.txt"
 if [ $DEV_WHEELS -eq 1 ]; then
@@ -204,8 +207,14 @@ if [ $FETCH_WHEELS -eq 1 ]; then
     fi
     # shellcheck disable=SC2086
     ${PIP_CMD} install $requirement_args --extra-index-url "${GALAXY_WHEELS_INDEX_URL}"
-    set_galaxy_config_file_var
-    GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
+    if [ "$GALAXY_CONDITIONAL_DEPENDENCIES_APP" = "tool_shed" ]; then
+        set_tool_shed_config_file_var
+        conditional_dependencies_config_file="$TOOL_SHED_CONFIG_FILE"
+    else
+        set_galaxy_config_file_var
+        conditional_dependencies_config_file="$GALAXY_CONFIG_FILE"
+    fi
+    GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$conditional_dependencies_config_file', app='$GALAXY_CONDITIONAL_DEPENDENCIES_APP')))")
     if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
         if ${PIP_CMD} list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
             echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
@@ -216,8 +225,10 @@ if [ $FETCH_WHEELS -eq 1 ]; then
 fi
 
 # Check client build state.
-if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
-    if [ -f static/client_build_hash.txt ]; then
+if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
+    if [ "$INSTALL_PREBUILT_CLIENT" -ne 0 ]; then
+        echo "The Galaxy prebuilt client will be installed from PyPI."
+    elif [ -f static/client_build_hash.txt ]; then
         # If git is not used and static/client_build_hash.txt is present, next
         # client rebuilds must be done manually by the admin
         if [ "$GIT_BRANCH" = "0" ]; then
@@ -239,32 +250,58 @@ else
     echo "The Galaxy client build is being skipped due to the SKIP_CLIENT_BUILD environment variable."
 fi
 
-# Build client if necessary.
-if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
-    # Ensure pnpm is installed
-    INSTALL_PNPM=0
-    if ! command -v pnpm >/dev/null; then
-        INSTALL_PNPM=1
-    fi
-    if [ $INSTALL_PNPM -eq 1 ]; then
-        if [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
-            echo "Installing pnpm into '$CONDA_DEFAULT_ENV' Conda environment with conda."
-            $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" pnpm
-        elif [ -n "$VIRTUAL_ENV" ] && in_venv "$(command -v npm)"; then
-            echo "Installing pnpm into $VIRTUAL_ENV with corepack."
-            corepack enable pnpm
-        else
-            echo "Installing pnpm locally with npm."
-            npm install -g pnpm
+# Build or install client if necessary.
+if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
+    if [ "$INSTALL_PREBUILT_CLIENT" -ne 0 ]; then
+        # Prebuilt install: pull the matching galaxy-web-client wheel from PyPI.
+        # webapp.py picks it up via `import galaxy.web_client` and serves its
+        # bundled dist/ directly -- no pnpm or staging required.
+        GALAXY_WEB_CLIENT_VERSION=$(PYTHONPATH=lib python -c "from galaxy.version import VERSION; print(VERSION)")
+        GALAXY_WEB_CLIENT_REQUIREMENT="galaxy-web-client==${GALAXY_WEB_CLIENT_VERSION}"
+        case "$GALAXY_WEB_CLIENT_VERSION" in
+            *dev*|*rc*)
+                # Only tagged releases are published, so ask the resolver for the
+                # most recent one below this version instead of pinning exactly.
+                # Bound on the version with the .dev/rc suffix stripped: a bound
+                # that is itself a prerelease would let pip match the stray
+                # prerelease wheels on PyPI.
+                GALAXY_WEB_CLIENT_RELEASE_VERSION=${GALAXY_WEB_CLIENT_VERSION%%.dev*}
+                GALAXY_WEB_CLIENT_RELEASE_VERSION=${GALAXY_WEB_CLIENT_RELEASE_VERSION%%rc*}
+                GALAXY_WEB_CLIENT_RELEASE_VERSION=${GALAXY_WEB_CLIENT_RELEASE_VERSION%.}
+                echo "WARNING: Galaxy is at untagged version ${GALAXY_WEB_CLIENT_VERSION}, for which no galaxy-web-client wheel is published to PyPI."
+                echo "Installing the most recent galaxy-web-client release below ${GALAXY_WEB_CLIENT_RELEASE_VERSION}, which may differ slightly from this version of Galaxy."
+                GALAXY_WEB_CLIENT_REQUIREMENT="galaxy-web-client<${GALAXY_WEB_CLIENT_RELEASE_VERSION}"
+                ;;
+        esac
+        # shellcheck disable=SC2086
+        if ! ${PIP_CMD} install "$GALAXY_WEB_CLIENT_REQUIREMENT"; then
+            echo "ERROR: Galaxy prebuilt client install failed.  See ./client/README.md for more information, including how to get help."
+            exit 1
         fi
-    fi
-    # We need GALAXY_CONFIG_FILE here, ensure it's set.
-    set_galaxy_config_file_var
-    # Set plugin path
-    GALAXY_PLUGIN_PATH=$(python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
+    else
+        # Dev build: use pnpm to build client from source.
+        # Ensure pnpm is installed.
+        INSTALL_PNPM=0
+        if ! command -v pnpm >/dev/null; then
+            INSTALL_PNPM=1
+        fi
+        if [ $INSTALL_PNPM -eq 1 ]; then
+            if [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
+                echo "Installing pnpm into '$CONDA_DEFAULT_ENV' Conda environment with conda."
+                $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" pnpm
+            elif [ -n "$VIRTUAL_ENV" ] && in_venv "$(command -v npm)"; then
+                echo "Installing pnpm into $VIRTUAL_ENV with corepack."
+                corepack enable pnpm
+            else
+                echo "Installing pnpm locally with npm."
+                npm install -g pnpm
+            fi
+        fi
+        # We need GALAXY_CONFIG_FILE here, ensure it's set.
+        set_galaxy_config_file_var
+        # Set plugin path
+        GALAXY_PLUGIN_PATH=$(python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
 
-    if [ "${INSTALL_PREBUILT_CLIENT}" -eq 0 ]; then
-        # If we have not opted to use a prebuilt client, then build client.
         cd client
         # shellcheck disable=SC2086
         if pnpm install $PNPM_INSTALL_OPTS; then
@@ -277,19 +314,5 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
             exit 1
         fi
         cd -
-    else
-        # Install prebuilt client
-        # shellcheck disable=SC2086
-        if pnpm install $PNPM_INSTALL_OPTS; then
-            if ! (pnpm run stage) then
-                echo "ERROR: Galaxy prebuilt client install failed. See ./client/README.md for more information, including how to get help."
-                exit 1
-            fi
-        else
-            echo "ERROR: Galaxy prebuilt client dependency installation failed. See ./client/README.md for more information, including how to get help."
-            exit 1
-        fi
-
     fi
-
 fi

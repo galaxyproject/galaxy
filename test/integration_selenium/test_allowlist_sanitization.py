@@ -44,7 +44,7 @@ class TestAllowListSanitization(SeleniumIntegrationTestCase):
             self._put(
                 "/api/sanitize_allow?tool_id=html_output", data={"params": {"tool_id": "html_output"}}, admin=True
             ).raise_for_status()
-            self.driver.refresh()
+            self.refresh()
             self.assert_selector_absent("[data-description='sanitization warning']")
             self.assert_selector_absent("[data-description='allowlist link']")
             assert self.switch_to_frame()

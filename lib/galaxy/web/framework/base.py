@@ -16,7 +16,10 @@ from http.cookies import (
     SimpleCookie,
 )
 from importlib import import_module
-from typing import NoReturn
+from typing import (
+    NoReturn,
+    TYPE_CHECKING,
+)
 from urllib.parse import urljoin
 
 import routes
@@ -30,6 +33,10 @@ from paste.response import HeaderDict
 
 from galaxy.util import smart_str
 from galaxy.util.resources import resource_string
+
+if TYPE_CHECKING:
+    from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -104,7 +111,7 @@ class WebApplication:
         self.mapper.minimization = True
         self.transaction_factory = DefaultWebTransaction
         # Set if trace logging is enabled
-        self.trace_logger = None
+        self.trace_logger: FluentTraceLogger | None = None
         self.session_factories = []
 
     def add_ui_controller(self, controller_name, controller):
@@ -220,7 +227,7 @@ class WebApplication:
         else:
             environ["is_api_request"] = False
             controllers = self.controllers
-        if map_match is None:
+        if not map_match:
             raise webob.exc.HTTPNotFound(f"No route for {path_info}")
         self.trace(path_info=path_info, map_match=map_match)
         # Setup routes
@@ -264,21 +271,24 @@ class WebApplication:
             f"{'api' if environ['is_api_request'] else 'web'}.{controller_name}.{action_tag}"
         )
         # Combine mapper args and query string / form args and call
-        kwargs = trans.request.params.mixed()
+        try:
+            kwargs = trans.request.params.mixed()
+        except UnicodeDecodeError:
+            raise webob.exc.HTTPBadRequest("Unable to decode request parameters.")
         kwargs.update(map_match)
         # Special key for AJAX debugging, remove to avoid confusing methods
         kwargs.pop("_", None)
         try:
             body = method(trans, **kwargs)
         except Exception as e:
-            body = self.handle_controller_exception(e, trans, method, **kwargs)
+            body = self.handle_controller_exception(e, trans, method, kwargs)
             if not body:
                 trans.response.headers.pop("content-length", None)
                 raise
         body_renderer = body_renderer or self._render_body
         return body_renderer(trans, body, environ, start_response)
 
-    def _render_body(self, trans, body, environ, start_response):
+    def _render_body(self, trans: "GalaxyWebTransaction", body, environ, start_response):
         # Now figure out what we got back and try to get it to the browser in
         # a smart way
         if callable(body):
@@ -296,7 +306,7 @@ class WebApplication:
             start_response(trans.response.wsgi_status(), trans.response.wsgi_headeritems())
             return self.make_body_iterable(trans, body)
 
-    def make_body_iterable(self, trans, body):
+    def make_body_iterable(self, trans: "DefaultWebTransaction", body):
         if isinstance(body, (types.GeneratorType, list, tuple)):
             # Recursively stream the iterable
             return flatten(body)
@@ -307,7 +317,7 @@ class WebApplication:
             # Worst case scenario
             return [smart_str(body)]
 
-    def handle_controller_exception(self, e, trans, method, **kwargs):
+    def handle_controller_exception(self, e, trans: "GalaxyWebTransaction", method, kwargs):
         """
         Allow handling of exceptions raised in controller methods.
         """
@@ -363,6 +373,10 @@ class DefaultWebTransaction:
         self.environ = environ
         self.request = Request(environ)
         self.response = Response()
+        # Set by WebApplication.handle_request() once the route is resolved.
+        self.request_id: str | None = None
+        self.controller: str | None = None
+        self.action: str | None = None
 
     @lazy_property
     def session(self):
@@ -402,8 +416,8 @@ def _read_lines(self):
         self.read_lines_to_eof()
 
 
-webob.compat.cgi_FieldStorage.make_file = _make_file
-webob.compat.cgi_FieldStorage.read_lines = _read_lines
+webob.compat.cgi_FieldStorage.make_file = _make_file  # type: ignore[method-assign]
+webob.compat.cgi_FieldStorage.read_lines = _read_lines  # type: ignore[attr-defined]
 
 
 class Request(webob.Request):
@@ -439,7 +453,10 @@ class Request(webob.Request):
         cookies = SimpleCookie()
         if cookie_header := self.environ.get("HTTP_COOKIE"):
             all_cookies = webob.cookies.parse_cookie(cookie_header)
-            galaxy_cookies = {k.decode(): v.decode() for k, v in all_cookies if k.startswith(b"galaxy")}
+            try:
+                galaxy_cookies = {k.decode(): v.decode() for k, v in all_cookies if k.startswith(b"galaxy")}
+            except UnicodeDecodeError:
+                galaxy_cookies = {}
             if galaxy_cookies:
                 try:
                     cookies.load(galaxy_cookies)
@@ -541,7 +558,7 @@ class Response:
 CHUNK_SIZE = 2**16
 
 
-def send_file(start_response, trans, body):
+def send_file(start_response, trans: "GalaxyWebTransaction", body):
     # If configured use X-Accel-Redirect header for nginx
     base = trans.app.config.nginx_x_accel_redirect_base
     apache_xsendfile = trans.app.config.apache_xsendfile
@@ -563,8 +580,8 @@ def send_file(start_response, trans, body):
             body = b""
         if trans.request.range:
             start = int(trans.request.range.start)
-            file_size = int(trans.response.headers["content-length"])
-            end = int(file_size if end is None else trans.request.range.end)
+            file_size = os.path.getsize(body.name)
+            end = file_size if trans.request.range.end is None else min(int(trans.request.range.end), file_size)
             trans.response.headers["content-length"] = str(end - start)
             trans.response.headers["content-range"] = f"bytes {start}-{end - 1}/{file_size}"
             trans.response.status = 206

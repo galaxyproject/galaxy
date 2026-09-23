@@ -18,10 +18,10 @@ export function galaxyLegacyPlugin() {
 
                 optimizeDeps: {
                     // Pre-bundle problematic CommonJS dependencies
-                    include: ["store", "jquery-migrate", "underscore", "backbone"],
+                    include: ["store", "jquery-migrate"],
 
                     // Fix CommonJS global references
-                    esbuildOptions: {
+                    rolldownOptions: {
                         define: {
                             global: "globalThis",
                         },

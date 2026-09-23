@@ -1,7 +1,4 @@
 import logging
-from typing import (
-    Optional,
-)
 
 from sqlalchemy import select
 
@@ -79,7 +76,7 @@ class GroupUsersManager:
 
     def _get_group_user(
         self, trans: ProvidesAppContext, group: model.Group, user: model.User
-    ) -> Optional[model.UserGroupAssociation]:
+    ) -> model.UserGroupAssociation | None:
         return get_group_user(trans.sa_session, user, group)
 
     def _add_user_to_group(self, trans: ProvidesAppContext, group: model.Group, user: model.User):
@@ -92,7 +89,7 @@ class GroupUsersManager:
         trans.sa_session.commit()
 
 
-def get_group_user(session: galaxy_scoped_session, user, group) -> Optional[UserGroupAssociation]:
+def get_group_user(session: galaxy_scoped_session, user, group) -> UserGroupAssociation | None:
     stmt = (
         select(UserGroupAssociation).where(UserGroupAssociation.user == user).where(UserGroupAssociation.group == group)
     )

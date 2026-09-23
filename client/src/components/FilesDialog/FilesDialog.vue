@@ -11,6 +11,7 @@ import {
     type FilterFileSourcesOptions,
     type RemoteEntry,
 } from "@/api/remoteFiles";
+import type { TableField } from "@/components/Common/GTable.types";
 import { fileSourcePluginToItem, isSubPath } from "@/components/FilesDialog/utilities";
 import {
     type ItemsProvider,
@@ -38,8 +39,6 @@ interface FilesDialogProps {
     callback?: (files: SelectionItem | SelectionItem[]) => void;
     /** Options to filter the file sources */
     filterOptions?: FilterFileSourcesOptions;
-    /** Decide wether to keep the underlying modal static or dynamic */
-    modalStatic?: boolean;
     /** Browsing mode to define the selection behavior */
     mode?: FileSourceBrowsingMode;
     /** Whether to allow multiple selections */
@@ -57,7 +56,6 @@ interface FilesDialogProps {
 const props = withDefaults(defineProps<FilesDialogProps>(), {
     callback: () => {},
     filterOptions: undefined,
-    modalStatic: false,
     mode: "file",
     multiple: false,
     requireWritable: false,
@@ -72,7 +70,6 @@ const selectionModel = ref<Model>(new Model({ multiple: props.multiple }));
 
 const query = ref<string>();
 const selectionDialog = ref();
-const allSelected = ref(false);
 const selectedDirectories = ref<SelectionItem[]>([]);
 const errorMessage = ref<string>();
 const filter = ref();
@@ -86,18 +83,17 @@ const showTime = ref(true);
 const showDetails = ref(true);
 const isBusy = ref(false);
 const showFTPHelper = ref(false);
-const selectAllIcon = ref<SelectionState>(SELECTION_STATES.UNSELECTED);
 const urlTracker = useUrlTracker<SelectionItem & { parentPage?: number }>({ root: undefined });
 const totalItems = ref(0);
 
-const fields = computed(() => {
+const fields = computed<TableField[]>(() => {
     const fields = [];
-    fields.push({ key: "label" });
+    fields.push({ key: "label", label: "Name" });
     if (showDetails.value) {
-        fields.push({ key: "details" });
+        fields.push({ key: "details", label: "Details" });
     }
     if (showTime.value) {
-        fields.push({ key: "time" });
+        fields.push({ key: "time", label: "Time" });
     }
     return fields;
 });
@@ -215,20 +211,21 @@ function formatRows() {
 
     hasValue.value = selectionModel.value.count() > 0 || selectedDirectories.value.length > 0;
     for (const item of items.value) {
-        let _rowVariant = "active";
+        let selectionState: SelectionState = SELECTION_STATES.UNSELECTED;
         if (item.isLeaf || !fileMode.value) {
-            _rowVariant = selectionModel.value.exists(item.id) ? "success" : "default";
+            selectionState = selectionModel.value.exists(item.id)
+                ? SELECTION_STATES.SELECTED
+                : SELECTION_STATES.UNSELECTED;
         }
         // if directory
         else if (!item.isLeaf) {
-            _rowVariant = getIcon(isDirectorySelected(item.id), item.url);
+            selectionState = getIcon(isDirectorySelected(item.id), item.url);
         }
-        Vue.set(item, "_rowVariant", _rowVariant);
+        Vue.set(item, "selectionState", selectionState);
     }
-    allSelected.value = checkIfAllSelected();
-    if (urlTracker.current.value?.url) {
-        selectAllIcon.value = getIcon(allSelected.value, urlTracker.current.value.url);
-    }
+    // Called for its side effect: auto-selects the current folder when all
+    // of its children are selected.
+    checkIfAllSelected();
 }
 
 function isDirectorySelected(directoryId: string): boolean {
@@ -265,6 +262,7 @@ function load() {
     if (urlTracker.isAtRoot.value || errorMessage.value) {
         itemsProvider.value = undefined;
         errorMessage.value = undefined;
+        isBusy.value = true;
         fetchFileSources(props.filterOptions)
             .then((results) => {
                 const convertedItems = results
@@ -274,13 +272,15 @@ function load() {
                 const sortedItems = convertedItems.sort(sortPrivateFileSourcesFirst);
                 items.value = sortedItems;
                 formatRows();
-                optionsShow.value = true;
                 showTime.value = false;
                 showDetails.value = true;
                 totalItems.value = convertedItems.length;
+                isBusy.value = false;
+                optionsShow.value = true;
             })
             .catch((error) => {
                 errorMessage.value = errorMessageAsString(error);
+                isBusy.value = false;
             });
     } else {
         if (!urlTracker.current.value) {
@@ -303,17 +303,20 @@ function load() {
             return;
         }
 
+        isBusy.value = true;
         browseRemoteFiles(urlTracker.current.value?.url, false, props.requireWritable)
             .then((result) => {
                 items.value = filterByMode(result.entries).map(entryToRecord);
                 totalItems.value = result.totalMatches;
                 formatRows();
-                optionsShow.value = true;
                 showTime.value = true;
                 showDetails.value = false;
+                isBusy.value = false;
+                optionsShow.value = true;
             })
             .catch((error) => {
                 errorMessage.value = errorMessageAsString(error);
+                isBusy.value = false;
             });
     }
 }
@@ -475,11 +478,9 @@ onMounted(() => {
         :items-provider="itemsProvider"
         :total-items="totalItems"
         :modal-show="modalShow"
-        :modal-static="modalStatic"
         :multiple="multiple"
         :options-show="optionsShow"
-        :select-all-variant="selectAllIcon"
-        :show-select-icon="undoShow && multiple"
+        :selectable="undoShow && multiple"
         :undo-show="undoShow"
         :watch-on-page-changes="false"
         @onCancel="() => (modalShow = false)"

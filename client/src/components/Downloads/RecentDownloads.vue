@@ -91,3 +91,9 @@ const breadcrumbItems = [{ title: "Recent Exports & Downloads", to: "/downloads"
         </div>
     </div>
 </template>
+
+<style lang="scss" scoped>
+.recent-downloads {
+    container: cards-list / inline-size;
+}
+</style>

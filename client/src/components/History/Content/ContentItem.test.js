@@ -7,7 +7,6 @@ import VueRouter from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { updateContentFields } from "@/components/History/model/queries";
-import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 
 import ContentItem from "./ContentItem.vue";
 
@@ -24,8 +23,6 @@ vi.mock("vue-router/composables", () => ({
     useRoute: vi.fn(() => ({})),
     useRouter: vi.fn(() => ({})),
 }));
-
-setupSelectableMock();
 
 // mock queries
 updateContentFields.mockImplementation(async () => {});
@@ -45,6 +42,10 @@ describe("ContentItem", () => {
         suppressLucideVue2Deprecation();
 
         server.use(
+            http.get("/api/object_stores", ({ response }) => {
+                return response(200).json([]);
+            }),
+
             http.get("/api/datasets/{dataset_id}", ({ response }) => {
                 // We need to use untyped here because this endpoint is not
                 // described in the OpenAPI spec due to its complexity for now.

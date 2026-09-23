@@ -1,7 +1,3 @@
-from typing import (
-    Optional,
-)
-
 from pydantic import (
     Field,
     RootModel,
@@ -26,7 +22,7 @@ class ItemTagsResponse(Model):
         ...,
         title="name of the item tag",
     )
-    user_value: Optional[str] = Field(
+    user_value: str | None = Field(
         None,
         title="value of the item tag",
     )
@@ -41,7 +37,7 @@ class ItemTagsListResponse(RootModel):
 class ItemTagsCreatePayload(Model):
     """Payload schema for creating an item tag."""
 
-    value: Optional[str] = Field(
+    value: str | None = Field(
         None,
         title="value of the item tag",
     )

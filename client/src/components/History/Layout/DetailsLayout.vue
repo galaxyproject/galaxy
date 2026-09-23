@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faPen, faSave, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BFormInput, BFormTextarea } from "bootstrap-vue";
+import { BFormInput, BFormTextarea } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -10,7 +10,9 @@ import l from "@/utils/localization";
 
 import type { DetailsLayoutSummarized } from "./types";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import ClickToEdit from "@/components/Collections/common/ClickToEdit.vue";
+import Heading from "@/components/Common/Heading.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
@@ -123,15 +125,14 @@ function selectText() {
                     v-if="renameable"
                     v-model="clickToEditName"
                     component="h3"
-                    title="..."
                     data-description="name display"
                     no-save-on-blur
-                    class="my-2 w-100" />
-                <h3 v-else class="my-2 w-100">
+                    class="name-display my-2 w-100" />
+                <Heading v-else h3 :clamp="2" class="my-2 w-100">
                     {{ props.name || "..." }}
-                </h3>
+                </Heading>
             </template>
-            <div v-else style="max-width: 80%">
+            <div v-else class="overflow-hidden" style="max-width: 80%">
                 <TextSummary
                     :description="name"
                     data-description="name display"
@@ -141,17 +142,17 @@ function selectText() {
                     no-expand />
             </div>
 
-            <BButton
+            <GButton
                 :disabled="isAnonymous || !writeable"
                 class="edit-button ml-1 float-right"
                 data-description="editor toggle"
-                size="sm"
-                variant="link"
+                size="small"
+                transparent
                 :title="editButtonTitle"
                 :pressed="editing"
                 @click="onToggle">
                 <FontAwesomeIcon :icon="faPen" fixed-width />
-            </BButton>
+            </GButton>
         </div>
 
         <slot name="description" />
@@ -176,7 +177,7 @@ function selectText() {
                 v-if="tags"
                 :class="{
                     'mt-2': !summarized,
-                    tags: ['both', 'tags'].includes(summarized),
+                    tags: ['both', 'tags'].includes(summarized || ''),
                     hidden: summarized === 'hidden',
                 }"
                 :value="tags"
@@ -211,21 +212,21 @@ function selectText() {
 
             <StatelessTags v-if="localProps.tags" v-model="localProps.tags" class="mb-3 tags" />
 
-            <BButton
+            <GButton
                 class="save-button mb-1"
                 data-description="editor save button"
-                size="sm"
-                variant="primary"
+                size="small"
+                color="blue"
                 :disabled="!localProps.name"
                 @click="onSave">
                 <FontAwesomeIcon :icon="faSave" fixed-width />
                 <span v-localize>Save</span>
-            </BButton>
+            </GButton>
 
-            <BButton class="cancel-button mb-1" data-description="editor cancel button" size="sm" @click="onToggle">
+            <GButton class="cancel-button mb-1" data-description="editor cancel button" size="small" @click="onToggle">
                 <FontAwesomeIcon :icon="faUndo" fixed-width />
                 <span v-localize>Cancel</span>
-            </BButton>
+            </GButton>
         </div>
 
         <slot></slot>
@@ -233,6 +234,14 @@ function selectText() {
 </template>
 
 <style lang="scss" scoped>
+.name-display :deep(h3),
+h3.name-display {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
 .summarized-details {
     margin-left: 0.5rem;
     max-width: 15rem;

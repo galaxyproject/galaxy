@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import Query
 from fastapi.responses import RedirectResponse
 
@@ -18,11 +16,11 @@ StateQueryParam: str = Query(
     title="State information sent with auth request",
     description="Base-64 encoded JSON used to route request within Galaxy.",
 )
-CodeQueryParam: Optional[str] = Query(
+CodeQueryParam: str | None = Query(
     None,
     title="OAuth2 Authorization Code from remote resource",
 )
-ErrorQueryParam: Optional[str] = Query(
+ErrorQueryParam: str | None = Query(
     None,
     title="OAuth2 Error from remote resource",
 )
@@ -54,8 +52,8 @@ class OAuth2Callback:
         self,
         trans: SessionRequestContext = DependsOnTrans,
         state: str = StateQueryParam,
-        code: Optional[str] = CodeQueryParam,
-        error: Optional[str] = ErrorQueryParam,
+        code: str | None = CodeQueryParam,
+        error: str | None = ErrorQueryParam,
     ):
         if error:
             error_code = self._ensure_valid_oauth_error_code(error)

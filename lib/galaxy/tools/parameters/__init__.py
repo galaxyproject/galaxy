@@ -6,8 +6,6 @@ from json import dumps
 from typing import (
     Any,
     cast,
-    Optional,
-    Union,
 )
 
 from boltons.iterutils import remap
@@ -24,7 +22,7 @@ from .basic import (
     ColumnListParameter,
     DataCollectionToolParameter,
     DataToolParameter,
-    ParameterValueError,
+    DirectoryUriToolParameter,
     SelectToolParameter,
     TextToolParameter,
     ToolParameter,
@@ -57,7 +55,7 @@ REPLACE_ON_TRUTHY = object()
 # Some tools use the code tag and access the code base, expecting certain tool parameters to be available here.
 __all__ = ("DataCollectionToolParameter", "DataToolParameter", "SelectToolParameter")
 
-ToolInputsT = dict[str, Union[Group, ToolParameter]]
+ToolInputsT = dict[str, Group | ToolParameter]
 
 
 def visit_input_values(
@@ -228,6 +226,7 @@ def visit_input_values(
     payload = {
         "context": context,
         "no_replacement_value": no_replacement_value,
+        "replace_optional_connections": replace_optional_connections,
         "allow_case_inference": allow_case_inference,
         "unset_value": unset_value,
     }
@@ -287,9 +286,24 @@ def visit_input_values(
             )
 
 
+def collect_directory_uris(
+    inputs: ToolInputsT,
+    input_values: ToolStateJobInstancePopulatedT,
+) -> set[str]:
+    """Collect the values of every ``directory_uri`` parameter (file source write destinations)."""
+    uris: set[str] = set()
+
+    def _collect(input, value, **kwargs):
+        if isinstance(input, DirectoryUriToolParameter) and isinstance(value, str) and value:
+            uris.add(value)
+
+    visit_input_values(inputs, input_values, _collect)
+    return uris
+
+
 def check_param(
     trans, param: ToolParameter, incoming_value, param_values, simple_errors: bool = True
-) -> tuple[Any, Union[str, ValueError, None]]:
+) -> tuple[Any, str | ValueError | None]:
     """
     Check the value of a single parameter `param`. The value in
     `incoming_value` is converted from its HTML encoding and validated.
@@ -298,7 +312,7 @@ def check_param(
     when dealing with grouping scenarios).
     """
     value = incoming_value
-    error: Union[str, ValueError, None] = None
+    error: str | ValueError | None = None
     try:
         if trans.workflow_building_mode:
             if is_runtime_value(value):
@@ -333,7 +347,7 @@ def params_to_strings(
     app,
     nested=False,
     use_security=False,
-) -> Union[ToolStateDumpedToJsonT, ToolStateDumpedToJsonInternalT, ToolStateDumpedToStringsT]:
+) -> ToolStateDumpedToJsonT | ToolStateDumpedToJsonInternalT | ToolStateDumpedToStringsT:
     """
     Convert a dictionary of parameter values to a dictionary of strings
     suitable for persisting. The `value_to_basic` method of each parameter
@@ -353,7 +367,7 @@ def params_to_strings(
     return rval
 
 
-def params_from_strings(params: dict[str, Union[Group, ToolParameter]], param_values, app, ignore_errors=False) -> dict:
+def params_from_strings(params: dict[str, Group | ToolParameter], param_values, app, ignore_errors=False) -> dict:
     """
     Convert a dictionary of strings as produced by `params_to_strings`
     back into parameter values (decode the json representation and then
@@ -373,10 +387,8 @@ def params_from_strings(params: dict[str, Union[Group, ToolParameter]], param_va
             # This would resolve a lot of back and forth in the various to/from methods.
             value = safe_loads(value)
         if param:
-            try:
-                value = param.value_from_basic(value, app, ignore_errors)
-            except ParameterValueError:
-                continue
+            # if ignore_error is true we return the value unmodified
+            value = param.value_from_basic(value, app, ignore_errors)
         rval[key] = value
     return rval
 
@@ -429,7 +441,7 @@ def populate_state(
     inputs: ToolInputsT,
     incoming: ToolStateJobInstanceT,
     state: ToolStateJobInstancePopulatedT,
-    errors: Optional[ParameterValidationErrorsT] = None,
+    errors: ParameterValidationErrorsT | None = None,
     context=None,
     check=True,
     simple_errors=True,

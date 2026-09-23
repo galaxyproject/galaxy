@@ -14,8 +14,6 @@ from argparse import (
 from collections.abc import Iterable
 from typing import (
     cast,
-    Optional,
-    Union,
 )
 
 import alembic
@@ -178,12 +176,12 @@ class BaseDbScript(abc.ABC):
     """Facade for common database schema migration operations."""
 
     @abc.abstractmethod
-    def _set_dburl(self, config_file: Optional[str] = None) -> None: ...
+    def _set_dburl(self, config_file: str | None = None) -> None: ...
 
     @abc.abstractmethod
     def _upgrade_to_head(self, is_sql_mode: bool): ...
 
-    def __init__(self, config_file: Optional[str] = None) -> None:
+    def __init__(self, config_file: str | None = None) -> None:
         self.alembic_config = self._get_alembic_cfg()
         self._set_dburl(config_file)
 
@@ -303,7 +301,7 @@ class BaseAlembicManager(abc.ABC):
     def _get_alembic_root(self): ...
 
     @staticmethod
-    def is_at_revision(engine: Engine, revision: Union[str, Iterable[str]]) -> bool:
+    def is_at_revision(engine: Engine, revision: str | Iterable[str]) -> bool:
         """
         True if revision is a subset of the set of version heads stored in the database.
         """
@@ -313,15 +311,15 @@ class BaseAlembicManager(abc.ABC):
             db_version_heads = context.get_current_heads()
             return set(revision) <= set(db_version_heads)
 
-    def __init__(self, engine: Engine, config_dict: Optional[dict] = None) -> None:
+    def __init__(self, engine: Engine, config_dict: dict | None = None) -> None:
         self.engine = engine
         self.alembic_cfg = self._load_config(config_dict)
         self.script_directory = ScriptDirectory.from_config(self.alembic_cfg)
-        self._db_heads: Optional[Iterable[str]]
+        self._db_heads: Iterable[str] | None
         self._reset_db_heads()
 
     @property
-    def db_heads(self) -> Optional[Iterable]:
+    def db_heads(self) -> Iterable | None:
         if self._db_heads is None:  # Explicitly check for None: could be an empty tuple.
             with self.engine.connect() as conn:
                 context: MigrationContext = MigrationContext.configure(conn)
@@ -331,12 +329,12 @@ class BaseAlembicManager(abc.ABC):
             self._db_heads = listify(self._db_heads)
         return self._db_heads
 
-    def stamp_revision(self, revision: Union[str, Iterable[str]]) -> None:
+    def stamp_revision(self, revision: str | Iterable[str]) -> None:
         """Partial proxy to alembic's stamp command."""
         command.stamp(self.alembic_cfg, revision)  # type: ignore[arg-type]  # https://alembic.sqlalchemy.org/en/latest/api/commands.html#alembic.command.stamp.params.revision
         self._reset_db_heads()
 
-    def _load_config(self, config_dict: Optional[dict]) -> Config:
+    def _load_config(self, config_dict: dict | None) -> Config:
         alembic_root = self._get_alembic_root()
         _alembic_file = os.path.join(alembic_root, "alembic.ini")
         config = Config(_alembic_file)
@@ -347,7 +345,7 @@ class BaseAlembicManager(abc.ABC):
                 config.set_main_option(key, value)
         return config
 
-    def _get_revision(self, revision_id: str) -> Optional[Script]:
+    def _get_revision(self, revision_id: str) -> Script | None:
         try:
             return self.script_directory.get_revision(revision_id)
         except alembic.util.exc.CommandError as e:
@@ -395,14 +393,14 @@ class DatabaseStateCache:
         metadata.reflect(bind=conn)
         return metadata
 
-    def _load_sqlalchemymigrate_version(self, conn: Connection) -> Optional[int]:
+    def _load_sqlalchemymigrate_version(self, conn: Connection) -> int | None:
         if self.has_sqlalchemymigrate_version_table():
             sql = text(f"select version from {SQLALCHEMYMIGRATE_TABLE}")
             return conn.execute(sql).scalar()
         return None
 
 
-def pop_arg_from_args(args: list[str], arg_name) -> Optional[str]:
+def pop_arg_from_args(args: list[str], arg_name) -> str | None:
     """
     Pop and return argument name and value from args if arg_name is in args.
     """
@@ -431,7 +429,7 @@ def load_metadata(metadata: MetaData, engine: Engine) -> None:
         metadata.create_all(bind=conn)
 
 
-def listify(data: Union[str, Iterable[str]]) -> Iterable[str]:
+def listify(data: str | Iterable[str]) -> Iterable[str]:
     if not isinstance(data, (list, tuple)):
         return [cast(str, data)]
     return data

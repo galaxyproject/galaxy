@@ -8,7 +8,10 @@ from datetime import (
     timedelta,
 )
 from types import SimpleNamespace
-from typing import Optional
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
 from unittest.mock import (
     MagicMock,
     patch,
@@ -28,7 +31,12 @@ from jwt import (
     InvalidIssuerError,
     InvalidSignatureError,
 )
+from social_core.backends.base import BaseAuth
 from social_core.backends.open_id_connect import OpenIdConnectAuth
+from social_core.utils import (
+    module_member,
+    setting_name,
+)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -36,11 +44,19 @@ from galaxy import model
 from galaxy.authnz.managers import AuthnzManager
 from galaxy.authnz.oidc_utils import decode_access_token as decode_access_token_oidc
 from galaxy.authnz.psa_authnz import (
+    apply_user_activation_policy,
     AUTH_PIPELINE,
+    BACKENDS,
+    create_and_activate_oidc_user,
+    create_user_and_activate,
     decode_access_token,
     PSAAuthnz,
+    Strategy,
     sync_user_profile,
 )
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesAppContext
 
 
 @pytest.fixture(scope="module")
@@ -68,6 +84,7 @@ def mock_oidc_backend_config_file(tmp_path):
             <redirect_uri>$galaxy_url/authnz/$provider_name/callback</redirect_uri>
             <enable_idp_logout>true</enable_idp_logout>
             <accepted_audiences>gxyclient</accepted_audiences>
+            <domain>example.com</domain>
         </provider>
     </OIDC>
     """
@@ -106,15 +123,15 @@ class AuthTokenData:
 
 def create_access_token(
     email: str = "user@example.com",
-    roles: Optional[list[str]] = None,
+    roles: list[str] | None = None,
     iss: str = "https://issuer.example.com",
-    sub: Optional[str] = None,
-    iat: Optional[int] = None,
-    exp: Optional[int] = None,
+    sub: str | None = None,
+    iat: int | None = None,
+    exp: int | None = None,
     aud: str = "https://audience.example.com",
-    scope: Optional[list[str]] = None,
-    azp: Optional[str] = None,
-    permissions: Optional[list[str]] = None,
+    scope: list[str] | None = None,
+    azp: str | None = None,
+    permissions: list[str] | None = None,
     algorithm: str = "RS256",
     public_key_id: str = "example-key",
 ) -> AuthTokenData:
@@ -323,6 +340,29 @@ def test_oidc_config_custom_auth_pipeline(mock_oidc_config_file, mock_oidc_backe
     assert psa_authnz.config["SOCIAL_AUTH_PIPELINE"] == custom_auth_pipeline
 
 
+def test_oidc_backend_config_file_parsing(mock_oidc_config_file, mock_oidc_backend_config_file):
+    """Basic test of backend config XML parsing"""
+    mock_app = MagicMock()
+    mock_app.config = SimpleNamespace(
+        oidc_auth_pipeline=None,
+        oidc_auth_pipeline_extra=None,
+        oidc=defaultdict(dict),
+        fixed_delegated_auth=False,
+    )
+    manager = AuthnzManager(
+        app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
+    )
+
+    parsed = manager.oidc_backends_config["oidc"]
+    assert parsed["url"] == "login.example.com"
+    assert parsed["client_id"] == "gxyclient"
+    assert parsed["client_secret"] == "dummyclientsecret"
+    assert parsed["redirect_uri"] == "$galaxy_url/authnz/$provider_name/callback"
+    assert parsed["enable_idp_logout"] is True
+    assert parsed["accepted_audiences"] == "gxyclient"
+    assert parsed["domain"] == "example.com"
+
+
 def test_oidc_config_auth_pipeline_extra(mock_oidc_config_file, mock_oidc_backend_config_file):
     """
     Test that the oidc_auth_pipeline_extra config option is used to extend the auth pipeline.
@@ -373,18 +413,177 @@ def test_oidc_config_custom_auth_pipeline_and_extra(mock_oidc_config_file, mock_
     assert psa_authnz.config["SOCIAL_AUTH_PIPELINE"] == custom_auth_pipeline + tuple(custom_auth_pipeline_extra)
 
 
+def make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file):
+    mock_app = MagicMock()
+    mock_app.config = SimpleNamespace(
+        oidc_auth_pipeline=None,
+        oidc_auth_pipeline_extra=None,
+        oidc=defaultdict(dict),
+        fixed_delegated_auth=False,
+    )
+    manager = AuthnzManager(
+        app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
+    )
+    return PSAAuthnz(
+        provider="oidc",
+        oidc_config=manager.oidc_config,
+        oidc_backend_config=manager.oidc_backends_config,
+        app_config=mock_app.config,
+    )
+
+
+def make_mock_token(auth_time: int, expires: int, has_refresh_token: bool = True) -> MagicMock:
+    """Build a minimal UserAuthnzToken mock for refresh() tests."""
+    token = MagicMock()
+    token.extra_data = {"auth_time": auth_time, "expires": expires}
+    if has_refresh_token:
+        token.extra_data["refresh_token"] = "dummy_refresh_token"
+    return token
+
+
+def make_mock_trans():
+    """Build a minimal trans mock with sa_session, request, and session."""
+    trans = MagicMock()
+    trans.sa_session = MagicMock()
+    trans.request = MagicMock()
+    trans.request.host = "https://galaxy.example.com"
+    trans.session = {}
+    return trans
+
+
+@pytest.fixture
+def psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file):
+    return make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
+
+
+class TestPSAAuthnzRefresh:
+    def test_refresh_returns_false_when_no_token(self, psa_authnz):
+        assert psa_authnz.refresh(make_mock_trans(), None) is False
+
+    def test_refresh_returns_false_when_no_refresh_token(self, psa_authnz):
+        auth_time = int(datetime.now().strftime("%s")) - 100
+        token = make_mock_token(auth_time=auth_time, expires=3600, has_refresh_token=False)
+        assert psa_authnz.refresh(make_mock_trans(), token) is False
+
+    def test_refresh_returns_false_when_token_too_new(self, psa_authnz):
+        """New token — no refresh needed."""
+        auth_time = int(datetime.now().strftime("%s"))
+        token = make_mock_token(auth_time=auth_time, expires=3600)
+        assert psa_authnz.refresh(make_mock_trans(), token) is False
+
+    def test_refresh_called_when_token_past_half_lifetime(self, psa_authnz):
+        expires = 3600
+        auth_time = int(datetime.now().strftime("%s")) - expires  # issued expires seconds ago, so past half
+        token = make_mock_token(auth_time=auth_time, expires=expires)
+        with patch("galaxy.authnz.psa_authnz.on_the_fly_config"):
+            result = psa_authnz.refresh(make_mock_trans(), token)
+        assert result is True
+        token.refresh_token.assert_called_once()
+
+    def test_refresh_called_when_token_already_expired(self, psa_authnz):
+        """Access token is fully expired — should still refresh using the stored refresh_token."""
+        expires = 3600
+        # issued 2*expires seconds ago so the token is well past full expiry
+        auth_time = int(datetime.now().strftime("%s")) - 2 * expires
+        token = make_mock_token(auth_time=auth_time, expires=expires)
+        with patch("galaxy.authnz.psa_authnz.on_the_fly_config"):
+            result = psa_authnz.refresh(make_mock_trans(), token)
+        assert result is True
+        token.refresh_token.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "global_activation, require_user_activation, expected_active, expected_emails",
+    [
+        (True, False, True, 0),
+        (True, True, False, 1),
+        (False, False, True, 0),
+        (False, True, True, 0),
+    ],
+)
+def test_apply_user_activation_policy(global_activation, require_user_activation, expected_active, expected_emails):
+    user = SimpleNamespace(email="new@example.com", username="newuser", active=False)
+    session = MagicMock()
+    user_manager = MagicMock()
+    trans = SimpleNamespace(
+        app=SimpleNamespace(config=SimpleNamespace(user_activation_on=global_activation), user_manager=user_manager),
+        sa_session=session,
+    )
+
+    apply_user_activation_policy(cast("ProvidesAppContext", trans), cast(model.User, user), require_user_activation)
+
+    assert user.active is expected_active
+    session.add.assert_called_once_with(user)
+    session.commit.assert_called_once()
+    assert user_manager.send_activation_email.call_count == expected_emails
+
+
+def test_create_user_and_activate_only_applies_activation_policy_to_new_users(monkeypatch):
+    new_user = SimpleNamespace(email="new@example.com", username="newuser", active=False)
+    social_create = MagicMock(return_value={"is_new": True, "user": new_user})
+    monkeypatch.setattr("galaxy.authnz.psa_authnz.social_create_user", social_create)
+    session = MagicMock()
+    user_manager = MagicMock()
+    trans = SimpleNamespace(
+        app=SimpleNamespace(config=SimpleNamespace(user_activation_on=True), user_manager=user_manager),
+        sa_session=session,
+    )
+    strategy = SimpleNamespace(config={"GALAXY_TRANS": trans, "REQUIRE_USER_ACTIVATION": False})
+
+    result = create_user_and_activate(strategy=strategy, details={}, backend=MagicMock())
+
+    assert result == {"is_new": True, "user": new_user}
+    assert new_user.active is True
+    user_manager.send_activation_email.assert_not_called()
+
+    existing_user = SimpleNamespace(email="existing@example.com", username="existing", active=False)
+    social_create.return_value = {"is_new": False}
+    result = create_user_and_activate(strategy=strategy, details={}, backend=MagicMock(), user=existing_user)
+
+    assert result == {"is_new": False}
+    assert existing_user.active is False
+    assert session.add.call_count == 1
+    assert session.commit.call_count == 1
+    user_manager.send_activation_email.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "require_user_activation, expected_trusted, expected_send",
+    [(True, False, True), (False, True, False)],
+)
+def test_create_and_activate_oidc_user_delegates_to_user_manager(
+    require_user_activation, expected_trusted, expected_send
+):
+    user_manager = MagicMock()
+    trans = SimpleNamespace(app=SimpleNamespace(user_manager=user_manager), sa_session=MagicMock())
+
+    user = create_and_activate_oidc_user(
+        cast("ProvidesAppContext", trans), "new@example.com", "newuser", require_user_activation
+    )
+
+    assert user is user_manager.create.return_value
+    user_manager.create.assert_called_once_with(
+        email="new@example.com",
+        username="newuser",
+        trans=trans,
+        trusted_email=expected_trusted,
+        send_activation_email=expected_send,
+    )
+
+
 def test_sync_user_profile_skips_when_account_interface_enabled():
     manager = MagicMock()
     session = MagicMock()
+    notify = MagicMock()
     app_config = SimpleNamespace(enable_account_interface=True, enable_notification_system=True)
-    app = SimpleNamespace(config=app_config, user_manager=manager, notification_manager=SimpleNamespace())
+    notification_manager = SimpleNamespace(send_notification_internal=notify)
+    app = SimpleNamespace(config=app_config, user_manager=manager, notification_manager=notification_manager)
     trans = SimpleNamespace(app=app, sa_session=session)
     strategy = SimpleNamespace(config={"GALAXY_TRANS": trans, "FIXED_DELEGATED_AUTH": True})
     user = SimpleNamespace(id=1, preferences={})
     details = {"email": "new@example.com", "username": "newname"}
 
-    with patch("galaxy.webapps.galaxy.services.notifications.NotificationService.send_notification_internal") as notify:
-        sync_user_profile(strategy=strategy, details=details, user=user)
+    sync_user_profile(strategy=strategy, details=details, user=user)
 
     manager.update_email.assert_not_called()
     manager.update_username.assert_not_called()
@@ -395,15 +594,16 @@ def test_sync_user_profile_skips_when_account_interface_enabled():
 def test_sync_user_profile_skips_when_fixed_delegated_auth_disabled():
     manager = MagicMock()
     session = MagicMock()
+    notify = MagicMock()
     app_config = SimpleNamespace(enable_account_interface=False, enable_notification_system=True)
-    app = SimpleNamespace(config=app_config, user_manager=manager, notification_manager=SimpleNamespace())
+    notification_manager = SimpleNamespace(send_notification_internal=notify)
+    app = SimpleNamespace(config=app_config, user_manager=manager, notification_manager=notification_manager)
     trans = SimpleNamespace(app=app, sa_session=session)
     strategy = SimpleNamespace(config={"GALAXY_TRANS": trans, "FIXED_DELEGATED_AUTH": False})
     user = SimpleNamespace(id=2, email="old@example.com", username="oldname", preferences={})
     details = {"email": "new@example.com", "username": "newname"}
 
-    with patch("galaxy.webapps.galaxy.services.notifications.NotificationService.send_notification_internal") as notify:
-        sync_user_profile(strategy=strategy, details=details, user=user)
+    sync_user_profile(strategy=strategy, details=details, user=user)
 
     manager.update_email.assert_not_called()
     manager.update_username.assert_not_called()
@@ -414,16 +614,16 @@ def test_sync_user_profile_skips_when_fixed_delegated_auth_disabled():
 def test_sync_user_profile_updates_when_account_interface_disabled():
     manager = MagicMock()
     session = MagicMock()
+    notify = MagicMock()
     app_config = SimpleNamespace(enable_account_interface=False, enable_notification_system=True)
-    notification_manager = SimpleNamespace(notifications_enabled=True)
+    notification_manager = SimpleNamespace(notifications_enabled=True, send_notification_internal=notify)
     app = SimpleNamespace(config=app_config, user_manager=manager, notification_manager=notification_manager)
     trans = SimpleNamespace(app=app, sa_session=session)
     strategy = SimpleNamespace(config={"GALAXY_TRANS": trans, "FIXED_DELEGATED_AUTH": True})
     user = SimpleNamespace(id=2, email="old@example.com", username="oldname", preferences={})
     details = {"email": "new@example.com", "username": "newname"}
 
-    with patch("galaxy.webapps.galaxy.services.notifications.NotificationService.send_notification_internal") as notify:
-        sync_user_profile(strategy=strategy, details=details, user=user)
+    sync_user_profile(strategy=strategy, details=details, user=user)
 
     manager.update_email.assert_called_once_with(
         trans, user, "new@example.com", commit=False, send_activation_email=False
@@ -431,3 +631,128 @@ def test_sync_user_profile_updates_when_account_interface_disabled():
     manager.update_username.assert_called_once_with(trans, user, "newname", commit=False)
     assert session.commit.call_count == 1
     notify.assert_called_once()
+
+
+def test_authenticate_does_not_mutate_backend_default_scope(psa_authnz):
+    """
+    Previously had a bug where the backend default scope was being mutated
+    when extra scopes were added to the config. This test ensures that
+    the backend default scope is not mutated, and the scopes
+    remain the same across multiple calls to authenticate().
+    """
+    shared_default_scope = ["openid", "email", "profile"]
+    psa_authnz.config["SCOPE"] = ["offline_access", "custom_scope"]
+
+    class FakeBackend:
+        name = "oidc"
+        DEFAULT_SCOPE = shared_default_scope
+
+        def __init__(self):
+            self.strategy = None
+
+        def setting(self, name, default=None):
+            assert self.strategy is not None
+            return self.strategy.setting(name, default=default, backend=self)
+
+        def get_scope(self):
+            scope = self.setting("SCOPE", [])
+            if not self.setting("IGNORE_DEFAULT_SCOPE", False):
+                scope = scope + (self.DEFAULT_SCOPE or [])
+            return scope
+
+    backend_instance = FakeBackend()
+    observed_scopes = []
+
+    def fake_load_backend(strategy, redirect_uri):
+        backend_instance.strategy = strategy
+        return backend_instance
+
+    def fake_do_auth(backend):
+        observed_scopes.append(backend.get_scope())
+        return MagicMock()
+
+    with (
+        patch("galaxy.authnz.psa_authnz.on_the_fly_config"),
+        patch.object(psa_authnz, "_load_backend", side_effect=fake_load_backend),
+        patch("galaxy.authnz.psa_authnz.do_auth", side_effect=fake_do_auth),
+    ):
+        psa_authnz.authenticate(make_mock_trans())
+        psa_authnz.authenticate(make_mock_trans())
+
+    expected = ["offline_access", "custom_scope", "openid", "email", "profile"]
+    assert observed_scopes == [expected, expected]
+    assert shared_default_scope == ["openid", "email", "profile"]
+
+
+@pytest.mark.parametrize("provider, backend_path", BACKENDS.items())
+def test_configured_extra_scopes_are_requested_without_mutating_backend_default_scope(provider, backend_path):
+    """
+    Verify the actual backend classes Galaxy uses request configured scopes via
+    social-core's SCOPE setting without mutating the backend's DEFAULT_SCOPE.
+    """
+    extra_scopes = ["offline_access", "custom_scope"]
+    backend_class = module_member(backend_path)
+    original_default_scope = backend_class.DEFAULT_SCOPE
+    expected_default_scope = list(original_default_scope or [])
+    config = {
+        "provider": provider,
+        "redirect_uri": "https://galaxy.example.com/authnz/callback",
+        setting_name("SCOPE"): extra_scopes,
+    }
+    trans = make_mock_trans()
+    strategy = Strategy(trans.request, trans.session, None, config)
+
+    try:
+        backend = backend_class(strategy, config["redirect_uri"])
+        observed_scopes = backend.get_scope()
+
+        assert observed_scopes == extra_scopes + expected_default_scope
+        assert backend_class.DEFAULT_SCOPE is original_default_scope
+        assert list(backend_class.DEFAULT_SCOPE or []) == expected_default_scope
+    finally:
+        backend_class.DEFAULT_SCOPE = original_default_scope
+
+
+@pytest.mark.parametrize("provider, backend_path", BACKENDS.items())
+def test_authenticate_with_real_backend_does_not_accumulate_extra_scopes(psa_authnz, provider, backend_path):
+    """
+    Verify repeated authenticate() calls request the same scope list when using
+    the actual backend classes Galaxy supports, even if a backend instance is
+    reused across calls.
+    """
+    extra_scopes = ["offline_access", "custom_scope"]
+    backend_class = module_member(backend_path)
+    original_default_scope = backend_class.DEFAULT_SCOPE
+    expected_default_scope = list(original_default_scope or [])
+    backend_instances: list[BaseAuth] = []
+    observed_scopes = []
+
+    psa_authnz.config["provider"] = provider
+    psa_authnz.config[setting_name("SCOPE")] = extra_scopes
+
+    def fake_load_backend(strategy, redirect_uri):
+        if not backend_instances:
+            backend_instances.append(backend_class(strategy, redirect_uri))
+        else:
+            backend_instances[0].strategy = strategy
+        return backend_instances[0]
+
+    def fake_do_auth(backend):
+        observed_scopes.append(backend.get_scope())
+        return MagicMock()
+
+    try:
+        with (
+            patch("galaxy.authnz.psa_authnz.on_the_fly_config"),
+            patch.object(psa_authnz, "_load_backend", side_effect=fake_load_backend),
+            patch("galaxy.authnz.psa_authnz.do_auth", side_effect=fake_do_auth),
+        ):
+            psa_authnz.authenticate(make_mock_trans())
+            psa_authnz.authenticate(make_mock_trans())
+
+        expected_scope = extra_scopes + expected_default_scope
+        assert observed_scopes == [expected_scope, expected_scope]
+        assert backend_class.DEFAULT_SCOPE is original_default_scope
+        assert list(backend_class.DEFAULT_SCOPE or []) == expected_default_scope
+    finally:
+        backend_class.DEFAULT_SCOPE = original_default_scope

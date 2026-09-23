@@ -1,9 +1,9 @@
 import logging
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from galaxy import model
 from galaxy.jobs.runners import JobState
+from galaxy.util import now
 from ._safe_eval import safe_eval
 
 if TYPE_CHECKING:
@@ -83,19 +83,15 @@ def _handle_resubmit_definitions(
             job_state.job_wrapper.job_destination.id,
         )
 
-        # Resolve dynamic if necessary, and cache the destination to prevent
-        # rerunning dynamic after resubmit
-        new_destination = job_state.job_wrapper.set_cached_job_destination(new_destination)
-        # Reset job state
-        job_state.job_wrapper.clear_working_directory()
-        job = job_state.job_wrapper.get_job()
-        if handler := resubmit.get("handler"):
-            log.debug("%s Job reassigned to handler %s", job_log_prefix, handler)
-            job.set_handler(handler)
-            job_runner.sa_session.add(job)
-            # Is this safe to do here?
-            job_runner.sa_session.commit()
-        # Handle delaying before resubmission if needed.
+        # Defer evaluation: do NOT call set_cached_job_destination here. The
+        # resubmit destination is persisted via set_job_destination below;
+        # __recover_job_wrapper(resubmit=True) will walk the chain afresh when
+        # the job is picked up from the queue (refs #7118, #15208).
+        prior_destination_params = (job_state.job_wrapper.get_job().destination_params or {}).copy()
+        new_destination.params = {**prior_destination_params, **new_destination.params}
+        # Handle delaying before resubmission if needed — must happen BEFORE
+        # set_job_destination so the delay param is persisted along with the
+        # destination.
         raw_delay = resubmit.get("delay")
         if raw_delay:
             delay = str(expression_context.safe_eval(str(raw_delay)))
@@ -105,7 +101,17 @@ def _handle_resubmit_definitions(
                 new_destination.params["__resubmit_delay_seconds"] = str(delay)
             except ValueError:
                 log.warning(f"Cannot delay job with delay [{delay}], does not appear to be a number.")
+        # Persist the new destination before clearing the working directory.
+        # This is what makes a resubmitted job resolve its new JWD correctly.
         job_state.job_wrapper.set_job_destination(new_destination)
+        job_state.job_wrapper.clear_working_directory()
+        job = job_state.job_wrapper.get_job()
+        if handler := resubmit.get("handler"):
+            log.debug("%s Job reassigned to handler %s", job_log_prefix, handler)
+            job.set_handler(handler)
+            job_runner.sa_session.add(job)
+            # Is this safe to do here?
+            job_runner.sa_session.commit()
         # Clear external ID (state change below flushes the change)
         job.job_runner_external_id = None
         # Allow the UI to query for resubmitted state
@@ -126,24 +132,23 @@ class _ExpressionContext:
 
         if self._lazy_context is None:
             runner_state = getattr(self._job_state, "runner_state", None) or JobState.runner_states.UNKNOWN_ERROR
-            attempt = 1
-            now = datetime.utcnow()
+            job = self._job_state.job_wrapper.get_job()
+            attempt = job.resubmission_count + 1
+            current_time = now()
             last_running_state = None
             last_queued_state = None
-            for state in self._job_state.job_wrapper.get_job().state_history:
+            for state in job.state_history:
                 if state.state == model.Job.states.RUNNING:
                     last_running_state = state
                 elif state.state == model.Job.states.QUEUED:
                     last_queued_state = state
-                elif state.state == model.Job.states.RESUBMITTED:
-                    attempt = attempt + 1
 
             seconds_running = 0
             seconds_since_queued = 0
             if last_running_state:
-                seconds_running = (now - last_running_state.create_time).total_seconds()
+                seconds_running = (current_time - last_running_state.create_time).total_seconds()
             if last_queued_state:
-                seconds_since_queued = (now - last_queued_state.create_time).total_seconds()
+                seconds_since_queued = (current_time - last_queued_state.create_time).total_seconds()
 
             self._lazy_context = {
                 "walltime_reached": runner_state == JobState.runner_states.WALLTIME_REACHED,

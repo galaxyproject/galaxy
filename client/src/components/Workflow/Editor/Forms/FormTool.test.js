@@ -33,7 +33,7 @@ describe("FormTool", () => {
         );
     });
 
-    function mountTarget() {
+    function mountTarget(inputs = [{ name: "input", label: "input", type: "text", value: "value" }]) {
         return mount(FormTool, {
             propsData: {
                 id: "input",
@@ -45,7 +45,7 @@ describe("FormTool", () => {
                         name: "tool_name",
                         version: "1.0",
                         description: "description",
-                        inputs: [{ name: "input", label: "input", type: "text", value: "value" }],
+                        inputs,
                         help: "help_text",
                         help_format: "restructuredtext",
                         versions: ["1.0", "2.0", "3.0"],
@@ -85,5 +85,39 @@ describe("FormTool", () => {
         expect(state.tool_version).toEqual("3.0");
         expect(state.tool_id).toEqual("tool_id+3.0");
         await flushPromises();
+    });
+
+    it("does not stamp UI metadata into a rules input payload", () => {
+        const inputs = mountTarget([
+            { name: "input", label: "input", type: "text", value: "value" },
+            {
+                name: "rules",
+                label: "rules",
+                type: "rules",
+                value: {
+                    mapping: [{ type: "list_identifiers", columns: [1] }],
+                    rules: [{ type: "add_column_metadata", value: "identifier0" }],
+                },
+            },
+        ]).vm.inputs;
+
+        const rulesInput = inputs[1];
+        const nestedEntries = [rulesInput.value.mapping[0], rulesInput.value.rules[0]];
+
+        // Leak fixed: nested rule/mapping entries carry no UI-only keys.
+        for (const entry of nestedEntries) {
+            expect(entry).not.toHaveProperty("collapsible_value");
+            expect(entry).not.toHaveProperty("connectable");
+            expect(entry).not.toHaveProperty("is_workflow");
+        }
+
+        // #18741 preserved: the top-level rules input is runtime-editable / not connectable.
+        expect(rulesInput.collapsible_value).toBeUndefined();
+        expect(rulesInput.connectable).toBe(false);
+
+        // Regression guard: sibling scalar inputs are still stamped as before.
+        const textInput = inputs[0];
+        expect(textInput.collapsible_value.__class__).toBe("RuntimeValue");
+        expect(textInput.connectable).toBe(true);
     });
 });

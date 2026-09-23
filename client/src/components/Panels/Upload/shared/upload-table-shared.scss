@@ -12,7 +12,6 @@
     overflow: auto;
 
     :deep(.table) {
-        table-layout: auto;
         min-width: 100%;
     }
 }
@@ -55,6 +54,22 @@
         display: block;
         font-weight: 600;
         margin-bottom: 0.25rem;
+    }
+}
+
+.options-controls {
+    gap: 0.5rem;
+}
+
+.options-header,
+.options-cell {
+    :deep(.custom-control) {
+        margin-right: 0;
+        margin-bottom: 0;
+    }
+
+    :deep(.custom-control-label) {
+        white-space: nowrap;
     }
 }
 

@@ -6,21 +6,22 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestWindowManagerPersistence(SeleniumTestCase):
+class TestWindowManagerPersistence(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
     def setUp(self):
         super().setUp()
-        self.execute_script("localStorage.removeItem('galaxy-scratchbook-windows');")
+        self.execute_script("localStorage.removeItem('galaxy-window-manager-windows');")
 
     @selenium_test
     @managed_history
     def test_scratchbook_window_persistence(self):
         """Progressive test: open, reload, multi-window, close, verify persistence at each step."""
-        self.perform_upload(self.get_filename("1.fasta"))
-        self.perform_upload(self.get_filename("1.bed"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.bed")).start()
         self.history_panel_wait_for_hid_ok(2)
 
         self.window_manager_enable()

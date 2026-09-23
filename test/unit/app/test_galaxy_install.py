@@ -43,6 +43,8 @@ def test_against_production_shed(tmp_path: Path):
         assert tool_guid in f.read()
     repo_path = tmp_path / "tools" / "toolshed.g2.bx.psu.edu" / "repos" / repo_owner / repo_name / repo_revision
     assert repo_path.exists()
+    # All shed installs now register data tables; the per-revision config is written for any repo
+    # with sample files, regardless of whether it's a Data Manager.
     tool_data_table_path = (
         tmp_path
         / "tool_data"

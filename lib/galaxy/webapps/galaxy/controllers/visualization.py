@@ -20,6 +20,7 @@ from galaxy.webapps.base.controller import (
     SharableMixin,
     UsesVisualizationMixin,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from ..api import depends
 
 log = logging.getLogger(__name__)
@@ -28,13 +29,16 @@ log = logging.getLogger(__name__)
 class VisualizationController(
     BaseUIController, SharableMixin, UsesVisualizationMixin, UsesAnnotations, UsesItemRatings
 ):
+    app: "StructuredApp"
     hda_manager: HDAManager = depends(HDAManager)
     slug_builder: SlugBuilder = depends(SlugBuilder)
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
 
-    def get_visualization(self, trans, visualization_id, check_ownership=True, check_accessible=False):
+    def get_visualization(
+        self, trans: GalaxyWebTransaction, visualization_id, check_ownership=True, check_accessible=False
+    ):
         """
         Get a Visualization from the database by id, verifying ownership.
         """
@@ -50,7 +54,7 @@ class VisualizationController(
 
     @web.expose
     @web.require_login()
-    def copy(self, trans, id, **kwargs):
+    def copy(self, trans: GalaxyWebTransaction, id, **kwargs):
         visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
         user = trans.get_user()
         owner = visualization.user == user
@@ -71,7 +75,7 @@ class VisualizationController(
 
     @web.expose
     @web.require_login("share Galaxy visualizations")
-    def imp(self, trans, id, **kwargs):
+    def imp(self, trans: GalaxyWebTransaction, id, **kwargs):
         """Import a visualization into user's workspace."""
         # Set referer message.
         referer = trans.request.referer
@@ -112,7 +116,7 @@ class VisualizationController(
                 use_panels=True,
             )
 
-    def _display_by_username_and_slug(self, trans, username, slug, **kwargs):
+    def _display_by_username_and_slug(self, trans: GalaxyWebTransaction, username, slug, **kwargs):
         """Display visualization based on a username and slug."""
 
         # Get visualization.
@@ -141,7 +145,7 @@ class VisualizationController(
 
     @web.legacy_expose_api
     @web.require_login("edit visualizations")
-    def edit(self, trans, payload=None, **kwd):
+    def edit(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         """
         Edit a visualization's attributes.
         """

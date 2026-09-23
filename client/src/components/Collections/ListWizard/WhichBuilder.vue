@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { BButton, BCard, BCardGroup, BCardTitle } from "bootstrap-vue";
+import { BCard, BCardGroup, BCardTitle } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { borderVariant } from "@/components/Common/Wizard/utils";
 
 import type { WhichListBuilder } from "./types";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     value: WhichListBuilder;
@@ -47,8 +49,8 @@ function toggleAdvanced() {
                     <b>List of Paired Datasets</b>
                 </BCardTitle>
                 <div>
-                    This option creates a uniform list of paired datasets, use this option if all of your data should be
-                    paired off.
+                    This option creates a list of paired datasets (e.g., paired-end data from Illumina and ElementBio),
+                    use this option if all of your data should be paired off.
                 </div>
             </BCard>
             <BCard
@@ -67,7 +69,7 @@ function toggleAdvanced() {
         </BCardGroup>
         <span>
             <div v-if="!advanced" class="m-3">
-                <BButton variant="primary" @click="toggleAdvanced">Advanced Options</BButton>
+                <GButton color="blue" @click="toggleAdvanced">Advanced Options</GButton>
             </div>
             <BCardGroup v-else deck class="mt-3">
                 <BCard

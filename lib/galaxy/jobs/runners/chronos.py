@@ -3,7 +3,6 @@ import logging
 import os
 from typing import (
     TYPE_CHECKING,
-    Union,
 )
 
 from galaxy import model
@@ -205,7 +204,7 @@ class ChronosJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             self.monitor_queue.put(ajs)
 
     @handle_exception_call
-    def check_watched_item(self, job_state: AsynchronousJobState) -> Union[AsynchronousJobState, None]:
+    def check_watched_item(self, job_state: AsynchronousJobState) -> AsynchronousJobState | None:
         job_name = job_state.job_id
         # TODO: how can stopped GxIT jobs be handled here?
         if job := self._retrieve_job(job_name):
@@ -253,8 +252,8 @@ class ChronosJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         return None
 
     @handle_exception_call
-    def finish_job(self, job_state: AsynchronousJobState) -> None:
-        super().finish_job(job_state)
+    def _finish_job(self, job_state: AsynchronousJobState) -> None:
+        super()._finish_job(job_state)
         self._chronos_client.delete(job_state.job_id)
 
     def parse_destination_params(self, params):

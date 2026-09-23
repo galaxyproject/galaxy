@@ -1,6 +1,5 @@
 import { useWorkflowStores } from "@/composables/workflowStores";
-
-import { AxisAlignedBoundingBox, type WorkflowTransform } from "../modules/geometry";
+import { AxisAlignedBoundingBox, type WorkflowTransform } from "@/utils/geometry";
 
 export interface BoundingBoxBounds {
     minX: number;

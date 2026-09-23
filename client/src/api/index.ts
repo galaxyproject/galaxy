@@ -214,6 +214,15 @@ export function isHDCA(entry?: HistoryItemSummary | CollectionEntry): entry is H
     );
 }
 
+/**
+ * Returns true if the given collection entry carries the detailed payload
+ * (i.e. has `elements`). The element list is a snapshot at fetch time —
+ * use `collectionElementsStore` for fresh element pagination, not this.
+ */
+export function isDetailedCollection(entry?: HDCASummary | HDCADetailed | null): entry is HDCADetailed {
+    return !!entry && "elements" in entry;
+}
+
 export function isDCE(item: object): item is DCESummary {
     return item && "element_type" in item;
 }
@@ -274,6 +283,13 @@ export interface AnonymousUser extends AnonymousUserModel {
 
 /** Represents any user, including anonymous users or session-less (null) users.**/
 export type AnyUser = RegisteredUser | AnonymousUser | null;
+
+export function toAnyUser(user: UserModel): AnyUser {
+    if ("email" in user) {
+        return { ...user, isAnonymous: false } as RegisteredUser;
+    }
+    return { ...user, isAnonymous: true } as AnonymousUser;
+}
 
 export function isRegisteredUser(user: AnyUser | UserModel): user is RegisteredUser {
     return user !== null && "email" in user;

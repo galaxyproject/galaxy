@@ -1,6 +1,24 @@
-import _ from "underscore";
-
 import { isDefined, isValidNumber } from "@/utils/validation";
+
+/** Find a data/data_collection parameter in a tool form ``inputs`` tree by
+ * its full ``|``-separated dotted name. Reuses ``visitInputs`` (which already
+ * encodes Galaxy's path conventions: ``|`` for conditionals/sections and
+ * ``_${i}`` for repeat iterations) so the lookup matches the server-side
+ * ``populate_model.py`` path construction.
+ *
+ * @param{Array}  inputs       - Tool form inputs tree (e.g. formConfig.inputs).
+ * @param{String} targetName   - Full dotted name to find.
+ * @returns the matching parameter node, or ``null`` if not found.
+ */
+export function findInputByDottedName(inputs, targetName) {
+    let found = null;
+    visitInputs(inputs, (node, name) => {
+        if (!found && name === targetName && (node.type === "data" || node.type === "data_collection")) {
+            found = node;
+        }
+    });
+    return found;
+}
 
 /** Visits tool inputs.
  * @param{dict}   inputs    - Nested dictionary of input elements
@@ -8,20 +26,23 @@ import { isDefined, isValidNumber } from "@/utils/validation";
  */
 export function visitInputs(inputs, callback, prefix = "", context = undefined) {
     context = Object.assign({}, context);
-    _.each(inputs, (input) => {
+    for (const key in inputs) {
+        const input = inputs[key];
         if (input && input.type && input.name) {
             context[input.name] = input;
         }
-    });
+    }
     for (var key in inputs) {
         var node = inputs[key];
         node.name = node.name || key;
         var name = prefix ? `${prefix}|${node.name}` : node.name;
         switch (node.type) {
             case "repeat":
-                _.each(node.cache, (cache, j) => {
-                    visitInputs(cache, callback, `${name}_${j}`, context);
-                });
+                if (node.cache) {
+                    for (const [j, cache] of Object.entries(node.cache)) {
+                        visitInputs(cache, callback, `${name}_${j}`, context);
+                    }
+                }
                 break;
             case "conditional":
                 if (node.test_param) {
@@ -58,9 +79,11 @@ export function visitAllInputs(inputs, callback, prefix = "") {
         var name = prefix ? `${prefix}|${nodeName}` : nodeName;
         switch (node.type) {
             case "repeat":
-                _.each(node.cache, (cache, j) => {
-                    visitAllInputs(cache, callback, `${name}_${j}`);
-                });
+                if (node.cache) {
+                    for (const [j, cache] of Object.entries(node.cache)) {
+                        visitAllInputs(cache, callback, `${name}_${j}`);
+                    }
+                }
                 break;
             case "conditional":
                 if (node.test_param) {
@@ -134,6 +157,133 @@ export function matchInputs(index, response) {
     }
     search("", response);
     return result;
+}
+
+/** Builds a nested state dict from the form input tree and flat formData.
+ * Produces the format expected by RequestToolState (POST /api/jobs).
+ * @param{Array}    inputs    - Nested array of input elements (the tool form tree)
+ * @param{Object}   formData  - Flat dictionary with pipe-separated keys (e.g. "cond|param")
+ * @returns{Object} Nested dictionary matching the RequestToolState format
+ */
+export function buildNestedState(inputs, formData) {
+    return _buildLevel(inputs, formData, "");
+}
+
+function _buildLevel(inputs, formData, prefix) {
+    const result = {};
+    for (const key in inputs) {
+        const node = inputs[key];
+        const nodeName = node.name || key;
+        const flatKey = prefix ? `${prefix}|${nodeName}` : nodeName;
+        switch (node.type) {
+            case "repeat": {
+                const items = [];
+                if (node.cache) {
+                    for (const [j, cache] of Object.entries(node.cache)) {
+                        items.push(_buildLevel(cache, formData, `${flatKey}_${j}`));
+                    }
+                }
+                result[nodeName] = items;
+                break;
+            }
+            case "conditional": {
+                const condResult = {};
+                if (node.test_param) {
+                    const testKey = `${flatKey}|${node.test_param.name}`;
+                    const testValue = _convertValue(node.test_param, formData[testKey]);
+                    condResult[node.test_param.name] = testValue;
+                    const selectedCase = matchCase(node, testValue ?? node.test_param.value);
+                    if (selectedCase !== -1) {
+                        Object.assign(condResult, _buildLevel(node.cases[selectedCase].inputs, formData, flatKey));
+                    }
+                }
+                result[nodeName] = condResult;
+                break;
+            }
+            case "section":
+                result[nodeName] = _buildLevel(node.inputs, formData, flatKey);
+                break;
+            default:
+                result[nodeName] = _convertValue(node, formData[flatKey]);
+        }
+    }
+    return result;
+}
+
+function _convertValue(node, value) {
+    if (node.type === "data" || node.type === "data_collection") {
+        return _convertDataValue(value, node.multiple);
+    }
+    if (node.type === "data_column") {
+        if (value === undefined) {
+            return undefined;
+        }
+        if (value === null || value === "") {
+            return null;
+        }
+        if (Array.isArray(value)) {
+            return value.map((v) => (typeof v === "string" ? parseInt(v, 10) : v));
+        }
+        return typeof value === "string" ? parseInt(value, 10) : value;
+    }
+    if (node.type === "integer") {
+        if (value === undefined) {
+            return undefined;
+        }
+        if (value === null || value === "") {
+            return null;
+        }
+        return typeof value === "string" ? parseInt(value, 10) : value;
+    }
+    if (node.type === "float") {
+        if (value === undefined) {
+            return undefined;
+        }
+        if (value === null || value === "") {
+            return null;
+        }
+        return typeof value === "string" ? parseFloat(value) : value;
+    }
+    if (node.type === "boolean") {
+        if (typeof value === "string") {
+            return value === "true";
+        }
+        return value;
+    }
+    if (node.type === "select" && node.multiple) {
+        if (value === null || value === undefined) {
+            return value;
+        }
+        if (!Array.isArray(value)) {
+            return [value];
+        }
+        return value;
+    }
+    return value;
+}
+
+function _convertDataValue(value, multiple = false) {
+    if (!value || !value.values || value.values.length === 0) {
+        return null;
+    }
+    if (value.batch) {
+        return {
+            __class__: "Batch",
+            values: value.values.map((v) => _convertDataEntry(v)),
+        };
+    }
+    if (value.values.length === 1 && !multiple) {
+        return _convertDataEntry(value.values[0]);
+    }
+    return value.values.map((v) => _convertDataEntry(v));
+}
+
+function _convertDataEntry(v) {
+    const entry = { src: v.src, id: v.id };
+    if (v.map_over_type) {
+        entry.map_over_type = v.map_over_type;
+    }
+    return entry;
 }
 
 /** Validate value against a regular expression pattern
@@ -254,7 +404,11 @@ export function validateInputs(index, values, rejectEmptyRequiredInputs = false)
             continue;
         }
         if (isRequired && inputDef.type != "hidden") {
-            if (!isDefined(inputValue) || (rejectEmptyRequiredInputs && inputValue === "")) {
+            if (
+                !isDefined(inputValue) ||
+                (rejectEmptyRequiredInputs && inputValue === "") ||
+                (Array.isArray(inputValue) && inputValue.length === 0)
+            ) {
                 return [inputId, "Please provide a value for this option."];
             }
         }

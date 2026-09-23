@@ -57,7 +57,6 @@ Members
 - Alireza Heidari (@itisAliRH)
 - Jennifer Hillman Jackson (@jennaj)
 - David López (@davelopez)
-- Laila Los (@ElectronicBlueberry)
 - Anton Nekrutenko (@nekrut)
 - Helena Rasche (@hexylena)
 - Nicola Soranzo (@nsoranzo)
@@ -159,8 +158,9 @@ than the author of the pull request, with no *-1* binding votes. A member of the
 *committers* group merging a pull request is considered an implicit +1.
 
 Pull requests modifying frozen and tagged release branches should be restricted
-to bug fixes. As an exception, pull requests which only add new datatypes can
-target a frozen branch or the latest tagged release branch.
+to bug fixes. As exceptions, pull requests which only add new datatypes, and
+pull requests which only add or update visualizations, can target a frozen
+branch or the latest tagged release branch.
 
 A pull request marked *[WIP]* (i.e. work in progress) in the title by its
 author(s) may *not* be merged without coordinating the removal of that mark with

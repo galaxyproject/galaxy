@@ -1,7 +1,6 @@
 import logging
 import sys
 import time
-from typing import Optional
 
 from sqlalchemy.orm.scoping import scoped_session
 
@@ -116,4 +115,4 @@ class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
 
 
 # Global instance of the universe app.
-app: Optional[ToolShedApp] = None
+app: ToolShedApp | None = None

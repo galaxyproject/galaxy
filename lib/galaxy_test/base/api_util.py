@@ -2,9 +2,6 @@ import base64
 import os
 import random
 import string
-from typing import (
-    Optional,
-)
 
 DEFAULT_GALAXY_MASTER_API_KEY = "TEST123"
 DEFAULT_GALAXY_USER_API_KEY = None
@@ -31,7 +28,7 @@ def get_admin_api_key() -> str:
     return DEFAULT_GALAXY_MASTER_API_KEY
 
 
-def get_user_api_key() -> Optional[str]:
+def get_user_api_key() -> str | None:
     """Test user API key to use for functional tests.
 
     If set, this should drive API based testing - if not set an admin API key will
@@ -49,7 +46,7 @@ def baseauth_headers(username: str, password: str) -> dict[str, str]:
     return headers
 
 
-def random_name(prefix: Optional[str] = None, suffix: Optional[str] = None, len: int = 10) -> str:
+def random_name(prefix: str | None = None, suffix: str | None = None, len: int = 10) -> str:
     return "{}{}{}".format(
         prefix or "",
         "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(len)),

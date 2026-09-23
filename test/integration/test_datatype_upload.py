@@ -20,7 +20,7 @@ from .test_upload_configuration_options import BaseUploadContentConfigurationInt
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 GALAXY_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(SCRIPT_DIRECTORY)))
 TEST_FILE_DIR = os.path.join(GALAXY_ROOT, "lib/galaxy/datatypes/test")
-TestData = collections.namedtuple("TestData", "path datatype uploadable")
+DatatypeUploadCase = collections.namedtuple("DatatypeUploadCase", "path datatype uploadable")
 DATATYPES_CONFIG = os.path.join(GALAXY_ROOT, "lib/galaxy/config/sample/datatypes_conf.xml.sample")
 PARENT_SNIFFER_MAP = {"fastqsolexa": "fastq"}
 
@@ -39,7 +39,7 @@ def collect_test_data(registry):
     files = [os.path.join(TEST_FILE_DIR, f) for f in test_files]
     datatypes = [find_datatype(registry, f) for f in test_files]
     uploadable = [datatype.file_ext in registry.upload_file_formats for datatype in datatypes]
-    test_data_description = [TestData(*items) for items in zip(files, datatypes, uploadable)]
+    test_data_description = [DatatypeUploadCase(*items) for items in zip(files, datatypes, uploadable)]
     return {os.path.basename(data.path): data for data in test_data_description}
 
 
@@ -61,7 +61,7 @@ TEST_CASES = collect_test_data(registry)
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_auto(
     instance: UploadTestDatatypeDataIntegrationInstance,
-    test_data: TestData,
+    test_data: DatatypeUploadCase,
     temp_file,
     celery_session_worker,
     celery_session_app,
@@ -72,7 +72,7 @@ def test_upload_datatype_auto(
 
 def upload_datatype_helper(
     instance: UploadTestDatatypeDataIntegrationInstance,
-    test_data: TestData,
+    test_data: DatatypeUploadCase,
     temp_file,
     history_id: str,
     delete_cache_dir: bool = False,

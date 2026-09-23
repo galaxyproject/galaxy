@@ -15,6 +15,7 @@
 <script>
 import axios from "axios";
 
+import { GalaxyApi } from "@/api";
 import { getAppRoot } from "@/onload/loadConfig";
 
 import Message from "../Message.vue";
@@ -77,45 +78,41 @@ export default {
 
     methods: {
         showDataManager(dataManagerTableName) {
-            axios
-                .get(`${getAppRoot()}data_manager/tool_data_table_items`, {
-                    params: {
-                        table_name: dataManagerTableName,
-                    },
+            GalaxyApi()
+                .GET("/api/tool_data/{table_name}", {
+                    params: { path: { table_name: dataManagerTableName } },
                 })
-                .then((response) => {
-                    this.message = response.data.message;
-                    this.status = response.data.status;
-
-                    if (response.data.status !== "error" && response.data.status !== "warning") {
+                .then(({ data, error }) => {
+                    if (error) {
+                        this.message = error.err_msg || "Failed to load tool data table.";
+                        this.status = "error";
+                    } else {
                         this.dataManagerTableName = dataManagerTableName;
-                        this.dataManagerColumns = response.data.data.columns;
-                        this.dataManagerItems = response.data.data.items;
+                        this.dataManagerColumns = data.columns;
+                        this.dataManagerItems = data.fields.map((row) =>
+                            Object.fromEntries(data.columns.map((col, i) => [col, row[i]])),
+                        );
                         this.currentView = "data-manager-grid";
                     }
-                })
-                .catch((error) => {
-                    console.error(error);
                 });
         },
 
         reloadDataManager(dataManagerTableName) {
-            axios
-                .get(`${getAppRoot()}data_manager/reload_tool_data_table`, {
-                    params: {
-                        table_name: dataManagerTableName,
-                    },
+            GalaxyApi()
+                .GET("/api/tool_data/{table_name}/reload", {
+                    params: { path: { table_name: dataManagerTableName } },
                 })
-                .then((response) => {
-                    this.message = response.data.message;
-                    this.status = response.data.status;
-
-                    if (response.data.status !== "error" && response.data.status !== "warning") {
-                        this.dataManagerItems = response.data.data.items;
+                .then(({ data, error }) => {
+                    if (error) {
+                        this.message = error.err_msg || "Failed to reload tool data table.";
+                        this.status = "error";
+                    } else {
+                        this.dataManagerItems = data.fields.map((row) =>
+                            Object.fromEntries(data.columns.map((col, i) => [col, row[i]])),
+                        );
+                        this.message = `Reloaded data table '${dataManagerTableName}'.`;
+                        this.status = "done";
                     }
-                })
-                .catch((error) => {
-                    console.error(error);
                 });
         },
     },

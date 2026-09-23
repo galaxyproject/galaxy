@@ -1,12 +1,10 @@
-from typing import Optional
-
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
 class TestDatasetHashingIntegration(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
-    calculate_dataset_hash: Optional[str] = None
+    calculate_dataset_hash: str | None = None
 
     def setUp(self) -> None:
         super().setUp()

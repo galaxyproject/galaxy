@@ -6,6 +6,7 @@ since these tests can mutate the server config state.
 """
 
 import operator
+import os
 
 from galaxy.util import UNKNOWN
 from ._framework import ApiTestCase
@@ -73,6 +74,19 @@ class TestToolDataApi(ApiTestCase):
         self._assert_status_code_is(show_response, 200)
         data_table = show_response.json()
         assert data_table["columns"] == ["value", "dbkey", "name", "path"]
+
+    def test_reload_and_download_testbeta(self):
+        show_response = self._get("tool_data/testbeta/reload", admin=True)
+        self._assert_status_code_is(show_response, 200)
+        data_table = show_response.json()
+        path_column = data_table["columns"].index("path")
+        file_path = data_table["fields"][0][path_column]
+        file_name = os.path.basename(file_path)
+        assert file_name == "entry.txt"
+        show_field_response = self._get(f"tool_data/testbeta/fields/newvalue/files/{file_name}", admin=True)
+        self._assert_status_code_is(show_field_response, 200)
+        content = show_field_response.text
+        assert content == "This is data 1.", content
 
     def test_show_unknown_raises_404(self):
         show_response = self._get("tool_data/unknown", admin=True)

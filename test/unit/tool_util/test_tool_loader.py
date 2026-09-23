@@ -111,9 +111,9 @@ def test_loader_unnamed_yield():
     </macros>
 </tool>""")
         xml = tool_dir.load()
-        assert xml.find("/inputs[1]/input").get("name") == "first_input"
-        assert xml.find("/inputs[2]/input").get("name") == "second_input"
-        assert xml.find("/inputs[3]/input").get("name") == "third_input"
+        assert xml.find("./inputs[1]/input").get("name") == "first_input"
+        assert xml.find("./inputs[2]/input").get("name") == "second_input"
+        assert xml.find("./inputs[3]/input").get("name") == "third_input"
 
 
 def test_loader_unnamed_yield_nested():
@@ -149,9 +149,9 @@ def test_loader_unnamed_yield_nested():
 """)
         xml = tool_dir.load()
         # assert the both yields in the inner macro (paired_options) are expanded
-        assert xml.find('/inputs/conditional[@name="library"]/when[@value="paired"]/param[@name="test"]') is not None
+        assert xml.find('./inputs/conditional[@name="library"]/when[@value="paired"]/param[@name="test"]') is not None
         assert (
-            xml.find('/inputs/conditional[@name="library"]/when[@value="paired_collection"]/param[@name="test"]')
+            xml.find('./inputs/conditional[@name="library"]/when[@value="paired_collection"]/param[@name="test"]')
             is not None
         )
 
@@ -180,9 +180,9 @@ def test_loader_recursive():
     </macros>
 </tool>""")
         xml = tool_dir.load()
-        assert xml.find("/inputs/input[1]").get("name") == "first_input"
-        assert xml.find("/inputs/input[2]").get("name") == "second_input"
-        assert xml.find("/inputs/input[3]").get("name") == "third_input"
+        assert xml.find("./inputs/input[1]").get("name") == "first_input"
+        assert xml.find("./inputs/input[2]").get("name") == "second_input"
+        assert xml.find("./inputs/input[3]").get("name") == "third_input"
 
 
 def test_loader_recursive2():
@@ -212,9 +212,9 @@ def test_loader_recursive2():
     </macros>
 </tool>""")
         xml = tool_dir.load()
-        assert xml.find("/inputs/input[1]").get("name") == "first_input"
-        assert xml.find("/inputs/input[2]").get("name") == "second_input"
-        assert xml.find("/inputs/input[3]").get("name") == "third_input"
+        assert xml.find("./inputs/input[1]").get("name") == "first_input"
+        assert xml.find("./inputs/input[2]").get("name") == "second_input"
+        assert xml.find("./inputs/input[3]").get("name") == "third_input"
 
 
 def test_loader_toplevel_yield():
@@ -237,8 +237,8 @@ def test_loader_toplevel_yield():
     </inputs>
 </tool>""")
         xml = tool_dir.load()
-        assert xml.find("/inputs/param[1]").get("name") == "a1"
-        assert xml.find("/inputs/param[2]").get("name") == "b"
+        assert xml.find("./inputs/param[1]").get("name") == "a1"
+        assert xml.find("./inputs/param[2]").get("name") == "b"
 
 
 def test_loader_shortcut():
@@ -356,7 +356,7 @@ def test_loader_token_attribute_name():
 </tool>
 """)
         xml = tool_dir.load()
-        assert xml.find('/another/tag[@name="blah"]') is not None
+        assert xml.find('./another/tag[@name="blah"]') is not None
 
 
 def test_loader_token_attribute_value():
@@ -375,7 +375,7 @@ def test_loader_token_attribute_value():
 </tool>
 """)
         xml = tool_dir.load()
-        assert xml.find('/another/tag[@value="The value."]') is not None
+        assert xml.find('./another/tag[@value="The value."]') is not None
 
 
 def test_loader_token_empty():
@@ -391,7 +391,7 @@ def test_loader_token_empty():
 </tool>
 """)
         xml = tool_dir.load()
-        assert xml.find('/another/tag[@value=""]') is not None
+        assert xml.find('./another/tag[@value=""]') is not None
 
 
 def test_loader_macro_token_quote():

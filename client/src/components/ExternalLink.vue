@@ -1,18 +1,17 @@
-<script setup>
+<script setup lang="ts">
 import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-const props = defineProps({
-    href: {
-        type: String,
-        required: true,
-    },
-});
+import GLink from "@/components/BaseComponents/GLink.vue";
+
+const props = defineProps<{
+    href: string;
+}>();
 </script>
 
 <template>
-    <a target="_blank" :href="props.href">
+    <GLink target="_blank" :href="props.href">
         <slot></slot>
         <FontAwesomeIcon :icon="faExternalLinkAlt" />
-    </a>
+    </GLink>
 </template>

@@ -4,10 +4,39 @@ History
 .. to_doc
 
 ---------
-26.1.dev0
+26.2.dev0
 ---------
 
 
+
+-------------------
+26.1.1 (2026-08-04)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+26.1.0 (2026-08-02)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Migrate Python packages to \`src\` layout and pure namespace packages by `@mr-c <https://github.com/mr-c>`_ in `#21977 <https://github.com/galaxyproject/galaxy/pull/21977>`_
+
+-------------------
+26.0.1 (2026-06-04)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+26.0.0 (2026-04-08)
+-------------------
+
+No recorded changes since last release
 
 -------------------
 25.1.2 (2026-03-09)

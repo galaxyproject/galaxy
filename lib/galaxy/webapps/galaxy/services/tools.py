@@ -8,8 +8,10 @@ from typing import (
     cast,
     get_args,
     Optional,
-    Union,
+    TYPE_CHECKING,
+    TypeAlias,
 )
+from uuid import UUID
 
 from starlette.datastructures import UploadFile
 
@@ -32,7 +34,6 @@ from galaxy.managers.tools import (
 )
 from galaxy.model import (
     LibraryDatasetDatasetAssociation,
-    PostJobAction,
     User,
 )
 from galaxy.schema.credentials import CredentialsContext
@@ -53,6 +54,10 @@ from galaxy.schema.fetch_data import (
 from galaxy.schema.schema import CreateToolLandingRequestPayload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_util.parameters import ToolParameterT
+from galaxy.tool_util.toolbox.base import (
+    MaterializationReasonName,
+    ToolLike,
+)
 from galaxy.tool_util_models.parameters import (
     CollectionElementCollectionRequestUri,
     CollectionElementDataRequestUri,
@@ -62,10 +67,17 @@ from galaxy.tool_util_models.parameters import (
 )
 from galaxy.tools import Tool
 from galaxy.tools._types import InputFormatT
+from galaxy.tools.cached_toolbox import CachedToolBox
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
 from galaxy.webapps.galaxy.services.base import ServiceBase
+
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
+    from galaxy.work.context import SessionRequestContext
+
+    PanelViewTrans: TypeAlias = "GalaxyWebTransaction | SessionRequestContext"
 
 log = logging.getLogger(__name__)
 
@@ -74,7 +86,7 @@ JobCreateResponse = dict[str, Any]
 
 
 def get_tool(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
-    tool: Optional[Tool] = None
+    tool: ToolLike | None = None
     if tool_ref.tool_uuid and trans.user:
         tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_ref.tool_uuid)
     if not tool:
@@ -89,7 +101,7 @@ def get_tool(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
     if not tool:
         log.debug(f"Not found tool with kwds [{tool_ref}]")
         raise exceptions.ToolMissingException("Tool not found.")
-    return tool
+    return trans.app.toolbox.materialize_tool(tool, reason="execution")
 
 
 def validate_tool_for_running(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
@@ -121,7 +133,7 @@ def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandin
                         f"Sample sheet metadata (column_definitions, rows) can only be used with collection_type 'sample_sheet' or 'sample_sheet:<type>', not '{collection_type}'"
                     )
 
-    targets: list[Union[DataElementsTarget, HdcaDataItemsTarget]] = []
+    targets: list[DataElementsTarget | HdcaDataItemsTarget] = []
 
     for request_item in data_landing_payload.request_state:
         if isinstance(request_item, (DataRequestUri, FileRequestUri)):
@@ -207,6 +219,18 @@ class ToolsService(ServiceBase):
         self.toolbox_search = toolbox_search
         self.history_manager = history_manager
 
+    def curated_tool_tags_by_id(self, trans: ProvidesUserContext) -> dict[str, list[str]]:
+        """Return {tool_id: [tag, ...]} for currently-loaded tools that carry curated tags.
+
+        Sidecar for the My Tools panel; keeps `tool_tags` out of the bulk /api/tools
+        payload (and out of its cache key).
+        """
+        mapping: dict[str, list[str]] = {}
+        for _, tool in trans.app.toolbox.tools():
+            if tool.tool_tags:
+                mapping[tool.id] = list(tool.tool_tags)
+        return mapping
+
     def file_landing_to_tool_landing(
         self,
         trans: ProvidesUserContext,
@@ -228,6 +252,7 @@ class ToolsService(ServiceBase):
             request_state=request_state,
             client_secret=file_landing_payload.client_secret,
             public=file_landing_payload.public,
+            origin=file_landing_payload.origin,
         )
 
     def data_landing_to_tool_landing(
@@ -250,6 +275,7 @@ class ToolsService(ServiceBase):
             request_state=request_state,
             client_secret=data_landing_payload.client_secret,
             public=data_landing_payload.public,
+            origin=data_landing_payload.origin,
         )
 
     def inputs(
@@ -265,8 +291,8 @@ class ToolsService(ServiceBase):
     def create_fetch(
         self,
         trans: ProvidesHistoryContext,
-        fetch_payload: Union[FetchDataFormPayload, FetchDataPayload],
-        files: Optional[list[UploadFile]] = None,
+        fetch_payload: FetchDataFormPayload | FetchDataPayload,
+        files: list[UploadFile] | None = None,
     ) -> JobCreateResponse:
         payload = fetch_payload.model_dump(exclude_unset=True)
         request_version = "1"
@@ -293,6 +319,14 @@ class ToolsService(ServiceBase):
             clean_payload[key] = value
         clean_payload["check_content"] = self.config.check_upload_content
         validate_and_normalize_targets(trans, clean_payload)
+        preferred_object_store_id = clean_payload.get("preferred_object_store_id")
+        if preferred_object_store_id is not None:
+            validation_error = trans.app.object_store.validate_selected_object_store_id(
+                trans.user,
+                preferred_object_store_id,
+            )
+            if validation_error:
+                raise RequestParameterInvalidException(validation_error)
         request = dumps(clean_payload)
         create_payload: ToolRunPayload = {
             "tool_id": "__DATA_FETCH__",
@@ -303,6 +337,8 @@ class ToolsService(ServiceBase):
                 "file_count": str(len(files_payload)),
             },
         }
+        if preferred_object_store_id is not None:
+            create_payload["preferred_object_store_id"] = preferred_object_store_id
         create_payload.update(files_payload)
         return self._create(trans, create_payload)
 
@@ -369,26 +405,13 @@ class ToolsService(ServiceBase):
             preferred_object_store_id=preferred_object_store_id,
             credentials_context=CredentialsContext(root=credentials_context) if credentials_context else None,
             tags=tags,
+            send_email_notification=inputs.get("send_email_notification", False),
         )
-
-        new_pja_flush = False
-        for job in vars.get("jobs", []):
-            if inputs.get("send_email_notification", False):
-                # Unless an anonymous user is invoking this via the API it
-                # should never be an option, but check and enforce that here
-                if trans.user is None:
-                    raise exceptions.ToolExecutionError("Anonymously run jobs cannot send an email notification.")
-                else:
-                    job_email_action = PostJobAction("EmailAction")
-                    job.add_post_job_action(job_email_action)
-                    new_pja_flush = True
-
-        if new_pja_flush:
-            trans.sa_session.commit()
-
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 
-    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars) -> JobCreateResponse:
+    def _handle_inputs_output_to_api_response(
+        self, trans: ProvidesHistoryContext, tool, target_history, vars
+    ) -> JobCreateResponse:
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get("out_data", [])
         rval: dict[str, Any] = {"outputs": [], "output_collections": [], "jobs": [], "implicit_collections": []}
@@ -445,7 +468,7 @@ class ToolsService(ServiceBase):
         trans.security.encode_all_ids(rval, recursive=True)
         return rval
 
-    def _search(self, q: str, view: Optional[str]) -> list[str]:
+    def _search(self, q: str, view: str | None) -> list[str]:
         """
         Perform the search on the given query.
         Boosts and numer of results are configurable in galaxy.ini file.
@@ -494,21 +517,40 @@ class ToolsService(ServiceBase):
     # -- Helper methods --
     #
     def _get_tool(
-        self, trans: ProvidesUserContext, id, tool_version=None, tool_uuid=None, user: Optional[User] = None
-    ) -> Tool:
+        self,
+        trans: ProvidesUserContext,
+        id,
+        tool_version=None,
+        tool_uuid=None,
+        user: User | None = None,
+    ) -> ToolLike:
+        if tool_uuid:
+            try:
+                UUID(tool_uuid)
+            except ValueError:
+                raise exceptions.RequestParameterInvalidException(f"Invalid tool_uuid '{tool_uuid}'.")
         tool = trans.app.toolbox.get_tool(id, tool_version)
         if not tool:
-            if user:
-                # FIXME: id as tool_uuid is for raw_tool_source endpoint, port to fastapi and fix
-                if id == tool_uuid:
-                    id = None
+            if user and (id or tool_uuid):
                 tool = trans.app.toolbox.get_tool(user=user, tool_id=id, tool_uuid=tool_uuid)
-                if tool:
-                    return tool
-            raise exceptions.ObjectNotFound(f"Could not find tool with id '{id or tool_uuid}'.")
+            if not tool:
+                raise exceptions.ObjectNotFound(f"Could not find tool with id '{id or tool_uuid}'.")
         if not tool.allow_user_access(user):
             raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
         return tool
+
+    def _get_materialized_tool(
+        self,
+        trans: ProvidesUserContext,
+        id,
+        tool_version=None,
+        tool_uuid=None,
+        user: User | None = None,
+        *,
+        materialization_reason: MaterializationReasonName,
+    ) -> Tool:
+        tool = self._get_tool(trans, id, tool_version, tool_uuid, user)
+        return trans.app.toolbox.materialize_tool(tool, reason=materialization_reason)
 
     def _detect(self, trans: ProvidesUserContext, tool_id):
         """
@@ -528,17 +570,164 @@ class ToolsService(ServiceBase):
                     detected_versions.append(tool.version)
         return detected_versions
 
-    def get_tool_icon_path(self, trans, tool_id, tool_version=None) -> Optional[str]:
+    def get_tool_icon_path(self, trans: ProvidesUserContext, tool_id, tool_version=None) -> str | None:
         tool = self._get_tool(trans, tool_id, tool_version)
-        if tool and tool.icon:
+        if tool.icon:
+            materialized_tool = trans.app.toolbox.materialize_tool(tool, reason="detail")
             icon_file_path = tool.icon
-            if icon_file_path and tool.tool_dir:
+            if icon_file_path and materialized_tool.tool_dir:
                 # Prevent any path traversal attacks. The icon_src must be in the tool's directory.
-                if not safe_contains(tool.tool_dir, icon_file_path):
+                if not safe_contains(materialized_tool.tool_dir, icon_file_path):
                     raise Exception(
                         f"Invalid icon path for tool '{tool_id}'. Path must be within the tool's directory."
                     )
-                file_path = os.path.join(tool.tool_dir, icon_file_path)
+                file_path = os.path.join(materialized_tool.tool_dir, icon_file_path)
                 if os.path.exists(file_path):
                     return file_path
         return None
+
+    # === Batch Endpoint Methods (use cached toolbox index when available) ===
+
+    def _get_cached_toolbox(self, trans: ProvidesUserContext) -> Optional["CachedToolBox"]:
+        """Return the active toolbox if it's a CachedToolBox, else None."""
+        toolbox = trans.app.toolbox
+        return toolbox if isinstance(toolbox, CachedToolBox) else None
+
+    def get_tests_summary(self, trans: ProvidesUserContext) -> dict[str, dict[str, dict[str, Any]]]:
+        """
+        Get tests summary for all tools.
+
+        Uses the cached toolbox index when available for O(1) access,
+        otherwise falls back to iterating over the traditional toolbox.
+
+        Returns:
+            Dictionary of {tool_id: {version: {tool_name, count}}}.
+        """
+        cached_toolbox = self._get_cached_toolbox(trans)
+        if cached_toolbox and cached_toolbox.tool_index:
+            # The index is store-wide and ``get_tests_summary`` already drops
+            # datatype converters; scope the result to tools this toolbox
+            # actually holds so ids present in the store but never loaded here
+            # don't leak into the summary (the eager loop below only ever sees
+            # loaded tools).
+            summary = cached_toolbox.tool_index.get_tests_summary()
+            return {tool_id: versions for tool_id, versions in summary.items() if cached_toolbox.has_tool(tool_id)}
+
+        # Fallback to traditional toolbox iteration
+        test_counts_by_tool: dict[str, dict] = {}
+        for _id, tool in trans.app.toolbox.tools():
+            if not tool.is_datatype_converter:
+                tests = tool.tests
+                if tests:
+                    if tool.id not in test_counts_by_tool:
+                        test_counts_by_tool[tool.id] = {}
+                    available_versions = test_counts_by_tool[tool.id]
+                    available_versions[tool.version] = {
+                        "tool_name": tool.name,
+                        "count": len(tests),
+                    }
+        return test_counts_by_tool
+
+    def get_all_requirements(self, trans: ProvidesUserContext) -> list[dict[str, Any]]:
+        """
+        Get all unique requirements from all tools.
+
+        Uses the cached toolbox index when available for O(1) access.
+
+        Returns:
+            List of unique requirement dictionaries.
+        """
+        cached_toolbox = self._get_cached_toolbox(trans)
+        if cached_toolbox and cached_toolbox.tool_index:
+            return cached_toolbox.tool_index.get_all_requirements()
+
+        # Fallback to traditional toolbox
+        return trans.app.toolbox.all_requirements
+
+    def get_panel_views(self, trans: ProvidesUserContext) -> dict[str, Any]:
+        """
+        Get panel views information.
+
+        Uses the cached toolbox index when available.
+
+        Returns:
+            Dictionary with default_panel_view and views.
+        """
+        toolbox = trans.app.toolbox
+        cached_toolbox = self._get_cached_toolbox(trans)
+        # Prefer the index's pre-computed view dicts when present, but fall
+        # back to the live ``toolbox.panel_view_dicts()`` when empty —
+        # ``CachedToolBox`` doesn't currently populate
+        # ``tool_index.panel_views`` (the views are registered live in
+        # ``_setup_panel_views``), so the index lookup yields ``{}`` and
+        # callers like ``test_edam_toolbox`` see no views at all.
+        if cached_toolbox and cached_toolbox.tool_index:
+            indexed_views = cached_toolbox.tool_index.get_panel_views()
+            if indexed_views:
+                return {
+                    "default_panel_view": toolbox.default_panel_view(trans),
+                    "views": indexed_views,
+                }
+
+        return {
+            "default_panel_view": toolbox.default_panel_view(trans),
+            "views": toolbox.panel_view_dicts(),
+        }
+
+    def list_tools(
+        self,
+        trans: "PanelViewTrans",
+        in_panel: bool,
+        tool_help: bool,
+        view: str | None,
+    ) -> list[dict[str, Any]]:
+        """List tools in the panel or as a flat list."""
+        # Both modes go through ``AbstractToolBox.to_dict``: the flat listing
+        # runs the ``FilterFactory`` pass (admin/user tool filters and
+        # ``allow_user_access``) over every tool, and ``get_tool_to_dict``
+        # serves ``CachedTool`` stubs from the index without materialising —
+        # so cached-toolbox mode stays O(1) parses while honoring the same filters as
+        # the eager toolbox.
+        return trans.app.toolbox.to_dict(trans, in_panel=in_panel, tool_help=tool_help, view=view)
+
+    def search_tools(
+        self,
+        trans: ProvidesUserContext,
+        query: str,
+        view: str | None = None,
+        limit: int = 50,
+    ) -> list[str]:
+        """Search tools via the ``app.toolbox_search`` singleton.
+
+        Cached and eager toolbox search both own a Whoosh corpus for each
+        rendered panel view and expose the same
+        ``search(q, panel_view, config)`` interface.
+
+        Every hit is resolved with a per-tool access check
+        (``allow_user_access``, e.g. ``require_login`` tools for anonymous
+        users) so denied tools are filtered out.
+
+        In cached-toolbox mode ``get_tool`` would materialise every hit, so
+        hits are instead resolved against registered stubs via
+        :meth:`CachedToolBox.resolve_search_hit`.
+        """
+        cached_toolbox = self._get_cached_toolbox(trans)
+        results: list[str] = []
+        hits = self._search(query, view) or []
+        if cached_toolbox is not None:
+            hits = cached_toolbox.latest_search_hits(hits)
+        for hit in hits:
+            if cached_toolbox is not None:
+                cached_tool = cached_toolbox.resolve_search_hit(hit)
+                if cached_tool is not None and cached_tool.id and cached_tool.allow_user_access(trans.user):
+                    results.append(cached_tool.id)
+                continue
+            try:
+                tool_like = self._get_tool(trans, hit, user=trans.user)
+                if tool_like.id:
+                    results.append(tool_like.id)
+            except exceptions.AuthenticationFailed:
+                pass
+            except exceptions.ObjectNotFound:
+                pass
+        return results

@@ -1,6 +1,7 @@
 import { curveCatmullRom, line } from "d3";
 
 import * as commentColors from "@/components/Workflow/Editor/Comments/colors";
+import type { GraphStep } from "@/composables/useInvocationGraph";
 import type {
     FrameWorkflowComment,
     FreehandWorkflowComment,
@@ -9,6 +10,42 @@ import type {
 } from "@/stores/workflowEditorCommentStore";
 import type { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
+
+const stateColors: Record<string, string> = {};
+let _style: CSSStyleDeclaration | null = null;
+
+/** Initialize the state color cache from CSS variables. Call once when the minimap is mounted. */
+export function initStateColors(style: CSSStyleDeclaration) {
+    _style = style;
+    for (const key of Object.keys(stateColors)) {
+        delete stateColors[key];
+    }
+}
+
+/** Returns the cached CSS `--state-color-{stateName}` value, looking it up on first use. */
+function lookupStateColor(stateName: string): string {
+    if (!(stateName in stateColors) && _style) {
+        stateColors[stateName] = _style.getPropertyValue(`--state-color-${stateName.replace(/_/g, "-")}`);
+    }
+    return stateColors[stateName] ?? "";
+}
+
+/** Get the color for a minimap step based on its state (invocation view) and errors. */
+export function getStepColor(step: Step, nodeColor: string, errorColor: string): string {
+    const graphStep = step as GraphStep;
+    if (graphStep.headerClass) {
+        for (const [key, active] of Object.entries(graphStep.headerClass)) {
+            if (active && key.startsWith("header-")) {
+                const color = lookupStateColor(key.slice(7));
+                if (color) {
+                    return color;
+                }
+            }
+        }
+        return nodeColor;
+    }
+    return step.errors ? errorColor : nodeColor;
+}
 
 export function drawBoxComments(
     ctx: CanvasRenderingContext2D,
@@ -68,6 +105,27 @@ export function drawSteps(
         }
     });
     ctx.fill();
+}
+
+/** Draw borders around minimap steps. This is needed to make step boundaries visible when
+ * step colors are very light (in the invocation view where steps can have states). */
+export function drawStepBorders(
+    ctx: CanvasRenderingContext2D,
+    steps: Step[],
+    borderColor: string,
+    stateStore: ReturnType<typeof useWorkflowStateStore>,
+) {
+    ctx.beginPath();
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 1;
+    steps.forEach((step) => {
+        const rect = stateStore.stepPosition[step.id];
+
+        if (rect && step.position) {
+            ctx.rect(step.position.left, step.position.top, rect.width, rect.height);
+        }
+    });
+    ctx.stroke();
 }
 
 export function drawFreehandComments(

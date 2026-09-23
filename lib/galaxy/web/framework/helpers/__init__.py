@@ -7,15 +7,13 @@ GalaxyWebTransaction in galaxy/webapps/base/webapp.py
 """
 
 import re
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import timedelta
 
 from babel import default_locale
 from babel.dates import format_timedelta
 from routes import url_for
 
+from galaxy.util import now
 from galaxy.util.json import safe_dumps as dumps  # noqa: F401
 from .tags import (
     javascript_link,
@@ -29,14 +27,14 @@ def time_ago(x):
     Convert a datetime to a string.
     """
     # If the date is more than one week ago, then display the actual date instead of in words
-    if datetime.utcnow() - x > timedelta(weeks=1):  # Greater than a week difference
+    if now() - x > timedelta(weeks=1):  # Greater than a week difference
         return x.strftime("%b %d, %Y")
     else:
         # Workaround https://github.com/python-babel/babel/issues/137
         kwargs = {}
         if not default_locale("LC_TIME"):
             kwargs["locale"] = "en_US_POSIX"
-        return format_timedelta(x - datetime.utcnow(), threshold=1, add_direction=True, **kwargs)  # type: ignore[arg-type] # https://github.com/python/mypy/issues/9676
+        return format_timedelta(x - now(), threshold=1, add_direction=True, **kwargs)  # type: ignore[arg-type] # https://github.com/python/mypy/issues/9676
 
 
 def iff(a, b, c):

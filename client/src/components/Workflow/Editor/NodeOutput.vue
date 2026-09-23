@@ -108,9 +108,17 @@ const isVisible = computed(() => {
 
 const visibleHint = computed(() => {
     if (isVisible.value) {
-        return `Output will be visible in history. Click to hide output.`;
+        return `Output will be visible in history.${!props.readonly ? " Click to hide output." : ""}`;
     } else {
-        return `Output will be hidden in history. Click to make output visible.`;
+        return `Output will be hidden in history.${!props.readonly ? " Click to make output visible." : ""}`;
+    }
+});
+
+const activeOutputHint = computed(() => {
+    if (!props.readonly) {
+        return "Checked outputs will become primary workflow outputs and are available as subworkflow outputs.";
+    } else {
+        return "Checked outputs are primary workflow outputs and are available as subworkflow outputs.";
     }
 });
 
@@ -350,22 +358,26 @@ const removeTagsAction = computed(() => {
 <template>
     <div class="node-output" :class="rowClass" :data-output-name="output.name">
         <div v-if="!props.blank" class="d-flex flex-column w-100">
-            <div class="node-output-buttons">
+            <div class="node-output-buttons align-items-start">
                 <button
                     v-if="showCalloutActiveOutput"
-                    v-b-tooltip
+                    v-g-tooltip
                     class="callout-terminal inline-icon-button mark-terminal"
-                    :class="{ 'mark-terminal-active': workflowOutput }"
-                    title="Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
+                    :class="{ 'mark-terminal-active': workflowOutput, 'readonly-button': readonly }"
+                    :title="activeOutputHint"
                     @click="onToggleActive">
                     <FontAwesomeIcon v-if="workflowOutput" fixed-width :icon="faCheckSquare" />
                     <FontAwesomeIcon v-else fixed-width :icon="faSquare" />
                 </button>
                 <button
                     v-if="showCalloutVisible"
-                    v-b-tooltip
+                    v-g-tooltip
                     class="callout-terminal inline-icon-button mark-terminal"
-                    :class="{ 'mark-terminal-visible': isVisible, 'mark-terminal-hidden': !isVisible }"
+                    :class="{
+                        'mark-terminal-visible': isVisible,
+                        'mark-terminal-hidden': !isVisible,
+                        'readonly-button': readonly,
+                    }"
                     :title="visibleHint"
                     @click="onToggleVisible">
                     <FontAwesomeIcon v-if="isVisible" fixed-width :icon="faEye" />
@@ -373,7 +385,7 @@ const removeTagsAction = computed(() => {
                 </button>
                 <span>
                     <span
-                        v-b-tooltip
+                        v-g-tooltip
                         :title="labelToolTipTitle"
                         class="d-inline-block rounded"
                         :class="labelClass"
@@ -386,7 +398,7 @@ const removeTagsAction = computed(() => {
 
             <div
                 v-if="addTagsAction.length > 0"
-                v-b-tooltip.left
+                v-g-tooltip.left
                 class="d-flex align-items-center overflow-x-hidden"
                 title="These tags will be added to the output dataset">
                 <FontAwesomeIcon :icon="faPlus" class="mr-1" />
@@ -395,7 +407,7 @@ const removeTagsAction = computed(() => {
 
             <div
                 v-if="removeTagsAction.length > 0"
-                v-b-tooltip.left
+                v-g-tooltip.left
                 class="d-flex align-items-center overflow-x-hidden"
                 title="These tags will be removed from the output dataset">
                 <FontAwesomeIcon :icon="faMinus" class="mr-1" />
@@ -406,7 +418,7 @@ const removeTagsAction = computed(() => {
         <DraggableWrapper
             :id="id"
             ref="terminalComponent"
-            v-b-tooltip.hover="!props.blank ? outputDetails : ''"
+            v-g-tooltip.hover="!props.blank ? outputDetails : ''"
             class="output-terminal prevent-zoom"
             :class="{ 'mapped-over': isMultiple, 'blank-output': props.blank }"
             :output-name="output.name"
@@ -453,6 +465,18 @@ const removeTagsAction = computed(() => {
     display: flex;
     flex-direction: row;
     margin-left: -0.2rem;
+
+    .readonly-button {
+        cursor: default !important;
+
+        &:hover,
+        &:focus,
+        &:active,
+        &:focus-visible {
+            background-color: unset !important;
+            color: $brand-primary !important;
+        }
+    }
 }
 
 .output-terminal {

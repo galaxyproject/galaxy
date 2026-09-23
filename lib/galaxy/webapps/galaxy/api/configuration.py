@@ -6,7 +6,6 @@ and configuration settings.
 import logging
 from typing import (
     Any,
-    Optional,
 )
 
 from fastapi import Path
@@ -53,7 +52,7 @@ class FastAPIConfiguration:
         summary="Return information about the current authenticated user",
         response_description="Information about the current authenticated user",
     )
-    def whoami(self, trans: ProvidesUserContext = DependsOnTrans) -> Optional[UserModel]:
+    def whoami(self, trans: ProvidesUserContext = DependsOnTrans) -> UserModel | None:
         """Return information about the current authenticated user."""
         return _user_to_model(trans.user)
 
@@ -66,7 +65,7 @@ class FastAPIConfiguration:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         view: SerializationViewQueryParam = None,
-        keys: Optional[str] = SerializationKeysQueryParam,
+        keys: str | None = SerializationKeysQueryParam,
     ) -> dict[str, Any]:
         """
         Return an object containing exposable configuration settings.
@@ -138,7 +137,15 @@ class FastAPIConfiguration:
 def _user_to_model(user):
     if user:
         return UserModel.model_construct(
-            **user.to_dict(view="element", value_mapper={"id": Security.security.encode_id})
+            **user.to_dict(
+                view="element",
+                value_mapper={
+                    "id": Security.security.encode_id,
+                    # Dictifiable otherwise stringifies datetimes via isoformat(); keep the
+                    # datetime object so UserModel.last_password_change serializes correctly.
+                    "last_password_change": lambda v: v,
+                },
+            )
         )
     return None
 

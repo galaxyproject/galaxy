@@ -37,7 +37,8 @@ class TestPurgeUsage(BaseModelTestCase):
         d1 = model.HistoryDatasetAssociation(
             extension="txt", history=self.h, create_dataset=True, sa_session=self.model.session
         )
-        d1.dataset.total_size = 10
+        assert d1.dataset is not None
+        d1.dataset.total_size = Decimal(10)
         self.persist(d1)
         return d1
 
@@ -86,6 +87,7 @@ class TestCalculateUsage(BaseModelTestCase):
         d1 = model.HistoryDatasetAssociation(
             extension="txt", history=self.h, create_dataset=True, sa_session=self.model.session
         )
+        assert d1.dataset is not None
         d1.dataset.total_size = total_size
         d1.dataset.object_store_id = object_store_id
         self.persist(d1)
@@ -567,6 +569,7 @@ backends:
         d1 = model.HistoryDatasetAssociation(
             extension="txt", history=self.h, create_dataset=True, sa_session=self.model.session
         )
+        assert d1.dataset is not None
         d1.dataset.total_size = total_size
         d1.dataset.object_store_id = object_store_id
         self.persist(d1)

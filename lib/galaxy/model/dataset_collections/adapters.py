@@ -136,7 +136,6 @@ class PromoteCollectionElementToCollectionAdapter(DCECollectionAdapter):
 
 
 class PromoteDatasetToCollection(CollectionAdapter):
-
     def __init__(self, hda: "HistoryDatasetAssociation", collection_type: str):
         assert collection_type in ["list", "paired_or_unpaired"]
         self._hda = hda
@@ -158,6 +157,7 @@ class PromoteDatasetToCollection(CollectionAdapter):
     @property
     def dataset_action_tuples(self):
         hda = self._hda
+        assert hda.dataset is not None
         return [(permission.action, permission.role_id) for permission in hda.dataset.actions]
 
     @property
@@ -165,6 +165,7 @@ class PromoteDatasetToCollection(CollectionAdapter):
         hda = self._hda
         dbkeys = [hda.dbkey] if hda.dbkey else []
         extensions = [hda.extension] if hda.extension else []
+        assert hda.dataset is not None
         states = {hda.dataset.state: 1} if hda.dataset.state else {}
         deleted = 1 if hda.deleted or (hda.dataset and hda.dataset.deleted) else 0
         return CollectionStateSummary(dbkeys=dbkeys, extensions=extensions, states=states, deleted=deleted)
@@ -228,10 +229,10 @@ class PromoteDatasetsToCollection(CollectionAdapter):
         return self
 
     @property
-    def dataset_action_tuples(self):
-        tuples = []
+    def dataset_action_tuples(self) -> list[tuple[str | None, int | None]]:
+        tuples: list[tuple[str | None, int | None]] = []
         for hda in self.dataset_instances:
-            tuples.append([(permission.action, permission.role_id) for permission in hda.dataset.actions])
+            tuples.extend((permission.action, permission.role_id) for permission in hda.dataset.actions)
         return tuples
 
     @property

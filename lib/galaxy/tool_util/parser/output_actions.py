@@ -7,7 +7,6 @@ import os.path
 import re
 from typing import (
     Any,
-    List,
 )
 
 from typing_extensions import Protocol
@@ -71,7 +70,7 @@ class ToolOutputActionConditionalWhen(ToolOutputActionGroup):
     tag = "when"
 
     @classmethod
-    def from_elem(cls, app: ToolOutputActionApp, conditional_name_parts: List[str], when_elem):
+    def from_elem(cls, app: ToolOutputActionApp, conditional_name_parts: list[str], when_elem):
         """Loads the proper when by attributes of elem"""
         when_value = when_elem.get("value", None)
         if when_value is not None:
@@ -84,7 +83,7 @@ class ToolOutputActionConditionalWhen(ToolOutputActionGroup):
                 )
         raise TypeError("When type not implemented")
 
-    def __init__(self, app: ToolOutputActionApp, conditional_name_parts: List[str], config_elem, value):
+    def __init__(self, app: ToolOutputActionApp, conditional_name_parts: list[str], config_elem, value):
         super().__init__(app, config_elem)
         self.conditional_name_parts = conditional_name_parts
         self.value = value
@@ -115,7 +114,7 @@ class ValueToolOutputActionConditionalWhen(ToolOutputActionConditionalWhen):
 class DatatypeIsInstanceToolOutputActionConditionalWhen(ToolOutputActionConditionalWhen):
     tag = "when datatype_isinstance"
 
-    def __init__(self, app: ToolOutputActionApp, conditional_name_parts: List[str], config_elem, value):
+    def __init__(self, app: ToolOutputActionApp, conditional_name_parts: list[str], config_elem, value):
         super().__init__(app, conditional_name_parts, config_elem, value)
         self.value = type(app.datatypes_registry.get_datatype_by_extension(value))
 

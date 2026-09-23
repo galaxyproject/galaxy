@@ -1,6 +1,5 @@
 from typing import (
     Literal,
-    Union,
 )
 
 from galaxy.tools.parameters.basic import (
@@ -13,15 +12,15 @@ from galaxy.tools.parameters.basic import (
 )
 
 INPUT_PARAMETER_TYPES = Literal["text", "integer", "float", "boolean", "color", "directory_uri"]
-default_source_type = dict[str, Union[int, float, bool, str]]
-tool_param_type = Union[
-    TextToolParameter,
-    IntegerToolParameter,
-    FloatToolParameter,
-    BooleanToolParameter,
-    ColorToolParameter,
-    DirectoryUriToolParameter,
-]
+default_source_type = dict[str, int | float | bool | str]
+tool_param_type = (
+    TextToolParameter
+    | IntegerToolParameter
+    | FloatToolParameter
+    | BooleanToolParameter
+    | ColorToolParameter
+    | DirectoryUriToolParameter
+)
 
 
 def get_default_parameter(param_type: INPUT_PARAMETER_TYPES) -> tool_param_type:

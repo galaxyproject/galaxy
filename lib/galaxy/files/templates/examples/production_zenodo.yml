@@ -32,7 +32,9 @@
               The personal access token to use to connect to Zenodo. Go to your Account Settings and then go to Applications
               here https://zenodo.org/account/settings/applications/. You can generate a new `Personal Access Token` if you don't have one yet.
               This will allow Galaxy to display your draft records and upload files to them. If you enabled the option to export data
-                from Galaxy to Zenodo, make sure to enable the `deposit:write` scope when creating the token.
+              from Galaxy to Zenodo, make sure to enable the `deposit:write` scope when creating the token.
+
+              **Note**: If you provide a token, you will be able to browse **only your own records**, if you don't provide a token, you will be able to browse all public records in Zenodo.
 
   configuration:
       type: zenodo

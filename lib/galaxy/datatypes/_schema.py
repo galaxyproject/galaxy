@@ -1,7 +1,3 @@
-from typing import (
-    Optional,
-)
-
 from pydantic import (
     BaseModel,
     Field,
@@ -26,12 +22,11 @@ __all__ = [
 class CompositeFileInfo(BaseModel):
     name: str = Field(..., title="Name", description="The name of this composite file")  # Mark this field as required
     optional: bool = Field(title="Optional", description="")  # TODO add description
-    mimetype: Optional[str] = Field(title="MIME type", description="The MIME type of this file")
-    description: Optional[str] = Field(
-        title="Description", description="Summary description of the purpouse of this file"
-    )
-    substitute_name_with_metadata: Optional[str] = Field(
-        title="Substitute name with metadata", description=""  # TODO add description
+    mimetype: str | None = Field(title="MIME type", description="The MIME type of this file")
+    description: str | None = Field(title="Description", description="Summary description of the purpouse of this file")
+    substitute_name_with_metadata: str | None = Field(
+        title="Substitute name with metadata",
+        description="",  # TODO add description
     )
     is_binary: bool = Field(title="Is binary", description="Whether this file is a binary file")
     to_posix_lines: bool = Field(title="To posix lines", description="")  # TODO add description
@@ -45,8 +40,8 @@ class DatatypeDetails(BaseModel):
         description="The data type’s Dataset file extension",
         examples=["bed"],
     )
-    description: Optional[str] = Field(title="Description", description="A summary description for this data type")
-    description_url: Optional[HttpUrl] = Field(
+    description: str | None = Field(title="Description", description="A summary description for this data type")
+    description_url: HttpUrl | None = Field(
         title="Description URL",
         description="The URL to a detailed description for this datatype",
         examples=["https://wiki.galaxyproject.org/Learn/Datatypes#Bed"],
@@ -56,15 +51,15 @@ class DatatypeDetails(BaseModel):
         title="Display in upload",
         description="If True, the associated file extension will be displayed in the `File Format` select list in the `Upload File from your computer` tool in the `Get Data` tool section of the tool panel",
     )
-    composite_files: Optional[list[CompositeFileInfo]] = Field(
+    composite_files: list[CompositeFileInfo] | None = Field(
         default=None, title="Composite files", description="A collection of files composing this data type"
     )
-    upload_warning: Optional[str] = Field(
+    upload_warning: str | None = Field(
         default=None,
         title="Upload warning",
         description="End-user information regarding potential pitfalls with this upload type.",
     )
-    display_behavior: Optional[str] = Field(
+    display_behavior: str | None = Field(
         default=None,
         title="Display behavior",
         description="How this datatype behaves when displayed with preview=True: 'inline' (can be displayed in browser) or 'download' (triggers download)",
@@ -129,12 +124,12 @@ class DatatypeEDAMDetails(BaseModel):
         description="The EDAM prefixed Resource Identifier",
         examples=["format_1782"],
     )
-    label: Optional[str] = Field(
+    label: str | None = Field(
         title="Label",
         description="The EDAM label",
         examples=["NCBI gene report format"],
     )
-    definition: Optional[str] = Field(
+    definition: str | None = Field(
         title="Definition",
         description="The EDAM definition",
         examples=["Entry (gene) format of the NCBI database."],

@@ -36,7 +36,7 @@ def generate_clone_url_for(trans: "ProvidesRepositoriesContext", repository: "Re
 
 
 def generate_clone_url_for_repository_in_tool_shed(
-    user: Optional["User"], repository: "Repository", hostname: Optional[str] = None
+    user: Optional["User"], repository: "Repository", hostname: str | None = None
 ) -> str:
     """Generate the URL for cloning a repository that is in the tool shed."""
     base_url = hostname or url_for("/", qualified=True).rstrip("/")

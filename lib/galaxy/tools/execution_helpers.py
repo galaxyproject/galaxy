@@ -5,9 +5,11 @@ tool execution code, and tool action code.
 """
 
 import logging
-from typing import Optional
+from typing import Any
 
 from more_itertools import consecutive_groups
+
+from galaxy.managers.context import ProvidesUserContext
 
 log = logging.getLogger(__name__)
 
@@ -17,11 +19,11 @@ class ToolExecutionCache:
     the same tool by the same user with slightly different parameters.
     """
 
-    def __init__(self, trans):
+    def __init__(self, trans: ProvidesUserContext):
         self.trans = trans
         self.current_user_roles = trans.get_current_user_roles()
-        self.chrom_info = {}
-        self.cached_collection_elements = {}
+        self.chrom_info: dict[str, Any] = {}
+        self.cached_collection_elements: dict[Any, Any] = {}
 
     def get_chrom_info(self, tool_id, input_dbkey):
         genome_builds = self.trans.app.genome_builds
@@ -50,7 +52,7 @@ def filter_output(tool, output, incoming):
     return False
 
 
-def on_text_for_names(names: Optional[list[str]], prefix: Optional[str] = None) -> str:
+def on_text_for_names(names: list[str] | None, prefix: str | None = None) -> str:
     if names is None or len(names) == 0:
         return ""
 
@@ -71,7 +73,7 @@ def on_text_for_names(names: Optional[list[str]], prefix: Optional[str] = None) 
     return on_text
 
 
-def on_text_for_numeric_ids(ids: Optional[list[int]], prefix: Optional[str] = None) -> str:
+def on_text_for_numeric_ids(ids: list[int] | None, prefix: str | None = None) -> str:
     if ids is None or len(ids) == 0:
         return ""
     # ids may contain duplicates... this is because the first value in
@@ -92,9 +94,9 @@ def on_text_for_numeric_ids(ids: Optional[list[int]], prefix: Optional[str] = No
 
 
 def on_text_for_dataset_and_collections(
-    dataset_hids: Optional[list[int]] = None,
-    collection_hids: Optional[list[int]] = None,
-    element_ids: Optional[list[str]] = None,
+    dataset_hids: list[int] | None = None,
+    collection_hids: list[int] | None = None,
+    element_ids: list[str] | None = None,
 ) -> str:
 
     on_text = []

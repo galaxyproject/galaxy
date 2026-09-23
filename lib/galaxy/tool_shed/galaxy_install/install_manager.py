@@ -3,7 +3,6 @@ import logging
 import os
 from typing import (
     Any,
-    Optional,
 )
 
 from sqlalchemy import or_
@@ -29,6 +28,7 @@ from galaxy.tool_shed.util import (
     tool_util,
 )
 from galaxy.tool_util.deps import views
+from galaxy.tool_util.deps.resolvers import DependencyException
 from galaxy.util.tool_shed import (
     common_util,
     encoding_util,
@@ -78,7 +78,7 @@ class InstallRepositoryManager:
     app: InstallationTarget
     tpm: tool_panel_manager.ToolPanelManager
 
-    def __init__(self, app: InstallationTarget, tpm: Optional[tool_panel_manager.ToolPanelManager] = None):
+    def __init__(self, app: InstallationTarget, tpm: tool_panel_manager.ToolPanelManager | None = None):
         self.app = app
         self.install_model = self.app.install_model
         self._view = views.DependencyResolversView(app)
@@ -170,6 +170,7 @@ class InstallRepositoryManager:
         session.add(tool_shed_repository)
         session.commit()
 
+        is_data_manager = "data_manager" in irmm_metadata_dict
         if "sample_files" in irmm_metadata_dict:
             sample_files = irmm_metadata_dict.get("sample_files", [])
             tool_index_sample_files = stdtm.get_tool_index_sample_files(sample_files)
@@ -186,23 +187,26 @@ class InstallRepositoryManager:
             )
             sample_files = irmm_metadata_dict.get("sample_files", [])
             tool_index_sample_files = stdtm.get_tool_index_sample_files(sample_files)
-            tool_data_path = self.app.config.tool_data_path
-            tool_util.copy_sample_files(tool_data_path, tool_index_sample_files, tool_path=tool_path)
+            # Galaxy-managed loc files for shed-installed tools live under tool_data_path/shed/
+            # so they're separated from admin-configured loc files at tool_data_path root.
+            shed_loc_dir = os.path.join(self.app.config.tool_data_path, "shed")
+            os.makedirs(shed_loc_dir, exist_ok=True)
+            tool_util.copy_sample_files(shed_loc_dir, tool_index_sample_files, tool_path=tool_path)
             sample_files_copied = [str(s) for s in tool_index_sample_files]
             repository_tools_tups = irmm.get_repository_tools_tups()
             if repository_tools_tups:
-                # Handle missing data table entries for tool parameters that are dynamically generated select lists.
-                repository_tools_tups = stdtm.handle_missing_data_table_entry(
-                    relative_install_dir, tool_path, repository_tools_tups
-                )
+                if is_data_manager:
+                    # Only Data Manager repos register data tables on install.
+                    repository_tools_tups = stdtm.handle_missing_data_table_entry(
+                        relative_install_dir, tool_path, repository_tools_tups
+                    )
                 # Handle missing index files for tool parameters that are dynamically generated select lists.
                 repository_tools_tups, sample_files_copied = tool_util.handle_missing_index_file(
                     self.app, tool_path, sample_files, repository_tools_tups, sample_files_copied
                 )
-                # Copy remaining sample files included in the repository to the ~/tool-data directory of the
-                # local Galaxy instance.
+                # Copy remaining sample files included in the repository to the shed loc dir.
                 tool_util.copy_sample_files(
-                    tool_data_path, sample_files, tool_path=tool_path, sample_files_copied=sample_files_copied
+                    shed_loc_dir, sample_files, tool_path=tool_path, sample_files_copied=sample_files_copied
                 )
                 self.tpm.add_to_tool_panel(
                     repository_name=tool_shed_repository.name,
@@ -319,7 +323,7 @@ class InstallRepositoryManager:
         tsr_ids = [r.id for r in created_or_updated_tool_shed_repositories]
         tool_shed_repositories = []
         for tsr_id in tsr_ids:
-            tsr = self.install_model.context.query(self.install_model.ToolShedRepository).get(tsr_id)
+            tsr = self.install_model.context.get(self.install_model.ToolShedRepository, tsr_id)
             tool_shed_repositories.append(tsr)
         clause_list = []
         for tsr_id in tsr_ids:
@@ -492,8 +496,8 @@ class InstallRepositoryManager:
             tsr_ids, repo_info_dicts, tool_panel_section_keys=tool_panel_section_keys
         )
         for tsr_id in ordered_tsr_ids:
-            repository = self.install_model.context.query(self.install_model.ToolShedRepository).get(
-                self.app.security.decode_id(tsr_id)
+            repository = self.install_model.context.get(
+                self.install_model.ToolShedRepository, self.app.security.decode_id(tsr_id)
             )
             if repository.status in [
                 self.install_model.ToolShedRepository.installation_status.NEW,
@@ -640,16 +644,35 @@ class InstallRepositoryManager:
                 tool_shed_repository,
                 self.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
             )
-            new_tools = [self.app.toolbox._tools_by_id.get(tool_d["guid"], None) for tool_d in metadata["tools"]]
-            new_requirements = {tool.requirements.packages for tool in new_tools if tool}
-            [self._view.install_dependencies(r) for r in new_requirements]
-            dependency_manager = self.app.toolbox.dependency_manager
-            if dependency_manager.cached:
-                [dependency_manager.build_cache(r) for r in new_requirements]
+            self._install_tool_dependencies(metadata)
 
         self.update_tool_shed_repository_status(
             tool_shed_repository, self.install_model.ToolShedRepository.installation_status.INSTALLED
         )
+
+    def _install_tool_dependencies(self, metadata):
+        requirements_to_tool_ids = {}
+        for tool_dict in metadata["tools"]:
+            tool_id = tool_dict["guid"]
+            tool = self.app.toolbox._tools_by_id.get(tool_id)
+            if tool:
+                requirements_to_tool_ids.setdefault(tool.requirements.packages, []).append(tool_id)
+
+        for requirements in requirements_to_tool_ids:
+            self._view.install_dependencies(requirements)
+
+        dependency_manager = self.app.toolbox.dependency_manager
+        if dependency_manager.cached:
+            for requirements, tool_ids in requirements_to_tool_ids.items():
+                try:
+                    dependency_manager.build_cache(requirements)
+                except DependencyException:
+                    log.exception(
+                        "Failed to build dependency cache for requirements %s used by tools %s; "
+                        "repository installation will continue, but the affected tools may fail to execute",
+                        requirements.to_dict(),
+                        ", ".join(tool_ids),
+                    )
 
     def update_tool_shed_repository(
         self,

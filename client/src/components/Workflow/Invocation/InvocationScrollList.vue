@@ -93,7 +93,7 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
         {
             id: "state",
             label: invocation.state,
-            title: invocation.state,
+            title: "",
             class: stateClass(invocation.state),
             visible: true,
         },

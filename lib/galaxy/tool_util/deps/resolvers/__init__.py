@@ -6,11 +6,7 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
-from typing import (
-    Any,
-    Dict,
-    List,
-)
+from typing import Any
 
 import yaml
 
@@ -39,7 +35,7 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
     # resolution.
     disabled = False
     resolves_simple_dependencies = True
-    config_options: Dict[str, Any] = {}
+    config_options: dict[str, Any] = {}
     read_only = True
 
     @abstractmethod
@@ -76,7 +72,7 @@ class MultipleDependencyResolver:
     """Variant of DependencyResolver that can optionally resolve multiple dependencies together."""
 
     @abstractmethod
-    def resolve_all(self, requirements: ToolRequirements, **kwds) -> List["Dependency"]:
+    def resolve_all(self, requirements: ToolRequirements, **kwds) -> list["Dependency"]:
         """
         Given multiple requirements yields a list of Dependency objects if and only if they may all be resolved together.
 
@@ -253,8 +249,7 @@ class SpecificationPatternDependencyResolver(SpecificationAwareDependencyResolve
         version = requirement.version
         specs = requirement.specs
 
-        spec = self._find_specification(specs)
-        if spec is not None:
+        if (spec := self._find_specification(specs)) is not None:
             name = spec.short_name
             version = spec.version or version
 

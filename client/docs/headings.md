@@ -10,7 +10,7 @@ Heading Levels are used by screen readers, and other software, to get a rough id
 
 - When increasing a heading level, do not skip Levels.
 
-- Do not use a headings level to determine it's size. Use one of the heading utility classes (e.g. `h-lg`) instead.
+- Do not use a headings level to determine its size. Use one of the heading utility classes (e.g. `h-lg`) instead.
 
 - Do not use a heading tag to make a non-heading text large. Use a heading utility class on a `<span>` instead.
 

@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from string import Template
 from typing import (
     Any,
-    Optional,
 )
 
 from typing_extensions import Protocol
@@ -130,8 +129,8 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
 
 class DescribesScriptIntegrityChecks(Protocol):
     check_job_script_integrity: bool
-    check_job_script_integrity_count: Optional[int]
-    check_job_script_integrity_sleep: Optional[float]
+    check_job_script_integrity_count: int | None
+    check_job_script_integrity_sleep: float | None
 
 
 @dataclass
@@ -139,8 +138,8 @@ class ScriptIntegrityChecks:
     """Minimal class implementing the DescribesScriptIntegrityChecks protocol"""
 
     check_job_script_integrity: bool
-    check_job_script_integrity_count: Optional[int] = None
-    check_job_script_integrity_sleep: Optional[float] = None
+    check_job_script_integrity_count: int | None = None
+    check_job_script_integrity_sleep: float | None = None
 
 
 def write_script(path: str, contents, job_io: DescribesScriptIntegrityChecks, mode: int = RWXR_XR_X) -> None:

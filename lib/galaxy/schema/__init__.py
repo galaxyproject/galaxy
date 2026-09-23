@@ -1,9 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from typing import (
-    Optional,
-    Union,
-)
 
 from pydantic import (
     BaseModel,
@@ -13,8 +9,8 @@ from pydantic import (
 
 class BootstrapAdminUser(BaseModel):
     id: int = 0
-    email: Optional[str] = None
-    username: Optional[str] = None
+    email: str | None = None
+    username: str | None = None
     preferences: dict[str, str] = {}
     bootstrap_admin_user: bool = True
 
@@ -28,13 +24,13 @@ class ValueFilterQueryParams(BaseModel):
     Multiple `q/qv` queries can be concatenated.
     """
 
-    q: Optional[Union[list[str], str]] = Field(
+    q: list[str] | str | None = Field(
         default=None,
         title="Filter Query",
         description="Generally a property name to filter by followed by an (often optional) hyphen and operator string.",
         examples=["create_time-gt"],
     )
-    qv: Optional[Union[list[str], str]] = Field(
+    qv: list[str] | str | None = Field(
         default=None,
         title="Filter Value",
         description="The value to filter by.",
@@ -45,13 +41,13 @@ class ValueFilterQueryParams(BaseModel):
 class PaginationQueryParams(BaseModel):
     """Used to paginate a the request results by limiting and offsetting."""
 
-    offset: Optional[int] = Field(
+    offset: int | None = Field(
         default=0,
         ge=0,
         title="Offset",
         description="Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item",
     )
-    limit: Optional[int] = Field(
+    limit: int | None = Field(
         default=None,
         ge=1,
         title="Limit",
@@ -62,7 +58,7 @@ class PaginationQueryParams(BaseModel):
 class FilterQueryParams(ValueFilterQueryParams, PaginationQueryParams):
     """Contains full filtering options to query elements, paginate and order them."""
 
-    order: Optional[str] = Field(
+    order: str | None = Field(
         default=None,
         title="Order",
         description=(
@@ -77,7 +73,7 @@ class FilterQueryParams(ValueFilterQueryParams, PaginationQueryParams):
 class SerializationParams(BaseModel):
     """Contains common parameters for customizing model serialization."""
 
-    view: Optional[str] = Field(
+    view: str | None = Field(
         default=None,
         title="View",
         description=(
@@ -86,7 +82,7 @@ class SerializationParams(BaseModel):
         ),
         examples=["summary"],
     )
-    keys: Optional[list[str]] = Field(
+    keys: list[str] | None = Field(
         default=None,
         title="Keys",
         description=(
@@ -94,7 +90,7 @@ class SerializationParams(BaseModel):
             "to the ones included in the `view`."
         ),
     )
-    default_view: Optional[str] = Field(
+    default_view: str | None = Field(
         default=None,
         title="Default View",
         description="The item view that will be used in case none was specified.",

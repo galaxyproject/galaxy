@@ -26,12 +26,12 @@ from typing import (
     SupportsInt,
     TYPE_CHECKING,
     TypeVar,
-    Union,
 )
 from urllib.parse import urlparse
 
 import yaml
 
+from galaxy.config._galaxy_config_schema_attributes import GalaxyAppConfigurationAttributes
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import (
@@ -54,7 +54,7 @@ from galaxy.util.resources import (
     resource_path,
 )
 from galaxy.util.themes import flatten_theme
-from ..version import (
+from galaxy.version import (
     VERSION_MAJOR,
     VERSION_MINOR,
 )
@@ -70,7 +70,6 @@ ISO_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 GALAXY_APP_NAME = "galaxy"
 GALAXY_SCHEMAS_PATH = resource_path(__name__, "schemas")
 GALAXY_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "config_schema.yml"
-REPORTS_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "reports_config_schema.yml"
 TOOL_SHED_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "tool_shed_config_schema.yml"
 LOGGING_CONFIG_DEFAULT: dict[str, Any] = {
     "disable_existing_loggers": False,
@@ -125,6 +124,17 @@ LOGGING_CONFIG_DEFAULT: dict[str, Any] = {
         "sentry_sdk.errors": {
             "level": "INFO",
             "qualname": "sentry_sdk.errors",
+        },
+        "social": {
+            # social_core's handle_http_errors decorator calls
+            # social_logger.exception(...) on every OAuth provider HTTP
+            # error (e.g. 400 invalid_grant when an auth code is
+            # reused/expired), then re-raises AuthCanceled/AuthForbidden/
+            # etc. which AuthnzManager.callback() already catches and
+            # logs appropriately (see #22300). The library-side exception
+            # log is pure Sentry noise — see #22400.
+            "level": "CRITICAL",
+            "qualname": "social",
         },
     },
     "filters": {
@@ -244,7 +254,7 @@ OptStr = TypeVar("OptStr", None, str)
 class BaseAppConfiguration(HasDynamicProperties):
     # Override in subclasses (optional): {KEY: config option, VALUE: deprecated directory name}
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
-    renamed_options: Optional[dict[str, str]] = None
+    renamed_options: dict[str, str] | None = None
     deprecated_dirs: dict[str, str] = {}
     paths_to_check_against_root: set[str] = (
         set()
@@ -291,7 +301,7 @@ class BaseAppConfiguration(HasDynamicProperties):
         old_prefixes = (
             f"{old_dialect}:",
             f"{old_dialect}+",
-        )  # check for postgres://foo and postgres+driver//foo
+        )  # check for postgres://foo and postgres+driver://foo
         offset = len(old_dialect)
         keys = ("database_connection", "install_database_connection")
         for key in keys:
@@ -450,7 +460,7 @@ class BaseAppConfiguration(HasDynamicProperties):
                     return path
 
     def _update_raw_config_from_kwargs(self, kwargs):
-        type_converters: dict[str, Callable[[Any], Union[bool, int, float, str]]] = {
+        type_converters: dict[str, Callable[[Any], bool | int | float | str]] = {
             "bool": string_as_bool,
             "int": int,
             "float": float,
@@ -614,7 +624,7 @@ class BaseAppConfiguration(HasDynamicProperties):
 class CommonConfigurationMixin:
     """Shared configuration settings code for Galaxy and ToolShed."""
 
-    sentry_dsn: str
+    sentry_dsn: str | None
     config_dict: dict[str, str]
 
     @property
@@ -658,7 +668,7 @@ class CommonConfigurationMixin:
                 raise ConfigurationError(f"Unable to create missing directory: {path}\n{unicodify(e)}")
 
 
-class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
+class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfiguration, CommonConfigurationMixin):
     renamed_options = {
         "blacklist_file": "email_domain_blocklist_file",
         "whitelist_file": "email_domain_allowlist_file",
@@ -714,6 +724,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     }
 
     add_sample_file_to_defaults = {
+        "agent_model_capabilities_file",
         "build_sites_config_file",
         "datatypes_config_file",
         "tool_data_table_config_path",
@@ -726,12 +737,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     }
 
     allow_local_account_creation: bool
-    allowed_origin_hostnames: list[str]
     builds_file_path: str
     container_resolvers_config_file: str
     database_connection: str
     drmaa_external_runjob_script: str
-    email_from: Optional[str]
+    email_from: str | None
     enable_tool_shed_check: bool
     file_source_temp_dir: str
     galaxy_data_manager_data_path: str
@@ -740,10 +750,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     hash_function: HashFunctionNameEnum
     integrated_tool_panel_config: str
     involucro_path: str
-    len_file_path: str
     manage_dependency_relationships: bool
     monitor_thread_join_timeout: int
-    mulled_channels: list[str]
     new_file_path: str
     nginx_upload_store: str
     password_expiration_period: timedelta
@@ -754,21 +762,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     themes: dict[str, dict[str, str]]
     themes_by_host: dict[str, dict[str, dict[str, str]]]
     tool_data_path: str
-    tool_dependency_dir: Optional[str]
-    tool_filters: list[str]
-    tool_label_filters: list[str]
     tool_path: str
-    tool_section_filters: list[str]
-    toolbox_filter_base_modules: list[str]
     track_jobs_in_database: bool
     trust_jupyter_notebook_conversion: bool
     tus_upload_store: str
     use_remote_user: bool
     user_library_import_dir_auto_creation: bool
-    user_library_import_symlink_allowlist: list[str]
-    user_tool_filters: list[str]
-    user_tool_label_filters: list[str]
-    user_tool_section_filters: list[str]
     visualization_plugins_directory: str
     workflow_resource_params_mapper: str
 
@@ -850,6 +849,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         if not self.database_connection:  # Provide default if not supplied by user
             db_path = self._in_data_dir("universe.sqlite")
             self.database_connection = f"sqlite:///{db_path}?isolation_level=IMMEDIATE"
+        if not self.tool_source_database_connection:
+            self.tool_source_database_connection = f"sqlite:///{self._in_data_dir('tool_sources.sqlite')}"
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_encoding = kwargs.get("database_encoding")  # Create new databases with this encoding
         self.thread_local_log = None
@@ -930,7 +931,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             raise ConfigurationError(f"Unrecognized value for hash_function option: {self.hash_function}")
         self.hash_function = HashFunctionNameEnum[self.hash_function]
         self.metadata_strategy = kwargs.get("metadata_strategy", "directory")
-        self.use_remote_user = self.use_remote_user or self.single_user
+        self.use_remote_user = bool(self.use_remote_user or self.single_user)
         self.fetch_url_allowlist_ips = parse_allowlist_ips(listify(kwargs.get("fetch_url_allowlist")))
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
 
@@ -1141,7 +1142,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # load in the chat_prompts if AI is configured (old key & base URL, or inference_services)
         if self.ai_api_key or self.ai_api_base_url or getattr(self, "inference_services", None):
             self._load_chat_prompts()
-            self._load_agent_config()
 
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         try:
@@ -1331,50 +1331,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         else:
             log.warning(f"Chat prompts file not found at {chat_prompts_path}")
 
-    def _load_agent_config(self):
-        """Load agent configuration with defaults."""
-        # Set default agent configuration if not present
-        if not hasattr(self, "agents"):
-            self.agents: dict = {}
-
-        # Default agent configurations
-        default_agents = {
-            "router": {
-                "enabled": True,
-                "model": "openai:gpt-4",
-                "temperature": 0.3,
-                "max_tokens": 1000,
-            },
-            "error_analysis": {
-                "enabled": True,
-                "model": "openai:gpt-4",
-                "temperature": 0.2,
-                "max_tokens": 2000,
-            },
-            "dataset_analyzer": {
-                "enabled": False,  # Beta feature
-                "model": "openai:gpt-4",
-                "temperature": 0.3,
-                "max_tokens": 1500,
-            },
-            "custom_tool": {
-                "enabled": True,
-                "model": "openai:gpt-4",
-                "temperature": 0.4,
-                "max_tokens": 2000,
-            },
-        }
-
-        # Merge with any existing config
-        for agent_type, default_config in default_agents.items():
-            if agent_type not in self.agents:
-                self.agents[agent_type] = default_config
-            else:
-                # Fill in missing keys with defaults
-                for key, value in default_config.items():
-                    if key not in self.agents[agent_type]:
-                        self.agents[agent_type][key] = value
-
     def _process_celery_config(self):
         if self.celery_conf and self.celery_conf.get("result_backend") is None:
             # If the result_backend is not set, use a SQLite database in the data directory
@@ -1402,6 +1358,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         try_parsing(self.database_connection, "database_connection")
         try_parsing(self.install_database_connection, "install_database_connection")
+        try_parsing(self.tool_source_database_connection, "tool_source_database_connection")
         if self.interactivetoolsproxy_map is not None:
             try_parsing(self.interactivetoolsproxy_map, "interactivetoolsproxy_map")
         try_parsing(self.amqp_internal_connection, "amqp_internal_connection")
@@ -1473,10 +1430,29 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     def ensure_tempdir(self):
         self._ensure_directory(self.new_file_path)
 
+    def all_tool_config_files(self) -> list[str]:
+        """Every tool config the toolbox loads: ``tool_config_file`` plus the
+        shed tool conf and, when present on disk, the migrated tools conf.
+        """
+        configs = list(self.tool_configs or [])
+        if self.shed_tool_config_file and self.shed_tool_config_file not in configs:
+            configs.append(self.shed_tool_config_file)
+        # migrated_tools_config is reserved for tools eliminated from the
+        # distribution; only load it when it exists (an existing deployment
+        # where migrations were previously run).
+        if (
+            self.migrated_tools_config
+            and os.path.exists(self.migrated_tools_config)
+            and self.migrated_tools_config not in configs
+        ):
+            configs.append(self.migrated_tools_config)
+        return configs
+
     def check(self):
         # Check that required directories exist; attempt to create otherwise
         paths_to_check = [
             self.data_dir,
+            self.file_path,
             self.ftp_upload_dir,
             self.library_import_dir,
             self.managed_config_dir,
@@ -1564,7 +1540,7 @@ def get_database_engine_options(kwargs, model_prefix=""):
     Allow options for the SQLAlchemy database engine to be passed by using
     the prefix "database_engine_option".
     """
-    conversions: dict[str, Callable[[Any], Union[bool, int]]] = {
+    conversions: dict[str, Callable[[Any], bool | int]] = {
         "convert_unicode": string_as_bool,
         "pool_timeout": int,
         "echo": string_as_bool,

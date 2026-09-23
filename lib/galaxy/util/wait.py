@@ -1,17 +1,13 @@
 """Abstraction for waiting on API conditions to become true."""
 
 import time
-from typing import (
-    Callable,
-    Optional,
-    Union,
-)
+from collections.abc import Callable
 
 DEFAULT_POLLING_BACKOFF = 0
 DEFAULT_POLLING_DELTA = 0.25
 
 TIMEOUT_MESSAGE_TEMPLATE = "Timed out after {} seconds waiting on {}."
-timeout_type = Union[int, float]
+timeout_type = int | float
 
 
 def wait_on(
@@ -20,7 +16,7 @@ def wait_on(
     timeout: timeout_type,
     delta: timeout_type = DEFAULT_POLLING_DELTA,
     polling_backoff: timeout_type = DEFAULT_POLLING_BACKOFF,
-    sleep_: Optional[Callable] = None,
+    sleep_: Callable | None = None,
 ):
     """Wait for function to return non-None value.
 

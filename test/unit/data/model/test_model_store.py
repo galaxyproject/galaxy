@@ -12,7 +12,6 @@ from tempfile import (
 from typing import (
     Any,
     NamedTuple,
-    Optional,
 )
 
 import pytest
@@ -49,6 +48,19 @@ TEST_PATH_1 = TESTCASE_DIRECTORY / "1.txt"
 TEST_PATH_2 = TESTCASE_DIRECTORY / "2.bed"
 TEST_PATH_2_CONVERTED = TESTCASE_DIRECTORY / "2.txt"
 DEFAULT_OBJECT_STORE_BY = "id"
+
+
+def test_get_export_dataset_filename_truncates_long_name():
+    long_name = "https___example.com_" + "a" * 2000 + ".fastq.gz"
+    filename = store.get_export_dataset_filename(long_name, "fastqsanger.gz", "abcdef1234567890", conversion_key=None)
+    assert len(filename.encode("utf-8")) <= 255
+    assert filename.endswith("_abcdef1234567890.fastqsanger.gz")
+
+    filename_conv = store.get_export_dataset_filename(
+        long_name, "bam", "abcdef1234567890", conversion_key="0123456789abcdef"
+    )
+    assert len(filename_conv.encode("utf-8")) <= 255
+    assert filename_conv.endswith("_abcdef1234567890_conversion_0123456789abcdef.bam")
 
 
 def test_import_export_history():
@@ -212,6 +224,7 @@ def test_import_export_history_with_implicit_conversion_and_extra_files():
     app.object_store.update_from_file(implicit_hda.dataset, file_name=TEST_PATH_2_CONVERTED, create=True)
 
     d2.dataset.create_extra_files_path()
+    assert implicit_hda.dataset is not None
     implicit_hda.dataset.create_extra_files_path()
 
     app.write_primary_file(d2, "cool primary file 1")
@@ -296,6 +309,7 @@ def test_import_from_dict():
     assert imported_hda.state == "deferred"
     assert not imported_hda.deleted
 
+    assert imported_hda.dataset is not None
     assert len(imported_hda.dataset.hashes) == 1
     assert len(imported_hda.dataset.sources) == 1
     assert imported_hda.dataset.created_from_basename == "dataset.txt"
@@ -774,6 +788,70 @@ def test_import_traceback_handling():
     assert exc.value.traceback == traceback_message
 
 
+def test_export_history_with_orphan_icjja(tmp_path):
+    """Orphan ImplicitCollectionJobsJobAssociation rows (job_id NULL) are
+    persisted by the import path when an ICJ references a job key not in
+    object_import_tracker.jobs_by_key. The next export crashes in
+    get_identifier(j_a.job=None); ignore_errors skips the orphan."""
+    app = _mock_app()
+    u, h, _d1, _d2, j = _setup_simple_cat_job(app)
+
+    icj = model.ImplicitCollectionJobs()
+    linked = model.ImplicitCollectionJobsJobAssociation()
+    linked.order_index = 0
+    linked.implicit_collection_jobs = icj
+    linked.job = j
+    to_orphan = model.ImplicitCollectionJobsJobAssociation()
+    to_orphan.order_index = 1
+    to_orphan.implicit_collection_jobs = icj
+    to_orphan.job = j
+    app.add_and_commit(icj, linked, to_orphan)
+
+    # Mimic the post-import state: drop the FK so the row becomes an orphan.
+    to_orphan.job = None  # type: ignore[assignment]
+    app.commit()
+
+    with pytest.raises(AttributeError):
+        with store.TarModelExportStore(str(tmp_path / "strict.tgz"), app=app, export_files="copy") as export_store:
+            export_store.export_history(h)
+
+    tolerant_archive = str(tmp_path / "tolerant.tgz")
+    with store.TarModelExportStore(tolerant_archive, app=app, export_files="copy", ignore_errors=True) as export_store:
+        export_store.export_history(h)
+
+    imported_history = import_archive(tolerant_archive, app, u)
+    imported_job = imported_history.datasets[1].creating_job
+    imported_icj = imported_job.implicit_collection_jobs_association.implicit_collection_jobs
+    assert len(imported_icj.jobs) == 1
+
+
+def test_export_history_with_null_param_id(tmp_path):
+    """Job params shaped {"src": "hda"|"hdca"|"dce", "id": null} are persisted
+    by the import path at model/store/__init__.py:1860-1888 when a referenced
+    HDA/HDCA/DCE can't be resolved. Strict export raises in
+    get_identifier_for_id; ignore_errors passes the null through.
+
+    Reproducing the on-disk state directly: the only producer is the import
+    path itself, so deleting the referenced HDA wouldn't null the persisted
+    param JSON."""
+    app = _mock_app()
+    u, h, _d1, _d2, j = _setup_simple_cat_job(app)
+    j.parameters = [model.JobParameter(name="input1", value=json.dumps({"src": "hda", "id": None}))]
+    app.commit()
+
+    with pytest.raises(NotImplementedError):
+        with store.TarModelExportStore(str(tmp_path / "strict.tgz"), app=app, export_files="copy") as export_store:
+            export_store.export_history(h)
+
+    tolerant_archive = str(tmp_path / "tolerant.tgz")
+    with store.TarModelExportStore(tolerant_archive, app=app, export_files="copy", ignore_errors=True) as export_store:
+        export_store.export_history(h)
+
+    imported_history = import_archive(tolerant_archive, app, u)
+    imported_job = imported_history.datasets[1].creating_job
+    assert json.loads(imported_job.raw_param_dict()["input1"]) == {"src": "hda", "id": None}
+
+
 def test_import_export_edit_datasets():
     """Test modifying existing HDA and dataset metadata with import."""
     app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
@@ -978,6 +1056,21 @@ def test_import_job_with_output_copy():
     )
     import_model_store.perform_import()
     assert copy.extension == "txt"
+
+
+def test_import_existing_job_reports_state_without_applying_it():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    job = h.active_datasets[-1].creating_job
+    assert job
+    job.state = model.Job.states.RUNNING
+    app.commit()
+    import_model_store = store.get_import_model_store_for_directory(
+        temp_directory, import_options=store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True), app=app
+    )
+    object_import_tracker = import_model_store.perform_import()
+    assert job.state == model.Job.states.RUNNING
+    assert app.model.session.scalar(select(model.Job.state).where(model.Job.id == job.id)) == model.Job.states.RUNNING
+    assert object_import_tracker.job_states_by_id == {job.id: model.Job.states.OK}
 
 
 def test_import_datasets_with_ids_fails_if_not_editing_models():
@@ -1366,7 +1459,7 @@ def setup_fixture_context_with_history(
 def perform_import_from_store_dict(
     fixture_context: StoreFixtureContextWithHistory,
     import_dict: dict[str, Any],
-    import_options: Optional[store.ImportOptions] = None,
+    import_options: store.ImportOptions | None = None,
 ) -> None:
     import_options = import_options or store.ImportOptions()
     import_model_store = store.get_import_model_store_for_dict(

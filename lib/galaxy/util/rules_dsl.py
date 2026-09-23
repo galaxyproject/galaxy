@@ -1,14 +1,14 @@
 import abc
 import itertools
 import re
-from typing import (
-    List,
-    Type,
-)
 
 import yaml
 
 from galaxy.util.resources import resource_string
+
+
+class RulesDSLError(Exception):
+    pass
 
 
 def get_rules_specification():
@@ -25,8 +25,7 @@ def _ensure_rule_contains_keys(rule, keys):
 
 
 def _ensure_key_value_in(rule, key, values):
-    value = rule[key]
-    if value not in values:
+    if (value := rule[key]) not in values:
         raise ValueError(f"Invalid value [{value}] for [{key}] encountered.")
 
 
@@ -48,11 +47,11 @@ def apply_regex(regex, target, data, replacement=None, group_count=None, allow_u
                         new_columns = ["" for _ in range(group_count)]
                     result = row + new_columns
                 else:
-                    raise Exception(f"Problem applying regular expression [{regex}] to [{source}].")
+                    raise RulesDSLError(f"Problem applying regular expression [{regex}] to [{source}].")
             else:
                 if group_count:
                     if len(match.groups()) != group_count:
-                        raise Exception("Problem applying regular expression, wrong number of groups found.")
+                        raise RulesDSLError("Problem applying regular expression, wrong number of groups found.")
 
                     result = row + list(match.groups())
                 else:
@@ -65,7 +64,7 @@ def apply_regex(regex, target, data, replacement=None, group_count=None, allow_u
                 if allow_unmatched:
                     result = row + [""]
                 else:
-                    raise Exception(f"Problem applying regular expression [{regex}] to [{source}].")
+                    raise RulesDSLError(f"Problem applying regular expression [{regex}] to [{source}].")
 
         return result
 
@@ -650,7 +649,7 @@ class RuleSet:
         return message
 
 
-RULES_DEFINITION_CLASSES: List[Type[BaseRuleDefinition]] = [
+RULES_DEFINITION_CLASSES: list[type[BaseRuleDefinition]] = [
     AddColumnMetadataRuleDefinition,
     AddColumnGroupTagValueRuleDefinition,
     AddColumnConcatenateRuleDefinition,

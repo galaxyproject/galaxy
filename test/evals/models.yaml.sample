@@ -1,0 +1,37 @@
+# Models to evaluate. Each top-level key is a model name; the value names
+# the proxy it lives on plus the API key (literal or env var).
+#
+# Copy to test/evals/models.yaml (gitignored) and fill in.
+#
+# When you run `python -m evals.run_evals --model-config evals/models.yaml`
+# from the `test/` directory without `--models`, every model declared
+# here is evaluated.
+#
+# Two ways to supply the key per entry:
+#   - api_key_env: <ENV_VAR_NAME>   (recommended -- key never lives in file)
+#   - api_key: <literal-key>        (only safe because this file is gitignored)
+#
+# Models referenced by --judge-model also use entries here.
+
+# LiteLLM-routed model -- proxy URL is the local LiteLLM port.
+# gpt-oss-120b:
+#   proxy_url: http://localhost:4000/v1/
+#   api_key: sk-local-test-master-key
+
+# Local LM Studio (OpenAI-compatible) -- default port is 1234. The model
+# name must match what's loaded in LM Studio. Bump the per-model context
+# length in LM Studio's UI before running; the harness prompts overflow
+# the default 4k window.
+# google/gemma-4-e4b:
+#   proxy_url: http://localhost:1234/v1/
+#   api_key: lm-studio
+
+# TACC SambaNova proxy with env-var key.
+# Llama-4-Maverick-17B-128E-Instruct:
+#   proxy_url: https://ai.tejas.tacc.utexas.edu/v1/
+#   api_key_env: TACC_API_KEY
+
+# Same proxy, literal key.
+# Meta-Llama-3.3-70B-Instruct:
+#   proxy_url: https://ai.tejas.tacc.utexas.edu/v1/
+#   api_key: sk-...

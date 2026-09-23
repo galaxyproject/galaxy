@@ -58,6 +58,24 @@ class BaseScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
 
         return path
 
+    def _pgcleanup_check_output(self, extra_args: list[str]) -> str:
+        config_file = self.write_config_file()
+        output = self._scripts_check_output("cleanup_datasets/pgcleanup.py", ["-c", config_file] + extra_args)
+        print(output)
+        return output
+
+    def is_purged(self, history_id: str, dataset) -> bool:
+        # set wait=False to prevent errored dataset from erroring out
+        if isinstance(dataset, str):
+            details_response = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset_id=dataset, wait=False
+            )
+        else:
+            details_response = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset=dataset, wait=False
+            )
+        return details_response["purged"]
+
 
 class TestScriptsIntegration(BaseScriptsIntegrationTestCase):
     def test_helper(self):

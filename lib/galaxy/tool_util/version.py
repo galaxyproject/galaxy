@@ -24,10 +24,8 @@
 # was removed: https://github.com/pypa/packaging/blob/21.3/packaging/version.py
 
 import re
+from collections.abc import Iterator
 from typing import (
-    Iterator,
-    List,
-    Tuple,
     Union,
 )
 
@@ -39,7 +37,7 @@ from packaging.version import (
 
 __all__ = ["parse_version", "LegacyVersion"]
 
-LegacyCmpKey = Tuple[int, Tuple[str, ...]]
+LegacyCmpKey = tuple[int, tuple[str, ...]]
 
 
 def parse_version(version: str) -> Union["LegacyVersion", Version]:
@@ -150,7 +148,7 @@ def _legacy_cmpkey(version: str) -> LegacyCmpKey:
 
     # This scheme is taken from pkg_resources.parse_version setuptools prior to
     # it's adoption of the packaging library.
-    parts: List[str] = []
+    parts: list[str] = []
     for part in _parse_version_parts(version.lower()):
         if part.startswith("*"):
             # remove "-" before a prerelease tag

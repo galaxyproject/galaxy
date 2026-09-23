@@ -16,7 +16,6 @@ from collections.abc import (
 from itertools import islice
 from typing import (
     Any,
-    Optional,
 )
 
 import bx.align.maf
@@ -44,6 +43,7 @@ from galaxy.datatypes.sniff import (
 from galaxy.exceptions import InvalidFileFormatError
 from galaxy.util import (
     compression_utils,
+    iter_start_of_line,
     nice_size,
 )
 from galaxy.util.checkers import is_gzip
@@ -114,7 +114,7 @@ class Sequence(data.Text):
         data_lines = 0
         sequences = 0
         with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
-            for line in fh:
+            for line in iter_start_of_line(fh, 1):
                 line = line.strip()
                 if line and line.startswith("#"):
                     # We don't count comment lines for sequence data types
@@ -218,7 +218,7 @@ class Sequence(data.Text):
         return directories
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """Split a generic sequence file (not sensible or possible, see subclasses)."""
         if split_params is None:
             return None
@@ -323,8 +323,8 @@ class Sequence(data.Text):
         trans,
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
+        filename: str | None = None,
+        to_ext: str | None = None,
         **kwd,
     ):
         headers = kwd.get("headers", {})
@@ -335,12 +335,13 @@ class Sequence(data.Text):
                     chunk = fh.read(max_peek_size + 1)
                 except UnicodeDecodeError:
                     raise InvalidFileFormatError("Dataset appears to contain binary data, cannot display.")
+                # Always serve as text/plain so the browser preserves whitespace/newlines
+                # and does not interpret the content as HTML.
+                self._clean_and_set_mime_type(trans, "text/plain", headers)
                 if len(chunk) <= max_peek_size:
-                    mime = "text/plain"
-                    self._clean_and_set_mime_type(trans, mime, headers)
-                    return chunk[:-1], headers
-                headers["x-content-truncated"] = max_peek_size
-                return util.unicodify(chunk[:-1]), headers
+                    return chunk, headers
+                headers["x-content-truncated"] = str(max_peek_size)
+                return util.unicodify(chunk[:max_peek_size]), headers
         else:
             return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
 
@@ -355,7 +356,7 @@ class Alignment(data.Text):
     )
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """Split a generic alignment file (not sensible or possible, see subclasses)."""
         if split_params is None:
             return None
@@ -376,7 +377,7 @@ class Fasta(Sequence):
         data_lines = 0
         sequences = 0
         with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
-            for line in fh:
+            for line in iter_start_of_line(fh, 1):
                 if not line:
                     continue
                 elif line[0] == ">":
@@ -443,7 +444,7 @@ class Fasta(Sequence):
         return False
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """Split a FASTA file sequence by sequence.
 
         Note that even if split_mode="number_of_parts", the actual number of
@@ -738,7 +739,7 @@ class BaseFastq(Sequence):
         data_lines = 0
         sequences = 0
         with compression_utils.get_fileobj(dataset.get_file_name()) as in_file:
-            for line in in_file:
+            for line in iter_start_of_line(in_file, 1):
                 if line.startswith("@") and data_lines % 4 == 0:
                     sequences += 1
                 data_lines += 1
@@ -791,7 +792,7 @@ class BaseFastq(Sequence):
         return self.check_first_block(file_prefix)
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """
         FASTQ files are split on cluster boundaries, in increments of 4 lines
         """
@@ -1007,11 +1008,11 @@ class Maf(Alignment):
         optional=True,
     )
 
-    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: HasMetadata | None = None) -> None:
         Alignment.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(
-        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: str | None = None, **kwd
     ) -> None:
         """
         Parses and sets species, chromosomes, index from MAF file.
@@ -1063,7 +1064,7 @@ class Maf(Alignment):
         """Returns formated html of peek"""
         return self.make_html_table(dataset)
 
-    def make_html_table(self, dataset: DatasetProtocol, skipchars: Optional[list] = None) -> str:
+    def make_html_table(self, dataset: DatasetProtocol, skipchars: list | None = None) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []
         try:
@@ -1290,7 +1291,7 @@ class RNADotPlotMatrix(data.Data):
             coor = False
             pairs = False
             with open(filename) as handle:
-                for line in handle:
+                for line in iter_start_of_line(handle, 9):
                     line = line.strip()
                     if line:
                         if line.startswith("/sequence"):
@@ -1327,12 +1328,13 @@ class DotBracket(Sequence):
         data_lines = 0
         sequences = 0
 
-        for line in open(dataset.get_file_name()):
-            line = line.strip()
-            data_lines += 1
+        with open(dataset.get_file_name()) as fh:
+            for line in iter_start_of_line(fh, 1):
+                line = line.strip()
+                data_lines += 1
 
-            if line and line.startswith(">"):
-                sequences += 1
+                if line and line.startswith(">"):
+                    sequences += 1
 
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences

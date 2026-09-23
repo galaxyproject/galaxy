@@ -13,13 +13,17 @@ from typing import (
 )
 
 from galaxy.util.compression_utils import CompressedFile
-from galaxy_test.api.test_workflows import RunsWorkflowFixtures
+from galaxy_test.api.test_workflows import (
+    RunsWorkflowFixtures,
+    WORKFLOW_SIMPLE,
+)
 from galaxy_test.base import api_asserts
 from galaxy_test.base.api import UsesCeleryTasks
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     RunJobsSummary,
+    skip_without_tool,
     WorkflowPopulator,
 )
 from galaxy_test.driver.integration_setup import PosixFileSourceSetup
@@ -73,6 +77,17 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
         with open(bco_path) as f:
             bco = json.load(f)
         self.workflow_populator.validate_biocompute_object(bco)
+
+    @skip_without_tool("cat1")
+    def test_export_invocation_bco(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
+            invocation_id = summary.invocation_id
+            bco_path = self.workflow_populator.download_invocation_to_store(invocation_id, extension="bco.json")
+            with open(bco_path) as f:
+                bco = json.load(f)
+            self.workflow_populator.validate_biocompute_object(bco)
+            assert bco["provenance_domain"]["name"] == "Simple Workflow"
 
     def test_export_ro_crate_with_optional_parameter_without_value(self):
         """Test exporting invocation with optional text parameter that has no value.
@@ -382,26 +397,23 @@ steps:
             # Test 2: Export with include_hidden=True, include_deleted=False
             # Expected: 3 datasets (input_1 + output_1[hidden] + output_3)
             dataset_files = self._export_and_get_datasets(invocation_id, include_hidden=True, include_deleted=False)
-            assert len(dataset_files) == 3, (
-                f"Test 2 (hidden=True, deleted=False): Expected 3 datasets, found {len(dataset_files)}: "
-                f"{dataset_files}"
-            )
+            assert (
+                len(dataset_files) == 3
+            ), f"Test 2 (hidden=True, deleted=False): Expected 3 datasets, found {len(dataset_files)}: {dataset_files}"
 
             # Test 3: Export with include_hidden=False, include_deleted=True
             # Expected: 3 datasets (input_1 + output_2[deleted] + output_3)
             dataset_files = self._export_and_get_datasets(invocation_id, include_hidden=False, include_deleted=True)
-            assert len(dataset_files) == 3, (
-                f"Test 3 (hidden=False, deleted=True): Expected 3 datasets, found {len(dataset_files)}: "
-                f"{dataset_files}"
-            )
+            assert (
+                len(dataset_files) == 3
+            ), f"Test 3 (hidden=False, deleted=True): Expected 3 datasets, found {len(dataset_files)}: {dataset_files}"
 
             # Test 4: Export with include_hidden=True, include_deleted=True
             # Expected: 4 datasets (input_1 + output_1[hidden] + output_2[deleted] + output_3)
             dataset_files = self._export_and_get_datasets(invocation_id, include_hidden=True, include_deleted=True)
-            assert len(dataset_files) == 4, (
-                f"Test 4 (hidden=True, deleted=True): Expected 4 datasets, found {len(dataset_files)}: "
-                f"{dataset_files}"
-            )
+            assert (
+                len(dataset_files) == 4
+            ), f"Test 4 (hidden=True, deleted=True): Expected 4 datasets, found {len(dataset_files)}: {dataset_files}"
 
     def _export_and_get_datasets(self, invocation_id: str, include_hidden: bool, include_deleted: bool) -> list[str]:
         """Helper method to export an invocation and return the list of dataset files in the archive."""

@@ -1,35 +1,50 @@
 <script setup lang="ts">
 import { faArrowCircleLeft, faArrowCircleRight, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { JobBaseModel } from "@/api/jobs";
+import type { TableField } from "@/components/Common/GTable.types";
+import { useInvocationStore } from "@/stores/invocationStore";
 
-import { getJobDuration } from "../JobInformation/utilities";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import GTable from "@/components/Common/GTable.vue";
+import Heading from "@/components/Common/Heading.vue";
+import JobDetails from "@/components/JobInformation/JobDetails.vue";
+import JobState from "@/components/JobStates/JobState.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
-import GButton from "../BaseComponents/GButton.vue";
-import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
-import GModal from "../BaseComponents/GModal.vue";
-import Heading from "../Common/Heading.vue";
-import JobDetails from "../JobInformation/JobDetails.vue";
-import JobState from "../JobStates/JobState.vue";
-import UtcDate from "../UtcDate.vue";
-
-const props = defineProps<{
+interface Props {
     jobs: JobBaseModel[];
     invocationId: string;
     currentPage: number;
     sortDesc: boolean;
     perPage: number;
-}>();
+}
+
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "update:current-page", value: number): void;
     (e: "update:sort-desc", value: boolean): void;
 }>();
 
+const invocationStore = useInvocationStore();
+
+// `getInvocationJobRuntimeById` (via `getInvocationMetricsById`) fetches on first read and
+// self-refreshes as steps finish -- see invocationStore.ts for details.
+const runtimeByJobId = computed(() => invocationStore.getInvocationJobRuntimeById(props.invocationId));
+
 const showModal = ref(false);
+
+const fields: TableField[] = [
+    { key: "id", label: "Job ID" },
+    { key: "update_time", label: "Updated", sortable: true },
+    { key: "duration", label: "Runtime (Wall Clock)" },
+    { key: "state", label: "State" },
+];
 
 /** The job currently being viewed in the modal */
 const viewedJob = ref<JobBaseModel | null>(null);
@@ -55,20 +70,13 @@ const viewedJobIndex = computed<number | null>({
     },
 });
 
-function getTrClass(job: JobBaseModel) {
-    return {
-        "clickable-row": true,
-        "font-weight-bold": job.id === viewedJob.value?.id,
-    };
-}
-
-function jobClicked(job: JobBaseModel) {
-    viewedJob.value = job;
+function jobClicked(event: { item: JobBaseModel }) {
+    viewedJob.value = event.item;
     showModal.value = true;
 }
 
-function onSort(sortInfo: { sortDesc: boolean }) {
-    emit("update:sort-desc", sortInfo.sortDesc);
+function onSort(_sortBy: string, sortDesc: boolean) {
+    emit("update:sort-desc", sortDesc);
 }
 
 function navigateJob(direction: "previous" | "next") {
@@ -111,28 +119,24 @@ watch(
 
 <template>
     <div>
-        <BTable
-            class="job-step-jobs"
-            primary-key="id"
-            :current-page="props.currentPage"
-            :items="props.jobs"
-            striped
-            no-sort-reset
-            no-local-sorting
+        <GTable
+            clickable-rows
             hover
+            striped
+            class="job-step-jobs"
+            sort-by="update_time"
+            :current-page="props.currentPage"
+            :fields="fields"
+            :items="props.jobs"
+            :local-sorting="false"
             :per-page="props.perPage"
-            :fields="[
-                { key: 'id', label: 'Job ID' },
-                { key: 'tool_id', label: 'Tool' },
-                { key: 'update_time', label: 'Updated', sortable: true },
-                { key: 'duration', label: 'Time To Finish' },
-                { key: 'state', label: 'State' },
-            ]"
-            :tbody-tr-class="getTrClass"
-            @row-clicked="jobClicked"
+            :sort-desc="props.sortDesc"
+            @row-click="jobClicked($event)"
             @sort-changed="onSort">
             <template v-slot:cell(id)="data">
-                <div class="d-flex flex-gapx-1 align-items-center">
+                <div
+                    class="d-flex flex-gapx-1 align-items-center"
+                    :class="{ 'font-weight-bold': data.item.id === viewedJob?.id }">
                     <span>{{ data.item.id }}</span>
 
                     <GButton
@@ -148,7 +152,7 @@ watch(
             </template>
 
             <template v-slot:cell(update_time)="data">
-                <UtcDate :date="data.item.update_time" mode="timeonly" />
+                <UtcDate :date="data.item.update_time" mode="elapsed" />
             </template>
 
             <template v-slot:cell(state)="data">
@@ -156,23 +160,19 @@ watch(
             </template>
 
             <template v-slot:cell(duration)="data">
-                {{ getJobDuration(data.item) }}
+                {{ runtimeByJobId[data.item.id] ?? "N/A" }}
             </template>
-        </BTable>
+        </GTable>
 
         <GModal :show.sync="showModal" fixed-height size="medium" @close="viewedJob = null">
             <template v-slot:header>
                 <div v-if="viewedJob" class="w-100 d-flex justify-content-between align-items-center">
-                    <div class="d-flex flex-gapx-1 align-items-center">
-                        <Heading h2 size="sm" style="margin-bottom: 0">
-                            Job
-                            <code>
-                                {{ viewedJob.id }}
-                            </code>
-                        </Heading>
-
-                        <JobState :job="viewedJob" />
-                    </div>
+                    <Heading h2 size="sm">
+                        Job
+                        <code>
+                            {{ viewedJob.id }}
+                        </code>
+                    </Heading>
 
                     <div class="d-flex align-items-center">
                         <GButtonGroup>
@@ -188,6 +188,7 @@ watch(
                     </div>
                 </div>
             </template>
+
             <JobDetails v-if="viewedJob" :job-id="viewedJob.id" :invocation-id="invocationId" />
         </GModal>
     </div>
@@ -195,7 +196,7 @@ watch(
 
 <style scoped lang="scss">
 .job-step-jobs {
-    :deep(.clickable-row) {
+    :deep(.g-table-row-clickable) {
         cursor: pointer;
         color: var(--color-blue-600);
         user-select: text;

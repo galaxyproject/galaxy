@@ -47,7 +47,7 @@ const emit = defineEmits(["workbookContents"]);
     </BCard>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 @import "@/style/scss/theme/blue.scss";
 @import "@/components/Collections/wizard/workbook-dropzones.scss";
 

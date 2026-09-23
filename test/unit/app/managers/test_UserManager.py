@@ -4,7 +4,10 @@ User Manager testing.
 Executable directly using: python -m test.unit.managers.test_UserManager
 """
 
-from datetime import datetime
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
 from unittest.mock import patch
 
 from sqlalchemy import (
@@ -22,7 +25,11 @@ from galaxy.managers import (
     users,
 )
 from galaxy.security.passwords import check_password
+from galaxy.util import now
 from .base import BaseTestCase
+
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 # =============================================================================
 default_password = "123456"
@@ -95,7 +102,7 @@ class TestUserManager(BaseTestCase):
     def test_trimming(self):
         self.log("emails must be trimmed")
         user2b, message = self.user_manager.register(
-            self.trans,
+            cast("GalaxyWebTransaction", self.trans),
             email=" user2b@user2.user2 ",
             username="user2b",
             password=default_password,
@@ -105,7 +112,7 @@ class TestUserManager(BaseTestCase):
         assert user2b.email == "user2b@user2.user2"
         self.log("usernames must be trimmed")
         user2c, message = self.user_manager.register(
-            self.trans,
+            cast("GalaxyWebTransaction", self.trans),
             email="user2c@user2.user2",
             username=" user2c ",
             password=default_password,
@@ -178,7 +185,7 @@ class TestUserManager(BaseTestCase):
         )
         assert check_password(default_password, user2.password)
         assert not check_password(changed_password, user2.password)
-        prt.expiration_time = datetime.utcnow()
+        prt.expiration_time = now()
         user, message = self.user_manager.change_password(
             self.trans, token=prt.token, password=default_password, confirm=default_password
         )
@@ -224,6 +231,58 @@ class TestUserManager(BaseTestCase):
                 mock_hash_util.assert_called_once()
         assert result is True
 
+    def test_create_active_by_default_when_activation_off(self):
+        self.app.config.user_activation_on = False
+        user = self.user_manager.create(email="off@example.com", username="actoff")
+        assert user.active is True
+
+    def test_create_inactive_when_activation_on(self):
+        self.app.config.user_activation_on = True
+        user = self.user_manager.create(email="on@example.com", username="acton")
+        assert user.active is False
+
+    def test_create_trusted_email_active_despite_activation_on(self):
+        self.app.config.user_activation_on = True
+        user = self.user_manager.create(email="trust@example.com", username="trusted", trusted_email=True)
+        assert user.active is True
+
+    def test_create_sends_activation_email_only_when_inactive(self):
+        self.app.config.user_activation_on = True
+        with patch.object(self.user_manager, "send_activation_email") as mock_send:
+            user = self.user_manager.create(
+                email="mail@example.com", username="mailer", trans=self.trans, send_activation_email=True
+            )
+        assert user.active is False
+        mock_send.assert_called_once_with(self.trans, "mail@example.com", "mailer")
+
+    def test_create_skips_activation_email_when_trusted(self):
+        self.app.config.user_activation_on = True
+        with patch.object(self.user_manager, "send_activation_email") as mock_send:
+            user = self.user_manager.create(
+                email="trustmail@example.com",
+                username="trustmail",
+                trans=self.trans,
+                trusted_email=True,
+                send_activation_email=True,
+            )
+        assert user.active is True
+        mock_send.assert_not_called()
+
+    def test_update_email_sends_activation_email(self):
+        self.app.config.user_activation_on = True
+        user = self.user_manager.create(email="original@example.com", username="updater")
+
+        with patch("galaxy.util.send_mail") as mock_send_mail:
+            self.user_manager.update_email(self.trans, user, "updated@example.com", send_activation_email=True)
+        # The activation email was sent to the new address ...
+        mock_send_mail.assert_called_once()
+        assert mock_send_mail.call_args.args[1] == "updated@example.com"
+        # ... and the user can be found by the new email with an activation token.
+        refreshed = self.user_manager.by_email("updated@example.com")
+        assert refreshed is not None
+        assert refreshed.activation_token is not None
+        assert refreshed.active is False
+
     def test_reset_email(self):
         self.log("should produce the password reset email")
         self.user_manager.create(email="user@nopassword.com", username="nopassword")
@@ -237,7 +296,9 @@ class TestUserManager(BaseTestCase):
 
         with patch("galaxy.util.send_mail", side_effect=validate_send_email) as mock_send_mail:
             with patch("galaxy.model.unique_id", return_value="reset_token") as mock_unique_id:
-                result = self.user_manager.send_reset_email(self.trans, dict(email="user@nopassword.com"))
+                result = self.user_manager.send_reset_email(
+                    cast("GalaxyWebTransaction", self.trans), dict(email="user@nopassword.com")
+                )
                 mock_send_mail.assert_called_once()
                 mock_unique_id.assert_called_once()
         assert result is None
@@ -249,7 +310,7 @@ class TestUserManager(BaseTestCase):
         user = self.user_manager.create(email=user_email, username="nopassword")
         self.user_manager.delete(user)
         assert user.deleted is True
-        message = self.user_manager.send_reset_email(self.trans, {"email": user_email})
+        message = self.user_manager.send_reset_email(cast("GalaxyWebTransaction", self.trans), {"email": user_email})
         assert message is None
 
     def test_get_user_by_identity(self):
@@ -264,6 +325,23 @@ class TestUserManager(BaseTestCase):
         assert self.user_manager.get_user_by_identity(uppercase_email_user["username"].capitalize()) is None
         # Email lookups should be case-insensitive
         assert self.user_manager.get_user_by_identity(uppercase_email_user["email"].capitalize()) == uppercase_user
+
+    def test_purge_deletes_oidc_tokens(self):
+        self.log("purging a user should unlink their external identities")
+        self.trans.app.config.allow_user_deletion = True
+        user2 = self.user_manager.create(**user2_data)
+        self.trans.sa_session.add(model.UserAuthnzToken(provider="google", uid="uid2", user=user2))
+        self.trans.sa_session.commit()
+        assert self._oidc_tokens_for(user2)
+
+        self.user_manager.delete(user2)
+        self.user_manager.purge(user2)
+
+        assert self._oidc_tokens_for(user2) == []
+
+    def _oidc_tokens_for(self, user):
+        stmt = select(model.UserAuthnzToken).where(model.UserAuthnzToken.user_id == user.id)
+        return list(self.trans.sa_session.scalars(stmt))
 
 
 # =============================================================================
@@ -397,7 +475,9 @@ class TestUserDeserializer(BaseTestCase):
         self.log("username should be updatable")
         new_name = "double-plus-good"
         self.deserializer.deserialize(user, {"username": new_name}, trans=self.trans)
-        assert self.user_manager.by_id(user.id).username == new_name
+        new_user = self.user_manager.by_id(user.id)
+        assert new_user is not None
+        assert new_user.username == new_name
 
 
 # =============================================================================

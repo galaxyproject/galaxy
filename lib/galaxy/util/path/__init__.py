@@ -5,6 +5,7 @@ import importlib
 import logging
 import shlex
 import types
+from collections.abc import Iterator
 from functools import partial
 from itertools import starmap
 from operator import getitem
@@ -32,12 +33,7 @@ from os.path import (
 from pathlib import Path
 from typing import (
     AnyStr,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
     TYPE_CHECKING,
-    Union,
 )
 
 try:
@@ -54,24 +50,24 @@ import galaxy.util
 
 # Stable in Python 3.10 path types
 if TYPE_CHECKING:
-    StrPath = Union[str, PathLike[str]]
-    BytesPath = Union[bytes, PathLike[bytes]]
-    GenericPath = Union[AnyStr, PathLike[AnyStr]]
-    StrOrBytesPath = Union[str, bytes, PathLike[str], PathLike[bytes]]
+    StrPath = str | PathLike[str]
+    BytesPath = bytes | PathLike[bytes]
+    GenericPath = AnyStr | PathLike[AnyStr]  # type: ignore[misc]  # TypeVar in | expression confuses mypy
+    StrOrBytesPath = str | bytes | PathLike[str] | PathLike[bytes]
 else:
-    StrPath = Union[str, PathLike]
-    BytesPath = Union[bytes, PathLike]
-    GenericPath = Union[AnyStr, PathLike]
-    StrOrBytesPath = Union[str, bytes, PathLike, PathLike]
+    StrPath = str | PathLike
+    BytesPath = bytes | PathLike
+    GenericPath = AnyStr | PathLike
+    StrOrBytesPath = str | bytes | PathLike | PathLike
 
-AllowListT = Optional[List[GenericPath]]
+AllowListT = list[GenericPath] | None  # type: ignore[valid-type]  # GenericPath is TypeVar-based, mypy can't resolve
 
 WALK_MAX_DIRS = 10000
 
 log = logging.getLogger(__name__)
 
 
-def safe_path(path: GenericPath, allowlist: AllowListT = None):
+def safe_path(path: GenericPath, allowlist: AllowListT = None):  # type: ignore[valid-type]  # GenericPath is TypeVar-based
     """Ensure that a the absolute location of the path (after following symlinks) is either itself or on the allowlist
     of acceptable locations.
 
@@ -86,7 +82,7 @@ def safe_path(path: GenericPath, allowlist: AllowListT = None):
     return any(__contains(dirname(path), path, allowlist=allowlist))
 
 
-def safe_contains(prefix: GenericPath, path: GenericPath, allowlist: AllowListT = None, real=None):
+def safe_contains(prefix: GenericPath, path: GenericPath, allowlist: AllowListT = None, real=None):  # type: ignore[valid-type]  # GenericPath is TypeVar-based
     """Ensure a path is contained within another path.
 
     Given any two filesystem paths, ensure that ``path`` is contained in ``prefix``. If ``path`` exists (either as an
@@ -117,7 +113,7 @@ class _SafeContainsDirectoryChecker:
         self.prefix = prefix
         self.real_dirpath = realpath(join(prefix, dirpath))
 
-    def check(self, filename: GenericPath) -> bool:
+    def check(self, filename: GenericPath) -> bool:  # type: ignore[valid-type]  # GenericPath is TypeVar-based
         dirpath_path = join(self.real_dirpath, filename)
         if islink(dirpath_path):
             return safe_contains(self.prefix, filename, allowlist=self.allowlist)
@@ -125,7 +121,7 @@ class _SafeContainsDirectoryChecker:
             return safe_contains(self.prefix, filename, allowlist=self.allowlist, real=dirpath_path)
 
 
-def safe_makedirs(path: GenericPath) -> None:
+def safe_makedirs(path: GenericPath) -> None:  # type: ignore[valid-type]  # GenericPath is TypeVar-based
     """Safely make a directory, do not fail if it already exists or is created during execution.
 
     :type path:     string
@@ -142,7 +138,7 @@ def safe_makedirs(path: GenericPath) -> None:
                 raise
 
 
-def safe_relpath(path: GenericPath) -> bool:
+def safe_relpath(path: GenericPath) -> bool:  # type: ignore[valid-type]  # GenericPath is TypeVar-based
     """Determine whether a relative path references a path outside its root.
 
     This is a path computation: the filesystem is not accessed to confirm the existence or nature of ``path``.
@@ -198,7 +194,7 @@ def safe_walk(path, allowlist=None):
         yield (dirpath, dirnames, filenames)
 
 
-def unsafe_walk(path: GenericPath, allowlist: AllowListT = None, username: Optional[str] = None):
+def unsafe_walk(path: GenericPath, allowlist: AllowListT = None, username: str | None = None):  # type: ignore[valid-type]  # GenericPath is TypeVar-based
     """Walk a path and ensure that none of its contents are symlinks outside the path.
 
     It is assumed that ``path`` itself has already been validated e.g. with :func:`safe_relpath` or
@@ -222,7 +218,7 @@ def unsafe_walk(path: GenericPath, allowlist: AllowListT = None, username: Optio
     return unsafe_paths
 
 
-def __path_permission_for_user(path: GenericPath, username: str) -> bool:
+def __path_permission_for_user(path: GenericPath, username: str) -> bool:  # type: ignore[valid-type]  # GenericPath is TypeVar-based
     """
     :type path:         string
     :param path:        a directory or file to check
@@ -387,7 +383,7 @@ def external_chown(path, pwent, external_chown_script, description="file"):
 
         cmd = shlex.split(external_chown_script)
         cmd.extend([path, pwent[0], str(pwent[3])])
-        log.debug(f"Changing ownership of {path} with: '{galaxy.util.shlex_join(cmd)}'")
+        log.debug(f"Changing ownership of {path} with: '{shlex.join(cmd)}'")
         galaxy.util.commands.execute(cmd)
         return True
     except galaxy.util.commands.CommandLineException as e:
@@ -395,7 +391,7 @@ def external_chown(path, pwent, external_chown_script, description="file"):
         return False
 
 
-def __listify(item) -> Union[list, tuple]:
+def __listify(item) -> list | tuple:
     """A non-splitting version of :func:`galaxy.util.listify`."""
     if not item:
         return []
@@ -408,7 +404,7 @@ def __listify(item) -> Union[list, tuple]:
 # helpers
 
 
-def __walk(path: GenericPath) -> Iterator[GenericPath]:
+def __walk(path: GenericPath) -> Iterator[GenericPath]:  # type: ignore[valid-type]  # GenericPath is TypeVar-based
     for dirpath, dirnames, filenames in walk(path):
         for name in dirnames:
             yield join(dirpath, name)
@@ -416,9 +412,7 @@ def __walk(path: GenericPath) -> Iterator[GenericPath]:
             yield join(dirpath, name)
 
 
-def __contains(
-    prefix: GenericPath, path: GenericPath, allowlist: AllowListT = None, real: Optional[GenericPath] = None
-):
+def __contains(prefix: GenericPath, path: GenericPath, allowlist: AllowListT = None, real: GenericPath | None = None):  # type: ignore[valid-type]  # GenericPath is TypeVar-based
     real = real or realpath(join(prefix, path))
     yield not relpath(real, prefix).startswith(pardir)
     for aldir in allowlist or []:
@@ -430,12 +424,12 @@ def __ext_strip_sep(ext: str) -> str:
     return ext.lstrip(extsep)
 
 
-def __splitext_no_sep(path: AnyStr) -> List[str]:
+def __splitext_no_sep(path: AnyStr) -> list[str]:
     path_as_str = galaxy.util.unicodify(path)
     return (path_as_str.rsplit(extsep, 1) + [""])[0:2]
 
 
-def __splitext_ignore(path: AnyStr, ignore: Optional[Union[List[str], Tuple[str]]] = None) -> Tuple[str, str]:
+def __splitext_ignore(path: AnyStr, ignore: list[str] | tuple[str] | None = None) -> tuple[str, str]:
     # note: unlike os.path.splitext this strips extsep from ext
     ignore_map = map(__ext_strip_sep, __listify(ignore))
     root, ext = __splitext_no_sep(path)

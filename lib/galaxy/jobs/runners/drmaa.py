@@ -252,7 +252,7 @@ class DRMAAJobRunner(AsynchronousJobRunner[DRMAAJobState]):
         # Add to our 'queue' of jobs to monitor
         self.monitor_queue.put(ajs)
 
-    def _complete_terminal_job(self, ajs: DRMAAJobState, drmaa_state: str, **kwargs) -> Union[bool, None]:
+    def _complete_terminal_job(self, ajs: DRMAAJobState, drmaa_state: str, **kwargs) -> bool | None:
         """
         Handle a job upon its termination in the DRM. This method is meant to
         be overridden by subclasses to improve post-mortem and reporting of
@@ -270,15 +270,11 @@ class DRMAAJobRunner(AsynchronousJobRunner[DRMAAJobState]):
                 ajs.fail_message = "The cluster DRM system terminated this job"
                 self.work_queue.put((self.fail_job, ajs))
         elif drmaa_state == drmaa.JobState.DONE or job_state == model.Job.states.STOPPED:
-            # External metadata processing for external runjobs
-            external_metadata = not asbool(ajs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
-            if external_metadata:
-                self._handle_metadata_externally(ajs.job_wrapper, resolve_requirements=True)
             if job_state != model.Job.states.DELETED:
                 self.work_queue.put((self.finish_job, ajs))
         return None
 
-    def check_watched_item_drmaa(self, ajs: DRMAAJobState, new_watched: list[DRMAAJobState]) -> Union[str, None]:
+    def check_watched_item_drmaa(self, ajs: DRMAAJobState, new_watched: list[DRMAAJobState]) -> str | None:
         """
         look at a single watched job, determine its state, and deal with errors
         that could happen in this process. to be called from check_watched_items()

@@ -1,9 +1,8 @@
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
 )
+
+import pytest
 
 from galaxy.exceptions import (
     RequestParameterInvalidException,
@@ -15,6 +14,7 @@ from galaxy.tool_util_models.parameter_validators import (
     RegexParameterValidatorModel,
 )
 from galaxy.util.config_templates import (
+    split_ftp_host_path,
     StrictModel,
     TemplateEnvironmentEntry,
     TemplateSecret,
@@ -22,6 +22,8 @@ from galaxy.util.config_templates import (
     TemplateVariableBoolean,
     TemplateVariableInteger,
     TemplateVariablePathComponent,
+    TemplateVariableSelect,
+    TemplateVariableSelectOption,
     TemplateVariableString,
     validate_secrets_and_variables,
 )
@@ -34,9 +36,9 @@ class TestTemplate(StrictModel):
     id: str
     type: str = "test"
     version: int
-    variables: Optional[List[TemplateVariable]]
-    secrets: Optional[List[TemplateSecret]]
-    environment: Optional[List[TemplateEnvironmentEntry]]
+    variables: list[TemplateVariable] | None
+    secrets: list[TemplateSecret] | None
+    environment: list[TemplateEnvironmentEntry] | None
 
 
 def _template_with_variable(variable: TemplateVariable) -> TestTemplate:
@@ -63,11 +65,11 @@ def _template_with_secret(name: str) -> TestTemplate:
 class TestInstanceDefinition(StrictModel):
     template_id: str
     template_version: int
-    variables: Dict[str, Any]
-    secrets: Dict[str, str]
+    variables: dict[str, Any]
+    secrets: dict[str, str]
 
 
-def _test_instance_with_variables(variables: Dict[str, Any]) -> TestInstanceDefinition:
+def _test_instance_with_variables(variables: dict[str, Any]) -> TestInstanceDefinition:
     return TestInstanceDefinition(
         template_id=TEST_TEMPLATE_ID,
         template_version=TEST_TEMPLATE_VERSION,
@@ -76,7 +78,7 @@ def _test_instance_with_variables(variables: Dict[str, Any]) -> TestInstanceDefi
     )
 
 
-def _test_instance_with_secrets(secrets: Dict[str, str]) -> TestInstanceDefinition:
+def _test_instance_with_secrets(secrets: dict[str, str]) -> TestInstanceDefinition:
     return TestInstanceDefinition(
         template_id=TEST_TEMPLATE_ID,
         template_version=TEST_TEMPLATE_VERSION,
@@ -97,6 +99,14 @@ def test_variable_typing_string():
     instance = _test_instance_with_variables({"test_var": False})
     e = assert_validation_throws(instance, template)
     assert isinstance(e, RequestParameterInvalidException)
+
+
+def test_variable_typing_multiline_string():
+    template = _template_with_variable(
+        TemplateVariableString(name="test_var", help=None, type="string", multiline=True)
+    )
+    instance = _test_instance_with_variables({"test_var": "line1\nline2"})
+    validate_secrets_and_variables(instance, template)
 
 
 def test_variable_typing_boolean():
@@ -149,6 +159,45 @@ def test_variable_typing_path_component():
     assert isinstance(e, RequestParameterInvalidException)
 
     instance = _test_instance_with_variables({"test_var": "simple_directory", "extra": "4"})
+    e = assert_validation_throws(instance, template)
+    assert isinstance(e, RequestParameterInvalidException)
+
+
+def test_variable_typing_select():
+    # A select without static options accepts any string (dynamic options are validated elsewhere).
+    template = _template_with_variable(
+        TemplateVariableSelect(
+            name="test_var",
+            help=None,
+            type="select",
+            options_provider={"kind": "github_authorized_repository_owners"},
+        )
+    )
+    instance = _test_instance_with_variables({"test_var": "galaxyproject/galaxy"})
+    validate_secrets_and_variables(instance, template)
+
+    instance = _test_instance_with_variables({"test_var": 5})
+    e = assert_validation_throws(instance, template)
+    assert isinstance(e, RequestParameterInvalidException)
+
+
+def test_variable_typing_select_static_options():
+    template = _template_with_variable(
+        TemplateVariableSelect(
+            name="test_var",
+            help=None,
+            type="select",
+            options=[
+                TemplateVariableSelectOption(label="First", value="first"),
+                TemplateVariableSelectOption(label="Second", value="second"),
+            ],
+        )
+    )
+    instance = _test_instance_with_variables({"test_var": "first"})
+    validate_secrets_and_variables(instance, template)
+
+    # A value outside the declared static options is rejected.
+    instance = _test_instance_with_variables({"test_var": "third"})
     e = assert_validation_throws(instance, template)
     assert isinstance(e, RequestParameterInvalidException)
 
@@ -289,6 +338,90 @@ def test_length_validator_min_only():
     instance = _test_instance_with_variables({"description": "test"})
     e = assert_validation_throws(instance, template)
     assert isinstance(e, RequestParameterInvalidException)
+
+
+# --- split_ftp_host_path tests ---
+
+
+@pytest.mark.parametrize(
+    "data, expected_host, expected_root",
+    [
+        # Plain host, no path
+        ({"host": "ftp.gnu.org"}, "ftp.gnu.org", None),
+        # Host with path
+        ({"host": "ftp.gnu.org/gnu/"}, "ftp.gnu.org", "/gnu/"),
+        ({"host": "ftp.ensemblgenomes.org/pub/version/"}, "ftp.ensemblgenomes.org", "/pub/version/"),
+        # Protocol prefix
+        ({"host": "ftp://ftp.gnu.org/gnu/"}, "ftp.gnu.org", "/gnu/"),
+        ({"host": "ftps://ftp.gnu.org/gnu/"}, "ftp.gnu.org", "/gnu/"),
+        ({"host": "ftp://ftp.gnu.org"}, "ftp.gnu.org", None),
+        # Trailing slash only
+        ({"host": "ftp.gnu.org/"}, "ftp.gnu.org", "/"),
+        # Host with port and path
+        ({"host": "ftp.gnu.org:2121/gnu/"}, "ftp.gnu.org:2121", "/gnu/"),
+        # No host
+        ({"port": 21}, None, None),
+    ],
+)
+def test_split_ftp_host_path(data, expected_host, expected_root):
+    result = split_ftp_host_path(data)
+    if expected_host is None:
+        assert "host" not in result or result.get("host") == data.get("host")
+    else:
+        assert result["host"] == expected_host
+    if expected_root is None:
+        assert "root" not in result
+    else:
+        assert result["root"] == expected_root
+
+
+@pytest.mark.parametrize(
+    "root_value",
+    ["/custom"],
+)
+def test_split_ftp_host_path_explicit_root_not_overridden(root_value):
+    result = split_ftp_host_path({"host": "ftp.gnu.org/gnu/", "root": root_value})
+    assert result["host"] == "ftp.gnu.org/gnu/"
+    assert result["root"] == root_value
+
+
+def test_split_ftp_host_path_blank_root_treated_as_unset():
+    result = split_ftp_host_path({"host": "ftp.gnu.org/gnu/", "root": ""})
+    assert result["host"] == "ftp.gnu.org"
+    assert result["root"] == "/gnu/"
+
+
+def test_split_ftp_host_path_preserves_other_keys():
+    result = split_ftp_host_path({"host": "ftp.gnu.org/gnu/", "user": "anon", "port": 21})
+    assert result["host"] == "ftp.gnu.org"
+    assert result["root"] == "/gnu/"
+    assert result["user"] == "anon"
+    assert result["port"] == 21
+
+
+@pytest.mark.parametrize("non_dict", [None, "ftp://ftp.gnu.org", 42, []])
+def test_split_ftp_host_path_non_dict_input(non_dict):
+    assert split_ftp_host_path(non_dict) == non_dict
+
+
+def test_split_ftp_host_path_does_not_mutate_input():
+    original = {"host": "ftp.gnu.org/gnu/"}
+    split_ftp_host_path(original)
+    assert original == {"host": "ftp.gnu.org/gnu/"}
+
+
+@pytest.mark.parametrize(
+    "root",
+    ["../etc", "/gnu/../etc", "/..", "foo/../bar", "/gnu/../../etc"],
+)
+def test_split_ftp_host_path_rejects_traversal_in_explicit_root(root):
+    with pytest.raises(ValueError, match="must not contain '\\.\\.'"):
+        split_ftp_host_path({"host": "ftp.gnu.org", "root": root})
+
+
+def test_split_ftp_host_path_rejects_traversal_in_host_derived_root():
+    with pytest.raises(ValueError, match="must not contain '\\.\\.'"):
+        split_ftp_host_path({"host": "ftp.gnu.org/../etc"})
 
 
 def test_length_validator_max_only():

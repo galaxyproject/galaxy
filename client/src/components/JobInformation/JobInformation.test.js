@@ -1,5 +1,6 @@
 import "@tests/vitest/mockHelpPopovers";
 
+import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -61,6 +62,7 @@ describe("JobInformation/JobInformation.vue", () => {
         wrapper = mount(JobInformation, {
             propsData,
             localVue,
+            pinia: createTestingPinia({ createSpy: vi.fn }),
         });
         await flushPromises();
         jobInfoTable = wrapper.find("#job-information");
@@ -89,6 +91,32 @@ describe("JobInformation/JobInformation.vue", () => {
             const msg = rendered_link.at(i).text();
             expect(jobResponse.job_messages.includes(msg));
         }
+    });
+
+    it("explains stream read failures and displays structured diagnostics", async () => {
+        const desc = "Job failed because the tool stdout file could not be read: No such file or directory";
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response }) => {
+                return response(200).json({
+                    ...jobResponse,
+                    state: "error",
+                    job_messages: [{ type: "stdio_read_error", stream: "stdout", errno: 2, error_level: 3, desc }],
+                });
+            }),
+        );
+        wrapper.destroy();
+        wrapper = mount(JobInformation, {
+            propsData: { jobId: JOB_ID },
+            localVue,
+            pinia: createTestingPinia({ createSpy: vi.fn }),
+        });
+        await flushPromises();
+
+        const message = wrapper.find("#job-messages .job-message").text();
+        expect(message).toContain(desc);
+        expect(message).toContain("type: stdio_read_error");
+        expect(message).toContain("stream: stdout");
+        expect(message).toContain("errno: 2");
     });
 
     it("job_information API content", async () => {

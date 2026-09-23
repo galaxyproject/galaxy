@@ -5,11 +5,11 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import (
     Any,
-    Optional,
 )
 
 import pytest
 
+from galaxy.celery import CELERY_APP_DEFAULTS
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy_test.base.api import (
     AnonymousGalaxyInteractor,
@@ -35,10 +35,10 @@ from galaxy_test.base.testcase import host_port_and_url
 @dataclass
 class ApiConfigObject:
     host: str
-    port: Optional[str]
+    port: str | None
     url: str
-    user_api_key: Optional[str]
-    admin_api_key: Optional[str]
+    user_api_key: str | None
+    admin_api_key: str | None
     test_data_resolver: Any
     keepOutdir: Any
 
@@ -107,10 +107,7 @@ def celery_worker_parameters():
 
 @pytest.fixture(scope="session")
 def celery_parameters():
-    return {
-        "task_create_missing_queues": True,
-        "task_default_queue": "galaxy.internal",
-    }
+    return CELERY_APP_DEFAULTS
 
 
 @pytest.fixture

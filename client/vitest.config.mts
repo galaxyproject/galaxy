@@ -1,8 +1,9 @@
 /// <reference types="vitest" />
-import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue2";
 import path from "path";
 import { fileURLToPath } from "url";
+import { defineConfig } from "vite";
+
 import { i18nPlugin } from "./tests/vitest/test-plugin";
 import { yamlPlugin } from "./tests/vitest/yaml-plugin";
 
@@ -14,7 +15,6 @@ const modulesToTransform = [
     "bootstrap-vue",
     "rxjs",
     "@hirez_io",
-    "winbox",
     "pretty-bytes",
     "@fortawesome",
     "ro-crate-zip-explorer",
@@ -54,12 +54,14 @@ export default defineConfig({
         // Use thread pool for faster test execution
         pool: "threads",
         // Test file patterns
-        include: ["src/**/*.test.{js,ts}", "tests/vitest/**/*.test.{js,ts}"],
+        include: ["src/**/*.test.{js,ts}", "tests/vitest/**/*.test.{js,ts}", "packages/*/src/**/*.test.{js,ts}"],
         // Exclude patterns
         exclude: ["node_modules", "dist", "**/dist/**"],
     },
     resolve: {
         alias: {
+            // galaxy-ui resolves through the workspace symlink and its exports
+            // map, so it needs no alias entry here.
             // Match former Jest's module name mapping
             "@": path.resolve(__dirname, "./src"),
             "@tests": path.resolve(__dirname, "./tests"),

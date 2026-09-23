@@ -105,6 +105,11 @@
         "message": "Authentication failed, invalid credentials supplied."
     },
     {
+        "name": "FILE_SOURCE_CREDENTIAL_EXPIRED",
+        "code": 401002,
+        "message": "The OIDC credentials for this file source have expired."
+    },
+    {
         "name": "USER_NO_API_KEY",
         "code": 403001,
         "message": "Authentication required for this request"
@@ -175,6 +180,11 @@
         "message": "This API method or call signature has been deprecated and is no longer available"
     },
     {
+        "name": "TOO_MANY_REQUESTS",
+        "code": 429001,
+        "message": "Too many requests, try again later."
+    },
+    {
         "name": "INTERNAL_SERVER_ERROR",
         "code": 500001,
         "message": "Internal server error."
@@ -218,5 +228,15 @@
         "name": "SERVER_NOT_CONFIGURED_FOR_REQUEST",
         "code": 501002,
         "message": "Server not configured for the request. The Galaxy admin may be able to resolve the problem by installing additional dependencies or setting up new infrastructure."
+    },
+    {
+        "name": "UPSTREAM_PROXY_ERROR",
+        "code": 502001,
+        "message": "An error occurred while proxying a request to an upstream server."
+    },
+    {
+        "name": "UPSTREAM_PROXY_TIMEOUT",
+        "code": 504001,
+        "message": "The upstream server did not respond in time."
     }
 ]

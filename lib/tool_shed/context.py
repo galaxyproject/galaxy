@@ -1,5 +1,4 @@
 import abc
-from typing import Optional
 
 from sqlalchemy.orm import scoped_session
 from typing_extensions import Protocol
@@ -57,7 +56,7 @@ class ProvidesUserContext(ProvidesAppContext, Protocol):
 
     @property
     @abc.abstractmethod
-    def user(self) -> Optional[User]:
+    def user(self) -> User | None:
         """Provide access to the user object."""
 
     @property
@@ -84,7 +83,7 @@ class ProvidesRepositoriesContext(ProvidesUserContext, Protocol):
 
 class SessionRequestContext(ProvidesRepositoriesContext, Protocol):
     @abc.abstractmethod
-    def get_galaxy_session(self) -> Optional[GalaxySession]: ...
+    def get_galaxy_session(self) -> GalaxySession | None: ...
 
     @abc.abstractmethod
     def set_galaxy_session(self, galaxy_session: GalaxySession): ...
@@ -97,9 +96,6 @@ class SessionRequestContext(ProvidesRepositoriesContext, Protocol):
     @abc.abstractmethod
     def response(self) -> GalaxyAbstractResponse: ...
 
-    @abc.abstractmethod
-    def url_builder(self): ...
-
     @property
     @abc.abstractmethod
     def session_csrf_token(self) -> str: ...
@@ -107,22 +103,20 @@ class SessionRequestContext(ProvidesRepositoriesContext, Protocol):
 
 class SessionRequestContextImpl(SessionRequestContext):
     _app: ToolShedApp
-    _user: Optional[User]
-    _galaxy_session: Optional[GalaxySession]
+    _user: User | None
+    _galaxy_session: GalaxySession | None
 
     def __init__(
         self,
         app: ToolShedApp,
         request: GalaxyAbstractRequest,
         response: GalaxyAbstractResponse,
-        user: Optional[User] = None,
-        galaxy_session: Optional[GalaxySession] = None,
-        url_builder=None,
+        user: User | None = None,
+        galaxy_session: GalaxySession | None = None,
     ):
         self._app = app
         self._user = user
         self._galaxy_session = galaxy_session
-        self._url_builder = url_builder
         self.__request = request
         self.__response = response
 
@@ -131,14 +125,10 @@ class SessionRequestContextImpl(SessionRequestContext):
         return self._app
 
     @property
-    def url_builder(self):
-        return self._url_builder
-
-    @property
-    def user(self) -> Optional[User]:
+    def user(self) -> User | None:
         return self._user
 
-    def get_galaxy_session(self) -> Optional[GalaxySession]:
+    def get_galaxy_session(self) -> GalaxySession | None:
         return self._galaxy_session
 
     def set_galaxy_session(self, galaxy_session: GalaxySession):
@@ -175,7 +165,7 @@ class SessionRequestContextImpl(SessionRequestContext):
         return token
 
     @property
-    def galaxy_session(self) -> Optional[GalaxySession]:
+    def galaxy_session(self) -> GalaxySession | None:
         return self._galaxy_session
 
     def log_event(self, str):

@@ -10,7 +10,7 @@ import {
     type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BButton } from "bootstrap-vue";
+import { BBadge } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -20,6 +20,7 @@ import { useUserStore } from "@/stores/userStore";
 import { copy } from "@/utils/clipboard";
 import { isUrl } from "@/utils/url";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 interface BadgeData {
@@ -152,40 +153,49 @@ function getStepText(steps: number) {
 
 <template>
     <div class="workflow-indicators">
-        <BButton
+        <GButton
             v-if="workflow.published && !publishedView"
-            v-b-tooltip.noninteractive.hover
-            size="sm"
+            v-g-tooltip.hover
+            size="small"
             class="workflow-published-icon inline-icon-button"
+            transparent
+            icon-only
+            color="blue"
             :title="publishedTitle"
             @click="emit('updateFilter', 'published', true)">
             <FontAwesomeIcon :icon="faGlobe" fixed-width />
-        </BButton>
+        </GButton>
         <FontAwesomeIcon
             v-else-if="workflow.published"
-            v-b-tooltip.noninteractive.hover
+            v-g-tooltip.hover
             title="Published workflow"
             :icon="faGlobe"
             fixed-width
             size="sm" />
 
-        <BButton
+        <GButton
             v-if="sourceType.includes('trs')"
-            v-b-tooltip.noninteractive.hover
-            size="sm"
+            v-g-tooltip.hover
+            size="small"
             class="workflow-trs-icon inline-icon-button"
+            transparent
+            icon-only
+            color="blue"
             :title="sourceTitle">
             <FontAwesomeIcon :icon="faShieldAlt" fixed-width @click="onCopyLink" />
-        </BButton>
+        </GButton>
 
-        <BButton
+        <GButton
             v-if="sourceType == 'url'"
-            v-b-tooltip.noninteractive.hover
-            size="sm"
+            v-g-tooltip.hover
+            size="small"
             class="workflow-external-link inline-icon-button"
+            transparent
+            icon-only
+            color="blue"
             :title="sourceTitle">
             <FontAwesomeIcon :icon="faFileImport" fixed-width @click="onCopyLink" />
-        </BButton>
+        </GButton>
 
         <span v-if="!noEditTime" class="mr-1">
             <small>
@@ -200,7 +210,7 @@ function getStepText(steps: number) {
 
         <BBadge
             v-if="shared && !publishedView"
-            v-b-tooltip.noninteractive.hover
+            v-g-tooltip.hover
             class="outline-badge cursor-pointer mx-1"
             :title="`'${workflow.owner}' shared this workflow with you. Click to view all workflows shared with you by '${workflow.owner}'`"
             @click="onViewMySharedByUser">
@@ -210,7 +220,7 @@ function getStepText(steps: number) {
 
         <BBadge
             v-if="publishedView && workflow.published"
-            v-b-tooltip.noninteractive.hover
+            v-g-tooltip.hover
             data-description="published owner badge"
             class="outline-badge cursor-pointer mx-1"
             :title="publishedTitle"
@@ -223,7 +233,7 @@ function getStepText(steps: number) {
             <BBadge
                 v-for="creator in creatorBadges"
                 :key="creator.name"
-                v-b-tooltip.noninteractive.hover
+                v-g-tooltip.hover
                 data-description="external creator badge"
                 class="mx-1"
                 :class="creator.class"

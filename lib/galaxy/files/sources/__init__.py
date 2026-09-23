@@ -2,12 +2,15 @@ import abc
 import builtins
 import os
 import time
+from datetime import (
+    datetime,
+    timezone,
+)
 from enum import Enum
 from typing import (
     Any,
     ClassVar,
     Generic,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -27,6 +30,7 @@ from galaxy.files.models import (
     FilesSourceProperties,
     FilesSourceRuntimeContext,
     FilesSourceTemplateContext,
+    RealizedSourceMetadata,
     resolve_file_source_template,
     TResolvedConfig,
     TTemplateConfig,
@@ -109,7 +113,8 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         source_path: str,
         native_path: str,
         user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
+        opts: FilesSourceOptions | None = None,
+        metadata_out: RealizedSourceMetadata | None = None,
     ):
         """Realize source path (relative to uri root) to local file system path.
 
@@ -121,6 +126,10 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         :type user_context: OptionalUserContext, optional
         :param opts: A set of options to exercise additional control over the realize_to method. Filesource specific, defaults to None
         :type opts: Optional[FilesSourceOptions], optional
+        :param metadata_out: An optional dict the file source may populate with metadata about the
+            realized source that isn't derivable from the URI - currently only a ``name`` key
+            reported by the DRS file source. Filesource specific, defaults to None
+        :type metadata_out: Optional[RealizedSourceMetadata], optional
         """
 
     @abc.abstractmethod
@@ -129,7 +138,7 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         target_path: str,
         native_path: str,
         user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
+        opts: FilesSourceOptions | None = None,
     ) -> str:
         """Write file at native path to target_path (relative to uri root).
 
@@ -214,11 +223,11 @@ class SupportsBrowsing(metaclass=abc.ABCMeta):
         path="/",
         recursive=False,
         user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        opts: FilesSourceOptions | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         """Return a list of 'Directory's and 'File's and the total count in a tuple."""
 
@@ -295,7 +304,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
     def get_browsable(self) -> bool:
         return file_source_type_is_browsable(type(self))
 
-    def get_prefix(self) -> Optional[str]:
+    def get_prefix(self) -> str | None:
         return self.id
 
     def get_scheme(self) -> str:
@@ -328,7 +337,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
             root = uri_join(root, prefix)
         return root
 
-    def get_url(self) -> Optional[str]:
+    def get_url(self) -> str | None:
         """Returns a URL that can be used to link to the remote source."""
         return None
 
@@ -337,11 +346,24 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
 
     def score_url_match(self, url: str) -> int:
         root = self.get_uri_root()
-        return len(root) if root in url else 0
+        if url.startswith(root):
+            rest = url[len(root) :]
+            # For roots with a prefix (e.g. gxfiles://test1), ensure match is
+            # at a boundary so gxfiles://test1http://evil doesn't match test1.
+            # Roots ending with :// (e.g. gxftp://) don't need this check.
+            if root.endswith("://") or not rest or rest.startswith("/"):
+                return len(root)
+        return 0
 
     def uri_from_path(self, path: str) -> str:
         uri_root = self.get_uri_root()
         return uri_join(uri_root, path)
+
+    def uri_from_write_result(self, path_or_uri: str) -> str:
+        """Normalize a write result without prefixing a service-assigned absolute URI."""
+        if "://" in path_or_uri:
+            return path_or_uri
+        return self.uri_from_path(path_or_uri)
 
     def _parse_common_props(self, config: FilesSourceProperties):
         self._file_sources_config = config.file_sources_config
@@ -354,6 +376,44 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         self.requires_groups = config.requires_groups
         self.disable_templating = config.disable_templating
         self._validate_security_rules()
+        self._auth_expires_at: datetime | None = (
+            datetime.fromisoformat(config.auth_expires_at) if config.auth_expires_at else None
+        )
+
+    def _check_credentials_fresh(self) -> None:
+        if self._auth_expires_at and datetime.now(timezone.utc) > self._auth_expires_at:
+            from galaxy.exceptions import FileSourceCredentialExpired
+
+            raise FileSourceCredentialExpired()
+
+    def _compute_auth_expires_at(self, user_context: "OptionalUserContext") -> datetime | None:
+        if user_context is None:
+            return None
+        provider = self.template_config.oidc_auth_provider
+        if not provider:
+            return None
+        expirations = getattr(user_context, "oidc_access_token_expirations", {})
+        return expirations.get(provider)
+
+    def _inject_oidc_bearer_token(
+        self,
+        http_headers: dict[str, str],
+        user_context: "OptionalUserContext",
+    ) -> dict[str, str] | None:
+        """Return a copy of http_headers with a Bearer token added for the configured OIDC provider.
+
+        Returns None if no provider is configured, no user context is available, or the user has
+        no token for that provider. Explicitly configured Authorization headers take precedence.
+        """
+        provider = self.template_config.oidc_auth_provider
+        if not provider or not user_context:
+            return None
+        token = (getattr(user_context, "oidc_access_tokens", None) or {}).get(provider)
+        if not token:
+            return None
+        headers = dict(http_headers)
+        headers.setdefault("Authorization", f"Bearer {token}")
+        return headers
 
     def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> dict[str, Any]:
         rval: dict[str, Any] = {
@@ -361,7 +421,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
             "type": self.plugin_type,
             "label": self.label,
             "doc": self.doc,
-            "writable": self.writable,
+            "writable": self.get_writable(),
             "browsable": self.get_browsable(),
             "requires_roles": self.requires_roles,
             "requires_groups": self.requires_groups,
@@ -381,6 +441,13 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
             context = self._get_runtime_context(user_context=user_context)
             serialized_config = self._serialize_config(context.config)
             rval.update(serialized_config)
+            if self.template_config.oidc_auth_provider is not None and user_context is not None:
+                updated_headers = self._inject_oidc_bearer_token(dict(rval.get("http_headers") or {}), user_context)
+                if updated_headers is not None:
+                    rval["http_headers"] = updated_headers
+            expires_at = self._compute_auth_expires_at(user_context)
+            if expires_at is not None:
+                rval["auth_expires_at"] = expires_at.isoformat()
         return rval
 
     def _serialize_config(self, config: TResolvedConfig) -> dict[str, Any]:
@@ -395,7 +462,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
             exclude=COMMON_FILE_SOURCE_PROP_NAMES,
         )
 
-    def to_dict_time(self, ctime) -> Optional[str]:
+    def to_dict_time(self, ctime) -> str | None:
         if ctime is None:
             return None
         elif isinstance(ctime, (int, float)):
@@ -405,8 +472,9 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
 
     def _get_runtime_context(
         self,
-        opts: Optional[FilesSourceOptions] = None,
+        opts: FilesSourceOptions | None = None,
         user_context: "OptionalUserContext" = None,
+        metadata_out: RealizedSourceMetadata | None = None,
     ) -> FilesSourceRuntimeContext:
         """
         Get the runtime context for this file source, resolving the template configuration
@@ -420,7 +488,11 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
             self.template_config = self.template_config.model_copy(update=extra_props)
 
         resolved_config = self._evaluate_template_config(user_data)
-        return FilesSourceRuntimeContext(user_data=user_data, config=resolved_config)
+        if self.template_config.oidc_auth_provider and user_context and hasattr(resolved_config, "http_headers"):
+            updated_headers = self._inject_oidc_bearer_token(dict(resolved_config.http_headers or {}), user_context)
+            if updated_headers is not None:
+                resolved_config = resolved_config.model_copy(update={"http_headers": updated_headers})
+        return FilesSourceRuntimeContext(user_data=user_data, config=resolved_config, metadata_out=metadata_out)
 
     def _apply_defaults_to_template(
         self, defaults: dict[str, Any], template_config: TTemplateConfig
@@ -435,7 +507,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         defaults.update(template_updates)
         return self.template_config_class(**defaults)
 
-    def _evaluate_template_config(self, user_data: Optional[UserData] = None) -> TResolvedConfig:
+    def _evaluate_template_config(self, user_data: UserData | None = None) -> TResolvedConfig:
         if self.disable_templating:
             # Convert template config to resolved config without template evaluation
             config_dict = self.template_config.model_dump(exclude_unset=True, exclude_none=True)
@@ -453,13 +525,14 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         path="/",
         recursive=False,
         user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        opts: FilesSourceOptions | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         self._check_user_access(user_context)
+        self._check_credentials_fresh()
         if not self.supports_pagination and (limit is not None or offset is not None):
             raise RequestParameterInvalidException("Pagination is not supported by this file source.")
         if not self.supports_search and query:
@@ -482,10 +555,10 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         path="/",
         recursive=False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[builtins.list[AnyRemoteEntry], int]:
         raise NotImplementedError()
 
@@ -493,7 +566,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         self,
         entry_data: EntryData,
         user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
+        opts: FilesSourceOptions | None = None,
     ) -> Entry:
         self._ensure_writeable()
         self._check_user_access(user_context)
@@ -513,10 +586,11 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         target_path: str,
         native_path: str,
         user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
+        opts: FilesSourceOptions | None = None,
     ) -> str:
         self._ensure_writeable()
         self._check_user_access(user_context)
+        self._check_credentials_fresh()
         resolved_config = self._get_runtime_context(opts, user_context)
         return self._write_from(target_path, native_path, resolved_config) or target_path
 
@@ -526,7 +600,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         target_path: str,
         native_path: str,
         context: FilesSourceRuntimeContext[TResolvedConfig],
-    ) -> Optional[str]:
+    ) -> str | None:
         pass
 
     def realize_to(
@@ -534,10 +608,12 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         source_path: str,
         native_path: str,
         user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
+        opts: FilesSourceOptions | None = None,
+        metadata_out: RealizedSourceMetadata | None = None,
     ):
         self._check_user_access(user_context)
-        resolved_config = self._get_runtime_context(opts, user_context)
+        self._check_credentials_fresh()
+        resolved_config = self._get_runtime_context(opts, user_context, metadata_out=metadata_out)
         self._realize_to(source_path, native_path, resolved_config)
 
     @abc.abstractmethod

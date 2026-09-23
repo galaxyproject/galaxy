@@ -6,13 +6,17 @@ import {
     faDesktop,
     faFileArchive,
     faHdd,
+    faLayerGroup,
     faLink,
     faSitemap,
     faTable,
 } from "@fortawesome/free-solid-svg-icons";
-import { computed, type ComputedRef, defineAsyncComponent } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, type ComputedRef, defineAsyncComponent, type Ref } from "vue";
 
+import { useConfig } from "@/composables/config";
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
+import { useUserStore } from "@/stores/userStore";
 
 import type { UploadMethod, UploadMethodConfig } from "./types";
 
@@ -91,6 +95,23 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
         ],
         component: defineAsyncComponent(() => import("./methods/DataLibraryUpload.vue")),
     },
+    "composite-file": {
+        id: "composite-file",
+        name: "Upload Composite Dataset",
+        description: "Upload a dataset made up of multiple component files (e.g. Plink, AffyBatch)",
+        icon: faLayerGroup,
+        headerAction: "Upload Composite Dataset",
+        requiresTargetHistory: true,
+        showStartButton: true,
+        tips: [
+            "A composite dataset bundles several files into a single Galaxy dataset (e.g. Plink `.bed`+`.bim`+`.fam`, or an Affymetrix CEL batch)",
+            "Select the composite **type** first — each type defines a fixed set of named component file slots",
+            "Each slot can be filled from a **local file**, a **remote URL**, or **pasted content**",
+            "Optional slots (shown with a blue check) can be left empty; required slots (orange exclamation) must be filled before you can start the upload",
+            "Drag a file directly onto a slot row to fill it quickly",
+        ],
+        component: defineAsyncComponent(() => import("./methods/CompositeFileUpload.vue")),
+    },
     "explore-zip": {
         id: "explore-zip",
         name: "Explore Compressed Zip Archive",
@@ -128,6 +149,7 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
         icon: faHdd,
         headerAction: "Import History",
         requiresTargetHistory: false,
+        requiresLogin: true,
         showStartButton: false,
         tips: [
             "Import a complete Galaxy history from a previously exported file or URL",
@@ -143,6 +165,7 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
         icon: faSitemap,
         headerAction: "Import Workflow",
         requiresTargetHistory: false,
+        requiresLogin: true,
         showStartButton: false,
         tips: [
             "Import workflows from Galaxy Workflow files or public URLs",
@@ -184,4 +207,51 @@ export function useAllUploadMethods(): ComputedRef<UploadMethodConfig[]> {
     return computed(() =>
         Object.values(uploadMethodRegistry).filter((method) => !method.requiresAdvancedMode || advancedMode.value),
     );
+}
+
+/**
+ * Reactive list of upload methods filtered by allowed methods, Galaxy config, and login requirements.
+ *
+ * @param allowedMethods - Optional list of allowed upload method IDs. When `undefined`,
+ * only `requiresLogin`, `requiresConfig`, and `requiresAdvancedMode` filters are applied.
+ */
+export function useFilteredUploadMethods(
+    allowedMethods?: Ref<UploadMethod[] | undefined>,
+): ComputedRef<UploadMethodConfig[]> {
+    const allMethods = useAllUploadMethods();
+    const { config: galaxyConfig, isConfigLoaded } = useConfig();
+    const { isAnonymous } = storeToRefs(useUserStore());
+
+    return computed(() => {
+        return allMethods.value
+            .map((method) => {
+                let disabled = false;
+                let disabledTitle: string | undefined;
+
+                if (method.requiresLogin && isAnonymous.value) {
+                    disabled = true;
+                    disabledTitle = "You must be logged in to use this feature";
+                }
+
+                if (disabled) {
+                    return { ...method, disabled, disabledTitle };
+                }
+
+                return method;
+            })
+            .filter((method) => {
+                if (
+                    allowedMethods?.value &&
+                    !allowedMethods.value.some((allowedMethod) => allowedMethod === method.id)
+                ) {
+                    return false;
+                }
+
+                if (!isConfigLoaded.value || !method.requiresConfig) {
+                    return true;
+                }
+
+                return method.requiresConfig.every((configKey) => Boolean(galaxyConfig.value[configKey]));
+            });
+    });
 }

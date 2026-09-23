@@ -1,4 +1,9 @@
-from galaxy.model import Role
+from sqlalchemy import select
+
+from galaxy.model import (
+    Role,
+    UserRoleAssociation,
+)
 from galaxy.model.db.role import (
     get_displayable_roles,
     get_npns_roles,
@@ -35,6 +40,34 @@ def test_get_private_user_role(session, make_user, make_role, make_user_role_ass
 
     role = get_private_user_role(u1, session)
     assert role is r1
+
+
+def test_get_private_user_role_with_duplicate_private_roles(session, make_user, make_role, make_user_role_association):
+    user = make_user()
+    r1 = make_role(type=Role.types.PRIVATE)
+    r2 = make_role(type=Role.types.PRIVATE)
+    make_user_role_association(user, r1)
+    make_user_role_association(user, r2)
+
+    assert len(session.scalars(_private_roles_stmt(user)).all()) == 2
+    assert get_private_user_role(user, session) is r1
+
+
+def test_attempt_create_private_role_does_not_create_a_second_private_role(session, make_user):
+    user = make_user()
+
+    user.attempt_create_private_role()
+    user.attempt_create_private_role()
+
+    assert len(session.scalars(_private_roles_stmt(user)).all()) == 1
+
+
+def _private_roles_stmt(user):
+    return (
+        select(Role)
+        .join(UserRoleAssociation, Role.id == UserRoleAssociation.role_id)
+        .where(UserRoleAssociation.user_id == user.id, Role.type == Role.types.PRIVATE)
+    )
 
 
 def test_get_roles_by_ids(session, make_role):
@@ -151,8 +184,8 @@ def test_get_displayable_roles(session, make_role, make_user_and_role):
     admin_role1 = make_role(type="admin", name="admin-role-1", description="Description of admin-role1")
     make_role(type="admin", description="Description of admin-role1", deleted=True)
 
-    user_is_admin, security_agent = True, None
-    roles = get_displayable_roles(session, user1, user_is_admin, security_agent)
+    user_is_admin = True
+    roles = get_displayable_roles(session, user1, user_is_admin)
     assert len(roles) == 3
     assert roles[0].id == private_role1.id
     assert roles[1].id == private_role2.id
@@ -168,11 +201,28 @@ def test_get_private_role_user_emails_dict(session, make_role, make_user_and_rol
     user2, private_role2 = make_user_and_role(email="user2@example.com")
     user3, private_role3 = make_user_and_role(email="user3@example.com")
     # make 2 non-private roles
-    make_role(type="admin", name="admin-role-1", description="Description of admin-role1")
+    admin_role1 = make_role(type="admin", name="admin-role-1", description="Description of admin-role1")
     make_role(type="admin", name="admin-role-2", description="Description of admin-role2")
 
-    data = get_private_role_user_emails_dict(session)
-    assert len(data) == 3  # only private role mappings are returned
+    # all private role ids
+    all_ids = {private_role1.id, private_role2.id, private_role3.id}
+    data = get_private_role_user_emails_dict(session, role_ids=all_ids)
+    assert len(data) == 3
     assert data[private_role1.id] == "user1@example.com"
     assert data[private_role2.id] == "user2@example.com"
     assert data[private_role3.id] == "user3@example.com"
+
+    # subset of role ids
+    subset_ids = {private_role1.id, private_role3.id}
+    data = get_private_role_user_emails_dict(session, role_ids=subset_ids)
+    assert len(data) == 2
+    assert data[private_role1.id] == "user1@example.com"
+    assert data[private_role3.id] == "user3@example.com"
+
+    # empty set returns empty dict without hitting the database
+    data = get_private_role_user_emails_dict(session, role_ids=set())
+    assert len(data) == 0
+
+    # non-private role ids return empty (filtered by type=PRIVATE)
+    data = get_private_role_user_emails_dict(session, role_ids={admin_role1.id})
+    assert len(data) == 0

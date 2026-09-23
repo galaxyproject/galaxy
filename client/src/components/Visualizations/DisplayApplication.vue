@@ -49,7 +49,9 @@ async function requestLink() {
         errorMessage.value = `Failed to create link: ${errorMessageAsString(error.err_msg)}`;
     } else {
         errorMessage.value = "";
-        applicationData.value = data;
+        // Cast needed -- openapi-typescript-helpers Readable<T> widens tuples
+        // https://github.com/openapi-ts/openapi-typescript/issues/2632
+        applicationData.value = data as CreateLinkFeedback;
         if (applicationData.value.resource) {
             window.open(applicationData.value.resource, "_blank");
         } else if (applicationData.value.refresh) {

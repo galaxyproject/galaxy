@@ -1,8 +1,8 @@
 import { computed, getCurrentScope, onScopeDispose, reactive, ref, watch } from "vue";
 
-import type { Rectangle } from "@/components/Workflow/Editor/modules/geometry";
 import { useMagicKeys } from "@/composables/useMagicKeys";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import type { Rectangle } from "@/utils/geometry";
 
 import { defineScopedStore } from "./scopedStore";
 import type { WorkflowCommentColor } from "./workflowEditorCommentStore";

@@ -2,6 +2,7 @@ from galaxy.selenium.navigates_galaxy import (
     ConfigTemplateParameter,
     FileSourceInstance,
 )
+from galaxy_test.selenium.upload_activity_helpers import UsesUploadActivity
 from ._base_user_file_sources import BaseUserObjectStoreSeleniumIntegration
 from .framework import (
     managed_history,
@@ -9,7 +10,7 @@ from .framework import (
 )
 
 
-class TestObjectStoreSelectionSeleniumIntegration(BaseUserObjectStoreSeleniumIntegration):
+class TestObjectStoreSelectionSeleniumIntegration(BaseUserObjectStoreSeleniumIntegration, UsesUploadActivity):
     example_filename = "production_ftp.yml"
 
     @selenium_test
@@ -27,4 +28,5 @@ class TestObjectStoreSelectionSeleniumIntegration(BaseUserObjectStoreSeleniumInt
             ],
         )
         uri_root = self.create_file_source_template(instance)
-        self.upload_uri(f"{uri_root}/welcome.msg", wait=True)
+        self.upload_context("paste-links").stage_paste_link(f"{uri_root}/welcome.msg").start()
+        self.wait_for_history()

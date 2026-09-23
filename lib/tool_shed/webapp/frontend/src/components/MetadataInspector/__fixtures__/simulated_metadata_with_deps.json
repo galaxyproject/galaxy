@@ -66,7 +66,8 @@
                 },
                 "repository_dependencies": [],
                 "tools": [],
-                "invalid_tools": []
+                "invalid_tools": [],
+                "create_time": "2024-06-01T00:00:00.000000"
             },
             {
                 "model_class": "RepositoryMetadata",
@@ -117,7 +118,8 @@
                         "version_string_cmd": null
                     }
                 ],
-                "invalid_tools": []
+                "invalid_tools": [],
+                "create_time": "2024-07-01T00:00:00.000000"
             }
         ],
         "tools": [
@@ -142,6 +144,7 @@
                 "version_string_cmd": null
             }
         ],
-        "invalid_tools": []
+        "invalid_tools": [],
+        "create_time": "2024-01-15T10:30:00.000000"
     }
 }

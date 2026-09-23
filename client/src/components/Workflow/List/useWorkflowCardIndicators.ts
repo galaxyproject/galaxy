@@ -85,6 +85,7 @@ export function useWorkflowCardIndicators(
             label: "",
             title: sourceTitle.value,
             icon: faFileImport,
+            handler: onCopyLink,
             visible: sourceType.value == "url",
         },
     ];

@@ -1,15 +1,21 @@
 import string
 from typing import (
     cast,
-    Optional,
 )
+
+import pytest
 
 from galaxy import model
 from galaxy.app_unittest_utils import tools_support
 from galaxy.exceptions import UserActivationRequiredException
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util.parser.xml import parse_change_format
+from galaxy.tools import (
+    load_tool_action_class,
+    tool_produces_real_jobs,
+)
 from galaxy.tools.actions import (
     DefaultToolAction,
     determine_output_format,
@@ -51,6 +57,35 @@ TWO_OUTPUTS = """<tool id="test_tool" name="Test Tool">
 </tool>
 """
 
+# Tool with a multiple="true" data parameter – used to test on_string handling for collections.
+MULTIPLE_DATA_TOOL = """<tool id="test_tool" name="Test Tool" version="1.0" profile="26.1">
+    <command>cat "$param1" &lt; $out1</command>
+    <inputs>
+        <param type="data" format="tabular" name="param1" multiple="true" value="" />
+    </inputs>
+    <outputs>
+        <data name="out1" format="data" />
+    </outputs>
+</tool>
+"""
+
+
+def test_load_tool_action_class_validates_configured_class():
+    action_class = load_tool_action_class("galaxy.tools.actions", "DefaultToolAction")
+
+    assert action_class is DefaultToolAction
+    assert tool_produces_real_jobs("default", ("galaxy.tools.actions", "DefaultToolAction")) is True
+
+
+def test_load_tool_action_class_rejects_missing_class():
+    with pytest.raises(AttributeError, match="has no class 'MissingToolAction'"):
+        load_tool_action_class("galaxy.tools.actions", "MissingToolAction")
+
+
+def test_load_tool_action_class_rejects_non_action_class():
+    with pytest.raises(TypeError, match="is not a ToolAction subclass"):
+        load_tool_action_class("json", "JSONDecoder")
+
 
 def test_on_text_for_numeric_ids():
     def assert_on_text_is(expected, hids):
@@ -83,6 +118,27 @@ def test_on_text_for_dataset_and_collections():
 
 
 class TestDefaultToolAction(TestCase, tools_support.UsesTools):
+    def test_on_text_multiple_true_collection(self):
+        # Create a collection with three datasets
+        hdca = model.HistoryDatasetCollectionAssociation()
+        hdca.id = 999
+        hdca.hid = 55
+        collection = model.DatasetCollection()
+        hdca.collection = collection
+        # add three datasets to the collection
+        hda1 = self.__add_dataset()
+        hda2 = self.__add_dataset()
+        hda3 = self.__add_dataset()
+        model.DatasetCollectionElement(collection=collection, element=hda1)
+        model.DatasetCollectionElement(collection=collection, element=hda2)
+        model.DatasetCollectionElement(collection=collection, element=hda3)
+        collection.collection_type = "list"
+        self.history.dataset_collections.append(hdca)
+        # incoming param with the collection
+        incoming = {"param1": hdca}
+        job, output = self._simple_execute(contents=MULTIPLE_DATA_TOOL, incoming=incoming)
+        assert output["out1"].name == f"Test Tool on collection {hdca.hid}"
+
     def setUp(self):
         self.setup_app()
         history = model.History()
@@ -159,7 +215,7 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         self._init_tool(contents)
         job, out_data, *_ = self.action.execute(
             tool=self.tool,
-            trans=self.trans,
+            trans=cast(ProvidesHistoryContext, self.trans),
             history=self.history,
             incoming=incoming,
         )
@@ -190,6 +246,9 @@ def test_determine_output_format():
 
     input_based_output = quick_output("txt", format_source="i2")
     __assert_output_format_is("fastq", input_based_output, [("i1", "fasta"), ("i2", "fastq")])
+
+    input_based_output = quick_output("txt", format_source="missing")
+    __assert_output_format_is("txt", input_based_output, [("i1", "fasta")])
 
     change_format_xml = """<data><change_format>
         <when input="options_type.output_type" value="solexa" format="fastqsolexa" />
@@ -252,9 +311,7 @@ def __assert_output_format_is(expected, output, input_extensions=None, param_con
     assert actual_format == expected, f"Actual format {actual_format}, does not match expected {expected}"
 
 
-def quick_output(
-    format: str, format_source: Optional[str] = None, change_format_xml: Optional[str] = None
-) -> ToolOutput:
+def quick_output(format: str, format_source: str | None = None, change_format_xml: str | None = None) -> ToolOutput:
     test_output = ToolOutput("test_output")
     test_output.format = format
     test_output.format_source = format_source

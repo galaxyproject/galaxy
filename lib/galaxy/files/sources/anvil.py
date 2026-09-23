@@ -2,10 +2,6 @@ try:
     from anvilfs.anvilfs import AnVILFS
 except ImportError:
     AnVILFS = None
-from typing import (
-    Optional,
-    Union,
-)
 
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
@@ -17,19 +13,19 @@ from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
 class AnVILFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
-    namespace: Union[str, TemplateExpansion]
-    workspace: Union[str, TemplateExpansion]
-    api_url: Union[str, TemplateExpansion, None] = None
-    on_anvil: Union[bool, TemplateExpansion, None] = False
-    drs_url: Union[str, TemplateExpansion, None] = None
+    namespace: str | TemplateExpansion
+    workspace: str | TemplateExpansion
+    api_url: str | TemplateExpansion | None = None
+    on_anvil: bool | TemplateExpansion | None = False
+    drs_url: str | TemplateExpansion | None = None
 
 
 class AnVILFileSourceConfiguration(BaseFileSourceConfiguration):
     namespace: str
     workspace: str
-    api_url: Optional[str] = None
-    on_anvil: Optional[bool] = False
-    drs_url: Optional[str] = None
+    api_url: str | None = None
+    on_anvil: bool | None = False
+    drs_url: str | None = None
 
 
 class AnVILFilesSource(PyFilesystem2FilesSource[AnVILFileSourceTemplateConfiguration, AnVILFileSourceConfiguration]):

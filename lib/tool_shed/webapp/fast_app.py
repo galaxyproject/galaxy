@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import (
     Any,
     cast,
-    Optional,
 )
 
 from a2wsgi import WSGIMiddleware
@@ -52,6 +51,7 @@ api_tags_metadata = [
         "description": "User-related endpoints.",
     },
     {"name": "undocumented", "description": "API routes that have not yet been ported to FastAPI."},
+    {"name": "legacy_install", "description": "Legacy Galaxy install protocol endpoints."},
 ]
 
 # Set this if asset handling should be sent to vite.
@@ -59,7 +59,7 @@ api_tags_metadata = [
 #   pnpm dev
 # Start tool shed with:
 #   TOOL_SHED_VITE_PORT=4040 ./run_tool_shed.sh
-TOOL_SHED_VITE_PORT: Optional[str] = os.environ.get("TOOL_SHED_VITE_PORT", None)
+TOOL_SHED_VITE_PORT: str | None = os.environ.get("TOOL_SHED_VITE_PORT", None)
 TOOL_SHED_FRONTEND_TARGET: str = os.environ.get("TOOL_SHED_FRONTEND_TARGET") or "auto"  # auto, src, or node
 TOOL_SHED_USE_HMR: bool = TOOL_SHED_VITE_PORT is not None
 WEBAPP_DIR = Path(__file__).parent.resolve()

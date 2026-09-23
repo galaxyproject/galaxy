@@ -5,7 +5,6 @@ Pydantic schemas for AI agent responses and requests.
 from enum import Enum
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic import (
@@ -31,6 +30,7 @@ class ActionType(str, Enum):
     CONTACT_SUPPORT = "contact_support"
     VIEW_EXTERNAL = "view_external"
     DOCUMENTATION = "documentation"
+    WORKFLOW_IMPORT = "workflow_import"
 
 
 class ActionSuggestion(BaseModel):
@@ -54,6 +54,9 @@ class ActionSuggestion(BaseModel):
         elif self.action_type == ActionType.VIEW_EXTERNAL:
             if not self.parameters.get("url"):
                 raise ValueError("VIEW_EXTERNAL requires 'url' parameter")
+        elif self.action_type == ActionType.WORKFLOW_IMPORT:
+            if not self.parameters.get("trs_id"):
+                raise ValueError("WORKFLOW_IMPORT requires 'trs_id' parameter")
         return self
 
 
@@ -65,7 +68,7 @@ class AgentResponse(BaseModel):
     agent_type: str = Field(description="Type of agent that generated this response")
     suggestions: list[ActionSuggestion] = Field(default_factory=list, description="Actionable suggestions")
     metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
-    reasoning: Optional[str] = Field(default=None, description="Explanation of the agent's reasoning")
+    reasoning: str | None = Field(default=None, description="Explanation of the agent's reasoning")
 
 
 class AgentQueryRequest(BaseModel):
@@ -86,7 +89,7 @@ class AgentQueryResponse(BaseModel):
     """
 
     response: AgentResponse = Field(description="The agent's response")
-    processing_time: Optional[float] = Field(default=None, description="Time taken to process the query in seconds")
+    processing_time: float | None = Field(default=None, description="Time taken to process the query in seconds")
 
 
 class AvailableAgent(BaseModel):
@@ -96,7 +99,7 @@ class AvailableAgent(BaseModel):
     name: str = Field(description="Human-readable name")
     description: str = Field(description="Description of the agent's capabilities")
     enabled: bool = Field(description="Whether the agent is currently enabled")
-    model: Optional[str] = Field(default=None, description="LLM model used by the agent")
+    model: str | None = Field(default=None, description="LLM model used by the agent")
     specialties: list[str] = Field(default_factory=list, description="Areas of specialization")
 
 
@@ -122,16 +125,16 @@ class ErrorAnalysisRequest(BaseModel):
     """Request for error analysis."""
 
     query: str = Field(description="Description of the error or problem")
-    job_id: Optional[int] = Field(default=None, description="Galaxy job ID associated with the error")
-    error_text: Optional[str] = Field(default=None, description="Specific error message text")
-    tool_id: Optional[str] = Field(default=None, description="Tool that caused the error")
+    job_id: int | None = Field(default=None, description="Galaxy job ID associated with the error")
+    error_text: str | None = Field(default=None, description="Specific error message text")
+    tool_id: str | None = Field(default=None, description="Tool that caused the error")
 
 
 class ErrorCategory(BaseModel):
     """Classification of error types."""
 
     category: str = Field(description="Main error category")
-    subcategory: Optional[str] = Field(default=None, description="More specific error subcategory")
+    subcategory: str | None = Field(default=None, description="More specific error subcategory")
     severity: str = Field(description="Error severity level")
 
 
@@ -162,7 +165,7 @@ class QualityIssue(BaseModel):
     severity: str = Field(description="Severity level")
     description: str = Field(description="Detailed description of the issue")
     suggested_fix: str = Field(description="Recommended solution")
-    affected_records: Optional[int] = Field(default=None, description="Number of affected records")
+    affected_records: int | None = Field(default=None, description="Number of affected records")
 
 
 class DatasetAnalysisResponse(BaseModel):
@@ -178,8 +181,8 @@ class DatasetAnalysisResponse(BaseModel):
 class WorkflowOptimizationRequest(BaseModel):
     """Request for workflow optimization."""
 
-    workflow_id: Optional[str] = Field(default=None, description="Galaxy workflow identifier")
-    workflow_structure: Optional[dict[str, Any]] = Field(default=None, description="Workflow structure data")
+    workflow_id: str | None = Field(default=None, description="Galaxy workflow identifier")
+    workflow_structure: dict[str, Any] | None = Field(default=None, description="Workflow structure data")
     performance_goals: list[str] = Field(default_factory=list, description="Optimization goals")
 
 
@@ -199,7 +202,7 @@ class WorkflowOptimizationResponse(BaseModel):
     optimization_suggestions: list[OptimizationSuggestion] = Field(description="List of optimization suggestions")
     performance_improvements: list[str] = Field(description="Expected performance improvements")
     bottlenecks_identified: list[str] = Field(description="Identified bottlenecks")
-    estimated_time_savings: Optional[str] = Field(default=None, description="Estimated time savings")
+    estimated_time_savings: str | None = Field(default=None, description="Estimated time savings")
     confidence: ConfidenceLevel = Field(description="Confidence in the analysis")
 
 
@@ -220,7 +223,7 @@ class AgentStatus(BaseModel):
     agent_type: str = Field(description="Type of agent")
     enabled: bool = Field(description="Whether the agent is enabled")
     health_status: str = Field(description="Health status (healthy, degraded, unavailable)")
-    last_response_time: Optional[float] = Field(default=None, description="Last response time in seconds")
+    last_response_time: float | None = Field(default=None, description="Last response time in seconds")
     error_rate: float = Field(description="Recent error rate")
     model_info: dict[str, Any] = Field(default_factory=dict, description="Information about the underlying model")
 
@@ -233,3 +236,11 @@ class SystemStatus(BaseModel):
     agent_statuses: list[AgentStatus] = Field(description="Status of each agent")
     system_health: str = Field(description="Overall system health")
     last_check: str = Field(description="Last health check timestamp")
+
+
+class WorkflowReportResponse(BaseModel):
+    """Response from the workflow report generation agent."""
+
+    report: str = Field(description="Generated markdown report for the workflow")
+    total_tokens: int | None = Field(default=None, description="Total tokens consumed by the generation")
+    model: str | None = Field(default=None, description="LLM model used to generate the report")

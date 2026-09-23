@@ -2,7 +2,6 @@ import os
 import shutil
 import tempfile
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -34,8 +33,8 @@ def upload_tar(
     dry_run: bool = False,
     remove_repo_files_not_in_tar: bool = True,
     new_repo_alert: bool = False,
-    rdah: Optional[RepositoryDependencyAttributeHandler] = None,
-    tdah: Optional[ToolDependencyAttributeHandler] = None,
+    rdah: RepositoryDependencyAttributeHandler | None = None,
+    tdah: ToolDependencyAttributeHandler | None = None,
 ) -> ChangeResponseT:
     host = trans.repositories_hostname
     app = trans.app
@@ -82,6 +81,7 @@ def upload_tar(
                 if error_message:
                     return False, error_message, [], "", 0, 0
                 elif altered:
+                    assert root_elem is not None
                     tmp_filename = xml_util.create_and_write_tmp_file(root_elem)
                     shutil.move(tmp_filename, uploaded_file_name)
             elif os.path.split(uploaded_file_name)[-1] == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
@@ -91,6 +91,7 @@ def upload_tar(
                 if error_message:
                     return False, error_message, [], "", 0, 0
                 if altered:
+                    assert root_elem is not None
                     tmp_filename = xml_util.create_and_write_tmp_file(root_elem)
                     shutil.move(tmp_filename, uploaded_file_name)
         return handle_directory_changes(

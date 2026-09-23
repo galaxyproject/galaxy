@@ -1,5 +1,6 @@
 from copy import deepcopy
 from json import dumps
+from typing import Any
 
 import yaml
 
@@ -156,6 +157,18 @@ def test_fetch_data_schema():
     assert isinstance(elements[0], PastedDataElement)
     assert isinstance(elements[1], UrlDataElement)
     assert isinstance(elements[2], FileDataElement)
+
+
+def test_fetch_schema_drops_extra_files_elements():
+    request: dict[str, Any] = deepcopy(example_payload)
+    request["targets"][0]["elements"][0]["extra_files"] = {
+        "src": "pasted",
+        "elements": [{"src": "pasted", "paste_content": "owned\n", "name": "../../escaped.txt"}],
+    }
+    payload = FetchDataPayload(**request)
+    extra_files = payload.model_dump()["targets"][0]["elements"][0]["extra_files"]
+    assert extra_files["src"] == "pasted"
+    assert "elements" not in extra_files
 
 
 def test_data_items():

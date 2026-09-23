@@ -3,32 +3,16 @@
 import logging
 from typing import (
     Any,
-    Optional,
 )
 
+from galaxy.agents import GalaxyAgentDependencies
+from galaxy.agents.registry import AgentRegistry
+from galaxy.agents.router import QueryRouterAgent
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.exceptions import ConfigurationError
-from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.agents import AgentResponse
-
-# Import agent system (pydantic_ai is optional)
-try:
-    from galaxy.agents import (
-        agent_registry,
-        GalaxyAgentDependencies,
-    )
-    from galaxy.agents.error_analysis import ErrorAnalysisAgent
-    from galaxy.agents.router import QueryRouterAgent
-
-    HAS_AGENTS = True
-except ImportError:
-    HAS_AGENTS = False
-    agent_registry = None  # type: ignore[assignment,misc,unused-ignore]
-    GalaxyAgentDependencies = None  # type: ignore[assignment,misc,unused-ignore]
-    QueryRouterAgent = None  # type: ignore[assignment,misc,unused-ignore]
-    ErrorAnalysisAgent = None  # type: ignore[assignment,misc,unused-ignore]
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -40,14 +24,13 @@ class AgentService:
         self,
         config: GalaxyAppConfiguration,
         job_manager: JobManager,
+        registry: AgentRegistry,
     ):
-        if not HAS_AGENTS:
-            raise ConfigurationError("Agent system is not available")
-
         self.config = config
         self.job_manager = job_manager
+        self.registry = registry
 
-    def create_dependencies(self, trans: ProvidesUserContext, user: User) -> GalaxyAgentDependencies:
+    def create_dependencies(self, trans: SessionRequestContext, user: User) -> GalaxyAgentDependencies:
         """Create agent dependencies for dependency injection."""
         toolbox = trans.app.toolbox if hasattr(trans, "app") and hasattr(trans.app, "toolbox") else None
         return GalaxyAgentDependencies(
@@ -56,16 +39,17 @@ class AgentService:
             config=self.config,
             job_manager=self.job_manager,
             toolbox=toolbox,
-            get_agent=agent_registry.get_agent,
+            get_agent=self.registry.get_agent,
+            get_capability_blurb=self.registry.get_capability_blurb,
         )
 
     async def execute_agent(
         self,
         agent_type: str,
         query: str,
-        trans: ProvidesUserContext,
+        trans: SessionRequestContext,
         user: User,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> AgentResponse:
         """Execute a specific agent and return response."""
         deps = self.create_dependencies(trans, user)
@@ -75,7 +59,7 @@ class AgentService:
 
         try:
             log.info(f"Executing {agent_type} agent for query: '{query[:100]}...'")
-            agent = agent_registry.get_agent(agent_type, deps)
+            agent = self.registry.get_agent(agent_type, deps)
             response = await agent.process(query, context)
 
             return AgentResponse(
@@ -112,9 +96,9 @@ class AgentService:
     async def route_and_execute(
         self,
         query: str,
-        trans: ProvidesUserContext,
+        trans: SessionRequestContext,
         user: User,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
         agent_type: str = "auto",
     ) -> AgentResponse:
         """
@@ -123,7 +107,10 @@ class AgentService:
         When agent_type is 'auto', the router agent handles the query directly,
         either answering it or using output functions to hand off to specialists.
         """
-        if agent_type == "auto":
+        if agent_type == "auto" and isinstance(context, dict) and context.get("page_id"):
+            log.info("Routing to page_assistant for notebook context")
+            return await self.execute_agent("page_assistant", query, trans, user, context)
+        elif agent_type == "auto":
             # Router handles everything via output functions:
             # - Answers general questions directly
             # - Hands off to error_analysis for debugging
@@ -134,3 +121,9 @@ class AgentService:
             # Explicit agent request - execute directly
             log.info(f"User explicitly requested agent: {agent_type}")
             return await self.execute_agent(agent_type, query, trans, user, context)
+
+    def list_agents(self) -> list[str]:
+        return self.registry.list_agents()
+
+    def get_agent_info(self, agent_type: str) -> dict:
+        return self.registry.get_agent_info(agent_type)

@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml" />
+  <tool file="export_remote_0.1.0.xml" />
   <tool file="export_remote.xml" />
   <section id="test" name="Test Section">
     <tool file="multi_data_optional.xml" />
@@ -17,6 +18,7 @@
   <tool file="inheritance_simple.xml" />
   <tool file="boolean_conditional.xml" />
   <tool file="composite.xml" />
+  <tool file="composite_pbed.xml" />
   <tool file="environment_variables.xml" />
   <tool file="environment_variables_inject.xml" />
   <tool file="code_file.xml" />
@@ -47,6 +49,7 @@
   <tool file="tool_provided_metadata_10.xml" />
   <tool file="tool_provided_metadata_11.xml" />
   <tool file="tool_provided_metadata_12.xml" />
+  <tool file="tool_provided_metadata_security.xml" />
   <tool file="empty_datasets.xml" />
   <tool file="is_of_type.xml" />
   <tool file="data_optional.xml" />
@@ -60,6 +63,7 @@
   <tool file="filter_static_regexp.xml" />
   <tool file="select_from_dataset.xml" />
   <tool file="select_from_dataset_in_conditional.xml" />
+  <tool file="conditional_name_digit_suffix.xml" />
   <tool file="select_from_csvdataset.xml" />
   <tool file="select_from_dataset_optional.xml" />
   <tool file="drill_down.xml" />
@@ -91,6 +95,7 @@
   <tool file="checksum.xml" />
   <tool file="sim_size_delta.xml" />
   <tool file="composite_shapefile.xml" />
+  <tool file="infinity.xml"/>
   <tool file="is_valid_xml.xml" />
   <tool file="expression_tools/parse_values_from_file.xml" />
   <tool file="expression_tools/pick_value.xml" />
@@ -118,6 +123,13 @@
   <tool file="output_format_collection.xml" />
   <tool file="format_source_in_conditional.xml" />
   <tool file="output_filter.xml" />
+  <tool file="async_conditional_no_default_nested_data.xml" />
+  <tool file="async_ambiguous_unqualified_name.xml" />
+  <tool file="async_nested_conditional_shared_discriminator.xml" />
+  <tool file="async_nested_conditional_shared_discriminator_bare.xml" />
+  <tool file="async_posix_regex_validator.xml" />
+  <tool file="async_min_repeat_unqualified.xml" />
+  <tool file="async_repeat_unqualified_no_min.xml" />
   <tool file="output_empty_work_dir.xml" />
   <tool file="output_filter_with_input.xml" />
   <tool file="output_filter_with_input_optional.xml" />
@@ -143,6 +155,7 @@
   <tool file="select_optional_legacy.xml" />
   <tool file="select_optional.xml" />
   <tool file="select_dynamic.xml" />
+  <tool file="select_from_data_table_no_name.xml" />
   <tool file="hidden_param.xml" />
   <tool file="special_params.xml" />
   <tool file="section.xml" />
@@ -190,6 +203,7 @@
   <tool file="collection_paired_default.xml" />
   <tool file="collection_paired_structured_like.xml" />
   <tool file="collection_paired_conditional_structured_like.xml" />
+  <tool file="collection_paired_structured_like_with_data_input.xml" />
   <tool file="collection_nested_test.xml" />
   <tool file="collection_nested_default.xml" />
   <tool file="collection_mixed_param.xml" />
@@ -221,6 +235,7 @@
   <tool file="collection_paired_or_unpaired.xml" />
   <tool file="collection_list_paired_or_unpaired.xml" />
   <tool file="discover_sort_by.xml" />
+  <tool file="discover_long_name.xml" />
   <tool file="discover_default_ext.xml" />
   <tool file="expression_forty_two.xml" />
   <tool file="expression_pick_larger_file.xml" />
@@ -249,6 +264,8 @@
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v01galaxy6.xml" />
   <tool file="multiple_versions_v02.xml" />
+  <tool file="multiple_versions_hidden_v01.xml" hidden="true" />
+  <tool file="multiple_versions_hidden_v02.xml" />
   <section id="test_section_multi" name="Test Section with Multiple Versions">
     <tool file="multiple_versions_v01.xml" />
     <tool file="multiple_versions_v01galaxy6.xml" />
@@ -288,6 +305,7 @@
   <tool file="for_workflows/count_multi_file.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
   <tool file="for_workflows/randomlines.xml" />
+  <tool file="for_workflows/catWrapper.xml" />
   <tool file="create_directory_index.xml" />
   <tool file="use_directory_index.xml" />
 
@@ -334,6 +352,7 @@
   <tool file="configfile_user_defined.yml" />
   <tool file="from_work_dir_glob.xml" />
   <tool file="secret_tool.xml" />
+  <tool file="credentials_test.xml" />
 
   <!-- Tools without tool test but useful for hand-crafted, artisanal test cases. -->
   <tool file="cat_data_and_sleep.xml" />
@@ -351,6 +370,8 @@
   <tool file="${model_tools_path}/flatten_collection.xml" />
   <tool file="${model_tools_path}/sort_collection_list.xml" />
   <tool file="${model_tools_path}/harmonize_two_collections_list.xml" />
+  <tool file="${model_tools_path}/harmonize_two_collections_list_1.0.0.xml" />
+  <tool file="${model_tools_path}/nest_collection.xml" />
   <tool file="${model_tools_path}/merge_collection.xml" />
   <tool file="${model_tools_path}/relabel_from_file.xml" />
   <tool file="${model_tools_path}/filter_from_file.xml" />

@@ -6,13 +6,18 @@ written for Selenium's WebElement.
 """
 
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
 from playwright.sync_api import (
     ElementHandle,
     JSHandle,
+    Locator,
+)
+
+from .selenium_keys import (
+    SELENIUM_KEY_TO_PLAYWRIGHT,
+    SELENIUM_MODIFIERS,
 )
 
 if TYPE_CHECKING:
@@ -27,13 +32,12 @@ class PlaywrightShadowRoot:
         self._shadow_root = shadow_root_handle
         self._driver = driver
 
-    def find_element(self, by: str = "id", value: Optional[str] = None) -> "WebElementProtocol":
+    def find_element(self, by: str = "id", value: str | None = None) -> "WebElementProtocol":
         if value is None:
             raise ValueError("value parameter is required")
         selector = self._driver._selenium_locator_to_playwright_selector(by, value)
         result_handle = self._shadow_root.evaluate_handle(f"root => root.querySelector('{selector}')")
-        element_handle = result_handle.as_element()
-        if element_handle:
+        if element_handle := result_handle.as_element():
             return PlaywrightElement(element_handle, self._driver)
         raise Exception(f"No element found in shadow root with {by}='{value}'")
 
@@ -46,9 +50,10 @@ class PlaywrightElement:
     WebElement API, allowing the same code to work with both backends.
     """
 
-    def __init__(self, element_handle: ElementHandle, driver: "HasPlaywrightDriver"):
+    def __init__(self, element_handle: ElementHandle, driver: "HasPlaywrightDriver", locator: Locator | None = None):
         self._element = element_handle
         self._driver = driver
+        self._locator = locator
 
     @property
     def text(self) -> str:
@@ -63,22 +68,53 @@ class PlaywrightElement:
 
     def click(self) -> None:
         """Click the element."""
-        self._element.click()
+        if self._locator is not None:
+            # Re-resolve after DOM changes between the wait and the click.
+            self._locator.click()
+        else:
+            self._element.click()
 
     def send_keys(self, *value: str) -> None:
         """
         Send keys to the element (type text).
 
-        Uses focus() + cursor-to-end to match Selenium's send_keys behavior
-        of appending text. Playwright's click() positions cursor at click
-        point (center of element), which would insert text mid-content.
+        Translates Selenium Keys constants to Playwright keyboard actions.
+        Modifier keys (Control, Command, etc.) combine with the next key
+        as a keyboard shortcut (e.g. Keys.CONTROL, "a" -> "Control+a").
         """
-        text = "".join(str(v) for v in value)
         self._element.focus()
-        self._element.evaluate(
-            "el => { if (el.setSelectionRange) el.setSelectionRange(el.value.length, el.value.length) }"
-        )
-        self._element.type(text)
+        # Flatten all args into a single character stream
+        all_chars = "".join(str(v) for v in value)
+        has_special = any(c in SELENIUM_KEY_TO_PLAYWRIGHT for c in all_chars)
+        if not has_special:
+            # setSelectionRange is not supported on email, number, date, etc. inputs
+            # per the HTML spec. For those types, use the End key to move cursor to end.
+            input_type = self._element.evaluate("el => (el.type || '').toLowerCase()")
+            no_selection_range_types = {"email", "number", "date", "month", "week", "time", "datetime-local"}
+            if input_type in no_selection_range_types:
+                self._element.press("End")
+            else:
+                self._element.evaluate(
+                    "el => { if (el.setSelectionRange) el.setSelectionRange(el.value.length, el.value.length) }"
+                )
+            self._element.type(all_chars)
+        else:
+            modifiers: list[str] = []
+            for char in all_chars:
+                pw_key = SELENIUM_KEY_TO_PLAYWRIGHT.get(char)
+                if pw_key and char in SELENIUM_MODIFIERS:
+                    modifiers.append(pw_key)
+                elif pw_key:
+                    combo = "+".join(modifiers + [pw_key])
+                    self._element.press(combo)
+                    modifiers.clear()
+                else:
+                    if modifiers:
+                        combo = "+".join(modifiers + [char])
+                        self._element.press(combo)
+                        modifiers.clear()
+                    else:
+                        self._element.type(char)
 
     def clear(self) -> None:
         """
@@ -88,7 +124,7 @@ class PlaywrightElement:
         """
         self._element.fill("")
 
-    def get_attribute(self, name: str) -> Optional[str]:
+    def get_attribute(self, name: str) -> str | None:
         """
         Get the value of an element attribute.
 
@@ -129,11 +165,13 @@ class PlaywrightElement:
 
     def is_selected(self) -> bool:
         """
-        Check if element is selected (for checkboxes, radio buttons, options).
+        Check if a checkbox, radio button, or option is selected.
 
-        Maps to Playwright's is_checked() method.
+        Playwright's is_checked() only handles checkbox/radio inputs and raises
+        for <option> elements, so fall back to evaluating the element's
+        ``checked``/``selected`` property to mirror Selenium's behavior.
         """
-        return self._element.is_checked()
+        return bool(self._element.evaluate("(el) => !!(el.checked || el.selected)"))
 
     def submit(self) -> None:
         """
@@ -149,17 +187,16 @@ class PlaywrightElement:
         handle = self._element.evaluate_handle("el => el.shadowRoot")
         return PlaywrightShadowRoot(handle, self._driver)
 
-    def find_element(self, by: str = "id", value: Optional[str] = None) -> "WebElementProtocol":
+    def find_element(self, by: str = "id", value: str | None = None) -> "WebElementProtocol":
         """Find a child element within this element."""
         if value is None:
             raise ValueError("value parameter is required")
         selector = self._driver._selenium_locator_to_playwright_selector(by, value)
-        found_element = self._element.query_selector(selector)
-        if found_element:
+        if found_element := self._element.query_selector(selector):
             return PlaywrightElement(found_element, self._driver)
         raise Exception(f"No element found with {by}='{value}'")
 
-    def find_elements(self, by: str = "id", value: Optional[str] = None) -> list["WebElementProtocol"]:
+    def find_elements(self, by: str = "id", value: str | None = None) -> list["WebElementProtocol"]:
         """Find all child elements matching the locator within this element."""
         if value is None:
             raise ValueError("value parameter is required")

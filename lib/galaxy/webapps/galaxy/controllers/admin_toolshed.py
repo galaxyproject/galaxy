@@ -8,6 +8,7 @@ from galaxy import (
     web,
 )
 from galaxy.exceptions import ConfigDoesNotAllowException
+from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.util import dependency_display
 from galaxy.tool_shed.util.repository_util import (
     get_absolute_path_to_file_in_repository,
@@ -16,6 +17,7 @@ from galaxy.tool_shed.util.repository_util import (
 )
 from galaxy.util import unicodify
 from galaxy.util.tool_shed import common_util
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from .admin import AdminGalaxy
 
 log = logging.getLogger(__name__)
@@ -24,7 +26,7 @@ log = logging.getLogger(__name__)
 def legacy_tool_shed_endpoint(func):
     # admin only and only available if running test cases.
     @wraps(func)
-    def wrapper(trans, *args, **kwargs):
+    def wrapper(trans: GalaxyWebTransaction, *args, **kwargs):
         if not trans.app.config.config_dict.get("running_functional_tests", False):
             raise ConfigDoesNotAllowException("Legacy tool shed endpoint only available during testing.")
         return func(trans, *args, **kwargs)
@@ -33,14 +35,16 @@ def legacy_tool_shed_endpoint(func):
 
 
 class AdminToolshed(AdminGalaxy):
+    app: StructuredApp
+
     @web.json
     @web.require_admin
     @legacy_tool_shed_endpoint
-    def activate_repository(self, trans, **kwd):
+    def activate_repository(self, trans: GalaxyWebTransaction, **kwd):
         """Activate a repository that was deactivated but not uninstalled."""
         return self._activate_repository(trans, **kwd)
 
-    def _activate_repository(self, trans, **kwd):
+    def _activate_repository(self, trans: GalaxyWebTransaction, **kwd):
         repository_id = kwd["id"]
         repository = get_installed_tool_shed_repository(trans.app, repository_id)
         try:
@@ -53,7 +57,7 @@ class AdminToolshed(AdminGalaxy):
     @web.expose
     @web.require_admin
     @legacy_tool_shed_endpoint
-    def restore_repository(self, trans, **kwd):
+    def restore_repository(self, trans: GalaxyWebTransaction, **kwd):
         repository_id = kwd["id"]
         repository = get_installed_tool_shed_repository(trans.app, repository_id)
         if repository.uninstalled:
@@ -62,7 +66,7 @@ class AdminToolshed(AdminGalaxy):
             return self._activate_repository(trans, **kwd)
 
     @web.expose
-    def display_image_in_repository(self, trans, **kwd):
+    def display_image_in_repository(self, trans: GalaxyWebTransaction, **kwd):
         """
         Open an image file that is contained in an installed tool shed repository or that is referenced by a URL for display.  The
         image can be defined in either a README.rst file contained in the repository or the help section of a Galaxy tool config that
@@ -96,7 +100,7 @@ class AdminToolshed(AdminGalaxy):
         return None
 
     def _get_updated_repository_information(
-        self, trans, repository_id, repository_name, repository_owner, changeset_revision
+        self, trans: GalaxyWebTransaction, repository_id, repository_name, repository_owner, changeset_revision
     ):
         """
         Send a request to the appropriate tool shed to retrieve the dictionary of information required to reinstall
@@ -120,10 +124,10 @@ class AdminToolshed(AdminGalaxy):
     @web.json
     @web.require_admin
     @legacy_tool_shed_endpoint
-    def manage_repository_json(self, trans, **kwd):
+    def manage_repository_json(self, trans: GalaxyWebTransaction, **kwd):
         return self._manage_repository_json(trans, **kwd)
 
-    def _manage_repository_json(self, trans, **kwd):
+    def _manage_repository_json(self, trans: GalaxyWebTransaction, **kwd):
         repository_id = kwd.get("id", None)
         if repository_id is None:
             return trans.show_error_message("Missing required encoded repository id.")

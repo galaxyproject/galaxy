@@ -6,7 +6,6 @@ are encapsulated here.
 import logging
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -32,9 +31,7 @@ class ToolShedModelMapping(SharedModelMapping):
     create_tables: bool
 
 
-def init(
-    url: str, engine_options: Optional[dict[str, Any]] = None, create_tables: bool = False
-) -> ToolShedModelMapping:
+def init(url: str, engine_options: dict[str, Any] | None = None, create_tables: bool = False) -> ToolShedModelMapping:
     """Connect mappings to the database"""
     engine_options = engine_options or {}
     # Create the database engine

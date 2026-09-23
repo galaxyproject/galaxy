@@ -24,7 +24,9 @@ interface Props {
     title?: string;
     histories: HistorySummary[];
     additionalOptions?: AdditionalOptions[];
+    hideDeleted?: boolean;
     showModal: boolean;
+    selectionInstruction?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -32,7 +34,9 @@ const props = withDefaults(defineProps<Props>(), {
     title: "Switch to history",
     histories: () => [],
     additionalOptions: () => [],
+    hideDeleted: false,
     showModal: false,
+    selectionInstruction: "Click a history to switch to it",
 });
 
 const emit = defineEmits<{
@@ -102,25 +106,15 @@ function selectHistories() {
 function setFilterValue(newFilter: string, newValue: string) {
     filter.value = HistoriesFilters.setFilterValue(filter.value, newFilter, newValue);
 }
-
-// hacky workaround for popovers in date pickers being cutoff
-// https://github.com/galaxyproject/galaxy/issues/17711
-const modalBodyClasses = computed(() => {
-    return [
-        showAdvanced.value
-            ? "history-selector-modal-body-allow-overflow"
-            : "history-selector-modal-body-prevent-overflow",
-    ];
-});
 </script>
 
 <template>
     <GModal
         ref="modal"
         size="small"
-        fixed-height
+        :overflow-visible="showAdvanced"
+        :fixed-height="!showAdvanced"
         :show.sync="propShowModal"
-        :class="modalBodyClasses"
         :title="localize(title)">
         <BFormGroup :description="localize('Filter histories')">
             <FilterMenu
@@ -138,6 +132,7 @@ const modalBodyClasses = computed(() => {
             :multiple="props.multiple"
             :selected-histories="selectedHistories"
             :additional-options="props.additionalOptions"
+            :hide-deleted="props.hideDeleted"
             :show-modal.sync="propShowModal"
             in-modal
             :filter="filter"
@@ -164,19 +159,9 @@ const modalBodyClasses = computed(() => {
                         @click="selectHistories">
                         Change Selected
                     </GButton>
-                    <span v-else v-localize> Click a history to switch to it </span>
+                    <span v-else>{{ localize(props.selectionInstruction) }}</span>
                 </span>
             </template>
         </HistoryList>
     </GModal>
 </template>
-
-<style scoped lang="scss">
-.history-selector-modal-body-allow-overflow {
-    overflow: visible;
-}
-
-.history-selector-modal-body-prevent-overflow {
-    overflow: hidden;
-}
-</style>

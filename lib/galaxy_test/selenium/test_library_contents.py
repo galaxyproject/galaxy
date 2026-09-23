@@ -11,9 +11,10 @@ from .framework import (
     SeleniumTestCase,
     UsesLibraryAssertions,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
+class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions, UsesUploadActivity):
     run_as_admin = True
 
     @selenium_test
@@ -63,7 +64,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
     @requires_new_library
     def test_import_dataset_from_history(self):
         self.admin_login()
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)

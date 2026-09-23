@@ -1,6 +1,5 @@
 from typing import (
     cast,
-    Optional,
 )
 
 from sqlalchemy import select
@@ -140,11 +139,11 @@ class BaseLandingRequestTest(integration_util.IntegrationTestCase, integration_u
 
     def _get_landing_request_from_db(
         self, uuid: str, model_class: type[LandingRequestModel]
-    ) -> Optional[LandingRequestModel]:
+    ) -> LandingRequestModel | None:
         """Get a landing request from the database by UUID."""
         session = self._app.model.session
         stmt = select(model_class).where(model_class.uuid == uuid)
-        return cast(Optional[LandingRequestModel], session.execute(stmt).scalar_one_or_none())
+        return cast(LandingRequestModel | None, session.execute(stmt).scalar_one_or_none())
 
     def _create_and_make_public_workflow(self, workflow_name: str) -> str:
         """Create a simple workflow and make it public."""

@@ -141,16 +141,8 @@ function handleFailingStepClick() {
                 Problem occurred at this step:
                 <strong>
                     <WorkflowStepTitle
-                        :step-index="dependentWorkflowStep.id"
-                        :step-label="
-                            dependentInvocationStep?.workflow_step_label || `Step ${dependentWorkflowStep.id + 1}`
-                        "
-                        :step-type="dependentWorkflowStep.type"
-                        :step-tool-id="dependentWorkflowStep.tool_id"
-                        :step-tool-uuid="dependentWorkflowStep.tool_uuid"
-                        :step-subworkflow-id="
-                            'workflow_id' in dependentWorkflowStep ? dependentWorkflowStep.workflow_id : null
-                        " />
+                        :invocation-step="dependentInvocationStep"
+                        :workflow-step="dependentWorkflowStep" />
                 </strong>
             </GCard>
             <GCard v-if="failingStepInfo" clickable grid-view @click="handleFailingStepClick">

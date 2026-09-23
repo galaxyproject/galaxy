@@ -4,9 +4,6 @@ Mixins for Annotatable model managers and serializers.
 
 import abc
 import logging
-from typing import (
-    Optional,
-)
 
 from sqlalchemy.orm import scoped_session
 
@@ -23,7 +20,7 @@ log = logging.getLogger(__name__)
 # needed to extract this for use in manager *and* serializer, ideally, would use self.manager.annotation
 # from serializer, but history_contents has no self.manager
 # TODO: fix
-def _match_by_user(item, user) -> Optional[str]:
+def _match_by_user(item, user) -> str | None:
     if not user:
         return None
     for annotation in item.annotations:
@@ -39,7 +36,7 @@ class AnnotatableManagerMixin:
     @abc.abstractmethod
     def session(self) -> scoped_session: ...
 
-    def annotation(self, item) -> Optional[str]:
+    def annotation(self, item) -> str | None:
         """
         Return the annotation string made by the `item`'s owner or `None` if there
         is no annotation.
@@ -109,7 +106,7 @@ class AnnotatableDeserializerMixin:
 class AnnotatableFilterMixin:
     fn_filter_parsers: FunctionFilterParsersType
 
-    def _owner_annotation(self, item) -> Optional[str]:
+    def _owner_annotation(self, item) -> str | None:
         """
         Get the annotation by the item's owner.
         """

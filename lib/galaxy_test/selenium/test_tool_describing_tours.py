@@ -61,3 +61,24 @@ class TestToolDescribingTours(SeleniumTestCase):
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(2)
         self.screenshot("tool_describing_tour_3_after_execute")
+
+    @selenium_test
+    def test_generate_tour_boolean_conditional(self):
+        self.tool_open("gx_conditional_boolean")
+        self.tool_form_generate_tour()
+        popover_component = self.components.tour.popover._
+        popover_component.wait_for_visible()
+
+        # Intro step: advance to the outer conditional step.
+        popover_component.next.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # Advance to the inner boolean_parameter case step.
+        popover_component.next.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        # tests[0] specifies boolean_parameter="true" → tour should render "Yes".
+        text = popover_component.content.wait_for_visible().text
+        assert "Yes" in text, text
+
+        popover_component.end.wait_for_and_click()
+        popover_component.wait_for_absent_or_hidden()

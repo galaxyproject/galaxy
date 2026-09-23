@@ -1,0 +1,76 @@
+- doc: |
+    BASIC_MAPPING_INCLUDING_SINGLE_DATASET: Mapping a list collection over a data input
+    while another input is a single dataset produces a list output collection.
+  job:
+    input1:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: el1
+          class: File
+          contents: "list element 1"
+        - identifier: el2
+          class: File
+          contents: "list element 2"
+    input2:
+      class: File
+      contents: "single dataset content"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: list
+      elements:
+        el1:
+          asserts:
+            - that: has_text
+              text: "list element 1"
+            - that: has_text
+              text: "single dataset content"
+        el2:
+          asserts:
+            - that: has_text
+              text: "list element 2"
+            - that: has_text
+              text: "single dataset content"
+
+- doc: |
+    BASIC_MAPPING_TWO_INPUTS_WITH_IDENTICAL_STRUCTURE: Mapping two list collections with
+    identical structure over two data inputs produces a list output collection.
+  job:
+    input1:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: el1
+          class: File
+          contents: "collection 1 element 1"
+        - identifier: el2
+          class: File
+          contents: "collection 1 element 2"
+    input2:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: el1
+          class: File
+          contents: "collection 2 element 1"
+        - identifier: el2
+          class: File
+          contents: "collection 2 element 2"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: list
+      elements:
+        el1:
+          asserts:
+            - that: has_text
+              text: "collection 1 element 1"
+            - that: has_text
+              text: "collection 2 element 1"
+        el2:
+          asserts:
+            - that: has_text
+              text: "collection 1 element 2"
+            - that: has_text
+              text: "collection 2 element 2"

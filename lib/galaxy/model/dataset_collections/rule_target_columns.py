@@ -1,8 +1,5 @@
 import re
 from dataclasses import dataclass
-from typing import (
-    Optional,
-)
 
 from pydantic import BaseModel
 
@@ -56,7 +53,7 @@ COLUMN_TITLE_PREFIXES: dict[str, RuleBuilderMappingTargetKey] = {
 }
 
 
-def column_title_to_target_type(column_title: str) -> Optional[RuleBuilderMappingTargetKey]:
+def column_title_to_target_type(column_title: str) -> RuleBuilderMappingTargetKey | None:
     normalized_title = re.sub(r"[\s\(\)\-\_]|optional", "", column_title.lower())
     if normalized_title not in COLUMN_TITLE_PREFIXES:
         for key in COLUMN_TITLE_PREFIXES.keys():
@@ -142,7 +139,7 @@ def column_titles_to_headers(
     inferred_columns: list[InferredColumnMapping] = []
 
     for column_index, column_title in enumerate(column_titles):
-        column_type_: Optional[RuleBuilderMappingTargetKey] = column_title_to_target_type(column_title)
+        column_type_: RuleBuilderMappingTargetKey | None = column_title_to_target_type(column_title)
         if not column_type_:
             # make a note in parse log that this column was skipped
             continue

@@ -4,15 +4,14 @@ import os
 import string
 import subprocess
 import time
-from typing import Optional
 
 import pytest
 
 from galaxy.objectstore.irods import IRODSObjectStore
 from galaxy_test.driver import integration_util
 from ..test_datatype_upload import (
+    DatatypeUploadCase,
     TEST_CASES,
-    TestData,
     upload_datatype_helper,
     UploadTestDatatypeDataIntegrationInstance,
 )
@@ -114,7 +113,7 @@ def stop_irods(container_name):
 
 
 class BaseObjectstoreUploadIntegrationInstance(UploadTestDatatypeDataIntegrationInstance):
-    object_store_template: Optional[string.Template] = None
+    object_store_template: string.Template | None = None
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -192,7 +191,7 @@ idle_connection_irods_instance = integration_util.integration_module_instance(
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_dos_disk_and_disk(
-    distributed_instance: UploadTestDosDiskAndDiskIntegrationInstance, test_data: TestData, temp_file
+    distributed_instance: UploadTestDosDiskAndDiskIntegrationInstance, test_data: DatatypeUploadCase, temp_file
 ) -> None:
     with distributed_instance.dataset_populator.test_history() as history_id:
         upload_datatype_helper(distributed_instance, test_data, temp_file, history_id)
@@ -200,7 +199,7 @@ def test_upload_datatype_dos_disk_and_disk(
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_irods(
-    irods_instance: IrodsUploadTestDatatypeDataIntegrationInstance, test_data: TestData, temp_file
+    irods_instance: IrodsUploadTestDatatypeDataIntegrationInstance, test_data: DatatypeUploadCase, temp_file
 ) -> None:
     with irods_instance.dataset_populator.test_history() as history_id:
         upload_datatype_helper(irods_instance, test_data, temp_file, history_id, True)
@@ -208,7 +207,9 @@ def test_upload_datatype_irods(
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_dos_irods_and_disk(
-    distributed_and_irods_instance: UploadTestDosIrodsAndDiskIntegrationInstance, test_data: TestData, temp_file
+    distributed_and_irods_instance: UploadTestDosIrodsAndDiskIntegrationInstance,
+    test_data: DatatypeUploadCase,
+    temp_file,
 ) -> None:
     with distributed_and_irods_instance.dataset_populator.test_history() as history_id:
         upload_datatype_helper(distributed_and_irods_instance, test_data, temp_file, history_id)
@@ -216,7 +217,9 @@ def test_upload_datatype_dos_irods_and_disk(
 
 @pytest.mark.parametrize("test_data", SINGLE_TEST_CASE.values(), ids=list(SINGLE_TEST_CASE.keys()))
 def test_upload_datatype_irods_idle_connections(
-    idle_connection_irods_instance: IrodsIdleConnectionUploadIntegrationInstance, test_data: TestData, temp_file
+    idle_connection_irods_instance: IrodsIdleConnectionUploadIntegrationInstance,
+    test_data: DatatypeUploadCase,
+    temp_file,
 ) -> None:
     with idle_connection_irods_instance.dataset_populator.test_history() as history_id:
         upload_datatype_helper(idle_connection_irods_instance, test_data, temp_file, history_id, True)

@@ -1,9 +1,13 @@
 import { computed, type ComputedRef, type Ref, ref, unref } from "vue";
 
+import { useEventStore } from "@/stores/eventStore";
+
 export function useSidebarSelection<T>(items: Ref<T[]> | ComputedRef<T[]>, getId: (item: T) => string) {
     const selectionMode = ref(false);
     const selectedIds = ref(new Set<string>());
     const lastClickedIndex = ref<number | null>(null);
+
+    const eventStore = useEventStore();
 
     const allSelected = computed(() => unref(items).length > 0 && selectedIds.value.size === unref(items).length);
 
@@ -36,6 +40,9 @@ export function useSidebarSelection<T>(items: Ref<T[]> | ComputedRef<T[]>, getId
     /** Handle a click in the context of selection mode.
      *  Returns true if the click was consumed (caller should not navigate). */
     function handleSelectionClick(item: T, index: number, event: MouseEvent): boolean {
+        if (eventStore.isCtrlKey(event) && !selectionMode.value) {
+            selectionMode.value = true;
+        }
         if (!selectionMode.value) {
             return false;
         }

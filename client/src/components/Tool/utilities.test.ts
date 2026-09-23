@@ -23,6 +23,7 @@ describe("copyLink", () => {
         copyLink(toolId);
         expect(writeText).toHaveBeenCalledTimes(1);
         expect(writeText).toHaveBeenCalledWith(expect.stringContaining(toolId));
+        expect(writeText).toHaveBeenCalledWith(expect.not.stringContaining("/root?"));
     });
 
     it("should encode the tool id with spaces", () => {

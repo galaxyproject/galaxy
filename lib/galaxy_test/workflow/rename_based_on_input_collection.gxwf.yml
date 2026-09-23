@@ -15,6 +15,6 @@ steps:
           $link: fastq_inputs
       reference:
         $link: fasta_input
-    outputs:
+    out:
       out_file1:
         rename: "#{fastq_input.fastq_input1 | basename} suffix"

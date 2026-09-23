@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import type { TemplateSecret, TemplateVariable } from "@/api/configTemplates";
+import type { TemplateSecret, TemplateSummary, TemplateVariable } from "@/api/configTemplates";
 
-import { createTemplateForm, templateSecretFormEntry, templateVariableFormEntry, upgradeForm } from "./formUtil";
+import {
+    createTemplateForm,
+    formDataTypedGet,
+    templateSecretFormEntry,
+    templateVariableFormEntry,
+    upgradeForm,
+} from "./formUtil";
 import {
     GENERIC_FTP_FILE_SOURCE_TEMPLATE,
     OBJECT_STORE_INSTANCE,
@@ -36,6 +42,33 @@ describe("formUtils", () => {
             expect(formEl0?.help).toEqual("Label this new file source with a name.");
             const formEl1 = form[1];
             expect(formEl1?.name).toEqual("_meta_description");
+        });
+
+        it("should thread dynamic options through to select variables", () => {
+            const template = {
+                id: "github",
+                version: 0,
+                variables: [
+                    {
+                        name: "org",
+                        type: "select",
+                        options_provider: { kind: "github_authorized_repository_owners", depends_on: [] },
+                    },
+                ],
+                secrets: [],
+            } as unknown as TemplateSummary;
+            const form = createTemplateForm(template, "file source", {
+                org: [
+                    ["galaxyproject", "galaxyproject"],
+                    ["me", "me"],
+                ],
+            });
+            const orgEntry = form.find((entry) => entry.name === "org");
+            expect(orgEntry?.type).toBe("select");
+            expect(orgEntry?.options).toEqual([
+                ["galaxyproject", "galaxyproject"],
+                ["me", "me"],
+            ]);
         });
     });
 
@@ -98,6 +131,91 @@ describe("formUtils", () => {
             const formEntry = templateVariableFormEntry(hostVariable, "mycoolhost.org");
             expect(formEntry.value).toBe("mycoolhost.org");
         });
+        it("should render optional integer with no default as empty string", () => {
+            const optionalIntVar: TemplateVariable = {
+                name: "timeout",
+                type: "integer",
+                optional: true,
+            };
+            const formEntry = templateVariableFormEntry(optionalIntVar, undefined);
+            expect(formEntry.value).toBe("");
+        });
+        it("should render required integer with no default as 0", () => {
+            const requiredIntVar: TemplateVariable = {
+                name: "timeout",
+                type: "integer",
+                optional: false,
+            };
+            const formEntry = templateVariableFormEntry(requiredIntVar, undefined);
+            expect(formEntry.value).toBe(0);
+        });
+        it("should render multiline string types as Galaxy textarea inputs", () => {
+            const multilineVariable: TemplateVariable = {
+                name: "private_key",
+                type: "string",
+                multiline: true,
+            };
+            const formEntry = templateVariableFormEntry(multilineVariable, "line1\nline2");
+            expect(formEntry.type).toBe("text");
+            expect(formEntry.area).toBe(true);
+            expect(formEntry.value).toBe("line1\nline2");
+        });
+        it("should render select types with static options as Galaxy select inputs", () => {
+            const selectVariable: TemplateVariable = {
+                name: "region",
+                type: "select",
+                options: [
+                    { label: "First", value: "first" },
+                    { label: "Second", value: "second" },
+                ],
+            };
+            const formEntry = templateVariableFormEntry(selectVariable, undefined);
+            expect(formEntry.type).toBe("select");
+            expect(formEntry.options).toEqual([
+                ["First", "first"],
+                ["Second", "second"],
+            ]);
+        });
+        it("should populate select options from dynamic options keyed by variable name", () => {
+            const selectVariable: TemplateVariable = {
+                name: "org",
+                type: "select",
+                options_provider: { kind: "github_authorized_repository_owners", depends_on: [] },
+            };
+            const formEntry = templateVariableFormEntry(selectVariable, undefined, {
+                org: [
+                    ["galaxyproject", "galaxyproject"],
+                    ["me", "me"],
+                ],
+            });
+            expect(formEntry.type).toBe("select");
+            expect(formEntry.options).toEqual([
+                ["galaxyproject", "galaxyproject"],
+                ["me", "me"],
+            ]);
+        });
+        it("should prefer dynamic options over static options when both are present", () => {
+            const selectVariable: TemplateVariable = {
+                name: "org",
+                type: "select",
+                options: [{ label: "Static", value: "static" }],
+                options_provider: { kind: "github_authorized_repository_owners", depends_on: [] },
+            };
+            const formEntry = templateVariableFormEntry(selectVariable, undefined, {
+                org: [["dynamic", "dynamic"]],
+            });
+            expect(formEntry.options).toEqual([["dynamic", "dynamic"]]);
+        });
+        it("should keep a preset select value selectable when no options are available yet", () => {
+            const selectVariable: TemplateVariable = {
+                name: "org",
+                type: "select",
+                options_provider: { kind: "github_authorized_repository_owners", depends_on: [] },
+            };
+            const formEntry = templateVariableFormEntry(selectVariable, "galaxyproject");
+            expect(formEntry.value).toBe("galaxyproject");
+            expect(formEntry.options).toEqual([["galaxyproject", "galaxyproject"]]);
+        });
     });
 
     describe("templateVariableFormEntry optional field", () => {
@@ -159,6 +277,63 @@ describe("formUtils", () => {
             };
             const formEntry = templateSecretFormEntry(secretWithoutOptional);
             expect(formEntry.optional).toBe(false);
+        });
+
+        it("should render multiline secrets as textarea inputs", () => {
+            const multilineSecret: TemplateSecret = {
+                name: "private_key",
+                help: "PEM content",
+                multiline: true,
+            };
+            const formEntry = templateSecretFormEntry(multilineSecret);
+            expect(formEntry.type).toBe("text");
+            expect(formEntry.area).toBe(true);
+        });
+    });
+
+    describe("formDataTypedGet", () => {
+        const selectVar: TemplateVariable = {
+            name: "org",
+            type: "select",
+            options_provider: { kind: "github_authorized_repository_owners", depends_on: [] },
+        };
+
+        it("should return undefined for an optional integer when the raw value is empty string", () => {
+            const optionalIntVar: TemplateVariable = {
+                name: "timeout",
+                type: "integer",
+                optional: true,
+            };
+            const result = formDataTypedGet(optionalIntVar, { timeout: "" });
+            expect(result).toBeUndefined();
+        });
+
+        it("should return the parsed integer when a valid string value is provided", () => {
+            const intVar: TemplateVariable = {
+                name: "timeout",
+                type: "integer",
+            };
+            const result = formDataTypedGet(intVar, { timeout: "42" });
+            expect(result).toBe(42);
+        });
+
+        it("should return undefined for integer when raw value is null", () => {
+            const intVar: TemplateVariable = {
+                name: "timeout",
+                type: "integer",
+            };
+            const result = formDataTypedGet(intVar, { timeout: null });
+            expect(result).toBeUndefined();
+        });
+
+        it("should return the selected value as a string for select variables", () => {
+            const result = formDataTypedGet(selectVar, { org: "galaxyproject" });
+            expect(result).toBe("galaxyproject");
+        });
+
+        it("should return undefined for a select variable with no value", () => {
+            const result = formDataTypedGet(selectVar, {});
+            expect(result).toBeUndefined();
         });
     });
 });

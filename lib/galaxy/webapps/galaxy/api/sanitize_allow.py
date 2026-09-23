@@ -7,16 +7,41 @@ from typing import (
     Any,
 )
 
+from pydantic import (
+    BaseModel,
+    Field,
+)
+
 from galaxy import web
 from galaxy.webapps.base.controller import BaseAPIController
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
+
+
+class SanitizeAllowlistToolEntry(BaseModel):
+    """A single tool row in the /api/sanitize_allow response."""
+
+    tool_name: str = Field(description="Display name of the installed tool ('' if not installed)")
+    tool_id: list[str] = Field(description="Tool id split on '/'")
+    ids: dict[str, str] = Field(description="Derived id fragments (full/owner/repository/tool[/allowed])")
+    allowed: bool = Field(description="Whether the tool is on the sanitize allowlist")
+    toolshed: bool = Field(description="Whether the tool id is tool-shed-scoped")
+
+
+class SanitizeAllowlistResponse(BaseModel):
+    """Response model for /api/sanitize_allow."""
+
+    blocked_toolshed: list[SanitizeAllowlistToolEntry] = Field(default_factory=list)
+    allowed_toolshed: list[SanitizeAllowlistToolEntry] = Field(default_factory=list)
+    blocked_local: list[SanitizeAllowlistToolEntry] = Field(default_factory=list)
+    allowed_local: list[SanitizeAllowlistToolEntry] = Field(default_factory=list)
 
 
 class SanitizeAllowController(BaseAPIController):
     @web.require_admin
     @web.expose_api
-    def index(self, trans, **kwd):
+    def index(self, trans: GalaxyWebTransaction, **kwd):
         """
         GET /api/sanitize_allow
         Return an object showing the current state of the toolbox and allow list.
@@ -25,7 +50,7 @@ class SanitizeAllowController(BaseAPIController):
 
     @web.require_admin
     @web.expose_api
-    def create(self, trans, tool_id, **kwd):
+    def create(self, trans: GalaxyWebTransaction, tool_id, **kwd):
         """
         PUT /api/sanitize_allow
         Add a new tool_id to the allowlist.
@@ -37,7 +62,7 @@ class SanitizeAllowController(BaseAPIController):
 
     @web.require_admin
     @web.expose_api
-    def delete(self, trans, tool_id, **kwd):
+    def delete(self, trans: GalaxyWebTransaction, tool_id, **kwd):
         """
         DELETE /api/sanitize_allow
         Remove tool_id from allowlist.
@@ -47,17 +72,16 @@ class SanitizeAllowController(BaseAPIController):
             self._save_allowlist(trans)
         return self._generate_allowlist(trans)
 
-    def _save_allowlist(self, trans):
+    def _save_allowlist(self, trans: GalaxyWebTransaction):
         trans.app.config.sanitize_allowlist = sorted(trans.app.config.sanitize_allowlist)
         with open(trans.app.config.sanitize_allowlist_file, "w") as f:
             f.write("\n".join(trans.app.config.sanitize_allowlist))
         trans.app.queue_worker.send_control_task("reload_sanitize_allowlist", noop_self=True)
 
-    def _generate_allowlist(self, trans):
+    def _generate_allowlist(self, trans: GalaxyWebTransaction):
         sanitize_dict: dict[str, Any] = dict(
             blocked_toolshed=[], allowed_toolshed=[], blocked_local=[], allowed_local=[]
         )
-        ids = None
         for tool_id in trans.app.config.sanitize_allowlist:
             installed_name = ""
             installed_ids = {"full": "", "allowed": tool_id, "owner": "", "repository": "", "tool": ""}
@@ -101,4 +125,6 @@ class SanitizeAllowController(BaseAPIController):
                     sanitize_dict["blocked_toolshed"].append(tool_dict)
                 else:
                     sanitize_dict["blocked_local"].append(tool_dict)
-        return sanitize_dict
+        # Route through the response model so the shape is validated/documented;
+        # model_dump reproduces the same JSON the client already consumes.
+        return SanitizeAllowlistResponse(**sanitize_dict).model_dump()

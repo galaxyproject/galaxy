@@ -8,9 +8,10 @@ import { ExternalIdentities } from "@/components/User/ExternalIdentities";
 import { hasSingleOidcProfile } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import AdminRoutes from "@/entry/analysis/routes/admin-routes";
 import LibraryRoutes from "@/entry/analysis/routes/library-routes";
+import LoginRoutes from "@/entry/analysis/routes/login-routes";
 import StorageRoutes from "@/entry/analysis/routes/storage-routes";
 import { getAppRoot } from "@/onload/loadConfig";
-import { requireAuth } from "@/router/guards";
+import { requireAuth, requireAuthForUploadMethod } from "@/router/guards";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
@@ -18,7 +19,6 @@ import { patchRouterPush } from "./router-push";
 import CenterFrame from "./modules/CenterFrame.vue";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes.vue";
-import ChatGXY from "@/components/ChatGXY.vue";
 import CitationsList from "@/components/Citation/CitationsList.vue";
 import ClientError from "@/components/ClientError.vue";
 import CollectionEditView from "@/components/Collections/common/CollectionEditView.vue";
@@ -36,6 +36,7 @@ import ManageFileSourceIndex from "@/components/FileSources/Instances/ManageInde
 import UpgradeFileSourceInstance from "@/components/FileSources/Instances/UpgradeInstance.vue";
 import CreateUserFileSource from "@/components/FileSources/Templates/CreateUserFileSource.vue";
 import FormGeneric from "@/components/Form/FormGeneric.vue";
+import GalaxyAI from "@/components/GalaxyAI.vue";
 import GalaxyWizard from "@/components/GalaxyWizard.vue";
 import GridInvocation from "@/components/Grid/GridInvocation.vue";
 import GridPage from "@/components/Grid/GridPage.vue";
@@ -43,12 +44,16 @@ import GridVisualization from "@/components/Grid/GridVisualization.vue";
 import HelpTerm from "@/components/Help/HelpTerm.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import HistoryExportTasks from "@/components/History/Export/HistoryExport.vue";
+import HistoryGraphView from "@/components/History/Graph/HistoryGraphView.vue";
 import HistoryAccessibility from "@/components/History/HistoryAccessibility.vue";
 import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
 import HistoryList from "@/components/History/HistoryList.vue";
 import HistoryPublished from "@/components/History/HistoryPublished.vue";
 import HistoryView from "@/components/History/HistoryView.vue";
 import HistoryMultipleView from "@/components/History/Multiple/MultipleView.vue";
+import StorageOperationHistoryView from "@/components/History/StorageOperations/StorageOperationHistoryView.vue";
+import StorageOperationRunView from "@/components/History/StorageOperations/StorageOperationRunView.vue";
+import WorkflowExtractionForm from "@/components/History/WorkflowExtractionForm.vue";
 import HistoryImport from "@/components/HistoryImport.vue";
 import ZipImportResults from "@/components/ImportData/zip/ZipImportResults.vue";
 import ZipImportWizard from "@/components/ImportData/zip/ZipImportWizard.vue";
@@ -66,6 +71,7 @@ import UpgradeObjectStoreInstance from "@/components/ObjectStore/Instances/Upgra
 import CreateUserObjectStore from "@/components/ObjectStore/Templates/CreateUserObjectStore.vue";
 import PageView from "@/components/Page/PageView.vue";
 import PageForm from "@/components/PageDisplay/PageForm.vue";
+import HistoryPageView from "@/components/PageEditor/HistoryPageView.vue";
 import PageEditor from "@/components/PageEditor/PageEditor.vue";
 import UploadMethodView from "@/components/Panels/Upload/UploadMethodView.vue";
 import UploadPage from "@/components/Panels/Upload/UploadPage.vue";
@@ -98,14 +104,11 @@ import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished
 import WorkflowRerun from "@/components/Workflow/Run/WorkflowRerun.vue";
 import WorkflowRun from "@/components/Workflow/Run/WorkflowRun.vue";
 import StoredWorkflowInvocations from "@/components/Workflow/StoredWorkflowInvocations.vue";
-import WorkflowCreate from "@/components/Workflow/WorkflowCreate.vue";
 import WorkflowExport from "@/components/Workflow/WorkflowExport.vue";
 import WorkflowImport from "@/components/Workflow/WorkflowImport.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
 import Analysis from "@/entry/analysis/modules/Analysis.vue";
 import Home from "@/entry/analysis/modules/Home.vue";
-import Login from "@/entry/analysis/modules/Login.vue";
-import Register from "@/entry/analysis/modules/Register.vue";
 import WorkflowEditorModule from "@/entry/analysis/modules/WorkflowEditor.vue";
 
 Vue.use(VueRouter);
@@ -140,14 +143,6 @@ function redirectAnon(redirect = "") {
     }
 }
 
-// redirect logged in users
-function redirectLoggedIn() {
-    const Galaxy = getGalaxyInstance();
-    if (Galaxy.user.id) {
-        return "/";
-    }
-}
-
 function redirectIf(condition, path) {
     if (condition) {
         return path;
@@ -160,18 +155,8 @@ export function getRouter(Galaxy) {
         base: getAppRoot(),
         mode: "history",
         routes: [
-            /** Login entry route */
-            {
-                path: "/login/start",
-                component: Login,
-                redirect: redirectLoggedIn(),
-            },
-            /** Registration entry route */
-            {
-                path: "/register/start",
-                component: Register,
-                redirect: redirectLoggedIn(),
-            },
+            /** Login and registration entry routes */
+            ...LoginRoutes,
             /** Workflow editor */
             {
                 path: "/workflows/edit",
@@ -191,6 +176,7 @@ export function getRouter(Galaxy) {
                     pageId: route.query.id,
                     embed: route.query.embed ? parseBool(route.query.embed) : undefined,
                     showHeading: route.query.heading ? parseBool(route.query.heading) : undefined,
+                    displayOnly: route.query.displayOnly === "true",
                 }),
             },
             {
@@ -251,6 +237,7 @@ export function getRouter(Galaxy) {
                         path: "upload/:methodId",
                         component: UploadMethodView,
                         props: true,
+                        beforeEnter: requireAuthForUploadMethod,
                     },
                     {
                         path: "help/terms/:term",
@@ -421,6 +408,50 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
+                        path: "histories/:historyId/storage/runs",
+                        component: StorageOperationHistoryView,
+                        props: true,
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "histories/:historyId/storage/runs/:runId",
+                        component: StorageOperationRunView,
+                        props: true,
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "histories/:historyId/extract_workflow",
+                        component: WorkflowExtractionForm,
+                        props: true,
+                    },
+                    {
+                        path: "histories/:historyId/graph/:tab?",
+                        component: HistoryGraphView,
+                        props: (route) => ({
+                            historyId: route.params.historyId,
+                            tab: route.params.tab,
+                            seedSrc: route.query.seed_src || undefined,
+                            seedId: route.query.seed_id || undefined,
+                        }),
+                    },
+                    {
+                        path: "histories/:historyId/pages",
+                        component: HistoryPageView,
+                        props: (route) => ({
+                            historyId: route.params.historyId,
+                        }),
+                    },
+                    {
+                        path: "histories/:historyId/pages/:pageId",
+                        component: HistoryPageView,
+                        props: (route) => ({
+                            historyId: route.params.historyId,
+                            pageId: route.params.pageId,
+                            displayOnly: route.query.displayOnly === "true",
+                            invocationId: route.query.invocation_id,
+                        }),
+                    },
+                    {
                         path: "interactivetool_entry_points/list",
                         component: InteractiveTools,
                     },
@@ -507,6 +538,7 @@ export function getRouter(Galaxy) {
                             invocationId: route.query.invocation_id,
                             mode: "create",
                         }),
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "pages/edit",
@@ -515,12 +547,15 @@ export function getRouter(Galaxy) {
                             id: route.query.id,
                             mode: "edit",
                         }),
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "/pages/editor",
                         component: PageEditor,
                         props: (route) => ({
                             pageId: route.query.id,
+                            displayOnly: route.query.displayOnly === "true",
+                            hideHeader: route.query.hideHeader === "true",
                         }),
                     },
                     {
@@ -570,8 +605,8 @@ export function getRouter(Galaxy) {
                         component: TourList,
                     },
                     {
-                        path: "chatgxy/:exchangeId?",
-                        component: ChatGXY,
+                        path: "galaxyai/:exchangeId?",
+                        component: GalaxyAI,
                         redirect: redirectAnon(),
                         props: (route) => ({
                             exchangeId: route.params.exchangeId || undefined,
@@ -764,11 +799,6 @@ export function getRouter(Galaxy) {
                         redirect: redirectAnon(),
                     },
                     {
-                        path: "workflows/create",
-                        component: WorkflowCreate,
-                        redirect: redirectAnon(),
-                    },
-                    {
                         path: "workflows/export",
                         component: WorkflowExport,
                         props: (route) => ({
@@ -926,21 +956,40 @@ export function getRouter(Galaxy) {
         return false;
     }
 
+    /** Checks for unsaved changes (e.g., in the workflow editor) before navigating.
+     * Prompts the user to confirm if there are unsaved changes.
+     * @returns true if navigation should proceed, false to abort.
+     */
+    function checkUnsavedChanges(router) {
+        if (!router.confirmation) {
+            return true;
+        }
+        if (confirm("There are unsaved changes which will be lost.")) {
+            router.confirmation = undefined;
+            return true;
+        }
+        return false;
+    }
+
     router.beforeEach(async (to, from, next) => {
         // TODO: merge anon redirect functionality here for more standard handling
+
+        if (!checkUnsavedChanges(router)) {
+            return next(false);
+        }
 
         const isAdminAccessRequired = checkAdminAccessRequired(to);
         if (isAdminAccessRequired) {
             const error = new Error(`Admin access required for '${to.path}'.`);
             error.name = "AdminRequired";
-            next(error);
+            return next(error);
         }
 
         const isRegisteredUserAccessRequired = checkRegisteredUserAccessRequired(to);
         if (isRegisteredUserAccessRequired) {
             const error = new Error(`Registered user access required for '${to.path}'.`);
             error.name = "RegisteredUserRequired";
-            next(error);
+            return next(error);
         }
         next();
     });

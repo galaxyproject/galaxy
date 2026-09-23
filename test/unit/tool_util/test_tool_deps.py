@@ -15,8 +15,6 @@ from subprocess import (
 )
 from typing import (
     Any,
-    Dict,
-    Optional,
 )
 
 from galaxy.tool_util.deps import (
@@ -802,7 +800,7 @@ def test_dependency_manager_config_options_global():
 
 
 def test_dependency_manager_config_options_embedded_config():
-    dependency_config: Dict[str, Any] = {
+    dependency_config: dict[str, Any] = {
         "default_base_path": "/tmp",
         "cache_dir": "/tmp",
     }
@@ -835,7 +833,7 @@ def test_dependency_manager_config_options_resolution_config():
     app_config = {
         "conda_auto_init": False,
     }
-    resolution_config: Dict[str, Any] = {
+    resolution_config: dict[str, Any] = {
         "default_base_path": "/tmp",
         "cache_dir": "/tmp",
     }
@@ -899,7 +897,7 @@ def __dependency_manager(file_content, extension=".xml"):
             yield dm
 
 
-def __dependency_manager_for_base_path(default_base_path: str, conf_file: Optional[str] = None) -> DependencyManager:
+def __dependency_manager_for_base_path(default_base_path: str, conf_file: str | None = None) -> DependencyManager:
     dm = DependencyManager(
         default_base_path=default_base_path, conf_file=conf_file, app_config={"conda_auto_init": False}
     )

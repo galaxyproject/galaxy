@@ -2,7 +2,7 @@
 
 Galaxy has countless ways for users to connect with things that might be considered their "data" - file sources (aka "remote files"), object stores (aka "storage locations"), data libraries, the upload API, visualizations, display applications, custom tools, etc...
 
-This document is going to discuss two of these (file sources and object stores) that are most important Galaxy administrators and how to build Galaxy configurations that allow administrators to let users tie into various pieces of infrastructure (local and publicly available).
+This document is going to discuss two of these (file sources and object stores) that are most important to Galaxy administrators and how to build Galaxy configurations that allow administrators to let users tie into various pieces of infrastructure (local and publicly available).
 
 ```{contents} Table of Contents
 :depth: 4
@@ -17,7 +17,7 @@ Galaxy object stores (called "storage locations" in the UI) store datasets and g
 
 Some of Galaxy's most updated and complete administrator documentation can be found in configuration sample files - this is definitely the case for object stores and file sources. The relevant sample configuration files include [file_sources_conf.yml.sample](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/file_sources_conf.yml.sample) and [object_store_conf.sample.yml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/object_store_conf.sample.yml).
 
-File sources and object stores configured with the above files essentially are available to all users of your Galaxy instance - hence this document describes them as "global" file sources and object stores. File source configurations do allow some templating that does allow the a global file source to be materialized differently for different users. For instance, you as an admin may setup a Dropbox file source and may explicitly add custom user properties that allow that single Dropbox file source to read from a user's preferences. Since there is just one Dropbox service and most people only have a single Dropbox account, this use case can be somewhat adequately addressed by the global file source and the global user preferences file. For a use case like Amazon S3 buckets though for instance, a single bucket file source that is parameterized one way is probably more clearly inadequate. For instance, users would very likely want to attach different buckets for different projects. Additionally, the Galaxy user interface doesn't tie the user preferences to the particular file source and so this method introduces a huge education burden on your Galaxy instance. Finally, the templating available to file sources are not available for object stores - and allowing users to describe how they would like datasets stored and to pay for their own dataset storage are important use cases.
+File sources and object stores configured with the above files essentially are available to all users of your Galaxy instance - hence this document describes them as "global" file sources and object stores. File source configurations do allow some templating that does allow a global file source to be materialized differently for different users. For instance, you as an admin may setup a Dropbox file source and may explicitly add custom user properties that allow that single Dropbox file source to read from a user's preferences. Since there is just one Dropbox service and most people only have a single Dropbox account, this use case can be somewhat adequately addressed by the global file source and the global user preferences file. For a use case like Amazon S3 buckets though for instance, a single bucket file source that is parameterized one way is probably more clearly inadequate. For instance, users would very likely want to attach different buckets for different projects. Additionally, the Galaxy user interface doesn't tie the user preferences to the particular file source and so this method introduces a huge education burden on your Galaxy instance. Finally, the templating available to file sources are not available for object stores - and allowing users to describe how they would like datasets stored and to pay for their own dataset storage are important use cases.
 
 This document is going to describe Galaxy configuration template libraries that allow the
 administrator to setup templates for file sources and object stores that your users may instantiate
@@ -280,6 +280,12 @@ can be placed `file_source_templates.yml` in Galaxy configuration directory (or 
 pointed to by the configuration option `file_source_templates_config_file` in `galaxy.yml`).
 Alternatively, the configuration can be placed directly into `galaxy.yml` using the
 `file_source_templates` configuration option.
+
+A template can define `form_alerts` to show administrator-authored Markdown alerts while a
+user creates an instance. Each alert has a Bootstrap `variant` and optional `condition`; alerts
+without a condition are always shown. Template capabilities can expose condition names for
+source-specific states, allowing the template to control the message without hard-coding it in
+the form component.
 
 ### File Source Types
 
@@ -626,6 +632,141 @@ a production Galaxy instance but Dropbox operates on a different scale.
 For more information on what Dropbox considers a "development" app versus a "production"
 app - checkout the [Dropbox documentation](https://www.dropbox.com/developers/reference/developer-guide#production-approval).
 
+#### OneDrive
+
+Once you have OAuth 2.0 client credentials from Microsoft Entra (called `oauth2_client_id`
+and `oauth2_client_secret` here), the following configurations can be used to enable
+OneDrive for your Galaxy instance.
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_onedrive.yml
+:language: yaml
+```
+or
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_onedrive_full.yml
+:language: yaml
+```
+
+To use one of these templates, make the credentials available to Galaxy's web and job handler
+processes using the environment variables `GALAXY_ONEDRIVE_CLIENT_ID` and
+`GALAXY_ONEDRIVE_CLIENT_SECRET`. Jobs themselves do not need these values and should
+not receive them.
+If your Galaxy instance has Vault configured, you can use this Vault-backed variant instead:
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/onedrive_client_secrets_in_vault.yml
+:language: yaml
+```
+
+The current OneDrive implementation supports two drive modes:
+
+- `drive_mode: appfolder`
+  This is the default and targets Microsoft Graph `special/approot`. Galaxy can
+  browse, download, upload, and create folders inside the application's dedicated
+  OneDrive app folder (`Apps/<Application Name>`). This mode should be paired
+  with delegated permission `Files.ReadWrite.AppFolder`.
+- `drive_mode: full`
+  This targets the user's full OneDrive root (`/me/drive/root`) instead of the
+  application folder. This mode requires broader delegated Microsoft Graph
+  permissions such as `Files.ReadWrite`.
+
+To configure Microsoft Entra app for this file source:
+
+1. Sign in to [Microsoft Azure](https://portal.azure.com/). Go to `Microsoft Entra ID` and open
+   `App Registrations`.
+2. Select `New registration`.
+3. Enter a recognizable application name for Galaxy, for example `Galaxy OneDrive`.
+4. Under `Supported account types`, choose the audience that matches your deployment.
+   If Galaxy users may connect both organizational Microsoft accounts and personal
+   Microsoft accounts, select `Any Entra ID tenant + Personal Microsoft accounts`.
+5. Under `Redirect URI`, choose platform type `Web` and enter your Galaxy callback URL:
+   `<your galaxy root>/oauth2_callback`.
+   For example, if Galaxy is available at `https://usegalaxy.eu`, use
+   `https://usegalaxy.eu/oauth2_callback`.
+   For local development this is often `http://localhost:8080/oauth2_callback`.
+6. Create the registration and open the app's `Overview` page.
+   Copy the `Application (client) ID` and expose it to Galaxy as
+   `GALAXY_ONEDRIVE_CLIENT_ID`.
+7. Open `Certificates & secrets > Client secrets`, create a new client secret,
+   and copy the generated secret value immediately.
+   Expose that value to Galaxy as `GALAXY_ONEDRIVE_CLIENT_SECRET`.
+   Microsoft only shows the full secret value once.
+8. Open `API permissions` and add Microsoft Graph delegated permissions.
+   For the default app-folder configuration, add `Files.ReadWrite.AppFolder`.
+   Also add `offline_access` so Galaxy can obtain refresh tokens for long-lived access.
+9. If your deployment uses `drive_mode: full` instead of the default `appfolder`,
+   add delegated permission `Files.ReadWrite` instead of `Files.ReadWrite.AppFolder`.
+   This must match the scope requested in the Galaxy template.
+
+After this setup, users connect their own OneDrive accounts through Galaxy's OAuth2
+flow. The client ID and client secret identify your Galaxy application to Microsoft,
+but file access is performed with per-user delegated access and refresh tokens.
+
+To configure full-drive access instead of the default app-folder mode, you need to
+change both the Galaxy yml config template and the Microsoft Entra app registration. 
+In Galaxy yml config, set `drive_mode: full` and request a broader OAuth scope such as
+`oauth2_scope: "offline_access Files.ReadWrite"`. In Microsoft Entra, grant the
+matching delegated Microsoft Graph permission (`Files.ReadWrite` instead of
+`Files.ReadWrite.AppFolder`). If only the Microsoft permission is widened and
+`drive_mode` remains `appfolder`, Galaxy will continue to operate only inside the
+application folder.
+
+This implementation currently uses Microsoft Graph's simple upload endpoint and
+does not yet implement resumable uploads for very large files, server-side pagination,
+or server-side search/sorting.
+
+#### GitHub
+
+Once you have OAuth 2.0 client credentials from GitHub (called `oauth2_client_id`
+and `oauth2_client_secret` here), the following configuration can be used to enable
+GitHub repositories for your Galaxy instance.
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_github.yml
+:language: yaml
+```
+
+To use this template, make the credentials available to Galaxy's web and job handler
+processes using the environment variables `GALAXY_GITHUB_APP_CLIENT_ID` and
+`GALAXY_GITHUB_APP_CLIENT_SECRET`. Jobs themselves do not need these values and should
+not receive them.
+
+GitHub is a per-repository file source: each instance connects a single repository, and
+the user supplies the repository owner, name, and (optionally) branch when creating the
+instance. To connect several repositories, a user creates several instances of the template.
+
+To configure a GitHub App for this file source:
+
+1. Sign in to GitHub and open
+   [Settings > Developer settings > GitHub Apps](https://github.com/settings/apps),
+   then select `New GitHub App` (for an organization, use its developer settings instead).
+2. Enter a recognizable application name for Galaxy, for example `Galaxy GitHub`, and a
+   homepage URL (your Galaxy instance URL is fine).
+3. Under `Callback URL`, enter your Galaxy callback URL: `<your galaxy root>/oauth2_callback`.
+   For example, if Galaxy is available at `https://usegalaxy.eu`, use
+   `https://usegalaxy.eu/oauth2_callback`.
+   This must match exactly the URL Galaxy redirects to, which Galaxy derives from the
+   address users browse to. GitHub treats `localhost` and `127.0.0.1` as different hosts,
+   so for local development register the exact host you use (often
+   `http://localhost:8080/oauth2_callback`). GitHub Apps allow multiple callback URLs, so
+   you may add both `localhost` and `127.0.0.1` variants if needed.
+4. Enable `Request user authorization (OAuth) during installation`, and under
+   `Optional features` (or `Identifying and authorizing users`) enable
+   `Expiring user authorization tokens`. This is required: it makes GitHub issue a
+   `refresh_token`, which Galaxy stores to mint short-lived access tokens on the user's
+   behalf. Without it, GitHub returns a non-expiring token with no refresh token and Galaxy
+   cannot complete the flow.
+5. Under `Webhook`, uncheck `Active`. Galaxy does not use GitHub webhooks, and GitHub
+   otherwise requires a webhook URL to create the app.
+6. Under `Permissions > Repository permissions`, set `Contents` to `Read-only` for
+   browse and download, or `Read and write` if users should be able to upload files.
+7. Create the app. On its settings page copy the `Client ID` and expose it to Galaxy as
+   `GALAXY_GITHUB_APP_CLIENT_ID`, then `Generate a new client secret` and expose that value
+   as `GALAXY_GITHUB_APP_CLIENT_SECRET` (GitHub shows the secret only once).
+
+After this setup, users connect their own GitHub accounts through Galaxy's OAuth2 flow.
+The client ID and client secret identify your Galaxy application to GitHub, but file access
+is performed with per-user access and refresh tokens - Galaxy stores only the refresh token
+in its Vault and mints short-lived access tokens on use.
+
 ## Playing Nicer with Ansible
 
 Many large instances of Galaxy are configured with Ansible and much of the existing administrator
@@ -970,8 +1111,8 @@ user defined data access templates can support OAuth 2.0.
 
 Galaxy keeps track of which plugin `type`s (currently only file source types) require
 OAuth2 to work properly and will take care of authorization redirection, saving refresh tokens,
-etc.. implicitly. One such `type` is `dropbox`. Here is the production Dropbox
-template distributed with Galaxy.
+etc.. implicitly. Such `type`s include `dropbox`, `googledrive`, `onedrive`, and `github`.
+Here is the production Dropbox template distributed with Galaxy.
 
 ```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_dropbox.yml
 :language: yaml

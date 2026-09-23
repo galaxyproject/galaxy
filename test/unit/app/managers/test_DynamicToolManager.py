@@ -1,3 +1,4 @@
+from galaxy import exceptions
 from galaxy.app_unittest_utils.toolbox_support import BaseToolBoxTestCase
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.tool_util_models.dynamic_tool_models import DynamicToolCreatePayload
@@ -14,7 +15,12 @@ class TestDynamicToolManager(BaseToolBoxTestCase):
     def test_create_tool(self):
         tool_version = "0.1"
         payload = DynamicToolCreatePayload(
-            representation={"class": "GalaxyTool", "version": tool_version, "command": "echo 42"}
+            representation={
+                "class": "GalaxyTool",
+                "name": "Test Tool",
+                "version": tool_version,
+                "shell_command": "echo 42",
+            }
         )
         dynamic_tool = self.dynamic_tool_manager.create_tool(payload)
         assert dynamic_tool.active
@@ -23,6 +29,21 @@ class TestDynamicToolManager(BaseToolBoxTestCase):
         assert dynamic_tool.tool_version == tool_version
 
     def test_create_tool_no_version(self):
-        payload = DynamicToolCreatePayload(representation={"class": "GalaxyTool", "command": "echo 42"})
+        payload = DynamicToolCreatePayload(
+            representation={"class": "GalaxyTool", "name": "Test Tool", "shell_command": "echo 42"}
+        )
         with self.assertRaises(ValueError):
+            self.dynamic_tool_manager.create_tool(payload)
+
+    def test_create_tool_requires_beta_tool_formats(self):
+        self.app.config.enable_beta_tool_formats = False
+        payload = DynamicToolCreatePayload(
+            representation={
+                "class": "GalaxyTool",
+                "name": "Test Tool",
+                "version": "0.1",
+                "shell_command": "echo 42",
+            }
+        )
+        with self.assertRaises(exceptions.ConfigDoesNotAllowException):
             self.dynamic_tool_manager.create_tool(payload)

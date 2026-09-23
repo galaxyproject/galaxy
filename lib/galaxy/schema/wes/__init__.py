@@ -7,8 +7,6 @@ from __future__ import annotations
 from enum import Enum
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 
 from pydantic import (
@@ -47,7 +45,7 @@ class ServiceType(BaseModel):
 
 
 class RunId(BaseModel):
-    run_id: Optional[str] = Field(None, description="workflow run ID")
+    run_id: str | None = Field(None, description="workflow run ID")
 
 
 class State(Enum):
@@ -66,14 +64,14 @@ class State(Enum):
 
 class RunStatus(BaseModel):
     run_id: str
-    state: Optional[State] = None
+    state: State | None = None
 
 
 class RunSummary(RunStatus):
-    start_time: Optional[str] = Field(
+    start_time: str | None = Field(
         None, description='When the run started executing, in ISO 8601 format "%Y-%m-%dT%H:%M:%SZ"'
     )
-    end_time: Optional[str] = Field(
+    end_time: str | None = Field(
         None,
         description='When the run stopped executing (completed, failed, or cancelled), in ISO 8601 format "%Y-%m-%dT%H:%M:%SZ"',
     )
@@ -81,7 +79,7 @@ class RunSummary(RunStatus):
 
 
 class RunRequest(BaseModel):
-    workflow_params: Optional[dict[str, Any]] = Field(
+    workflow_params: dict[str, Any] | None = Field(
         None,
         description="REQUIRED\nThe workflow run parameterizations (JSON encoded), including input and output file locations",
     )
@@ -92,13 +90,13 @@ class RunRequest(BaseModel):
     workflow_type_version: str = Field(
         ..., description="REQUIRED\nThe workflow descriptor type version, must be one supported by this WES instance"
     )
-    tags: Optional[dict[str, str]] = None
-    workflow_engine_parameters: Optional[dict[str, str]] = None
-    workflow_engine: Optional[str] = Field(
+    tags: dict[str, str] | None = None
+    workflow_engine_parameters: dict[str, str] | None = None
+    workflow_engine: str | None = Field(
         None,
         description="The workflow engine, must be one supported by this WES instance. Required if workflow_engine_version is provided.",
     )
-    workflow_engine_version: Optional[str] = Field(
+    workflow_engine_version: str | None = Field(
         None,
         description="The workflow engine version, must be one supported by this WES instance. If workflow_engine is provided, but workflow_engine_version is not, servers can make no assumptions with regard to the engine version the WES instance uses to process the request if  that WES instance supports multiple versions of the requested engine.",
     )
@@ -109,51 +107,51 @@ class RunRequest(BaseModel):
 
 
 class Log(BaseModel):
-    name: Optional[str] = Field(None, description="The task or workflow name")
-    cmd: Optional[list[str]] = Field(None, description="The command line that was executed")
-    start_time: Optional[str] = Field(
+    name: str | None = Field(None, description="The task or workflow name")
+    cmd: list[str] | None = Field(None, description="The command line that was executed")
+    start_time: str | None = Field(
         None, description='When the command started executing, in ISO 8601 format "%Y-%m-%dT%H:%M:%SZ"'
     )
-    end_time: Optional[str] = Field(
+    end_time: str | None = Field(
         None,
         description='When the command stopped executing (completed, failed, or cancelled), in ISO 8601 format "%Y-%m-%dT%H:%M:%SZ"',
     )
-    stdout: Optional[str] = Field(
+    stdout: str | None = Field(
         None,
         description="A URL to retrieve standard output logs of the workflow run or task.  This URL may change between status requests, or may not be available until the task or workflow has finished execution.  Should be available using the same credentials used to access the WES endpoint.",
     )
-    stderr: Optional[str] = Field(
+    stderr: str | None = Field(
         None,
         description="A URL to retrieve standard error logs of the workflow run or task.  This URL may change between status requests, or may not be available until the task or workflow has finished execution.  Should be available using the same credentials used to access the WES endpoint.",
     )
-    exit_code: Optional[int] = Field(None, description="Exit code of the program")
-    system_logs: Optional[list[str]] = Field(
+    exit_code: int | None = Field(None, description="Exit code of the program")
+    system_logs: list[str] | None = Field(
         None,
         description="System logs are any logs the system decides are relevant,\nwhich are not tied directly to a workflow.\nContent is implementation specific: format, size, etc.\n\nSystem logs may be collected here to provide convenient access.\n\nFor example, the system may include an error message that caused\na SYSTEM_ERROR state (e.g. disk is full), etc.",
     )
 
 
 class DefaultWorkflowEngineParameter(BaseModel):
-    name: Optional[str] = Field(None, description="The name of the parameter")
-    type: Optional[str] = Field(None, description="Describes the type of the parameter, e.g. float.")
-    default_value: Optional[str] = Field(
+    name: str | None = Field(None, description="The name of the parameter")
+    type: str | None = Field(None, description="Describes the type of the parameter, e.g. float.")
+    default_value: str | None = Field(
         None, description='The stringified version of the default parameter. e.g. "2.45".'
     )
 
 
 class WorkflowTypeVersion(BaseModel):
-    workflow_type_version: Optional[list[str]] = Field(
+    workflow_type_version: list[str] | None = Field(
         None, description="an array of one or more acceptable types for the `workflow_type`"
     )
 
 
 class TaskLog(Log):
     id: str = Field(..., description="A unique identifier which may be used to reference the task")
-    system_logs: Optional[list[str]] = Field(
+    system_logs: list[str] | None = Field(
         None,
         description="System logs are any logs the system decides are relevant,\nwhich are not tied directly to a task.\nContent is implementation specific: format, size, etc.\n\nSystem logs may be collected here to provide convenient access.\n\nFor example, the system may include the name of the host\nwhere the task is executing, an error message that caused\na SYSTEM_ERROR state (e.g. disk is full), etc.",
     )
-    tes_uri: Optional[str] = Field(
+    tes_uri: str | None = Field(
         None,
         description="An optional URL pointing to an extended task definition defined by a [TES api](https://github.com/ga4gh/task-execution-schemas)",
     )
@@ -161,27 +159,25 @@ class TaskLog(Log):
 
 
 class WorkflowEngineVersion(BaseModel):
-    workflow_engine_version: Optional[list[str]] = Field(
+    workflow_engine_version: list[str] | None = Field(
         None, description="An array of one or more acceptable engines versions for the `workflow_engine`"
     )
 
 
 class RunListResponse(BaseModel):
-    runs: Optional[list[Union[RunStatus, RunSummary]]] = Field(
+    runs: list[RunStatus | RunSummary] | None = Field(
         None,
         description="A list of workflow runs that the service has executed or is executing. The list is filtered to only include runs that the caller has permission to see.",
     )
-    next_page_token: Optional[str] = Field(
+    next_page_token: str | None = Field(
         None,
         description="A token which may be supplied as `page_token` in workflow run list request to get the next page of results.  An empty string indicates there are no more items to return.",
     )
 
 
 class ErrorResponse(BaseModel):
-    msg: Optional[str] = Field(None, description="A detailed error message.")
-    status_code: Optional[int] = Field(
-        None, description="The integer representing the HTTP status code (e.g. 200, 404)."
-    )
+    msg: str | None = Field(None, description="A detailed error message.")
+    status_code: int | None = Field(None, description="The integer representing the HTTP status code (e.g. 200, 404).")
 
 
 class Service(BaseModel):
@@ -192,33 +188,33 @@ class Service(BaseModel):
     )
     name: str = Field(..., description="Name of this service. Should be human readable.", examples=["My project"])
     type: ServiceType
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None,
         description="Description of the service. Should be human readable and provide information about the service.",
         examples=["This service provides..."],
     )
     organization: Organization = Field(..., description="Organization providing the service")
-    contactUrl: Optional[AnyUrl] = Field(
+    contactUrl: AnyUrl | None = Field(
         None,
         description="URL of the contact for the provider of this service, e.g. a link to a contact form (RFC 3986 format), or an email (RFC 2368 format).",
         examples=["mailto:support@example.com"],
     )
-    documentationUrl: Optional[AnyUrl] = Field(
+    documentationUrl: AnyUrl | None = Field(
         None,
         description="URL of the documentation of this service (RFC 3986 format). This should help someone learn how to use your service, including any specifics required to access data, e.g. authentication.",
         examples=["https://docs.myservice.example.com"],
     )
-    createdAt: Optional[AwareDatetime] = Field(
+    createdAt: AwareDatetime | None = Field(
         None,
         description="Timestamp describing when the service was first deployed and available (RFC 3339 format)",
         examples=["2019-06-04T12:58:19Z"],
     )
-    updatedAt: Optional[AwareDatetime] = Field(
+    updatedAt: AwareDatetime | None = Field(
         None,
         description="Timestamp describing when the service was last updated (RFC 3339 format)",
         examples=["2019-06-04T12:58:19Z"],
     )
-    environment: Optional[str] = Field(
+    environment: str | None = Field(
         None,
         description="Environment the service is running in. Use this to distinguish between production, development and testing/staging deployments. Suggested values are prod, test, dev, staging. However this is advised and not enforced.",
         examples=["test"],
@@ -231,26 +227,26 @@ class Service(BaseModel):
 
 
 class RunLog(BaseModel):
-    run_id: Optional[str] = Field(None, description="workflow run ID")
-    request: Optional[RunRequest] = None
-    state: Optional[State] = None
-    run_log: Optional[Log] = None
-    task_logs_url: Optional[str] = Field(
+    run_id: str | None = Field(None, description="workflow run ID")
+    request: RunRequest | None = None
+    state: State | None = None
+    run_log: Log | None = None
+    task_logs_url: str | None = Field(
         None,
         description="A reference to the complete url which may be used to obtain a paginated list of task logs for this workflow",
     )
-    task_logs: Optional[list[Union[Log, TaskLog]]] = Field(
+    task_logs: list[Log | TaskLog] | None = Field(
         None,
         description="The logs, and other key info like timing and exit code, for each step in the workflow run. This field is deprecated and the `task_logs_url` should be used to retrieve a paginated list of steps from the workflow run. This field will be removed in the next major version of the  specification (2.0.0)",
     )
-    outputs: Optional[dict[str, Any]] = Field(None, description="The outputs from the workflow run.")
+    outputs: dict[str, Any] | None = Field(None, description="The outputs from the workflow run.")
 
 
 class TaskListResponse(BaseModel):
-    task_logs: Optional[list[TaskLog]] = Field(
+    task_logs: list[TaskLog] | None = Field(
         None, description="The logs, and other key info like timing and exit code, for each step in the workflow run."
     )
-    next_page_token: Optional[str] = Field(
+    next_page_token: str | None = Field(
         None,
         description="A token which may be supplied as `page_token` in workflow run task list request to get the next page of results.  An empty string indicates there are no more items to return.",
     )

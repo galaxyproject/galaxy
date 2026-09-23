@@ -2,10 +2,6 @@
 
 import logging
 import re
-from typing import (
-    List,
-    Optional,
-)
 
 from . import InstrumentPlugin
 from ..formatting import JobMetricFormatter
@@ -25,7 +21,7 @@ class EnvPlugin(InstrumentPlugin):
 
     plugin_type = "env"
     formatter = EnvFormatter()
-    variables: Optional[List[str]]
+    variables: list[str] | None
     default_safety = Safety.UNSAFE
 
     def __init__(self, **kwargs):

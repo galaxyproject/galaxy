@@ -56,7 +56,7 @@
                             :display-rule-type.sync="displayRuleType"
                             @saveRule="handleRuleSave">
                             <ColumnSelector :target.sync="addSortingTarget" :col-headers="activeRuleColHeaders" />
-                            <label v-b-tooltip.hover.noninteractive :title="titleNumericSort">
+                            <label v-g-tooltip.hover :title="titleNumericSort">
                                 <input v-model="addSortingNumeric" type="checkbox" />
                                 {{ l("Numeric sorting.") }}
                             </label>
@@ -141,7 +141,7 @@
                                 {{ l("Replacement Expression") }}
                                 <input v-model="addColumnRegexReplacement" type="text" class="rule-replacement" />
                             </label>
-                            <label v-b-tooltip.hover.noninteractive>
+                            <label v-g-tooltip.hover>
                                 <input v-model="addColumnRegexAllowUnmatched" type="checkbox" />
                                 {{ l("Allow regular expression unmatched.") }}
                             </label>
@@ -227,7 +227,7 @@
                             @saveRule="handleRuleSave">
                             <ColumnSelector :target.sync="addFilterRegexTarget" :col-headers="activeRuleColHeaders" />
                             <RegularExpressionInput :target.sync="addFilterRegexExpression" />
-                            <label v-b-tooltip.hover :title="titleInvertFilterRegex">
+                            <label v-g-tooltip.hover :title="titleInvertFilterRegex">
                                 <input v-model="addFilterRegexInvert" type="checkbox" />
                                 {{ l("Invert filter.") }}
                             </label>
@@ -238,7 +238,7 @@
                             @saveRule="handleRuleSave">
                             <ColumnSelector :target.sync="addFilterMatchesTarget" :col-headers="activeRuleColHeaders" />
                             <input v-model="addFilterMatchesValue" type="text" />
-                            <label v-b-tooltip.hover :title="titleInvertFilterMatches">
+                            <label v-g-tooltip.hover :title="titleInvertFilterMatches">
                                 <input v-model="addFilterMatchesInvert" type="checkbox" />
                                 {{ l("Invert filter.") }}
                             </label>
@@ -274,7 +274,7 @@
                                 Filter how many rows?
                                 <input v-model="addFilterCountN" type="number" />
                             </label>
-                            <label v-b-tooltip.hover :title="titleInvertFilterMatches">
+                            <label v-g-tooltip.hover :title="titleInvertFilterMatches">
                                 <input v-model="addFilterCountInvert" type="checkbox" />
                                 {{ l("Invert filter.") }}
                             </label>
@@ -284,7 +284,7 @@
                             :display-rule-type.sync="displayRuleType"
                             @saveRule="handleRuleSave">
                             <ColumnSelector :target.sync="addFilterEmptyTarget" :col-headers="activeRuleColHeaders" />
-                            <label v-b-tooltip.hover :title="titleInvertFilterEmpty">
+                            <label v-g-tooltip.hover :title="titleInvertFilterEmpty">
                                 <input v-model="addFilterEmptyInvert" type="checkbox" />
                                 {{ l("Invert filter.") }}
                             </label>
@@ -302,7 +302,7 @@
                                     :ordered="true"
                                     :value-as-list="true">
                                     <span
-                                        v-b-tooltip.hover
+                                        v-g-tooltip.hover
                                         :title="titleRemoveMapping"
                                         class="fa fa-times"
                                         @click="removeMapping(index)"></span>
@@ -359,7 +359,7 @@
                             <span class="title">
                                 {{ l("Rules") }}
                                 <span
-                                    v-b-tooltip.hover
+                                    v-g-tooltip.hover
                                     class="fa fa-wrench rule-builder-view-source"
                                     :title="titleViewSource"
                                     @click="viewSource"></span>
@@ -401,7 +401,7 @@
                             <div class="rules-buttons btn-group">
                                 <div class="dropup">
                                     <button
-                                        v-b-tooltip.hover.bottom.noninteractive
+                                        v-g-tooltip.hover.bottom
                                         type="button"
                                         :title="titleRulesMenu"
                                         class="rule-menu-rules-button primary-button dropdown-toggle"
@@ -425,7 +425,7 @@
                                 </div>
                                 <div class="dropup">
                                     <button
-                                        v-b-tooltip.hover.bottom.noninteractive
+                                        v-g-tooltip.hover.bottom
                                         type="button"
                                         :title="titleFilterMenu"
                                         class="rule-menu-filter-button primary-button dropdown-toggle"
@@ -444,7 +444,7 @@
                                 </div>
                                 <div class="dropup">
                                     <button
-                                        v-b-tooltip.hover.bottom.noninteractive
+                                        v-g-tooltip.hover.bottom
                                         type="button"
                                         :title="titleColumMenu"
                                         class="rule-menu-column-button primary-button dropdown-toggle"
@@ -535,7 +535,7 @@
                     <div v-if="showCollectionNameInput" class="rule-footer-name-group">
                         <b-input
                             v-model="collectionName"
-                            v-b-tooltip.hover
+                            v-g-tooltip.hover
                             class="collection-name"
                             :placeholder="namePlaceholder"
                             :title="namePlaceholder" />
@@ -608,8 +608,8 @@
 import HotTable from "@handsontable/vue";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
+import { escape } from "lodash";
 import { mapActions } from "pinia";
-import _ from "underscore";
 import Vue from "vue";
 
 import { ERROR_STATES, NON_TERMINAL_STATES } from "@/api/jobs";
@@ -642,6 +642,17 @@ Vue.use(BootstrapVue);
 
 const RULES = RuleDefs.RULES;
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
+
+// UI-only keys the rule builder / tool form stamp onto live rule & mapping entries.
+// The server never reads them; they must not be persisted into tool_state or saved sessions.
+export const UI_ONLY_RULE_KEYS = ["collapsible_value", "connectable", "is_workflow", "editing", "error", "warn"];
+const stripUiKeys = function (entry) {
+    const clean = { ...entry };
+    for (const key of UI_ONLY_RULE_KEYS) {
+        delete clean[key];
+    }
+    return clean;
+};
 
 export default {
     components: {
@@ -933,7 +944,7 @@ export default {
             }
         },
         hasActiveMappingEdit() {
-            const has = _.any(_.values(this.mapping), (mapping) => mapping.editing);
+            const has = Object.values(this.mapping).some((mapping) => mapping.editing);
             return has;
         },
         activeRule() {
@@ -1000,12 +1011,12 @@ export default {
             const formattedHeaders = [];
             for (const colIndex in this.colHeaders) {
                 const colHeader = this.colHeaders[colIndex];
-                formattedHeaders[colIndex] = `<b>${_.escape(colHeader)}</b>`;
+                formattedHeaders[colIndex] = `<b>${escape(colHeader)}</b>`;
                 const mappingDisplay = [];
                 for (const mapping of this.mapping) {
                     if (mapping.columns.indexOf(parseInt(colIndex)) !== -1) {
                         const mappingDef = MAPPING_TARGETS[mapping.type];
-                        mappingDisplay.push(`<i>${_.escape(mappingDef.columnHeader || mappingDef.label)}</i>`);
+                        mappingDisplay.push(`<i>${escape(mappingDef.columnHeader || mappingDef.label)}</i>`);
                     }
                 }
                 if (mappingDisplay.length == 1) {
@@ -1373,15 +1384,11 @@ export default {
             this.ruleView = "source";
         },
         resetSource() {
-            const replacer = function (key, value) {
-                if (key == "error" || key == "warn") {
-                    return undefined;
-                }
-                return value;
-            };
             const asJson = {
-                rules: this.rules,
-                mapping: this.mapping,
+                // Serialize DSL-only copies; leave this.rules/this.mapping live so the
+                // builder UI keeps rendering validation/edit state (error/warn/editing).
+                rules: this.rules.map(stripUiKeys),
+                mapping: this.mapping.map(stripUiKeys),
             };
             if (!this.exisistingDatasets) {
                 if (this.extension !== UploadUtils.DEFAULT_EXTENSION) {
@@ -1392,7 +1399,7 @@ export default {
                 }
             }
             this.ruleSourceJson = asJson;
-            this.ruleSource = JSON.stringify(asJson, replacer, "  ");
+            this.ruleSource = JSON.stringify(asJson, null, "  ");
             this.ruleSourceError = null;
         },
         attemptRulePreview() {
@@ -1499,8 +1506,10 @@ export default {
         },
         async createCollection() {
             const asJson = {
-                rules: this.rules,
-                mapping: this.mapping,
+                // DSL-only copies — this is stringified into a localStorage saved session
+                // below; strip UI-only keys so they are not persisted.
+                rules: this.rules.map(stripUiKeys),
+                mapping: this.mapping.map(stripUiKeys),
             };
             var arrayOfColumns = this.mapping.flatMap((m) => m.columns);
             if (arrayOfColumns.some((m) => m >= this.colHeaders.length)) {

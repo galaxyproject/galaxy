@@ -64,13 +64,13 @@ describe("QuotaMeter.vue", () => {
 
     it("shows total usage when there is no quota", async () => {
         {
-            const user = { ...FAKE_USER, total_disk_usage: 7168 };
+            const user = { ...FAKE_USER, total_disk_usage: 7000 };
             const config = { enable_quotas: false };
             const wrapper = await createQuotaMeterWrapper(config, user);
             expect(wrapper.find("span").text()).toBe("Using 7 KB");
         }
         {
-            const user = { ...FAKE_USER, total_disk_usage: 21504, quota: "unlimited" };
+            const user = { ...FAKE_USER, total_disk_usage: 21000, quota: "unlimited" };
             const config = { enable_quotas: true };
             const wrapper = await createQuotaMeterWrapper(config, user);
             expect(wrapper.find("span").text()).toBe("Using 21 KB");

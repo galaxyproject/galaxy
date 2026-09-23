@@ -2,18 +2,17 @@ import datetime
 import json
 import os
 import time
-import urllib.parse
 from operator import itemgetter
-from typing import Union
 from unittest import SkipTest
 
-import pytest
 import requests
 from dateutil.parser import isoparse
 
+from galaxy.util import now
 from galaxy.util.unittest_utils import transient_failure
 from galaxy_test.api.test_tools import TestsTools
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
+from galaxy_test.base.decorators import requires_new_history
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -34,14 +33,14 @@ class TestJobsApi(ApiTestCase, TestsTools):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_index(self, history_id):
         # Create HDA to ensure at least one job exists...
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index()
         assert "__DATA_FETCH__" in map(itemgetter("tool_id"), jobs)
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_system_details_admin_only(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(admin=False)
@@ -53,7 +52,22 @@ class TestJobsApi(ApiTestCase, TestsTools):
         assert job["command_line"]
         assert job["external_id"]
 
-    @pytest.mark.require_new_history
+    @requires_new_history
+    def test_show_system_details_admin_only(self, history_id):
+        # handler and job_runner_name were only set for the admin_job_list
+        # view, so an admin reading a single job always got null for both.
+        self.__history_with_new_dataset(history_id)
+        job_id = self.__jobs_index(admin=True)[0]["id"]
+
+        job = self._get(f"jobs/{job_id}", admin=False).json()
+        assert job["handler"] is None
+        assert job["job_runner_name"] is None
+
+        job = self._get(f"jobs/{job_id}", admin=True).json()
+        assert job["handler"] is not None
+        assert job["job_runner_name"] is not None
+
+    @requires_new_history
     def test_admin_job_list(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs_response = self._get("jobs?view=admin_job_list", admin=False)
@@ -64,7 +78,7 @@ class TestJobsApi(ApiTestCase, TestsTools):
         job = jobs[0]
         self._assert_has_keys(job, "command_line", "external_id", "handler")
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_job_list_collection_view(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs_response = self._get("jobs?view=collection")
@@ -73,7 +87,7 @@ class TestJobsApi(ApiTestCase, TestsTools):
         job = jobs[0]
         self._assert_has_keys(job, "id", "tool_id", "state")
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_job_list_default_view(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs_response = self._get(f"jobs?history_id={history_id}")
@@ -82,7 +96,7 @@ class TestJobsApi(ApiTestCase, TestsTools):
         job = jobs[0]
         self._assert_has_keys(job, "id", "tool_id", "state")
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_index_state_filter(self, history_id):
         # Initial number of ok jobs
         original_count = len(self.__uploads_with_state("ok"))
@@ -104,15 +118,15 @@ class TestJobsApi(ApiTestCase, TestsTools):
             message = template % (original_count, new_count)
             raise AssertionError(message)
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_index_date_filter(self, history_id):
-        two_weeks_ago = (datetime.datetime.utcnow() - datetime.timedelta(14)).isoformat()
-        last_week = (datetime.datetime.utcnow() - datetime.timedelta(7)).isoformat()
-        before = datetime.datetime.utcnow().isoformat()
+        two_weeks_ago = (now() - datetime.timedelta(14)).isoformat()
+        last_week = (now() - datetime.timedelta(7)).isoformat()
+        before = now().isoformat()
         today = before[:10]
-        tomorrow = (datetime.datetime.utcnow() + datetime.timedelta(1)).isoformat()[:10]
+        tomorrow = (now() + datetime.timedelta(1)).isoformat()[:10]
         self.__history_with_new_dataset(history_id)
-        after = datetime.datetime.utcnow().isoformat()
+        after = now().isoformat()
 
         # Test using dates
         jobs = self.__jobs_index(data={"date_range_min": today, "date_range_max": tomorrow})
@@ -127,7 +141,7 @@ class TestJobsApi(ApiTestCase, TestsTools):
         jobs = self.__jobs_index(data={"date_range_min": two_weeks_ago, "date_range_max": last_week})
         assert today_job_id not in map(itemgetter("id"), jobs)
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_index_history(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(data={"history_id": history_id})
@@ -137,7 +151,7 @@ class TestJobsApi(ApiTestCase, TestsTools):
             jobs = self.__jobs_index(data={"history_id": other_history_id})
             assert len(jobs) == 0
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     @skip_without_tool("cat1")
     def test_index_workflow_and_invocation_filter(self, history_id):
         workflow_simple = """
@@ -166,7 +180,7 @@ steps:
         assert len(jobs2) == 1
         assert jobs1 == jobs2
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     @skip_without_tool("multi_data_optional")
     def test_index_workflow_filter_implicit_jobs(self, history_id):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
@@ -198,7 +212,7 @@ steps:
         assert len(workflow_jobs) == 2
         assert len(second_invocation_jobs) == 1
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_index_limit_and_offset_filter(self, history_id):
         # create 2 datasets
         self.__history_with_new_dataset(history_id)
@@ -214,7 +228,7 @@ steps:
         assert response.status_code == 400
         assert response.json()["err_msg"] == "Input should be greater than or equal to 1 in ('query', 'limit')"
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_index_search_filter_tool_id(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(data={"history_id": history_id})
@@ -227,7 +241,7 @@ steps:
         jobs = self.__jobs_index(data={"history_id": history_id, "search": "tool:'FETCH'"})
         assert len(jobs) == 0
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_index_search_filter_email(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(data={"history_id": history_id, "search": "FETCH"})
@@ -260,7 +274,7 @@ steps:
         self._assert_status_code_is(jobs_response, 403)
         assert jobs_response.json() == {"err_msg": "Only admins can index the jobs of others", "err_code": 403006}
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_index_handler_runner_filters(self, history_id):
         self.__history_with_new_dataset(history_id)
 
@@ -305,7 +319,7 @@ steps:
         ).json()
         assert not jobs
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_index_multiple_states_filter(self, history_id):
         # Initial number of ok jobs
         original_count = len(self.__uploads_with_state("ok", "new"))
@@ -318,7 +332,7 @@ steps:
         new_count = len(self.__uploads_with_state("new", "ok"))
         assert original_count < new_count, new_count
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_show(self, history_id):
         job_properties_tool_run = self.dataset_populator.run_tool(
             tool_id="job_properties",
@@ -365,7 +379,7 @@ steps:
         assert "The bool is not true\n" in job_details["stdout"]
         assert "The bool is very not true\n" in job_details["stderr"]
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_show_security(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs_response = self._get("jobs", data={"history_id": history_id})
@@ -387,6 +401,54 @@ steps:
         show_jobs_response = self._get(f"jobs/{job_id}", admin=True)
         assert show_jobs_response.json()["external_id"] is not None
         assert show_jobs_response.json()["command_line"] is not None
+
+    @skip_without_tool("collection_creates_pair")
+    @requires_new_history
+    def test_show_collection_only_job_public(self, history_id):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/22602.
+        job_id, hdca_id = self._run_collection_only_job(history_id)
+        hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)
+        for element in hdca["elements"]:
+            response = self.dataset_populator.make_dataset_public_raw(history_id, element["object"]["id"])
+            assert_status_code_is_ok(response)
+        with self._different_user(anon=True):
+            show_jobs_response = self._get(f"jobs/{job_id}")
+            self._assert_status_code_is(show_jobs_response, 200)
+            assert show_jobs_response.json()["id"] == job_id
+
+    @skip_without_tool("collection_creates_pair")
+    @requires_new_history
+    def test_show_collection_only_job_private_denied(self, history_id):
+        job_id, hdca_id = self._run_collection_only_job(history_id)
+        hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)
+        for element in hdca["elements"]:
+            self.dataset_populator.make_private(history_id, element["object"]["id"])
+        with self._different_user():
+            show_jobs_response = self._get(f"jobs/{job_id}")
+            self._assert_status_code_is(show_jobs_response, 403)
+
+    @requires_new_history
+    def test_show_job_accessible_via_public_history(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs_response = self._get("jobs", data={"history_id": history_id})
+        job_id = jobs_response.json()[0]["id"]
+        self.dataset_populator.make_public(history_id)
+        with self._different_user():
+            show_jobs_response = self._get(f"jobs/{job_id}")
+            self._assert_status_code_is(show_jobs_response, 200)
+            assert show_jobs_response.json()["id"] == job_id
+
+    def _run_collection_only_job(self, history_id):
+        input_id = self.dataset_populator.new_dataset(history_id, content="a\nb\nc\nd\n", wait=True)["id"]
+        run_response = self.dataset_populator.run_tool(
+            tool_id="collection_creates_pair",
+            inputs={"input1": {"src": "hda", "id": input_id}},
+            history_id=history_id,
+        )
+        job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+        hdca_id = run_response["output_collections"][0]["id"]
+        return job_id, hdca_id
 
     def _run_detect_errors(self, history_id, inputs):
         payload = self.dataset_populator.run_tool_payload(
@@ -449,7 +511,7 @@ steps:
             )
             first_update_time = failed_hdca["update_time"]
             assert failed_hdca["visible"]
-            rerun_params = self._get(f"jobs/{job_id}/build_for_rerun").json()
+            rerun_params = self.dataset_populator.build_for_rerun(job_id)
             inputs = rerun_params["state_inputs"]
             inputs["rerun_remap_job_id"] = job_id
             rerun_response = self._run_detect_errors(history_id=history_id, inputs=inputs)
@@ -481,7 +543,7 @@ steps:
                 assert_ok=False,
             )
             assert failed_hdca["visible"]
-            rerun_params = self._get(f"jobs/{job_id}/build_for_rerun").json()
+            rerun_params = self.dataset_populator.build_for_rerun(job_id)
             inputs = rerun_params["state_inputs"]
             inputs["rerun_remap_job_id"] = unrelated_job_id
             before_rerun_items = self.dataset_populator.get_history_contents(history_id)
@@ -526,7 +588,7 @@ steps:
     @skip_without_tool("detect_errors_aggressive")
     def test_report_error_anon(self):
         with self._different_user(anon=True):
-            history_id = self._get(urllib.parse.urljoin(self.url, "history/current_history_json")).json()["id"]
+            history_id = self._get_current_history_id()
             self._run_error_report(history_id)
 
     def _run_error_report(self, history_id):
@@ -553,7 +615,7 @@ steps:
             run_response = self._post("tools", data=payload, key=self.master_api_key)
             self._assert_status_code_is(run_response, 400)
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     @skip_without_tool("create_2")
     def test_deleting_output_keep_running_until_all_deleted(self, history_id):
         job_state, outputs = self._setup_running_two_output_job(history_id, 120)
@@ -577,7 +639,7 @@ steps:
         final_state = wait_on_state(job_state, assert_ok=False, timeout=15)
         assert final_state in ["deleting", "deleted"], final_state
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     @skip_without_tool("create_2")
     def test_purging_output_keep_running_until_all_purged(self, history_id):
         job_state, outputs = self._setup_running_two_output_job(history_id, 120)
@@ -637,7 +699,7 @@ steps:
             == "Parameter 'collection': the previously selected dataset collection has elements that are deleted."
         )
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     @skip_without_tool("create_2")
     def test_purging_output_cleaned_after_ok_run(self, history_id):
         job_state, outputs = self._setup_running_two_output_job(history_id, 10)
@@ -668,6 +730,30 @@ steps:
             # Make sure the non-purged dataset is on disk and the purged one is not.
             assert os.path.exists(output_dataset_paths[1])
             assert not os.path.exists(output_dataset_paths[0])
+
+    @skip_without_tool("conditional_name_digit_suffix")
+    def test_create_job_with_conditional_name_digit_suffix(self):
+        # Regression: expand_meta_parameters_async used to mangle conditional names ending
+        # in _N (e.g. "inner_options_1") by misidentifying them as repeat indices, causing
+        # Pydantic job-internal validation to fail with extra_forbidden / list_type errors.
+        with self.dataset_populator.test_history() as history_id:
+            response = self.dataset_populator.tool_request_raw(
+                tool_id="conditional_name_digit_suffix",
+                inputs={
+                    "outer": {
+                        "select": "a",
+                        "inner_options_1": {"mode": "by_index", "col": 1},
+                        "inner_options_2": {"mode": "by_name", "label": "foo"},
+                    }
+                },
+                history_id=history_id,
+            )
+            response.raise_for_status()
+            tool_request_id = response.json()["tool_request_id"]
+            submitted = self.dataset_populator.wait_on_tool_request(tool_request_id)
+            assert submitted, self.dataset_populator.get_tool_request(tool_request_id)
+            jobs = self.galaxy_interactor.jobs_for_tool_request(tool_request_id)
+            self.dataset_populator.wait_for_jobs(jobs, assert_ok=True)
 
     def _hack_to_skip_test_if_state_ok(self, job_state):
         if job_state().json()["state"] == "ok":
@@ -708,7 +794,7 @@ steps:
         assert_status_code_is_ok(update_response)
         return update_response
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     @skip_without_tool("cat_data_and_sleep")
     def test_resume_job(self, history_id):
         hda1 = self.dataset_populator.new_dataset(history_id, content="samp1\t10.0\nsamp2\t20.0\n")
@@ -756,7 +842,7 @@ steps:
         assert_status_code_is_ok(response)
         return response.json()
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_search(self, history_id):
         dataset_id = self.__history_with_ok_dataset(history_id)
         # We first copy the datasets, so that the update time is lower than the job creation time
@@ -780,7 +866,7 @@ steps:
         self._assert_status_code_is_ok(delete_response)
         self._search(search_payload, expected_search_count=0)
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_search_handle_identifiers(self, history_id):
         # Test that input name and element identifier of a jobs' output must match for a job to be returned.
         dataset_id = self.__history_with_ok_dataset(history_id)
@@ -796,7 +882,7 @@ steps:
         search_payload = self._search_payload(history_id=history_id, tool_id="identifier_single", inputs=inputs)
         self._search(search_payload, expected_search_count=0)
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_search_delete_outputs(self, history_id):
         dataset_id = self.__history_with_ok_dataset(history_id)
         inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
@@ -816,6 +902,7 @@ steps:
             assert_ok=False,
         )
         job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id)
         icj_id = failed_hdca["implicit_collection_jobs_id"]
         assert icj_id
         index = self.__jobs_index(data=dict(implicit_collection_jobs_id=icj_id))
@@ -823,7 +910,45 @@ steps:
         assert index[0]["id"] == job_id
         assert index[0]["state"] == "error", index
 
-    @pytest.mark.require_new_history
+    def test_show_job_exposes_implicit_collection_jobs_id(self, history_id):
+        run_response = self._run_map_over_error(history_id)
+        job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id)
+        expected_icj_id = self.dataset_populator.get_hdca_implicit_collection_jobs_id(
+            history_id, run_response["implicit_collections"][0]["id"], assert_ok=False
+        )
+        job = self.dataset_populator.get_job_details(job_id).json()
+        assert job["implicit_collection_jobs_id"] == expected_icj_id
+
+    def test_show_job_implicit_collection_jobs_id_null_for_unmapped_job(self, history_id):
+        dataset_id = self.__history_with_ok_dataset(history_id)
+        inputs = {"input1": {"src": "hda", "id": dataset_id}}
+        run_response = self.dataset_populator.run_tool("cat1", inputs, history_id)
+        job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+        job = self.dataset_populator.get_job_details(job_id).json()
+        assert job["implicit_collection_jobs_id"] is None
+
+    @requires_new_history
+    def test_search_jobs_exposes_implicit_collection_jobs_id(self, history_id):
+        dataset_id = self.__history_with_ok_dataset(history_id)
+        unmapped_inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
+        unmapped_job = self._create_and_search_job(history_id, unmapped_inputs, tool_id="cat1").json()[0]
+        assert unmapped_job["implicit_collection_jobs_id"] is None
+
+        list_id = self.__history_with_ok_collection(collection_type="list", history_id=history_id)
+        mapped_inputs = json.dumps({"input1": {"batch": True, "values": [{"src": "hdca", "id": list_id}]}})
+        mapped_jobs = self._create_and_search_job(history_id, mapped_inputs, tool_id="cat1").json()
+        assert mapped_jobs
+        icj_ids = {job["implicit_collection_jobs_id"] for job in mapped_jobs}
+        assert None not in icj_ids
+        assert len(icj_ids) == 1, mapped_jobs
+        # search and show must agree - they share EncodedJobDetails but not a serializer
+        for job in mapped_jobs:
+            shown = self.dataset_populator.get_job_details(job["id"]).json()
+            assert shown["implicit_collection_jobs_id"] == job["implicit_collection_jobs_id"]
+
+    @requires_new_history
     def test_search_with_hdca_list_input(self, history_id):
         list_id_a = self.__history_with_ok_collection(collection_type="list", history_id=history_id)
         list_id_b = self.__history_with_ok_collection(collection_type="list", history_id=history_id)
@@ -851,8 +976,8 @@ steps:
         search_payload = self._search_payload(history_id=history_id, tool_id="multi_data_param", inputs=inputs)
         self._search(search_payload, expected_search_count=0)
 
-    @transient_failure(issue=21230)
-    @pytest.mark.require_new_history
+    @transient_failure(issue=21230, potentially_fixed=True)
+    @requires_new_history
     def test_search_delete_hdca_output(self, history_id):
         list_id_a = self.__history_with_ok_collection(collection_type="list", history_id=history_id)
         inputs = json.dumps(
@@ -880,7 +1005,7 @@ steps:
         search_payload = self._search_payload(history_id=history_id, tool_id="collection_creates_list", inputs=inputs)
         self._search(search_payload, expected_search_count=0)
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_search_with_hdca_pair_input(self, history_id):
         list_id_a = self.__history_with_ok_collection(collection_type="pair", history_id=history_id)
         inputs = json.dumps(
@@ -913,7 +1038,7 @@ steps:
         self._assert_status_code_is_ok(delete_response)
         self._search(search_payload, expected_search_count=0)
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_search_with_hdca_list_pair_input(self, history_id):
         list_id_a = self.__history_with_ok_collection(collection_type="list:pair", history_id=history_id)
         inputs = json.dumps(
@@ -924,7 +1049,7 @@ steps:
         )
         self._job_search(tool_id="multi_data_param", history_id=history_id, inputs=inputs)
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_search_with_hdca_list_pair_collection_mapped_over_pair_input(self, history_id):
         list_id_a = self.__history_with_ok_collection(collection_type="list:pair", history_id=history_id)
         inputs = json.dumps(
@@ -944,7 +1069,7 @@ steps:
             wait_for_job=True,
             assert_ok=True,
         )
-        rerun_params = self._get(f"jobs/{run_response['jobs'][0]['id']}/build_for_rerun").json()
+        rerun_params = self.dataset_populator.build_for_rerun(run_response["jobs"][0]["id"])
         # Since we call rerun on the first (and only) job we should get the expanded input
         # which is a dataset collection element (and not the list:pair hdca that was used as input to the original
         # job).
@@ -966,12 +1091,43 @@ steps:
             assert_ok=True,
         )
 
+    @skip_without_tool("multi_data_param")
+    def test_job_build_for_rerun_hdca_value_in_options(self, history_id):
+        """When rerunning a job whose input was a collection passed to a
+        ``multiple="true"`` data parameter, the collection must appear in
+        ``options.hdca`` (not ``options.hda``) so the client can match it
+        against the value's ``src: "hdca"``.
+
+        Regression test for a bug where hidden HDCAs were misclassified as
+        HDAs in the fallback options, causing the rerun form to show single-
+        dataset mode with nothing pre-selected.
+        """
+        hdca_id = self.__history_with_ok_collection(collection_type="list", history_id=history_id)
+        inputs = {
+            "f1": {"src": "hdca", "id": hdca_id},
+            "f2": {"src": "hdca", "id": hdca_id},
+        }
+        run_response = self._run("multi_data_param", history_id, inputs, wait_for_job=True, assert_ok=True)
+        job_id = run_response["jobs"][0]["id"]
+
+        # Hide the collection so it goes through the job-rerun fallback path
+        # (not found among active visible dataset collections).
+        self.dataset_populator.hide_dataset_collection(hdca_id)
+
+        rerun_params = self.dataset_populator.build_for_rerun(job_id)
+
+        # Find the f1 input definition in the form model
+        f1_input = next(i for i in rerun_params["inputs"] if i["name"] == "f1")
+        assert f1_input["value"]["values"][0]["src"] == "hdca"
+
+        # The HDCA must be in options.hdca (not options.hda)
+        hdca_option = f1_input["options"]["hdca"][0]
+        assert hdca_option["id"] == hdca_id and hdca_option["src"] == "hdca"
+
     @skip_without_tool("multiple_versions")
     def test_job_build_for_rerun_switch_version(self, history_id):
         run_response = self._run("multiple_versions", history_id, {}, tool_version="0.1").json()
-        rerun_params = self._get(
-            f"jobs/{run_response['jobs'][0]['id']}/build_for_rerun", {"tool_version": "0.2"}
-        ).json()
+        rerun_params = self.dataset_populator.build_for_rerun(run_response["jobs"][0]["id"], tool_version="0.2")
         assert rerun_params["version"] == "0.2"
 
     @skip_without_tool("collection_paired_test")
@@ -1012,7 +1168,7 @@ steps:
             assert_ok=True,
         )
         assert len(run_response["jobs"]) == 2
-        rerun_params = self._get(f"jobs/{run_response['jobs'][0]['id']}/build_for_rerun").json()
+        rerun_params = self.dataset_populator.build_for_rerun(run_response["jobs"][0]["id"])
         # Since we call rerun on the first (and only) job we should get the expanded input
         # which is a dataset collection element (and not the list:list hdca that was used as input to the original
         # job).
@@ -1033,7 +1189,7 @@ steps:
         )
         assert rerun_content == run_content
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_get_inputs_and_outputs(self, history_id):
         dataset_id = self.__history_with_ok_dataset(history_id)
         inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
@@ -1056,7 +1212,7 @@ steps:
         assert job_first_output.get("dataset").get("id") == job_first_output_values.get("id")
         assert job_first_output.get("dataset").get("src") == job_first_output_values.get("src")
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_delete_job(self, history_id):
         dataset_id = self.__history_with_ok_dataset(history_id)
         inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
@@ -1074,7 +1230,7 @@ steps:
         self._assert_status_code_is(empty_search_response, 200)
         assert len(empty_search_response.json()) == 0
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     @transient_failure(issue=21242)
     def test_delete_job_with_message(self, history_id):
         # Setup a job that will take a while to run so we can verify our cancelling
@@ -1109,7 +1265,7 @@ steps:
 
         assert wait_on(check, "dataset to be deleted with message")
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_destination_params(self, history_id):
         dataset_id = self.__history_with_ok_dataset(history_id)
         inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
@@ -1118,7 +1274,7 @@ steps:
         destination_params_response = self._get(f"/api/jobs/{job_id}/destination_params", admin=True)
         self._assert_status_code_is(destination_params_response, 200)
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_job_metrics(self, history_id):
         dataset_id = self.__history_with_ok_dataset(history_id)
         inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
@@ -1129,7 +1285,7 @@ steps:
         metrics_by_dataset_response = self._get(f"/api/datasets/{dataset_id}/metrics", data={"hda_ldda": "hda"})
         self._assert_status_code_is(metrics_by_dataset_response, 200)
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_parameters_display(self, history_id):
         dataset_id = self.__history_with_ok_dataset(history_id)
         inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
@@ -1165,8 +1321,8 @@ steps:
         return tool_response
 
     def _search_payload(
-        self, tool_id: str, inputs: str, state: str = "ok", history_id: Union[str, None] = None
-    ) -> dict[str, Union[str, None]]:
+        self, tool_id: str, inputs: str, state: str = "ok", history_id: str | None = None
+    ) -> dict[str, str | None]:
         search_payload = dict(tool_id=tool_id, inputs=inputs, history_id=history_id, state=state)
         return search_payload
 
@@ -1226,3 +1382,39 @@ steps:
         jobs = jobs_response.json()
         assert isinstance(jobs, list)
         return jobs
+
+
+class TestDataManagerJobsApi(ApiTestCase):
+    """API tests for data manager jobs submitted via the async POST /api/jobs endpoint."""
+
+    require_admin_user = True
+    dataset_populator: DatasetPopulator
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @skip_without_tool("data_manager")
+    def test_data_manager_async_submission_with_mismatched_conf_id(self):
+        # Regression for data manager jobs submitted via POST /api/jobs failing with
+        # "Invalid data manager requested" when the data_manager_conf.xml <data_manager id>
+        # differs from the tool XML <tool id>. The test tool "data_manager" (tool XML id)
+        # is registered in sample_data_manager_conf.xml as id="test_data_manager", which
+        # is exactly that mismatch. Before the fix, exec_after_process looked up the data
+        # manager using DataManagerJobAssociation.data_manager_id, which was set from the
+        # reconstructed tool's XML id ("data_manager") rather than the conf id
+        # ("test_data_manager"), causing the lookup to return None and the job to fail with
+        # exit code 0 but error state.
+        with self.dataset_populator.test_history() as history_id:
+            response = self.dataset_populator.tool_request_raw(
+                tool_id="data_manager",
+                inputs={"ignored_value": "test", "exit_code": 0},
+                history_id=history_id,
+                strict=False,
+            )
+            response.raise_for_status()
+            tool_request_id = response.json()["tool_request_id"]
+            submitted = self.dataset_populator.wait_on_tool_request(tool_request_id)
+            assert submitted, self.dataset_populator.get_tool_request(tool_request_id)
+            jobs = self.galaxy_interactor.jobs_for_tool_request(tool_request_id)
+            self.dataset_populator.wait_for_jobs(jobs, assert_ok=True)

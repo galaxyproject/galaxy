@@ -13,7 +13,6 @@ import tempfile
 import time
 from typing import (
     Any,
-    Optional,
 )
 from urllib.parse import urlparse
 
@@ -24,7 +23,7 @@ from galaxy.exceptions import MessageException
 log = logging.getLogger(__name__)
 
 
-class AscpFileSystem(AbstractFileSystem):
+class AscpFileSystem(AbstractFileSystem):  # type: ignore[misc]  # fsspec is untyped
     """Custom fsspec filesystem implementation for Aspera ascp transfers.
 
     This module implements fsspec.AbstractFileSystem for the ascp command-line tool.
@@ -74,10 +73,10 @@ class AscpFileSystem(AbstractFileSystem):
     def __init__(
         self,
         ssh_key: str,
-        ssh_key_passphrase: Optional[str] = None,
+        ssh_key_passphrase: str | None = None,
         ascp_path: str = "ascp",
-        user: Optional[str] = None,
-        host: Optional[str] = None,
+        user: str | None = None,
+        host: str | None = None,
         rate_limit: str = "300m",
         port: int = 33001,
         disable_encryption: bool = True,

@@ -1,16 +1,17 @@
 import os
 import tempfile
-from typing import Optional
+from functools import cache
 
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConf,
 )
 from galaxy.files.plugins import FileSourcePluginsConfig
+from galaxy.util.config_parsers import parse_allowlist_ips
 
 
 class TestConfiguredFileSources(ConfiguredFileSources):
-    def __init__(self, file_sources_config: FileSourcePluginsConfig, conf_dict: dict, test_root: Optional[str]):
+    def __init__(self, file_sources_config: FileSourcePluginsConfig, conf_dict: dict, test_root: str | None):
         super().__init__(file_sources_config, ConfiguredFileSourcesConf(conf_dict=conf_dict))
         self.test_root = test_root
 
@@ -25,6 +26,17 @@ class TestPosixConfiguredFileSources(TestConfiguredFileSources):
         }
         file_sources_config = FileSourcePluginsConfig()
         super().__init__(file_sources_config, {"test1": plugin}, root)
+
+
+@cache
+def stock_file_sources_allowing_loopback() -> ConfiguredFileSources:
+    """Stock file sources permitted to fetch from a mock HTTP server on the loopback interface.
+
+    The stock HTTP file source refuses private addresses unless they are allowlisted, so
+    tests serving fixtures from a local mock server need this configuration.
+    """
+    file_sources_config = FileSourcePluginsConfig(fetch_url_allowlist=parse_allowlist_ips(["127.0.0.0/24"]))
+    return ConfiguredFileSources(file_sources_config, load_stock_plugins=True)
 
 
 def setup_root():

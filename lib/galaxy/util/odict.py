@@ -8,16 +8,9 @@ Whenever possible the stdlib `collections.OrderedDict` should be used instead of
 this custom implementation.
 """
 
-import sys
 from collections import UserDict
 from typing import (
-    Dict,
-    Generic,
-    List,
-    Optional,
-    Tuple,
     TypeVar,
-    Union,
 )
 
 dict_alias = dict
@@ -25,16 +18,9 @@ dict_alias = dict
 KeyT = TypeVar("KeyT")
 ValueT = TypeVar("ValueT")
 
-if sys.version_info >= (3, 9):
 
-    # A simple type alias doesn't work with mypy
-    class TypedUserDict(UserDict[KeyT, ValueT]): ...
-
-else:
-
-    # UserDict is not generic in Python < 3.9
-    # TypeError: 'ABCMeta' object is not subscriptable
-    class TypedUserDict(UserDict, Generic[KeyT, ValueT]): ...
+# A simple type alias doesn't work with mypy
+class TypedUserDict(UserDict[KeyT, ValueT]): ...
 
 
 class odict(TypedUserDict[KeyT, ValueT]):
@@ -46,9 +32,9 @@ class odict(TypedUserDict[KeyT, ValueT]):
     order.
     """
 
-    def __init__(self, dict: Optional[Union[Dict[KeyT, ValueT], List[Tuple[KeyT, ValueT]]]] = None) -> None:
+    def __init__(self, dict: dict[KeyT, ValueT] | list[tuple[KeyT, ValueT]] | None = None) -> None:
         item = dict
-        self._keys: List[KeyT] = []
+        self._keys: list[KeyT] = []
         if isinstance(item, dict_alias):
             super().__init__(item)
         else:
@@ -81,7 +67,7 @@ class odict(TypedUserDict[KeyT, ValueT]):
     def keys(self):
         return self._keys[:]
 
-    def popitem(self) -> Tuple[KeyT, ValueT]:
+    def popitem(self) -> tuple[KeyT, ValueT]:
         try:
             key = self._keys[-1]
         except IndexError:

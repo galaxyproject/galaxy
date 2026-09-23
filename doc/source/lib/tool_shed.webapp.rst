@@ -14,7 +14,6 @@ Subpackages
 
    tool_shed.webapp.api
    tool_shed.webapp.controllers
-   tool_shed.webapp.framework
    tool_shed.webapp.model
    tool_shed.webapp.search
    tool_shed.webapp.security

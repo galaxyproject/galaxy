@@ -2,7 +2,6 @@ from datetime import datetime
 from enum import Enum
 from typing import (
     Literal,
-    Union,
 )
 
 from pydantic import Field
@@ -30,7 +29,7 @@ class CleanableItemsSummary(Model):
     )
 
 
-StoredItemType = Union[Literal["history"], Literal["dataset"]]
+StoredItemType = Literal["history"] | Literal["dataset"]
 
 
 class StoredItem(Model):

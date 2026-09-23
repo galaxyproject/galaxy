@@ -1,6 +1,7 @@
 import { computed } from "vue";
 
-import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
+import { isDetailedCollection } from "@/api";
+import { useDatasetCollectionStore } from "@/stores/datasetCollectionStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 interface Props {
@@ -8,20 +9,21 @@ interface Props {
 }
 
 export function useDetailedCollection<T extends Props>(props: T) {
-    const collectionStore = useCollectionElementsStore();
+    const collectionStore = useDatasetCollectionStore();
 
+    // `getDetailedCollection` triggers a detail fetch (or upgrade from summary)
+    // on first access; while loading or summary-only, the narrow yields null.
     const collection = computed(() => {
-        return collectionStore.getDetailedCollectionById(props.collectionId);
+        const entry = collectionStore.getDetailedCollection(props.collectionId);
+        return isDetailedCollection(entry) ? entry : null;
     });
+
+    // Read the error by id so it surfaces even before `collection` lands.
     const collectionLoadError = computed(() => {
-        if (collection.value) {
-            const collectionElementLoadError = collectionStore.getLoadingCollectionElementsError(collection.value);
-            if (collectionElementLoadError) {
-                return errorMessageAsString(collectionElementLoadError);
-            }
-        }
-        return undefined;
+        const err = collectionStore.getCollectionError(props.collectionId);
+        return err ? errorMessageAsString(err) : undefined;
     });
+
     return {
         collectionStore,
         collection,

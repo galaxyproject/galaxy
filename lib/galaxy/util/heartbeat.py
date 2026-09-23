@@ -3,7 +3,6 @@ import sys
 import threading
 import time
 import traceback
-from typing import Dict
 
 
 def get_current_thread_object_dict():
@@ -43,7 +42,7 @@ class Heartbeat(threading.Thread):
         self.fname_nonsleeping = None
         self.file_nonsleeping = None
         self.pid = None
-        self.nonsleeping_heartbeats: Dict[int, int] = {}
+        self.nonsleeping_heartbeats: dict[int, int] = {}
         # Event to wait on when sleeping, allows us to interrupt for shutdown
         self.wait_event = threading.Event()
 

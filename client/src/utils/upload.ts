@@ -36,6 +36,7 @@ import {
     type ApiDataElement,
     type CompositeDataElement,
     type FetchDataPayload,
+    type FetchDataResponse,
     type FetchDatasetHash,
     fetchDatasets,
     type FetchDatasetsCallbacks,
@@ -52,12 +53,14 @@ import {
     guessInitialFilterType,
     guessNameForPair,
 } from "@/components/Collections/pairing";
+import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import type { UploadRowModel } from "@/components/Upload/model";
-import type { SupportedCollectionType } from "@/composables/upload/collectionTypes";
+import type { SupportedCollectionType, UploadCollectionConfig } from "@/composables/upload/collectionTypes";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
+import { uploadApiOptionDefaults } from "@/composables/upload/uploadOptionModel";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
-import { isUrl } from "@/utils/url";
+import { isUrl, isValidUrl } from "@/utils/url";
 
 import { createTusUpload, type FileStream, type NamedBlob, type UploadableFile } from "./tusUpload";
 
@@ -126,6 +129,8 @@ interface UploadItemCommon {
     deferred: boolean;
     /** Optional hash values for verification */
     hashes?: FetchDatasetHash[];
+    /** Whether to auto-decompress the upload */
+    auto_decompress: boolean;
 }
 
 /** Upload item from a local file */
@@ -167,6 +172,8 @@ export interface UploadPayload {
     targets: (HdasUploadTarget | HdcaUploadTarget)[];
     /** Whether to auto-decompress uploads */
     auto_decompress: boolean;
+    /** Optional preferred object store id for all created datasets. */
+    preferred_object_store_id?: string;
     /** Local files to upload via TUS (not part of API, processed by submitUpload) */
     files: UploadableFile[];
 }
@@ -183,16 +190,43 @@ export interface UploadDataPayload extends UploadPayload {
 export interface BuildPayloadOptions {
     /** Whether this is a composite upload (multiple files as one dataset) */
     composite?: boolean;
+    /**
+     * User-defined name for a composite dataset. When set, forwarded to the API so Galaxy
+     * names the dataset accordingly. When absent, Galaxy auto-generates the name.
+     */
+    compositeName?: string;
 }
 
 // ============================================================================
 // Configuration Types
 // ============================================================================
 
+/** Per-file progress tracking options */
+interface PerFileProgressOptions {
+    /** Upload item IDs corresponding to files (one per file, for per-file progress tracking) */
+    uploadIds?: string[];
+    /** Callback for per-file progress updates (fileId, percentage) */
+    perFileProgress?: (fileId: string, percentage: number) => void;
+}
+
+/**
+ * Cancellation configuration for uploads.
+ *
+ * Use `signal` for atomic (all-or-nothing) cancellation, or `signals` for
+ * per-file cancellation where cancelled files are skipped and the rest still
+ * upload. The two are mutually exclusive.
+ */
+export interface CancellationConfig {
+    /** Shared AbortSignal that cancels the entire submission (all-or-nothing). */
+    signal?: AbortSignal;
+    /** Per-file AbortSignals; a cancelled file is skipped instead of aborting the whole upload. */
+    signals?: (AbortSignal | undefined)[];
+}
+
 /**
  * Configuration for upload submission.
  */
-export interface UploadSubmitConfig extends FetchDatasetsCallbacks {
+export interface UploadSubmitConfig extends FetchDatasetsCallbacks, PerFileProgressOptions, CancellationConfig {
     /** The upload payload data */
     data: UploadDataPayload;
     /** Whether this is a composite upload */
@@ -204,9 +238,15 @@ export interface UploadSubmitConfig extends FetchDatasetsCallbacks {
 /**
  * Configuration for the uploadDatasets function.
  */
-export interface UploadDatasetsConfig extends FetchDatasetsCallbacks, BuildPayloadOptions {
+export interface UploadDatasetsConfig
+    extends FetchDatasetsCallbacks,
+        BuildPayloadOptions,
+        PerFileProgressOptions,
+        CancellationConfig {
     /** Chunk size for TUS uploads in bytes (default: 10MB) */
     chunkSize?: number;
+    /** Optional preferred object store id for uploaded datasets. */
+    preferredObjectStoreId?: string;
 }
 
 // ============================================================================
@@ -219,9 +259,7 @@ export interface UploadDatasetsConfig extends FetchDatasetsCallbacks, BuildPaylo
 export const uploadItemDefaults = {
     dbkey: "?",
     ext: "auto",
-    space_to_tab: false,
-    to_posix_lines: true,
-    deferred: false,
+    ...uploadApiOptionDefaults,
 } as const;
 
 // ============================================================================
@@ -343,6 +381,7 @@ export function createFileUploadItem(
         to_posix_lines: options.to_posix_lines ?? uploadItemDefaults.to_posix_lines,
         deferred: options.deferred ?? uploadItemDefaults.deferred,
         hashes: options.hashes,
+        auto_decompress: options.auto_decompress ?? uploadItemDefaults.auto_decompress ?? true,
     };
 }
 
@@ -379,6 +418,7 @@ export function createPastedUploadItem(
         to_posix_lines: options.to_posix_lines ?? uploadItemDefaults.to_posix_lines,
         deferred: options.deferred ?? uploadItemDefaults.deferred,
         hashes: options.hashes,
+        auto_decompress: options.auto_decompress ?? uploadItemDefaults.auto_decompress ?? true,
     };
 }
 
@@ -404,12 +444,13 @@ export function createUrlUploadItem(
     historyId: string,
     options: Partial<Omit<UrlUploadItem, "src" | "url" | "historyId">> = {},
 ): UrlUploadItem {
+    const trimmedUrl = url.trim();
     // Extract filename from URL if not provided
-    const defaultName = url.split("/").pop()?.split("?")[0] || DEFAULT_FILE_NAME;
+    const defaultName = trimmedUrl.split("/").pop()?.split("?")[0] || DEFAULT_FILE_NAME;
 
     return {
         src: "url",
-        url,
+        url: trimmedUrl,
         historyId,
         name: options.name ?? defaultName,
         size: options.size ?? 0,
@@ -419,6 +460,7 @@ export function createUrlUploadItem(
         to_posix_lines: options.to_posix_lines ?? uploadItemDefaults.to_posix_lines,
         deferred: options.deferred ?? uploadItemDefaults.deferred,
         hashes: options.hashes,
+        auto_decompress: options.auto_decompress ?? uploadItemDefaults.auto_decompress ?? true,
     };
 }
 
@@ -443,6 +485,7 @@ export function toApiUploadItem(item: NewUploadItem): ApiUploadItem {
         to_posix_lines: item.toPosixLines,
         deferred: item.deferred,
         hashes: item.hashes,
+        auto_decompress: item.autoDecompress ?? true,
     };
 
     switch (item.uploadMode) {
@@ -504,7 +547,7 @@ export function parseContentToUploadItems(
     // If first line is a URL, treat all lines as URLs
     if (isUrl(firstLine)) {
         return lines.filter(Boolean).map((urlLine) => {
-            if (!isUrl(urlLine)) {
+            if (!isValidUrl(urlLine)) {
                 throw new Error(`Invalid URL: ${urlLine}`);
             }
             return createUrlUploadItem(urlLine, historyId, options);
@@ -530,7 +573,7 @@ function buildDataElement(item: ApiUploadItem): ApiDataElement {
         name: normalizeFileName(item.name),
         space_to_tab: item.space_to_tab,
         to_posix_lines: item.to_posix_lines,
-        auto_decompress: false,
+        auto_decompress: item.auto_decompress ?? uploadItemDefaults.auto_decompress ?? true,
         deferred: item.deferred,
     };
 
@@ -592,7 +635,7 @@ function validateItemContent(item: ApiUploadItem): void {
             if (!item.url || item.url.trim().length === 0) {
                 throw new Error(`No URL for upload item: ${item.name}`);
             }
-            if (!isUrl(item.url)) {
+            if (!isValidUrl(item.url)) {
                 throw new Error(`Invalid URL: ${item.url}`);
             }
             break;
@@ -608,7 +651,7 @@ function validateItemContent(item: ApiUploadItem): void {
  * @throws Error if no valid items are provided or validation fails
  */
 export function buildUploadPayload(items: ApiUploadItem[], options: BuildPayloadOptions = {}): UploadPayload {
-    const { composite = false } = options;
+    const { composite = false, compositeName } = options;
 
     if (items.length === 0) {
         throw new Error("No upload items provided.");
@@ -639,6 +682,7 @@ export function buildUploadPayload(items: ApiUploadItem[], options: BuildPayload
         const firstItem = items[0]!;
         const compositeElement: CompositeDataElement = {
             src: "composite",
+            name: compositeName ?? undefined,
             dbkey: firstItem.dbkey,
             ext: firstItem.ext,
             auto_decompress: false,
@@ -667,7 +711,7 @@ export function buildUploadPayload(items: ApiUploadItem[], options: BuildPayload
         history_id: historyId,
         targets: [
             {
-                auto_decompress: false,
+                auto_decompress: true,
                 destination: { type: "hdas" },
                 elements,
             },
@@ -780,7 +824,8 @@ export function buildCollectionUploadPayload(items: ApiUploadItem[], options: Co
     let elements: HdcaUploadTarget["elements"];
 
     if (options.collectionType === "list") {
-        elements = dataElements;
+        // reverse the order of the elements to emulate what we have in the history panel
+        elements = dataElements.reverse();
     } else if (options.collectionType === "list:paired") {
         elements = buildPairedElements(items, dataElements);
     } else {
@@ -811,23 +856,75 @@ export function buildCollectionUploadPayload(items: ApiUploadItem[], options: Co
  * Converts UploadPayload to FetchDataPayload for API submission.
  */
 function toApiPayload(data: UploadPayload): FetchDataPayload {
-    return {
+    const payload: FetchDataPayload = {
         history_id: data.history_id,
         targets: data.targets,
         auto_decompress: data.auto_decompress,
     };
+
+    if (data.preferred_object_store_id) {
+        payload.preferred_object_store_id = data.preferred_object_store_id;
+    }
+
+    return payload;
 }
 
 /**
  * Uploads files via TUS protocol, then submits the complete payload.
+ *
+ * In atomic mode (`signal` provided), any abort cancels the entire submission.
+ * In per-file mode (`signals` provided), cancelled files are filtered out upfront
+ * and the remaining files are uploaded and submitted together.
+ *
+ * @param data - Upload payload containing files and targets
+ * @param tusEndpoint - TUS upload endpoint URL
+ * @param chunkSize - Chunk size for TUS uploads in bytes
+ * @param callbacks - Standard fetch callbacks (success, error, warning, progress)
+ * @param uploadIds - Optional array of upload item IDs (one per file) for per-file progress tracking
+ * @param perFileProgress - Optional callback for per-file progress updates
+ * @param signal - Shared AbortSignal that cancels the entire submission (all-or-nothing).
+ *   Mutually exclusive with `signals`.
+ * @param signals - Optional per-file AbortSignals (one per file). When provided, a cancelled
+ *   file is skipped and the remaining files are still uploaded and submitted together.
+ *   Mutually exclusive with `signal`.
  */
 async function uploadFilesViaTus(
     data: UploadPayload,
     tusEndpoint: string,
     chunkSize: number,
     callbacks: FetchDatasetsCallbacks,
+    uploadIds?: string[],
+    perFileProgress?: (fileId: string, percentage: number) => void,
+    signal?: AbortSignal,
+    signals?: (AbortSignal | undefined)[],
 ): Promise<void> {
-    const files = data.files || [];
+    const allFiles = data.files || [];
+    const hasPerFileTracking = uploadIds && perFileProgress && uploadIds.length === allFiles.length;
+
+    const firstTarget = data.targets[0];
+    const allElements = firstTarget && "elements" in firstTarget ? firstTarget.elements : undefined;
+    const elementsMatchFiles = allElements !== undefined && allElements.length === allFiles.length;
+
+    // In per-file mode, filter out cancelled files upfront so the upload loop
+    // only processes active files and the payload is built cleanly.
+    const isPerFileMode = Boolean(signals);
+    const activeIndices = isPerFileMode
+        ? allFiles.map((_, i) => i).filter((i) => !signals![i]?.aborted)
+        : allFiles.map((_, i) => i);
+
+    // In per-file mode, if every file was cancelled there's nothing to submit.
+    // In atomic mode, proceed even with no files (e.g. composite uploads).
+    if (isPerFileMode && activeIndices.length === 0) {
+        return;
+    }
+
+    const files = activeIndices.map((i) => allFiles[i]!);
+    const fileSignals = isPerFileMode ? activeIndices.map((i) => signals![i] ?? signal) : undefined;
+    const activeElements =
+        isPerFileMode && elementsMatchFiles ? activeIndices.map((i) => allElements![i]!) : allElements;
+
+    // Track per-file progress for aggregate calculation
+    const fileProgressMap = new Map<string, number>();
 
     // Build API payload with TUS session info
     const apiPayload: Record<string, unknown> = {
@@ -836,39 +933,210 @@ async function uploadFilesViaTus(
         auto_decompress: data.auto_decompress,
     };
 
+    if (data.preferred_object_store_id) {
+        apiPayload.preferred_object_store_id = data.preferred_object_store_id;
+    }
+
+    // Collect TUS upload results so the final payload only includes files that
+    // were actually uploaded (some may be skipped due to mid-loop cancellation).
+    const uploadedFiles: { sessionId: string; fileName: string; elementIndex: number }[] = [];
+
     try {
-        // Upload each file sequentially via TUS
-        for (let index = 0; index < files.length; index++) {
-            const file = files[index];
+        for (let slot = 0; slot < files.length; slot++) {
+            const fileSignal = fileSignals?.[slot] ?? signal;
+
+            if (fileSignal?.aborted) {
+                if (isPerFileMode) {
+                    continue;
+                }
+                return;
+            }
+
+            const file = files[slot];
             if (!file) {
                 continue;
             }
 
-            const result = await createTusUpload({
-                file,
-                endpoint: tusEndpoint,
-                historyId: data.history_id,
-                chunkSize,
-                onProgress: callbacks.progress || (() => {}),
-                onError: (err: Error) => {
-                    callbacks.error?.(err);
-                },
-            });
+            const fileId = hasPerFileTracking ? uploadIds[activeIndices[slot]!] : undefined;
 
-            // Add TUS session information to payload
-            apiPayload[`files_${index}|file_data`] = {
-                session_id: result.sessionId,
-                name: result.fileName,
-            };
+            let result;
+            try {
+                result = await createTusUpload({
+                    file,
+                    endpoint: tusEndpoint,
+                    historyId: data.history_id,
+                    chunkSize,
+                    onProgress: (percentage: number) => {
+                        if (hasPerFileTracking && fileId) {
+                            fileProgressMap.set(fileId, percentage);
+                            perFileProgress!(fileId, percentage);
+
+                            const values = Array.from(fileProgressMap.values());
+                            const aggregate = Math.round(
+                                values.reduce((sum: number, p: number) => sum + p, 0) / values.length,
+                            );
+                            callbacks.progress?.(aggregate);
+                        } else {
+                            callbacks.progress?.(percentage);
+                        }
+                    },
+                    onError: (err: Error) => {
+                        if (!fileSignal?.aborted) {
+                            callbacks.error?.(err);
+                        }
+                    },
+                    signal: fileSignal,
+                });
+            } catch (err) {
+                if (fileSignal?.aborted) {
+                    if (isPerFileMode) {
+                        continue;
+                    }
+                    return;
+                }
+                throw err;
+            }
+
+            uploadedFiles.push({
+                sessionId: result.sessionId,
+                fileName: result.fileName,
+                elementIndex: slot,
+            });
         }
 
-        await fetchDatasets(apiPayload as FetchDataPayload, callbacks);
+        if (signal?.aborted) {
+            return;
+        }
+
+        if (uploadedFiles.length === 0 && isPerFileMode) {
+            return;
+        }
+
+        // Build contiguous file slots from only the files that were actually uploaded.
+        for (let i = 0; i < uploadedFiles.length; i++) {
+            const { sessionId, fileName } = uploadedFiles[i]!;
+            apiPayload[`files_${i}|file_data`] = { session_id: sessionId, name: fileName };
+        }
+
+        // Prune targets to only include elements for uploaded files.
+        if (isPerFileMode && elementsMatchFiles && activeElements) {
+            const survivingElements = uploadedFiles.map((f) => activeElements[f.elementIndex]!);
+            apiPayload.targets = [{ ...firstTarget, elements: survivingElements }];
+        }
+
+        await fetchDatasets(apiPayload as FetchDataPayload, callbacks, signal);
     } catch (err) {
-        // Ensure error callback is invoked
+        if (signal?.aborted) {
+            return;
+        }
         if (err instanceof Error) {
             callbacks.error?.(err);
         }
     }
+}
+
+async function submitUrlElements(
+    data: UploadPayload,
+    target: HdasUploadTarget,
+    callbacks: FetchDatasetsCallbacks,
+    signal?: AbortSignal,
+    signals?: (AbortSignal | undefined)[],
+): Promise<void> {
+    if (!signals) {
+        await fetchDatasets(toApiPayload(data), callbacks, signal);
+        return;
+    }
+
+    const responses: FetchDataResponse[] = [];
+    const reportAndRethrowError = (uploadError: string | Error): never => {
+        callbacks.error?.(uploadError);
+        throw uploadError instanceof Error ? uploadError : new Error(String(uploadError));
+    };
+
+    for (const [index, element] of target.elements.entries()) {
+        const itemSignal = signals[index];
+        if (!("src" in element) || element.src !== "url" || itemSignal?.aborted) {
+            continue;
+        }
+
+        const apiPayload = toApiPayload({
+            ...data,
+            targets: [{ ...target, elements: [element] }],
+        });
+        await fetchDatasets(
+            apiPayload,
+            {
+                ...callbacks,
+                success: (response) => responses.push(response),
+                error: reportAndRethrowError,
+            },
+            itemSignal,
+        );
+    }
+
+    if (responses.length > 0) {
+        callbacks.success?.({
+            jobs: responses.flatMap((response) => response.jobs),
+            outputs: responses.flatMap((response) => (response.outputs ? [response.outputs] : [])),
+        });
+    }
+}
+
+type IndexedUploadElement = { element: ApiDataElement; index: number };
+type IndexedPastedElement = { element: PastedDataElement; index: number };
+
+function isActivePastedElement(
+    entry: IndexedUploadElement,
+    signals?: (AbortSignal | undefined)[],
+): entry is IndexedPastedElement {
+    return entry.element.src === "pasted" && !signals?.[entry.index]?.aborted;
+}
+
+function pastedElementToFile(element: PastedDataElement): NamedBlob {
+    const blob = new Blob([String(element.paste_content)]) as NamedBlob;
+    blob.name = String(element.name || DEFAULT_FILE_NAME);
+    return blob;
+}
+
+async function submitPastedElements(
+    data: UploadPayload,
+    target: HdasUploadTarget,
+    tusEndpoint: string,
+    chunkSize: number,
+    callbacks: FetchDatasetsCallbacks,
+    uploadIds?: string[],
+    perFileProgress?: (fileId: string, percentage: number) => void,
+    signal?: AbortSignal,
+    signals?: (AbortSignal | undefined)[],
+): Promise<void> {
+    const targetElements = target.elements as ApiDataElement[];
+    const elements = (signals ? targetElements : targetElements.slice(0, 1))
+        .map((element, index) => ({ element, index }))
+        .filter((entry) => isActivePastedElement(entry, signals));
+
+    if (elements.length === 0) {
+        return;
+    }
+
+    const files = elements.map(({ element }) => pastedElementToFile(element));
+    const uploadData = {
+        ...data,
+        files,
+        targets: [{ ...target, elements: elements.map(({ element }) => element) }],
+    };
+    const itemSignals = signals ? elements.map(({ index }) => signals[index]) : undefined;
+    const itemUploadIds = uploadIds ? elements.map(({ index }) => uploadIds[index]!) : undefined;
+
+    await uploadFilesViaTus(
+        uploadData,
+        tusEndpoint,
+        chunkSize,
+        callbacks,
+        itemUploadIds,
+        perFileProgress,
+        signal,
+        itemSignals,
+    );
 }
 
 /**
@@ -886,6 +1154,10 @@ export async function submitUpload(config: UploadSubmitConfig): Promise<void> {
         progress = () => {},
         isComposite = false,
         chunkSize = DEFAULT_CHUNK_SIZE,
+        uploadIds,
+        perFileProgress,
+        signal,
+        signals,
     } = config;
 
     // Initial validation
@@ -897,45 +1169,41 @@ export async function submitUpload(config: UploadSubmitConfig): Promise<void> {
     const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload/`;
     const callbacks: FetchDatasetsCallbacks = { success, error, warning, progress };
 
-    // Determine upload path based on data structure
-    const hasFiles = data.files && data.files.length > 0;
+    if (data.files?.length || isComposite) {
+        await uploadFilesViaTus(data, tusEndpoint, chunkSize, callbacks, uploadIds, perFileProgress, signal, signals);
+        return;
+    }
 
-    if (hasFiles || isComposite) {
-        // Upload files via TUS, then submit payload
-        await uploadFilesViaTus(data, tusEndpoint, chunkSize, callbacks);
-    } else if (data.targets && data.targets.length > 0) {
-        const firstTarget = data.targets[0];
+    const firstTarget = data.targets[0];
+    if (!firstTarget) {
+        return;
+    }
 
-        // Check if this is a collection (HDCA) target
-        if (firstTarget && "destination" in firstTarget && firstTarget.destination.type === "hdca") {
-            // HDCA collection target with no local files (all URLs/pasted) - submit directly
-            const apiPayload = toApiPayload(data);
-            await fetchDatasets(apiPayload, callbacks);
-        } else if (
-            firstTarget &&
-            "elements" in firstTarget &&
-            firstTarget.elements &&
-            firstTarget.elements.length > 0
-        ) {
-            // Handle HDA URL or pasted content
-            const firstElement = firstTarget.elements[0];
+    if (firstTarget.destination.type === "hdca") {
+        await fetchDatasets(toApiPayload(data), callbacks, signal);
+        return;
+    }
 
-            if (firstElement && "src" in firstElement) {
-                if (firstElement.src === "url") {
-                    // Direct URL submission - no TUS upload needed
-                    const apiPayload = toApiPayload(data);
-                    await fetchDatasets(apiPayload, callbacks);
-                } else if (firstElement.src === "pasted" && "paste_content" in firstElement) {
-                    // Convert pasted content to Blob and upload via TUS
-                    const pasteContent = String(firstElement.paste_content);
-                    const blob = new Blob([pasteContent]) as NamedBlob;
-                    blob.name = String(firstElement.name || DEFAULT_FILE_NAME);
+    if (!firstTarget.elements?.length) {
+        return;
+    }
 
-                    const filesData: UploadPayload = { ...data, files: [blob] };
-                    await uploadFilesViaTus(filesData, tusEndpoint, chunkSize, callbacks);
-                }
-            }
-        }
+    const hdasTarget = firstTarget as HdasUploadTarget;
+    const firstElement = hdasTarget.elements[0];
+    if (firstElement && "src" in firstElement && firstElement.src === "url") {
+        await submitUrlElements(data, hdasTarget, callbacks, signal, signals);
+    } else if (firstElement && "src" in firstElement && firstElement.src === "pasted") {
+        await submitPastedElements(
+            data,
+            hdasTarget,
+            tusEndpoint,
+            chunkSize,
+            callbacks,
+            uploadIds,
+            perFileProgress,
+            signal,
+            signals,
+        );
     }
 }
 
@@ -970,17 +1238,36 @@ export async function submitUpload(config: UploadSubmitConfig): Promise<void> {
  * ```
  */
 export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatasetsConfig = {}): Promise<void> {
-    const { composite = false, chunkSize, success, error, warning, progress } = config;
+    const {
+        composite = false,
+        compositeName,
+        chunkSize,
+        success,
+        error,
+        warning,
+        progress,
+        preferredObjectStoreId,
+        uploadIds,
+        perFileProgress,
+        signal,
+        signals,
+    } = config;
+    let errorReported = false;
+    const reportError = (uploadError: string | Error) => {
+        errorReported = true;
+        error?.(uploadError);
+    };
 
     try {
         // Build the API-ready payload from upload items
-        const payload = buildUploadPayload(items, { composite });
+        const payload = buildUploadPayload(items, { composite, compositeName });
 
         // Prepare the data for submission
         const data: UploadDataPayload = {
             history_id: payload.history_id,
             targets: payload.targets,
             auto_decompress: payload.auto_decompress,
+            preferred_object_store_id: preferredObjectStoreId,
             files: payload.files,
         };
 
@@ -990,14 +1277,55 @@ export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatas
             isComposite: composite,
             chunkSize,
             success,
-            error,
+            error: reportError,
             warning,
             progress,
+            uploadIds,
+            perFileProgress,
+            signal,
+            signals,
         });
     } catch (err) {
-        const errorMessage = errorMessageAsString(err);
-        config.error?.(errorMessage);
+        if (!errorReported) {
+            reportError(errorMessageAsString(err));
+        }
+        if (err instanceof Error && errorReported) {
+            throw err;
+        }
     }
+}
+
+/**
+ * Determines if an upload item is compatible with the Fetch API (i.e., can be included in the payload).
+ * Items with uploadMode "data-library" are not compatible because they are copied from the data library and require a different handling approach.
+ */
+export function isFetchApiCompatible(item: NewUploadItem): boolean {
+    return item.uploadMode !== "data-library";
+}
+
+/**
+ * Builds a PreparedUpload object from UI upload items.
+ */
+export function buildPreparedUpload(items: NewUploadItem[], collectionConfig?: UploadCollectionConfig): PreparedUpload {
+    return buildPreparedUploadWithOptions(items, collectionConfig);
+}
+
+interface PreparedUploadBuildOptions {
+    apiItems?: ApiUploadItem[];
+    uploadOptions?: PreparedUpload["uploadOptions"];
+}
+
+export function buildPreparedUploadWithOptions(
+    items: NewUploadItem[],
+    collectionConfig?: UploadCollectionConfig,
+    options?: PreparedUploadBuildOptions,
+): PreparedUpload {
+    return {
+        apiItems: options?.apiItems ?? items.filter(isFetchApiCompatible).map((item) => toApiUploadItem(item)),
+        collectionConfig,
+        uploadItems: items,
+        uploadOptions: options?.uploadOptions,
+    };
 }
 
 /**
@@ -1025,7 +1353,23 @@ export async function uploadCollectionDatasets(
     collectionOptions: CollectionUploadOptions,
     config: UploadDatasetsConfig = {},
 ): Promise<void> {
-    const { chunkSize, success, error, warning, progress } = config;
+    const {
+        chunkSize,
+        success,
+        error,
+        warning,
+        progress,
+        preferredObjectStoreId,
+        uploadIds,
+        perFileProgress,
+        signal,
+        signals,
+    } = config;
+    let errorReported = false;
+    const reportError = (uploadError: string | Error) => {
+        errorReported = true;
+        error?.(uploadError);
+    };
 
     try {
         const payload = buildCollectionUploadPayload(items, collectionOptions);
@@ -1034,6 +1378,7 @@ export async function uploadCollectionDatasets(
             history_id: payload.history_id,
             targets: payload.targets,
             auto_decompress: payload.auto_decompress,
+            preferred_object_store_id: preferredObjectStoreId,
             files: payload.files,
         };
 
@@ -1041,12 +1386,21 @@ export async function uploadCollectionDatasets(
             data,
             chunkSize,
             success,
-            error,
+            error: reportError,
             warning,
             progress,
+            uploadIds,
+            perFileProgress,
+            signal,
+            signals,
         });
     } catch (err) {
-        config.error?.(errorMessageAsString(err));
+        if (!errorReported) {
+            reportError(errorMessageAsString(err));
+        }
+        if (err instanceof Error && errorReported) {
+            throw err;
+        }
     }
 }
 

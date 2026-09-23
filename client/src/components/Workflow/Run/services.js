@@ -3,6 +3,8 @@
  */
 import axios from "axios";
 
+import { VALID_INPUT_DATASET_STATES } from "@/api/datasets";
+import { DEFAULT_OPTIONS_PAGE_SIZE } from "@/components/Form/Elements/FormData/types";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -19,6 +21,80 @@ export async function getRunData(workflowId, version = null, instance = false) {
         url += `&version=${version}`;
     }
     try {
+        const response = await axios.get(url);
+        return response.data;
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
+
+/**
+ * Search history contents (HDAs + HDCAs) for a workflow run dropdown. Filters
+ * server-side by extension (canonical accept-set including implicit conversion
+ * targets), name/hid (search), and HDA-vs-HDCA type. Returns the raw API list.
+ *
+ * @param {String} historyId
+ * @param {Object} opts
+ * @param {Array<string>} [opts.extensions] - sorted accept-set; empty/missing → no extension filter.
+ * @param {String} [opts.type] - "dataset" | "dataset_collection".
+ * @param {String} [opts.tag] - exact dataset/collection tag required by the workflow input.
+ * @param {Boolean} [opts.visibleOnly] - restrict to visible items; false for
+ *   ``data_collection`` parameters, which offer hidden collections too.
+ * @param {String} [opts.search] - name substring or numeric hid match.
+ * @param {Number} [opts.offset]
+ * @param {Number} [opts.limit]
+ */
+export async function searchHistoryContents(
+    historyId,
+    { extensions, type, tag, search, visibleOnly = true, offset = 0, limit = DEFAULT_OPTIONS_PAGE_SIZE } = {},
+) {
+    const q = [];
+    const qv = [];
+    if (visibleOnly) {
+        q.push("visible-eq");
+        qv.push("True");
+    }
+    q.push("deleted-eq");
+    qv.push("False");
+    if (type !== "dataset_collection") {
+        // The server only offers datasets in an input-eligible state on the
+        // first page; without this the later pages would offer more than it did.
+        q.push("state-in");
+        qv.push(VALID_INPUT_DATASET_STATES.join(","));
+    }
+    if (type) {
+        q.push("history_content_type-eq");
+        qv.push(type);
+    }
+    if (extensions && extensions.length) {
+        q.push("extension-in");
+        qv.push(extensions.join(","));
+    }
+    if (tag) {
+        q.push("tag-eq");
+        qv.push(tag);
+    }
+    if (search) {
+        const trimmed = String(search).trim();
+        if (trimmed) {
+            if (/^\d+$/.test(trimmed)) {
+                q.push("hid-eq");
+                qv.push(trimmed);
+            } else {
+                q.push("name-contains");
+                qv.push(trimmed);
+            }
+        }
+    }
+    const params = new URLSearchParams();
+    params.set("v", "dev");
+    params.set("offset", String(offset));
+    params.set("limit", String(limit));
+    params.set("order", "hid-dsc");
+    q.forEach((key) => params.append("q", key));
+    qv.forEach((value) => params.append("qv", value));
+    try {
+        const url = `${getAppRoot()}api/histories/${historyId}/contents?${params.toString()}`;
         const response = await axios.get(url);
         return response.data;
     } catch (e) {
@@ -44,14 +120,21 @@ export async function invokeWorkflow(workflowId, invocationData) {
  * @param {String} toolVersion - Corresponding tool version.
  * @param {Object} toolInputs - Current tool state.
  * @param {Object} historyId - History ID to populate data selection fields.
+ * @param {Object} optionsPagination - Optional per-parameter pagination spec
+ *   (`{<dotted-name>: {<src>: {offset, limit, search}}}`) forwarded as
+ *   `options_pagination` so the workflow run form can lazy-load paginated
+ *   options or backend-search the dropdown.
  */
-export async function getTool(toolId, toolVersion, toolInputs, historyId) {
+export async function getTool(toolId, toolVersion, toolInputs, historyId, optionsPagination) {
     const requestData = {
         tool_id: toolId,
         tool_version: toolVersion,
         inputs: JSON.parse(JSON.stringify(toolInputs)),
         history_id: historyId,
     };
+    if (optionsPagination) {
+        requestData.options_pagination = optionsPagination;
+    }
     try {
         const { data } = await axios.post(`${getAppRoot()}api/tools/${toolId}/build`, requestData);
         return data;

@@ -8,6 +8,7 @@ from galaxy.exceptions import (
     ItemAccessibilityException,
     UserRequiredException,
 )
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.util import plugin_config
 
 log = logging.getLogger(__name__)
@@ -64,7 +65,7 @@ class ErrorPlugin:
             roles = []
         return self.app.security_agent.can_access_dataset(roles, dataset.dataset)
 
-    def _check_invocation_accessibility(self, trans, invocation, user):
+    def _check_invocation_accessibility(self, trans: ProvidesUserContext | None, invocation, user):
         if not user:
             raise UserRequiredException("User is not logged in", type="error")
         if not trans or not self.app.workflow_manager.check_security(trans, invocation, check_ownership=False):

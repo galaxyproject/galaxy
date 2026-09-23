@@ -19,7 +19,6 @@ from galaxy.model import (
 
 
 class AssociationNullFix(ABC):
-
     def __init__(self, connection):
         self.connection = connection
         self.assoc_model = self.association_model()
@@ -57,7 +56,6 @@ class AssociationNullFix(ABC):
 
 
 class UserGroupAssociationNullFix(AssociationNullFix):
-
     def association_model(self):
         return UserGroupAssociation
 
@@ -66,7 +64,6 @@ class UserGroupAssociationNullFix(AssociationNullFix):
 
 
 class UserRoleAssociationNullFix(AssociationNullFix):
-
     def association_model(self):
         return UserRoleAssociation
 
@@ -75,7 +72,6 @@ class UserRoleAssociationNullFix(AssociationNullFix):
 
 
 class GroupRoleAssociationNullFix(AssociationNullFix):
-
     def association_model(self):
         return GroupRoleAssociation
 
@@ -84,7 +80,6 @@ class GroupRoleAssociationNullFix(AssociationNullFix):
 
 
 class AssociationDuplicateFix(ABC):
-
     def __init__(self, connection):
         self.connection = connection
         self.assoc_model = self.association_model()
@@ -134,7 +129,6 @@ class AssociationDuplicateFix(ABC):
 
 
 class UserGroupAssociationDuplicateFix(AssociationDuplicateFix):
-
     def association_model(self):
         return UserGroupAssociation
 
@@ -156,7 +150,6 @@ class UserGroupAssociationDuplicateFix(AssociationDuplicateFix):
 
 
 class UserRoleAssociationDuplicateFix(AssociationDuplicateFix):
-
     def association_model(self):
         return UserRoleAssociation
 
@@ -178,7 +171,6 @@ class UserRoleAssociationDuplicateFix(AssociationDuplicateFix):
 
 
 class GroupRoleAssociationDuplicateFix(AssociationDuplicateFix):
-
     def association_model(self):
         return GroupRoleAssociation
 

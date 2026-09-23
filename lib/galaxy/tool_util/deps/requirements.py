@@ -1,19 +1,13 @@
 import copy
 import os
-from typing import (
-    Any,
+from collections.abc import (
     Callable,
-    cast,
-    Dict,
     Iterable,
     Iterator,
-    List,
-    Optional,
-    Tuple,
-    Union,
 )
-
-from typing_extensions import (
+from typing import (
+    Any,
+    cast,
     get_args,
     Literal,
 )
@@ -40,9 +34,9 @@ class ToolRequirement:
     def __init__(
         self,
         name: str,
-        type: Optional[str] = None,
-        version: Optional[str] = None,
-        specs: Optional[Iterable["RequirementSpecification"]] = None,
+        type: str | None = None,
+        version: str | None = None,
+        specs: Iterable["RequirementSpecification"] | None = None,
     ) -> None:
         if specs is None:
             specs = []
@@ -51,7 +45,7 @@ class ToolRequirement:
         self.version = version
         self.specs = specs
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         specs = [s.to_dict() for s in self.specs]
         return dict(name=self.name, type=self.type, version=self.version, specs=specs)
 
@@ -59,7 +53,7 @@ class ToolRequirement:
         return copy.deepcopy(self)
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> "ToolRequirement":
+    def from_dict(cls, d: dict[str, Any]) -> "ToolRequirement":
         version = d.get("version")
         name = d["name"]
         type = d.get("type")
@@ -86,7 +80,7 @@ class ToolRequirement:
 class RequirementSpecification:
     """Refine a requirement using a URI."""
 
-    def __init__(self, uri: str, version: Optional[str] = None) -> None:
+    def __init__(self, uri: str, version: str | None = None) -> None:
         self.uri = uri
         self.version = version
 
@@ -98,11 +92,11 @@ class RequirementSpecification:
     def short_name(self) -> str:
         return self.uri.split("/")[-1]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return dict(uri=self.uri, version=self.version)
 
     @classmethod
-    def from_dict(cls, dict: Dict) -> "RequirementSpecification":
+    def from_dict(cls, dict: dict) -> "RequirementSpecification":
         uri = dict["uri"]
         version = dict.get("version", None)
         return cls(uri=uri, version=version)
@@ -119,7 +113,7 @@ class ToolRequirements:
     Represents all requirements (packages, env vars) needed to run a tool.
     """
 
-    def __init__(self, tool_requirements: Optional[List[Union[ToolRequirement, Dict[str, Any]]]] = None) -> None:
+    def __init__(self, tool_requirements: list[ToolRequirement | dict[str, Any]] | None = None) -> None:
         if tool_requirements:
             if not isinstance(tool_requirements, list):
                 raise ToolRequirementsException("ToolRequirements Constructor expects a list")
@@ -130,7 +124,7 @@ class ToolRequirements:
             self.tool_requirements = OrderedSet()
 
     @classmethod
-    def from_list(cls, requirements: List[Union[ToolRequirement, Dict[str, Any]]]) -> "ToolRequirements":
+    def from_list(cls, requirements: list[ToolRequirement | dict[str, Any]]) -> "ToolRequirements":
         return cls(requirements)
 
     @property
@@ -144,7 +138,7 @@ class ToolRequirements:
     def to_list(self):
         return [r.to_dict() for r in self.tool_requirements]
 
-    def append(self, requirement: Union[ToolRequirement, Dict[str, Any]]) -> None:
+    def append(self, requirement: ToolRequirement | dict[str, Any]) -> None:
         if not isinstance(requirement, ToolRequirement):
             requirement = ToolRequirement.from_dict(requirement)
         self.tool_requirements.add(requirement)
@@ -168,7 +162,7 @@ class ToolRequirements:
     def __hash__(self) -> int:
         return sum(r.__hash__() for r in self.tool_requirements)
 
-    def to_dict(self) -> List[Dict[str, Any]]:
+    def to_dict(self) -> list[dict[str, Any]]:
         return [r.to_dict() for r in self.tool_requirements]
 
 
@@ -208,7 +202,7 @@ class ContainerDescription:
         self.shell = shell
         self.explicit = False
 
-    def to_dict(self, *args, **kwds) -> Dict[str, Any]:
+    def to_dict(self, *args, **kwds) -> dict[str, Any]:
         return dict(
             identifier=self.identifier,
             type=self.type,
@@ -217,7 +211,7 @@ class ContainerDescription:
         )
 
     @classmethod
-    def from_dict(cls, dict: Dict[str, Any]) -> "ContainerDescription":
+    def from_dict(cls, dict: dict[str, Any]) -> "ContainerDescription":
         identifier = dict["identifier"]
         type = dict.get("type", DEFAULT_CONTAINER_TYPE)
         resolve_dependencies = dict.get("resolve_dependencies", DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES)
@@ -252,7 +246,7 @@ VALID_RESOURCE_TYPES = get_args(ResourceType)
 
 
 class ResourceRequirement:
-    def __init__(self, value_or_expression: Union[int, float, str], resource_type: ResourceType) -> None:
+    def __init__(self, value_or_expression: int | float | str, resource_type: ResourceType) -> None:
         self.value_or_expression = value_or_expression
         if not resource_type:
             raise ValueError("Missing resource requirement type")
@@ -265,10 +259,10 @@ class ResourceRequirement:
         except ValueError:
             self.runtime_required = True
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"resource_type": self.resource_type, "value_or_expression": self.value_or_expression}
 
-    def get_value(self, runtime: Optional[Dict] = None, js_evaluator: Optional[Callable] = None) -> float:
+    def get_value(self, runtime: dict | None = None, js_evaluator: Callable | None = None) -> float:
         if self.runtime_required:
             # TODO: hook up evaluator
             # return js_evaluator(self.value_or_expression, runtime)
@@ -278,7 +272,7 @@ class ResourceRequirement:
         return float(self.value_or_expression)
 
 
-def resource_requirements_from_list(requirements: Iterable[Dict[str, Any]]) -> List[ResourceRequirement]:
+def resource_requirements_from_list(requirements: Iterable[dict[str, Any]]) -> list[ResourceRequirement]:
     cwl_to_galaxy = {
         "coresMin": "cores_min",
         "coresMax": "cores_max",
@@ -334,7 +328,7 @@ class BaseCredential:
         if not self.inject_as_env:
             raise ValueError("Missing inject_as_env")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "optional": self.optional,
@@ -375,8 +369,8 @@ class CredentialsRequirement:
         label: str = "",
         description: str = "",
         optional: bool = False,
-        secrets: Optional[List[Secret]] = None,
-        variables: Optional[List[Variable]] = None,
+        secrets: list[Secret] | None = None,
+        variables: list[Variable] | None = None,
     ) -> None:
         self.name = name
         self.version = version
@@ -391,7 +385,7 @@ class CredentialsRequirement:
         if not self.version:
             raise ValueError("Missing version")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "version": self.version,
@@ -403,7 +397,7 @@ class CredentialsRequirement:
         }
 
     @classmethod
-    def from_dict(cls, dict: Dict[str, Any]) -> "CredentialsRequirement":
+    def from_dict(cls, dict: dict[str, Any]) -> "CredentialsRequirement":
         name = dict["name"]
         version = dict["version"]
         label = dict.get("label", "")
@@ -423,17 +417,17 @@ class CredentialsRequirement:
 
 
 def parse_requirements_from_lists(
-    software_requirements: List[Union[ToolRequirement, Dict[str, Any]]],
-    containers: Iterable[Dict[str, Any]],
-    resource_requirements: Iterable[Dict[str, Any]],
-    javascript_requirements: List[Dict[str, Any]],
-    credentials: Iterable[Dict[str, Any]],
-) -> Tuple[
+    software_requirements: list[ToolRequirement | dict[str, Any]],
+    containers: Iterable[dict[str, Any]],
+    resource_requirements: Iterable[dict[str, Any]],
+    javascript_requirements: list[dict[str, Any]],
+    credentials: Iterable[dict[str, Any]],
+) -> tuple[
     ToolRequirements,
-    List[ContainerDescription],
-    List[ResourceRequirement],
-    List[JavascriptRequirement],
-    List[CredentialsRequirement],
+    list[ContainerDescription],
+    list[ResourceRequirement],
+    list[JavascriptRequirement],
+    list[CredentialsRequirement],
 ]:
     return (
         ToolRequirements.from_list(software_requirements),
@@ -488,7 +482,7 @@ def parse_requirements_from_xml(xml_root, parse_resources_and_credentials: bool 
     if parse_resources_and_credentials:
         resource_elems = requirements_elem.findall("resource") if requirements_elem is not None else []
         resources = [resource_from_element(r) for r in resource_elems]
-        javascript_requirements: List[Dict[str, Any]] = []
+        javascript_requirements: list[dict[str, Any]] = []
         credentials_elems = requirements_elem.findall("credentials") if requirements_elem is not None else []
         credentials = [credentials_from_element(s) for s in credentials_elems]
         return requirements, containers, resources, javascript_requirements, credentials

@@ -9,7 +9,6 @@
       elements:
         - identifier: test_level_1
           class: Collection
-          type: list
           elements:
             - identifier: data1
               class: File
@@ -34,11 +33,9 @@
       elements:
         - identifier: test_level_2
           class: Collection
-          type: list:list
           elements:
             - identifier: test_level_1
               class: Collection
-              type: list
               elements:
                 - identifier: data1
                   class: File
@@ -71,15 +68,12 @@
       elements:
         - identifier: test_level_3
           class: Collection
-          type: list:list:list
           elements:
             - identifier: test_level_2
               class: Collection
-              type: list:list
               elements:
                 - identifier: test_level_1
                   class: Collection
-                  type: list
                   elements:
                     - identifier: data1
                       class: File
@@ -96,6 +90,7 @@
       collection_type: list:list
       elements:
         test_level_3:
+          class: Collection
           elements:
             test_level_2:
               asserts:

@@ -8,6 +8,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import {
     createFormDataToPayload,
     createTemplateForm,
+    type DynamicOptions,
     editFormDataToPayload,
     editTemplateForm,
     type FormEntry,
@@ -42,6 +43,7 @@ export function useConfigurationTemplateCreation<T extends TemplateSummary, R>(
     testUrl: CreateTestUrl,
     createUrl: CreateUrl,
     onCreate: (result: R) => unknown,
+    dynamicOptions?: Ref<DynamicOptions>,
 ) {
     const error = ref<string | null>(null);
     const { testRunning, testResults } = useConfigurationTesting();
@@ -93,7 +95,7 @@ export function useConfigurationTemplateCreation<T extends TemplateSummary, R>(
     }
 
     const inputs = computed<FormEntry[]>(() => {
-        return createTemplateForm(template.value, what);
+        return createTemplateForm(template.value, what, dynamicOptions?.value);
     });
 
     const submitTitle = "Create";

@@ -1,7 +1,6 @@
 import contextlib
 import os
 import threading
-from typing import Union
 
 from sqlalchemy.orm.scoping import scoped_session
 
@@ -150,7 +149,7 @@ def _setup_mapping_and_user():
 
 
 def _create_hda(
-    has_session: Union[mapping.GalaxyModelMapping, scoped_session],
+    has_session: mapping.GalaxyModelMapping | scoped_session,
     object_store,
     history,
     path,

@@ -7,6 +7,7 @@ from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tool_shed.cache import ToolShedRepositoryCache
 from galaxy.tool_util.toolbox.base import ToolConfRepository
+from galaxy_test.base.test_http_server import test_http_server  # noqa: F401
 
 
 @pytest.fixture

@@ -3,9 +3,7 @@ import mimetypes
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import (
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 from urllib.parse import quote_plus
 
@@ -23,7 +21,7 @@ DEFAULT_DATASET_NAME = "dataset"
 class DisplayApplicationParameter:
     """Abstract Class for Display Application Parameters"""
 
-    type: Optional[str] = None
+    type: str | None = None
 
     @classmethod
     def from_elem(cls, elem, link):
@@ -72,7 +70,7 @@ class DatasetLikeObject:
     state: DatasetState
     extension: str
     name: str
-    dbkey: Optional[str]
+    dbkey: str | None
     datatype: Data
 
 
@@ -116,7 +114,7 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
             )
         return None
 
-    def _get_dataset_like_object(self, other_values) -> Optional[Union[DatasetLikeObject, DatasetInstance]]:
+    def _get_dataset_like_object(self, other_values) -> DatasetLikeObject | DatasetInstance | None:
         data = other_values.get(self.dataset, None)
         assert data, "Base dataset could not be found in values provided to DisplayApplicationDataParameter"
         if isinstance(data, DisplayDataValueWrapper):

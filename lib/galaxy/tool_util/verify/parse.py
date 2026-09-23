@@ -1,19 +1,16 @@
 import logging
 import os
 import traceback
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import (
     Any,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
+    cast,
+    Literal,
     Union,
 )
 
 from packaging.version import Version
-from typing_extensions import Literal
 
 from galaxy.tool_util.parameters import (
     input_models_for_tool_source,
@@ -27,6 +24,7 @@ from galaxy.tool_util.parser.interface import (
     TestCollectionDef,
     ToolSource,
     ToolSourceTest,
+    ToolSourceTestInput,
     ToolSourceTestInputs,
     ToolSourceTests,
 )
@@ -61,36 +59,48 @@ AnyParamContext = Union["ParamContext", "RootParamContext"]
 
 
 def parse_tool_test_descriptions(
-    tool_source: ToolSource, tool_guid: Optional[str] = None, parameters: Optional[List[ToolParameterT]] = None
+    tool_source: ToolSource, tool_guid: str | None = None, parameters: list[ToolParameterT] | None = None
 ) -> Iterable[ToolTestDescription]:
     """
     Build ToolTestDescription objects for each test description.
     """
     profile = tool_source.parse_profile()
     validate_on_load = Version(profile) >= Version("24.2")
-    validation_skipped_reason: Optional[str] = None
+    validation_skipped_reason: str | None = None
     if not validate_on_load:
         validation_skipped_reason = f"tool profile {profile} < 24.2, validation skipped"
 
     raw_tests_dict: ToolSourceTests = tool_source.parse_tests_to_dict()
-    tests: List[ToolTestDescription] = []
+    tests: list[ToolTestDescription] = []
 
     for i, raw_test_dict in enumerate(raw_tests_dict.get("tests", [])):
-        validation_exception: Optional[Exception] = None
-        request_and_schema: Optional[TestRequestAndSchema] = None
-        tool_parameter_bundle: Optional[ToolParameterBundleModel] = None
-        if validate_on_load:
-            try:
-                if parameters is None:
-                    tool_parameter_bundle = input_models_for_tool_source(tool_source)
-                    parameters = tool_parameter_bundle.parameters
-                validated_test_case = case_state(raw_test_dict, parameters, profile, validate=True)
+        validation_exception: Exception | None = None
+        request_and_schema: TestRequestAndSchema | None = None
+        tool_parameter_bundle: ToolParameterBundleModel | None = None
+        try:
+            if parameters is None:
+                tool_parameter_bundle = input_models_for_tool_source(tool_source)
+                parameters = tool_parameter_bundle.parameters
+            qualified_test_dict = cast(
+                ToolSourceTest, {**raw_test_dict, "inputs": _qualify_test_inputs(tool_source, raw_test_dict)}
+            )
+            validated_test_case = case_state(qualified_test_dict, parameters, profile, validate=validate_on_load)
+            if validated_test_case.unhandled_inputs:
+                # Inputs that map to no parameter (e.g. legacy unqualified repeats) can't be
+                # represented in a modern request; fall back to the legacy API.
+                validation_skipped_reason = (
+                    f"could not build request: unhandled inputs {validated_test_case.unhandled_inputs}"
+                )
+            else:
                 request_and_schema = TestRequestAndSchema(
                     validated_test_case.tool_state,
                     tool_parameter_bundle or ToolParameterBundleModel(parameters=parameters),
                 )
-            except Exception as e:
+        except Exception as e:
+            if validate_on_load:
                 validation_exception = e
+            else:
+                validation_skipped_reason = f"could not build request: {e}"
 
         if validation_exception:
             tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)
@@ -122,13 +132,45 @@ class TestRequestAndSchema:
     request_schema: ToolParameterBundleModel
 
 
+def _qualify_test_inputs(tool_source: ToolSource, raw_test_dict: ToolSourceTest) -> ToolSourceTestInputs:
+    """Rewrite a legacy test's unqualified parameter names to the tool's own paths.
+
+    Reuses the loader's tree walk, so `input2` given twice becomes `queries_0|input2`
+    and `queries_1|input2` exactly as the legacy submission resolves it. Tools whose
+    profile disallows unqualified access resolve to the names they already carry.
+    """
+    inputs: ToolSourceTestInputs = raw_test_dict.get("inputs") or []
+    scratch: ToolSourceTestInputs = [cast(ToolSourceTestInput, dict(raw_input)) for raw_input in inputs]
+    qualified_names: dict[int, str] = {}
+    try:
+        _process_raw_inputs(
+            tool_source,
+            input_sources(tool_source),
+            list(scratch),
+            raw_test_dict.get("value_state_representation", "test_case_xml"),
+            [],
+            [],
+            [],
+            qualified_names=qualified_names,
+        )
+    except Exception:
+        # Only names are wanted here. Any loader complaint about a value is raised again
+        # by the caller's own walk, against the original inputs.
+        return inputs
+    qualified: ToolSourceTestInputs = []
+    for raw_input, probe in zip(inputs, scratch):
+        name = qualified_names.get(id(probe))
+        qualified.append(cast(ToolSourceTestInput, {**raw_input, "name": name}) if name else raw_input)
+    return qualified
+
+
 def _description_from_tool_source(
     tool_source: ToolSource,
     raw_test_dict: ToolSourceTest,
     test_index: int,
-    tool_guid: Optional[str],
-    request_and_schema: Optional[TestRequestAndSchema],
-    request_unavailable_reason: Optional[str],
+    tool_guid: str | None,
+    request_and_schema: TestRequestAndSchema | None,
+    request_unavailable_reason: str | None,
 ) -> ToolTestDescription:
     required_files: RequiredFilesT = []
     required_data_tables: RequiredDataTablesT = []
@@ -141,15 +183,15 @@ def _description_from_tool_source(
     if maxseconds is not None:
         maxseconds = int(maxseconds)
 
-    request: Optional[Dict[str, Any]] = None
-    request_schema: Optional[Dict[str, Any]] = None
+    request: dict[str, Any] | None = None
+    request_schema: dict[str, Any] | None = None
     if request_and_schema:
         request = request_and_schema.request.input_state
-        request_schema = request_and_schema.request_schema.dict()
+        request_schema = request_and_schema.request_schema.model_dump()
 
     value_state_representation = raw_test_dict.get("value_state_representation", "test_case_xml")
     tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)
-    processed_test_dict: Union[ValidToolTestDict, InvalidToolTestDict]
+    processed_test_dict: ValidToolTestDict | InvalidToolTestDict
     try:
         processed_inputs = _process_raw_inputs(
             tool_source,
@@ -185,6 +227,7 @@ def _description_from_tool_source(
                 "maxseconds": maxseconds,
                 "error": False,
                 "value_state_representation": value_state_representation,
+                "credentials": raw_test_dict.get("credentials", None),
             }
         )
     except Exception:
@@ -205,7 +248,7 @@ def _description_from_tool_source(
     return ToolTestDescription.from_tool_source_dict(processed_test_dict)
 
 
-def _tool_id_and_version(tool_source: ToolSource, tool_guid: Optional[str]) -> Tuple[str, str]:
+def _tool_id_and_version(tool_source: ToolSource, tool_guid: str | None) -> tuple[str, str]:
     tool_id = tool_guid or tool_source.parse_id()
     assert tool_id
     tool_version = parse_tool_version_with_defaults(tool_id, tool_source)
@@ -214,13 +257,14 @@ def _tool_id_and_version(tool_source: ToolSource, tool_guid: Optional[str]) -> T
 
 def _process_raw_inputs(
     tool_source: ToolSource,
-    input_sources: List[InputSource],
+    input_sources: list[InputSource],
     raw_inputs: ToolSourceTestInputs,
     value_state_representation: Literal["test_case_xml", "test_case_json"],
     required_files: RequiredFilesT,
     required_data_tables: RequiredDataTablesT,
     required_loc_files: RequiredLocFileT,
-    parent_context: Optional[AnyParamContext] = None,
+    parent_context: AnyParamContext | None = None,
+    qualified_names: dict[int, str] | None = None,
 ) -> ExpandedToolInputs:
     """
     Recursively expand flat list of inputs into "tree" form of flat list
@@ -240,6 +284,8 @@ def _process_raw_inputs(
             case_name = test_param_input_source.parse_name()
             case_context = ParamContext(name=case_name, parent_context=cond_context)
             raw_input_dict = case_context.extract_value(raw_inputs)
+            if raw_input_dict is not None and qualified_names is not None:
+                qualified_names[id(raw_input_dict)] = case_context.for_state()
             case_value = raw_input_dict["value"] if raw_input_dict else None
             case_when, case_input_sources = _matching_case_for_value(
                 tool_source, input_source, test_param_input_source, case_value, allow_legacy_test_case_parameters
@@ -255,6 +301,7 @@ def _process_raw_inputs(
                         required_data_tables,
                         required_loc_files,
                         parent_context=cond_context,
+                        qualified_names=qualified_names,
                     )
                     expanded_inputs.update(case_inputs)
                 expanded_case_value = split_if_str(case_when)
@@ -287,6 +334,7 @@ def _process_raw_inputs(
                     required_data_tables,
                     required_loc_files,
                     parent_context=context,
+                    qualified_names=qualified_names,
                 )
                 if expanded_input:
                     expanded_inputs.update(expanded_input)
@@ -306,6 +354,7 @@ def _process_raw_inputs(
                         required_data_tables,
                         required_loc_files,
                         parent_context=context,
+                        qualified_names=qualified_names,
                     )
                     if expanded_input:
                         expanded_inputs.update(expanded_input)
@@ -316,6 +365,8 @@ def _process_raw_inputs(
         else:
             context = ParamContext(name=name, parent_context=parent_context)
             raw_input_dict = context.extract_value(raw_inputs)
+            if raw_input_dict is not None and qualified_names is not None:
+                qualified_names[id(raw_input_dict)] = context.for_state()
             param_type = input_source.get("type")
             if raw_input_dict:
                 name = raw_input_dict["name"]
@@ -324,7 +375,7 @@ def _process_raw_inputs(
                 location = param_extra.get("location")
                 if param_type != "text":
                     param_value = split_if_str(param_value)
-                if param_type == "data":
+                if param_type in ("data", "hidden_data"):
                     if location and input_source.get_bool("multiple", False):
                         # We get the input/s from the location which can be a list of urls separated by commas
                         locations = split_if_str(location)
@@ -366,7 +417,7 @@ def _process_raw_inputs(
     return expanded_inputs
 
 
-def input_sources(tool_source: ToolSource) -> List[InputSource]:
+def input_sources(tool_source: ToolSource) -> list[InputSource]:
     input_sources = []
     pages_source = tool_source.parse_input_pages()
     if pages_source.inputs_defined:
@@ -382,13 +433,13 @@ class ParamContext:
     parent_context: AnyParamContext
     name: str
     # if in a repeat - what position in the repeat
-    index: Optional[int]
+    index: int | None
     # we've encouraged the use of repeat/conditional tags to capture fully qualified paths
     # to parameters in tools. This brings the parameters closer to the API and prevents a
     # variety of possible ambiguities. Disable this for newer tools.
     allow_unqualified_access: bool
 
-    def __init__(self, name: str, parent_context: AnyParamContext, index: Optional[int] = None):
+    def __init__(self, name: str, parent_context: AnyParamContext, index: int | None = None):
         self.parent_context = parent_context
         self.name = name
         self.index = None if index is None else int(index)
@@ -396,8 +447,7 @@ class ParamContext:
 
     def for_state(self) -> str:
         name = self.name if self.index is None else f"{self.name}_{self.index}"
-        parent_for_state = self.parent_context.for_state()
-        if parent_for_state:
+        if parent_for_state := self.parent_context.for_state():
             return f"{parent_for_state}|{name}"
         else:
             return name
@@ -480,8 +530,7 @@ def _process_simple_value(
                         found_value = True
                     if value_for_text is None and param_value == text:
                         value_for_text = opt_value
-            dynamic_options = param.parse_dynamic_options()
-            if dynamic_options:
+            if dynamic_options := param.parse_dynamic_options():
                 data_table_name = dynamic_options.get_data_table_name()
                 index_file_name = dynamic_options.get_index_file_name()
                 if data_table_name:
@@ -580,11 +629,11 @@ def _matching_case_for_value(
 
 def _add_uploaded_dataset(
     name: str,
-    value: Optional[str],
+    value: str | None,
     extra: ExtraFileInfoDictT,
     input_parameter: InputSource,
     required_files: RequiredFilesT,
-) -> Optional[str]:
+) -> str | None:
     if value is None:
         assert (
             input_parameter.parse_optional() or "composite_data" in extra
@@ -648,8 +697,7 @@ def split_if_str(value):
 # into the YAML structure consumed by the test framework {that: string, **atributes}
 def tag_structure_to_that_structure(raw_assert):
     as_json = {"that": raw_assert["tag"], **raw_assert.get("attributes", {})}
-    children = raw_assert.get("children")
-    if children:
+    if children := raw_assert.get("children"):
         as_json["children"] = list(map(tag_structure_to_that_structure, children))
     return as_json
 

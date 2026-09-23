@@ -10,6 +10,7 @@ from fastapi.responses import Response
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.genomes import GenomesManager
+from galaxy.work.context import SessionRequestContext
 from . import (
     depends,
     DependsOnTrans,
@@ -53,7 +54,9 @@ FormatQueryParam: str = Query(None, title="Format", description="Format")
 ReferenceQueryParam: bool = Query(None, title="Reference", description="If true, return reference data")
 
 IndexTypeQueryParam: str = Query(
-    "fasta_indexes", title="Index type", description="Index type"  # currently this is the only supported index type
+    "fasta_indexes",
+    title="Index type",
+    description="Index type",  # currently this is the only supported index type
 )
 
 
@@ -80,7 +83,7 @@ class FastAPIGenomes:
     )
     def show(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         id: str = IdPathParam,
         reference: bool = ReferenceQueryParam,
         num: int = NumQueryParam,

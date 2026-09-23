@@ -6,7 +6,6 @@ import {
     BCardBody,
     BCardFooter,
     BCardHeader,
-    BCollapse,
     BForm,
     BFormCheckbox,
     BFormGroup,
@@ -15,8 +14,10 @@ import {
 } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 
+import { SKIP_PENDING_REQUESTS_HEADER } from "@/api/pendingRequests";
 import { getOIDCIdpsWithRegistration, type OIDCConfig } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import { Toast } from "@/composables/toast";
+import { discardActiveConnectionsBeforeAuthNavigation } from "@/composables/useAuthNavigation";
 import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -24,6 +25,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import GButton from "../BaseComponents/GButton.vue";
 import GLink from "../BaseComponents/GLink.vue";
 import VerticalSeparator from "../Common/VerticalSeparator.vue";
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 import ExternalRegistration from "@/components/User/ExternalIdentities/ExternalRegistration.vue";
 
@@ -62,6 +64,8 @@ const oidcPreferred = computed(() => {
     return props.enableOidc && props.preferOidcLogin;
 });
 
+const activePanel = ref<"oidc" | "register">(oidcPreferred.value ? "oidc" : "register");
+
 /** This decides if all register options should be displayed in column style
  * (one below the other) or horizontally.
  */
@@ -70,15 +74,24 @@ const registerColumnDisplay = computed(() => Boolean(props.termsUrl));
 async function submit() {
     disableCreate.value = true;
 
+    // Stop polling and abort in-flight axios/GalaxyApi before sending the
+    // register POST — otherwise a late anonymous-cookie response can overwrite
+    // the authenticated cookie we're about to receive.
+    discardActiveConnectionsBeforeAuthNavigation();
+
     try {
-        const response = await axios.post(withPrefix("/user/create"), {
-            email: email.value,
-            username: username.value,
-            password: password.value,
-            confirm: confirm.value,
-            subscribe: subscribe.value,
-            session_csrf_token: props.sessionCsrfToken,
-        });
+        const response = await axios.post(
+            withPrefix("/user/create"),
+            {
+                email: email.value,
+                username: username.value,
+                password: password.value,
+                confirm: confirm.value,
+                subscribe: subscribe.value,
+                session_csrf_token: props.sessionCsrfToken,
+            },
+            { headers: { [SKIP_PENDING_REQUESTS_HEADER]: "1" } },
+        );
 
         if (response.data.message && response.data.status) {
             Toast.info(response.data.message);
@@ -109,30 +122,26 @@ async function submit() {
                     <BCard no-body>
                         <!-- OIDC enabled and prioritized: encourage users to use it instead of local registration -->
                         <span v-if="oidcPreferred">
-                            <BCardHeader v-b-toggle.accordion-oidc role="button">
+                            <BCardHeader role="button" @click="activePanel = 'oidc'">
                                 Register using institutional account
                             </BCardHeader>
 
-                            <BCollapse id="accordion-oidc" visible role="tabpanel" accordion="registration_acc">
+                            <GCollapse :visible="activePanel === 'oidc'" role="tabpanel">
                                 <BCardBody>
                                     Create a Galaxy account using an institutional account (e.g.:Google/JHU). This will
                                     redirect you to your institutional login through OIDC.
                                     <ExternalLogin class="mt-2" />
                                 </BCardBody>
-                            </BCollapse>
+                            </GCollapse>
                         </span>
 
                         <!-- Local Galaxy Registration -->
                         <BCardHeader v-if="!oidcPreferred" v-localize>Create a Galaxy account</BCardHeader>
-                        <BCardHeader v-else v-localize v-b-toggle.accordion-register role="button">
+                        <BCardHeader v-else v-localize role="button" @click="activePanel = 'register'">
                             Or, register with email
                         </BCardHeader>
 
-                        <BCollapse
-                            id="accordion-register"
-                            :visible="!oidcPreferred"
-                            role="tabpanel"
-                            accordion="registration_acc">
+                        <GCollapse :visible="activePanel === 'register'" role="tabpanel">
                             <BCardBody :class="{ 'd-flex w-100': !registerColumnDisplay }">
                                 <div v-if="!disableLocalAccounts">
                                     <BFormGroup :label="labelEmailAddress" label-for="register-form-email">
@@ -213,7 +222,7 @@ async function submit() {
                                     </div>
                                 </template>
                             </BCardBody>
-                        </BCollapse>
+                        </GCollapse>
 
                         <BCardFooter v-if="!hideLoginLink">
                             <span v-localize>Already have an account?</span>

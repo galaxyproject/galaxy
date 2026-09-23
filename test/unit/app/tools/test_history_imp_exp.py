@@ -3,6 +3,7 @@ import os
 import tarfile
 import tempfile
 from shutil import rmtree
+from typing import Any
 from unittest.mock import Mock
 
 from sqlalchemy import select
@@ -12,6 +13,7 @@ from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.exceptions import MalformedContents
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.objectstore.unittest_utils import Config as TestConfig
+from galaxy.tools.actions.history_imp_exp import ImportHistoryToolAction
 from galaxy.tools.imp_exp import (
     JobExportHistoryArchiveWrapper,
     JobImportHistoryArchiveWrapper,
@@ -26,6 +28,24 @@ DATASETS_ATTRS_EXPORT = """[{{"info": "\\nuploaded txt file", "peek": "foo\\n\\n
 DATASETS_ATTRS_PROVENANCE = """[]"""
 HISTORY_ATTRS = """{"hid_counter": 2, "update_time": "2016-02-08 18:38:38.705058", "create_time": "2016-02-08 18:38:20.790057", "name": "paste", "tags": {}, "genome_build": "?", "annotation": null}"""
 JOBS_ATTRS = """[{"info": null, "tool_id": "upload1", "update_time": "2016-02-08T18:39:23.356482", "stdout": "", "input_mapping": {}, "tool_version": "1.1.4", "traceback": null, "command_line": "python /galaxy/tools/data_source/upload.py /galaxy /scratch/tmppwU9rD /scratch/tmpP4_45Y 1:/scratch/jobs/000/dataset_1_files:/data/000/dataset_1.dat", "exit_code": 0, "output_datasets": [1], "state": "ok", "create_time": "2016-02-08T18:38:39.153873", "params": {"files": [{"to_posix_lines": "Yes", "NAME": "None", "file_data": null, "space_to_tab": null, "url_paste": "/scratch/strio_url_paste_o6nrv8", "__index__": 0, "ftp_files": "", "uuid": "None"}], "paramfile": "/scratch/tmpP4_45Y", "file_type": "auto", "files_metadata": {"file_type": "auto", "__current_case__": 41}, "async_datasets": "None", "dbkey": "?"}, "stderr": ""}]"""
+
+
+class ConcreteImportHistoryToolAction(ImportHistoryToolAction):
+    def get_output_name(self, *args: Any, **kwargs: Any) -> str:
+        raise NotImplementedError
+
+
+def test_import_history_action_reports_url_archive_source():
+    action = ConcreteImportHistoryToolAction()
+    archive_source = "https://example.org/history.tar.gz"
+    assert list(
+        action.iter_referenced_file_source_uris({"__ARCHIVE_TYPE__": "url", "__ARCHIVE_SOURCE__": archive_source})
+    ) == [archive_source]
+    assert not list(
+        action.iter_referenced_file_source_uris(
+            {"__ARCHIVE_TYPE__": "file", "__ARCHIVE_SOURCE__": "/tmp/history.tar.gz"}
+        )
+    )
 
 
 def t_data_path(name):

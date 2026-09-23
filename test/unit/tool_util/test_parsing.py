@@ -2,16 +2,20 @@ import os
 import os.path
 import shutil
 import tempfile
+from collections.abc import Sequence
 from math import isinf
 from typing import (
-    Optional,
-    Sequence,
-    Type,
     TypeVar,
 )
 
-from galaxy.tool_util.parser.factory import get_tool_source
+import pytest
+
+from galaxy.tool_util.parser.factory import (
+    build_xml_tool_source,
+    get_tool_source,
+)
 from galaxy.tool_util.parser.output_objects import from_tool_source
+from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.tool_util_models.tool_outputs import (
     ToolOutput,
@@ -278,8 +282,8 @@ def get_test_tool_source(source_file_name=None, source_contents=None, macro_cont
 
 
 class BaseLoaderTestCase(TestCase):
-    source_file_name: Optional[str] = None
-    source_contents: Optional[str] = None
+    source_file_name: str | None = None
+    source_contents: str | None = None
 
     def setUp(self):
         self.temp_directory = tempfile.mkdtemp()
@@ -330,7 +334,7 @@ class TestXmlLoader(BaseLoaderTestCase):
 
     def test_tool_source_to_string(self):
         # Previously this threw an Exception - test for regression.
-        str(self._tool_source)
+        assert str(self._tool_source).startswith("XmlToolSource[")
 
     def test_version(self):
         assert self._tool_source.parse_version() == "1.0.1"
@@ -741,8 +745,7 @@ class TestApplyRulesToolLoader(BaseLoaderTestCase):
         assert not output_model.hidden
         assert output_model.label == "${input.name} (re-organized)"
         output_collection_model = assert_output_model_of_type(output_model, ToolOutputCollection)
-        structure = output_collection_model.structure
-        assert structure.collection_type_from_rules == "rules"
+        assert output_collection_model.collection_type_from_rules == "rules"
 
 
 class TestBuildListToolLoader(BaseLoaderTestCase):
@@ -931,6 +934,101 @@ class TestCollectionOutputYaml(FunctionalTestToolTestCase):
         assert len(output_collections) == 1
 
 
+@pytest.mark.parametrize("format_source", [None, "input"])
+@pytest.mark.parametrize("rule_format", [None, "tabular"])
+def test_collection_format_defaults_match_xml(format_source, rule_format):
+    output = {
+        "type": "collection",
+        "collection_type": "list",
+        "format": "txt",
+        "format_source": format_source,
+        "metadata_source": "input",
+        "discover_datasets": [{"pattern": "result", "format": rule_format}],
+    }
+    source_attribute = f'format_source="{format_source}"' if format_source else ""
+    rule_attribute = f'format="{rule_format}"' if rule_format else ""
+    xml_source = build_xml_tool_source(f"""<tool profile="26.1"><outputs>
+        <collection name="output" type="list" format="txt" metadata_source="input" {source_attribute}>
+            <discover_datasets pattern="result" {rule_attribute} />
+        </collection>
+    </outputs></tool>""")
+    for source in (xml_source, YamlToolSource({"outputs": {"output": output}})):
+        _, collections = source.parse_outputs(None)
+        collection = collections["output"]
+        assert collection.dataset_collector_descriptions[0].default_ext == (
+            rule_format or (None if format_source else "txt")
+        )
+        output_model = collection.to_model()
+        assert output_model.format == "txt"
+        assert output_model.format_source == format_source
+        assert output_model.metadata_source == "input"
+
+
+def test_yaml_parser_accepts_collection_type_source_alias():
+    # XML tools use ``type_source``; the pydantic UDT model uses
+    # ``collection_type_source``. Parser must accept either.
+    doc = {
+        "class": "GalaxyTool",
+        "id": "alias-tool",
+        "name": "Alias tool",
+        "version": "0.1",
+        "shell_command": "touch outs/a.txt",
+        "outputs": [
+            {
+                "name": "outs",
+                "type": "collection",
+                "collection_type_source": "input1",
+                "discover_datasets": [
+                    {
+                        "discover_via": "pattern",
+                        "pattern": "__name_and_ext__",
+                        "directory": "outs",
+                    }
+                ],
+            }
+        ],
+    }
+    tool_source = YamlToolSource(doc)
+    _outputs, output_collections = tool_source.parse_outputs(None)
+    assert output_collections["outs"].structure.collection_type_source == "input1"
+
+
+def test_yaml_parser_lifts_legacy_structure_wrapper():
+    # Older DynamicTool.value rows nest collection fields under ``structure:``.
+    # The YAML parser path bypasses pydantic (see ``Toolbox.dynamic_tool_to_tool``),
+    # so it normalizes the wrapper itself.
+    legacy_doc = {
+        "class": "GalaxyTool",
+        "id": "legacy-collection-tool",
+        "name": "Legacy collection tool",
+        "version": "0.1",
+        "shell_command": "mkdir -p outs && touch outs/a.txt",
+        "outputs": [
+            {
+                "name": "outs",
+                "type": "collection",
+                "structure": {
+                    "collection_type": "list",
+                    "discover_datasets": [
+                        {
+                            "discover_via": "pattern",
+                            "pattern": "__name_and_ext__",
+                            "directory": "outs",
+                        }
+                    ],
+                },
+            }
+        ],
+    }
+    tool_source = YamlToolSource(legacy_doc)
+    outputs, output_collections = tool_source.parse_outputs(None)
+    assert "outs" in output_collections
+    output = output_collections["outs"]
+    assert output.structure.collection_type == "list"
+    assert output.structure.dataset_collector_descriptions
+    assert output.structure.dataset_collector_descriptions[0].discover_via == "pattern"
+
+
 class TestEnvironmentVariables(FunctionalTestToolTestCase):
     test_path = "environment_variables.xml"
 
@@ -948,8 +1046,8 @@ class TestExpectations(FunctionalTestToolTestCase):
         tests = tests_dict["tests"]
         assert len(tests) == 10
         test_0 = tests[0]
-        assert len(test_0["stderr"]) == 1
-        assert len(test_0["stdout"]) == 2
+        assert len(test_0["stderr"]) == 2
+        assert len(test_0["stdout"]) == 1
 
 
 class TestExpectationsCommandVersion(FunctionalTestToolTestCase):
@@ -995,7 +1093,7 @@ def test_old_invalid_citation_dont_cause_failure_to_load():
 
 
 def test_invalid_citation_not_allowed_in_modern_tools():
-    with as_file(resource_path(__name__, "invalid_citation_24.2.xml")) as tool_path:
+    with as_file(resource_path(__name__, "invalid_citation_26.1.xml")) as tool_path:
         tool_source = get_tool_source(tool_path)
     exc = None
     try:
@@ -1003,6 +1101,17 @@ def test_invalid_citation_not_allowed_in_modern_tools():
     except Exception as e:
         exc = e
     assert exc is not None
+
+
+def test_legacy_doi_prefix_citation_is_normalized():
+    # Legacy 'doi:'-prefixed citations load and are normalized to the bare DOI
+    # so downstream resolution (https://doi.org/<doi>) works (see issue #22795).
+    with as_file(resource_path(__name__, "doi_prefixed_citation.xml")) as tool_path:
+        tool_source = get_tool_source(tool_path)
+    citations = tool_source.parse_citations()
+    assert len(citations) == 1
+    assert citations[0].type == "doi"
+    assert citations[0].content == "10.1186/1471-2105-11-485"
 
 
 class TestToolProvidedMetadata2(FunctionalTestToolTestCase):
@@ -1026,6 +1135,6 @@ class TestToolProvidedMetadata2(FunctionalTestToolTestCase):
 T = TypeVar("T")
 
 
-def assert_output_model_of_type(obj, clazz: Type[T]) -> T:
+def assert_output_model_of_type(obj, clazz: type[T]) -> T:
     assert isinstance(obj, clazz)
     return obj

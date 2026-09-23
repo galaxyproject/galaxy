@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faBurn } from "@fortawesome/free-solid-svg-icons";
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -120,10 +121,9 @@ async function onPermanentlyDeleteHistory(historyId: string) {
         localize("Are you sure you want to permanently delete this history? This action cannot be undone."),
         {
             title: localize("Permanently delete history?"),
-            okVariant: "danger",
-            okTitle: localize("Permanently delete"),
-            cancelTitle: localize("Cancel"),
-            cancelVariant: "outline-primary",
+            okText: localize("Permanently delete"),
+            okColor: "red",
+            okIcon: faBurn,
         },
     );
     if (!confirmed) {

@@ -15,9 +15,12 @@ from galaxy.files import (
     ConfiguredFileSources,
     NoMatchingFileSource,
 )
-from galaxy.files.models import FilesSourceOptions
+from galaxy.files.models import (
+    FilesSourceOptions,
+    RealizedSourceMetadata,
+)
 from galaxy.util import (
-    stream_to_open_named_file,
+    stream_to_path,
     unicodify,
 )
 from galaxy.util.config_parsers import IpAllowedListEntryT
@@ -40,18 +43,27 @@ def stream_url_to_file(
     url: str,
     file_sources: Optional["ConfiguredFileSources"] = None,
     prefix: str = "gx_file_stream",
-    dir: Optional[str] = None,
+    dir: str | None = None,
     user_context=None,
-    target_path: Optional[str] = None,
-    file_source_opts: Optional[FilesSourceOptions] = None,
+    target_path: str | None = None,
+    file_source_opts: FilesSourceOptions | None = None,
+    metadata_out: RealizedSourceMetadata | None = None,
 ) -> str:
+    """Stream ``url`` to a local path and return that path.
+
+    ``metadata_out``, if supplied, is populated by file sources that can report metadata
+    about the source they realized. Only the DRS file source does so today, setting a
+    ``name`` key from the DRS object's own name.
+    """
     file_sources = ensure_file_sources(file_sources)
     file_source, rel_path = file_sources.get_file_source_path(url)
     if file_source:
         if not target_path:
             with tempfile.NamedTemporaryFile(prefix=prefix, delete=False, dir=dir) as temp:
                 target_path = temp.name
-        file_source.realize_to(rel_path, target_path, user_context=user_context, opts=file_source_opts)
+        file_source.realize_to(
+            rel_path, target_path, user_context=user_context, opts=file_source_opts, metadata_out=metadata_out
+        )
         return target_path
     else:
         raise NoMatchingFileSource(f"Could not find a matching handler for: {url}")
@@ -66,7 +78,8 @@ def ensure_file_sources(file_sources: Optional["ConfiguredFileSources"]) -> "Con
 def stream_to_file(stream, suffix="", prefix="", dir=None, text=False, **kwd):
     """Writes a stream to a temporary file, returns the temporary file's name"""
     fd, temp_name = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=dir, text=text)
-    return stream_to_open_named_file(stream, fd, temp_name, **kwd)
+    os.close(fd)
+    return stream_to_path(stream, temp_name, **kwd)
 
 
 def validate_uri_access(uri: str, is_admin: bool, ip_allowlist: list[IpAllowedListEntryT]) -> None:
@@ -94,13 +107,15 @@ def split_port(parsed_url: str, url: str) -> tuple[str, int]:
 
 def validate_non_local(uri: str, ip_allowlist: list[IpAllowedListEntryT]) -> str:
     # If it doesn't look like a URL, ignore it.
-    if not (uri.lstrip().startswith("http://") or uri.lstrip().startswith("https://")):
+    if not (uri.strip().startswith("http://") or uri.strip().startswith("https://")):
         return uri
 
-    # Strip leading whitespace before passing url to urlparse()
-    url = uri.lstrip()
+    # Strip surrounding whitespace before passing url to urlparse()
+    url = uri.strip()
     # Extract hostname component
     parsed_url = urlparse(url).netloc
+    if not parsed_url:
+        raise RequestParameterInvalidException(f"Could not verify url '{url}'.")
     # If credentials are in this URL, we need to strip those.
     if parsed_url.count("@") > 0:
         # credentials.
@@ -134,8 +149,10 @@ def validate_non_local(uri: str, ip_allowlist: list[IpAllowedListEntryT]) -> str
     # Call getaddrinfo to resolve hostname into tuples containing IPs.
     try:
         addrinfo = socket.getaddrinfo(parsed_url, port)
-    except socket.gaierror as e:
-        log.debug(f"Could not resolve url '{url}': {e}")
+    except (socket.gaierror, UnicodeError) as e:
+        # UnicodeError covers idna codec failures (e.g. empty DNS labels in hosts like '...' or '..example.com')
+        # which are not wrapped as socket.gaierror.
+        log.debug("Could not resolve url '%s': '%s'", url, e)
         raise RequestParameterInvalidException(f"Could not verify url '{url}'.")
     # Get the IP addresses that this entry resolves to (uniquely)
     # We drop:

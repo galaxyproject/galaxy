@@ -3,6 +3,8 @@ import json
 import os
 from dataclasses import dataclass
 
+import pytest
+
 from galaxy.tool_util.data import (
     BUNDLE_INDEX_FILE_NAME,
     BundleProcessingOptions,
@@ -10,6 +12,7 @@ from galaxy.tool_util.data import (
 from galaxy.tool_util.data.bundles.models import (
     convert_data_tables_xml,
     DataTableBundleProcessorDescription,
+    get_path_headers,
 )
 from galaxy.util import (
     galaxy_directory,
@@ -82,7 +85,7 @@ class OutputDataset:
     extra_files_path: str
     ext: str = "data_manager_json"
 
-    def get_file_name(self, sync_cache=True) -> str:
+    def get_file_name(self, sync_cache=True, auth=None) -> str:
         return self.file_name_
 
     def extra_files_path_exists(self) -> bool:
@@ -208,6 +211,279 @@ def test_import_bundle(tdt_manager, tmp_path):
     assert new_row[0] == "newvalue"
     assert new_row[1] == "mynewname"
     assert new_row[2] == str(tmp_path / "testalpha" / "newvalue" / "newvalue.txt")
+
+
+def prepare_absolute_path_output_and_description(tmp_path, table_name="testalpha", path_column="path"):
+    """Mirror a data manager recording an absolute path with a ``${column}`` move source.
+
+    ``path_column`` defaults to the conventional ``path`` (as MetaPhlAn uses); pass
+    another name (e.g. CAT's ``database_folder``) to model a data manager whose path
+    column is not literally called ``path``.
+    """
+    index = "mpa_toy"
+    extra_files_path = tmp_path / "extra"
+    staged = extra_files_path / index
+    staged.mkdir(parents=True)
+    (staged / f"{index}.pkl").write_text("PICKLE")
+
+    # Absolute path, as MetaPhlAn records it (points inside extra_files_path).
+    recorded_path = str(staged)
+    output = {"data_tables": {table_name: [{"value": index, "name": "toy", path_column: recorded_path}]}}
+    output_dataset_path = tmp_path / "output.dat"
+    output_dataset_path.write_text(json.dumps(output))
+    output_dataset = OutputDataset(output_dataset_path, extra_files_path)
+    out_data = {"out1": output_dataset}
+    data_table = {
+        "name": table_name,
+        "output": {
+            "columns": [
+                {"name": "value"},
+                {"name": "name"},
+                {
+                    "name": path_column,
+                    "output_ref": "out1",
+                    "moves": [
+                        {
+                            "type": "directory",
+                            "relativize_symlinks": False,
+                            "source_value": "${" + path_column + "}",
+                            "target_value": "metaphlan/data/${value}",
+                            "target_base": "${GALAXY_DATA_MANAGER_DATA_PATH}",
+                        }
+                    ],
+                    "value_translations": [
+                        {"value": "${GALAXY_DATA_MANAGER_DATA_PATH}/metaphlan/data/${value}", "type": "template"},
+                        {"value": "abspath", "type": "function"},
+                    ],
+                },
+            ]
+        },
+    }
+    process_description = DataTableBundleProcessorDescription(
+        **{"undeclared_tables": False, "data_tables": [data_table]}
+    )
+    return index, out_data, process_description
+
+
+@pytest.mark.parametrize(
+    ("table_name", "path_column"),
+    [
+        ("testalpha", "path"),  # the conventional column, à la MetaPhlAn
+        ("testcat", "database_folder"),  # a differently-named path column, à la CAT
+    ],
+)
+def test_import_bundle_with_absolute_recorded_path(tdt_manager, tmp_path, table_name, path_column):
+    """Write must relativize, and import must stage, an absolute recorded path.
+
+    Covers both the conventional ``path`` column and a differently-named one, so a
+    ``path``-only assumption anywhere in the write/import wiring is caught. Renaming
+    the extra-files dir before import models transport to another host, where the
+    recorded absolute job dir no longer exists.
+    """
+    index, out_data, process_description = prepare_absolute_path_output_and_description(
+        tmp_path, table_name=table_name, path_column=path_column
+    )
+    tdt_manager.write_bundle(out_data, process_description, None)
+
+    # Write stored the absolute job path relative to the extra-files dir.
+    bundle_index = json.loads((tmp_path / "extra" / BUNDLE_INDEX_FILE_NAME).read_text())
+    stored_path = bundle_index["data_tables"][table_name][0][path_column]
+    assert stored_path == index
+    assert not os.path.isabs(stored_path)
+
+    # Transport the bundle: the location it was written at is gone by import.
+    transported = tmp_path / "imported"
+    os.rename(tmp_path / "extra", transported)
+
+    options = BundleProcessingOptions(
+        what="data manager 'mock'",
+        data_manager_path=str(tmp_path),
+        target_config_file=str(tmp_path / "sample_data_managers_conf.xml"),
+    )
+    tdt_manager.import_bundle(str(transported), options)
+
+    new_row = _last_row(tmp_path / f"{table_name}.loc")
+    assert new_row[0] == index
+    loc_target = new_row[-1]
+    # The DB files were actually moved to where the loc entry points.
+    assert os.path.exists(os.path.join(loc_target, f"{index}.pkl"))
+
+
+def prepare_split_prefix_output_and_description(
+    tmp_path,
+    table_name="testalpha",
+    path_column="path",
+    store_leaf=None,
+    compute_leaf=None,
+    recorded_relative_path=None,
+):
+    """Model the object-store vs job-working-dir prefix split.
+
+    In production ``write_bundle`` runs on the job handler, where
+    ``dataset.extra_files_path`` resolves to the object-store extra-files dir,
+    while the data manager baked its absolute ``path`` on the compute node under
+    the transient job working dir. The directories differ in every prefix
+    component, so a plain ``os.path.relpath`` escapes with ``..``. They may even
+    differ in the ``dataset_<key>_files`` leaf itself: the compute side is
+    uuid-keyed under outputs_to_working_directory while the store may be
+    id-keyed — pass distinct ``store_leaf``/``compute_leaf`` to model that. The
+    recorded absolute path deliberately does NOT exist under
+    ``extra_files_path`` here, so the fix must be structural (no existence check).
+    """
+    index = "mpa_toy"
+    compute_leaf = compute_leaf or "dataset_00000000-0000-0000-0000-000000000000_files"
+    store_leaf = store_leaf or compute_leaf
+
+    # Object-store extra-files dir: where the bundle index actually gets written.
+    extra_files_path = tmp_path / "objectstore" / "000" / store_leaf
+    extra_files_path.mkdir(parents=True)
+
+    # Absolute path as recorded by the DM under the (now-irrelevant) job working dir.
+    job_dir = tmp_path / "jobs" / "001" / "outputs" / compute_leaf
+    recorded_path = str(job_dir / (index if recorded_relative_path is None else recorded_relative_path))
+
+    output = {"data_tables": {table_name: [{"value": index, "name": "toy", path_column: recorded_path}]}}
+    output_dataset_path = tmp_path / "output.dat"
+    output_dataset_path.write_text(json.dumps(output))
+    output_dataset = OutputDataset(output_dataset_path, extra_files_path)
+    out_data = {"out1": output_dataset}
+    data_table = {
+        "name": table_name,
+        "output": {
+            "columns": [
+                {"name": "value"},
+                {"name": "name"},
+                {
+                    "name": path_column,
+                    "output_ref": "out1",
+                    "moves": [
+                        {
+                            "type": "directory",
+                            "relativize_symlinks": False,
+                            "source_value": "${" + path_column + "}",
+                            "target_value": "metaphlan/data/${value}",
+                            "target_base": "${GALAXY_DATA_MANAGER_DATA_PATH}",
+                        }
+                    ],
+                    "value_translations": [
+                        {"value": "${GALAXY_DATA_MANAGER_DATA_PATH}/metaphlan/data/${value}", "type": "template"},
+                        {"value": "abspath", "type": "function"},
+                    ],
+                },
+            ]
+        },
+    }
+    process_description = DataTableBundleProcessorDescription(
+        **{"undeclared_tables": False, "data_tables": [data_table]}
+    )
+    return index, extra_files_path, job_dir, out_data, process_description
+
+
+def test_write_bundle_relativizes_split_prefix_path_from_compute_root(tdt_manager, tmp_path):
+    """A data manager's compute-side path is made relative to its known job-dir root."""
+    index, extra_files_path, compute_extra_files_path, out_data, process_description = (
+        prepare_split_prefix_output_and_description(tmp_path)
+    )
+    tdt_manager.write_bundle(
+        out_data,
+        process_description,
+        None,
+        source_extra_files_paths={"out1": str(compute_extra_files_path)},
+    )
+
+    bundle_index = json.loads((extra_files_path / BUNDLE_INDEX_FILE_NAME).read_text())
+    stored_path = bundle_index["data_tables"]["testalpha"][0]["path"]
+    assert stored_path == index
+    assert not os.path.isabs(stored_path)
+
+
+def test_write_bundle_relativizes_uuid_keyed_job_path_on_id_keyed_store(tdt_manager, tmp_path):
+    """A uuid-keyed compute root works even when the object store is id-keyed."""
+    index, extra_files_path, compute_extra_files_path, out_data, process_description = (
+        prepare_split_prefix_output_and_description(
+            tmp_path,
+            store_leaf="dataset_42_files",
+            compute_leaf="dataset_00000000-0000-0000-0000-000000000000_files",
+        )
+    )
+    tdt_manager.write_bundle(
+        out_data,
+        process_description,
+        None,
+        source_extra_files_paths={"out1": str(compute_extra_files_path)},
+    )
+
+    bundle_index = json.loads((extra_files_path / BUNDLE_INDEX_FILE_NAME).read_text())
+    stored_path = bundle_index["data_tables"]["testalpha"][0]["path"]
+    assert stored_path == index
+    assert not os.path.isabs(stored_path)
+
+
+def test_write_bundle_relativizes_compute_extra_files_root(tdt_manager, tmp_path):
+    _, extra_files_path, compute_extra_files_path, out_data, process_description = (
+        prepare_split_prefix_output_and_description(tmp_path, recorded_relative_path="")
+    )
+    tdt_manager.write_bundle(
+        out_data,
+        process_description,
+        None,
+        source_extra_files_paths={"out1": str(compute_extra_files_path)},
+    )
+
+    bundle_index = json.loads((extra_files_path / BUNDLE_INDEX_FILE_NAME).read_text())
+    assert bundle_index["data_tables"]["testalpha"][0]["path"] == os.curdir
+
+
+def test_write_bundle_preserves_nested_dataset_named_directory(tdt_manager, tmp_path):
+    store_leaf = "dataset_42_files"
+    relative_path = os.path.join("mpa_toy", store_leaf, "index")
+    _, extra_files_path, compute_extra_files_path, out_data, process_description = (
+        prepare_split_prefix_output_and_description(
+            tmp_path, store_leaf=store_leaf, recorded_relative_path=relative_path
+        )
+    )
+    tdt_manager.write_bundle(
+        out_data,
+        process_description,
+        None,
+        source_extra_files_paths={"out1": str(compute_extra_files_path)},
+    )
+
+    bundle_index = json.loads((extra_files_path / BUNDLE_INDEX_FILE_NAME).read_text())
+    assert bundle_index["data_tables"]["testalpha"][0]["path"] == relative_path
+
+
+def test_path_headers_from_move_and_abspath():
+    """A column is a path column when it has a move or an abspath translation, whatever its name."""
+    description = DataTableBundleProcessorDescription(
+        undeclared_tables=False,
+        data_tables=[
+            {
+                "name": "t",
+                "output": {
+                    "columns": [
+                        {"name": "value"},
+                        {"name": "path", "moves": [{"type": "directory", "relativize_symlinks": False}]},
+                        {"name": "index_path", "value_translations": [{"type": "function", "value": "abspath"}]},
+                        # An output_ref alone does not make a column a path.
+                        {"name": "reference", "output_ref": "out1"},
+                    ]
+                },
+            }
+        ],
+    )
+    assert description.path_headers_by_data_table == {"t": {"path", "index_path"}}
+    assert get_path_headers(description, "t") == {"path", "index_path"}
+
+
+def test_get_path_headers_falls_back_to_convention():
+    """Without a declared path column (undeclared tables, or no description) use the ``path`` convention."""
+    assert get_path_headers(None, "t") == {"path"}
+    description = DataTableBundleProcessorDescription(
+        undeclared_tables=False,
+        data_tables=[{"name": "t", "output": {"columns": [{"name": "value"}]}}],
+    )
+    assert get_path_headers(description, "t") == {"path"}
 
 
 def test_undeclared_tables(tdt_manager, tmp_path):

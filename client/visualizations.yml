@@ -18,6 +18,9 @@ alignmentviewer:
 annotateimage:
     package: "@galaxyproject/annotateimage"
     version: 0.0.0
+atlas:
+    package: "@galaxyproject/atlas"
+    version: 0.0.0
 chiraviz:
     package: "@galaxyproject/chiraviz"
     version: 0.0.2
@@ -45,9 +48,12 @@ hyphyvision:
 igv:
     package: "@galaxyproject/igv"
     version: 0.0.25
+jsonviewer:
+    package: "@galaxyproject/jsonviewer"
+    version: 0.0.0
 jupyterlite:
     package: "@galaxyproject/jupyterlite"
-    version: 0.0.30
+    version: 0.0.31
 kepler:
     package: "@galaxyproject/kepler"
     version: 0.0.3
@@ -71,7 +77,7 @@ nora:
     version: 1.2.4
 openlayers:
     package: "@galaxyproject/openlayers"
-    version: 0.0.6
+    version: 0.0.9
 openseadragon:
     package: "@galaxyproject/openseadragon"
     version: 0.0.2
@@ -83,13 +89,13 @@ phylocanvas:
     version: 0.0.11
 plotly:
     package: "@galaxyproject/plotly"
-    version: 0.0.28
+    version: 0.0.30
 plotly_box:
     package: "@galaxyproject/plotly_box"
     version: 0.0.0
 plotly_heatmap:
     package: "@galaxyproject/plotly_heatmap"
-    version: 0.0.1
+    version: 0.0.2
 plotly_histogram:
     package: "@galaxyproject/plotly_histogram"
     version: 0.0.0
@@ -98,31 +104,40 @@ plotly_pie:
     version: 0.0.3
 plotly_surface:
     package: "@galaxyproject/plotly_surface"
-    version: 0.0.0
+    version: 0.0.1
 plyr:
     package: "@galaxyproject/plyr"
     version: 0.0.4
 rerunio:
     package: "@galaxyproject/rerunio"
     version: 0.0.0
+rmsxflipbook:
+    package: "@galaxyproject/rmsxflipbook"
+    version: 0.0.4
+seqviz:
+    package: "@galaxyproject/seqviz"
+    version: 0.0.2
 tabulator:
     package: "@galaxyproject/tabulator"
-    version: 0.0.9
+    version: 0.0.11
 tiffviewer:
     package: "@galaxyproject/tiffviewer"
-    version: 0.0.3
+    version: 0.0.5
 ts_visjs:
     package: "@galaxyproject/ts_visjs"
     version: 0.0.6
 unipept:
     package: "@galaxyproject/unipept"
     version: 0.0.2
+varri:
+    package: "@galaxyproject/varri"
+    version: 0.0.0
 venn:
     package: "@galaxyproject/venn"
     version: 0.0.8
 vintent:
     package: "@galaxyproject/vintent"
-    version: 0.0.0
+    version: 0.0.4
 vitessce:
     package: "@galaxyproject/vitessce"
     version: 0.0.5

@@ -1,7 +1,6 @@
 import abc
 import logging
 import re
-from typing import Optional
 
 import yaml
 from pydantic import (
@@ -144,7 +143,7 @@ class UrlHeadersConfiguration(UrlHeadersConfig):
 
     def _find_header_in_patterns(
         self, header_name: str, matching_patterns: list[UrlPatternConfig]
-    ) -> Optional[tuple[HeaderConfig, UrlPatternConfig]]:
+    ) -> tuple[HeaderConfig, UrlPatternConfig] | None:
         """
         Find a header configuration in matching patterns.
 

@@ -76,7 +76,7 @@
 
 <script>
 import axios from "axios";
-import { debounce } from "underscore";
+import { debounce } from "lodash";
 
 import { getAppRoot } from "@/onload/loadConfig";
 

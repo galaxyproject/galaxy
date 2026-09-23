@@ -16,6 +16,7 @@ import DataTypes from "@/components/admin/DataTypes.vue";
 import ToolboxDependencies from "@/components/admin/Dependencies/Landing.vue";
 import DisplayApplications from "@/components/admin/DisplayApplications.vue";
 import ErrorStack from "@/components/admin/ErrorStack.vue";
+import GroupForm from "@/components/admin/GroupForm.vue";
 import JobsList from "@/components/admin/JobsList.vue";
 import BroadcastForm from "@/components/admin/Notifications/BroadcastForm.vue";
 import NotificationForm from "@/components/admin/Notifications/NotificationForm.vue";
@@ -206,10 +207,9 @@ export default [
             },
             {
                 path: "form/manage_users_and_roles_for_group",
-                component: FormGeneric,
+                component: GroupForm,
                 props: (route) => ({
-                    url: `/admin/manage_users_and_roles_for_group?id=${route.query.id}`,
-                    redirect: "/admin/groups",
+                    groupId: route.query.id,
                 }),
             },
             {
@@ -226,11 +226,7 @@ export default [
             },
             {
                 path: "form/create_group",
-                component: FormGeneric,
-                props: {
-                    url: "/admin/create_group",
-                    redirect: "/admin/groups",
-                },
+                component: GroupForm,
             },
             {
                 path: "form/create_quota",

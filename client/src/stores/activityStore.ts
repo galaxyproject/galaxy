@@ -32,6 +32,12 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
     const currentDefaultActivities = computed(() => customDefaultActivities.value ?? defaultActivities);
     const isSideBarOpen = computed(() => toggledSideBar.value !== "" && toggledSideBar.value !== "closed");
 
+    const specialPanelActivityIds = ref<Set<string>>(new Set());
+
+    function setSpecialPanelActivityIds(ids: string[]) {
+        specialPanelActivityIds.value = new Set(ids);
+    }
+
     const toggledSideBar = useUserLocalStorage(`activity-store-current-side-bar-${scope}`, "tools");
     const sidePanelWidth = useUserLocalStorage(`activity-store-side-panel-width-${scope}`, 300);
 
@@ -115,7 +121,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
                 }
             });
 
-            const allSideBarsSet = new Set(allSideBars);
+            const allSideBarsSet = new Set([...allSideBars, ...specialPanelActivityIds.value]);
             const firstSideBar = allSideBars[0];
 
             if (firstSideBar && !allSideBarsSet.has(toggledSideBar.value)) {
@@ -229,5 +235,6 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         currentDefaultActivities,
         overrideDefaultActivities,
         resetDefaultActivities,
+        setSpecialPanelActivityIds,
     };
 });

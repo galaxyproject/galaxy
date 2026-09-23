@@ -1,7 +1,6 @@
 import logging
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy.managers.configuration import ConfigurationManager
@@ -22,7 +21,7 @@ router = Router(tags=["context"])
 
 class ContextResponse(Model):
     config: dict[str, Any]
-    session_csrf_token: Optional[str] = None
+    session_csrf_token: str | None = None
     user: dict[str, Any]
 
 

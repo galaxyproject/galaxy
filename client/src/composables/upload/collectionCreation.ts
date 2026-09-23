@@ -5,9 +5,7 @@
 
 import { type Ref, ref } from "vue";
 
-import type { CollectionConfig } from "@/composables/uploadQueue";
-
-import type { CollectionCreationState } from "./collectionTypes";
+import type { CollectionCreationState, UploadCollectionConfig } from "./collectionTypes";
 
 export function useCollectionCreation(collectionConfigComponent?: Ref<{ reset: () => void } | null>) {
     const collectionState = ref<CollectionCreationState>({
@@ -27,9 +25,9 @@ export function useCollectionCreation(collectionConfigComponent?: Ref<{ reset: (
     }
 
     /**
-     * Builds a CollectionConfig for the upload queue if collection creation is active
+     * Builds an UploadCollectionConfig when collection creation is active.
      */
-    function buildCollectionConfig(targetHistoryId: string): CollectionConfig | undefined {
+    function buildCollectionConfig(targetHistoryId: string): UploadCollectionConfig | undefined {
         if (!collectionState.value.config) {
             return undefined;
         }

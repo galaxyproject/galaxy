@@ -50,6 +50,45 @@ export function buildToolEntries(toolIds: string[], toolsById: Record<string, To
     return toolIds.map((id) => [id, toolsById[id]] as [string, Tool]).filter(([, tool]) => tool !== undefined);
 }
 
+/** Extract unique tool IDs from a panel tree, ignoring section labels and unknown object types. */
+export function getUniqueToolIdsInPanel(panel: Record<string, ToolPanelItem> | null | undefined): Set<string> {
+    const toolIds = new Set<string>();
+    for (const item of Object.values(panel || {})) {
+        if (isToolSection(item) && item.tools) {
+            item.tools.forEach((toolOrLabel) => {
+                if (typeof toolOrLabel === "string") {
+                    toolIds.add(toolOrLabel);
+                }
+            });
+        } else if (isTool(item)) {
+            toolIds.add(item.id);
+        }
+    }
+    return toolIds;
+}
+
+type CountableTool = Pick<Tool, "id"> & Partial<Pick<Tool, "version">>;
+
+export function getVersionlessToolId(toolId: string, tool: CountableTool | undefined) {
+    if (tool?.version && toolId.endsWith(`/${tool.version}`)) {
+        return toolId.slice(0, -tool.version.length - 1);
+    }
+    return toolId;
+}
+
+export function countUniqueToolsInList<T extends CountableTool>(tools: Record<string, T> | T[]) {
+    const toolEntries = Array.isArray(tools) ? tools.map((tool) => [tool.id, tool] as const) : Object.entries(tools);
+    const toolIds = new Set<string>();
+    for (const [toolId, tool] of toolEntries) {
+        toolIds.add(getVersionlessToolId(toolId, tool));
+    }
+    return toolIds.size;
+}
+
+export function countUniqueToolsInPanel(panel: Record<string, ToolPanelItem> | null | undefined, fallbackCount = 0) {
+    return getUniqueToolIdsInPanel(panel).size || fallbackCount;
+}
+
 /** Filter panel to only include tools matching the provided tool IDs */
 export function filterPanelByToolIds(
     panel: Record<string, ToolPanelItem>,
@@ -84,6 +123,41 @@ export const UNSECTIONED_SECTION: ToolSection = {
     name: "Unsectioned Tools",
     description: "Tools that don't appear under any section in the unsearched panel",
 } as const;
+
+// Whoosh's `tool_tags` field analyzer lowercases at index time
+// (KeywordAnalyzer(lowercase=True, commas=True) — see lib/galaxy/tools/search/__init__.py).
+// We lowercase the search clause too so a query for `tag:"Get Data"` matches an
+// indexed `get data` regardless of how the parser handles case folding.
+export function escapeQuotedWhooshToken(value: string) {
+    return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+/** Strip surrounding quotes/whitespace from a user-typed tag value. */
+export function normalizeToolTagValue(tag: string | string[]): string {
+    return String(tag)
+        .trim()
+        .replace(/^"(.*)"$/, "$1")
+        .replace(/^'(.*)'$/, "$1");
+}
+
+/** Quote a tag for inline filter text (`tag:foo` vs `tag:"foo bar"`) without lowercasing. */
+export function quoteToolTagValue(tag: string | string[]): string {
+    const normalizedValue = normalizeToolTagValue(tag);
+    return /\s/.test(normalizedValue) ? `"${escapeQuotedWhooshToken(normalizedValue)}"` : normalizedValue;
+}
+
+function normalizeToolTagQueryValue(tag: string): string {
+    const lowered = normalizeToolTagValue(tag).toLowerCase();
+    return /\s/.test(lowered) ? `"${escapeQuotedWhooshToken(lowered)}"` : lowered;
+}
+
+export function buildToolTagClause(tag: string): string {
+    // Always wrap in parens — Whoosh accepts both `field:"phrase"` and
+    // `field:("phrase")`, but the consistent grouped form composes cleanly
+    // when the clause is concatenated with `AND` siblings.
+    const normalizedTag = normalizeToolTagQueryValue(tag);
+    return `tool_tags:(${normalizedTag})`;
+}
 
 export interface SearchCommonKeys {
     [key: string]: number | undefined;
@@ -154,30 +228,53 @@ export function createWorkflowQuery(filterSettings: Record<string, string | bool
  *      return query = "(name:(skew) name_exact:(skew) description:(skew)) AND (edam_topics:(topic_0797) AND )"
  */
 export function createWhooshQuery(filterSettings: ToolFilters) {
-    let query = "(";
-    // add description+name_exact fields = name, to do a combined OrGroup at backend
+    const nameClauses: string[] = [];
+    const filterClauses: string[] = [];
+
     const name = filterSettings["name"];
-    if (name) {
-        query += "name:(" + name + ") ";
-        query += "name_exact:(" + name + ") ";
-        query += "description:(" + name + ")";
+    if (typeof name === "string" && name) {
+        nameClauses.push(`name:(${name})`);
+        nameClauses.push(`name_exact:(${name})`);
+        nameClauses.push(`description:(${name})`);
     }
-    query += ") AND (";
+
     for (const [key, filterValue] of Object.entries(filterSettings)) {
-        if (filterValue) {
+        if (!filterValue || key === "name") {
+            continue;
+        }
+
+        if (key === "tag") {
+            const tags = Array.isArray(filterValue) ? filterValue : [filterValue];
+            const validTags = tags.filter((tag) => !!tag);
+            if (validTags.length > 0) {
+                filterClauses.push(...validTags.map((tag) => buildToolTagClause(tag)));
+            }
+        } else if (typeof filterValue === "string") {
             if (key === "ontology" && filterValue.includes("operation")) {
-                query += "edam_operations:(" + filterValue + ") AND ";
+                filterClauses.push(`edam_operations:(${filterValue})`);
             } else if (key === "ontology" && filterValue.includes("topic")) {
-                query += "edam_topics:(" + filterValue + ") AND ";
-            } else if (key == "id") {
-                query += "id_exact:(" + filterValue + ") AND ";
-            } else if (key != "name") {
-                query += key + ":(" + filterValue + ") AND ";
+                filterClauses.push(`edam_topics:(${filterValue})`);
+            } else if (key === "id") {
+                filterClauses.push(`id_exact:(${filterValue})`);
+            } else {
+                filterClauses.push(`${key}:(${filterValue})`);
             }
         }
     }
-    query += ")";
-    return query;
+
+    if (nameClauses.length > 0 && filterClauses.length > 0) {
+        return `(${nameClauses.join(" ")}) AND (${filterClauses.join(" AND ")})`;
+    }
+
+    if (nameClauses.length > 0) {
+        return `(${nameClauses.join(" ")})`;
+    }
+
+    if (filterClauses.length > 0) {
+        return `(${filterClauses.join(" AND ")})`;
+    }
+
+    return "";
 }
 
 // Determines width given the root and draggable element, smallest and largest size and the current position

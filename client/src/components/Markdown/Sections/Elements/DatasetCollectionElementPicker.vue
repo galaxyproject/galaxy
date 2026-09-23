@@ -40,7 +40,7 @@ function handleInput(value: string) {
 <template>
     <div>
         <b-navbar class="align-items-center">
-            <b-collapse id="nav-text-collapse" is-nav>
+            <div class="navbar-collapse">
                 <b-navbar-nav>
                     <b-nav-text class="mr-3">Select Element</b-nav-text>
                 </b-navbar-nav>
@@ -51,7 +51,7 @@ function handleInput(value: string) {
                         :options="dceToId"
                         @input="handleInput"></b-form-select>
                 </b-nav-form>
-            </b-collapse>
+            </div>
         </b-navbar>
         <slot name="element" :element="value"></slot>
     </div>

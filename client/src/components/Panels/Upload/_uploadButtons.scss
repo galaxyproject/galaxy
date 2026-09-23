@@ -1,0 +1,12 @@
+/** Shared styles for cancel/stop buttons in upload progress UI. */
+
+@mixin cancel-button($class: cancel-btn) {
+    .#{$class} {
+        line-height: 1;
+        vertical-align: baseline;
+
+        &:hover {
+            color: $brand-danger !important;
+        }
+    }
+}

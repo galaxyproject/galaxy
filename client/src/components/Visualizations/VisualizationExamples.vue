@@ -44,7 +44,7 @@ function onSubmit(name: string, url: string, ftype?: string) {
     </div>
     <BDropdown
         v-else-if="urlData && urlData.length > 0"
-        v-b-tooltip.hover
+        v-g-tooltip.hover
         no-caret
         right
         role="button"

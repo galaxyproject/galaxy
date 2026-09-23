@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCollapse } from "bootstrap-vue";
-import slugify from "slugify";
-import { computed } from "vue";
+import { computed, reactive, ref, set } from "vue";
 
 import { useToolTrainingMaterial } from "@/composables/toolTrainingMaterial";
-import { useUid } from "@/composables/utils/uid";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 
@@ -21,11 +20,8 @@ const props = defineProps<{
 const { trainingAvailable, trainingCategories, tutorialDetails, allTutorialsUrl, versionAvailable } =
     useToolTrainingMaterial(props.id, props.name, props.version, props.owner);
 
-const collapseId = useUid("collapse-");
-
-function idForCategory(category: string) {
-    return `${collapseId.value}-${slugify(category)}`;
-}
+const mainOpen = ref(false);
+const categoryOpen = reactive<Record<string, boolean>>({});
 
 function tutorialsInCategory(category: string) {
     return tutorialDetails.value.filter((tut) => tut.category === category);
@@ -38,6 +34,10 @@ const tutorialText = computed(() => {
         return "There is 1 tutorial available which uses this tool.";
     }
 });
+
+function toggleCategory(category: string) {
+    set(categoryOpen, category, !categoryOpen[category]);
+}
 </script>
 
 <template>
@@ -53,20 +53,20 @@ const tutorialText = computed(() => {
             </ExternalLink>
         </p>
 
-        <BButton v-b-toggle="collapseId" class="ui-link">
+        <GButton class="ui-link" transparent inline color="blue" @click="mainOpen = !mainOpen">
             <b>
                 Tutorials available in {{ trainingCategories.length }}
                 {{ trainingCategories.length > 1 ? "categories" : "category" }}
             </b>
             <FontAwesomeIcon :icon="faCaretDown" />
-        </BButton>
-        <BCollapse :id="collapseId">
+        </GButton>
+        <GCollapse v-model="mainOpen">
             <div v-for="category in trainingCategories" :key="category">
-                <BButton v-b-toggle="idForCategory(category)" class="ui-link ml-3">
+                <GButton class="ui-link ml-3" transparent inline color="blue" @click="toggleCategory(category)">
                     {{ category }} ({{ tutorialsInCategory(category).length }})
                     <FontAwesomeIcon :icon="faCaretDown" />
-                </BButton>
-                <BCollapse :id="idForCategory(category)">
+                </GButton>
+                <GCollapse :visible="!!categoryOpen[category]">
                     <ul class="d-flex flex-column my-1">
                         <li v-for="tutorial in tutorialsInCategory(category)" :key="tutorial.title">
                             <ExternalLink :href="tutorial.url.toString()" class="ml-2">
@@ -74,8 +74,22 @@ const tutorialText = computed(() => {
                             </ExternalLink>
                         </li>
                     </ul>
-                </BCollapse>
+                </GCollapse>
             </div>
-        </BCollapse>
+        </GCollapse>
     </div>
 </template>
+
+<style scoped lang="scss">
+// GButton's transparent-blue hover repaints the label near-white, and `.ui-link` keeps
+// the background transparent, so without this the toggles vanish on hover. The extra
+// `.g-*` classes are not decoration: they are what lifts this rule above
+// `.g-button.g-transparent:not(.g-pressed).g-blue:hover`.
+.ui-link.g-button.g-transparent.g-blue:not(.g-pressed) {
+    &:hover,
+    &:focus-visible {
+        color: var(--color-blue-700);
+        text-decoration: underline;
+    }
+}
+</style>

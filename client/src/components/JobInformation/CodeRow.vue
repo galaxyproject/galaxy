@@ -14,7 +14,7 @@
                     <pre :class="codeClass">{{ codeItem }}</pre>
                 </b-col>
                 <b-col
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     class="nopadding pointer"
                     :title="`click to ${action}`"
                     @mousedown="mouseIsDown = true"

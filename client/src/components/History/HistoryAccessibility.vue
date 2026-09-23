@@ -52,7 +52,7 @@ function openSharingTab() {
                     {{ localize("Share or Publish") }}
                     <BBadge
                         v-if="sharingStatusChanged"
-                        v-b-tooltip.hover.noninteractive
+                        v-g-tooltip.hover
                         class="ml-1"
                         :title="localize('Sharing status for this history has changed.')"
                         variant="primary">

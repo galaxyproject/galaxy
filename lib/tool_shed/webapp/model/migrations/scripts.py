@@ -1,7 +1,4 @@
 import os
-from typing import (
-    Optional,
-)
 
 from galaxy.model.migrations.base import pop_arg_from_args
 from galaxy.util.properties import (
@@ -22,7 +19,7 @@ def get_dburl(argv: list[str], cwd: str) -> str:
     return get_dburl_from_file(cwd, config_file)
 
 
-def get_dburl_from_file(cwd: str, config_file: Optional[str] = None) -> str:
+def get_dburl_from_file(cwd: str, config_file: str | None = None) -> str:
     if config_file is None:
         cwds = [cwd, os.path.join(cwd, CONFIG_DIR_NAME)]
         config_file = find_config_file(DEFAULT_CONFIG_NAMES, dirs=cwds)

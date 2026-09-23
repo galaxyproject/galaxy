@@ -1,8 +1,7 @@
 """
 Galaxy AI Agents Module
 
-This module provides AI agent functionality built on pydantic-ai for Galaxy.
-Agents provide specialized assistance for workflows, tool errors, data quality, and more.
+AI agents built on pydantic-ai for Galaxy.
 """
 
 from .base import (
@@ -12,29 +11,31 @@ from .base import (
 )
 from .custom_tool import CustomToolAgent
 from .error_analysis import ErrorAnalysisAgent
+from .gtn_training import GTNTrainingAgent
+from .history import HistoryAgent
 from .orchestrator import WorkflowOrchestratorAgent
-from .registry import AgentRegistry
+from .page_assistant import PageAssistantAgent
+from .registry import (
+    AgentRegistry,
+    build_default_registry,
+)
 from .router import QueryRouterAgent
 from .tools import ToolRecommendationAgent
+from .workflow_report import WorkflowReportAgent
 
 __all__ = [
     "AgentType",
     "BaseGalaxyAgent",
     "GalaxyAgentDependencies",
     "AgentRegistry",
+    "build_default_registry",
     "QueryRouterAgent",
     "ErrorAnalysisAgent",
     "CustomToolAgent",
+    "PageAssistantAgent",
     "WorkflowOrchestratorAgent",
     "ToolRecommendationAgent",
+    "HistoryAgent",
+    "GTNTrainingAgent",
+    "WorkflowReportAgent",
 ]
-
-# Global agent registry instance
-agent_registry = AgentRegistry()
-
-# Register default agents
-agent_registry.register(AgentType.ROUTER, QueryRouterAgent)
-agent_registry.register(AgentType.ERROR_ANALYSIS, ErrorAnalysisAgent)
-agent_registry.register(AgentType.CUSTOM_TOOL, CustomToolAgent)
-agent_registry.register(AgentType.ORCHESTRATOR, WorkflowOrchestratorAgent)
-agent_registry.register(AgentType.TOOL_RECOMMENDATION, ToolRecommendationAgent)

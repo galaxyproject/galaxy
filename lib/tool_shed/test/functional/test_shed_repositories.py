@@ -245,6 +245,43 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         repo = populator.setup_column_maker_and_get_metadata(prefix="repoforinstallinfo")
         populator.get_install_info(repo)
 
+    def test_install_info_is_cacheable(self):
+        populator = self.populator
+        repo = populator.setup_column_maker_and_get_metadata(prefix="repoforinstallinfocache")
+
+        for path in (
+            "repositories/get_repository_revision_install_info",
+            "repositories/install_info",
+        ):
+            response = populator.get_install_info_raw(repo, path=path)
+            api_asserts.assert_status_code_is_ok(response)
+            etag = response.headers["ETag"]
+            assert response.headers["Cache-Control"] == "public, max-age=86400"
+
+            for tag in (etag, f"W/{etag}", f'"unrelated", {etag}'):
+                not_modified = populator.get_install_info_raw(repo, path=path, headers={"If-None-Match": tag})
+                assert not_modified.status_code == 304
+                assert not_modified.content == b""
+                assert not_modified.headers["ETag"] == etag
+
+            stale = populator.get_install_info_raw(repo, path=path, headers={"If-None-Match": '"nolongercurrent"'})
+            api_asserts.assert_status_code_is_ok(stale)
+            assert stale.content == response.content
+
+    def test_install_info_etag_tracks_the_revision(self):
+        populator = self.populator
+        repository = populator.setup_column_maker_repo(prefix="repoforinstallinfoetag")
+        first_metadata = populator.get_metadata(repository, True)
+        first_etag = populator.get_install_info_raw(first_metadata).headers["ETag"]
+
+        populator.update_column_maker_repo(repository)
+        second_metadata = populator.get_metadata(repository, True)
+        second_etag = populator.get_install_info_raw(second_metadata).headers["ETag"]
+
+        assert second_metadata.latest_revision.changeset_revision != first_metadata.latest_revision.changeset_revision
+        assert second_etag != first_etag
+        assert populator.get_install_info_raw(first_metadata).headers["ETag"] == first_etag
+
     def test_get_ordered_installable_revisions(self):
         # Used in ephemeris...
         populator = self.populator

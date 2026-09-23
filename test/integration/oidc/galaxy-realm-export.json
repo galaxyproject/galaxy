@@ -690,6 +690,93 @@
       ],
       "notBefore": 0,
       "groups": []
+    },
+    {
+      "id": "a1c4f0de-0001-4b2a-9f10-2f6c4a8e0001",
+      "createdTimestamp": 1694376671733,
+      "username": "gxyuser_fixed_assoc",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "Test",
+      "lastName": "GalaxyUser",
+      "email": "gxyuser_fixed_assoc@galaxy.org",
+      "credentials": [
+        {
+          "id": "b2d5e1cf-0001-4b2a-9f10-2f6c4a8e0001",
+          "type": "password",
+          "userLabel": "My password",
+          "createdDate": 1694376754826,
+          "secretData": "{\"value\":\"uNBI+UnpCLpXWHhm/tPSnnhuINiNw2MNt1XeDmImJaQ=\",\"salt\":\"fHS/FpnORylnSIco16UHwA==\",\"additionalParameters\":{}}",
+          "credentialData": "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "galaxy-access-role",
+        "default-roles-gxyrealm"
+      ],
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "a1c4f0de-0002-4b2a-9f10-2f6c4a8e0002",
+      "createdTimestamp": 1694376671733,
+      "username": "gxyuser_fixed_relogin",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "Test",
+      "lastName": "GalaxyUser",
+      "email": "gxyuser_fixed_relogin@galaxy.org",
+      "credentials": [
+        {
+          "id": "b2d5e1cf-0002-4b2a-9f10-2f6c4a8e0002",
+          "type": "password",
+          "userLabel": "My password",
+          "createdDate": 1694376754826,
+          "secretData": "{\"value\":\"uNBI+UnpCLpXWHhm/tPSnnhuINiNw2MNt1XeDmImJaQ=\",\"salt\":\"fHS/FpnORylnSIco16UHwA==\",\"additionalParameters\":{}}",
+          "credentialData": "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "galaxy-access-role",
+        "default-roles-gxyrealm"
+      ],
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "a1c4f0de-0003-4b2a-9f10-2f6c4a8e0003",
+      "createdTimestamp": 1694376671733,
+      "username": "gxyuser_fixed_notify",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "Test",
+      "lastName": "GalaxyUser",
+      "email": "gxyuser_fixed_notify@galaxy.org",
+      "credentials": [
+        {
+          "id": "b2d5e1cf-0003-4b2a-9f10-2f6c4a8e0003",
+          "type": "password",
+          "userLabel": "My password",
+          "createdDate": 1694376754826,
+          "secretData": "{\"value\":\"uNBI+UnpCLpXWHhm/tPSnnhuINiNw2MNt1XeDmImJaQ=\",\"salt\":\"fHS/FpnORylnSIco16UHwA==\",\"additionalParameters\":{}}",
+          "credentialData": "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "galaxy-access-role",
+        "default-roles-gxyrealm"
+      ],
+      "notBefore": 0,
+      "groups": []
     }
   ],
   "scopeMappings": [

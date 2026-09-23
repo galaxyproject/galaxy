@@ -9,7 +9,11 @@ galaxy-data.
 import os
 import shutil
 import tempfile
-from typing import Optional
+from types import SimpleNamespace
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
 
 from galaxy import (
     model,
@@ -28,6 +32,9 @@ from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util.bunch import Bunch
+
+if TYPE_CHECKING:
+    from galaxy.tools import SetMetadataTool
 
 GALAXY_TEST_UNITTEST_SECRET = "6e46ed6483a833c100e68cc3f1d0dd76"
 GALAXY_TEST_IN_MEMORY_DB_CONNECTION = "sqlite:///:memory:"
@@ -96,7 +103,7 @@ class GalaxyDataTestApp:
     security_agent: GalaxyRBACAgent
     file_sources: ConfiguredFileSources = NullConfiguredFileSources()
 
-    def __init__(self, config: Optional[GalaxyDataTestConfig] = None, **kwd):
+    def __init__(self, config: GalaxyDataTestConfig | None = None, **kwd):
         config = config or GalaxyDataTestConfig(**kwd)
         self.config = config
         self.security = config.security
@@ -105,13 +112,18 @@ class GalaxyDataTestApp:
         model.setup_global_object_store_for_models(self.object_store)
         self.security_agent = self.model.security_agent
         self.tag_handler = GalaxyTagHandler(self.model.session)
+        # statsd/observability plumbing — stubbed out so paths that read
+        # ``app.execution_timer_factory.galaxy_statsd_client`` (e.g. the
+        # queue-worker instrumentation) degrade to a no-op if ever exercised
+        # against this mock instead of raising ``AttributeError``.
+        self.execution_timer_factory = SimpleNamespace(galaxy_statsd_client=None)
         self.init_datatypes()
 
     def init_datatypes(self):
         datatypes_registry = registry.Registry()
         datatypes_registry.load_datatypes()
         model.set_datatypes_registry(datatypes_registry)
-        datatypes_registry.set_external_metadata_tool = MockSetExternalTool()
+        datatypes_registry.set_external_metadata_tool = cast("SetMetadataTool", MockSetExternalTool())
         self.datatypes_registry = datatypes_registry
 
 

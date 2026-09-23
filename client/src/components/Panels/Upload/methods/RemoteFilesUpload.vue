@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faFolder, faGlobe, faPlus, faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faFolder, faGlobe, faPlus, faTrash, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BFormCheckbox, BFormInput, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
@@ -9,7 +9,9 @@ import { browseRemoteFiles, fetchFileSources, type RemoteEntry } from "@/api/rem
 import type { BreadcrumbItem } from "@/components/Common";
 import type { TableField } from "@/components/Common/GTable.types";
 import { Model } from "@/components/FilesDialog/model";
-import { fileSourcePluginToItem } from "@/components/FilesDialog/utilities";
+import { fileSourcePluginToItem, selectionToArray } from "@/components/FilesDialog/utilities";
+import { urlUploadOptionVisibility } from "@/components/Panels/Upload/shared/uploadOptionVisibility";
+import { getUploadSettingsColumnWidth } from "@/components/Panels/Upload/shared/uploadTableOptionsWidth";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useFileSources } from "@/composables/fileSources";
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
@@ -17,16 +19,17 @@ import { useCollectionCreation } from "@/composables/upload/collectionCreation";
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
 import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
+import { useUploadOptionBindings } from "@/composables/upload/uploadOptionBindings";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
-import { useUploadQueue } from "@/composables/uploadQueue";
 import { useUrlTracker } from "@/composables/urlTracker";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { buildPreparedUpload } from "@/utils/upload";
 import { mapToRemoteFileUpload } from "@/utils/upload/itemMappers";
 import { USER_FILE_PREFIX } from "@/utils/url";
 import { bytesToString } from "@/utils/utils";
 
-import type { UploadMethodComponent, UploadMethodConfig } from "../types";
+import type { PreparedUpload, UploadMethodComponent, UploadMethodConfig } from "../types";
 import type { RemoteFileItem } from "../types/uploadItem";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
@@ -45,10 +48,24 @@ import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue"
 
 interface Props {
     method: UploadMethodConfig;
+    /** History ID where uploaded datasets will be added. */
     targetHistoryId: string;
+    /** Allow creating dataset collections from selected remote files. */
+    allowCollections?: boolean;
+    /** Optional list of allowed formats to constrain selectable extensions. */
+    formats?: string[];
+    /** When false, restrict selection to a single remote file. */
+    multiple?: boolean;
+    /** When true, do not persist staging to the shared store (modal use). */
+    transient?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    allowCollections: true,
+    formats: undefined,
+    multiple: true,
+    transient: false,
+});
 
 const emit = defineEmits<{
     (e: "ready", ready: boolean): void;
@@ -56,18 +73,21 @@ const emit = defineEmits<{
 
 const { advancedMode } = useUploadAdvancedMode();
 
-const uploadQueue = useUploadQueue();
+const optionVisibility = computed(() => urlUploadOptionVisibility(advancedMode.value));
+
 const router = useRouter();
 const filesSources = useFileSources();
 
-const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults();
+const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults(props.formats);
 
 const tableContainerRef = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
 const remoteFileItems = ref<RemoteFileItem[]>([]);
-const { clear: clearStaging } = useUploadStaging<RemoteFileItem>(props.method.id, remoteFileItems);
+const { clear: clearStaging } = useUploadStaging<RemoteFileItem>(props.method.id, remoteFileItems, {
+    disableStore: props.transient,
+});
 
-const { collectionState, handleCollectionStateChange, buildCollectionConfig, resetCollection } =
+const { buildCollectionConfig, collectionState, handleCollectionStateChange, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
 
 let nextId = 1;
@@ -87,9 +107,11 @@ function createRemoteFileItem(id: number, selectionItem: SelectionItem): RemoteF
     };
 }
 
+const isSingleMode = computed(() => props.multiple === false);
+
 const showBrowser = ref(true);
 
-const selectionModel = ref<Model>(new Model({ multiple: true }));
+const selectionModel = ref<Model>(new Model({ multiple: !isSingleMode.value }));
 const selectionCount = ref(0);
 const urlTracker = useUrlTracker<SelectionItem>();
 const browserItems = ref<SelectionItem[]>([]);
@@ -153,6 +175,11 @@ const hasPagination = computed(() => {
 const hasItems = computed(() => remoteFileItems.value.length > 0);
 const hasSelection = computed(() => selectionCount.value > 0);
 
+const addMoreFilesTitle = computed(() =>
+    isSingleMode.value ? "Change selected file" : "Add more remote files to the upload list",
+);
+const addMoreFilesLabel = computed(() => (isSingleMode.value ? "Change selected file" : "Add More Files"));
+
 const breadcrumbs = computed(() => {
     const crumbs: BreadcrumbItem[] = [{ title: "Sources", index: -1 }];
     urlTracker.navigationHistory.value.forEach((item, index) => {
@@ -164,6 +191,10 @@ const breadcrumbs = computed(() => {
 const { isNameValid, restoreOriginalName } = useUploadItemValidation();
 
 const bulk = useBulkUploadOperations(remoteFileItems, effectiveExtensions);
+const { headerOptionProps, headerOptionEvents, getRowOptionProps, getRowOptionEvents } = useUploadOptionBindings(
+    bulk,
+    optionVisibility,
+);
 
 const { isReadyToUpload } = useUploadReadyState(hasItems, collectionState);
 
@@ -375,7 +406,12 @@ function isSelected(item: SelectionItem): boolean {
 }
 
 function addSelectedFiles() {
-    const selectedItems = selectionModel.value.finalize() as SelectionItem[];
+    let selectedItems = selectionToArray(selectionModel.value.finalize());
+
+    if (isSingleMode.value) {
+        selectedItems = selectedItems.slice(0, 1);
+        remoteFileItems.value = [];
+    }
 
     // Filter out any items that already exist in remoteFileItems
     const existingUrls = new Set(remoteFileItems.value.map((item) => item.url));
@@ -387,7 +423,7 @@ function addSelectedFiles() {
     }
 
     // Clear selection and switch to table view
-    selectionModel.value = new Model({ multiple: true });
+    selectionModel.value = new Model({ multiple: !isSingleMode.value });
     selectionCount.value = 0;
     showBrowser.value = false;
     scrollToBottom();
@@ -412,6 +448,11 @@ function scrollToBottom() {
 
 function removeItem(id: number) {
     remoteFileItems.value = remoteFileItems.value.filter((item) => item.id !== id);
+
+    if (remoteFileItems.value.length === 0) {
+        showBrowser.value = true;
+        resetCollection();
+    }
 }
 
 function createNewFileSource() {
@@ -448,7 +489,7 @@ const browserFields: TableField[] = [
 ];
 
 // File list table fields
-const tableFields: TableField[] = [
+const tableFields = computed<TableField[]>(() => [
     {
         key: "name",
         label: "Name",
@@ -490,6 +531,7 @@ const tableFields: TableField[] = [
         key: "options",
         label: "Upload Settings",
         sortable: false,
+        width: getUploadSettingsColumnWidth(optionVisibility.value),
         align: "center",
     },
     {
@@ -499,12 +541,12 @@ const tableFields: TableField[] = [
         width: "50px",
         align: "center",
     },
-];
+]);
 
-function clearAll() {
+function reset() {
     remoteFileItems.value = [];
     resetCollection();
-    selectionModel.value = new Model({ multiple: true });
+    selectionModel.value = new Model({ multiple: !isSingleMode.value });
     selectionCount.value = 0;
     allFetchedItems.value = [];
     clearSearch();
@@ -512,6 +554,7 @@ function clearAll() {
     currentPage.value = 1;
     load();
     showBrowser.value = true;
+    clearStaging();
 }
 
 function clearSearch() {
@@ -522,21 +565,13 @@ function updateSearchQuery(newQuery: string) {
     searchQuery.value = newQuery;
 }
 
-function startUpload() {
+function prepareUpload(): PreparedUpload | null {
+    if (remoteFileItems.value.length === 0) {
+        return null;
+    }
+
     const uploads = remoteFileItems.value.map((item) => mapToRemoteFileUpload(item, props.targetHistoryId));
-    const collectionConfig = buildCollectionConfig(props.targetHistoryId);
-
-    uploadQueue.enqueue(uploads, collectionConfig);
-
-    // Reset state
-    remoteFileItems.value = [];
-    clearStaging();
-    showBrowser.value = true;
-    resetCollection();
-    selectionModel.value = new Model({ multiple: true });
-    selectionCount.value = 0;
-    clearSearch();
-    urlTracker.reset();
+    return buildPreparedUpload(uploads, buildCollectionConfig(props.targetHistoryId));
 }
 
 onMounted(() => {
@@ -577,7 +612,7 @@ function getItemEntry(item: SelectionItem): RemoteEntry {
     return item.entry as RemoteEntry;
 }
 
-defineExpose<UploadMethodComponent>({ startUpload });
+defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 </script>
 
 <template>
@@ -632,7 +667,10 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     <!-- Select column header (select all) -->
                     <template v-slot:head(select)>
                         <BFormCheckbox
-                            v-if="!urlTracker.isAtRoot.value && filesOnCurrentPage.length > 0"
+                            v-if="
+                                props.multiple !== false && !urlTracker.isAtRoot.value && filesOnCurrentPage.length > 0
+                            "
+                            data-test-id="remote-files-select-all"
                             :checked="allFilesSelected"
                             :indeterminate="someFilesSelected"
                             @change="toggleSelectAll"
@@ -643,6 +681,8 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     <template v-slot:cell(select)="{ item }">
                         <BFormCheckbox
                             v-if="item.isLeaf"
+                            data-test-id="remote-files-browser-item-checkbox"
+                            :data-label="item.label"
                             :checked="isSelected(item)"
                             @change="toggleFileSelection(item)"
                             @click.stop />
@@ -652,13 +692,13 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     <template v-slot:cell(user)="{ item }">
                         <span
                             v-if="urlTracker.isAtRoot.value && !item.isLeaf && item.url.startsWith(USER_FILE_PREFIX)"
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover.noninteractive
                             title="You created this file source">
                             <FontAwesomeIcon :icon="faUser" class="text-primary" fixed-width />
                         </span>
                         <span
                             v-else-if="urlTracker.isAtRoot.value && !item.isLeaf"
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover.noninteractive
                             title="This file source was created by an administrator and is globally available">
                             <FontAwesomeIcon :icon="faGlobe" class="text-primary" fixed-width />
                         </span>
@@ -672,7 +712,13 @@ defineExpose<UploadMethodComponent>({ startUpload });
                                 :icon="faFolder"
                                 class="mr-2 text-warning"
                                 fixed-width />
-                            <span>{{ item.label }}</span>
+                            <span
+                                class="remote-files-browser-label"
+                                data-test-id="remote-files-browser-label"
+                                :data-label="item.label"
+                                :data-entry-kind="item.isLeaf ? 'file' : 'directory'">
+                                {{ item.label }}
+                            </span>
                         </div>
                     </template>
 
@@ -721,6 +767,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     color="blue"
                     :disabled="!hasSelection"
                     class="ml-auto"
+                    data-test-id="remote-files-add-selected"
                     @click="addSelectedFiles">
                     <FontAwesomeIcon :icon="faPlus" class="mr-1" />
                     Add Selected Files ({{ selectionCount }})
@@ -799,47 +846,31 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                     <!-- Options column with bulk checkboxes -->
                     <template v-slot:head(options)>
-                        <UploadTableOptionsHeader
-                            :all-space-to-tab="bulk.allSpaceToTab.value"
-                            :space-to-tab-indeterminate="bulk.spaceToTabIndeterminate.value"
-                            :show-posix="advancedMode"
-                            :all-to-posix-lines="bulk.allToPosixLines.value"
-                            :to-posix-lines-indeterminate="bulk.toPosixLinesIndeterminate.value"
-                            :show-deferred="true"
-                            :all-deferred="bulk.allDeferred.value"
-                            :deferred-indeterminate="bulk.deferredIndeterminate.value"
-                            @toggle-space-to-tab="bulk.toggleAllSpaceToTab"
-                            @toggle-to-posix-lines="bulk.toggleAllToPosixLines"
-                            @toggle-deferred="bulk.toggleAllDeferred" />
+                        <UploadTableOptionsHeader v-bind="headerOptionProps" v-on="headerOptionEvents" />
                     </template>
 
                     <template v-slot:cell(options)="{ item }">
-                        <UploadTableOptionsCell
-                            :space-to-tab="item.spaceToTab"
-                            :show-posix="advancedMode"
-                            :to-posix-lines="item.toPosixLines"
-                            :show-deferred="true"
-                            :deferred="item.deferred"
-                            @updateSpaceToTab="item.spaceToTab = $event"
-                            @updateToPosixLines="item.toPosixLines = $event"
-                            @updateDeferred="item.deferred = $event" />
+                        <UploadTableOptionsCell v-bind="getRowOptionProps(item)" v-on="getRowOptionEvents(item)" />
                     </template>
 
                     <!-- Actions column -->
                     <template v-slot:cell(actions)="{ item }">
-                        <button
-                            v-b-tooltip.hover.noninteractive
-                            class="btn btn-link text-danger remove-btn"
+                        <GButton
+                            v-g-tooltip.hover
+                            class="remove-btn"
+                            outline
+                            transparent
                             title="Remove file from list"
                             @click="removeItem(item.id)">
-                            <FontAwesomeIcon :icon="faTimes" />
-                        </button>
+                            <FontAwesomeIcon :icon="faTrash" />
+                        </GButton>
                     </template>
                 </GTable>
             </div>
 
             <!-- Collection Creation Section -->
             <CollectionCreationConfig
+                v-if="props.allowCollections !== false"
                 ref="collectionConfigComponent"
                 :files="remoteFileItems"
                 @update:state="handleCollectionStateChange" />
@@ -849,10 +880,10 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     color="grey"
                     tooltip
                     tooltip-placement="top"
-                    title="Add more remote files to the upload list"
+                    :title="addMoreFilesTitle"
                     @click="showFileBrowser">
                     <FontAwesomeIcon :icon="faPlus" class="mr-1" />
-                    Add More Files
+                    {{ addMoreFilesLabel }}
                 </GButton>
                 <GButton
                     outline
@@ -860,7 +891,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     tooltip
                     tooltip-placement="top"
                     title="Remove all files from the upload list"
-                    @click="clearAll">
+                    @click="reset">
                     Clear All
                 </GButton>
             </div>
@@ -911,6 +942,10 @@ defineExpose<UploadMethodComponent>({ startUpload });
         &:hover {
             background-color: rgba($brand-primary, 0.05);
         }
+    }
+
+    .remote-files-browser-label {
+        text-align: start;
     }
 }
 

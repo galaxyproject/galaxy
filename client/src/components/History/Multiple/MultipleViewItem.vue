@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
+import { userOwnsHistory } from "@/api";
+import { useConfig } from "@/composables/config";
 import { useExtendedHistory } from "@/composables/detailedHistory";
+import { addHistoryViewerSubscription, removeHistoryViewerSubscription } from "@/composables/useNotificationSSE";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import CollectionPanel from "@/components/History/CurrentCollection/CollectionPanel.vue";
 import HistoryNavigation from "@/components/History/CurrentHistory/HistoryNavigation.vue";
 import HistoryPanel from "@/components/History/CurrentHistory/HistoryPanel.vue";
@@ -24,6 +28,8 @@ const props = defineProps<Props>();
 
 const historyStore = useHistoryStore();
 const { currentHistoryId, pinnedHistories } = storeToRefs(historyStore);
+const { currentUser } = storeToRefs(useUserStore());
+const { config } = useConfig();
 
 const { history } = useExtendedHistory(props.source.id);
 
@@ -32,6 +38,31 @@ const selectedCollections = ref<any[]>([]);
 const sameToCurrent = computed(() => {
     return currentHistoryId.value === props.source.id;
 });
+
+// Owner routing covers histories the current user owns; only non-owned
+// histories need a viewer subscription. Skip in polling mode — there's no
+// SSE channel to push events to and the REST call would still hit the queue.
+const needsViewerSubscription = computed(() => {
+    if (!config.value?.enable_sse_updates) {
+        return false;
+    }
+    if (!history.value || !currentUser.value) {
+        return false;
+    }
+    return !userOwnsHistory(currentUser.value, history.value);
+});
+
+watch(
+    [needsViewerSubscription, () => props.source.id],
+    ([subscribe, id], _previous, onCleanup) => {
+        if (!subscribe || !id) {
+            return;
+        }
+        addHistoryViewerSubscription(id);
+        onCleanup(() => removeHistoryViewerSubscription(id));
+    },
+    { immediate: true },
+);
 
 function onViewCollection(collection: object) {
     selectedCollections.value = [...selectedCollections.value, collection];
@@ -48,25 +79,27 @@ function onViewCollection(collection: object) {
     <div v-else id="list-item" class="d-flex flex-column w-100">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <BButton
-                    size="sm"
+                <GButton
+                    size="small"
                     class="my-1"
+                    color="blue"
+                    outline
                     :disabled="sameToCurrent"
-                    :variant="sameToCurrent ? 'disabled' : 'outline-info'"
                     :title="sameToCurrent ? 'Current History' : 'Switch to this history'"
                     @click="historyStore.setCurrentHistory(source.id)">
                     {{ sameToCurrent ? "Current History" : "Switch to" }}
-                </BButton>
-                <BButton
+                </GButton>
+                <GButton
                     v-if="Object.keys(pinnedHistories).length > 0"
-                    size="sm"
+                    size="small"
                     class="my-1"
-                    variant="outline-danger"
+                    color="red"
+                    outline
                     title="Hide this history from the list"
                     @click="historyStore.unpinHistories([source.id])">
                     <FontAwesomeIcon :icon="faTimes" />
                     Hide
-                </BButton>
+                </GButton>
             </div>
 
             <HistoryNavigation :history="history" minimal />

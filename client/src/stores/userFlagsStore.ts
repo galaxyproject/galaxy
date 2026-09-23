@@ -10,14 +10,24 @@ export const useUserFlagsStore = defineStore("userFlagsStore", () => {
         "user-flags-store-preferred-form-select",
         "none" as PreferredFormSelect,
     );
+    const showStorageOperationsHelperPopover = useUserLocalStorage(
+        "user-flags-store-show-storage-operations-helper-popover",
+        true,
+    );
 
     function ignoreSelectionQueryBreakWarning() {
         showSelectionQueryBreakWarning.value = false;
+    }
+
+    function ignoreStorageOperationsHelperPopover() {
+        showStorageOperationsHelperPopover.value = false;
     }
 
     return {
         showSelectionQueryBreakWarning,
         ignoreSelectionQueryBreakWarning,
         preferredFormSelectElement,
+        showStorageOperationsHelperPopover,
+        ignoreStorageOperationsHelperPopover,
     };
 });

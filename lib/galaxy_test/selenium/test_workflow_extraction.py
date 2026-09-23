@@ -1,14 +1,11 @@
 """Selenium tests for workflow extraction UI.
 
-Tests the user-facing workflow extraction UI (Mako-based build_from_current_history page)
-while reusing test setup infrastructure from API tests.
-
-TODO: Add test for disabled/non-workflow tools shown as disabled (toolFormDisabled class).
+Tests the user-facing workflow extraction form at /histories/:historyId/extract_workflow,
+reusing test setup infrastructure from API tests.
 """
 
 from typing import (
     cast,
-    Optional,
 )
 
 from galaxy_test.base.populators import skip_without_tool
@@ -62,7 +59,7 @@ class TestWorkflowExtractionSelenium(SeleniumTestCase, WorkflowStructureAssertio
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         return hdca, job_ids_run1 + job_ids_run2
 
-    def setup_copied_cat1_history(self, history_id: str) -> Optional[str]:
+    def setup_copied_cat1_history(self, history_id: str) -> str | None:
         """Run cat1 in one history, copy outputs to given history.
 
         Returns: cat1 job_id associated with the copied datasets.
@@ -132,9 +129,9 @@ class TestWorkflowExtractionSelenium(SeleniumTestCase, WorkflowStructureAssertio
         self.workflow_populator.run_workflow(
             """
 class: GalaxyWorkflow
+inputs:
+  text_input1: collection
 steps:
-  - label: text_input1
-    type: input_collection
   - label: noop
     tool_id: cat1
     state:
@@ -155,21 +152,11 @@ test_data:
 
     # --- UI Extraction Helpers ---
 
-    def extract_workflow_set_name(self, name: str):
-        """Set the workflow name in extraction form."""
-        name_input = self.components.workflow_extract.workflow_name_input.wait_for_visible()
-        name_input.clear()
-        name_input.send_keys(name)
-
-    def extract_workflow_submit(self):
-        """Submit the extraction form."""
-        self.components.workflow_extract.create_button.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-
     def extract_workflow_toggle_job(self, job_id: str):
-        """Toggle a specific job checkbox by job_id."""
-        checkbox = self.components.workflow_extract.job_checkbox(job_id=job_id)
-        checkbox.wait_for_and_click()
+        """Toggle the selection checkbox for a specific job card by job_id."""
+        checkbox = self.components.workflow_extract.card_checkbox_by_job_id(job_id=job_id)
+        element = checkbox.wait_for_present()
+        self.execute_script_click(element)
 
     def find_workflow_by_name(self, name: str) -> str:
         """Find workflow ID by name via API. Returns most recently created if multiple match."""
@@ -187,85 +174,122 @@ test_data:
         workflow_id = self.find_workflow_by_name(name)
         return self.workflow_populator.download_workflow(workflow_id)
 
-    def extract_workflow_and_download(self, name: str, screenshot_name: Optional[str] = None) -> dict:
+    def extract_workflow_and_download(self, name: str, screenshot_name: str | None = None) -> dict:
         """Navigate to extraction, submit form, return downloaded workflow."""
         self.navigate_to_workflow_extraction()
         if screenshot_name:
             self.screenshot(screenshot_name)
-        self.extract_workflow_set_name(name)
-        self.extract_workflow_submit()
-        self.switch_to_default_content()
+        self.extract_workflow_name_and_submit(name)
         return self.get_workflow_by_name(name)
 
     def count_job_checkboxes(self) -> int:
-        """Count the number of job checkboxes visible."""
-        checkboxes = self.find_elements_by_selector('input[name="job_ids"]')
-        return len(checkboxes)
+        """Count the number of tool-step cards in the extraction form."""
+        return len(self.components.workflow_extract.tool_card_checkbox.all())
 
     def count_checked_job_checkboxes(self) -> int:
-        """Count number of checked job checkboxes."""
-        return len(self.find_elements_by_selector('input[name="job_ids"]:checked'))
+        """Count the number of checked tool-step cards."""
+        return len(self.components.workflow_extract.tool_card_checkbox_checked.all())
 
     def get_job_checkbox_values(self) -> list:
-        """Get all job checkbox values (job IDs) from the rendered UI."""
-        checkboxes = self.find_elements_by_selector('input[name="job_ids"]')
-        return [cb.get_attribute("value") for cb in checkboxes]
+        """Get job IDs from all tool-step cards."""
+        cards = self.components.workflow_extract.tool_card_with_job_id.all()
+        return [card.get_attribute("data-job-id") for card in cards]
+
+    def extract_workflow_toggle_output_star(self, job_id: str):
+        """Star/un-star the first output of the tool card for the given job.
+        The star button in WorkflowExtractionCard.vue is disabled while
+        `!props.job.checked` — a regression that defaults cards to
+        unchecked turns the click into a silent no-op, so the test surfaces
+        the bug directly rather than via a downstream timeout."""
+        star = self.components.workflow_extract.output_star_for_job(job_id=job_id).wait_for_present()
+        assert not star.get_attribute("disabled"), f"star for job {job_id} is disabled — its card is unchecked"
+        self.execute_script_click(star)
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+    def extract_workflow_rename_output(self, job_id: str, new_label: str):
+        """Click the output label button, type a new label in the modal, and
+        click the modal OK button. Requires the output to already be starred
+        (label button is v-if=output.exposed)."""
+        label_button = self.components.workflow_extract.output_label_for_job(job_id=job_id).wait_for_present()
+        self.execute_script_click(label_button)
+        self.components.workflow_extract.output_rename_input.wait_for_and_clear_and_send_keys(new_label)
+        self.components.workflow_extract.output_rename_confirm.wait_for_and_click()
+        # Modal closes asynchronously after the rename callback resolves.
+        self.components.workflow_extract.output_rename_input.wait_for_absent()
+
+    def extract_workflow_cancel_rename_output(self, job_id: str):
+        """Open the rename modal, type some text, and dismiss without
+        confirming. Asserts the modal closes without applying the rename."""
+        label_button = self.components.workflow_extract.output_label_for_job(job_id=job_id).wait_for_present()
+        self.execute_script_click(label_button)
+        self.components.workflow_extract.output_rename_input.wait_for_and_clear_and_send_keys("discarded label")
+        self.components.workflow_extract.output_rename_cancel.wait_for_and_click()
+        self.components.workflow_extract.output_rename_input.wait_for_absent()
+
+    def count_active_output_stars(self) -> int:
+        return len(self.components.workflow_extract.all_active_output_stars.all())
 
     @selenium_test
     @managed_history
     def test_extract_form_loads(self):
-        """Verify extraction form displays for empty history."""
+        """Verify extraction form displays for empty history with appropriate message."""
         self.navigate_to_workflow_extraction()
 
-        # Form should be visible
-        self.components.workflow_extract.workflow_name_input.wait_for_visible()
-        self.components.workflow_extract.create_button.wait_for_visible()
+        # For an empty history the form shows an info message, not the name/submit controls
+        self.components.workflow_extract.no_workflow_message.wait_for_visible()
 
-        # No jobs should be listed for empty history
+        # No tool-step cards for empty history
         job_count = self.count_job_checkboxes()
-        assert job_count == 0, f"Expected 0 job checkboxes for empty history, found {job_count}"
+        assert job_count == 0, f"Expected 0 job cards for empty history, found {job_count}"
 
         self.screenshot("workflow_extract_empty_history")
-
-        # Switch back to default content
-        self.switch_to_default_content()
 
     @skip_without_tool("random_lines1")
     @selenium_test
     @managed_history
     def test_extract_form_validation(self):
-        """Test form validation: no jobs selected creates workflow with only inputs."""
+        """Test form validation: submit is blocked when no steps are selected."""
         history_id = self.current_history_id()
         self.setup_mapped_collection_history(history_id)
 
         self.navigate_to_workflow_extraction()
 
-        # Verify initial state: 2 jobs (1 per batch run over collection)
-        assert self.count_job_checkboxes() == 2, "Expected exactly 2 job checkboxes"
-        assert self.count_checked_job_checkboxes() == 2, "Expected both jobs checked initially"
+        # Verify initial state: 2 tool-step cards, both checked
+        assert self.count_job_checkboxes() == 2, "Expected exactly 2 tool-step cards"
+        assert self.count_checked_job_checkboxes() == 2, "Expected both tool steps checked initially"
 
-        # Uncheck ALL jobs using IDs from rendered checkboxes
+        # Set a workflow name first
+        self.extract_workflow_set_name("Selenium Validation Test")
+
+        # Uncheck ALL cards (tool steps + input cards) so the workflow would have no steps
         rendered_job_ids = self.get_job_checkbox_values()
+        for job_id in rendered_job_ids:
+            self.extract_workflow_toggle_job(job_id)
+        # Also uncheck any remaining checked cards (e.g. input_collection / input_dataset)
+        for element in self.components.workflow_extract.all_card_checkboxes_checked.all():
+            self.execute_script_click(element)
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        assert self.count_checked_job_checkboxes() == 0, "Expected 0 tool steps checked after unchecking all"
+
+        self.screenshot("workflow_extract_no_steps_selected")
+
+        # Create button should be disabled when no steps are selected
+        create_button = self.components.workflow_extract.create_button.wait_for_visible()
+        assert (
+            create_button.get_attribute("aria-disabled") == "true"
+        ), "Expected create button to be disabled with no steps selected"
+
+        # Re-check tool steps — submit should now work
         for job_id in rendered_job_ids:
             self.extract_workflow_toggle_job(job_id)
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        assert self.count_checked_job_checkboxes() == 0, "Expected 0 jobs checked after unchecking all"
-
-        self.screenshot("workflow_extract_no_jobs_selected")
-
-        # Submit with no jobs - should still work (creates workflow with only input step)
-        workflow_name = "Selenium Empty Selection"
-        self.extract_workflow_set_name(workflow_name)
+        assert self.count_checked_job_checkboxes() == 2, "Expected tool steps checked again"
         self.extract_workflow_submit()
-        self.switch_to_default_content()
 
-        # Verify workflow was created with only input step (no tool steps)
-        workflow = self.get_workflow_by_name(workflow_name)
-        assert workflow is not None, "Expected workflow to be created even with no jobs selected"
-        self.assert_steps_of_type(workflow, "tool", expected_len=0)
-        # Should have 1 collection input step from the paired collection
-        self.assert_steps_of_type(workflow, "data_collection_input", expected_len=1)
+        workflow = self.get_workflow_by_name("Selenium Validation Test")
+        assert workflow is not None
 
     @skip_without_tool("cat1")
     @selenium_test
@@ -283,27 +307,24 @@ test_data:
         self.screenshot("workflow_extract_with_jobs")
 
         # Verify checkbox starts checked
-        initial_checked = self.find_elements_by_selector('input[name="job_ids"]:checked')
-        assert len(initial_checked) == 1, f"Expected 1 checked job checkbox, found {len(initial_checked)}"
+        assert self.count_checked_job_checkboxes() == 1, "Expected 1 tool-step card checked initially"
 
         # Toggle checkbox off
         self.extract_workflow_toggle_job(cat1_job_id)
         self.sleep_for(self.wait_types.UX_RENDER)
-        cat1_checkbox = self.find_element_by_selector(f'input[name="job_ids"][value="{cat1_job_id}"]')
+        cat1_checkbox = self.components.workflow_extract.card_checkbox_by_job_id(job_id=cat1_job_id).wait_for_present()
         assert not cat1_checkbox.is_selected(), "Expected checkbox unchecked after toggle"
 
         # Toggle back on
         self.extract_workflow_toggle_job(cat1_job_id)
         self.sleep_for(self.wait_types.UX_RENDER)
-        cat1_checkbox = self.find_element_by_selector(f'input[name="job_ids"][value="{cat1_job_id}"]')
+        cat1_checkbox = self.components.workflow_extract.card_checkbox_by_job_id(job_id=cat1_job_id).wait_for_present()
         assert cat1_checkbox.is_selected(), "Expected checkbox checked after second toggle"
         self.screenshot("workflow_extract_toggle_checkbox")
 
         # Extract workflow and verify structure
         workflow_name = "Selenium Extracted Cat1"
-        self.extract_workflow_set_name(workflow_name)
-        self.extract_workflow_submit()
-        self.switch_to_default_content()
+        self.extract_workflow_name_and_submit(workflow_name)
 
         workflow = self.get_workflow_by_name(workflow_name)
         self.assert_cat1_workflow_structure(workflow)
@@ -330,8 +351,8 @@ test_data:
         self.sleep_for(self.wait_types.UX_RENDER)
 
         # Verify first job unchecked, second job still checked
-        checkbox1 = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id_first}"]')
-        checkbox2 = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id_second}"]')
+        checkbox1 = self.components.workflow_extract.card_checkbox_by_job_id(job_id=job_id_first).wait_for_present()
+        checkbox2 = self.components.workflow_extract.card_checkbox_by_job_id(job_id=job_id_second).wait_for_present()
         assert not checkbox1.is_selected(), f"Expected job {job_id_first} unchecked"
         assert checkbox2.is_selected(), f"Expected job {job_id_second} still checked"
 
@@ -339,9 +360,7 @@ test_data:
 
         # Submit extraction
         workflow_name = "Selenium Job Subset"
-        self.extract_workflow_set_name(workflow_name)
-        self.extract_workflow_submit()
-        self.switch_to_default_content()
+        self.extract_workflow_name_and_submit(workflow_name)
 
         # Verify extracted workflow has 2 steps (1 input + 1 tool from second run only)
         workflow = self.get_workflow_by_name(workflow_name)
@@ -368,9 +387,7 @@ test_data:
 
         # Extract and verify structure
         workflow_name = "Selenium Copied Inputs"
-        self.extract_workflow_set_name(workflow_name)
-        self.extract_workflow_submit()
-        self.switch_to_default_content()
+        self.extract_workflow_name_and_submit(workflow_name)
 
         workflow = self.get_workflow_by_name(workflow_name)
         self.assert_cat1_workflow_structure(workflow)
@@ -411,9 +428,7 @@ test_data:
         self.screenshot("workflow_extract_reduce_collection")
 
         workflow_name = "Selenium Reduce Collection"
-        self.extract_workflow_set_name(workflow_name)
-        self.extract_workflow_submit()
-        self.switch_to_default_content()
+        self.extract_workflow_name_and_submit(workflow_name)
 
         workflow = self.get_workflow_by_name(workflow_name)
         # Should have 3 steps (1 collection input + 2 tools)
@@ -442,9 +457,7 @@ test_data:
         self.screenshot("workflow_extract_output_collections")
 
         workflow_name = "Selenium Output Collections"
-        self.extract_workflow_set_name(workflow_name)
-        self.extract_workflow_submit()
-        self.switch_to_default_content()
+        self.extract_workflow_name_and_submit(workflow_name)
 
         workflow = self.get_workflow_by_name(workflow_name)
         # Should have 5 steps (2 data inputs + 3 tools)
@@ -465,12 +478,16 @@ test_data:
         # one cat1 job per list element (typically 2, but may vary).
         job_count = self.count_job_checkboxes()
         assert job_count >= 1, f"Expected at least 1 job checkbox, found {job_count}"
+        mapped_cards = self.components.workflow_extract.mapped_tool_card.all()
+        assert len(mapped_cards) >= 1, "Expected at least one mapped-tool card on a list:paired mapped flow"
+        for card in mapped_cards:
+            assert card.get_attribute("data-icj-id"), "mapped-tool card missing data-icj-id"
+        mapped_badges = self.components.workflow_extract.mapped_badge.all()
+        assert len(mapped_badges) >= len(mapped_cards), "Expected mapped-tool cards to show a Mapped badge"
         self.screenshot("workflow_extract_nested_collection")
 
         workflow_name = "Selenium Nested Collection"
-        self.extract_workflow_set_name(workflow_name)
-        self.extract_workflow_submit()
-        self.switch_to_default_content()
+        self.extract_workflow_name_and_submit(workflow_name)
 
         workflow = self.get_workflow_by_name(workflow_name)
         # Should have 2 steps (1 collection input + 1 tool)
@@ -478,3 +495,83 @@ test_data:
 
         # Verify collection input is list:paired
         self.assert_input_step_collection_type(workflow, "list:paired")
+
+    @skip_without_tool("cat1")
+    @selenium_test
+    @managed_history
+    def test_extract_output_star_and_label_creates_workflow_output(self):
+        """Star + rename an output via the extraction UI, submit, and confirm
+        the downloaded workflow carries the renamed workflow_output."""
+        history_id = self.current_history_id()
+        cat1_job_id = self.setup_cat1_history(history_id)
+
+        self.navigate_to_workflow_extraction()
+        assert self.count_active_output_stars() == 0, "Outputs must default to unstarred"
+
+        self.extract_workflow_toggle_output_star(cat1_job_id)
+        self.components.workflow_extract.output_star_active_for_job(job_id=cat1_job_id).wait_for_present()
+        self.screenshot("workflow_extract_output_starred")
+
+        self.extract_workflow_rename_output(cat1_job_id, "cat1 result")
+
+        workflow_name = "Selenium Star And Label"
+        self.extract_workflow_name_and_submit(workflow_name)
+
+        workflow = self.get_workflow_by_name(workflow_name)
+        tool_steps = self.assert_steps_of_type(workflow, "tool", expected_len=1)
+        outputs = tool_steps[0]["workflow_outputs"]
+        assert len(outputs) == 1, outputs
+        assert outputs[0]["output_name"] == "out_file1"
+        assert outputs[0]["label"] == "cat1 result"
+
+    @skip_without_tool("cat1")
+    @selenium_test
+    @managed_history
+    def test_extract_default_off_creates_no_workflow_outputs(self):
+        """Regression-guards the 'stars default off' UX decision: extracting
+        without touching stars must produce a workflow with no workflow_outputs."""
+        history_id = self.current_history_id()
+        self.setup_cat1_history(history_id)
+
+        self.navigate_to_workflow_extraction()
+        # Pin the UX default at the source: no stars active on initial render.
+        # Catches a regression that flips the default to on before the
+        # downstream workflow_outputs assertion would.
+        assert self.count_active_output_stars() == 0, "Outputs must default to unstarred"
+        self.screenshot("workflow_extract_default_no_outputs")
+
+        workflow_name = "Selenium Default No Outputs"
+        self.extract_workflow_name_and_submit(workflow_name)
+
+        workflow = self.get_workflow_by_name(workflow_name)
+        tool_steps = self.assert_steps_of_type(workflow, "tool", expected_len=1)
+        assert tool_steps[0]["workflow_outputs"] == [], tool_steps[0]["workflow_outputs"]
+
+    @skip_without_tool("cat1")
+    @selenium_test
+    @managed_history
+    def test_extract_cancel_rename_preserves_star_and_default_label(self):
+        """Cancelling the rename modal must leave the output starred but
+        keep the default label (no workflow_output label applied)."""
+        history_id = self.current_history_id()
+        cat1_job_id = self.setup_cat1_history(history_id)
+
+        self.navigate_to_workflow_extraction()
+        self.extract_workflow_toggle_output_star(cat1_job_id)
+        self.components.workflow_extract.output_star_active_for_job(job_id=cat1_job_id).wait_for_present()
+        self.extract_workflow_cancel_rename_output(cat1_job_id)
+        # Star must remain active after cancel.
+        self.components.workflow_extract.output_star_active_for_job(job_id=cat1_job_id).wait_for_present()
+
+        workflow_name = "Selenium Cancel Rename"
+        self.extract_workflow_name_and_submit(workflow_name)
+
+        workflow = self.get_workflow_by_name(workflow_name)
+        tool_steps = self.assert_steps_of_type(workflow, "tool", expected_len=1)
+        outputs = tool_steps[0]["workflow_outputs"]
+        assert len(outputs) == 1, outputs
+        assert outputs[0]["output_name"] == "out_file1"
+        # WorkflowExtractionForm's onOutputToggle auto-fills the label from
+        # suggested_name on star, so the label is non-empty even with no
+        # rename; the only invariant is that the cancelled rename did NOT apply.
+        assert outputs[0]["label"] != "discarded label", outputs[0]

@@ -1,6 +1,8 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
+    faBan,
     faCheck,
+    faClock,
     faCloud,
     faExclamationTriangle,
     faLayerGroup,
@@ -12,7 +14,7 @@ import type { UploadItem } from "@/composables/upload/uploadItemTypes";
 
 import type { UploadMethod } from "./types";
 import { getUploadMethod } from "./uploadMethodRegistry";
-import type { BatchStatus, CollectionBatchState } from "./uploadState";
+import type { BatchStatus, BatchWithProgress } from "./uploadState";
 
 /**
  * Shared UI contract for progress indicators (files & batches)
@@ -36,16 +38,9 @@ export interface BatchProgressUi extends ProgressUiBase {
     label: string;
 }
 
-/**
- * Batch state as used by the upload progress view (includes progress percentage)
- */
-export interface BatchWithProgress extends CollectionBatchState {
-    progress: number;
-}
-
 const FILE_PROGRESS_UI: Record<UploadItem["status"], FileProgressUi> = {
     queued: {
-        icon: faSpinner,
+        icon: faClock,
         textClass: "text-muted",
         spin: false,
     },
@@ -69,6 +64,12 @@ const FILE_PROGRESS_UI: Record<UploadItem["status"], FileProgressUi> = {
         icon: faTimes,
         textClass: "text-danger",
         barClass: "bg-danger",
+        spin: false,
+    },
+    cancelled: {
+        icon: faBan,
+        textClass: "text-muted",
+        barClass: "bg-secondary",
         spin: false,
     },
 } as const;
@@ -105,6 +106,13 @@ const BATCH_PROGRESS_UI: Record<BatchStatus, (batch: BatchWithProgress) => Batch
         spin: false,
         label: "Error",
     }),
+    cancelled: () => ({
+        icon: faBan,
+        textClass: "text-muted",
+        barClass: "bg-secondary",
+        spin: false,
+        label: "Cancelled",
+    }),
 } as const;
 
 export function getBatchProgressUi(batch: BatchWithProgress): BatchProgressUi {
@@ -123,10 +131,11 @@ export interface UploadItemDisplayInfo {
     icon?: IconDefinition;
     iconTitle?: string;
     badges: UploadItemDisplayBadge[];
+    sourceUrl?: string;
 }
 
 /**
- * Get display information for an upload item (method icon, deferred badge, etc.).
+ * Get display information for an upload item (method icon, deferred badge, source URL, etc.).
  */
 export function getUploadItemDisplayInfo(item: UploadItem): UploadItemDisplayInfo {
     const badges: UploadItemDisplayBadge[] = [];
@@ -149,7 +158,15 @@ export function getUploadItemDisplayInfo(item: UploadItem): UploadItemDisplayInf
         icon: uploadMethod?.icon,
         iconTitle: uploadMethod?.name,
         badges,
+        sourceUrl: getUploadItemSourceUrl(item),
     };
+}
+
+function getUploadItemSourceUrl(item: UploadItem): string | undefined {
+    if (item.uploadMode !== "paste-links" && item.uploadMode !== "remote-files") {
+        return undefined;
+    }
+    return item.url || undefined;
 }
 
 export interface BatchDisplayInfo {
@@ -159,25 +176,15 @@ export interface BatchDisplayInfo {
 }
 
 /**
- * Extended batch state with uploads included.
- */
-export interface BatchWithUploads extends CollectionBatchState {
-    uploads: UploadItem[];
-}
-
-/**
  * Batch with both progress tracking and uploads (used in progress view).
+ * Re-exports the canonical type from uploadState for convenience.
  */
-export interface BatchWithProgressAndUploads extends BatchWithProgress {
-    uploads: UploadItem[];
-    allCompleted: boolean;
-    hasError: boolean;
-}
+export type BatchWithProgressAndUploads = BatchWithProgress;
 
 /**
  * Get aggregated display information for a batch (upload mode summary, deferred status).
  */
-export function getBatchDisplayInfo(batch: BatchWithUploads): BatchDisplayInfo {
+export function getBatchDisplayInfo(batch: BatchWithProgress): BatchDisplayInfo {
     const uploads = batch.uploads;
     const uploadModes = new Set(uploads.map((u: UploadItem) => u.uploadMode));
     const deferredCount = uploads.filter((u: UploadItem) => u.deferred).length;
@@ -215,10 +222,11 @@ export function getBatchDisplayInfo(batch: BatchWithUploads): BatchDisplayInfo {
 /**
  * Get progress breakdown summary for a batch (e.g., "3/5 completed, 1 error").
  */
-export function getBatchProgressSummary(batch: BatchWithUploads): string {
+export function getBatchProgressSummary(batch: BatchWithProgress): string {
     const total = batch.uploads.length;
     const completed = batch.uploads.filter((u: UploadItem) => u.status === "completed").length;
     const errors = batch.uploads.filter((u: UploadItem) => u.status === "error").length;
+    const cancelled = batch.uploads.filter((u: UploadItem) => u.status === "cancelled").length;
 
     const parts: string[] = [];
 
@@ -226,6 +234,10 @@ export function getBatchProgressSummary(batch: BatchWithUploads): string {
 
     if (errors > 0) {
         parts.push(`${errors} error${errors > 1 ? "s" : ""}`);
+    }
+
+    if (cancelled > 0) {
+        parts.push(`${cancelled} cancelled`);
     }
 
     return parts.join(", ");

@@ -2,10 +2,6 @@
 
 import sys
 import traceback
-from typing import (
-    Optional,
-    Union,
-)
 
 from Cheetah.Compiler import Compiler
 from Cheetah.NameMapper import NotFound
@@ -89,7 +85,7 @@ class InputNotFoundSyntaxError(SyntaxError):
     pass
 
 
-class FixedModuleCodeCompiler(Compiler):
+class FixedModuleCodeCompiler(Compiler):  # type: ignore[misc]  # Cheetah is untyped
     module_code = None
 
     def getModuleCode(self):
@@ -112,9 +108,9 @@ def fill_template(
     compiler_class=Compiler,
     first_exception=None,
     futurized=False,
-    python_template_version: Optional[Union[str, Version]] = "3",
+    python_template_version: str | Version | None = "3",
     **kwargs,
-):
+) -> str:
     """Fill a cheetah template out for specified context.
 
     If template_text is None, an exception will be thrown, if context

@@ -1,21 +1,24 @@
 <script setup lang="ts">
-import { faChevronDown, faChevronRight, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronRight, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
+import { localUploadOptionVisibility } from "@/components/Panels/Upload/shared/uploadOptionVisibility";
+import { getUploadSettingsColumnWidth } from "@/components/Panels/Upload/shared/uploadTableOptionsWidth";
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
 import { useCollectionCreation } from "@/composables/upload/collectionCreation";
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
 import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
+import { useUploadOptionBindings } from "@/composables/upload/uploadOptionBindings";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
-import { useUploadQueue } from "@/composables/uploadQueue";
+import { buildPreparedUpload } from "@/utils/upload";
 import { mapToPasteContentUpload } from "@/utils/upload/itemMappers";
 import { bytesToString } from "@/utils/utils";
 
-import type { UploadMethodComponent, UploadMethodConfig } from "../types";
+import type { PreparedUpload, UploadMethodComponent, UploadMethodConfig } from "../types";
 import type { PasteContentItem } from "../types/uploadItem";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
@@ -31,10 +34,24 @@ import GTable from "@/components/Common/GTable.vue";
 
 interface Props {
     method: UploadMethodConfig;
+    /** History ID where uploaded datasets will be added. */
     targetHistoryId: string;
+    /** Allow creating dataset collections from pasted datasets. */
+    allowCollections?: boolean;
+    /** Optional list of allowed formats to constrain selectable extensions. */
+    formats?: string[];
+    /** When false, restrict to a single pasted dataset. */
+    multiple?: boolean;
+    /** When true, do not persist staging to the shared store (modal use). */
+    transient?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    allowCollections: true,
+    formats: undefined,
+    multiple: true,
+    transient: false,
+});
 
 const emit = defineEmits<{
     (e: "ready", ready: boolean): void;
@@ -42,14 +59,14 @@ const emit = defineEmits<{
 
 const { advancedMode } = useUploadAdvancedMode();
 
-const uploadQueue = useUploadQueue();
+const optionVisibility = computed(() => localUploadOptionVisibility(advancedMode.value));
 
-const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults();
+const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults(props.formats);
 
 const tableContainerRef = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
 
-const { collectionState, handleCollectionStateChange, buildCollectionConfig, resetCollection } =
+const { buildCollectionConfig, collectionState, handleCollectionStateChange, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
 
 let nextId = 1;
@@ -66,13 +83,21 @@ function createPasteContentItem(id: number, name: string): PasteContentItem {
 const pasteItems = ref<PasteContentItem[]>([createPasteContentItem(nextId++, "Pasted Dataset 1")]);
 const expandedItemIds = ref<Set<number>>(new Set());
 const rowToggleMap = ref<Map<number, () => void>>(new Map());
-const { clear: clearStaging } = useUploadStaging<PasteContentItem>(props.method.id, pasteItems);
+const { clear: clearStaging } = useUploadStaging<PasteContentItem>(props.method.id, pasteItems, {
+    disableStore: props.transient,
+});
+
+const isSingleMode = computed(() => props.multiple === false);
 
 const hasItems = computed(() => pasteItems.value.some((item) => item.content.trim().length > 0));
 
 const { isNameValid, restoreOriginalName } = useUploadItemValidation();
 
 const bulk = useBulkUploadOperations(pasteItems, effectiveExtensions);
+const { headerOptionProps, headerOptionEvents, getRowOptionProps, getRowOptionEvents } = useUploadOptionBindings(
+    bulk,
+    optionVisibility,
+);
 
 const { isReadyToUpload } = useUploadReadyState(hasItems, collectionState);
 
@@ -109,6 +134,16 @@ function removeItem(id: number) {
     const nextExpanded = new Set(expandedItemIds.value);
     nextExpanded.delete(id);
     expandedItemIds.value = nextExpanded;
+}
+
+function reset() {
+    clearStaging();
+    // Reset to single empty item
+    const newItemId = nextId++;
+    rowToggleMap.value = new Map();
+    expandedItemIds.value = new Set();
+    pasteItems.value = [createPasteContentItem(newItemId, "Pasted Dataset 1")];
+    resetCollection();
 }
 
 function getItemSize(content: string) {
@@ -188,7 +223,7 @@ function toggleAllExpanded() {
 }
 
 // Table configuration
-const tableFields: TableField[] = [
+const tableFields = computed<TableField[]>(() => [
     {
         key: "expand",
         label: "",
@@ -213,6 +248,7 @@ const tableFields: TableField[] = [
         key: "preview",
         label: "Content Preview",
         sortable: false,
+        width: "120px",
         align: "center",
         class: "preview-column",
     },
@@ -235,6 +271,7 @@ const tableFields: TableField[] = [
         key: "options",
         label: "Upload Settings",
         sortable: false,
+        width: getUploadSettingsColumnWidth(optionVisibility.value),
         align: "center",
     },
     {
@@ -244,7 +281,7 @@ const tableFields: TableField[] = [
         width: "50px",
         align: "center",
     },
-];
+]);
 
 onMounted(() => {
     nextTick(() => {
@@ -252,28 +289,17 @@ onMounted(() => {
     });
 });
 
-function startUpload() {
+function prepareUpload(): PreparedUpload | null {
     const validItems = pasteItems.value.filter((item) => item.content.trim().length > 0);
     if (validItems.length === 0) {
-        return;
+        return null;
     }
 
     const uploads = validItems.map((item) => mapToPasteContentUpload(item, props.targetHistoryId));
-    const collectionConfig = buildCollectionConfig(props.targetHistoryId);
-
-    uploadQueue.enqueue(uploads, collectionConfig);
-
-    // Reset to single empty item
-    const newItemId = nextId++;
-    pasteItems.value = [createPasteContentItem(newItemId, "Pasted Dataset 1")];
-    rowToggleMap.value = new Map();
-    expandedItemIds.value = new Set();
-    nextTick(() => expandRow(newItemId));
-    clearStaging();
-    resetCollection();
+    return buildPreparedUpload(uploads, buildCollectionConfig(props.targetHistoryId));
 }
 
-defineExpose<UploadMethodComponent>({ startUpload });
+defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 </script>
 
 <template>
@@ -290,7 +316,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     <!-- Expand toggle column header -->
                     <template v-slot:head(expand)>
                         <button
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover
                             class="btn btn-link btn-sm p-0"
                             :title="getExpandAllToggleTitle(allExpanded)"
                             :aria-label="getExpandAllToggleTitle(allExpanded)"
@@ -300,11 +326,12 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     </template>
 
                     <!-- Expand toggle column -->
-                    <template v-slot:cell(expand)="{ item, toggleDetails }">
+                    <template v-slot:cell(expand)="{ item, index, toggleDetails }">
                         <span class="sr-only">{{ registerRowToggle(item.id, toggleDetails) }}</span>
                         <button
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover
                             class="btn btn-link btn-sm p-0"
+                            :data-test-id="`paste-content-toggle-${index + 1}`"
                             :title="getExpandToggleTitle(isExpanded(item.id))"
                             :aria-label="getExpandToggleTitle(isExpanded(item.id))"
                             @click="toggleRow(item, toggleDetails)"
@@ -317,6 +344,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     <!-- Name column -->
                     <template v-slot:cell(name)="{ item, index }">
                         <UploadTableNameCell
+                            :data-test-id="`upload-row-${index + 1}-name`"
                             :value="item.name"
                             :state="isNameValid(item.name)"
                             tooltip="Dataset name in your history (required)"
@@ -353,7 +381,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             </div>
                             <span
                                 v-else-if="!item.content"
-                                v-b-tooltip.hover.noninteractive
+                                v-g-tooltip.hover
                                 title="This dataset is empty and will be skipped during upload."
                                 class="small font-italic text-danger">
                                 No content
@@ -372,8 +400,9 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             @input="bulk.setAllExtensions" />
                     </template>
 
-                    <template v-slot:cell(extension)="{ item }">
+                    <template v-slot:cell(extension)="{ item, index }">
                         <UploadTableExtensionCell
+                            :data-test-id="`upload-row-${index + 1}-extension`"
                             :value="item.extension"
                             :extensions="effectiveExtensions"
                             :warning="bulk.getExtensionWarning(item.extension)"
@@ -391,8 +420,9 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             @input="bulk.setAllDbKeys" />
                     </template>
 
-                    <template v-slot:cell(dbKey)="{ item }">
+                    <template v-slot:cell(dbKey)="{ item, index }">
                         <UploadTableDbKeyCell
+                            :data-test-id="`upload-row-${index + 1}-dbkey`"
                             :value="item.dbkey"
                             :db-keys="listDbKeys"
                             :disabled="!configurationsReady"
@@ -401,38 +431,29 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                     <!-- Options column with bulk checkboxes -->
                     <template v-slot:head(options)>
-                        <UploadTableOptionsHeader
-                            :all-space-to-tab="bulk.allSpaceToTab.value"
-                            :space-to-tab-indeterminate="bulk.spaceToTabIndeterminate.value"
-                            :show-posix="advancedMode"
-                            :all-to-posix-lines="bulk.allToPosixLines.value"
-                            :to-posix-lines-indeterminate="bulk.toPosixLinesIndeterminate.value"
-                            @toggle-space-to-tab="bulk.toggleAllSpaceToTab"
-                            @toggle-to-posix-lines="bulk.toggleAllToPosixLines" />
+                        <UploadTableOptionsHeader v-bind="headerOptionProps" v-on="headerOptionEvents" />
                     </template>
 
                     <template v-slot:cell(options)="{ item }">
-                        <UploadTableOptionsCell
-                            :space-to-tab="item.spaceToTab"
-                            :show-posix="advancedMode"
-                            :to-posix-lines="item.toPosixLines"
-                            @updateSpaceToTab="item.spaceToTab = $event"
-                            @updateToPosixLines="item.toPosixLines = $event" />
+                        <UploadTableOptionsCell v-bind="getRowOptionProps(item)" v-on="getRowOptionEvents(item)" />
                     </template>
 
                     <!-- Actions column -->
-                    <template v-slot:cell(actions)="{ item }">
-                        <button
-                            v-b-tooltip.hover.noninteractive
-                            class="btn btn-link text-danger remove-btn"
+                    <template v-slot:cell(actions)="{ item, index }">
+                        <GButton
+                            v-g-tooltip.hover
+                            class="remove-btn"
+                            :data-test-id="`upload-row-${index + 1}-remove`"
+                            outline
+                            transparent
                             title="Remove dataset from list"
                             @click="removeItem(item.id)">
-                            <FontAwesomeIcon :icon="faTimes" />
-                        </button>
+                            <FontAwesomeIcon :icon="faTrash" />
+                        </GButton>
                     </template>
 
                     <!-- Row details for textarea -->
-                    <template v-slot:row-details="{ item }">
+                    <template v-slot:row-details="{ item, index }">
                         <div class="paste-content-row">
                             <label :for="`paste-content-${item.id}`" class="sr-only">
                                 Paste data for {{ item.name }}
@@ -440,6 +461,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             <textarea
                                 :id="`paste-content-${item.id}`"
                                 v-model="item.content"
+                                :data-test-id="`paste-content-textarea-${index + 1}`"
                                 class="form-control paste-textarea"
                                 rows="6"
                                 placeholder="Paste your data here"
@@ -451,12 +473,15 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
             <!-- Collection Creation Section -->
             <CollectionCreationConfig
+                v-if="props.allowCollections !== false"
                 ref="collectionConfigComponent"
                 :files="pasteItems"
                 @update:state="handleCollectionStateChange" />
 
             <div class="paste-list-actions mt-2">
                 <GButton
+                    v-if="!isSingleMode"
+                    data-test-id="add-another-dataset"
                     color="grey"
                     tooltip
                     tooltip-placement="top"
@@ -506,7 +531,6 @@ defineExpose<UploadMethodComponent>({ startUpload });
     }
 
     :deep(.preview-column) {
-        width: 100%;
         max-width: 300px;
         overflow: hidden;
     }
@@ -519,6 +543,9 @@ defineExpose<UploadMethodComponent>({ startUpload });
         height: 100%;
         padding: 0.25rem;
         margin: -0.25rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
 
         .preview-text {
             overflow: hidden;

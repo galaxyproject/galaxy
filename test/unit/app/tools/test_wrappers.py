@@ -306,7 +306,7 @@ class MockDataset:
         self.tags = []
         self.has_deferred_data = False
 
-    def get_file_name(self, sync_cache=True):
+    def get_file_name(self, sync_cache=True, auth=None):
         return MOCK_DATASET_PATH
 
 

@@ -23,10 +23,6 @@ The implementation is extensible to support future enhancements such as:
 """
 
 import logging
-from typing import (
-    Optional,
-    Union,
-)
 
 from galaxy.files.models import (
     FilesSourceRuntimeContext,
@@ -57,18 +53,18 @@ class AscpFilesSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfigura
     but referenced key paths wouldn't be accessible.
     """
 
-    ascp_path: Union[str, TemplateExpansion] = "ascp"
-    ssh_key_content: Union[str, TemplateExpansion]  # SSH key content as string (required)
-    ssh_key_passphrase: Union[str, TemplateExpansion, None] = None  # Passphrase for the SSH key (required)
-    user: Union[str, TemplateExpansion]  # Required field
-    host: Union[str, TemplateExpansion]  # Required field
-    rate_limit: Union[str, TemplateExpansion] = "300m"
-    port: Union[int, TemplateExpansion] = 33001
-    disable_encryption: Union[bool, TemplateExpansion] = True
-    max_retries: Union[int, TemplateExpansion] = 3
-    retry_base_delay: Union[float, TemplateExpansion] = 2.0
-    retry_max_delay: Union[float, TemplateExpansion] = 60.0
-    enable_resume: Union[bool, TemplateExpansion] = True
+    ascp_path: str | TemplateExpansion = "ascp"
+    ssh_key_content: str | TemplateExpansion  # SSH key content as string (required)
+    ssh_key_passphrase: str | TemplateExpansion | None = None  # Passphrase for the SSH key (required)
+    user: str | TemplateExpansion  # Required field
+    host: str | TemplateExpansion  # Required field
+    rate_limit: str | TemplateExpansion = "300m"
+    port: int | TemplateExpansion = 33001
+    disable_encryption: bool | TemplateExpansion = True
+    max_retries: int | TemplateExpansion = 3
+    retry_base_delay: float | TemplateExpansion = 2.0
+    retry_max_delay: float | TemplateExpansion = 60.0
+    enable_resume: bool | TemplateExpansion = True
 
 
 class AscpFilesSourceConfiguration(FsspecBaseFileSourceConfiguration):
@@ -84,7 +80,7 @@ class AscpFilesSourceConfiguration(FsspecBaseFileSourceConfiguration):
 
     ascp_path: str = "ascp"
     ssh_key_content: str  # SSH key content as string (required)
-    ssh_key_passphrase: Optional[str] = None  # Passphrase for the SSH key (optional)
+    ssh_key_passphrase: str | None = None  # Passphrase for the SSH key (optional)
     user: str  # Required field
     host: str  # Required field
     rate_limit: str = "300m"

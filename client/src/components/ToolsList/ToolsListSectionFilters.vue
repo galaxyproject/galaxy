@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { faLayerGroup, faSitemap, faTimes, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { faSitemap, faTimes, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownDivider, BDropdownGroup, BDropdownItem, BDropdownText, BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 
 import { type ToolSection, useToolStore } from "@/stores/toolStore";
 import type Filtering from "@/utils/filtering";
@@ -15,7 +15,7 @@ import ToolOntologyCard from "./ToolOntologyCard.vue";
 
 const props = defineProps<{
     /** The `Filtering` class (ToolFilters). */
-    filterClass: Filtering<string>;
+    filterClass: Filtering<string | string[]>;
     /** The current filter text. */
     filterText: string;
     /** Whether the dropdowns should be disabled. */
@@ -27,12 +27,7 @@ const emit = defineEmits<{
 }>();
 
 const toolStore = useToolStore();
-const { defaultPanelView, panels, panelSections } = storeToRefs(toolStore);
-
-const defaultToolSectionsFilter = ref("");
-const defaultToolSections = computed(() =>
-    searchWithinSections(panelSections.value(defaultPanelView.value), defaultToolSectionsFilter.value),
-);
+const { panels, panelSections } = storeToRefs(toolStore);
 
 const ontologiesFilter = ref("");
 const edamOperations = computed(() =>
@@ -42,15 +37,9 @@ const edamTopics = computed(() =>
     searchWithinSections(panelSections.value("ontology:edam_topics"), ontologiesFilter.value),
 );
 
-const selectedSection = computed<ToolSection | null>(() => {
-    const sectionName = props.filterClass.getFilterValue(props.filterText, "section")?.replace(/^"(.*)"$/, "$1");
-    return (
-        Object.values(defaultToolSections.value).find((section: ToolSection) => section.name === sectionName) || null
-    );
-});
-
 const selectedOntology = computed<ToolSection | null>(() => {
-    const ontologyId = props.filterClass.getFilterValue(props.filterText, "ontology")?.replace(/^"(.*)"$/, "$1");
+    const ontologyValue = props.filterClass.getFilterValue(props.filterText, "ontology");
+    const ontologyId = typeof ontologyValue === "string" ? ontologyValue.replace(/^"(.*)"$/, "$1") : undefined;
     return (
         Object.values(edamOperations.value).find((section: ToolSection) => section.id === ontologyId) ||
         Object.values(edamTopics.value).find((section: ToolSection) => section.id === ontologyId) ||
@@ -58,26 +47,12 @@ const selectedOntology = computed<ToolSection | null>(() => {
     );
 });
 
-watch(
-    () => defaultPanelView.value,
-    (newVal) => {
-        if (newVal) {
-            ensureSectionsAndOntologiesLoaded();
-        }
-    },
-    { immediate: true },
-);
-
-/** Ensures `toolStore.toolSections` contains the necessary sections to generate section dropdown filters for.
- *
- * _Note that the `toolStore` itself ensures a panel isn't loaded if it's already present in the state._
- */
-async function ensureSectionsAndOntologiesLoaded() {
-    await toolStore.fetchToolSections(defaultPanelView.value);
-
+/** Ensures `toolStore.toolSections` contains the ontology sections used in this view. */
+async function ensureOntologiesLoaded() {
     await toolStore.fetchToolSections("ontology:edam_operations");
     await toolStore.fetchToolSections("ontology:edam_topics");
 }
+ensureOntologiesLoaded();
 
 function getPanelIcon(panelView: string): IconDefinition | null {
     const viewType = panels.value[panelView]?.view_type;
@@ -101,59 +76,6 @@ function searchWithinSections(sections: ToolSection[], query: string) {
     <div class="d-flex flex-column flex-gapy-1">
         <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex flex-gapx-1">
-                <BDropdown
-                    block
-                    :disabled="props.disabled"
-                    variant="link"
-                    class="tool-section-dropdown"
-                    toggle-class="text-decoration-none"
-                    role="menu"
-                    aria-label="Select a tool section to filter by"
-                    size="sm">
-                    <template v-slot:button-content>
-                        <span class="sr-only">Select a tool section to filter by</span>
-                        <FontAwesomeIcon :icon="faLayerGroup" />
-                        <span v-if="selectedSection">
-                            {{ selectedSection.name }}
-                        </span>
-                        <i v-else> Select a section to filter by </i>
-                    </template>
-
-                    <BDropdownGroup
-                        id="searchable-sections"
-                        class="sections-select-list"
-                        header-classes="search-header">
-                        <template v-slot:header>
-                            <BDropdownText>
-                                <BFormInput
-                                    v-model="defaultToolSectionsFilter"
-                                    type="text"
-                                    placeholder="Filter sections..." />
-                            </BDropdownText>
-                        </template>
-
-                        <BDropdownItem
-                            v-for="sec in defaultToolSections"
-                            :key="sec.id"
-                            :title="sec.description"
-                            :active="selectedSection?.id === sec.id"
-                            @click="applyQuotedFilter('section', sec.name)">
-                            <span v-localize>{{ sec.name }}</span>
-                        </BDropdownItem>
-                    </BDropdownGroup>
-                </BDropdown>
-
-                <GButton
-                    v-if="selectedSection"
-                    title="Remove section filter"
-                    icon-only
-                    inline
-                    transparent
-                    tooltip
-                    @click="applyQuotedFilter('section', selectedSection.name)">
-                    <FontAwesomeIcon :icon="faTimes" />
-                </GButton>
-
                 <BDropdown
                     block
                     :disabled="props.disabled"

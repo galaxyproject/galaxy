@@ -1,4 +1,5 @@
 import abc
+from collections.abc import Hashable
 from typing import (
     Any,
     Literal,
@@ -39,13 +40,19 @@ class WorkRequestContext(ProvidesHistoryContext):
         workflow_building_mode=False,
         url_builder=None,
         galaxy_session: Optional["GalaxySession"] = None,
+        short_term_cache: dict[tuple[Hashable, ...], Any] | None = None,
     ):
         self._app = app
         self.__user = user
-        self.__user_current_roles: Optional[list[Role]] = None
+        self.__user_current_roles: list[Role] | None = None
         self.__history = history
         self._url_builder = url_builder
-        self._short_term_cache: dict[tuple[str, ...], Any] = {}
+        # When proxying an existing transaction (see ``proxy_work_context_for_history``)
+        # share its request-scoped cache so work done across proxies of the same
+        # request -- e.g. every step of a workflow Run form build -- is reused.
+        self._short_term_cache: dict[tuple[Hashable, ...], Any] = (
+            short_term_cache if short_term_cache is not None else {}
+        )
         self.workflow_building_mode = workflow_building_mode
         self.galaxy_session = galaxy_session
 
@@ -72,6 +79,9 @@ class WorkRequestContext(ProvidesHistoryContext):
         if self.__user_current_roles is None:
             self.__user_current_roles = super().get_current_user_roles()
         return self.__user_current_roles
+
+    def get_galaxy_session(self):
+        return self.galaxy_session
 
     def set_user(self, user):
         """Set the current user."""
@@ -135,13 +145,13 @@ class GalaxyAbstractResponse:
         self,
         key: str,
         value: str = "",
-        max_age: Optional[int] = None,
-        expires: Optional[int] = None,
+        max_age: int | None = None,
+        expires: int | None = None,
         path: str = "/",
-        domain: Optional[str] = None,
+        domain: str | None = None,
         secure: bool = False,
         httponly: bool = False,
-        samesite: Optional[Literal["lax", "strict", "none"]] = "lax",
+        samesite: Literal["lax", "strict", "none"] | None = "lax",
     ) -> None:
         """Set a cookie."""
 
@@ -170,10 +180,11 @@ class SessionRequestContext(WorkRequestContext):
         return self.galaxy_session
 
     def set_history(self, history):
-        if history and not history.deleted and self.galaxy_session:
-            self.galaxy_session.current_history = history
-        self.sa_session.add(self.galaxy_session)
-        self.sa_session.commit()
+        if self.galaxy_session:
+            if history and not history.deleted:
+                self.galaxy_session.current_history = history
+            self.sa_session.add(self.galaxy_session)
+            self.sa_session.commit()
 
 
 def proxy_work_context_for_history(
@@ -192,4 +203,5 @@ def proxy_work_context_for_history(
         url_builder=trans.url_builder,
         workflow_building_mode=workflow_building_mode,
         galaxy_session=trans.galaxy_session,
+        short_term_cache=trans._short_term_cache,
     )

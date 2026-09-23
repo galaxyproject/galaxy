@@ -3,7 +3,7 @@
 ---
 
 We are using components in two very distinct ways. The first, "normal", kind of component will
-probably look familiar to anybody whis is already passingly familiar with Vue. Here the relevant
+probably look familiar to anybody who is already passingly familiar with Vue. Here the relevant
 information comes in as properties, any internal variables get defined in "data", changes go out as
 events.
 
@@ -18,7 +18,7 @@ events.
 
 In this example, we've created a component whose job is to deal with loading and updating the doodad
 object. Notice that there is no markup inside the DoodadProvider other than the explicit renderless
-component we previously made, but you are free to putput whatever you want in there, accessing the
+component we previously made, but you are free to put whatever you want in there, accessing the
 doodad and saveDoddad properties as desired, as well as any other local data with the only
 restriction that Vue needs a single root element in which to render.
 
@@ -57,7 +57,7 @@ update:propname event syntax whenever possible [to facilitate .sync
 binds](https://vuejs.org/v2/guide/components-custom-events.html#sync-Modifier)).
 
 Whatever happens to that new object is somebody else's job. As soon as you tie the data management
-to the rendering, the re-usability of your components craters.
+to the rendering, the re-usability of your components crater.
 
 ## The Provider
 

@@ -237,7 +237,7 @@ watch(
         </div>
         <button
             v-if="hasConnections && !readonly"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             :title="reason"
             class="delete-terminal-button"
             @click="onRemove">
@@ -246,7 +246,7 @@ watch(
         <span v-if="!blank">{{ label }}</span>
         <span
             v-if="!input.optional && !hasTerminals"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             class="input-required"
             title="Input is required">
             *
@@ -300,8 +300,7 @@ watch(
 .delete-terminal-button {
     position: absolute;
     left: calc(-0.65rem - 5px);
-    top: 50%;
-    transform: translateY(-50%);
+    top: 0.25rem;
     display: grid;
     place-items: center;
     width: 0;

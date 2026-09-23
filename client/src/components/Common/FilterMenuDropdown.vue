@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BDropdown, BDropdownItem, BInputGroup, BInputGroupAppend, BModal } from "bootstrap-vue";
-import { capitalize } from "lodash";
+import { BDropdown, BDropdownItem, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
-import { fetchCurrentUserQuotaUsages, type QuotaUsage } from "@/api/users";
+import type { QuotaUsage } from "@/api/users";
+import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import type { FilterType, ValidFilter } from "@/utils/filtering";
-import { errorMessageAsString } from "@/utils/simple-error";
+import { capitalizeFirstLetter } from "@/utils/strings";
 
+import GButton from "../BaseComponents/GButton.vue";
+import GModal from "../BaseComponents/GModal.vue";
 import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
 
 type FilterValue = QuotaUsage | string | boolean | undefined;
@@ -67,7 +69,7 @@ const objectDatalist = computed<DatalistItem[]>(() => {
 
 // help modal button refs
 const helpToggle = ref(false);
-const modalTitle = `${capitalize(props.filter.placeholder)} Help`;
+const modalTitle = `${capitalizeFirstLetter(props.filter.placeholder || "")} Help`;
 function onHelp(_: string, value: string) {
     helpToggle.value = false;
     if (!props.disabled) {
@@ -76,25 +78,22 @@ function onHelp(_: string, value: string) {
 }
 
 // Quota Source refs and operations
-const quotaUsages = ref<QuotaUsage[]>([]);
-const errorMessage = ref<string>();
-async function loadQuotaUsages() {
-    try {
-        quotaUsages.value = await fetchCurrentUserQuotaUsages();
+const quotaUsageStore = useQuotaUsageStore();
+const quotaUsages = computed<QuotaUsage[]>(() => quotaUsageStore.quotaUsages ?? []);
 
-        // if the propValue is a string, find the corresponding QuotaUsage object and update the localValue
-        if (propValue.value && typeof propValue.value === "string") {
-            localValue.value = quotaUsages.value.find(
-                (quotaUsage) => props.filter.handler.converter!(quotaUsage) === propValue.value,
-            );
-        }
-    } catch (e) {
-        errorMessage.value = errorMessageAsString(e);
+async function loadQuotaUsages() {
+    await quotaUsageStore.loadQuotaUsages();
+
+    // if the propValue is a string, find the corresponding QuotaUsage object and update the localValue
+    if (propValue.value && typeof propValue.value === "string") {
+        localValue.value = quotaUsages.value.find(
+            (quotaUsage) => props.filter.handler.converter!(quotaUsage) === propValue.value,
+        );
     }
 }
 
 const hasMultipleQuotaSources = computed<boolean>(() => {
-    return !!(quotaUsages.value && quotaUsages.value.length > 1);
+    return quotaUsages.value.length > 1;
 });
 
 onMounted(async () => {
@@ -178,15 +177,15 @@ function setValue(val: FilterValue) {
             </BDropdown>
             <BInputGroupAppend>
                 <!-- append Help Modal toggle for filter if included -->
-                <BButton v-if="props.filter.helpInfo" :title="modalTitle" size="sm" @click="helpToggle = true">
+                <GButton v-if="props.filter.helpInfo" :title="modalTitle" size="small" @click="helpToggle = true">
                     <FontAwesomeIcon :icon="faQuestion" />
-                </BButton>
+                </GButton>
             </BInputGroupAppend>
         </BInputGroup>
 
         <!-- if a filter has help component, place it within a modal -->
         <span v-if="props.filter.helpInfo">
-            <BModal v-model="helpToggle" :title="modalTitle" ok-only>
+            <GModal :show.sync="helpToggle" :title="modalTitle" size="small" fixed-height>
                 <component
                     :is="props.filter.helpInfo"
                     v-if="typeof props.filter.helpInfo == 'object'"
@@ -194,7 +193,7 @@ function setValue(val: FilterValue) {
                 <div v-else-if="typeof props.filter.helpInfo == 'string'">
                     <p>{{ props.filter.helpInfo }}</p>
                 </div>
-            </BModal>
+            </GModal>
         </span>
     </div>
 </template>

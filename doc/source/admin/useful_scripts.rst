@@ -40,9 +40,9 @@ To safely delete unused histories and their associated records, please use the `
 Deleting old galaxy_session records
 -----------------------------------
 
-Each time Galaxy is accessed, a galaxy_session record is created, even when the user is annonymous. Over time, Galaxy accumulates such records. Deleting such records will declutter the database and free up space. 
+Each time Galaxy is accessed, a galaxy_session record is created, even when the user is anonymous. Over time, Galaxy accumulates such records. Deleting such records will declutter the database and free up space. 
 
-To safely delete such records, please use the galaxy-delete-sessions script. By default, a galaxy_session record should be at least a month old to be considered safe to delete (which is determinded by the value of its ``update_time`` field). 
+To safely delete such records, please use the galaxy-delete-sessions script. By default, a galaxy_session record should be at least a month old to be considered safe to delete (which is determined by the value of its ``update_time`` field). 
 
 .. code-block:: console
 

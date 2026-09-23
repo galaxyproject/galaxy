@@ -1,7 +1,11 @@
 """Test Tool execution and state handling logic."""
 
 from collections import OrderedDict
-from typing import cast
+from collections.abc import Hashable
+from typing import (
+    Any,
+    cast,
+)
 
 import webob.exc
 from sqlalchemy import select
@@ -206,6 +210,7 @@ class MockTrans:
         self.sa_session = self.app.model.context
         self.url_builder = None
         self.galaxy_session = None
+        self._short_term_cache: dict[tuple[Hashable, ...], Any] = {}
 
     def get_history(self, **kwargs):
         return self.history

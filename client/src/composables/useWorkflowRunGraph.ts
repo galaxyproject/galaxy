@@ -188,7 +188,7 @@ export function useWorkflowRunGraph(
     ): WorkflowRunStepInfo {
         // color variant for `paused` state works best for unpopulated inputs,
         // "" for optional inputs and `ok` for populated inputs
-        const headerClass = optional ? "" : !spin && populated ? "ok" : "paused";
+        const headerClass = optional ? undefined : !spin && populated ? "ok" : "paused";
         const headerIcon = spin ? faSpinner : populated ? faCheckCircle : faExclamationCircle;
 
         text = typeof text === "boolean" ? text : !optional ? text : `${text} (optional)`;

@@ -14,6 +14,7 @@ Galaxy Deployment & Administration
    nginx
    apache
    scaling
+   sse_updates
    cluster
    jobs
    job_metrics
@@ -21,6 +22,7 @@ Galaxy Deployment & Administration
    ai_agents
    enable_headers_in_fetch_requests
    tool_panel
+   tool_source_storage
    data_tables
    mq
    dependency_resolvers
@@ -28,7 +30,6 @@ Galaxy Deployment & Administration
    conda_faq
    user_defined_tools
    db_migration
-   reports
    useful_scripts
    ga4gh
    options

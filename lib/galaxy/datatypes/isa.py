@@ -12,7 +12,6 @@ import re
 import shutil
 import tempfile
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -34,6 +33,7 @@ from galaxy.datatypes.protocols import (
     HasExtraFilesAndMetadata,
     HasExtraFilesPath,
 )
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -204,10 +204,10 @@ class _Isa(Data):
         trans,
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
-        offset: Optional[int] = None,
-        ck_size: Optional[int] = None,
+        filename: str | None = None,
+        to_ext: str | None = None,
+        offset: int | None = None,
+        ck_size: int | None = None,
         **kwd,
     ):
         """Downloads the ISA dataset if `preview` is `False`;
@@ -218,6 +218,9 @@ class _Isa(Data):
         # if it is not required a preview use the default behaviour of `display_data`
         if not preview:
             return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
+
+        # this forces sync with objectstore
+        dataset.get_file_name(auth=ObjectStoreAuth(user=trans.user))
 
         # prepare the preview of the ISA dataset
         try:

@@ -124,6 +124,12 @@ describe("History SelectorModal.vue", () => {
         expect(wrapper.emitted()["selectHistory"][0][0].id).toBe(targetHistoryId);
     });
 
+    it("shows a custom selection instruction", async () => {
+        await mountWith({ ...PROPS_FOR_MODAL, selectionInstruction: "Click a history to copy datasets" });
+
+        expect(wrapper.text()).toContain("Click a history to copy datasets");
+    });
+
     describe("Multi-selection Mode", () => {
         it("should select multiple histories", async () => {
             await mountWith(PROPS_FOR_MODAL_MULTIPLE_SELECT);

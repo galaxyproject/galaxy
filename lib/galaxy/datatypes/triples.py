@@ -5,17 +5,17 @@ Triple format classes
 import logging
 import re
 
+from galaxy.datatypes import (
+    binary,
+    data,
+    text,
+    xml,
+)
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
-)
-from . import (
-    binary,
-    data,
-    text,
-    xml,
 )
 
 log = logging.getLogger(__name__)

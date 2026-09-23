@@ -1,7 +1,3 @@
-from typing import (
-    Optional,
-)
-
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.decorators import (
     requires_admin,
@@ -18,7 +14,7 @@ class TestGroupUsersApi(ApiTestCase):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     @requires_admin
-    def test_index(self, group_name: Optional[str] = None):
+    def test_index(self, group_name: str | None = None):
         group_name = group_name or "test-group_users"
         group = self._create_group(group_name)
         encoded_group_id = group["id"]
@@ -124,7 +120,7 @@ class TestGroupUsersApi(ApiTestCase):
         delete_response = self._delete(f"groups/{encoded_group_id}/users/{encoded_user_id}", admin=True)
         self._assert_status_code_is(delete_response, 400)
 
-    def _create_group(self, group_name: str, encoded_user_ids: Optional[list[str]] = None):
+    def _create_group(self, group_name: str, encoded_user_ids: list[str] | None = None):
         if encoded_user_ids is None:
             encoded_user_ids = [self.dataset_populator.user_id()]
         user_ids = encoded_user_ids

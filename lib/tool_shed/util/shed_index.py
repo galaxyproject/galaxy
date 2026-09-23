@@ -201,13 +201,16 @@ def load_one_dir(path):
 
 def get_repositories_for_indexing(session):
     # Do not index deleted, deprecated, or "tool_dependency_definition" type repositories.
+    # Order by last_updated_time so the build_index incremental fast path can
+    # break out as soon as it encounters an already-indexed repo with a
+    # matching full_last_updated stamp.
     Repository = model.Repository
     stmt = (
         select(Repository)
         .where(Repository.deleted == false())
         .where(Repository.deprecated == false())
         .where(Repository.type != "tool_dependency_definition")
-        .order_by(Repository.update_time.desc())
+        .order_by(Repository.last_updated_time.desc())
     )
     return session.scalars(stmt)
 

@@ -10,6 +10,13 @@ interface UseUploadStagingReturn {
     clear: () => void;
 }
 
+interface UploadStagingOptions {
+    /** Whether to disable the upload staging store.
+     * This is useful for short-term staging sessions that don't require persistence.
+     */
+    disableStore?: boolean;
+}
+
 /**
  * Composable to synchronize a local reactive items ref with the upload staging store.
  *
@@ -21,8 +28,18 @@ interface UseUploadStagingReturn {
 export function useUploadStaging<T extends StagedUploadItem>(
     mode: UploadMethod,
     items: Ref<T[]>,
+    options: UploadStagingOptions = {},
 ): UseUploadStagingReturn {
     const stagingStore = useUploadStagingStore();
+
+    // When disabled, act as a no-op passthrough using only the provided ref
+    if (options.disableStore) {
+        return {
+            clear() {
+                items.value = [];
+            },
+        };
+    }
 
     // Restore staged items on mount
     onMounted(() => {

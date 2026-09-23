@@ -13,6 +13,14 @@ warnings.filterwarnings("ignore", message=r"[\n.]DEPRECATION: Python 2", module=
 from galaxy.util import requests
 
 try:
+    from cwl_utils.types import CWLObjectType
+except ImportError:
+    try:
+        from cwltool.utils import CWLObjectType  # type: ignore[assignment, attr-defined, unused-ignore]
+    except ImportError:
+        CWLObjectType = object  # type: ignore[assignment, misc]
+
+try:
     from cwltool import (
         main,
         pathmapper,
@@ -67,16 +75,16 @@ except ImportError:
 
 try:
     from cwltool.utils import (
-        CWLObjectType,
         JobsType,
         normalizeFilesDirs,
+        OutputCallbackType,
         visit_class,
     )
 except ImportError:
-    CWLObjectType = object  # type: ignore[assignment, misc]
     JobsType = object  # type: ignore[misc, unused-ignore]
     visit_class = None  # type: ignore[assignment]
     normalizeFilesDirs = None  # type: ignore[assignment]
+    OutputCallbackType = None  # type: ignore[misc]
 
 try:
     import schema_salad
@@ -132,6 +140,7 @@ __all__ = (
     "main",
     "needs_shell_quoting",
     "normalizeFilesDirs",
+    "OutputCallbackType",
     "pathmapper",
     "process",
     "Process",

@@ -78,6 +78,10 @@ export function useUploadConfigurations(extensions: string[] | undefined) {
         }
     });
 
+    const compositeExtensions = computed(() =>
+        effectiveExtensions.value.filter((ext) => ext.composite_files && ext.composite_files.length > 0),
+    );
+
     const listDbKeys = ref<DbKey[]>([]);
     const dbKeysSet = ref(false);
     async function loadDbKeys() {
@@ -102,6 +106,7 @@ export function useUploadConfigurations(extensions: string[] | undefined) {
     return {
         configOptions,
         effectiveExtensions,
+        compositeExtensions,
         listDbKeys,
         ready,
     };

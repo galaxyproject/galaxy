@@ -18,12 +18,14 @@ API has gone too far.
 import io
 import os
 import tempfile
+from typing import Any
 
 import requests
 from sqlalchemy import select
 from tusclient import client
 
 from galaxy import model
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
@@ -40,6 +42,8 @@ TEST_TUS_CHUNK_SIZE = 1024
 class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     initialized = False
     dataset_populator: DatasetPopulator
+    input_hda_dict: dict[str, Any]
+    input_hda: model.HistoryDatasetAssociation
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -57,9 +61,11 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             sa_session = self.sa_session
             stmt = select(model.HistoryDatasetAssociation)
             assert len(sa_session.scalars(stmt).all()) == 0
-            self.input_hda_dict = self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_TEXT, wait=True)
+            TestJobFilesIntegration.input_hda_dict = self.dataset_populator.new_dataset(
+                history_id, content=TEST_INPUT_TEXT, wait=True
+            )
             assert len(sa_session.scalars(stmt).all()) == 1
-            self.input_hda = sa_session.scalars(stmt).all()[0]
+            TestJobFilesIntegration.input_hda = sa_session.scalars(stmt).all()[0]
             TestJobFilesIntegration.initialized = True
 
     def test_read_by_state(self):
@@ -198,8 +204,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         job.add_output_dataset("output1", output_hda)
         sa_session.commit()
         self._app.object_store.create(output_hda.dataset)
-        self._app.object_store.create(job, base_dir="job_work", dir_only=True, obj_dir=True)
-        working_directory = self._app.object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
+        working_directory = JobWorkingDirectory(job, self._app.object_store).create()
         return job, output_hda, working_directory
 
     def _api_job_keys(self, job):

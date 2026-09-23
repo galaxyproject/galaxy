@@ -10,11 +10,10 @@ from abc import (
     ABC,
     abstractmethod,
 )
+from collections.abc import Sequence
 from typing import (
     Any,
     Generic,
-    Optional,
-    Union,
 )
 
 from galaxy.navigation.components import Target
@@ -27,6 +26,7 @@ from .has_driver_protocol import (
     TimeoutCallback,
     WaitTypeT,
 )
+from .keys import Key
 from .web_element_protocol import WebElementProtocol
 
 
@@ -83,7 +83,7 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """Get timeout handler for application specific wait types."""
         return self._driver_impl.timeout_handler
 
-    def wait(self, timeout=..., wait_type: Optional[WaitTypeT] = None, **kwds):
+    def wait(self, timeout=..., wait_type: WaitTypeT | None = None, **kwds):
         """Create a wait object with the specified timeout."""
         return self._driver_impl.wait(timeout, wait_type=wait_type, **kwds)
 
@@ -108,29 +108,33 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """Navigate to the specified URL."""
         self._driver_impl.navigate_to(url)
 
+    def refresh(self) -> None:
+        """Reload the current page."""
+        self._driver_impl.refresh()
+
     def re_get_with_query_params(self, params_str: str):
         """Navigate to current URL with additional query parameters."""
         return self._driver_impl.re_get_with_query_params(params_str)
 
     # Element finding - by locator type
 
-    def find_element_by_id(self, id: str, element: Optional[Any] = None) -> WebElementProtocol:
+    def find_element_by_id(self, id: str, element: Any | None = None) -> WebElementProtocol:
         """Find element by ID attribute."""
         return self._driver_impl.find_element_by_id(id, element)
 
-    def find_element_by_selector(self, selector: str, element: Optional[Any] = None) -> WebElementProtocol:
+    def find_element_by_selector(self, selector: str, element: Any | None = None) -> WebElementProtocol:
         """Find element by CSS selector."""
         return self._driver_impl.find_element_by_selector(selector, element)
 
-    def find_element_by_xpath(self, xpath: str, element: Optional[Any] = None) -> WebElementProtocol:
+    def find_element_by_xpath(self, xpath: str, element: Any | None = None) -> WebElementProtocol:
         """Find element by XPath expression."""
         return self._driver_impl.find_element_by_xpath(xpath, element)
 
-    def find_element_by_link_text(self, text: str, element: Optional[Any] = None) -> WebElementProtocol:
+    def find_element_by_link_text(self, text: str, element: Any | None = None) -> WebElementProtocol:
         """Find link element by visible text."""
         return self._driver_impl.find_element_by_link_text(text, element)
 
-    def find_elements_by_selector(self, selector: str, element: Optional[Any] = None) -> list[WebElementProtocol]:
+    def find_elements_by_selector(self, selector: str, element: Any | None = None) -> list[WebElementProtocol]:
         """Find all elements matching CSS selector."""
         return self._driver_impl.find_elements_by_selector(selector, element)
 
@@ -300,6 +304,10 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """Hover mouse over element."""
         self._driver_impl.hover(element)
 
+    def hover_away(self) -> None:
+        """Move the mouse off whatever element it is currently over."""
+        self._driver_impl.hover_away()
+
     def move_to_and_click(self, element: WebElementProtocol) -> None:
         """Move mouse to element and click."""
         self._driver_impl.move_to_and_click(element)
@@ -322,15 +330,28 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
 
     # Keyboard interactions
 
-    def send_enter(self, element: Optional[WebElementProtocol] = None):
+    def active_element(self) -> WebElementProtocol:
+        """Return the element that currently has focus."""
+        return self._driver_impl.active_element()
+
+    def press(
+        self,
+        *keys: Key | str,
+        modifiers: Sequence[Key] = (),
+        element: WebElementProtocol | None = None,
+    ) -> None:
+        """Press keys in order, holding modifiers across the sequence."""
+        self._driver_impl.press(*keys, modifiers=modifiers, element=element)
+
+    def send_enter(self, element: WebElementProtocol | None = None):
         """Send ENTER key to element or active element."""
         return self._driver_impl.send_enter(element)
 
-    def send_escape(self, element: Optional[WebElementProtocol] = None):
+    def send_escape(self, element: WebElementProtocol | None = None):
         """Send ESCAPE key to element or active element."""
         return self._driver_impl.send_escape(element)
 
-    def send_backspace(self, element: Optional[WebElementProtocol] = None):
+    def send_backspace(self, element: WebElementProtocol | None = None):
         """Send BACKSPACE key to element or active element."""
         return self._driver_impl.send_backspace(element)
 
@@ -373,9 +394,19 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """
         return self._driver_impl.select_by_value(selector_template, value)
 
+    def select_by_visible_text(self, selector_template: HasElementLocator, text: str) -> None:
+        """
+        Select an option from a <select> element by the text shown to the user.
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple for the select element
+            text: The visible text of the option to select
+        """
+        return self._driver_impl.select_by_visible_text(selector_template, text)
+
     # Frame switching
 
-    def switch_to_frame(self, frame_reference: Union[str, int, Any] = "frame"):
+    def switch_to_frame(self, frame_reference: str | int | Any = "frame"):
         """Switch to iframe by name, id, index, or element."""
         return self._driver_impl.switch_to_frame(frame_reference)
 
@@ -403,7 +434,7 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
 
     # Storage and cookies
 
-    def set_local_storage(self, key: str, value: Union[str, float]) -> None:
+    def set_local_storage(self, key: str, value: str | float) -> None:
         """Set localStorage item."""
         self._driver_impl.set_local_storage(key, value)
 
@@ -423,7 +454,7 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
 
     # Accessibility
 
-    def axe_eval(self, context: Optional[str] = None, write_to: Optional[str] = None) -> AxeResults:
+    def axe_eval(self, context: str | None = None, write_to: str | None = None) -> AxeResults:
         """Run axe-core accessibility tests."""
         return self._driver_impl.axe_eval(context, write_to)
 

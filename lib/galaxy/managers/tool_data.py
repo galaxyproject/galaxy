@@ -2,7 +2,6 @@ from os.path import basename
 from pathlib import Path
 from typing import (
     cast,
-    Optional,
 )
 
 from galaxy import exceptions
@@ -73,7 +72,7 @@ class ToolDataManager:
         data_table.reload_from_files()
         return self._reload_data_table(table_name)
 
-    def get_field_file_path(self, trans, table_name: str, field_name: str, file_name: str) -> Path:
+    def get_field_file_path(self, trans: ProvidesUserContext, table_name: str, field_name: str, file_name: str) -> Path:
         """Get the absolute path to a given file name in the table field"""
         field_value = self._data_table_field(table_name, field_name)
         if table_name not in PUBLIC_TABLES and not trans.user_is_admin:
@@ -86,7 +85,7 @@ class ToolDataManager:
             raise exceptions.ObjectNotFound("No such path in data table field.")
         return full_path.absolute()
 
-    def delete(self, table_name: str, values: Optional[str] = None) -> ToolDataDetails:
+    def delete(self, table_name: str, values: str | None = None) -> ToolDataDetails:
         """Removes an item from a data table"""
         data_table = self._tabular_data_table(table_name)
         if not values:

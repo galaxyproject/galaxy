@@ -10,7 +10,6 @@ import tempfile
 from collections import defaultdict
 from typing import (
     cast,
-    Optional,
 )
 
 import galaxy.datatypes.registry
@@ -78,7 +77,7 @@ class MockActionI:
 
 
 class UsesTools(UsesApp):
-    tool_action: Optional[MockActionI] = None
+    tool_action: MockActionI | None = None
 
     def _init_tool(
         self,
@@ -89,7 +88,7 @@ class UsesTools(UsesApp):
         tool_id="test_tool",
         extra_file_contents=None,
         extra_file_path=None,
-        tool_path: Optional[StrPath] = None,
+        tool_path: StrPath | None = None,
     ):
         if tool_path is None:
             self.tool_file: StrPath = os.path.join(self.test_directory, filename)

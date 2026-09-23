@@ -3,8 +3,6 @@
 from typing import (
     Any,
     cast,
-    Optional,
-    Union,
 )
 
 from requests import Response
@@ -12,14 +10,14 @@ from requests import Response
 from galaxy.exceptions.error_codes import ErrorCode
 
 
-def assert_status_code_is(response: Response, expected_status_code: int, failure_message: Optional[str] = None):
+def assert_status_code_is(response: Response, expected_status_code: int, failure_message: str | None = None):
     """Assert that the supplied response has the expect status code."""
     response_status_code = response.status_code
     if expected_status_code != response_status_code:
         _report_status_code_error(response, expected_status_code, failure_message)
 
 
-def assert_status_code_is_ok(response: Response, failure_message: Optional[str] = None):
+def assert_status_code_is_ok(response: Response, failure_message: str | None = None):
     """Assert that the supplied response is okay.
 
     This is an alternative to ``response.raise_for_status()`` with a more detailed
@@ -33,7 +31,7 @@ def assert_status_code_is_ok(response: Response, failure_message: Optional[str] 
         _report_status_code_error(response, "2XX", failure_message)
 
 
-def assert_status_code_is_not_ok(response: Response, failure_message: Optional[str] = None):
+def assert_status_code_is_not_ok(response: Response, failure_message: str | None = None):
     """Assert that the supplied response is not okay.
 
     .. seealso:: :py:meth:`assert_status_code_is_ok`
@@ -44,9 +42,7 @@ def assert_status_code_is_not_ok(response: Response, failure_message: Optional[s
         _report_status_code_error(response, "2XX", failure_message)
 
 
-def _report_status_code_error(
-    response: Response, expected_status_code: Union[str, int], failure_message: Optional[str]
-):
+def _report_status_code_error(response: Response, expected_status_code: str | int, failure_message: str | None):
     try:
         body = response.json()
     except Exception:
@@ -71,7 +67,7 @@ def assert_not_has_keys(response: dict, *keys: str):
         assert key not in response, f"Response [{response}] contains invalid key [{key}]"
 
 
-def assert_error_code_is(response: Union[Response, dict], error_code: Union[int, ErrorCode]):
+def assert_error_code_is(response: Response | dict, error_code: int | ErrorCode):
     """Assert that the supplied response has the supplied Galaxy error code.
 
     Galaxy error codes can be imported from :py:mod:`galaxy.exceptions.error_codes`
@@ -95,14 +91,14 @@ def assert_object_id_error(response: Response):
         assert_error_code_is(response, 404001)
 
 
-def assert_error_message_contains(response: Union[Response, dict], expected_contains: str):
+def assert_error_message_contains(response: Response | dict, expected_contains: str):
     as_dict = _as_dict(response)
     assert_has_keys(as_dict, "err_msg")
     err_msg = as_dict["err_msg"]
     assert expected_contains in err_msg, f"Expected error message [{err_msg}] to contain [{expected_contains}]."
 
 
-def _as_dict(response: Union[Response, dict]) -> dict[str, Any]:
+def _as_dict(response: Response | dict) -> dict[str, Any]:
     as_dict: dict[str, Any]
     if isinstance(response, Response):
         as_dict = cast(dict, response.json())

@@ -6,9 +6,10 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { useDatasetStore } from "@/stores/datasetStore";
+import { useDatatypeStore } from "@/stores/datatypeStore";
 import { useUserStore } from "@/stores/userStore";
 import STATES from "@/utils/datasetStates";
-import { withPrefix } from "@/utils/redirect";
+import { absPath, withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
@@ -23,6 +24,7 @@ interface Props {
 }
 
 const { getDataset, isLoadingDataset } = useDatasetStore();
+const datatypeStore = useDatatypeStore();
 
 const emit = defineEmits(["load"]);
 
@@ -31,6 +33,8 @@ const props = defineProps<Props>();
 const contentTruncated = ref<number | null>(null);
 const contentChunked = ref<boolean>(false);
 const errorMessage = ref<string>("");
+const previewLoaded = ref<boolean>(false);
+const previewFrameUrl = ref<string | null>(null);
 const sanitizedJobImported = ref<boolean>(false);
 const sanitizedToolId = ref<string | null>(null);
 
@@ -38,7 +42,9 @@ const { isAdmin } = storeToRefs(useUserStore());
 
 const dataset = computed(() => getDataset(props.datasetId));
 const datasetUrl = computed(() => `/datasets/${props.datasetId}/display/`);
-const downloadUrl = computed(() => withPrefix(`${datasetUrl.value}?to_ext=${dataset.value?.file_ext}`));
+const downloadUrl = computed(() =>
+    withPrefix(`/api/datasets/${props.datasetId}/download?to_ext=${dataset.value?.file_ext}`),
+);
 const isLoading = computed(() => isLoadingDataset(props.datasetId));
 const previewUrl = computed(() => `${datasetUrl.value}?preview=True`);
 
@@ -54,19 +60,61 @@ const sanitizedMessage = computed(() => {
 
 watch(
     () => props.datasetId,
-    async () => {
+    async (_, __, onCleanup) => {
+        previewLoaded.value = false;
+        contentChunked.value = false;
+        contentTruncated.value = null;
+        sanitizedJobImported.value = false;
+        sanitizedToolId.value = null;
+        errorMessage.value = "";
+        const existingFrameUrl = previewFrameUrl.value;
+        previewFrameUrl.value = null;
+
+        const controller = new AbortController();
+        if (existingFrameUrl?.startsWith("blob:")) {
+            URL.revokeObjectURL(existingFrameUrl);
+        }
+        onCleanup(() => {
+            controller.abort();
+            if (previewFrameUrl.value?.startsWith("blob:")) {
+                URL.revokeObjectURL(previewFrameUrl.value);
+            }
+            previewFrameUrl.value = null;
+        });
+
         try {
-            const { headers } = await fetch(withPrefix(previewUrl.value), { method: "HEAD" });
+            const extension = dataset.value?.file_ext;
+            const datatypeDetails = extension ? await datatypeStore.fetchDatatypeDetails(extension) : null;
+            // HTML-like and composite previews need a real /display/ URL so relative assets keep working.
+            const useDirectPreview = Boolean(extension?.endsWith("html") || datatypeDetails?.composite_files?.length);
+            const method = useDirectPreview ? "HEAD" : "GET";
+            const response = await fetch(absPath(previewUrl.value), { method, signal: controller.signal });
+            const { headers } = response;
             contentChunked.value = !!headers.get("x-content-chunked");
             contentTruncated.value = headers.get("x-content-truncated")
                 ? Number(headers.get("x-content-truncated"))
                 : null;
             sanitizedJobImported.value = !!headers.get("x-sanitized-job-imported");
             sanitizedToolId.value = headers.get("x-sanitized-tool-id");
-            errorMessage.value = "";
+            if (!response.ok) {
+                throw new Error(`${response.status} ${response.statusText}`);
+            }
+            if (useDirectPreview) {
+                // Iframe request delayed until after this fetch completes so the duplicate download is sequential
+                // (which helps to make use of the objectstore cache for the second request).
+                previewFrameUrl.value = previewUrl.value;
+            } else if (!contentChunked.value) {
+                const blob = await response.blob();
+                previewFrameUrl.value = URL.createObjectURL(blob);
+            }
         } catch (e) {
-            errorMessage.value = errorMessageAsString(e);
-            console.error(e);
+            if (!controller.signal.aborted) {
+                errorMessage.value = errorMessageAsString(e);
+                console.error(e);
+            }
+        }
+        if (!controller.signal.aborted) {
+            previewLoaded.value = true;
         }
     },
     { immediate: true },
@@ -86,6 +134,7 @@ watch(
         <FontAwesomeIcon :icon="faExclamationTriangle" />
         <span>Dataset is unavailable. Please check the history panel for details.</span>
     </BAlert>
+    <LoadingSpan v-else-if="!previewLoaded" message="Loading dataset content" />
     <div v-else class="dataset-display h-100">
         <Alert v-if="sanitizedMessage" :dismissible="true" variant="warning" data-description="sanitization warning">
             {{ sanitizedMessage }}
@@ -110,7 +159,7 @@ watch(
                 </div>
                 <a :href="downloadUrl">Download</a>
             </div>
-            <CenterFrame :src="previewUrl" @load="emit('load')" />
+            <CenterFrame v-if="previewFrameUrl" :src="previewFrameUrl" @load="emit('load')" />
         </div>
     </div>
 </template>

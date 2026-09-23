@@ -23,11 +23,13 @@
  *   @tagClick="onTagClick" />
  */
 
-import type { Ref } from "vue";
+import { reactive, type Ref, ref } from "vue";
 
 import type { AnyHistoryEntry, MyHistory } from "@/api/histories";
 import { isMyHistory } from "@/api/histories";
+import { useHistoryStore } from "@/stores/historyStore";
 
+import RenameModal from "@/components/Common/RenameModal.vue";
 import HistoryCard from "@/components/History/HistoryCard.vue";
 
 interface Props {
@@ -150,6 +152,28 @@ const emit = defineEmits<{
      */
     (e: "on-history-card-click", history: AnyHistoryEntry, event: Event): void;
 }>();
+
+const historyStore = useHistoryStore();
+
+const modalOptions = reactive({
+    rename: {
+        id: "",
+        name: "",
+    },
+});
+
+const showRename = ref(false);
+
+function onRenameClose() {
+    showRename.value = false;
+    emit("refreshList", true, true);
+}
+
+function onRename(id: string, name: string) {
+    modalOptions.rename.id = id;
+    modalOptions.rename.name = name;
+    showRename.value = true;
+}
 </script>
 
 <template>
@@ -173,8 +197,16 @@ const emit = defineEmits<{
             @tagClick="(...args) => emit('tagClick', ...args)"
             @refreshList="(...args) => emit('refreshList', ...args)"
             @updateFilter="(...args) => emit('updateFilter', ...args)"
+            @rename="onRename"
             @on-key-down="(...args) => emit('on-key-down', ...args)"
             @on-history-card-click="(...args) => emit('on-history-card-click', ...args)" />
+
+        <RenameModal
+            v-if="showRename"
+            item-type="history"
+            :name="modalOptions.rename.name"
+            :rename-action="(newName) => historyStore.updateHistory(modalOptions.rename.id, { name: newName })"
+            @close="onRenameClose" />
     </div>
 </template>
 

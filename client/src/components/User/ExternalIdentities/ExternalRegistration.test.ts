@@ -16,7 +16,7 @@ function mountExtReg(cfg: object) {
         propsData: { idpsWithRegistration },
         stubs: {
             BAlert: true,
-            BButton: true,
+            GButton: true,
             BForm: true,
             BFormCheckbox: true,
             BFormGroup: true,

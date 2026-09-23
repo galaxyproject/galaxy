@@ -3,9 +3,10 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestAnonymousHistories(SeleniumTestCase):
+class TestAnonymousHistories(SeleniumTestCase, UsesUploadActivity):
     @selenium_test
     def test_anon_history_landing(self):
         self.home()
@@ -16,7 +17,7 @@ class TestAnonymousHistories(SeleniumTestCase):
     @selenium_test
     def test_anon_history_upload(self):
         self.home()
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         # Reload the history and make sure the state is preserved.
         self.home()
@@ -46,6 +47,6 @@ class TestAnonymousHistories(SeleniumTestCase):
 
     def _upload_file_anonymous_then_register_user(self):
         self.home()
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         self.register()

@@ -1,4 +1,16 @@
+import re
+
 from ._framework import ApiTestCase
+
+# Backbone, underscore and jQuery are no longer bundled as global objects for
+# injected webhook scripts. These patterns catch webhook scripts that still rely
+# on them (matching usage, not passing mentions in comments).
+REMOVED_GLOBAL_PATTERNS = [
+    re.compile(r"Backbone\."),
+    re.compile(r"_\.(template|each|map|extend|isEmpty)\("),
+    re.compile(r"\bjQuery\("),
+    re.compile(r"\$\(document\)"),
+]
 
 
 class TestWebhooksApi(ApiTestCase):
@@ -26,6 +38,16 @@ class TestWebhooksApi(ApiTestCase):
         response = self._get("webhooks/trans_object/data")
         self._assert_status_code_is(response, 200)
         self._assert_has_keys(response.json(), "username")
+
+    def test_scripts_avoid_removed_globals(self):
+        response = self._get("webhooks")
+        self._assert_status_code_is(response, 200)
+        for webhook in response.json():
+            script = webhook.get("script") or ""
+            for pattern in REMOVED_GLOBAL_PATTERNS:
+                assert not pattern.search(
+                    script
+                ), f"Webhook '{webhook.get('id')}' script uses removed global matching {pattern.pattern!r}"
 
     def _assert_are_webhooks(self, response):
         response_list = response.json()

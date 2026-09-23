@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useIntersectionObserver } from "@vueuse/core";
 import { BAlert, BFormCheckbox } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
@@ -28,22 +29,42 @@ import { type EventData, useEventStore } from "@/stores/eventStore";
 import { orList } from "@/utils/strings";
 
 import type { DataOption, ExtendedCollectionType } from "./types";
-import { containsDataOption } from "./types";
+import { containsDataOption, DEFAULT_OPTIONS_PAGE_SIZE, isDataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
+import FormSelectionPreference from "../FormSelectionPreference.vue";
 import FormDataContextButtons from "./FormDataContextButtons.vue";
 import FormDataExtensions from "./FormDataExtensions.vue";
 import FormDataWorkflowRunTabs from "./FormDataWorkflowRunTabs.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
+type HistoryOrCollectionItem = HistoryItemSummary | DCESummary;
+
+/**
+ * These are raw API items that need to be converted to DataOption format.
+ */
+type SingleOrMultipleHistoryItems = HistoryOrCollectionItem | HistoryOrCollectionItem[];
+
+/**
+ * Response types from the data dialog callback.
+ * DataOption[] is returned by the upload modal path for fresh uploads.
+ * SingleOrMultipleHistoryItems (HistoryItemSummary and DCESummary) are returned for dataset/collection selection.
+ */
+type DialogResponse = DataOption[] | SingleOrMultipleHistoryItems;
+
 type SelectOption = {
     label: string;
     value: DataOption | null;
 };
 
-type HistoryOrCollectionItem = HistoryItemSummary | DCESummary;
+type OptionsMetaEntry = {
+    offset: number;
+    limit: number;
+    total_estimate?: number;
+    has_more: boolean;
+};
 
 const props = withDefaults(
     defineProps<{
@@ -51,6 +72,9 @@ const props = withDefaults(
         multiple?: boolean;
         optional?: boolean;
         options: Record<string, Array<DataOption>>;
+        pinned?: Record<string, Array<DataOption>>;
+        optionsMeta?: Record<string, OptionsMetaEntry>;
+        name?: string;
         value?: {
             values: Array<DataOption>;
         };
@@ -75,13 +99,22 @@ const props = withDefaults(
         tag: undefined,
         userDefinedTitle: undefined,
         extendedCollectionType: () => ({}) as ExtendedCollectionType,
+        pinned: () => ({}) as Record<string, Array<DataOption>>,
+        optionsMeta: () => ({}) as Record<string, OptionsMetaEntry>,
+        name: undefined,
     },
 );
 
 const eventStore = useEventStore();
 const { datatypesMapper } = useDatatypesMapper();
 
-const $emit = defineEmits(["input", "alert", "focus"]);
+const $emit = defineEmits(["input", "alert", "focus", "load-more", "search-change"]);
+
+/** Active backend search query for this parameter. Updated when the user types
+ * in the dropdown's search box (debounced upstream by ``FormSelect``). Sent in
+ * both the ``search-change`` and the subsequent ``load-more`` payloads so the
+ * server keeps filtering as the user paginates. */
+const searchQuery = ref("");
 
 // Determines wether values should be processed as linked or unlinked
 const currentLinked = ref(true);
@@ -185,8 +218,12 @@ const formattedOptions = computed(() => {
     keepOptionsUpdate.value;
 
     if (currentSource.value && currentSource.value in props.options) {
-        // Map incoming values to available options
-        const options = props.options[currentSource.value] || [];
+        // Map incoming values to available options. Pinned entries are
+        // forced-include items returned by the server (selected values that
+        // landed outside the current page window, or rerun inputs that no
+        // longer exist in the active history). Treat them as keep-options.
+        const pinnedForSource = (props.pinned && props.pinned[currentSource.value]) || [];
+        const options = [...pinnedForSource, ...(props.options[currentSource.value] || [])];
         const result: Array<SelectOption> = [];
         options.forEach((option) => {
             const newOption = {
@@ -203,10 +240,11 @@ const formattedOptions = computed(() => {
                 }
             }
         });
-        // Add keep-options from other sources
+        // Add keep-options from other sources (page + pinned).
         const otherSources = [SOURCE.COLLECTION_ELEMENT, SOURCE.LIBRARY_DATASET];
         for (const otherSource of otherSources) {
-            const otherOptions = props.options[otherSource];
+            const pinnedForOther = (props.pinned && props.pinned[otherSource]) || [];
+            const otherOptions = [...pinnedForOther, ...(props.options[otherSource] || [])];
             if (Array.isArray(otherOptions)) {
                 otherOptions.forEach((option) => {
                     const keepKey = `${option.id}_${option.src}`;
@@ -225,6 +263,10 @@ const formattedOptions = computed(() => {
                 // check if option (with same id) is already in result, if yes replace it with keepOption
                 const existingOptionIndex = result.findIndex((v) => v.value?.id === option.value?.id);
                 if (existingOptionIndex >= 0) {
+                    const existingOption = result[existingOptionIndex];
+                    if (existingOption?.value && shouldPreferCanonicalOption(existingOption.value, option.value)) {
+                        return;
+                    }
                     result[existingOptionIndex] = option;
                 } else {
                     result.unshift(option);
@@ -250,6 +292,85 @@ const formattedOptions = computed(() => {
 const placeholder = computed(() => getSourceLabel(currentSource.value));
 
 /**
+ * Visible-source ``has_more`` flag — drives the "Load more" sentinel rendered
+ * inside the dropdown when the server reports the page is incomplete.
+ */
+const hasMoreInCurrentSource = computed(() => {
+    if (!currentSource.value || !props.optionsMeta) {
+        return false;
+    }
+    const meta = props.optionsMeta[currentSource.value];
+    return Boolean(meta && meta.has_more);
+});
+
+/**
+ * Count of options loaded for the current source — used to label the sentinel.
+ */
+const currentSourceLoadedCount = computed(() => {
+    if (!currentSource.value) {
+        return 0;
+    }
+    return (props.options[currentSource.value] || []).length;
+});
+
+const currentSourceTotalEstimate = computed(() => {
+    if (!currentSource.value || !props.optionsMeta) {
+        return null;
+    }
+    return props.optionsMeta[currentSource.value]?.total_estimate ?? null;
+});
+
+function onLoadMore() {
+    if (!props.name || !currentSource.value) {
+        return;
+    }
+    const src = currentSource.value;
+    const meta = props.optionsMeta?.[src];
+    const limit = meta?.limit ?? DEFAULT_OPTIONS_PAGE_SIZE;
+    // Advance the server's cursor rather than measuring ``options`` — the
+    // loaded list is a union of every page fetched so far (including pages
+    // fetched under a different search), so its length is not an offset into
+    // the currently filtered result set.
+    $emit("load-more", {
+        name: props.name,
+        src,
+        offset: (meta?.offset ?? 0) + limit,
+        limit,
+        search: searchQuery.value || undefined,
+    });
+}
+
+/** Forward the dropdown's typed search to the parent so it can refetch the
+ * options list against the backend (filtered by name/hid). Always emits — the
+ * parent treats an empty query as "reset to default page 0". */
+function onSearchChange(query: string) {
+    if (!props.name || !currentSource.value) {
+        return;
+    }
+    searchQuery.value = query;
+    const src = currentSource.value;
+    const limit = props.optionsMeta?.[src]?.limit ?? DEFAULT_OPTIONS_PAGE_SIZE;
+    $emit("search-change", {
+        name: props.name,
+        src,
+        query,
+        limit,
+    });
+}
+
+/** Sentinel rendered inside the multiselect's ``after-list`` slot — when it
+ * scrolls into view and ``has_more`` is still true, fetch the next page.
+ * The observer only fires on intersection-state changes, so each scroll-into-
+ * view triggers at most one load-more for the current offset.
+ */
+const loadMoreSentinel = ref<HTMLElement | null>(null);
+useIntersectionObserver(loadMoreSentinel, ([entry]) => {
+    if (entry?.isIntersecting && hasMoreInCurrentSource.value && !props.loading) {
+        onLoadMore();
+    }
+});
+
+/**
  * Provides the array of available variants associated with a specific form data type
  */
 const variant = computed(() => {
@@ -267,6 +388,26 @@ const usingSimpleSelect = computed(
     () =>
         !formSelectionRef.value ||
         ("displayMany" in formSelectionRef.value && formSelectionRef.value.displayMany === false),
+);
+
+/**
+ * Mirrors `FormSelection`'s simple/column select preference so the control can be
+ * rendered below the "accepted formats" row instead of inside the select field.
+ */
+const formSelectionPreference = ref({ showManyButton: false, showMultiButton: false });
+
+function onPreferenceChange(state: { showManyButton: boolean; showMultiButton: boolean }) {
+    formSelectionPreference.value = state;
+}
+
+function setFormSelectionUseMany(value: boolean) {
+    formSelectionRef.value?.setUseMany(value);
+}
+
+const showSelectionPreference = computed(
+    () =>
+        Boolean(currentVariant.value?.multiple) &&
+        (formSelectionPreference.value.showManyButton || formSelectionPreference.value.showMultiButton),
 );
 
 /**
@@ -351,8 +492,16 @@ function getSourceType(val: DataOption) {
     }
 }
 
-/** Add values from drag/drop or data dialog sources */
-function handleIncoming(incoming: Record<string, unknown> | Record<string, unknown>[], partial = true) {
+/**
+ * Handle incoming data from sources that require validation and transformation.
+ * This includes drag-drop operations and data dialog selections.
+ * Validates datatype compatibility, source type compatibility, and converts to DataOption format.
+ *
+ * @param incoming - The incoming data objects to process
+ * @param partial - If true, merge with existing selection; if false, replace selection
+ * @returns true if processing succeeded, false otherwise
+ */
+function handleIncoming(incoming: SingleOrMultipleHistoryItems, partial = true) {
     if (incoming) {
         const values = Array.isArray(incoming) ? incoming : [incoming];
 
@@ -479,6 +628,81 @@ function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
 }
 
 /**
+ * Normalize an uploaded option by finding matching options in existing props.
+ * Returns the canonical option if found, otherwise returns the uploaded option.
+ */
+function normalizeOption(option: DataOption): DataOption {
+    const keepKey = `${option.id}_${option.src}`;
+    const existingOptions = props.options?.[option.src];
+    const foundOption = existingOptions?.find((existing) => existing.id === option.id);
+
+    if (foundOption) {
+        return foundOption;
+    }
+
+    // Cache new option in keepOptions if not already present
+    if (!isInKeepOptions(keepKey, option)) {
+        keepOptions[keepKey] = {
+            label: `${option.hid || "Selected"}: ${option.name}`,
+            value: option,
+        };
+        keepOptionsUpdate.value++;
+    }
+
+    return option;
+}
+
+/**
+ * Normalize an array of uploaded options, preferring existing matches.
+ */
+function normalizeUploadedOptions(options: DataOption[]): DataOption[] {
+    return options.map(normalizeOption);
+}
+
+/**
+ * Update currentValue based on the current variant configuration.
+ * For multiple dataset fields, merges new options. Otherwise, selects the first option.
+ */
+function updateCurrentValue(options: DataOption[]): void {
+    const config = currentVariant.value;
+
+    if (config?.src === SOURCE.DATASET && config.multiple) {
+        // Merge new options into existing selection, avoiding duplicates
+        const merged = currentValue.value ? [...currentValue.value] : [];
+        for (const option of options) {
+            if (!containsDataOption(merged, option)) {
+                merged.push(option);
+            }
+        }
+        currentValue.value = merged;
+    } else {
+        // Single selection: use first option
+        currentValue.value = [options[0]!];
+    }
+}
+
+/**
+ * Handle data options freshly uploaded through the upload dialog.
+ * Normalizes options against existing props and updates the current selection.
+ */
+function handleUploadedDataOptions(uploadedOptions: DataOption[]): void {
+    if (!uploadedOptions?.length) {
+        return;
+    }
+
+    const normalized = normalizeUploadedOptions(uploadedOptions);
+    updateCurrentValue(normalized);
+}
+
+function isUnavailableName(name: string | undefined): boolean {
+    return Boolean(name && name.toLowerCase().startsWith("(unavailable)"));
+}
+
+function shouldPreferCanonicalOption(canonical: DataOption, keep: DataOption): boolean {
+    return (isUnavailableName(keep.name) && !isUnavailableName(canonical.name)) || (!keep.hid && !!canonical.hid);
+}
+
+/**
  * Check if the new value is already in the keepOptions.
  * This doesn't only check if the value is already stored by the `keepKey`, but also if the new value
  * has a `hid` and the existing value doesn't. This is to ensure that values with `hid` are preferred.
@@ -495,23 +719,35 @@ function isInKeepOptions(keepKey: string, newValue: DataOption): boolean {
 }
 
 /**
- * Open file dialog
+ * Callback handler for the data dialog.
+ * Routes responses to appropriate handlers based on their type.
+ *
+ * @param response - The response from the data dialog
+ */
+function onDataDialogResponse(response: DialogResponse): void {
+    // The data dialog's upload modal path returns DataOption[] directly
+    if (isDataOptionArray(response)) {
+        handleUploadedDataOptions(response);
+        return;
+    }
+    // Handle responses that require validation and transformation
+    handleIncoming(response, false);
+}
+
+/**
+ * Open file dialog for data selection or upload.
  */
 function onBrowse() {
     if (currentVariant.value) {
         const library = !!currentVariant.value.library;
         const multiple = !!currentVariant.value.multiple;
-        getGalaxyInstance().data.dialog(
-            (response: Record<string, unknown>) => {
-                handleIncoming(response, false);
-            },
-            {
-                allowUpload: true,
-                format: null,
-                library,
-                multiple,
-            },
-        );
+        const options = {
+            allowUpload: true,
+            format: null,
+            library,
+            multiple,
+        };
+        getGalaxyInstance().data.dialog(onDataDialogResponse, options);
     }
 }
 
@@ -716,6 +952,10 @@ function isHistoryOrCollectionItem(item: EventData): item is HistoryOrCollection
     return isHistoryItem(item) || isDCE(item);
 }
 
+function isDataOptionArray(value: unknown): value is DataOption[] {
+    return Array.isArray(value) && value.every((item) => isDataOption(item as object));
+}
+
 /**
  * Helper function to handle collection type changes safely
  */
@@ -764,13 +1004,13 @@ function onDragEnter(evt: DragEvent) {
         currentHighlighting.value = highlightingState;
         dragTarget.value = evt.target;
         dragData.value = eventData;
-    } else if (props.workflowRun && evt.dataTransfer?.items && workflowTab.value !== "create") {
+    } else if (props.workflowRun && evt.dataTransfer?.items && workflowTab.value !== "upload") {
         // if any item in DataTransfer is a file
         const hasFiles = Array.from(evt.dataTransfer.items).some((item) => item.kind === "file");
         if (hasFiles) {
             currentHighlighting.value = "success";
             $emit("alert", "Drop files in the upload area below to create datasets.");
-            workflowTab.value = "create";
+            workflowTab.value = "upload";
             dragTarget.value = evt.target;
         }
     }
@@ -792,7 +1032,10 @@ function onDragLeave(evt: DragEvent) {
 
 function onDrop(e: DragEvent) {
     if (dragData.value.length) {
-        if (handleIncoming(dragData.value, dragData.value.length === 1)) {
+        // Filter to only valid history/collection items
+        const filteredItems = dragData.value.filter(isHistoryOrCollectionItem) as HistoryOrCollectionItem[];
+        const partial = filteredItems.length === 1;
+        if (handleIncoming(filteredItems, partial)) {
             currentHighlighting.value = "success";
             if (props.workflowRun) {
                 workflowTab.value = "view";
@@ -817,8 +1060,11 @@ const matchedValues = computed(() => {
     if (props.value && props.value.values.length > 0) {
         props.value.values.forEach((entry) => {
             if ("src" in entry && entry.src) {
-                const options = props.options[entry.src] || [];
-                const option = options.find((v) => v.id === entry.id && v.src === entry.src);
+                const pageOptions = props.options[entry.src] || [];
+                const pinnedOptions = (props.pinned && props.pinned[entry.src]) || [];
+                const option =
+                    pageOptions.find((v) => v.id === entry.id && v.src === entry.src) ||
+                    pinnedOptions.find((v) => v.id === entry.id && v.src === entry.src);
                 if (option) {
                     const accepted = !props.tag || option.tags?.includes(props.tag);
                     if (accepted) {
@@ -895,10 +1141,13 @@ const noOptionsWarningMessage = computed(() => {
                 :collection-types="props.collectionTypes"
                 :current-source="currentSource || undefined"
                 :is-populated="currentValue && currentValue.length > 0"
+                :extensions="props.extensions"
+                :multiple="Boolean(currentVariant?.multiple)"
                 show-field-options
                 :show-view-create-options="props.workflowRun && !usingSimpleSelect"
                 :workflow-tab.sync="workflowTab"
                 @create-collection-type="handleCollectionTypeChange"
+                @uploaded-data="handleUploadedDataOptions"
                 @on-browse="onBrowse"
                 @set-current-field="(value) => (currentField = value)" />
 
@@ -914,14 +1163,20 @@ const noOptionsWarningMessage = computed(() => {
                     :multiple="currentVariant.multiple"
                     :optional="currentVariant.multiple || optional"
                     :options="formattedOptions"
-                    :placeholder="`Select a ${placeholder}`">
+                    :placeholder="`Select a ${placeholder}`"
+                    @search-change="onSearchChange">
                     <template v-slot:no-options>
-                        <BAlert
-                            :class="props.workflowRun && 'py-0 my-0 d-flex w-100 h-100 align-items-center'"
-                            variant="warning"
-                            show>
+                        <BAlert class="form-data-no-options-alert" variant="warning" show>
                             {{ noOptionsWarningMessage }}
                         </BAlert>
+                    </template>
+                    <template v-if="hasMoreInCurrentSource" v-slot:after-list>
+                        <div ref="loadMoreSentinel" class="form-data-load-more-sentinel text-muted text-center py-2">
+                            <small v-if="currentSourceTotalEstimate">
+                                Loading more… ({{ currentSourceLoadedCount }} of {{ currentSourceTotalEstimate }})
+                            </small>
+                            <small v-else>Loading more…</small>
+                        </div>
                     </template>
                 </FormSelect>
                 <FormSelection
@@ -930,12 +1185,24 @@ const noOptionsWarningMessage = computed(() => {
                     v-model="currentValue"
                     class="w-100"
                     :data="formattedOptions"
+                    :total-estimate="currentSourceTotalEstimate"
+                    defer-preference
                     optional
-                    multiple>
+                    multiple
+                    @preference-change="onPreferenceChange"
+                    @search-change="onSearchChange">
                     <template v-slot:no-options>
-                        <BAlert class="py-2 my-0" variant="warning" show>
+                        <BAlert class="form-data-no-options-alert" variant="warning" show>
                             {{ noOptionsWarningMessage }}
                         </BAlert>
+                    </template>
+                    <template v-if="hasMoreInCurrentSource" v-slot:after-list>
+                        <div ref="loadMoreSentinel" class="form-data-load-more-sentinel text-muted text-center py-2">
+                            <small v-if="currentSourceTotalEstimate">
+                                Loading more… ({{ currentSourceLoadedCount }} of {{ currentSourceTotalEstimate }})
+                            </small>
+                            <small v-else>Loading more…</small>
+                        </div>
                     </template>
                 </FormSelection>
             </div>
@@ -946,17 +1213,27 @@ const noOptionsWarningMessage = computed(() => {
                 :collection-types="props.collectionTypes"
                 :current-source="currentSource || undefined"
                 :is-populated="currentValue && currentValue.length > 0"
+                :extensions="props.extensions"
+                :multiple="Boolean(currentVariant?.multiple)"
                 show-view-create-options
                 :workflow-tab.sync="workflowTab"
-                @create-collection-type="handleCollectionTypeChange" />
+                @create-collection-type="handleCollectionTypeChange"
+                @uploaded-data="handleUploadedDataOptions" />
         </div>
 
-        <FormDataExtensions
-            v-if="restrictsExtensions"
-            class="mt-1"
-            :extensions="props.extensions"
-            :formats-button-id="formatsButtonId"
-            :formats-visible.sync="formatsVisible" />
+        <div v-if="restrictsExtensions || showSelectionPreference" class="d-flex align-items-center flex-gapx-1 mt-1">
+            <FormDataExtensions
+                v-if="restrictsExtensions"
+                :extensions="props.extensions"
+                :formats-button-id="formatsButtonId"
+                :formats-visible.sync="formatsVisible" />
+
+            <FormSelectionPreference
+                v-if="showSelectionPreference"
+                :show-many-button="formSelectionPreference.showManyButton"
+                :show-multi-button="formSelectionPreference.showMultiButton"
+                @use-many="setFormSelectionUseMany" />
+        </div>
 
         <div :class="{ 'd-flex justify-content-between': props.workflowRun }">
             <div v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
@@ -1001,7 +1278,7 @@ const noOptionsWarningMessage = computed(() => {
             :step-title="props.userDefinedTitle"
             :workflow-tab.sync="workflowTab"
             @focus="$emit('focus')"
-            @uploaded-data="($event) => handleIncoming($event, !$event?.length || $event.length <= 1)" />
+            @uploaded-data="handleUploadedDataOptions" />
     </div>
 </template>
 
@@ -1048,6 +1325,19 @@ const noOptionsWarningMessage = computed(() => {
                 padding-left: 5px;
             }
         }
+    }
+
+    .form-data-no-options-alert {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        // Match the adjacent context-button / select control height so the warning
+        // aligns with the row instead of over-filling it (multiple mode pushes the
+        // "switch to column select" control below) or leaving default alert padding.
+        min-height: 2.125rem;
+        margin: 0;
+        padding-top: 0;
+        padding-bottom: 0;
     }
 }
 

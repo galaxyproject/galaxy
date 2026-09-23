@@ -2,6 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { http as mswHttp, HttpResponse } from "msw";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
@@ -193,16 +194,45 @@ describe("DatasetView", () => {
         }
         global.IntersectionObserver = IO;
         global.MutationObserver = IO;
+        global.URL.createObjectURL = vi.fn(() => "blob:http://localhost/test-preview");
+        global.URL.revokeObjectURL = vi.fn();
         server.use(
             http.get("/api/datasets/:dataset_id", ({ response }) => {
                 return response(200).json(mockDataset);
             }),
             http.get("/api/configuration", ({ response }) => response(200).json({})),
             http.get("/api/plugins", ({ response }) => response(200).json([])),
+            mswHttp.get("http://localhost/datasets/:dataset_id/display/", ({ request }) => {
+                expect(request.url).toContain("preview=True");
+                return HttpResponse.text("preview data", {
+                    status: 200,
+                    headers: {
+                        "content-type": "text/plain",
+                    },
+                });
+            }),
         );
     });
 
     describe("Component mounting and basic functionality", () => {
+        it.each(["preview", "raw"])("uses the download endpoint from the %s tab", async (tab) => {
+            server.use(
+                http.get("/api/datatypes/:datatype_id", ({ response }) =>
+                    response(200).json({
+                        id: "mp4",
+                        display_behavior: "download",
+                    }),
+                ),
+            );
+            const wrapper = await mountDatasetView(tab, {
+                dataset: { ...mockDataset, name: "Annotated video", file_ext: "mp4" },
+            });
+
+            const downloadLink = wrapper.get(".auto-download-message a");
+            expect(downloadLink.text()).toContain("Download File");
+            expect(downloadLink.attributes("href")).toBe(`/api/datasets/${DATASET_ID}/download`);
+        });
+
         it("mounts with correct props", async () => {
             const wrapper = await mountDatasetView();
             expect(wrapper.exists()).toBe(true);
@@ -323,17 +353,17 @@ describe("DatasetView", () => {
             expect(wrapper.find("iframe").exists()).toBe(false);
         });
 
-        it.skip("falls back to default preview for unsupported datatypes", async () => {
+        it("falls back to default preview for unsupported datatypes", async () => {
             const wrapper = await mountDatasetView("preview");
             await flushPromises(); // Wait for preferred visualization check
 
             // No preferred visualization should be set
-            expect(wrapper.vm.preferredVisualization).toBeNull();
+            expect(wrapper.vm.preferredVisualization).toBeUndefined();
 
             // Check that we're using the default iframe
             expect(wrapper.findComponent({ name: "VisualizationFrame" }).exists()).toBe(false);
             expect(wrapper.find("iframe").exists()).toBe(true);
-            expect(wrapper.find("iframe").attributes("src")).toBe(`/datasets/${DATASET_ID}/display/?preview=true`);
+            expect(wrapper.find("iframe").attributes("src")).toBe("blob:http://localhost/test-preview");
         });
     });
 

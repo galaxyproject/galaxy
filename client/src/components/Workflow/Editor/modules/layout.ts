@@ -10,9 +10,8 @@ import {
     type WorkflowStepStore,
 } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
+import { AxisAlignedBoundingBox, type Rectangle, rectDistance } from "@/utils/geometry";
 import { match } from "@/utils/utils";
-
-import { AxisAlignedBoundingBox, type Rectangle, rectDistance } from "./geometry";
 
 const elk = new ELK();
 

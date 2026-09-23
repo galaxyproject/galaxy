@@ -19,7 +19,6 @@
  */
 
 import { faExclamationTriangle, faKey, faPencilAlt, faTrash, faWrench } from "@fortawesome/free-solid-svg-icons";
-import { BModal } from "bootstrap-vue";
 import { faCheck } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
@@ -37,6 +36,7 @@ import {
 } from "@/stores/userToolsServiceCredentialsStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GModal from "@/components/BaseComponents/GModal.vue";
 import GCard from "@/components/Common/GCard.vue";
 import CredentialsGroupForm from "@/components/User/Credentials/CredentialsGroupForm.vue";
 
@@ -153,10 +153,9 @@ async function deleteGroup(groupToDelete: ServiceCredentialsGroupDetails): Promi
 
     const confirmed = await confirm(message, {
         title: "Delete credentials group",
-        okTitle: "Delete group",
-        okVariant: "danger",
-        cancelVariant: "outline-primary",
-        centered: true,
+        okText: "Delete group",
+        okColor: "red",
+        okIcon: faTrash,
     });
 
     if (confirmed && groupToDelete) {
@@ -268,7 +267,7 @@ function getBadgesFor(group: ServiceCredentialsGroupDetails): CardBadge[] {
             ? "This tool is no longer available."
             : "This tool is using this credentials group. Click to view.",
         label: getToolDisplayName.value(group),
-        to: toolMissing ? undefined : `/root?tool_id=${group.sourceId}&tool_version=${group.sourceVersion}`,
+        to: toolMissing ? undefined : `/?tool_id=${group.sourceId}&tool_version=${group.sourceVersion}`,
     });
 
     if (!toolMissing) {
@@ -330,25 +329,16 @@ function getPrimaryActions(group: ServiceCredentialsGroupDetails): CardAction[] 
             :update-time="group.update_time">
         </GCard>
 
-        <BModal
-            v-model="showModal"
-            visible
-            centered
-            scrollable
-            no-close-on-backdrop
-            no-close-on-esc
-            button-size="md"
-            size="lg"
-            body-class="edit-credentials-body"
+        <GModal
+            :show.sync="showModal"
+            confirm
             :title="`Edit Credentials Group - ${editData?.groupData.groupPayload.name}`"
-            :ok-title="saveButtonText"
-            cancel-title="Close"
-            cancel-variant="outline-danger"
+            :ok-text="saveButtonText"
             @ok="onSaveChanges">
             <CredentialsGroupForm
                 v-if="editData"
                 :group-data="editData.groupData"
                 :service-definition="editData.serviceDefinition" />
-        </BModal>
+        </GModal>
     </div>
 </template>

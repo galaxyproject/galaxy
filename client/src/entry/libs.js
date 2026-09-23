@@ -4,23 +4,16 @@
  *
  * It exposes required globals to window for:
  * - jQuery plugins that expect window.$ and window.jQuery
- * - Backbone code that expects global underscore
  */
 
-// Backbone - expose globally for legacy code
-import Backbone from "backbone";
 // Buffer polyfill - some dependencies expect Buffer to be globally available
 import { Buffer } from "buffer";
 // jQuery - import directly from the package
 // Note: We import from "jquery" directly, not via jquery.custom.js,
 // to avoid code-splitting issues with Rollup/Vite
 import jQuery from "jquery";
-// Underscore - expose to window for Backbone and legacy code
-import _ from "underscore";
 
 window.Buffer = Buffer;
-window._ = _;
-window.Backbone = Backbone;
 
 // Expose jQuery globally - this must happen before jquery-migrate loads
 window.$ = jQuery;

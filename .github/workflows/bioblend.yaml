@@ -11,12 +11,13 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+permissions: {}
 jobs:
   test:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17
+        image: postgres:18
         # Provide the password for postgres
         env:
           POSTGRES_PASSWORD: postgres
@@ -35,13 +36,13 @@ jobs:
         galaxy_python_version: ['3.10']
     steps:
       - name: Checkout Galaxy
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 1
           path: galaxy
           persist-credentials: false
       - name: Checkout Bioblend
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
         with:
           repository: galaxyproject/bioblend
           path: bioblend
@@ -49,18 +50,14 @@ jobs:
       - name: Calculate Python version for BioBlend from tox_env
         id: get_bioblend_python_version
         run: echo "bioblend_python_version=$(echo "${{ matrix.tox_env }}" | sed -e 's/^py\([3-9]\)\([0-9]\+\)/\1.\2/')" >> $GITHUB_OUTPUT
-      - name: Set up Python for BioBlend
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ steps.get_bioblend_python_version.outputs.bioblend_python_version }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v10.1.0
       - name: Install tox
-        run: uv tool install tox --with tox-uv
+        run: uv tool install --python ${BIOBLEND_PYTHON_VERSION} tox --with tox-uv
+        env:
+          BIOBLEND_PYTHON_VERSION: ${{ steps.get_bioblend_python_version.outputs.bioblend_python_version }}
       - name: Set up Python for Galaxy
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.galaxy_python_version }}
+        run: uv python install ${{ matrix.galaxy_python_version }}
       - name: Run tests
         env:
           PGPASSWORD: postgres
@@ -69,7 +66,7 @@ jobs:
         run: |
           # Create a PostgreSQL database for Galaxy. The default SQLite3 database makes test fail randomly because of "database locked" error.
           createdb -U postgres galaxy
-          export DATABASE_CONNECTION=postgresql://postgres:@localhost/galaxy
+          export DATABASE_CONNECTION=postgresql+psycopg://postgres:@localhost/galaxy
           ./bioblend/run_bioblend_tests.sh -g galaxy -v python${{ matrix.galaxy_python_version }} -e ${{ matrix.tox_env }}
       - name: The job has failed
         if: ${{ failure() }}

@@ -239,12 +239,13 @@ steps:
 
 WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING = """
 class: GalaxyWorkflow
+inputs:
+  input_collection: collection
 steps:
-  - type: input_collection
   - tool_id: collection_creates_pair
     state:
       input1:
-        $link: 0
+        $link: "0"
   - tool_id: collection_paired_test
     state:
       f1:
@@ -547,7 +548,7 @@ inputs:
 steps:
   first_cat:
     tool_id: cat1
-    outputs:
+    out:
        out_file1:
          hide: true
          rename: "the new value"
@@ -733,7 +734,7 @@ steps:
       input: required
     state:
       lineNum:
-        $link:  expression/out1
+        $link: expression/out1
   count_multi_file:
     tool_id: count_multi_file
     in:
@@ -798,7 +799,7 @@ steps:
     state:
       input1:
         $link: input1
-    outputs:
+    out:
       out_file1:
         rename: "#{input1 | basename} suffix"
 test_data:
@@ -817,7 +818,7 @@ steps:
     tool_id: cat
     in:
       input1: input1
-    outputs:
+    out:
       out_file1:
         rename: "${replaceme} suffix"
 """
@@ -843,7 +844,7 @@ steps:
           label: first_cat
           in:
             input1: inner_input
-          outputs:
+          out:
             out_file1:
               rename: "${replaceme} suffix"
     in:
@@ -1191,6 +1192,9 @@ outputs:
     outputSource: subworkflow/inner_output_2
 """
 
+# The location is templated so tests can serve 1.bed from the local test HTTP server.
+DEFAULT_FILE_DATASET_INPUT_LOCATION = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"
+
 WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT = """
 class: GalaxyWorkflow
 inputs:
@@ -1199,7 +1203,7 @@ inputs:
       class: File
       basename: a file
       format: txt
-      location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+      location: {location}
 steps:
   cat1:
     tool_id: cat1
@@ -1218,7 +1222,7 @@ steps:
           class: File
           basename: a file
           format: txt
-          location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+          location: {location}
 """
 
 WORKFLOW_FLAT_CROSS_PRODUCT = """

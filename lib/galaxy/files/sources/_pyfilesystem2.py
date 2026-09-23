@@ -4,7 +4,6 @@ import logging
 import os
 from typing import (
     ClassVar,
-    Optional,
 )
 
 import fs
@@ -34,7 +33,7 @@ PACKAGE_MESSAGE = "FilesSource plugin is missing required Python PyFilesystem2 p
 
 
 class PyFilesystem2FilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]):
-    required_module: ClassVar[Optional[type[FS]]]
+    required_module: ClassVar[type[FS] | None]
     required_package: ClassVar[str]
     supports_pagination = True
     supports_search = True
@@ -62,10 +61,10 @@ class PyFilesystem2FilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]
         path="/",
         recursive=False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         """Return dictionary of 'Directory's and 'File's."""
         try:
@@ -95,10 +94,10 @@ class PyFilesystem2FilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]
         except fs.errors.FSError as e:
             raise MessageException(f"Problem listing file source path {path}. Reason: {e}") from e
 
-    def _get_total_matches_count(self, fs: FS, path: str, filter: Optional[list[str]] = None) -> int:
+    def _get_total_matches_count(self, fs: FS, path: str, filter: list[str] | None = None) -> int:
         return sum(1 for _ in fs.filterdir(path, namespaces=["basic"], files=filter, dirs=filter))
 
-    def _to_page(self, limit: Optional[int] = None, offset: Optional[int] = None) -> Optional[tuple[int, int]]:
+    def _to_page(self, limit: int | None = None, offset: int | None = None) -> tuple[int, int] | None:
         if limit is None and offset is None:
             return None
         limit = limit or DEFAULT_PAGE_LIMIT
@@ -106,18 +105,21 @@ class PyFilesystem2FilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]
         end = start + limit
         return (start, end)
 
-    def _query_to_filter(self, query: Optional[str]) -> Optional[list[str]]:
+    def _query_to_filter(self, query: str | None) -> list[str] | None:
         if not query:
             return None
         return [f"*{query}*"]
 
     def _realize_to(self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[TResolvedConfig]):
         with open(native_path, "wb") as write_file:
-            self._open_fs(context).download(source_path, write_file)
+            with self._open_fs(context) as openfs:
+                openfs.download(source_path, write_file)
 
     def _write_from(self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[TResolvedConfig]):
-        with open(native_path, "rb") as read_file:
-            openfs = self._open_fs(context)
+        with (
+            open(native_path, "rb") as read_file,
+            self._open_fs(context) as openfs,
+        ):
             dirname = fs.path.dirname(target_path)
             if not openfs.isdir(dirname):
                 openfs.makedirs(dirname)

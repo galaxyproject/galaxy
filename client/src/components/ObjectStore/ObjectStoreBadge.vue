@@ -59,7 +59,7 @@ const title = computed(() => {
 </script>
 
 <template>
-    <span v-b-tooltip.hover.noninteractive="title" class="object-store-badge-wrapper">
+    <span v-g-tooltip.hover="title" class="object-store-badge-wrapper">
         <FontAwesomeLayers :class="layerClasses" :data-badge-type="badgeType">
             <FontAwesomeIcon v-if="badgeType == 'restricted'" :icon="faUserLock" :class="disadvantage" />
             <FontAwesomeIcon v-if="badgeType == 'user_defined'" :icon="faPlug" :class="neutral" />

@@ -6,6 +6,7 @@ from galaxy_test.selenium.framework import (
     RunsWorkflows,
     UsesHistoryItemAssertions,
 )
+from galaxy_test.selenium.upload_activity_helpers import UsesUploadActivity
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
@@ -15,7 +16,9 @@ if TYPE_CHECKING:
     from galaxy_test.selenium.framework import SeleniumSessionDatasetPopulator
 
 
-class BaseWorkflowRunTargetTestCase(SeleniumIntegrationTestCase, RunsWorkflows, UsesHistoryItemAssertions):
+class BaseWorkflowRunTargetTestCase(
+    SeleniumIntegrationTestCase, RunsWorkflows, UsesHistoryItemAssertions, UsesUploadActivity
+):
     dataset_populator: "SeleniumSessionDatasetPopulator"
     ensure_registered = True
 
@@ -31,7 +34,7 @@ class TestWorkflowRunTargetNewSeleniumIntegration(BaseWorkflowRunTargetTestCase)
     @managed_history
     def test_execution_to_new_history(self):
         filename = self.test_data_resolver.get_filename("1.fasta")
-        self.perform_upload(filename)
+        self.upload_context("local-file").stage_local_file(filename).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         workflow_run = self.components.workflow_run
@@ -57,7 +60,7 @@ class TestWorkflowRunTargetCurrentSeleniumIntegration(BaseWorkflowRunTargetTestC
     @managed_history
     def test_execution_in_current_history(self):
         filename = self.test_data_resolver.get_filename("1.fasta")
-        self.perform_upload(filename)
+        self.upload_context("local-file").stage_local_file(filename).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         workflow_run = self.components.workflow_run
@@ -81,13 +84,14 @@ class TestWorkflowRunTargetSelectNewSeleniumIntegration(BaseWorkflowRunTargetTes
     @managed_history
     def test_execution_in_current_history(self):
         filename = self.test_data_resolver.get_filename("1.fasta")
-        self.perform_upload(filename)
+        self.upload_context("local-file").stage_local_file(filename).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         workflow_run = self.components.workflow_run
         workflow_run.expanded_form.wait_for_absent_or_hidden()
         workflow_run.runtime_setting_button.wait_for_and_click()
         workflow_run.runtime_setting_target.wait_for_and_click()
+        workflow_run.new_history_name_input.wait_for_visible()
         self.send_escape()
         workflow_run.runtime_setting_button.wait_for_and_click()
         workflow_run.runtime_setting_target.wait_for_absent_or_hidden()

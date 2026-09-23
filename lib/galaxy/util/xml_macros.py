@@ -1,12 +1,10 @@
 import os
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from copy import deepcopy
 from typing import (
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
     TYPE_CHECKING,
     TypeVar,
     Union,
@@ -24,10 +22,10 @@ if TYPE_CHECKING:
     )
     from galaxy.util.path import StrPath
 
-MacrosDictT = Dict[str, List["Element"]]
+MacrosDictT = dict[str, list["Element"]]
 
 
-def load_with_references(path: "StrPath") -> Tuple["ElementTree", Optional[List[str]]]:
+def load_with_references(path: "StrPath") -> tuple["ElementTree", list[str] | None]:
     """Load XML documentation from file system and preprocesses XML macros.
 
     Return the XML representation of the expanded tree and paths to
@@ -45,7 +43,7 @@ def load_with_references(path: "StrPath") -> Tuple["ElementTree", Optional[List[
     macros_el.clear()
 
     # Collect tokens
-    tokens: Dict[str, str] = {}
+    tokens: dict[str, str] = {}
     for m in macros.get("token", []):
         token_name = m.get("name")
         assert token_name
@@ -53,7 +51,7 @@ def load_with_references(path: "StrPath") -> Tuple["ElementTree", Optional[List[
     tokens = expand_nested_tokens(tokens)
 
     # Expand xml macros
-    macro_dict: Dict[str, XmlMacroDef] = {}
+    macro_dict: dict[str, XmlMacroDef] = {}
     for m in macros.get("xml", []):
         macro_name = m.get("name")
         assert macro_name
@@ -72,13 +70,12 @@ def load(path: "StrPath") -> "ElementTree":
     return tree
 
 
-def template_macro_params(root: "Element") -> Dict[str, Union[str, None]]:
+def template_macro_params(root: "Element") -> dict[str, str | None]:
     """
     Look for template macros and populate param_dict (for cheetah)
     with these.
     """
-    macros_el = _macros_el(root)
-    if macros_el is not None:
+    if (macros_el := _macros_el(root)) is not None:
         return _macros_of_type(macros_el, "template", lambda el: el.text)
     return {}
 
@@ -91,14 +88,14 @@ def raw_xml_tree(path: "StrPath") -> "ElementTree":
     return tree
 
 
-def imported_macro_paths(root: "Element") -> List[str]:
+def imported_macro_paths(root: "Element") -> list[str]:
     macros_el = _macros_el(root)
     if macros_el is None:
         return []
     return _imported_macro_paths_from_el(macros_el)
 
 
-def _import_macros(macros_el: "Element", path: "StrPath", macros: MacrosDictT) -> Optional[List[str]]:
+def _import_macros(macros_el: "Element", path: "StrPath", macros: MacrosDictT) -> list[str] | None:
     """
     root the parsed XML tree
     path the path to the main xml document
@@ -116,9 +113,9 @@ def _macros_el(root: "Element") -> Union["Element", None]:
 T = TypeVar("T")
 
 
-def _macros_of_type(macros_el: "Element", type: str, el_func: Callable[["Element"], T]) -> Dict[str, T]:
+def _macros_of_type(macros_el: "Element", type: str, el_func: Callable[["Element"], T]) -> dict[str, T]:
     macro_els = macros_el.findall("macro")
-    ret: Dict[str, T] = {}
+    ret: dict[str, T] = {}
     for macro_el in macro_els:
         if macro_el.get("type") == type:
             macro_name = macro_el.get("name")
@@ -127,7 +124,7 @@ def _macros_of_type(macros_el: "Element", type: str, el_func: Callable[["Element
     return ret
 
 
-def expand_nested_tokens(tokens: Dict[str, str]) -> Dict[str, str]:
+def expand_nested_tokens(tokens: dict[str, str]) -> dict[str, str]:
     for token_name in tokens.keys():
         for current_token_name, current_token_value in tokens.items():
             if token_name in current_token_value:
@@ -137,7 +134,7 @@ def expand_nested_tokens(tokens: Dict[str, str]) -> Dict[str, str]:
     return tokens
 
 
-def _expand_tokens(elements: Iterable["Element"], tokens: Dict[str, str]) -> None:
+def _expand_tokens(elements: Iterable["Element"], tokens: dict[str, str]) -> None:
     if not tokens:
         return
 
@@ -145,14 +142,13 @@ def _expand_tokens(elements: Iterable["Element"], tokens: Dict[str, str]) -> Non
         _expand_tokens_for_el(element, tokens)
 
 
-def _expand_tokens_for_el(element: "Element", tokens: Dict[str, str]) -> None:
+def _expand_tokens_for_el(element: "Element", tokens: dict[str, str]) -> None:
     """
     expand tokens in element and (recursively) in its children
     replacements of text attributes and attribute values are
     possible
     """
-    element_text = element.text
-    if element_text:
+    if element_text := element.text:
         new_value = _expand_tokens_str(element_text, tokens)
         if new_value is not element_text:
             element.text = new_value
@@ -168,7 +164,7 @@ def _expand_tokens_for_el(element: "Element", tokens: Dict[str, str]) -> None:
     _expand_tokens(element.__iter__(), tokens)
 
 
-def _expand_tokens_str(s: str, tokens: Dict[str, str]) -> str:
+def _expand_tokens_str(s: str, tokens: dict[str, str]) -> str:
     for key, value in tokens.items():
         if key in s:
             s = s.replace(key, value)
@@ -177,9 +173,9 @@ def _expand_tokens_str(s: str, tokens: Dict[str, str]) -> str:
 
 def _expand_macros(
     elements: Iterable["Element"],
-    macros: Dict[str, "XmlMacroDef"],
-    tokens: Dict[str, str],
-    visited: Optional[List[str]] = None,
+    macros: dict[str, "XmlMacroDef"],
+    tokens: dict[str, str],
+    visited: list[str] | None = None,
 ) -> None:
     if not macros and not tokens:
         return
@@ -196,7 +192,7 @@ def _expand_macros(
 
 
 def _expand_macro(
-    expand_el: "Element", macros: Dict[str, "XmlMacroDef"], tokens: Dict[str, str], visited: List[str]
+    expand_el: "Element", macros: dict[str, "XmlMacroDef"], tokens: dict[str, str], visited: list[str]
 ) -> None:
     macro_name = expand_el.get("macro")
     assert macro_name is not None, "Attempted to expand macro with no 'macro' attribute defined."
@@ -211,8 +207,7 @@ def _expand_macro(
     macro_el = deepcopy(macro_def.element)
     _expand_yield_statements(macro_el, expand_el)
 
-    macro_tokens = macro_def.macro_tokens(expand_el)
-    if macro_tokens:
+    if macro_tokens := macro_def.macro_tokens(expand_el):
         _expand_tokens(macro_el.__iter__(), macro_tokens)
 
     # Recursively expand contained macros.
@@ -245,7 +240,7 @@ def _expand_yield_statements(macro_el: "Element", expand_el: "Element") -> None:
         _xml_replace(yield_el, expand_el_children)
 
 
-def _load_macros(macros_el: "Element", xml_base_dir: str, macros: MacrosDictT) -> List[str]:
+def _load_macros(macros_el: "Element", xml_base_dir: str, macros: MacrosDictT) -> list[str]:
     # Import macros from external files.
     macro_paths = _load_imported_macros(macros_el, xml_base_dir, macros)
     # Load all directly defined macros.
@@ -276,7 +271,7 @@ def _load_embedded_macros(macros_el: "Element", macros: MacrosDictT) -> None:
                 macros[tag] = [macro_el]
 
 
-def _load_imported_macros(macros_el: "Element", xml_base_dir: str, macros: MacrosDictT) -> List[str]:
+def _load_imported_macros(macros_el: "Element", xml_base_dir: str, macros: MacrosDictT) -> list[str]:
     macro_paths = []
 
     for tool_relative_import_path in _imported_macro_paths_from_el(macros_el):
@@ -287,7 +282,7 @@ def _load_imported_macros(macros_el: "Element", xml_base_dir: str, macros: Macro
     return macro_paths
 
 
-def _imported_macro_paths_from_el(macros_el: "Element") -> List[str]:
+def _imported_macro_paths_from_el(macros_el: "Element") -> list[str]:
     imported_macro_paths = []
     for macro_import_el in macros_el.findall("import"):
         raw_import_path = macro_import_el.text
@@ -296,7 +291,7 @@ def _imported_macro_paths_from_el(macros_el: "Element") -> List[str]:
     return imported_macro_paths
 
 
-def _load_macro_file(path: "StrPath", xml_base_dir: str, macros: MacrosDictT) -> List[str]:
+def _load_macro_file(path: "StrPath", xml_base_dir: str, macros: MacrosDictT) -> list[str]:
     tree = parse_xml(path, strip_whitespace=False)
     root = tree.getroot()
     return _load_macros(root, xml_base_dir, macros)
@@ -340,7 +335,7 @@ class XmlMacroDef:
 
     def __init__(self, el: "Element") -> None:
         self.element = el
-        tokens: Dict[str, Union[str, None]] = {}
+        tokens: dict[str, str | None] = {}
         self.token_quote = "@"
         for key, value in el.attrib.items():
             key = unicodify(key)
@@ -355,14 +350,14 @@ class XmlMacroDef:
                 tokens[token] = value
         self.tokens = tokens
 
-    def macro_tokens(self, expand_el: "Element") -> Dict[str, str]:
+    def macro_tokens(self, expand_el: "Element") -> dict[str, str]:
         """
         get a dictionary mapping token names to values. The names are the
         parameter names surrounded by the quote character. Values are taken
         from the expand_el if absent default values of optional parameters are
         used.
         """
-        tokens: Dict[str, str] = {}
+        tokens: dict[str, str] = {}
         for key, default_val in self.tokens.items():
             token_value = expand_el.attrib.get(key, default_val)
             if token_value is None:

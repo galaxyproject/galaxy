@@ -8,8 +8,8 @@ import DatasetDownload from "./DatasetDownload.vue";
 const localVue = getLocalVue();
 
 const items = [
-    { id: "item_id", extension: "ext", meta_files: [{ file_type: "a" }, { file_type: "b" }] },
-    { id: "item_id", extension: "ext", meta_files: [] },
+    { id: "item_id", extension: "ext", file_size: 1024, meta_files: [{ file_type: "a" }, { file_type: "b" }] },
+    { id: "item_id", extension: "ext", file_size: 0, meta_files: [] },
 ];
 
 describe("DatasetDownload", () => {
@@ -38,9 +38,9 @@ describe("DatasetDownload", () => {
         expect(foundItems).toBe(false);
         await wrapper.trigger("click");
         const emitted = wrapper.emitted()["on-download"];
-        expect(emitted?.[0]?.[0]).toBe(`/api/datasets/item_id/display?to_ext=ext`);
+        expect(emitted?.[0]?.[0]).toBe(`/api/datasets/item_id/download?to_ext=ext`);
         expect(emitted?.[1]?.[0]).toBe(`/api/datasets/item_id/metadata_file?metadata_file=a`);
         expect(emitted?.[2]?.[0]).toBe(`/api/datasets/item_id/metadata_file?metadata_file=b`);
-        expect(emitted?.[3]?.[0]).toBe(`/api/datasets/item_id/display?to_ext=ext`);
+        expect(emitted?.[3]?.[0]).toBe(`/api/datasets/item_id/download?to_ext=ext`);
     });
 });

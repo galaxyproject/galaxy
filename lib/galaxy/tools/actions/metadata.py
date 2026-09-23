@@ -2,10 +2,10 @@ import logging
 import os
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy.job_execution.datasets import DatasetPath
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
     Dataset,
@@ -40,22 +40,23 @@ class SetMetadataToolAction(ToolAction):
 
     produces_real_jobs: bool = False
     set_output_hid: bool = False
+    file_source_uri_discovery_complete = True
 
     def execute(
         self,
         tool,
         trans,
-        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
-        history: Optional[History] = None,
+        incoming: ToolStateJobInstancePopulatedT | None = None,
+        history: History | None = None,
         job_params=None,
-        rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
-        execution_cache: Optional[ToolExecutionCache] = None,
-        dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = DEFAULT_DATASET_COLLECTION_ELEMENTS,
-        completed_job: Optional[Job] = None,
-        collection_info: Optional[MatchingCollections] = None,
-        job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
-        preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
-        credentials_context: Optional[CredentialsContext] = None,
+        rerun_remap_job_id: int | None = DEFAULT_RERUN_REMAP_JOB_ID,
+        execution_cache: ToolExecutionCache | None = None,
+        dataset_collection_elements: DatasetCollectionElementsSliceT | None = DEFAULT_DATASET_COLLECTION_ELEMENTS,
+        completed_job: Job | None = None,
+        collection_info: MatchingCollections | None = None,
+        job_callback: JobCallbackT | None = DEFAULT_JOB_CALLBACK,
+        preferred_object_store_id: str | None = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        credentials_context: CredentialsContext | None = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,
@@ -80,10 +81,10 @@ class SetMetadataToolAction(ToolAction):
         self,
         tool,
         trans,
-        incoming: Optional[dict[str, Any]],
+        incoming: dict[str, Any] | None,
         overwrite: bool = True,
-        history: Optional[History] = None,
-        job_params: Optional[dict[str, Any]] = None,
+        history: History | None = None,
+        job_params: dict[str, Any] | None = None,
     ):
         trans.check_user_activation()
         session = trans.get_galaxy_session()
@@ -106,13 +107,13 @@ class SetMetadataToolAction(ToolAction):
         self,
         tool,
         app,
-        session_id: Optional[int],
-        history_id: Optional[int],
-        user: Optional[User] = None,
-        incoming: Optional[dict[str, Any]] = None,
+        session_id: int | None,
+        history_id: int | None,
+        user: User | None = None,
+        incoming: dict[str, Any] | None = None,
         overwrite: bool = True,
-        history: Optional[History] = None,
-        job_params: Optional[dict[str, Any]] = None,
+        history: History | None = None,
+        job_params: dict[str, Any] | None = None,
     ):
         """
         Execute using application.
@@ -162,8 +163,10 @@ class SetMetadataToolAction(ToolAction):
         # Store original dataset state, so we can restore it. A separate table might be better (no chance of 'losing' the original state)?
         incoming["__ORIGINAL_DATASET_STATE__"] = dataset.state
         input_paths = [DatasetPath(dataset.id, real_path=dataset.get_file_name(), mutable=False)]
-        app.object_store.create(job, base_dir="job_work", dir_only=True, extra_dir=str(job.id))
-        job_working_dir = app.object_store.get_filename(job, base_dir="job_work", dir_only=True, extra_dir=str(job.id))
+        # Out-of-band metadata job: runs in the web thread before any destination
+        # is resolved, so job.working_directory is None and JobWorkingDirectory
+        # falls through to the object-store path.
+        job_working_dir = JobWorkingDirectory(job, app.object_store).create()
         datatypes_config = os.path.join(job_working_dir, "registry.xml")
         app.datatypes_registry.to_xml_file(path=datatypes_config)
         external_metadata_wrapper = get_metadata_compute_strategy(app.config, job.id, tool_id=tool.id)
@@ -175,6 +178,9 @@ class SetMetadataToolAction(ToolAction):
             output_datatasets_dict,
             {},
             sa_session,
+            uses_tool_provided_metadata=False,
+            allows_unnamed_outputs=False,
+            allows_external_output_paths=False,
             exec_dir=None,
             tmp_dir=job_working_dir,
             dataset_files_path=Dataset.file_path,

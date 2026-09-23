@@ -37,21 +37,22 @@ A method that requires a user but not a history should declare its
 # more checks against this issue.
 import abc
 import string
-from collections.abc import Callable
+from collections.abc import (
+    Callable,
+    Hashable,
+)
 from json import dumps
 from typing import (
     Any,
     cast,
     Literal,
     Optional,
+    TYPE_CHECKING,
 )
 
 from sqlalchemy import select
 
-from galaxy.exceptions import (
-    AuthenticationRequired,
-    UserActivationRequiredException,
-)
+from galaxy.exceptions import UserActivationRequiredException
 from galaxy.model import (
     Dataset,
     Event,
@@ -70,6 +71,9 @@ from galaxy.security.vault import UserVaultWrapper
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import bunch
 
+if TYPE_CHECKING:
+    from galaxy.tools.parameters.dataset_matcher import DatasetMatcherFactory
+
 
 class ProvidesAppContext:
     """For transaction-like objects to provide Galaxy convenience layer for
@@ -85,7 +89,7 @@ class ProvidesAppContext:
 
     @property
     @abc.abstractmethod
-    def url_builder(self) -> Optional[Callable[..., str]]:
+    def url_builder(self) -> Callable[..., str] | None:
         """
         Provide access to Galaxy URLs (if available).
 
@@ -193,6 +197,11 @@ class ProvidesAppContext:
         return self.app.install_model
 
 
+# Sentinel distinguishing a cached value (which may legitimately be ``None``)
+# from a cache miss in ``get_or_set_cache_value``.
+_CACHE_MISS: Any = object()
+
+
 class ProvidesUserContext(ProvidesAppContext):
     """For transaction-like objects to provide Galaxy convenience layer for
     reasoning about users.
@@ -202,15 +211,26 @@ class ProvidesUserContext(ProvidesAppContext):
     """
 
     workflow_building_mode: Literal[1, True, False] = False
-    galaxy_session: Optional[GalaxySession] = None
-    _tag_handler: Optional[GalaxyTagHandlerSession] = None
-    _short_term_cache: dict[tuple[str, ...], Any]
+    galaxy_session: GalaxySession | None = None
+    _tag_handler: GalaxyTagHandlerSession | None = None
+    _short_term_cache: dict[tuple[Hashable, ...], Any]
 
-    def set_cache_value(self, args: tuple[str, ...], value: Any):
+    def set_cache_value(self, args: tuple[Hashable, ...], value: Any):
         self._short_term_cache[args] = value
 
-    def get_cache_value(self, args: tuple[str, ...], default: Any = None) -> Any:
+    def get_cache_value(self, args: tuple[Hashable, ...], default: Any = None) -> Any:
         return self._short_term_cache.get(args, default)
+
+    def get_or_set_cache_value(self, args: tuple[Hashable, ...], factory: Callable[[], Any]) -> Any:
+        """Return the cached value for ``args``, computing and storing it via
+        ``factory`` on a miss. Request-scoped memoization for work repeated
+        within a single transaction (e.g. identical history-option queries
+        otherwise issued once per parameter while building a workflow Run form)."""
+        value = self.get_cache_value(args, _CACHE_MISS)
+        if value is _CACHE_MISS:
+            value = factory()
+            self.set_cache_value(args, value)
+        return value
 
     @property
     def tag_handler(self):
@@ -220,9 +240,10 @@ class ProvidesUserContext(ProvidesAppContext):
 
     @property
     def async_request_user(self) -> RequestUser:
+        galaxy_session_id = self.galaxy_session.id if self.galaxy_session else None
         if self.user is None:
-            raise AuthenticationRequired("The async task requires user authentication.")
-        return RequestUser(user_id=self.user.id)
+            return RequestUser(galaxy_session_id=galaxy_session_id)
+        return RequestUser(user_id=self.user.id, galaxy_session_id=galaxy_session_id)
 
     @property
     @abc.abstractmethod
@@ -234,8 +255,8 @@ class ProvidesUserContext(ProvidesAppContext):
         """Provide access to a user's personal vault."""
         return UserVaultWrapper(self.app.vault, self.user)
 
-    def get_user(self) -> Optional[User]:
-        user = cast(Optional[User], self.user or self.galaxy_session and self.galaxy_session.user)
+    def get_user(self) -> User | None:
+        user = cast(User | None, self.user or self.galaxy_session and self.galaxy_session.user)
         return user
 
     @property
@@ -272,7 +293,7 @@ class ProvidesUserContext(ProvidesAppContext):
             raise UserActivationRequiredException()
 
     @property
-    def user_ftp_dir(self) -> Optional[str]:
+    def user_ftp_dir(self) -> str | None:
         base_dir = self.app.config.ftp_upload_dir
         if base_dir is None or self.user is None:
             return None
@@ -298,15 +319,27 @@ class ProvidesHistoryContext(ProvidesUserContext):
     properties.
     """
 
+    # set per-request by galaxy.tools.parameters.dataset_matcher while a tool
+    # form is being evaluated
+    dataset_matcher_factory: Optional["DatasetMatcherFactory"] = None
+
+    @abc.abstractmethod
+    def get_history(self, create: bool = False) -> History | None:
+        """Return the current history, optionally creating one when there is none.
+
+        Transactions do not always have an active history, so None is a valid
+        response even when create is set.
+        """
+
     @property
     @abc.abstractmethod
-    def history(self) -> Optional[History]:
+    def history(self) -> History | None:
         """Provide access to the user's current history model object.
 
         :rtype: Optional[galaxy.model.History]
         """
 
-    def db_dataset_for(self, dbkey) -> Optional[HistoryDatasetAssociation]:
+    def db_dataset_for(self, dbkey) -> HistoryDatasetAssociation | None:
         """Optionally return the db_file dataset associated/needed by `dataset`."""
         # If no history, return None.
         if self.history is None:

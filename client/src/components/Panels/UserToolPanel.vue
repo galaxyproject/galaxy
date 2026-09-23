@@ -50,12 +50,21 @@ const currentItemId = computed(() => {
     return match ? match[0] : undefined;
 });
 
+function repField(tool: UnprivilegedToolResponse, key: string): string | undefined {
+    // representation may be a typed UserToolSource (status ok/lifted) or a raw
+    // dict (status invalid). Both shapes still hold name/id/etc by string key,
+    // but the union type loses property access — read defensively.
+    const rep = tool.representation as Record<string, unknown> | undefined;
+    const value = rep?.[key];
+    return typeof value === "string" ? value : undefined;
+}
+
 function cardClicked(tool: UnprivilegedToolResponse) {
     if (props.inPanel) {
         emit("unprivileged-tool-clicked", tool);
     }
     if (props.inWorkflowEditor) {
-        emit("onInsertTool", tool.representation.id, tool.representation.name, tool.uuid);
+        emit("onInsertTool", repField(tool, "id"), repField(tool, "name"), tool.uuid);
     } else {
         router.push(`/?tool_uuid=${tool.uuid}`);
     }
@@ -78,13 +87,31 @@ function newTool() {
 }
 
 function getToolBadges(tool: UnprivilegedToolResponse) {
-    return [
+    const badges = [
         {
             id: "version",
-            label: tool.representation.version,
+            label: repField(tool, "version") ?? "",
             title: "Version of this custom tool",
         },
     ];
+    if (tool.representation_status === "lifted") {
+        badges.push({
+            id: "status",
+            label: "needs update",
+            title:
+                "This tool's stored definition uses conventions that are no longer valid; " +
+                "they are ignored on read. Re-save the tool to clean it up.",
+        });
+    } else if (tool.representation_status === "invalid") {
+        badges.push({
+            id: "status",
+            label: "schema error",
+            title:
+                "This tool's stored definition does not satisfy the current schema. " +
+                "Open it in the editor to repair.",
+        });
+    }
+    return badges;
 }
 
 function getToolSecondaryActions(tool: UnprivilegedToolResponse) {
@@ -141,7 +168,7 @@ function getToolSecondaryActions(tool: UnprivilegedToolResponse) {
                     :active="tool.uuid === currentItemId"
                     :badges="getToolBadges(tool)"
                     :secondary-actions="getToolSecondaryActions(tool)"
-                    :title="tool.representation.name"
+                    :title="repField(tool, 'name') ?? tool.uuid"
                     :title-icon="{ icon: faWrench }"
                     title-size="text"
                     :update-time="tool.create_time"
@@ -150,7 +177,7 @@ function getToolSecondaryActions(tool: UnprivilegedToolResponse) {
                     <template v-slot:description>
                         <Heading class="m-0" size="text">
                             <small class="text-muted truncate-n-lines two-lines">
-                                {{ tool.representation.description }}
+                                {{ repField(tool, "description") }}
                             </small>
                         </Heading>
                     </template>

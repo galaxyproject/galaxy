@@ -25,7 +25,7 @@ const title = computed<string>(() => MESSAGES[props.type] ?? "");
 </script>
 
 <template>
-    <span v-b-tooltip.hover class="object-store-type object-store-help-on-hover" :title="title">{{ type }}</span>
+    <span v-g-tooltip.hover class="object-store-type object-store-help-on-hover" :title="title">{{ type }}</span>
 </template>
 
 <style scoped>

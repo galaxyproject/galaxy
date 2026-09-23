@@ -19,7 +19,7 @@ function toggleInfo() {
 </script>
 
 <template>
-    <button v-b-tooltip.hover :title="props.explanation" @click="toggleInfo">
+    <button v-g-tooltip.hover :title="props.explanation" @click="toggleInfo">
         <div id="heading">{{ props.heading }}</div>
 
         <div class="value">

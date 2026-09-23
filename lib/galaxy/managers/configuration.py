@@ -20,6 +20,13 @@ from galaxy.structured_app import StructuredApp
 log = logging.getLogger(__name__)
 
 
+def _get_registry_type(config) -> str:
+    inference_config = getattr(config, "inference_services", None) or {}
+    if isinstance(inference_config, dict) and inference_config.get("static_responses"):
+        return "static"
+    return "default"
+
+
 class ConfigurationManager:
     """Interface/service object for interacting with configuration and related data."""
 
@@ -125,6 +132,7 @@ class ConfigSerializer(base.ModelSerializer):
             "logo_url": _use_config,
             "logo_src": _use_config,
             "logo_src_secondary": _use_config,
+            "subdomain_switcher": _use_config,
             "terms_url": _use_config,
             "wiki_url": _use_config,
             "screencasts_url": _use_config,
@@ -184,7 +192,9 @@ class ConfigSerializer(base.ModelSerializer):
             "aws_estimate": _use_config,
             "carbon_emission_estimates": _defaults_to(True),
             "carbon_intensity": lambda item, key, **context: self.app.carbon_intensity,
-            "geographical_server_location_name": lambda item, key, **context: self.app.geographical_server_location_name,
+            "geographical_server_location_name": lambda item, key, **context: (
+                self.app.geographical_server_location_name
+            ),
             "geographical_server_location_code": _use_config,
             "power_usage_effectiveness": _use_config,
             "message_box_content": _use_config,
@@ -208,11 +218,16 @@ class ConfigSerializer(base.ModelSerializer):
             "expose_user_email": _use_config,
             "enable_tool_source_display": _use_config,
             "enable_celery_tasks": _use_config,
+            "enable_tool_requests": _use_config,
             "quota_source_labels": lambda item, key, **context: list(
                 object_store.get_quota_source_map().get_quota_source_labels()
             ),
-            "object_store_allows_id_selection": lambda item, key, **context: object_store.object_store_allows_id_selection(),
-            "object_store_ids_allowing_selection": lambda item, key, **context: object_store.object_store_ids_allowing_selection(),
+            "object_store_allows_id_selection": lambda item, key, **context: (
+                object_store.object_store_allows_id_selection()
+            ),
+            "object_store_ids_allowing_selection": lambda item, key, **context: (
+                object_store.object_store_ids_allowing_selection()
+            ),
             "object_store_always_respect_user_selection": _use_config,
             "user_activation_on": _use_config,
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
@@ -222,6 +237,7 @@ class ConfigSerializer(base.ModelSerializer):
             "tool_training_recommendations_link": _use_config,
             "tool_training_recommendations_api_url": _use_config,
             "enable_notification_system": _use_config,
+            "enable_sse_updates": _use_config,
             "instance_resource_url": _use_config,
             "instance_access_url": _use_config,
             "organization_name": _use_config,
@@ -232,13 +248,16 @@ class ConfigSerializer(base.ModelSerializer):
             "llm_api_configured": lambda item, key, **context: bool(
                 item.ai_api_key or item.ai_api_base_url or getattr(item, "inference_services", None)
             ),
+            "llm_registry_type": lambda item, key, **context: _get_registry_type(item),
             "install_tool_dependencies": _use_config,
             "install_repository_dependencies": _use_config,
             "install_resolver_dependencies": _use_config,
             "enable_tool_generated_tours": _use_config,
             "sentry_dsn_public": lambda item, key, **context: item.sentry_dsn_public,
-            "enable_webhooks": lambda item, key, **context: hasattr(self.app, "webhooks_registry")
-            and bool(self.app.webhooks_registry.webhooks),
+            "sentry_client_traces_sample_rate": _use_config,
+            "enable_webhooks": lambda item, key, **context: (
+                hasattr(self.app, "webhooks_registry") and bool(self.app.webhooks_registry.webhooks)
+            ),
         }
 
 

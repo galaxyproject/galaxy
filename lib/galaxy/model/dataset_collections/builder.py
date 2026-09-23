@@ -27,11 +27,11 @@ if TYPE_CHECKING:
 def build_collection(
     type: "BaseDatasetCollectionType",
     dataset_instances: "DatasetInstanceMapping",
-    collection: Optional[DatasetCollection] = None,
-    associated_identifiers: Optional[set[str]] = None,
-    fields: Optional[Union[str, list["FieldDict"]]] = None,
+    collection: DatasetCollection | None = None,
+    associated_identifiers: set[str] | None = None,
+    fields: str | list["FieldDict"] | None = None,
     column_definitions=None,
-    rows: Optional[dict[str, Optional["SampleSheetRow"]]] = None,
+    rows: dict[str, Optional["SampleSheetRow"]] | None = None,
 ):
     """
     Build DatasetCollection with populated DatasetcollectionElement objects
@@ -51,8 +51,8 @@ def set_collection_elements(
     type: "BaseDatasetCollectionType",
     dataset_instances: "DatasetInstanceMapping",
     associated_identifiers: set[str],
-    fields: Optional[Union[str, list["FieldDict"]]] = None,
-    rows: Optional[dict[str, Optional["SampleSheetRow"]]] = None,
+    fields: str | list["FieldDict"] | None = None,
+    rows: dict[str, Optional["SampleSheetRow"]] | None = None,
 ) -> DatasetCollection:
     new_element_keys = OrderedSet(dataset_instances.keys()) - associated_identifiers
     new_dataset_instances = {k: dataset_instances[k] for k in new_element_keys}
@@ -104,7 +104,7 @@ class CollectionBuilder:
         self._current_row_data = {}
 
         # Store collection here so we don't recreate the collection all the time
-        self.collection: Optional[DatasetCollection] = None
+        self.collection: DatasetCollection | None = None
         self.associated_identifiers: set[str] = set()
 
     def replace_elements_in_collection(
@@ -174,7 +174,7 @@ class CollectionBuilder:
 
     def build_elements_and_rows(
         self,
-    ) -> tuple["DatasetInstanceMapping", Optional[dict[str, Optional["SampleSheetRow"]]]]:
+    ) -> tuple["DatasetInstanceMapping", dict[str, Optional["SampleSheetRow"]] | None]:
         row_data = self._current_row_data
         self._current_row_data = {}
         return self.build_elements(), row_data

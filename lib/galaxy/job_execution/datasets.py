@@ -7,7 +7,6 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
-from typing import Union
 
 from galaxy.model import (
     DatasetCollectionElement,
@@ -15,14 +14,14 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
 )
 
-DeferrableObjectsT = Union[
-    DatasetInstance,
-    HistoryDatasetCollectionAssociation,
-    DatasetCollectionElement,
-    list[DatasetInstance],
-    list[Union[HistoryDatasetCollectionAssociation, DatasetCollectionElement]],
-    list[Union[DatasetInstance, HistoryDatasetCollectionAssociation, DatasetCollectionElement]],
-]
+DeferrableObjectsT = (
+    DatasetInstance
+    | HistoryDatasetCollectionAssociation
+    | DatasetCollectionElement
+    | list[DatasetInstance]
+    | list[HistoryDatasetCollectionAssociation | DatasetCollectionElement]
+    | list[DatasetInstance | HistoryDatasetCollectionAssociation | DatasetCollectionElement]
+)
 
 
 def dataset_path_rewrites(dataset_paths):

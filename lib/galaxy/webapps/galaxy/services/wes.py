@@ -5,7 +5,6 @@ import logging
 from dataclasses import dataclass
 from typing import (
     Any,
-    Optional,
 )
 from urllib.parse import (
     parse_qs,
@@ -26,7 +25,10 @@ from sqlalchemy.orm import joinedload
 from galaxy import exceptions
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.files.uris import stream_url_to_str
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.workflows import (
     RawWorkflowDescription,
     WorkflowContentsManager,
@@ -71,8 +73,10 @@ log = logging.getLogger(__name__)
 # Map Galaxy workflow invocation states to WES states
 GALAXY_TO_WES_STATE = {
     "new": State.QUEUED,
+    "requires_materialization": State.INITIALIZING,
     "ready": State.INITIALIZING,
     "scheduled": State.RUNNING,
+    "completed": State.COMPLETE,
     "failed": State.EXECUTOR_ERROR,
     "cancelled": State.CANCELED,
     "cancelling": State.CANCELING,
@@ -154,8 +158,8 @@ def _parse_gxworkflow_uri(workflow_url: str) -> tuple[str, bool]:
 
 def _load_workflow_content(
     trans: ProvidesUserContext,
-    workflow_attachment: Optional[UploadFile],
-    workflow_url: Optional[str],
+    workflow_attachment: UploadFile | None,
+    workflow_url: str | None,
 ) -> dict[str, Any]:
     """Load workflow content from attachment or URL.
 
@@ -439,16 +443,16 @@ class WesService(ServiceBase):
 
     def submit_run(
         self,
-        trans: ProvidesUserContext,
-        workflow_params: Optional[str] = None,
-        workflow_type: Optional[str] = None,
-        workflow_type_version: Optional[str] = None,
-        workflow_url: Optional[str] = None,
-        workflow_engine_parameters: Optional[str] = None,
-        workflow_engine: Optional[str] = None,
-        workflow_engine_version: Optional[str] = None,
-        tags: Optional[str] = None,
-        workflow_attachment: Optional[UploadFile] = None,
+        trans: ProvidesHistoryContext,
+        workflow_params: str | None = None,
+        workflow_type: str | None = None,
+        workflow_type_version: str | None = None,
+        workflow_url: str | None = None,
+        workflow_engine_parameters: str | None = None,
+        workflow_engine: str | None = None,
+        workflow_engine_version: str | None = None,
+        tags: str | None = None,
+        workflow_attachment: UploadFile | None = None,
     ) -> RunId:
         """Submit a new workflow run.
 
@@ -481,25 +485,21 @@ class WesService(ServiceBase):
             workflow_uri = workflow_dict["workflow_uri"]
             encoded_workflow_id, instance = _parse_gxworkflow_uri(workflow_uri)
 
-            # Load the workflow from the database
+            # Load the workflow from the database, applying the same accessibility
+            # rules as a normal invocation (owned, shared, published, or admin).
             # by_stored_id=not instance means:
             # - False (instance=False) -> load StoredWorkflow (by_stored_id=True)
             # - True (instance=True) -> load Workflow (by_stored_id=False)
-            try:
-                stored_workflow = self._workflows_service._workflows_manager.get_stored_workflow(
-                    trans, encoded_workflow_id, by_stored_id=not instance
-                )
-            except Exception as e:
-                raise exceptions.ObjectNotFound(
-                    f"Workflow '{encoded_workflow_id}' not found or not accessible: {str(e)}"
-                )
-
-            # Validate user has access to this workflow
-            if stored_workflow.user_id != trans.user.id and not trans.user_is_admin:
-                raise exceptions.ItemAccessibilityException("You do not have access to this workflow")
+            stored_workflow = self._workflows_service._workflows_manager.get_stored_accessible_workflow(
+                trans, encoded_workflow_id, by_stored_id=not instance
+            )
 
             # Use the existing workflow directly - no need to create a new one
-            # Skip to step 5 (engine parameters and history)
+            if instance:
+                # The URI named a specific version - invoke that one, not the latest.
+                invoke_workflow_id = trans.security.decode_id(encoded_workflow_id)
+            else:
+                invoke_workflow_id = stored_workflow.id
         else:
             # Step 2: Determine/validate workflow type
             detected_type = _determine_workflow_type(workflow_dict)
@@ -526,6 +526,8 @@ class WesService(ServiceBase):
                 source="WES API",
             )
             stored_workflow = created_workflow.stored_workflow
+            invoke_workflow_id = stored_workflow.id
+            instance = False
 
         # Step 5: Parse engine parameters and create/select history
         engine_params = {}
@@ -538,9 +540,10 @@ class WesService(ServiceBase):
         history = _get_or_create_history(trans, engine_params)
 
         # Step 6: Parse workflow parameters
-        invoke_params = {
+        invoke_params: dict[str, Any] = {
             "history_id": trans.security.encode_id(history.id),
             "inputs_by": "name",
+            "instance": instance,
         }
 
         if workflow_params:
@@ -560,7 +563,7 @@ class WesService(ServiceBase):
         invoke_payload = InvokeWorkflowPayload(**invoke_params)
         workflow_invocation_response = self._workflows_service.invoke_workflow(
             trans,
-            trans.security.encode_id(stored_workflow.id),
+            invoke_workflow_id,
             invoke_payload,
         )
 
@@ -576,7 +579,7 @@ class WesService(ServiceBase):
         self,
         trans: ProvidesUserContext,
         page_size: int = 10,
-        page_token: Optional[str] = None,
+        page_token: str | None = None,
     ) -> RunListResponse:
         """List workflow runs for the user with keyset pagination.
 
@@ -594,6 +597,9 @@ class WesService(ServiceBase):
         # Decode keyset token to get last seen ID
         token = self._keyset_pagination.decode_token(page_token, token_class=SingleKeysetToken)
         last_id = token.last_id if token else None
+
+        if trans.user is None:
+            raise exceptions.AuthenticationRequired("Listing WES runs requires authentication.")
 
         # Build query with keyset filtering
         query = trans.sa_session.query(WorkflowInvocation).join(History).where(History.user_id == trans.user.id)
@@ -743,7 +749,7 @@ class WesService(ServiceBase):
         self,
         trans: ProvidesUserContext,
         invocation_id: int,
-        last_token: Optional[TaskKeysetToken],
+        last_token: TaskKeysetToken | None,
         limit: int,
     ) -> list[dict]:
         """Fetch paginated task rows using composite keyset pagination.
@@ -871,7 +877,7 @@ class WesService(ServiceBase):
         trans: ProvidesUserContext,
         run_id: int,
         page_size: int = 10,
-        page_token: Optional[str] = None,
+        page_token: str | None = None,
     ) -> TaskListResponse:
         """Get paginated list of tasks for a workflow run.
 
@@ -1106,7 +1112,7 @@ class WesService(ServiceBase):
         self,
         trans: SessionRequestContext,
         invocation: WorkflowInvocation,
-        original_request: Optional[RunRequest] = None,
+        original_request: RunRequest | None = None,
     ) -> RunLog:
         """Convert a Galaxy WorkflowInvocation to a WES RunLog.
 

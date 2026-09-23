@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCheck, faClock, faHourglassHalf, faRedo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BCol, BRow } from "bootstrap-vue";
+import { BCol, BRow } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -10,6 +10,7 @@ import { Toast } from "@/composables/toast";
 import type { BroadcastNotification } from "@/stores/broadcastsStore";
 
 import BroadcastCard from "./BroadcastCard.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import GOverlay from "@/components/BaseComponents/GOverlay.vue";
@@ -153,14 +154,14 @@ loadBroadcastsList();
             </BRow>
         </div>
 
-        <BAlert v-if="loading" variant="info" show>
+        <GAlert v-if="loading" variant="info" show>
             <LoadingSpan message="Loading broadcasts" />
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-else-if="filteredBroadcasts.length === 0" id="empty-broadcast-list-alert" variant="info" show>
+        <GAlert v-else-if="filteredBroadcasts.length === 0" id="empty-broadcast-list-alert" variant="info" show>
             There are no broadcast notifications to show. Use the button above to create a new broadcast notification or
             change the filters.
-        </BAlert>
+        </GAlert>
         <GOverlay v-else :show="overlay">
             <BroadcastCard
                 v-for="notification in filteredBroadcasts"

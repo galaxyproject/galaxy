@@ -13,7 +13,8 @@ PROJECT_NAME?=galaxy-$(shell basename $(CURDIR))
 PROJECT_NAME:=$(subst _,-,$(PROJECT_NAME))
 BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 TEST_DIR?=tests
-TESTS?=$(SOURCE_DIR) $(TEST_DIR)
+DIST=dist
+TESTS?=$(TEST_DIR)
 
 .PHONY: clean-pyc clean-build docs clean
 
@@ -30,7 +31,7 @@ clean: clean-build clean-pyc clean-tests clean-web-client
 
 clean-build:
 	rm -fr build/
-	rm -fr dist/
+	rm -fr $(DIST)/
 	rm -fr galaxy_*.egg-info
 
 clean-pyc:
@@ -45,44 +46,43 @@ clean-tests:
 # Removing .venv instead of $(VENV) is intentional, because we can't guarantee we created $(VENV)
 clean-web-client:
 	rm -rf .venv
-	rm -rf galaxy/web_client/dist galaxy/web_client/client_build_hash.txt
+	rm -rf src/galaxy/web_client/dist src/galaxy/web_client/client_build_hash.txt
 
 setup-venv:
-	if [ ! -d $(VENV) ]; then python -m venv $(VENV); exit; fi;
-	$(IN_VENV) pip install -r dev-requirements.txt
+	uv sync --inexact --all-extras
 
-test:
-	$(IN_VENV) pytest $(TESTS)
+_test:
+	uv run pytest $(TESTS)
 
-dist: clean setup-venv galaxy/web_client/client_build_hash.txt
-	$(IN_VENV) python -m build
-	ls -l dist
+test: setup-venv _test
 
-galaxy/web_client/client_build_hash.txt:
-	$(IN_VENV) cd ../..; make client-production
-	mv ../../client/dist galaxy/web_client
-	git rev-parse HEAD > galaxy/web_client/client_build_hash.txt
+_dist: src/galaxy/web_client/client_build_hash.txt
+	uv build -o $(DIST)
+	ls -l $(DIST)
 
-_twine-exists: ; @which twine > /dev/null
+dist: clean _dist
 
-lint-dist: _twine-exists dist
-	$(IN_VENV) twine check dist/*
+src/galaxy/web_client/client_build_hash.txt:
+	# Use the main Galaxy virtualenv, since that's what `make client-production` uses
+	cd ../..; \
+		uv venv --allow-existing $(VENV); \
+		$(IN_VENV) \
+		uv pip install "nodejs-wheel==$$(cat client/.node_version)"; \
+		make client-production
+	mv ../../client/dist src/galaxy/web_client/
+	git rev-parse HEAD > src/galaxy/web_client/client_build_hash.txt
 
-_release-test-artifacts:
-	$(IN_VENV) twine upload -r test dist/*
-	$(OPEN_RESOURCE) https://testpypi.python.org/pypi/$(PROJECT_NAME)
+_setup-mypy-venv: setup-venv
+	uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 
-release-test-artifacts: lint-dist _release-test-artifacts
+_mypy:
+	uv run mypy .
 
-_release-artifacts:
-	@while [ -z "$$CONTINUE" ]; do \
-	  read -r -p "Have you executed release-test and reviewed results? [y/N]: " CONTINUE; \
-	done ; \
-	[ $$CONTINUE = "y" ] || [ $$CONTINUE = "Y" ] || (echo "Exiting."; exit 1;)
-	@echo "Releasing"
-	$(IN_VENV) twine upload dist/*
+mypy: _setup-mypy-venv _mypy
 
-release-artifacts: release-test-artifacts _release-artifacts
+lint-dist:
+	uvx --with-requirements dev-requirements.txt --from twine twine check $(DIST)/*
+	uv run --no-project python check_artifacts.py $(DIST)/*
 
 commit-version:
 	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/commit_version.py $(VERSION)
@@ -98,6 +98,3 @@ push-release:
 	echo "Makefile doesn't manually push release."
 
 release: release-local push-release
-
-mypy:
-	mypy .

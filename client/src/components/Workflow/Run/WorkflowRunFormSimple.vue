@@ -2,7 +2,7 @@
 import { faReadme } from "@fortawesome/free-brands-svg-icons";
 import { faArrowRight, faCog, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BFormInput, BModal } from "bootstrap-vue";
+import { BAlert, BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
@@ -10,6 +10,7 @@ import type { WriteStoreToPayload } from "@/api/exports";
 import type { WorkflowInvocationRequestInputs } from "@/api/invocations";
 import type { ToolIdentifier } from "@/api/tools";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
+import { DEFAULT_OPTIONS_PAGE_SIZE } from "@/components/Form/Elements/FormData/types";
 import type { FormParameterTypes } from "@/components/Form/parameterTypes";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
@@ -26,7 +27,7 @@ import type { Step } from "@/stores/workflowStepStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { invokeWorkflow } from "./services";
+import { invokeWorkflow, searchHistoryContents } from "./services";
 
 import WorkflowAnnotation from "../WorkflowAnnotation.vue";
 import WorkflowNavigationTitle from "../WorkflowNavigationTitle.vue";
@@ -37,6 +38,7 @@ import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
@@ -53,6 +55,8 @@ interface Props {
     isRerun?: boolean;
     landingUuid?: string;
 }
+
+type PaginatedDataOption = Pick<DataOption, "id" | "src" | "name" | "hid" | "keep" | "tags">;
 
 const props = withDefaults(defineProps<Props>(), {
     targetHistory: "current",
@@ -132,8 +136,15 @@ const computedActiveNodeId = computed<number | undefined>(() => {
     return undefined;
 });
 
-const formInputs = computed(() => {
-    const inputs = [] as any[];
+// ``stepInputByIndex`` maps ``step.step_index`` (as string) to the live
+// step-input object inside ``formInputs.value`` so the paginated-fetch
+// handlers can locate and mutate it in O(1) without walking the array.
+const formInputs = ref<any[]>([]);
+const stepInputByIndex = new Map<string, any>();
+
+function buildFormInputs() {
+    const inputs: any[] = [];
+    stepInputByIndex.clear();
     // Add workflow parameters.
     Object.values(props.model.wpInputs).forEach((input) => {
         const inputCopy = Object.assign({}, input) as any;
@@ -164,41 +175,54 @@ const formInputs = computed(() => {
             if (props.requestState) {
                 if (props.isRerun) {
                     const requestStateKeys = Object.keys(props.requestState);
+                    const stateKey = String(rerunStateIndex);
 
                     let value;
-                    if (props.requestState[rerunStateIndex]) {
+                    if (stateKey in props.requestState) {
                         // request state has the step_label as key
-                        value = props.requestState[rerunStateIndex];
-                    } else if (requestStateKeys[i] !== undefined && requestStateKeys[i] === "") {
+                        value = props.requestState[stateKey];
+                    } else if (requestStateKeys[i] === "") {
                         // request state has "" as key on the `i` position
                         value = Object.values(props.requestState)[i];
                     }
 
-                    if (value) {
+                    if (value !== undefined) {
                         if (stepType === "data_input" || stepType === "data_collection_input") {
                             // Note: This is different from workflow landings because `WorkflowInvocationRequestModel`
                             //       does not provide an object with `values` property.
-                            stepAsInput.value = {
-                                values: !Array.isArray(value) ? [value] : value,
-                            };
+                            // Optional data inputs left empty on the original run come back as `null` (or
+                            // arrays containing `null`). Filter those out so we don't poison FormData with
+                            // `{values: [null]}`, which crashes its `onMounted` hook on `"src" in null` and
+                            // leaves the bad wrapper in formData to be sent to the server.
+                            const valuesArray = (Array.isArray(value) ? value : [value]).filter(
+                                (v) => v !== null && v !== undefined,
+                            );
+                            if (valuesArray.length > 0) {
+                                stepAsInput.value = {
+                                    values: valuesArray,
+                                };
+                            }
                         } else {
                             stepAsInput.value = value;
                         }
                     }
-                } else if (props.requestState[stepLabel]) {
-                    const value = props.requestState[stepLabel];
-                    stepAsInput.value = value;
+                } else if (String(stepLabel) in props.requestState) {
+                    stepAsInput.value = props.requestState[String(stepLabel)];
                 }
             }
 
             // disable collection mapping...
             stepAsInput.flavor = "module";
             inputs.push(stepAsInput);
+            stepInputByIndex.set(String(step.step_index), stepAsInput);
             inputTypes.value[stepName] = stepType;
         }
     });
-    return inputs;
-});
+    formInputs.value = inputs;
+}
+
+buildFormInputs();
+watch(() => [props.model, props.requestState], buildFormInputs);
 
 /**
  * Returns the list of steps that do not match the workflow rerun `props.requestState`.
@@ -286,7 +310,94 @@ function onChange(data: any) {
     formData.value = data;
 }
 
-function onStorageUpdate(objectStoreId: string, intermediate: boolean) {
+function shapeContentsRow(row: any): PaginatedDataOption {
+    const src = row.history_content_type === "dataset_collection" ? "hdca" : "hda";
+    return {
+        id: row.id,
+        src,
+        name: row.name,
+        hid: row.hid,
+        keep: false,
+        tags: row.tags || [],
+    };
+}
+
+async function fetchStepOptions(
+    name: string,
+    src: string,
+    payload: { offset?: number; limit?: number; search?: string } = {},
+) {
+    // ``stepAsInput`` is a local copy built in ``buildFormInputs``, so this
+    // does not mutate the model prop.
+    const input = stepInputByIndex.get(String(name));
+    if (!input) {
+        return;
+    }
+    const type = src === "hdca" ? "dataset_collection" : "dataset";
+    const extensions = (input.acceptable_extensions || []) as string[];
+    const limit = payload.limit || DEFAULT_OPTIONS_PAGE_SIZE;
+    const offset = payload.offset || 0;
+    try {
+        const rows = await searchHistoryContents(props.model.historyId, {
+            extensions,
+            type,
+            tag: input.tag,
+            // ``data_collection`` parameters offer hidden collections too.
+            visibleOnly: input.type !== "data_collection",
+            search: payload.search,
+            offset,
+            limit,
+        });
+        const shaped: PaginatedDataOption[] = (rows || []).map(shapeContentsRow);
+        const base = (input.options?.[src] as PaginatedDataOption[]) || [];
+        const seen = new Set<string>(base.map((item) => `${item.id}_${item.src}`));
+        const merged = base.concat(
+            shaped.filter((item) => {
+                const key = `${item.id}_${item.src}`;
+                if (seen.has(key)) {
+                    return false;
+                }
+                seen.add(key);
+                return true;
+            }),
+        );
+        input.options = { ...(input.options || {}), [src]: merged };
+        input.options_meta = {
+            ...(input.options_meta || {}),
+            [src]: { offset, limit, has_more: shaped.length === limit },
+        };
+        // FormDisplay renders from an internal clone and only syncs
+        // server-owned attributes when the inputs prop changes by identity.
+        // A shallow array copy triggers that sync while preserving the clone's
+        // client-owned value and focused multiselect input.
+        formInputs.value = [...formInputs.value];
+    } catch (e) {
+        // intentionally silent — paging failures don't block the rest of the form
+        console.warn("history-contents pagination failed", e);
+    }
+}
+
+function onLoadMore({
+    name,
+    src,
+    offset,
+    limit,
+    search,
+}: {
+    name: string;
+    src: string;
+    offset: number;
+    limit: number;
+    search?: string;
+}) {
+    fetchStepOptions(name, src, { offset, limit, search });
+}
+
+function onSearchChange({ name, src, query, limit }: { name: string; src: string; query: string; limit?: number }) {
+    fetchStepOptions(name, src, { offset: 0, limit: limit || DEFAULT_OPTIONS_PAGE_SIZE, search: query });
+}
+
+function onStorageUpdate(objectStoreId: string | null, intermediate: boolean) {
     if (intermediate) {
         preferredIntermediateObjectStoreId.value = objectStoreId;
     } else {
@@ -339,6 +450,14 @@ async function onExecute() {
         if (inputType == "replacement_parameter") {
             replacementParams[inputName] = value;
         } else if (inputType && isWorkflowInput(inputType as Step["type"])) {
+            // Unset optional `data` / `data_collection` inputs surface here as `null`
+            // (FormData.vue's createValue returns null for `undefined`). Omit them so
+            // the server-side workflow scheduler sees a missing key rather than `None`,
+            // matching the working API submission shape and the rerun-branch filter above.
+            const isData = inputType === "data_input" || inputType === "data_collection_input";
+            if (isData && (value === null || value === undefined)) {
+                continue;
+            }
             inputs[inputName] = value;
         }
     }
@@ -564,8 +683,8 @@ onBeforeMount(() => {
                         <div class="settings-row">
                             <WorkflowStorageConfiguration
                                 :split-object-store="splitObjectStore"
-                                :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
-                                :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
+                                :invocation-preferred-object-store-id="preferredObjectStoreId"
+                                :invocation-preferred-intermediate-object-store-id="preferredIntermediateObjectStoreId"
                                 @updated="onStorageUpdate" />
                         </div>
                     </template>
@@ -615,6 +734,8 @@ onBeforeMount(() => {
                             :steps-not-matching-request="stepsNotMatchingRequest"
                             @onChange="onChange"
                             @onValidation="onValidation"
+                            @load-more="onLoadMore"
+                            @search-change="onSearchChange"
                             @stop-flagging="checkInputMatching = false"
                             @update:active-node-id="updateActiveNodeId" />
                     </GOverlay>
@@ -636,17 +757,16 @@ onBeforeMount(() => {
             </div>
         </div>
 
-        <BModal
-            v-model="showExportWizard"
+        <GModal
+            :show.sync="showExportWizard"
             title="Configure Export on Completion"
-            size="lg"
-            hide-footer
-            @hidden="onExportWizardCancel">
+            size="medium"
+            @close="onExportWizardCancel">
             <ExportOnCompleteWizard
                 :initial-config="exportOnCompleteConfig || undefined"
                 @configured="onExportConfigured"
                 @cancel="onExportWizardCancel" />
-        </BModal>
+        </GModal>
     </div>
 </template>
 
@@ -658,7 +778,9 @@ onBeforeMount(() => {
     border-left: 1px solid $gray-200;
     border-right: 1px solid $gray-200;
     border-bottom: 1px solid $gray-200;
-    animation: slideDown 0.2s ease-in-out;
+    // Fade only: a transform or height animation moves the toggles while the
+    // panel is appearing, so a click that starts on a row can land on another.
+    animation: fadeIn 0.2s ease-in-out;
 }
 
 .settings-row {
@@ -691,16 +813,12 @@ onBeforeMount(() => {
     font-size: 0.9em;
 }
 
-@keyframes slideDown {
+@keyframes fadeIn {
     from {
         opacity: 0;
-        transform: scaleY(0);
-        max-height: 0;
     }
     to {
         opacity: 1;
-        transform: scaleY(1);
-        max-height: 400px;
     }
 }
 </style>

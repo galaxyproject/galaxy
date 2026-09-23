@@ -29,7 +29,7 @@ model.set_datatypes_registry(datatypes_registry)
 
 DB_URI = "sqlite:///:memory:"
 # docker run -e POSTGRES_USER=galaxy -p 5432:5432 -d postgres
-# GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE='postgresql://galaxy@localhost:5432/' pytest test/unit/data/test_galaxy_mapping.py
+# GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE='postgresql+psycopg://galaxy@localhost:5432/' pytest test/unit/data/test_galaxy_mapping.py
 skip_if_not_postgres_base = pytest.mark.skipif(
     not os.environ.get("GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE"),
     reason="GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE not set",
@@ -74,7 +74,6 @@ class BaseModelTestCase(TestCase):
 
 
 class TestMappings(BaseModelTestCase):
-
     def test_dataset_instance_order(self) -> None:
         u = model.User(email=random_email(), password="password")
         h1 = model.History(name="History 1", user=u)
@@ -217,6 +216,61 @@ class TestMappings(BaseModelTestCase):
             ("outer_list", "inner_list", "reverse"),
         ]
         assert c4.dataset_elements == [dce1, dce2]
+
+    def test_nested_collection_attributes_duplicate_child_collection_id(self):
+        """Regression test for CardinalityViolation when multiple parent elements
+        reference the same child collection (duplicate child_collection_id).
+
+        On PostgreSQL the ARRAY walk optimisation uses correlated scalar
+        subqueries to navigate from leaf elements back to their ancestors via
+        child_collection_id.  When two parent DatasetCollectionElements share
+        the same child_collection_id those subqueries return more than one row,
+        causing 'more than one row returned by a subquery used as an expression'.
+        """
+        u = model.User(email=random_email(), password="password")
+        h1 = model.History(name="History 1", user=u)
+
+        # Build a paired collection with two datasets.
+        pair = model.DatasetCollection(collection_type="paired")
+        forward = model.HistoryDatasetAssociation(
+            extension="txt", history=h1, create_dataset=True, sa_session=self.model.session
+        )
+        reverse = model.HistoryDatasetAssociation(
+            extension="bam", history=h1, create_dataset=True, sa_session=self.model.session
+        )
+        model.DatasetCollectionElement(collection=pair, element=forward, element_identifier="forward", element_index=0)
+        model.DatasetCollectionElement(collection=pair, element=reverse, element_identifier="reverse", element_index=1)
+
+        # Create a list:paired collection where the *same* paired collection
+        # is referenced by two parent elements (duplicate child_collection_id).
+        list_pair = model.DatasetCollection(collection_type="list:paired")
+        model.DatasetCollectionElement(
+            collection=list_pair, element=pair, element_identifier="sample1", element_index=0
+        )
+        model.DatasetCollectionElement(
+            collection=list_pair, element=pair, element_identifier="sample2", element_index=1
+        )
+
+        self.persist(u, h1, forward, reverse, pair, list_pair, commit=True, expunge=False)
+        self.model.session.flush()
+
+        # All query paths that use _build_nested_collection_attributes_stmt
+        # must tolerate the duplicate without raising CardinalityViolation.
+        stmt = list_pair._build_nested_collection_attributes_stmt(
+            element_attributes=("element_identifier",),
+            hda_attributes=("extension",),
+            dataset_attributes=("state",),
+        )
+        result = self.model.session.execute(stmt).all()
+        # The two leaf datasets should appear (potentially duplicated because
+        # the same child collection is reachable via two parents).
+        extensions_in_result = {r.extension for r in result}
+        assert extensions_in_result == {"txt", "bam"}
+
+        # dataset_states_and_extensions_summary must not raise either.
+        summary = list_pair.dataset_states_and_extensions_summary
+        assert "txt" in summary.extensions
+        assert "bam" in summary.extensions
 
     def test_history_audit(self):
         u = model.User(email=random_email(), password="password")
@@ -456,6 +510,42 @@ class TestMappings(BaseModelTestCase):
         print(counts)
         assert counts.root["new"] == 2
         assert counts.root["scheduled"] == 1
+
+    def test_workflow_copy_preserves_metadata(self):
+        user = model.User(email=random_email(), password="password")
+        workflow = _workflow_from_steps(user, [])
+        workflow.name = "test_workflow_copy"
+        workflow.has_cycles = False
+        workflow.has_errors = False
+        workflow.license = "MIT"
+        workflow.creator_metadata = [{"class": "Person", "name": "Jane Doe"}]
+        workflow.reports_config = {"markdown": "## Report"}
+        workflow.readme = "A readme"
+        workflow.help = "Some help text"
+        workflow.logo_url = "https://galaxyproject.org/images/galaxy-logo.png"
+        workflow.doi = ["10.1000/xyz123"]
+        workflow.source_metadata = {"url": "https://example.org/workflow.ga"}
+        self.persist(workflow)
+
+        copied_workflow = workflow.copy(user=user)
+        # Driven off the real columns so that a column added by a later migration has to be
+        # classified here rather than being silently dropped by copy(), which is how
+        # readme/help/logo_url/doi were lost between 25.0 and now.
+        not_copied = {
+            "id",  # assigned per row
+            "create_time",
+            "update_time",
+            "stored_workflow_id",  # the caller attaches the copy
+            "parent_workflow_id",
+            "uuid",  # identifies a single revision
+            "source_metadata",  # provenance of this exact content
+        }
+        for column in set(model.Workflow.__table__.columns.keys()) - not_copied:
+            assert getattr(workflow, column) is not None, f"{column} is not covered by this test"
+            assert getattr(copied_workflow, column) == getattr(workflow, column), column
+
+        assert copied_workflow.uuid != workflow.uuid
+        assert copied_workflow.source_metadata is None
 
     def test_role_creation(self):
         security_agent = GalaxyRBACAgent(self.model.session)

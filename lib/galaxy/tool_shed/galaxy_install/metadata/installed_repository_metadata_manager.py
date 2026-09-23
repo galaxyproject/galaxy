@@ -2,7 +2,6 @@ import logging
 import os
 from typing import (
     Any,
-    Optional,
 )
 
 from sqlalchemy import false
@@ -22,27 +21,25 @@ from galaxy.util.tool_shed import (
     common_util,
     xml_util,
 )
-from galaxy.web.form_builder import SelectField
 
 log = logging.getLogger(__name__)
 
 
 class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
-
     def __init__(
         self,
         app: InstallationTarget,
-        tpm: Optional[tool_panel_manager.ToolPanelManager] = None,
-        repository: Optional[ToolShedRepository] = None,
-        changeset_revision: Optional[str] = None,
-        repository_clone_url: Optional[str] = None,
-        shed_config_dict: Optional[dict[str, Any]] = None,
-        relative_install_dir: Optional[str] = None,
-        repository_files_dir: Optional[str] = None,
+        tpm: tool_panel_manager.ToolPanelManager | None = None,
+        repository: ToolShedRepository | None = None,
+        changeset_revision: str | None = None,
+        repository_clone_url: str | None = None,
+        shed_config_dict: dict[str, Any] | None = None,
+        relative_install_dir: str | None = None,
+        repository_files_dir: str | None = None,
         resetting_all_metadata_on_repository: bool = False,
         updating_installed_repository: bool = False,
         persist: bool = False,
-        metadata_dict: Optional[dict[str, Any]] = None,
+        metadata_dict: dict[str, Any] | None = None,
     ):
         super().__init__(
             app,
@@ -62,17 +59,6 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
             self.tpm = tool_panel_manager.ToolPanelManager(self.app)
         else:
             self.tpm = tpm
-
-    def build_repository_ids_select_field(self, name="repository_ids", multiple=True, display="checkboxes"):
-        """Generate the current list of repositories for resetting metadata."""
-        repositories_select_field = SelectField(name=name, multiple=multiple, display=display)
-        query = self.get_query_for_setting_metadata_on_repositories(order=True)
-        for repository in query:
-            owner = str(repository.owner)
-            option_label = f"{str(repository.name)} ({owner})"
-            option_value = f"{self.app.security.encode_id(repository.id)}"
-            repositories_select_field.add_option(option_label, option_value)
-        return repositories_select_field
 
     def get_query_for_setting_metadata_on_repositories(self, order=True):
         """
@@ -112,6 +98,11 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
                         tool = self.app.toolbox.load_tool(
                             os.path.abspath(load_relative_path), guid=guid, use_cached=False
                         )
+                        # Install-time bookkeeping downstream inspects parsed
+                        # parameter state (``params_with_missing_data_table_entry``,
+                        # ``params_with_missing_index_file``), so hand consumers a
+                        # fully parsed tool like the eager toolbox always did.
+                        tool = self.app.toolbox.materialize_tool(tool, reason="installation")
                     except Exception:
                         log.exception("Error while loading tool at path '%s'", load_relative_path)
                         tool = None
@@ -189,7 +180,7 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
         return message, status
 
     def set_repository(
-        self, repository, relative_install_dir: Optional[str] = None, changeset_revision: Optional[str] = None
+        self, repository, relative_install_dir: str | None = None, changeset_revision: str | None = None
     ):
         super().set_repository(repository)
         self.repository_clone_url = common_util.generate_clone_url_for_installed_repository(self.app, repository)

@@ -3,7 +3,7 @@ import logging
 from time import strftime
 from typing import (
     Annotated,
-    Optional,
+    Any,
 )
 
 from fastapi import (
@@ -19,7 +19,10 @@ from galaxy import (
     exceptions,
     util,
 )
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesUserContext,
+)
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     CheckForUpdatesResponse,
@@ -72,7 +75,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
 
     service: ToolShedRepositoriesService = depends(ToolShedRepositoriesService)
 
-    def __ensure_can_install_repos(self, trans):
+    def __ensure_can_install_repos(self, trans: ProvidesUserContext):
         # Make sure this Galaxy instance is configured with a shed-related tool panel configuration file.
         if not have_shed_tool_conf_for_install(self.app):
             message = get_message_for_no_shed_tool_config()
@@ -147,7 +150,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
 
     @require_admin
     @expose_api
-    def install_repository_revisions(self, trans, payload, **kwd):
+    def install_repository_revisions(self, trans: ProvidesUserContext, payload, **kwd):
         """
         POST /api/tool_shed_repositories/install_repository_revisions
         Install one or more specified repository revisions from one or more specified tool sheds into Galaxy.  The received parameters
@@ -246,7 +249,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
 
     @require_admin
     @expose_api
-    def uninstall_repository(self, trans, id=None, **kwd):
+    def uninstall_repository(self, trans: ProvidesAppContext, id=None, **kwd):
         """
         DELETE /api/tool_shed_repositories/id
         DELETE /api/tool_shed_repositories/
@@ -268,9 +271,9 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
             except ValueError:
                 raise HTTPBadRequest(detail=f"No repository with id '{id}' found")
         else:
-            tsr_arguments = ["name", "owner", "changeset_revision", "tool_shed_url"]
+            tsr_argument_names = ["name", "owner", "changeset_revision", "tool_shed_url"]
             try:
-                tsr_arguments = {key: kwd[key] for key in tsr_arguments}
+                tsr_arguments = {key: kwd[key] for key in tsr_argument_names}
             except KeyError as e:
                 raise HTTPBadRequest(detail=f"Missing required parameter '{e.args[0]}'")
             repository = get_installed_repository(
@@ -314,7 +317,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
 
     @require_admin
     @expose_api
-    def reset_metadata_on_selected_installed_repositories(self, trans, **kwd):
+    def reset_metadata_on_selected_installed_repositories(self, trans: ProvidesAppContext, **kwd):
         if repository_ids := util.listify(kwd.get("repository_ids")):
             irmm = InstalledRepositoryMetadataManager(self.app)
             failed = []
@@ -341,7 +344,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
             raise exceptions.MessageException("Please specify repository ids [repository_ids].")
 
     @expose_api
-    def reset_metadata_on_installed_repositories(self, trans, payload, **kwd):
+    def reset_metadata_on_installed_repositories(self, trans: ProvidesUserContext, payload, **kwd):
         """
         PUT /api/tool_shed_repositories/reset_metadata_on_installed_repositories
 
@@ -350,7 +353,9 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
         :param key: the API key of the Galaxy admin user.
         """
         start_time = strftime("%Y-%m-%d %H:%M:%S")
-        results = dict(start_time=start_time, successful_count=0, unsuccessful_count=0, repository_status=[])
+        results: dict[str, Any] = dict(
+            start_time=start_time, successful_count=0, unsuccessful_count=0, repository_status=[]
+        )
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
         if not trans.user_is_admin:
             raise HTTPForbidden(
@@ -390,17 +395,17 @@ InstalledToolShedRepositoryIDPathParam = Annotated[
     ),
 ]
 
-NameQueryParam: Optional[str] = Query(default=None, title="Name", description="Filter by repository name.")
+NameQueryParam: str | None = Query(default=None, title="Name", description="Filter by repository name.")
 
-OwnerQueryParam: Optional[str] = Query(default=None, title="Owner", description="Filter by repository owner.")
+OwnerQueryParam: str | None = Query(default=None, title="Owner", description="Filter by repository owner.")
 
-ChangesetQueryParam: Optional[str] = Query(default=None, title="Changeset", description="Filter by changeset revision.")
+ChangesetQueryParam: str | None = Query(default=None, title="Changeset", description="Filter by changeset revision.")
 
-DeletedQueryParam: Optional[bool] = Query(
+DeletedQueryParam: bool | None = Query(
     default=None, title="Deleted?", description="Filter by whether the repository has been deleted."
 )
 
-UninstalledQueryParam: Optional[bool] = Query(
+UninstalledQueryParam: bool | None = Query(
     default=None, title="Uninstalled?", description="Filter by whether the repository has been uninstalled."
 )
 
@@ -417,11 +422,11 @@ class FastAPIToolShedRepositories:
     )
     def index(
         self,
-        name: Optional[str] = NameQueryParam,
-        owner: Optional[str] = OwnerQueryParam,
-        changeset: Optional[str] = ChangesetQueryParam,
-        deleted: Optional[bool] = DeletedQueryParam,
-        uninstalled: Optional[bool] = UninstalledQueryParam,
+        name: str | None = NameQueryParam,
+        owner: str | None = OwnerQueryParam,
+        changeset: str | None = ChangesetQueryParam,
+        deleted: bool | None = DeletedQueryParam,
+        uninstalled: bool | None = UninstalledQueryParam,
     ) -> list[InstalledToolShedRepository]:
         request = InstalledToolShedRepositoryIndexRequest(
             name=name,
@@ -438,7 +443,7 @@ class FastAPIToolShedRepositories:
         response_description="A description of the state and updates message.",
         require_admin=True,
     )
-    def check_for_updates(self, id: Optional[DecodedDatabaseIdField] = None) -> CheckForUpdatesResponse:
+    def check_for_updates(self, id: DecodedDatabaseIdField | None = None) -> CheckForUpdatesResponse:
         return self.service.check_for_updates(id and int(id))
 
     @router.get(

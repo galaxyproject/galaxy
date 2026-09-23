@@ -1,0 +1,51 @@
+<tool id="async_ambiguous_unqualified_name" name="async_ambiguous_unqualified_name" version="1.0.0">
+    <description>async regression: a duplicated identical unqualified test param is tolerated</description>
+    <!--
+      Models gatk4 mutect2 test 3 (and hisat2 test 5), which list a conditional
+      param by its unqualified short name TWICE in the same test with the SAME
+      value - a common test-authoring slip.
+
+      Sync (POST /api/tools): the duplicate identical entry is tolerated.
+
+      Async previously aborted the request build because _input_for() found two
+      matching test inputs for the short name (ref_seq):
+        could not build request: Ambiguous unqualified test parameter name
+        (ref_seq) for (reference_source|ref_seq)
+
+      Now duplicate matches with equivalent values are de-duplicated like the
+      synchronous path; only genuinely conflicting values are reported ambiguous.
+      This tool therefore validates and runs green under both submission paths.
+    -->
+    <command><![CDATA[
+cat '$reference_source.ref_seq' > '$out_file1'
+    ]]></command>
+    <inputs>
+        <conditional name="reference_source">
+            <param name="reference_source_selector" type="select" label="Reference source">
+                <option value="history" selected="true">History</option>
+                <option value="cached">Cached</option>
+            </param>
+            <when value="history">
+                <param name="ref_seq" type="data" format="txt" label="Reference" />
+            </when>
+            <when value="cached">
+                <param name="ref_seq" type="data" format="txt" label="Reference" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="reference_source_selector" value="history" />
+            <param name="ref_seq" value="simple_line.txt" />
+            <param name="ref_seq" value="simple_line.txt" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_text text="line" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

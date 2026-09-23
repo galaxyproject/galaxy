@@ -3,8 +3,6 @@ from typing import (
     Annotated,
     Any,
     Literal,
-    Optional,
-    Union,
 )
 
 from pydantic import (
@@ -58,7 +56,7 @@ class FilesSourcePlugin(Model):
         description="The display label for this plugin.",
         examples=["Library Import Directory"],
     )
-    doc: Optional[str] = Field(
+    doc: str | None = Field(
         None,
         title="Documentation",
         description="Documentation or extended description for this plugin.",
@@ -75,17 +73,17 @@ class FilesSourcePlugin(Model):
         description="Whether this files source plugin allows write access.",
         examples=[False],
     )
-    requires_roles: Optional[str] = Field(
+    requires_roles: str | None = Field(
         None,
         title="Requires roles",
         description="Only users with the roles specified here can access this files source.",
     )
-    requires_groups: Optional[str] = Field(
+    requires_groups: str | None = Field(
         None,
         title="Requires groups",
         description="Only users belonging to the groups specified here can access this files source.",
     )
-    url: Optional[str] = Field(
+    url: str | None = Field(
         None,
         title="URL",
         description="Optional URL that might be provided by some plugins to link to the remote source.",
@@ -107,7 +105,7 @@ class BrowsableFilesSourcePlugin(FilesSourcePlugin):
 
 
 class FilesSourcePluginList(RootModel):
-    root: list[Union[BrowsableFilesSourcePlugin, FilesSourcePlugin]] = Field(
+    root: list[BrowsableFilesSourcePlugin | FilesSourcePlugin] = Field(
         default=[],
         title="List of files source plugins",
         examples=[
@@ -143,7 +141,7 @@ class RemoteFile(RemoteEntry):
     class_: Literal["File"] = Field(..., alias="class")
     size: int = Field(..., title="Size", description="The size of the file in bytes.")
     ctime: str = Field(..., title="Creation time", description="The creation time of the file.")
-    hashes: Optional[list[RemoteFileHash]] = Field(
+    hashes: list[RemoteFileHash] | None = Field(
         None, title="Hashes", description="List of precomputed hashes for the file, if available."
     )
 
@@ -159,7 +157,7 @@ class ListJstreeResponse(RootModel):
 
 
 AnyRemoteEntry = Annotated[
-    Union[RemoteFile, RemoteDirectory],
+    RemoteFile | RemoteDirectory,
     Field(discriminator="class_"),
 ]
 
@@ -172,7 +170,7 @@ class ListUriResponse(RootModel):
     )
 
 
-AnyRemoteFilesListResponse = Union[ListUriResponse, ListJstreeResponse]
+AnyRemoteFilesListResponse = ListUriResponse | ListJstreeResponse
 
 
 class CreateEntryPayload(Model):
@@ -202,7 +200,7 @@ class CreatedEntryResponse(Model):
         description="The URI of the created entry.",
         examples=["gxfiles://my_new_entry"],
     )
-    external_link: Optional[str] = Field(
+    external_link: str | None = Field(
         default=None,
         title="External link",
         description="An optional external link to the created entry if available.",

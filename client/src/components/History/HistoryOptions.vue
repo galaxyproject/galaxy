@@ -2,6 +2,8 @@
 import {
     faArchive,
     faBars,
+    faBezierCurve,
+    faBook,
     faBurn,
     faClone,
     faColumns,
@@ -16,13 +18,12 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText, BFormCheckbox, BModal } from "bootstrap-vue";
+import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { canMutateHistory, type HistorySummary } from "@/api";
-import { iframeRedirect } from "@/components/plugins/legacyNavigation";
 import { useToast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -30,6 +31,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
 
+import GModal from "@/components/BaseComponents/GModal.vue";
 import CopyModal from "@/components/History/Modals/CopyModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -101,29 +103,36 @@ function onDelete() {
         historyStore.deleteHistory(props.history.id, false);
     }
 }
+
+watch(
+    () => [showDeleteModal.value, props.history.id],
+    () => {
+        purgeHistory.value = isDeletedNotPurged.value;
+    },
+);
 </script>
 
 <template>
     <div>
         <BDropdown
-            v-b-tooltip.top.hover.noninteractive
+            v-g-tooltip.top.hover
             no-caret
             size="sm"
             :variant="props.minimal ? 'outline-info' : 'link'"
             toggle-class="text-decoration-none"
             menu-class="history-options-button-menu"
-            title="History options"
+            :title="localize('History Options')"
             right
             data-description="history options">
             <template v-slot:button-content>
                 <FontAwesomeIcon fixed-width :icon="faBars" />
-                <span class="sr-only">History Options</span>
+                <span v-localize class="sr-only">History Options</span>
             </template>
 
             <BDropdownText>
                 <LoadingSpan v-if="historiesLoading" message="Fetching histories from server" />
-                <span v-else-if="!props.minimal">You have {{ totalHistoryCount }} histories.</span>
-                <span v-else>Manage History</span>
+                <span v-else-if="!props.minimal" v-localize>You have {{ totalHistoryCount }} histories.</span>
+                <span v-else v-localize>Manage History</span>
             </BDropdownText>
 
             <BDropdownItem
@@ -138,9 +147,9 @@ function onDelete() {
 
             <BDropdownDivider v-if="!props.minimal" />
 
-            <BDropdownText v-if="!canEditHistory">
-                This history has been <span class="font-weight-bold">{{ historyState }}</span
-                >.
+            <BDropdownText v-if="!canEditHistory" v-localize>
+                This history has been
+                <span class="font-weight-bold"> {{ historyState }} </span>.
                 <span v-localize>Some actions might not be available.</span>
             </BDropdownText>
 
@@ -208,11 +217,10 @@ function onDelete() {
             </BDropdownItem>
 
             <BDropdownItem
-                v-if="historyStore.currentHistoryId === history.id"
                 :disabled="isAnonymous"
                 data-description="extract workflow"
                 :title="userTitle('Convert History to Workflow')"
-                @click="iframeRedirect(`/workflow/build_from_current_history?history_id=${history.id}`)">
+                :to="`/histories/${history.id}/extract_workflow`">
                 <FontAwesomeIcon fixed-width :icon="faFileExport" />
                 <span v-localize>Extract Workflow</span>
             </BDropdownItem>
@@ -223,6 +231,19 @@ function onDelete() {
                 :to="`/histories/${history.id}/invocations`">
                 <FontAwesomeIcon fixed-width :icon="faList" />
                 <span v-localize>Show Invocations</span>
+            </BDropdownItem>
+
+            <BDropdownItem :title="localize('View History Graph')" :to="`/histories/${history.id}/graph`">
+                <FontAwesomeIcon fixed-width :icon="faBezierCurve" />
+                <span v-localize>Show History Graph</span>
+            </BDropdownItem>
+
+            <BDropdownItem
+                :disabled="isAnonymous || !canEditHistory"
+                :title="userTitle('View History Notebooks')"
+                :to="`/histories/${history.id}/pages`">
+                <FontAwesomeIcon fixed-width :icon="faBook" />
+                <span v-localize>Show History Notebooks</span>
             </BDropdownItem>
 
             <BDropdownDivider />
@@ -239,23 +260,25 @@ function onDelete() {
 
         <CopyModal :history="history" :show-modal.sync="showCopyModal" />
 
-        <BModal
-            v-model="showDeleteModal"
-            centered
-            :title="isDeletedNotPurged ? 'Permanently Delete History?' : 'Delete History?'"
-            title-tag="h2"
-            :ok-title="isDeletedNotPurged ? 'Permanently Delete' : 'Delete'"
-            ok-variant="danger"
-            cancel-variant="outline-primary"
-            @ok="onDelete"
-            @show="purgeHistory = isDeletedNotPurged">
+        <GModal
+            :show.sync="showDeleteModal"
+            :title="localize(isDeletedNotPurged ? 'Permanently Delete History?' : 'Delete History?')"
+            :ok-text="localize(isDeletedNotPurged ? 'Delete Permanently' : 'Delete')"
+            ok-color="red"
+            confirm
+            size="small"
+            @ok="onDelete">
             <p v-localize>
                 Do you also want to permanently delete the history <i class="ml-1">{{ history.name }}</i>
             </p>
 
-            <BFormCheckbox id="purge-history" v-model="purgeHistory" :disabled="isDeletedNotPurged">
+            <BFormCheckbox
+                id="purge-history"
+                v-model="purgeHistory"
+                :disabled="isDeletedNotPurged"
+                data-description="delete history checkbox">
                 <span v-localize>Yes, permanently delete this history.</span>
             </BFormCheckbox>
-        </BModal>
+        </GModal>
     </div>
 </template>

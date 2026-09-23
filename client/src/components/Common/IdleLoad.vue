@@ -3,8 +3,9 @@
 // in order to not slow down the rendering of parent components,
 // or the responsiveness of the UI
 
-import { BSpinner } from "bootstrap-vue";
 import { onMounted, ref } from "vue";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps<{
     spinner?: boolean;
@@ -26,7 +27,7 @@ onMounted(() => {
 <template>
     <div class="idle-load" :class="{ center: props.center && !render }">
         <slot v-if="render"></slot>
-        <BSpinner v-else-if="props.spinner"></BSpinner>
+        <LoadingSpan v-else-if="props.spinner" spinner-only />
     </div>
 </template>
 
