@@ -14,8 +14,6 @@ import {
 import { getData as getInvocationsData } from "@/components/Grid/configs/invocations";
 import { numTerminal } from "@/components/WorkflowInvocationState/util";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
-import { useHistoryStore } from "@/stores/historyStore";
-import { useWorkflowStore } from "@/stores/workflowStore";
 import { rethrowSimple, rethrowSimpleWithStatus } from "@/utils/simple-error";
 
 export const useInvocationStore = defineStore("invocationStore", () => {
@@ -294,32 +292,6 @@ export const useInvocationStore = defineStore("invocationStore", () => {
     );
 
     /**
-     * Resolves the history and workflow names an invocation is displayed with.
-     *
-     * The grid's `getData` starts these lookups but does not await them, so a
-     * list rendered right after the fetch (the command palette) would show bare
-     * ids. Both stores share their in-flight request per id, so awaiting the
-     * same lookups here adds no requests. A failing lookup only costs a name,
-     * never the invocation row, and is therefore ignored.
-     */
-    async function fetchInvocationNames(invocations: WorkflowInvocation[]) {
-        const historyStore = useHistoryStore();
-        const workflowStore = useWorkflowStore();
-        const historyIds = new Set(invocations.map((invocation) => invocation.history_id).filter(Boolean));
-        const workflowIds = new Set(invocations.map((invocation) => invocation.workflow_id).filter(Boolean));
-        await Promise.all([
-            ...[...historyIds].map((historyId) =>
-                historyStore.getHistoryById(historyId, false)
-                    ? Promise.resolve()
-                    : historyStore.loadHistoryById(historyId).catch(() => undefined),
-            ),
-            ...[...workflowIds].map((workflowId) =>
-                workflowStore.fetchWorkflowForInstanceIdCached(workflowId).catch(() => undefined),
-            ),
-        ]);
-    }
-
-    /**
      * Fetches the `limit` most recently created invocations and merges them into the shared
      * invocation cache (no separate copy of the data is kept -- only the ordered list of ids).
      *
@@ -343,7 +315,6 @@ export const useInvocationStore = defineStore("invocationStore", () => {
                 }
                 latestInvocationIds.value = ids;
                 hasLoadedLatestInvocations.value = true;
-                await fetchInvocationNames(invocations);
                 return latestInvocations.value;
             } finally {
                 isLoadingLatestInvocations.value = false;

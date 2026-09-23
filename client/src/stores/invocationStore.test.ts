@@ -10,9 +10,7 @@ import type {
     WorkflowJobMetric,
 } from "@/api/invocations";
 
-import { useHistoryStore } from "./historyStore";
 import { useInvocationStore } from "./invocationStore";
-import { useWorkflowStore } from "./workflowStore";
 
 const { server, http } = useServerMock();
 
@@ -175,16 +173,12 @@ describe("stores/invocationStore", () => {
             expect(requestedLimits).toEqual(["5"]);
         });
 
-        it("resolves the workflow and history names before it settles", async () => {
+        it("marks the latest invocations as loaded once fetched", async () => {
             const store = useInvocationStore();
+            expect(store.hasLoadedLatestInvocations).toBe(false);
 
             await store.fetchLatestInvocations();
 
-            // the grid's `getData` only starts these lookups -- the store awaits
-            // them, so a list rendered right after the fetch shows names instead
-            // of bare ids
-            expect(useWorkflowStore().getStoredWorkflowNameByInstanceId("workflow-inv2")).toBe("Workflow");
-            expect(useHistoryStore().getHistoryById("history-inv2", false)?.name).toBe("History");
             expect(store.hasLoadedLatestInvocations).toBe(true);
         });
 

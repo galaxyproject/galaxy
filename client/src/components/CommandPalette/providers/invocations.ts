@@ -41,9 +41,9 @@ function formatCreateTime(createTime: string | null | undefined): string | undef
 }
 
 /**
- * Names come from the history and workflow stores, which `fetchLatestInvocations`
- * populates (and awaits) before it resolves -- never fetched here, so rendering a
- * row never triggers a request.
+ * Names come from the history and workflow stores, which
+ * `fetchLatestInvocationsWithNames` populates before it resolves -- never fetched
+ * here, so rendering a row never triggers a request.
  */
 function invocationNames(invocation: WorkflowInvocation) {
     const historyStore = useHistoryStore();
@@ -70,6 +70,38 @@ function invocationToItem(invocation: WorkflowInvocation): PaletteItem {
 }
 
 /**
+ * Resolves the history and workflow names the rows are displayed with.
+ *
+ * The invocations grid's `getData` starts these lookups but does not await
+ * them, so rows rendered right after the fetch would show bare ids. Both stores
+ * share their in-flight request per id, so awaiting the same lookups here adds
+ * no requests. A failing lookup only costs a name, never the row, and is
+ * therefore ignored.
+ */
+async function fetchInvocationNames(invocations: WorkflowInvocation[]): Promise<void> {
+    const historyStore = useHistoryStore();
+    const workflowStore = useWorkflowStore();
+    const historyIds = new Set(invocations.map((invocation) => invocation.history_id).filter(Boolean));
+    const workflowIds = new Set(invocations.map((invocation) => invocation.workflow_id).filter(Boolean));
+    await Promise.all([
+        ...[...historyIds].map((historyId) =>
+            historyStore.getHistoryById(historyId, false)
+                ? Promise.resolve()
+                : historyStore.loadHistoryById(historyId).catch(() => undefined),
+        ),
+        ...[...workflowIds].map((workflowId) =>
+            workflowStore.fetchWorkflowForInstanceIdCached(workflowId).catch(() => undefined),
+        ),
+    ]);
+}
+
+/** The latest invocations, settling once the names their rows show are known too */
+async function fetchLatestInvocationsWithNames(): Promise<void> {
+    const invocations = await useInvocationStore().fetchLatestInvocations(LATEST_LIMIT);
+    await fetchInvocationNames(invocations);
+}
+
+/**
  * Store-first hydration: the store is filled once per session and every later
  * keystroke is answered from it. The invocations index has no free-text search,
  * so refetching for a query would only repeat the identical unfiltered request;
@@ -82,13 +114,13 @@ async function ensureLatestInvocations(): Promise<WorkflowInvocation[]> {
     const invocationStore = useInvocationStore();
     if (!invocationStore.hasLoadedLatestInvocations) {
         try {
-            await invocationStore.fetchLatestInvocations(LATEST_LIMIT);
+            await fetchLatestInvocationsWithNames();
         } catch (error) {
             console.debug("Command palette could not fetch invocations", error);
         }
         markListRefreshed(REFRESH_KEY);
     } else {
-        refreshListWhenStale(REFRESH_KEY, () => invocationStore.fetchLatestInvocations(LATEST_LIMIT));
+        refreshListWhenStale(REFRESH_KEY, fetchLatestInvocationsWithNames);
     }
     return invocationStore.latestInvocations;
 }

@@ -1,3 +1,4 @@
+import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -16,18 +17,21 @@ vi.mock("@/components/Grid/configs/invocations", () => ({
 const WORKFLOW_NAMES: Record<string, string> = { wf1: "Variant calling", wf2: "RNA-seq" };
 const HISTORY_NAMES: Record<string, string> = { h1: "My analysis", h2: "Scratch" };
 
+// awaited by the provider so the names are there to render
+const fetchWorkflowForInstanceIdCached = vi.fn(async (_id: string): Promise<void> => undefined);
+const loadHistoryById = vi.fn(async (_id: string): Promise<void> => undefined);
+
 vi.mock("@/stores/workflowStore", () => ({
     useWorkflowStore: () => ({
         getStoredWorkflowNameByInstanceId: (id: string, fallback = "...") => WORKFLOW_NAMES[id] ?? fallback,
-        // awaited by `fetchLatestInvocations` so the names are there to render
-        fetchWorkflowForInstanceIdCached: async () => undefined,
+        fetchWorkflowForInstanceIdCached,
     }),
 }));
 
 vi.mock("@/stores/historyStore", () => ({
     useHistoryStore: () => ({
         getHistoryById: (id: string) => (HISTORY_NAMES[id] ? { id, name: HISTORY_NAMES[id] } : null),
-        loadHistoryById: async () => undefined,
+        loadHistoryById,
     }),
 }));
 
@@ -75,6 +79,8 @@ describe("invocationsProvider", () => {
         setActivePinia(createPinia());
         recentItems.mockReturnValue([]);
         resetListRefreshTracking();
+        fetchWorkflowForInstanceIdCached.mockClear();
+        loadHistoryById.mockClear();
         vi.mocked(getInvocationsData).mockReset();
         vi.mocked(getInvocationsData).mockResolvedValue([INVOCATIONS, INVOCATIONS.length] as never);
     });
@@ -89,6 +95,29 @@ describe("invocationsProvider", () => {
         expect(items[0]?.subtitle).toContain("2026");
         expect(items[0]?.subtitle).toContain("My analysis");
         expect(items[0]?.to).toBe("/workflows/invocations/inv1");
+    });
+
+    it("resolves the workflow and history names before it settles", async () => {
+        let finishWorkflowLookup!: () => void;
+        fetchWorkflowForInstanceIdCached.mockImplementationOnce(
+            () => new Promise<void>((resolve) => (finishWorkflowLookup = resolve)),
+        );
+        let settled = false;
+        const search = Promise.resolve(invocationsProvider.searchScoped?.(SCOPE, "", makeCtx())).then(
+            () => (settled = true),
+        );
+        await flushPromises();
+
+        // the grid's `getData` only starts these lookups -- the provider awaits
+        // them, so rows rendered right after the fetch show names, not bare ids
+        expect(settled).toBe(false);
+        expect(fetchWorkflowForInstanceIdCached.mock.calls.map(([id]) => id)).toEqual(["wf1", "wf2", "unknown_wf"]);
+        // cached histories are not looked up again
+        expect(loadHistoryById.mock.calls.map(([id]) => id)).toEqual(["unknown_history"]);
+
+        finishWorkflowLookup();
+        await search;
+        expect(settled).toBe(true);
     });
 
     it("falls back to the invocation id when the workflow name is unknown", async () => {
@@ -161,6 +190,7 @@ describe("invocationsProvider", () => {
         expect(getInvocationsData).toHaveBeenCalledTimes(1);
 
         resetListRefreshTracking();
+        fetchWorkflowForInstanceIdCached.mockClear();
         const sections = (await invocationsProvider.searchScoped?.(SCOPE, "", makeCtx())) ?? [];
 
         expect(sections.at(-1)?.items.map((i) => i.id)).toEqual([
@@ -169,6 +199,9 @@ describe("invocationsProvider", () => {
             "invocations:inv3",
         ]);
         expect(getInvocationsData).toHaveBeenCalledTimes(2);
+        // the refreshed rows resolve their names as well
+        await flushPromises();
+        expect(fetchWorkflowForInstanceIdCached).toHaveBeenCalledTimes(3);
     });
 
     it("keeps rendering the cached invocations when a fetch fails", async () => {
