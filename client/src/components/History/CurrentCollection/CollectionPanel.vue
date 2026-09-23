@@ -1,6 +1,7 @@
 <!-- When a dataset collection is being viewed, this panel shows the contents of that collection -->
 
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import {
@@ -12,10 +13,12 @@ import {
     isCollectionElement,
     isHDCA,
     type SubCollection,
+    userOwnsHistory,
 } from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
+import { useUserStore } from "@/stores/userStore";
 import { setItemDragstart } from "@/utils/setDrag";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -40,6 +43,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const collectionElementsStore = useCollectionElementsStore();
+const { currentUser } = storeToRefs(useUserStore());
 
 const emit = defineEmits<{
     (e: "view-collection", collection: CollectionEntry): void;
@@ -78,7 +82,9 @@ const rootCollection = computed(() => {
     }
 });
 const isRoot = computed(() => dsc.value == rootCollection.value);
-const canEdit = computed(() => isRoot.value && canMutateHistory(props.history));
+const canEdit = computed(
+    () => isRoot.value && canMutateHistory(props.history) && userOwnsHistory(currentUser.value, props.history),
+);
 async function updateDsc(collection: CollectionEntry, fields: Object | undefined) {
     if (!isHDCA(collection)) {
         return;
