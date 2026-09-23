@@ -40,7 +40,7 @@ const ALL_TOOLS = [FASTQC, BOWTIE];
 const TOOLS_SCOPE = PALETTE_SCOPES.find((scope) => scope.key === "t")!;
 
 function makeCtx(): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAdmin: false, isAnonymous: false };
+    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false };
 }
 
 /** Bulk `/api/tools` returns the toolbox, a `q` search returns matching ids */

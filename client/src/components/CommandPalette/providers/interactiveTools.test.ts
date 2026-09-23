@@ -62,7 +62,6 @@ function makeCtx(): PaletteContext {
     return {
         canUseUnprivilegedTools: false,
         config: { interactivetools_enable: true },
-        isAdmin: false,
         isAnonymous: false,
     };
 }

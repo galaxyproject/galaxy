@@ -17,8 +17,6 @@ export interface PaletteContext {
         interactivetools_enable?: boolean;
         llm_api_configured?: boolean;
     };
-    /** Whether the current user is an admin */
-    isAdmin: boolean;
     /** Whether no user is logged in */
     isAnonymous: boolean;
     /**
@@ -108,8 +106,6 @@ export interface CommandPaletteProvider {
     id: string;
     /** Items shown when the query is empty (recents, defaults) */
     emptyQueryItems?(ctx: PaletteContext): PaletteItem[];
-    /** Legacy single-letter prefix; scoping lives in `providers/scopes.ts` */
-    prefix?: string;
     search(query: string, ctx: PaletteContext): PaletteItem[] | Promise<PaletteItem[]>;
     /** Multi-section search for one of the provider's scopes */
     searchScoped?(

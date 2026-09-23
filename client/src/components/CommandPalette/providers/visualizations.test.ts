@@ -42,7 +42,7 @@ function mockVisualization(id: string, title: string, type = "nvd3_bar"): Visual
 }
 
 function makeCtx(): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAdmin: false, isAnonymous: false };
+    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false };
 }
 
 function mockList(...visualizations: VisualizationSummary[]) {

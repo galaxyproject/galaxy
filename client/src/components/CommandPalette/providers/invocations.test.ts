@@ -71,7 +71,7 @@ const INVOCATIONS = [
 const SCOPE: ScopeDefinition = { key: "i", label: "Invocations", providerId: "invocations" };
 
 function makeCtx(): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAdmin: false, isAnonymous: false };
+    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false };
 }
 
 describe("invocationsProvider", () => {

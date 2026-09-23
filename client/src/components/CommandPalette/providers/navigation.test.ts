@@ -7,7 +7,6 @@ function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
     return {
         canUseUnprivilegedTools: false,
         config: { interactivetools_enable: false, llm_api_configured: false },
-        isAdmin: false,
         isAnonymous: false,
         ...overrides,
     };

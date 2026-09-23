@@ -4,7 +4,7 @@ import type { PaletteContext } from "../types";
 import { ACTIONS_SCOPE, availableScopes, findScope, isScopeAvailable, PALETTE_SCOPES } from "./scopes";
 
 function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAdmin: false, isAnonymous: false, ...overrides };
+    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false, ...overrides };
 }
 
 describe("PALETTE_SCOPES", () => {

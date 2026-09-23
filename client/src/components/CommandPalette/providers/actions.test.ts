@@ -38,7 +38,6 @@ function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
     return {
         canUseUnprivilegedTools: false,
         config: {},
-        isAdmin: false,
         isAnonymous: false,
         // the palette resolves these with `useFilteredUploadMethods`, which
         // already dropped whatever this user may not run

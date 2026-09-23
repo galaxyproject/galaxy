@@ -45,7 +45,7 @@ const ALPHA = makeDataset("d1", "alpha reads", "2026-01-03T00:00:00");
 const BETA = makeDataset("d2", "beta reads", "2026-01-05T00:00:00");
 
 function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAdmin: false, isAnonymous: false, ...overrides };
+    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false, ...overrides };
 }
 
 /** Serves the unfiltered "latest" list, and name-filters for search fetches */

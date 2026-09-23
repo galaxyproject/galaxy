@@ -89,7 +89,7 @@ function mockWorkflowsApi() {
 }
 
 function makeCtx(isAnonymous = false): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAdmin: false, isAnonymous };
+    return { canUseUnprivilegedTools: false, config: {}, isAnonymous };
 }
 
 function signIn(username = "me") {

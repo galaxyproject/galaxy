@@ -17,7 +17,7 @@ vi.mock("@/api/pages", () => ({
 }));
 
 function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAdmin: false, isAnonymous: false, ...overrides };
+    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false, ...overrides };
 }
 
 function mockPage(id: string, overrides: Partial<PageSummary> = {}): PageSummary {

@@ -261,7 +261,6 @@ function buildContext(): PaletteContext {
             interactivetools_enable: config.value?.interactivetools_enable,
             llm_api_configured: config.value?.llm_api_configured,
         },
-        isAdmin: userStore.isAdmin,
         isAnonymous: userStore.isAnonymous,
         navigate: (to: string) => {
             router.push(to).catch(() => {

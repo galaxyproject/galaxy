@@ -5,7 +5,7 @@ import { ALL_CATEGORY, availableCategories, categoryScope, PALETTE_CATEGORIES } 
 import { paletteProviders } from "./index";
 
 function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAdmin: false, isAnonymous: false, ...overrides };
+    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false, ...overrides };
 }
 
 describe("PALETTE_CATEGORIES", () => {
