@@ -144,6 +144,10 @@ class MockJobWrapper:
     ):
         self.fail_message = message
         self.fail_exception = exception
+        if exit_code is not None:
+            self.exit_code = exit_code
+        self.job_stdout = job_stdout
+        self.job_stderr = job_stderr
 
     def finish(self, stdout, stderr, exit_code, **kwds):
         self.stdout = stdout

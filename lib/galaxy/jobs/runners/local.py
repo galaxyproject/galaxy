@@ -88,6 +88,7 @@ class LocalJobRunner(BaseJobRunner):
             return
 
         stderr = stdout = ""
+        failure_message = None
 
         # command line has been added to the wrapper by prepare_job()
         job_file, exit_code_path = self._command_line(job_wrapper)
@@ -122,6 +123,13 @@ class LocalJobRunner(BaseJobRunner):
 
                 terminated = self.__poll_if_needed(proc, job_wrapper, job_id)
                 proc.wait()  # reap
+                log.debug("(%s) execution finished: %s (return code: %s)", job_id, job_file, proc.returncode)
+                if proc.returncode:
+                    if proc.returncode < 0:
+                        failure_message = f"job process was killed by signal {-proc.returncode}"
+                    else:
+                        failure_message = f"job process exited with return code {proc.returncode}"
+                    log.error("(%s) %s", job_id, failure_message)
                 if terminated:
                     return
                 elif check_pg(proc.pid):
@@ -140,10 +148,31 @@ class LocalJobRunner(BaseJobRunner):
             stderr = self._job_io_for_db(stderr_file)
             stdout_file.close()
             stderr_file.close()
-            log.debug(f"execution finished: {job_file}")
         except Exception:
             log.exception("failure running job %d", job_wrapper.job_id)
             self._fail_job_local(job_wrapper, "failure running job")
+            return
+
+        if (
+            failure_message is not None
+            and not os.path.exists(exit_code_path)
+            and job_wrapper.get_state()
+            not in (
+                model.Job.states.DELETING,
+                model.Job.states.DELETED,
+                model.Job.states.STOPPING,
+                model.Job.states.STOPPED,
+            )
+        ):
+            # The script died before recording the tool exit code. Preserve the
+            # process failure instead of trying to collect missing tool outputs.
+            job_wrapper.reclaim_ownership()
+            job_wrapper.fail(
+                failure_message,
+                exit_code=proc.returncode,
+                job_stdout=stdout,
+                job_stderr=f"{stderr.rstrip()}\n{failure_message}".lstrip("\n"),
+            )
             return
 
         self._handle_metadata_if_needed(job_wrapper)
@@ -214,7 +243,7 @@ class LocalJobRunner(BaseJobRunner):
         if not job_wrapper.tool.produces_entry_points:
             return
 
-        while check_pg(proc.pid):
+        while proc.poll() is None:
             if job_wrapper.check_for_entry_points(check_already_configured=False):
                 return
 
@@ -229,7 +258,7 @@ class LocalJobRunner(BaseJobRunner):
         i = 0
         pgid = proc.pid
         # Iterate until the process exits, periodically checking its limits
-        while check_pg(pgid):
+        while proc.poll() is None:
             i += 1
             if (i % 20) == 0:
                 limit_state = job_wrapper.check_limits(runtime=datetime.datetime.now() - job_start)
