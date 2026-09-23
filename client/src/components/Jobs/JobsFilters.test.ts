@@ -61,6 +61,10 @@ describe("jobsFilterParams", () => {
         it("doesn't combine a quoted tool_id value alongside unspecified text", () => {
             expect(jobsFilterParams("grep1 tool_id:'Grep1'")).toEqual({ search: "tool:Grep1 grep1" });
         });
+
+        it("throws instead of silently dropping an invalid filter key", () => {
+            expect(() => jobsFilterParams("xx:ss")).toThrow("Invalid filter(s) in query: xx");
+        });
     });
 
     describe("search by name mode", () => {
