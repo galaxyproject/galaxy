@@ -30,7 +30,7 @@ OBJECT_STORE_RUCIO_USERNAME = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RU
 OBJECT_STORE_RUCIO_RSE_NAME = "TEST"
 OBJECT_STORE_RUCIO_ACCESS = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_ACCESS", "rucio")
 OBJECT_STORE_RUCIO_IMAGE = os.environ.get(
-    "GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_IMAGE", "savannah.ornl.gov/ndip/public-docker/rucio:40.2.0"
+    "GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_IMAGE", "savannah.ornl.gov/ndip/public-docker/rucio:40.2.0-pg"
 )
 
 OBJECT_STORE_CONFIG = string.Template("""
@@ -140,15 +140,7 @@ def wait_rucio_ready(container_name):
 
 def start_rucio(container_name):
     ports = [(OBJECT_STORE_PORT, 80)]
-    # The image serves the Rucio API from a SQLite database, which permits a single writer,
-    # and Apache defaults to 4 WSGI processes of 4 threads each. add_replicas registers a
-    # file in one long write transaction, so two concurrent uploads contend for the write
-    # lock and the loser waits out the sqlite3 busy timeout of five seconds, failing with
-    # "database is locked" that the server reports as an opaque DatabaseException. One
-    # worker leaves no concurrent write to starve.
-    env_vars = {"RUCIO_WSGI_DAEMON_PROCESSES": "1", "RUCIO_WSGI_DAEMON_THREADS": "1"}
-    docker_run(OBJECT_STORE_RUCIO_IMAGE, container_name, ports=ports, env_vars=env_vars)
-
+    docker_run(OBJECT_STORE_RUCIO_IMAGE, container_name, ports=ports)
     wait_rucio_ready(container_name)
 
 
