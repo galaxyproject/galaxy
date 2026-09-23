@@ -12,6 +12,7 @@ interface Props {
     name: string;
     config: object;
     title?: string;
+    visualizationId?: string;
 }
 
 const props = defineProps<Props>();
@@ -36,6 +37,7 @@ async function render() {
             const dataIncoming = {
                 root: window.location.origin + getAppRoot(),
                 visualization_config: props.config,
+                visualization_id: props.visualizationId,
                 visualization_plugin: plugin,
                 visualization_title: props.title,
             };

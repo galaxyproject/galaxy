@@ -25,6 +25,7 @@ const iframeRef = ref<HTMLIFrameElement | null>(null);
 const isLoading = ref<boolean>(true);
 const hasUnsavedChanges = ref<boolean>(false);
 const visualizationConfig = ref();
+const visualizationTitle = ref<string | undefined>();
 
 function handleLoad() {
     isLoading.value = false;
@@ -88,6 +89,7 @@ onMounted(async () => {
             errorMessage.value = error.err_msg;
         } else if (data?.latest_revision?.config) {
             visualizationConfig.value = data.latest_revision.config;
+            visualizationTitle.value = data.title;
             errorMessage.value = "";
         } else {
             errorMessage.value = "Failed to access visualization details.";
@@ -118,6 +120,8 @@ onMounted(async () => {
             v-if="visualizationConfig"
             :config="visualizationConfig"
             :name="props.visualization"
+            :title="visualizationTitle"
+            :visualization-id="props.visualizationId"
             @load="handleLoad" />
     </div>
 </template>
