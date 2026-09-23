@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { PaletteContext } from "../types";
+import { parsePaletteQuery } from "../utilities";
 import { ACTIONS_SCOPE, availableScopes, findScope, isScopeAvailable, PALETTE_SCOPES } from "./scopes";
 
 function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
@@ -12,6 +13,13 @@ describe("PALETTE_SCOPES", () => {
         const keys = PALETTE_SCOPES.map((scope) => scope.key);
         expect(new Set(keys).size).toBe(keys.length);
         keys.forEach((key) => expect(key).toMatch(/^[a-z]{1,2}$/));
+    });
+
+    it("keeps every key typeable as a scope token", () => {
+        // a key the token pattern does not accept (e.g. three letters) could never be entered
+        PALETTE_SCOPES.forEach((scope) => {
+            expect(parsePaletteQuery(`${scope.key}:fastqc`)).toEqual({ type: "scope", scope, query: "fastqc" });
+        });
     });
 
     it("groups variants of one entity under a single provider", () => {

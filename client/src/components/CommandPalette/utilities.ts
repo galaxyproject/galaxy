@@ -6,14 +6,17 @@ import type { PaletteItem } from "./types";
 /** A scope token: one or two letters followed by a colon, e.g. `w:` or `hs:` */
 const SCOPE_TOKEN = /^([a-zA-Z]{1,2}):(.*)$/;
 
-const PALETTE_SEARCH_KEYS: SearchCommonKeys = {
+const PALETTE_SEARCH_KEYS = {
     exact: 5,
     startsWith: 4,
     name: 3,
     description: 2,
     combined: 1,
     wordMatch: 0,
-};
+} satisfies SearchCommonKeys;
+
+/** Backend-ranked results carry no scores: rank them between local "starts with" and name matches */
+export const BACKEND_RANKED_SCORE = (PALETTE_SEARCH_KEYS.startsWith + PALETTE_SEARCH_KEYS.name) / 2;
 
 export type ParsedPaletteQuery =
     /** Unscoped search text */

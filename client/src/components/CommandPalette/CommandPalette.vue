@@ -24,7 +24,7 @@ import { isPaletteFetchError } from "./providers/errors";
 import { ACTIONS_SCOPE, availableScopes, type ScopeDefinition } from "./providers/scopes";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem } from "./types";
 import { type PaletteMode, usePaletteMachine } from "./usePaletteMachine";
-import { scorePaletteItems } from "./utilities";
+import { BACKEND_RANKED_SCORE, scorePaletteItems } from "./utilities";
 
 import CommandPaletteItem from "./CommandPaletteItem.vue";
 
@@ -377,14 +377,12 @@ async function fanOutSections(ctx: PaletteContext): Promise<ResultSection[]> {
     const scored = await Promise.all(
         paletteProviders.map(async (provider) => {
             const items = await providerItems(provider.id, ctx);
-            // sections are shown best-match first; backend-ranked tools carry
-            // no scores, so they slot between "starts with" (4) and plain name
-            // matches (3) of the local providers
+            // sections are shown best-match first
             let score = 0;
             if (query.value) {
                 score =
                     provider.id === "tools"
-                        ? 3.5
+                        ? BACKEND_RANKED_SCORE
                         : Math.max(0, ...scorePaletteItems(items, query.value).map((match) => match.order));
             }
             return { id: provider.id, items, score, title: provider.title };
