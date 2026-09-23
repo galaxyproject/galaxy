@@ -80,6 +80,8 @@ class MapOverPlanner:
     ) -> matching.MatchingCollections | None:
         """Build the map-over plan for one workflow step.
 
+        The caller supplies ``all_inputs``, the step's input descriptions.
+
         An axis is one independently chosen collection coordinate. Linked inputs
         share a coordinate; independent inputs form a Cartesian product. An axis
         can span several collection levels, so it is not the same as one ``list``
