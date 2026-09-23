@@ -945,6 +945,17 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         )
         self.tool_cache.reset_status()
 
+    def ensure_tool_search_index(self) -> None:
+        """Index the toolbox once per toolbox reload."""
+        if self.toolbox_or_none is None:
+            return
+        if self.toolbox_search.build_index_if_stale(
+            tool_cache=self.tool_cache,
+            toolbox=self.toolbox,
+            index_help=self.config.index_tool_help,
+        ):
+            self.tool_cache.reset_status()
+
 
 class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationTarget[tools.ToolBox]):
     """Encapsulates the state of a Universe application"""
@@ -1128,6 +1139,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             app_type=WEBAPP if self.is_webapp else None,
         )
         self.database_heartbeat.add_change_callback(self.watchers.change_state)
+        self.database_heartbeat.add_change_callback(self._on_config_watcher_change)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
 
         # History audit monitor for SSE-based history updates. The monitor only
@@ -1195,6 +1207,13 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
 
     def _shutdown_watcher(self):
         self.watchers.shutdown()
+
+    def _on_config_watcher_change(self, is_config_watcher: bool) -> None:
+        # The election runs on the heartbeat thread and can land after the
+        # postfork ``rebuild_toolbox_search_index`` task has already skipped
+        # this not-yet-elected process, so the new watcher queues its own.
+        if is_config_watcher:
+            send_local_control_task(self, "rebuild_toolbox_search_index")
 
     def _shutdown_database_heartbeat(self):
         self.database_heartbeat.shutdown()

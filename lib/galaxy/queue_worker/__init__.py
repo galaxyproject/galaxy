@@ -371,8 +371,7 @@ def reload_tool_data_tables(app, **kwargs):
 
 def rebuild_toolbox_search_index(app, **kwargs):
     if app.is_webapp and app.database_heartbeat.is_config_watcher:
-        if app.toolbox_search.index_count < app.toolbox._reload_count:
-            app.reindex_tool_search()
+        app.ensure_tool_search_index()
     else:
         log.debug("App is not a webapp, not building a search index")
 
