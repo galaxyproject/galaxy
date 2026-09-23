@@ -520,8 +520,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * @param paginate whether to page through the list with the store's offset
      * @param queryString backend filter, e.g. built by `HistoriesFilters`
      * @param limit caps an unpaginated load, for consumers that only render a
-     * handful of rows (the command palette) — the panels leave it unset and keep
-     * loading the whole list
+     * handful of rows; leave it unset to load the whole list
      */
     function loadHistories(paginate = true, queryString?: string, limit?: number): Promise<void> {
         const key = `${paginate}|${queryString ?? ""}|${limit ?? ""}`;
