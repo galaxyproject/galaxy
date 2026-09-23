@@ -907,17 +907,18 @@ SkipStepCountsQueryParam: bool = Query(
     description="Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts.",
 )
 
-# The curated endpoint understands only name and tag; the stored-workflow tags
+# The curated endpoint understands only name, tag and collection; the stored-workflow tags
 # above would advertise filters it silently drops into free text.
 curated_query_tags = [
     IndexQueryTag("name", "The curated workflow's name.", "n"),
     IndexQueryTag("tag", "A tag on the curated workflow.", "t"),
+    IndexQueryTag("collection", "An IWC collection the curated workflow belongs to.", "c"),
 ]
 
 CuratedSearchQueryParam: str | None = search_query_param(
     model_name="Curated Workflow",
     tags=curated_query_tags,
-    free_text_fields=["name", "description", "tag"],
+    free_text_fields=["name", "description", "tag", "collection"],
 )
 
 CuratedSortByQueryParam: WorkflowSortByEnum | None = Query(

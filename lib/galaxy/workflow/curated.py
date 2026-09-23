@@ -21,6 +21,7 @@ import os
 import threading
 import urllib.parse
 import uuid
+from collections import Counter
 from collections.abc import (
     Callable,
     Iterable,
@@ -62,7 +63,14 @@ DOCKSTORE_TRS_VERSION_URL_TEMPLATE = "https://dockstore.org/api/ga4gh/trs/v2/too
 IWC_BRANCH_VERSION = "main"
 REFRESH_COOLDOWN_SECONDS = 300.0
 DEFAULT_FETCH_TIMEOUT_SECONDS = 30.0
-CURATED_SEARCH_FILTERS = {"name": "name", "n": "name", "tag": "tag", "t": "tag"}
+CURATED_SEARCH_FILTERS = {
+    "name": "name",
+    "n": "name",
+    "tag": "tag",
+    "t": "tag",
+    "collection": "collection",
+    "c": "collection",
+}
 # ``filter_terms`` only caps unquoted raw terms, and the endpoint is anonymous, so
 # without this a long run of ``name:x`` terms becomes one SQL predicate each in
 # local-owner mode -- enough to overflow SQLite's expression tree.
@@ -465,7 +473,7 @@ class _Searchable:
     pure substring scanning.
     """
 
-    __slots__ = ("entry", "name_text", "tags", "all_text")
+    __slots__ = ("entry", "name_text", "tags", "collections", "all_text")
 
     def __init__(self, entry: dict[str, Any]) -> None:
         name = str(entry.get("name") or "").lower()
@@ -476,7 +484,9 @@ class _Searchable:
         # Annotations stay reachable through free text.
         self.name_text = name
         self.tags = [str(tag).lower() for tag in entry.get("tags") or []]
-        self.all_text = f"{name} {description} {' '.join(self.tags)}"
+        self.collections = [str(collection).lower() for collection in entry.get("collections") or []]
+        # Collections too, as on iwc.galaxyproject.org: "proteomics" should find the Proteomics collection.
+        self.all_text = f"{name} {description} {' '.join(self.tags)} {' '.join(self.collections)}"
 
 
 def parse_curated_search(search: str) -> ParsedSearch:
@@ -496,7 +506,7 @@ def parse_curated_search(search: str) -> ParsedSearch:
 
 
 def search_curated(entries: list[dict[str, Any]], search: str | None) -> list[dict[str, Any]]:
-    """Filter projected entries by a name/tag search string, ANDing the terms."""
+    """Filter projected entries by a name/tag/collection search string, ANDing the terms."""
     if not search:
         return entries
     parsed = parse_curated_search(search)
@@ -511,6 +521,11 @@ def search_curated(entries: list[dict[str, Any]], search: str | None) -> list[di
                     matched = [item for item in matched if needle in item.tags]
                 else:
                     matched = [item for item in matched if any(needle in tag for tag in item.tags)]
+            elif term.filter == "collection":
+                if term.quoted:
+                    matched = [item for item in matched if needle in item.collections]
+                else:
+                    matched = [item for item in matched if any(needle in c for c in item.collections)]
         elif isinstance(term, RawTextTerm):
             matched = [item for item in matched if needle in item.all_text]
     return [item.entry for item in matched]
@@ -641,6 +656,13 @@ class CatalogPage(NamedTuple):
     source: Literal["iwc", "preparing", "unavailable"]
     total_matches: int
     entries: list[dict[str, Any]]
+    collections: list[tuple[str, int]]
+
+
+def count_collections(entries: list[dict[str, Any]]) -> list[tuple[str, int]]:
+    """Every collection in ``entries`` with its size, largest first, as the IWC site lists them."""
+    counts = Counter(collection for entry in entries for collection in entry.get("collections") or [])
+    return sorted(counts.items(), key=lambda item: (-item[1], item[0].lower()))
 
 
 def list_catalog(
@@ -662,11 +684,13 @@ def list_catalog(
     from a failed attempt is still running) with no entries. Each returned
     entry carries ``missing_tools`` as checked against ``toolbox`` for this
     user, or None throughout when there is no toolbox to check against.
+    Collection counts cover the whole catalog, not just the matches, so the
+    choices on offer don't shift under a search.
     """
     entries = load_projection(path)
     if entries is None:
         started = request_background_refresh(path)
-        return CatalogPage("preparing" if started else "unavailable", 0, [])
+        return CatalogPage("preparing" if started else "unavailable", 0, [], [])
 
     # Serve what we have and refresh behind it when it has aged out. Without
     # this the projection is only ever written on a cold start, so a Galaxy
@@ -683,7 +707,7 @@ def list_catalog(
         {**entry, "missing_tools": (missing or {}).get(entry.get("id") or "")}
         for entry in ordered[offset : offset + limit]
     ]
-    return CatalogPage("iwc", len(ordered), page)
+    return CatalogPage("iwc", len(ordered), page, count_collections(entries))
 
 
 def clear_caches() -> None:

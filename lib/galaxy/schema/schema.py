@@ -1779,6 +1779,11 @@ class CuratedWorkflow(Model):
     )
 
 
+class CuratedWorkflowCollection(Model):
+    name: str = Field(..., title="Name", description="The collection's name.")
+    count: int = Field(..., title="Count", description="How many curated workflows belong to the collection.")
+
+
 class CuratedWorkflowsIndexResponse(Model):
     source: CuratedWorkflowSourceEnum = Field(
         ...,
@@ -1800,6 +1805,14 @@ class CuratedWorkflowsIndexResponse(Model):
         default=None,
         title="Message",
         description="Human readable explanation shown when no workflows could be listed.",
+    )
+    collections: list[CuratedWorkflowCollection] = Field(
+        default_factory=list,
+        title="Collections",
+        description=(
+            "Every collection in the catalog with its size, largest first, regardless of the search. Empty when "
+            "the listing has no collections, as for workflows curated on this Galaxy."
+        ),
     )
 
 

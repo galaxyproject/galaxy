@@ -464,6 +464,44 @@ def test_search_curated_ands_multiple_terms() -> None:
     assert curated.search_curated(entries, "name:velocyto tag:data-import") == []
 
 
+def test_search_curated_collection_term_is_substring_unless_quoted() -> None:
+    entries = curated.project_manifest(SAMPLE_MANIFEST)
+    assert [entry["id"] for entry in curated.search_curated(entries, "collection:'data import'")] == [
+        "parallel-accession-download-main"
+    ]
+    assert [entry["id"] for entry in curated.search_curated(entries, "c:transcript")] == [
+        "velocyto-velocyto-on10x-filtered-barcodes"
+    ]
+    assert curated.search_curated(entries, "collection:'data'") == []
+    # Free text reaches collections too; only the collection has this spelling.
+    assert "data import" not in entries[1]["description"].lower()
+    assert [entry["id"] for entry in curated.search_curated(entries, "'data import'")] == [
+        "parallel-accession-download-main"
+    ]
+
+
+def test_count_collections_orders_by_size_then_name() -> None:
+    entries = [
+        {"collections": ["Proteomics", "Metaproteomics"]},
+        {"collections": ["metabolomics"]},
+        {"collections": ["Proteomics"]},
+        {"collections": []},
+        {},
+    ]
+    assert curated.count_collections(entries) == [("Proteomics", 2), ("metabolomics", 1), ("Metaproteomics", 1)]
+
+
+def test_list_catalog_counts_collections_across_the_whole_catalog(
+    projection_path: str, recorded_refreshes: list[str]
+) -> None:
+    curated.write_projection(projection_path, curated.project_manifest(SAMPLE_MANIFEST))
+
+    page = list_sample_catalog(projection_path, search="collection:'Transcriptomics'")
+
+    assert [entry["id"] for entry in page.entries] == ["velocyto-velocyto-on10x-filtered-barcodes"]
+    assert page.collections == [("Data import", 1), ("Transcriptomics", 1)]
+
+
 def test_search_curated_returns_empty_when_nothing_matches() -> None:
     entries = curated.project_manifest(SAMPLE_MANIFEST)
     assert curated.search_curated(entries, "no-such-workflow-anywhere") == []
@@ -880,7 +918,7 @@ def test_list_catalog_past_the_end_is_an_empty_page_with_the_real_total(
 
     page = list_sample_catalog(projection_path, offset=24)
 
-    assert page == curated.CatalogPage("iwc", 3, [])
+    assert page == curated.CatalogPage("iwc", 3, [], [("Data import", 1), ("Transcriptomics", 1)])
 
 
 def test_list_catalog_serves_a_stale_projection_while_refreshing_behind_it(
@@ -902,7 +940,7 @@ def test_list_catalog_without_a_projection_is_preparing_while_a_refresh_runs(
 ) -> None:
     page = list_sample_catalog(projection_path)
 
-    assert page == curated.CatalogPage("preparing", 0, [])
+    assert page == curated.CatalogPage("preparing", 0, [], [])
     assert recorded_refreshes == [projection_path]
 
 
@@ -911,7 +949,7 @@ def test_list_catalog_without_a_projection_is_unavailable_during_the_cooldown(
 ) -> None:
     monkeypatch.setattr(curated, "request_background_refresh", lambda path: False)
 
-    assert list_sample_catalog(projection_path) == curated.CatalogPage("unavailable", 0, [])
+    assert list_sample_catalog(projection_path) == curated.CatalogPage("unavailable", 0, [], [])
 
 
 def test_extract_tool_ids_walks_subworkflows_and_dedups() -> None:

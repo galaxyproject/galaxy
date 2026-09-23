@@ -10403,6 +10403,19 @@ export interface components {
              */
             update_time?: string | null;
         };
+        /** CuratedWorkflowCollection */
+        CuratedWorkflowCollection: {
+            /**
+             * Count
+             * @description How many curated workflows belong to the collection.
+             */
+            count: number;
+            /**
+             * Name
+             * @description The collection's name.
+             */
+            name: string;
+        };
         /**
          * CuratedWorkflowSourceEnum
          * @description Where the curated workflow listing was drawn from.
@@ -10411,6 +10424,11 @@ export interface components {
         CuratedWorkflowSourceEnum: "iwc" | "local" | "preparing" | "unavailable";
         /** CuratedWorkflowsIndexResponse */
         CuratedWorkflowsIndexResponse: {
+            /**
+             * Collections
+             * @description Every collection in the catalog with its size, largest first, regardless of the search. Empty when the listing has no collections, as for workflows curated on this Galaxy.
+             */
+            collections?: components["schemas"]["CuratedWorkflowCollection"][];
             /**
              * Message
              * @description Human readable explanation shown when no workflows could be listed.
@@ -53841,10 +53859,13 @@ export interface operations {
                  *     `tag`
                  *     : A tag on the curated workflow. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
                  *
+                 *     `collection`
+                 *     : An IWC collection the curated workflow belongs to. (The tag `c` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
                  *     ## Free Text
                  *
                  *     Free text search terms will be searched against the following attributes of the
-                 *     Curated Workflows: `name`, `description`, `tag`.
+                 *     Curated Workflows: `name`, `description`, `tag`, `collection`.
                  */
                 search?: string | null;
                 /** @description Sort curated workflows by this attribute. Without it, most recently updated first -- and in IWC catalog mode, workflows whose tools are all available here come before the rest. */

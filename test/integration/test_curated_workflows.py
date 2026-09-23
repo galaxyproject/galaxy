@@ -275,6 +275,11 @@ class TestCuratedWorkflowsLocal(_CuratedWorkflowsTestCase):
         names = [workflow["name"] for workflow in first["workflows"] + second["workflows"]]
         assert names == sorted(self.published_names)
 
+    def test_local_has_no_collections(self):
+        index = self._curated_index(limit=10)
+        assert index["collections"] == []
+        assert self._curated_index(search="collection:examples", limit=10)["total_matches"] == 0
+
     def test_local_is_exposed_to_the_client(self):
         assert self._get("configuration", anon=True).json()["curated_workflows_source"] == "local"
 
@@ -361,6 +366,20 @@ class TestCuratedWorkflowsCatalog(_CuratedWorkflowsTestCase):
         no_match = self._curated_index(search="tag:'assem'", limit=10)
         assert no_match["total_matches"] == 0
         assert no_match["workflows"] == []
+
+    def test_catalog_lists_collections_and_filters_by_them(self):
+        index = self._curated_index(limit=10)
+        counts = {collection["name"]: collection["count"] for collection in index["collections"]}
+        assert counts == {"Genome assembly": 2, "Epigenetics": 1, "Transcriptomics": 2, "Variant Calling": 1}
+        assert [collection["count"] for collection in index["collections"]] == [2, 2, 1, 1]
+
+        assembly = self._curated_index(search="collection:'Genome assembly'", limit=10)
+        assert {workflow["id"] for workflow in assembly["workflows"]} == {
+            "bacterial-genome-assembly-main",
+            "assembly-with-flye-main",
+        }
+        # The counts describe the catalog, not the current page of results.
+        assert assembly["collections"] == index["collections"]
 
     def test_curated_route_is_served_like_its_sibling_tabs(self):
         # Checks the server side of the tab's URL, not the client: bookmarking

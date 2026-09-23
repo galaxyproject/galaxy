@@ -351,6 +351,9 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                         stmt = stmt.where(text_column_filter(StoredWorkflow.name, term))
                     elif term.filter == "tag":
                         stmt = stmt.where(w_tag_exists(term.text, term.quoted))
+                    elif term.filter == "collection":
+                        # Collections are an IWC grouping; nothing curated here belongs to one.
+                        stmt = stmt.where(false())
                 elif isinstance(term, RawTextTerm):
                     stmt = stmt.where(
                         raw_text_column_filter([StoredWorkflow.name, w_tag_exists(term.text, False)], term)

@@ -36,6 +36,7 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import WorkflowInvocationResponse
 from galaxy.schema.schema import (
     CuratedWorkflow,
+    CuratedWorkflowCollection,
     CuratedWorkflowsIndexResponse,
     CuratedWorkflowSourceEnum,
     CuratedWorkflowsQueryPayload,
@@ -235,6 +236,7 @@ class WorkflowsService(ServiceBase):
             total_matches=page.total_matches,
             workflows=[CuratedWorkflow(**entry) for entry in page.entries],
             message=CATALOG_MESSAGES.get(source),
+            collections=[CuratedWorkflowCollection(name=name, count=count) for name, count in page.collections],
         )
 
     def _local_to_curated(self, trans: ProvidesUserContext, wf: StoredWorkflow) -> CuratedWorkflow:
