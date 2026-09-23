@@ -207,7 +207,7 @@ loadData();
                     </template>
 
                     <template v-if="defaultType === 'no'">
-                        <FormElementLabel title="Groups">
+                        <FormElementLabel id="admin-quota-groups" title="Groups">
                             <Multiselect
                                 id="admin-quota-groups-select"
                                 v-model="selectedGroups"

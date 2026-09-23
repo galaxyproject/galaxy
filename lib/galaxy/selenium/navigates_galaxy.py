@@ -1797,7 +1797,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         quota_component = admin_component.quota
 
         quota_component.add_new.wait_for_and_click()
-        form = quota_component.add_form.wait_for_visible()
+        form = quota_component.form.wait_for_visible()
 
         name = name or self._get_random_name()
         description = description or f"quota description for {name}"
@@ -1813,10 +1813,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         if quota_source_label:
             self.select_set_value(quota_component.source_label, quota_source_label)
         if user:
-            quota_component.users.wait_for_and_click()
-            quota_component.users_input.wait_for_and_send_keys(user)
-            quota_component.user_option(email=user).wait_for_and_click()
-        quota_component.add_form_submit.wait_for_and_click()
+            self.quota_form_add_user(user)
+        quota_component.submit.wait_for_and_click()
+
+    def quota_form_add_user(self, email: str):
+        quota_component = self.components.admin.quota
+        quota_component.users.wait_for_and_click()
+        quota_component.users_input.wait_for_and_send_keys(email)
+        quota_component.user_option(email=email).wait_for_and_click()
 
     def select_dataset_from_lib_import_modal(self, filenames):
         self.wait_for_selector_visible(".directory-dataset-picker-list")
