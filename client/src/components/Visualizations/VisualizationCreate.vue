@@ -91,7 +91,7 @@ defineExpose({ doQuery });
         </div>
         <div v-if="plugin.help" class="my-2">
             <Heading h2 separator bold size="sm">Help</Heading>
-            <div v-html="renderMarkdown(plugin.help)" />
+            <div v-sanitize-html:links="renderMarkdown(plugin.help)" />
         </div>
         <div class="my-2 pb-2">
             <div v-for="(tag, index) in plugin?.tags" :key="index" class="badge badge-info text-capitalize mr-1">
