@@ -1,3 +1,4 @@
+import math
 from typing import (
     Any,
 )
@@ -19,6 +20,7 @@ from galaxy.tool_util.parameters import (
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
     RequestToolState,
+    restore_non_finite_floats,
     strictify,
 )
 from galaxy.tool_util.parser.util import parse_profile_version
@@ -184,6 +186,36 @@ def test_dereference():
     dereferenced_state = dereference(request_state, bundle, _fake_dereference, _fake_collection_deference)
     assert isinstance(dereferenced_state, RequestInternalDereferencedToolState)
     dereferenced_state.validate(bundle)
+
+
+def test_restore_non_finite_floats():
+    tool_source = tool_source_for("parameters/gx_float")
+    bundle = input_models_for_tool_source(tool_source)
+    # safe_dumps encodes non-finite floats as sentinel strings so API payloads stay valid
+    # JSON - the persisted request state keeps that encoding and must be decoded before use.
+    request_state = RequestInternalToolState({"parameter": "__Infinity__"})
+    restored = restore_non_finite_floats(request_state, bundle)
+    assert restored.input_state["parameter"] == float("inf")
+
+    request_state = RequestInternalToolState({"parameter": "__-Infinity__"})
+    restored = restore_non_finite_floats(request_state, bundle)
+    assert restored.input_state["parameter"] == float("-inf")
+
+    request_state = RequestInternalToolState({"parameter": "__NaN__"})
+    restored = restore_non_finite_floats(request_state, bundle)
+    assert math.isnan(restored.input_state["parameter"])
+
+    request_state = RequestInternalToolState({"parameter": 1.5})
+    restored = restore_non_finite_floats(request_state, bundle)
+    assert restored.input_state["parameter"] == 1.5
+
+
+def test_restore_non_finite_floats_leaves_text_alone():
+    tool_source = tool_source_for("parameters/gx_text")
+    bundle = input_models_for_tool_source(tool_source)
+    request_state = RequestInternalToolState({"parameter": "__Infinity__"})
+    restored = restore_non_finite_floats(request_state, bundle)
+    assert restored.input_state["parameter"] == "__Infinity__"
 
 
 def test_dereference_resolves_url_default():

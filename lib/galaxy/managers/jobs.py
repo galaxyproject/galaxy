@@ -109,6 +109,7 @@ from galaxy.tool_util.parameters import (
     dereference,
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
+    restore_non_finite_floats,
     ToolParameterBundleModel,
 )
 from galaxy.tools import Tool
@@ -2245,6 +2246,8 @@ class JobSubmitter:
         if tool.parameters is None:
             raise RequestParameterInvalidException(f"Tool {tool.id} has no parameters defined")
         parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
+        # The persisted request stores non-finite floats as JSON-safe sentinel strings.
+        tool_state = restore_non_finite_floats(tool_state, parameter_bundle)
         return (
             dereference(tool_state, parameter_bundle, dereference_callback, dereference_collection_callback),
             new_hdas,

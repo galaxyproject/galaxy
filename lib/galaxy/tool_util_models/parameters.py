@@ -476,20 +476,18 @@ class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 _INFINITY_SENTINEL = "__Infinity__"
 _NEG_INFINITY_SENTINEL = "__-Infinity__"
+_NAN_SENTINEL = "__NaN__"
 
 
 def _convert_infinity_sentinel(v: Any) -> Any:
-    """Convert Galaxy JSON sentinel strings for infinity back to Python floats.
-
-    Galaxy's custom JSON encoder (galaxy.util.json.safe_dumps) serializes
-    float('inf') as '__Infinity__' and float('-inf') as '__-Infinity__' to
-    produce valid JSON.  When these sentinel values appear in deserialized
-    parameter dicts (e.g. from GET /api/tools/{id}/test_data) Pydantic must
-    accept them as valid float input.
-    """
+    """Restore non-finite floats without depending on the full Galaxy utility package."""
+    if not isinstance(v, str):
+        return v
+    if v == _NAN_SENTINEL:
+        return float("nan")
     if v == _INFINITY_SENTINEL:
         return float("inf")
-    elif v == _NEG_INFINITY_SENTINEL:
+    if v == _NEG_INFINITY_SENTINEL:
         return float("-inf")
     return v
 

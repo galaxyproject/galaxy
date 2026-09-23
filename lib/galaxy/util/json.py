@@ -13,7 +13,14 @@ from decimal import Decimal
 
 from . import unicodify
 
-__all__ = ("safe_dumps", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response")
+__all__ = (
+    "restore_inf_nan",
+    "safe_dumps",
+    "validate_jsonrpc_request",
+    "validate_jsonrpc_response",
+    "jsonrpc_request",
+    "jsonrpc_response",
+)
 
 log = logging.getLogger(__name__)
 
@@ -46,6 +53,19 @@ def swap_inf_nan(val):
         return str(val)
     else:
         return val
+
+
+def restore_inf_nan(val):
+    """Restore a non-finite float encoded by :func:`safe_dumps`."""
+    if not isinstance(val, str):
+        return val
+    if val == "__NaN__":
+        return float("nan")
+    if val == "__Infinity__":
+        return float("inf")
+    if val == "__-Infinity__":
+        return float("-inf")
+    return val
 
 
 def safe_loads(arg):
