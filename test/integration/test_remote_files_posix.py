@@ -6,6 +6,7 @@ from galaxy.model import Dataset
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import (
     DatasetPopulator,
+    skip_without_datatype,
     WorkflowPopulator,
 )
 from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
@@ -237,3 +238,28 @@ class TestPreferLinksPosixFileSourceIntegration(PosixFileSourceSetup, integratio
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             derived_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=derived_dataset)
             assert derived_content.strip() == "a"
+
+    @skip_without_datatype("velvet")
+    def test_composite_upload_does_not_consume_linked_sources(self):
+        # Composite parts land in the dataset's extra files directory, so they are copied rather
+        # than linked - but the linked sources are the user's files and must survive unchanged.
+        part_names = ["sequences", "roadmaps", "log"]
+        sources = {os.path.join(self.root_dir, name): f"{name} content\r\n".encode() for name in part_names}
+        for source, content in sources.items():
+            with open(source, "wb") as f:
+                f.write(content)
+        item = {
+            "src": "composite",
+            "ext": "velvet",
+            "composite": {"items": [{"src": "url", "url": f"gxfiles://linking_source/{name}"} for name in part_names]},
+        }
+        with self.dataset_populator.test_history() as history_id:
+            output = self.dataset_populator.fetch_hda(history_id, item)
+            roadmaps = self.dataset_populator.get_history_dataset_content(
+                history_id, dataset=output, filename="Roadmaps"
+            )
+            assert roadmaps == "roadmaps content\n", roadmaps
+        for source, content in sources.items():
+            assert os.path.exists(source), f"the upload consumed the linked source {source}"
+            with open(source, "rb") as f:
+                assert f.read() == content, f"the upload rewrote the linked source {source}"

@@ -84,7 +84,9 @@ def sniff_with_cls(cls, fname):
 stream_url_to_file = partial(files_stream_url_to_file, prefix="gx_url_paste")
 
 
-def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts):
+def handle_composite_file(
+    datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts, purge_source=True
+):
     # ``name`` can be user-controlled (e.g. the ``files_N|NAME`` of an ad-hoc
     # ``force_composite`` upload), so it must never resolve outside of the
     # dataset's extra files directory.
@@ -94,13 +96,19 @@ def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_
             f"Invalid composite file name '{name}'; must be a relative path inside the dataset's extra files directory"
         )
 
+    converted_path = None
     if not is_binary:
-        if upload_opts.get("space_to_tab"):
-            convert_newlines_sep2tabs(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
-        else:
-            convert_newlines(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
+        convert = convert_newlines_sep2tabs if upload_opts.get("space_to_tab") else convert_newlines
+        # ``purge_source`` is false for a source Galaxy does not own, which must neither be
+        # rewritten in place nor moved out of the caller's directory.
+        converted_path = convert(src_path, in_place=purge_source, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix).converted_path
 
-    shutil.move(src_path, file_output_path)
+    if converted_path is not None:
+        shutil.move(converted_path, file_output_path)
+    elif purge_source:
+        shutil.move(src_path, file_output_path)
+    else:
+        shutil.copy(src_path, file_output_path)
 
     # groom the dataset file content if required by the corresponding datatype definition
     if datatype and datatype.dataset_content_needs_grooming(file_output_path):

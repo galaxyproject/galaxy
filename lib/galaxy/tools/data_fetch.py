@@ -230,7 +230,7 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                     pass
                 key = keys[composite_item_idx]
                 writable_file = writable_files[key]
-                _, src_target, _ = _has_src_to_path(upload_config, composite_item)
+                _, src_target, is_link = _has_src_to_path(upload_config, composite_item)
                 # do the writing
                 sniff.handle_composite_file(
                     datatype,
@@ -241,6 +241,7 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                     upload_config.working_directory,
                     f"{os.path.basename(extra_files_path)}_",
                     composite_item,
+                    purge_source=not is_link,
                 )
                 composite_item_idx += 1
 
@@ -390,7 +391,7 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                                 item_prefix = os.path.join(prefix, name)
                             walk_extra_files(item.get("elements"), prefix=item_prefix)
                         else:
-                            src_name, src_path, _ = _has_src_to_path(upload_config, item)
+                            src_name, src_path, is_link = _has_src_to_path(upload_config, item)
                             check_extra_file_name(src_name)
                             if prefix:
                                 rel_path = os.path.join(prefix, src_name)
@@ -405,7 +406,10 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                             parent_dir = os.path.dirname(file_output_path)
                             if not os.path.exists(parent_dir):
                                 safe_makedirs(parent_dir)
-                            shutil.move(src_path, file_output_path)
+                            if is_link:
+                                shutil.copy(src_path, file_output_path)
+                            else:
+                                shutil.move(src_path, file_output_path)
 
                 walk_extra_files(extra_files.get("elements", []))
 
