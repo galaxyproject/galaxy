@@ -1126,6 +1126,22 @@ per input element. **One child invocation is the permanent execution model.**
 The jobs scheduled inside that invocation carry element cardinality and provenance.
 Additional child invocation rows are not a future completion criterion for mapping.
 
+Here, an **axis** means one independent choice of a collection coordinate during
+map-over. It is internal vocabulary for the execution plan, not a new collection
+type or a user-facing setting. Galaxy's existing terms describe the operations:
+linked inputs advance together at the same coordinate (zip), while independent
+inputs produce a cross product. For example, if ``A = [X, Y]`` and
+``B = [P, Q, R]`` are independent, the coordinates are ``(X, P)``, ``(X, Q)``,
+``(X, R)``, ``(Y, P)``, ``(Y, Q)``, ``(Y, R)``. The resulting collection type is
+``list:list``. If the two inputs are linked, they must have matching structure
+and advance together on one axis.
+
+An axis is not necessarily one level of ``list:list``. It can describe a whole
+nested collection when inner branches have different shapes. Its identity lets
+downstream steps recognize a coordinate inherited from the callable rather than
+map over it again. An input binding records which axis coordinates select its
+elements; a step can inherit an axis without binding any input to it.
+
 Every executable child step inherits the call's axes, including a step with no data
 dependency on the input that caused the call to map. A local child mapping axis is
 appended after inherited axes and forms a Cartesian product. Linked inputs on the
@@ -1308,5 +1324,4 @@ The Python implementation lives in
 TypeScript implementation lives in
 `client/src/components/Workflow/Editor/modules/collectionTypeDescription.ts`.
 Both must stay in sync; method names and conventions are identical.
-
 

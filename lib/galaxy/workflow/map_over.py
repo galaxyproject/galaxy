@@ -2,10 +2,44 @@
 
 When a step's data inputs are connected to collections with deeper structure
 than the input consumes, Galaxy runs the step once per matching coordinate and
-collects the results - the step is "mapped over" its inputs.
-``MapOverPlanner.plan_map_over`` builds that plan for one step: the
-resulting ``MatchingCollections`` (called ``collection_info`` throughout the
-workflow run code) records how each input is sliced.
+collects the results - the step is "mapped over" its inputs. This module
+builds that plan for one step: the resulting ``MatchingCollections`` (called
+``collection_info`` throughout the workflow run code) records the ordered
+mapping axes, how each input is sliced by them, and any conditional (``when``)
+values indexed over the coordinates.
+
+Vocabulary (see "Callable workflow boundaries" in
+doc/source/dev/collection_semantics.md for the semantics being implemented):
+
+- An *axis* (``MatchingCollectionAxis``) is one independently chosen
+  collection coordinate. Linked inputs advance together on a shared axis;
+  independent inputs form a Cartesian product of axes. One axis can span
+  several collection levels, so it is not the same thing as one ``list`` in a
+  collection type.
+- *Inherited* axes come from mapping over a callable (subworkflow) boundary:
+  every step of the child workflow starts with the parent call's axes, in
+  order, whether or not its inputs consume them.
+- A *binding* (``MatchingCollectionBinding``) records which axis coordinates
+  select elements of a given input.
+
+``MapOverPlanner.plan_map_over`` is the entry point. It proceeds in
+phases:
+
+1. Discover which of the step's inputs require matching
+   (``_find_collections_to_match``).
+2. Separate inputs already covered by inherited coordinates from inputs
+   introducing local mapping (``_extract_inherited_axis_bindings``), recording
+   refinements when a materialized collection reveals a deeper shape for an
+   inherited axis.
+3. Match the local inputs with the ordinary collection matcher and append any
+   residual linked axis (``_add_residual_linked_axis``).
+4. Compose the inherited and local plans in inherited-then-local order and
+   bind the separated inputs to the resulting coordinates.
+
+The module-level functions after the planner support ``SubWorkflowModule``:
+they shape pass-through outputs (child outputs wired directly to child inputs)
+to the callable's mapping structure and collect per-output mapping axes so the
+lineage can be persisted and recovered across scheduling rounds.
 """
 
 from collections.abc import Hashable
@@ -46,12 +80,21 @@ class MapOverPlanner:
     ) -> matching.MatchingCollections | None:
         """Build the map-over plan for one workflow step.
 
-        ``all_inputs`` holds the step's input descriptions as produced by
-        ``WorkflowModule.get_all_inputs``. Falls back to the plan inherited
-        from a mapped-over subworkflow invocation when the step adds no
-        mapping of its own.
+        An axis is one independently chosen collection coordinate. Linked inputs
+        share a coordinate; independent inputs form a Cartesian product. An axis
+        can span several collection levels, so it is not the same as one ``list``
+        in a collection type. Bindings say which coordinates slice each input.
+
+        A child step starts with the callable's inherited coordinates, even if
+        none of its inputs use them. First separate inputs already covered by
+        those coordinates from inputs that introduce local mapping. Then match
+        the local inputs, refine inherited shapes revealed by materialized
+        collections, and compose the two plans in inherited-then-local order.
+        Finally bind the separated inputs to the resulting coordinates.
         """
         collections_to_match = self._find_collections_to_match(progress, step, all_inputs)
+        # This removes inherited inputs from collections_to_match: passing them
+        # to the ordinary matcher would count the same coordinate a second time.
         inherited_bindings, axis_refinements = self._extract_inherited_axis_bindings(
             progress, step, collections_to_match
         )
