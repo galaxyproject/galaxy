@@ -1,4 +1,7 @@
-from unittest.mock import MagicMock
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
 from galaxy.files.models import (
     FilesSourceRuntimeContext,
@@ -34,10 +37,9 @@ def test_list_paths_are_scoped_to_configured_root():
         [{"name": f"{ROOT}/nested", "type": "directory"}],
         [{"name": f"{ROOT}/nested/hello.txt", "type": "file", "size": 5}],
     ]
-    source._open_fs = MagicMock(return_value=fs)
-
-    root_entries, _ = source._list(context, "/")
-    nested_entries, _ = source._list(context, "/nested")
+    with patch.object(source, "_open_fs", return_value=fs):
+        root_entries, _ = source._list(context, "/")
+        nested_entries, _ = source._list(context, "/nested")
 
     assert root_entries[0].path == "/nested"
     assert nested_entries[0].path == "/nested/hello.txt"
@@ -48,8 +50,7 @@ def test_list_paths_are_scoped_to_configured_root():
 def test_realize_path_is_scoped_to_configured_root():
     source, context = _source_and_context()
     fs = MagicMock()
-    source._open_fs = MagicMock(return_value=fs)
-
-    source._realize_to("/nested/hello.txt", "/tmp/hello.txt", context)
+    with patch.object(source, "_open_fs", return_value=fs):
+        source._realize_to("/nested/hello.txt", "/tmp/hello.txt", context)
 
     fs.get_file.assert_called_once_with(f"{ROOT}/nested/hello.txt", "/tmp/hello.txt")
