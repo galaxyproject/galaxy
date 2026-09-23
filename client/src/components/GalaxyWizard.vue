@@ -109,11 +109,10 @@ async function sendFeedback(value: "up" | "down") {
                 <BSkeleton animation="wave" width="70%" />
             </div>
             <div v-else>
-                <!-- eslint-disable-next-line vue/no-v-html -->
                 <div
+                    v-sanitize-html:links="renderMarkdown(queryResponse)"
                     class="chatResponse"
-                    data-description="galaxy wizard response"
-                    v-html="renderMarkdown(queryResponse)" />
+                    data-description="galaxy wizard response" />
 
                 <template v-if="errorMessage">
                     <hr class="error-divider" />
