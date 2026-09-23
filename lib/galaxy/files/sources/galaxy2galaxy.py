@@ -202,6 +202,31 @@ class Galaxy2GalaxyFilesSource(
             pending.extend(info["name"] for info in listing if info.get("type") == "directory")
         return entries, len(entries)
 
+    def _realize_to(
+        self,
+        source_path: str,
+        native_path: str,
+        context: FilesSourceRuntimeContext[Galaxy2GalaxyFileSourceConfiguration],
+    ):
+        # The shared _realize_to wraps nothing, so a backend error reaches the API untranslated and
+        # is reported as a bare 500 with a traceback. Importing a dataset that is still running is
+        # an ordinary thing for a user to try, so it has to say so instead.
+        try:
+            return super()._realize_to(source_path, native_path, context)
+        except MessageException:
+            raise
+        except FileNotFoundError as e:
+            raise ObjectNotFound(f"The specified path does not exist in {self.label} [{source_path}].") from e
+        except PermissionError as e:
+            raise AuthenticationRequired(
+                f"{self.label} refused access to [{source_path}]. Check the API key for this file source."
+            ) from e
+        except Exception as e:
+            # Not OSError: bioblend raises its own ConnectionError for every HTTP failure, and unlike
+            # the builtin it shares a name with, it is not an OSError. An expired key would otherwise
+            # arrive as a bare 500. The shared _list catches Exception for the same reason.
+            raise MessageException(f"Problem reading [{source_path}] from {self.label}. Reason: {e}") from e
+
     def _write_from(
         self,
         target_path: str,

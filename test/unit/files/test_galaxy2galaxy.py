@@ -237,3 +237,68 @@ def test_the_cache_options_reach_the_filesystem(recorder):
     assert passed["use_listings_cache"] is False
     assert passed["listings_expiry_time"] == 5
     assert passed["max_paths"] == 7
+
+
+class FakeNoDataError(OSError):
+    """Stands in for ``galaxy_fsspec.exceptions.GalaxyApiError``, which is an OSError."""
+
+
+class FakeBioblendConnectionError(Exception):
+    """Stands in for ``bioblend.ConnectionError``.
+
+    It shadows the name of the builtin, which *is* an OSError, while deriving from Exception. That
+    is why the realize path cannot catch OSError alone.
+    """
+
+
+def _failing_fake(exc: BaseException):
+    class FailingFileSystem:
+        def __init__(self, **kwargs):
+            self.dircache = {}
+
+        def ls(self, path, detail=True, **kwargs):
+            return TREE.get((path or "").strip("/"), [])
+
+        def get_file(self, rpath, lpath, **kwargs):
+            raise exc
+
+    return FailingFileSystem
+
+
+@pytest.mark.parametrize(
+    "raised,expected",
+    [
+        (FileNotFoundError("gone"), ObjectNotFound),
+        (PermissionError("refused"), AuthenticationRequired),
+        (FakeNoDataError("has no data to read yet (state 'running')"), MessageException),
+        (FakeBioblendConnectionError("GET: error 401: Provided API key is not valid."), MessageException),
+    ],
+)
+def test_a_failed_read_is_explained_rather_than_a_server_error(monkeypatch, tmp_path, raised, expected):
+    """The shared _realize_to wraps nothing, so anything from the backend reaches the API raw.
+
+    Importing a dataset that is still running is an ordinary thing to try, and it used to answer
+    with a bare 500 and a traceback.
+    """
+    monkeypatch.setattr(Galaxy2GalaxyFilesSource, "required_module", _failing_fake(raised))
+    with pytest.raises(expected) as caught:
+        _source().realize_to(
+            "histories/My History/reads.fastq",
+            str(tmp_path / "staged"),
+            user_context=user_context_fixture(),
+        )
+    assert caught.value.__cause__ is raised
+
+
+def test_a_read_failure_keeps_the_reason(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        Galaxy2GalaxyFilesSource,
+        "required_module",
+        _failing_fake(FakeNoDataError("has no data to read yet (state 'running')")),
+    )
+    with pytest.raises(MessageException, match="no data to read yet"):
+        _source().realize_to(
+            "histories/My History/reads.fastq",
+            str(tmp_path / "staged"),
+            user_context=user_context_fixture(),
+        )
