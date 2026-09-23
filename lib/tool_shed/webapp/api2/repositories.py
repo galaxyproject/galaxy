@@ -593,8 +593,12 @@ class FastAPIRepositories:
         repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
         return readmes(self.app, repository, changeset_revision)
 
-    @router.get("/repository")
-    def redirect(trans: SessionRequestContext = DependsOnTrans, repository_id: str = Query(...)):
+    @router.get(
+        "/repository",
+        deprecated=True,
+        include_in_schema=False,
+    )
+    def redirect_legacy_repository_url(trans: SessionRequestContext = DependsOnTrans, repository_id: str = Query(...)):
         # make sure it is real ID to sanitize before redirection
         sanitized_repository_id = trans.app.security.encode_id(trans.app.security.decode_id(repository_id))
         return RedirectResponse(f"/repositories/{sanitized_repository_id}")
