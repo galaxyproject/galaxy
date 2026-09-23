@@ -155,7 +155,7 @@ function dismiss() {
 
         <section class="main-content area-m">
             <Heading h2>{{ displayedBroadcast.content.subject }}</Heading>
-            <div class="message mb-1" v-html="renderMarkdown(displayedBroadcast.content.message)"></div>
+            <div v-sanitize-html:links="renderMarkdown(displayedBroadcast.content.message)" class="message mb-1"></div>
             <div class="bottom-row">
                 <div class="action-links">
                     <BButton
