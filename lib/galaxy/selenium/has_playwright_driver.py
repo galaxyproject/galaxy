@@ -634,7 +634,9 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         if timeout is UNSPECIFIED_TIMEOUT:
             timeout = self.timeout_handler(kwds.get("wait_type"))
 
-        return wait_on(condition_func, message, timeout)
+        # Match Selenium's WebDriverWait, which keeps polling on any falsy result;
+        # wait_on alone stops on anything but None.
+        return wait_on(lambda: condition_func() or None, message, timeout)
 
     def _unwrap_element(self, element: WebElementProtocol) -> ElementHandle:
         """
