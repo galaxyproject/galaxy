@@ -600,8 +600,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 compute_environment=compute_environment,
             )
             remote_working_directory = remote_job_config["working_directory"]
-            remote_job_directory = os.path.abspath(os.path.join(remote_working_directory, os.path.pardir))
-            remote_tool_directory = os.path.abspath(os.path.join(remote_job_directory, "tool_files"))
+            remote_job_directory = remote_job_config["job_directory"]
+            remote_tool_directory = remote_job_config["tools_directory"]
             pulsar_version = PulsarJobRunner.pulsar_version(remote_job_config)
             remote_command_params = dict(
                 working_directory=remote_job_config["metadata_directory"],
