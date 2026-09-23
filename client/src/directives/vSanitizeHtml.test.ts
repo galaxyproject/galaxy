@@ -78,4 +78,23 @@ describe("v-sanitize-html", () => {
         expect(sanitizeSpy).not.toHaveBeenCalled();
         expect(target.querySelector("i")!.getAttribute("data-decorated")).toBe("yes");
     });
+
+    test("clears its markup when a reused element no longer has the directive", async () => {
+        const Host = defineComponent({
+            props: { rich: { type: Boolean, default: true } },
+            template: `<div><pre v-if="rich" v-sanitize-html="'<b>rich</b>'" /><pre v-else class="plain">plain</pre></div>`,
+        });
+        const wrapper = mount(Host as object, { propsData: { rich: true } });
+        expect(wrapper.find("pre").element.innerHTML).toBe("<i>sanitized:<b>rich</b></i>");
+
+        await wrapper.setProps({ rich: false });
+        expect(wrapper.find("pre").element.innerHTML).toBe("plain");
+    });
+
+    test("keeps its markup while the element is being destroyed", () => {
+        const wrapper = mountWith("content");
+        const target = wrapper.find(".target").element;
+        wrapper.destroy();
+        expect(target.innerHTML).toBe("<i>sanitized:content</i>");
+    });
 });

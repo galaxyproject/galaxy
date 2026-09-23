@@ -43,6 +43,14 @@ export const vSanitizeHtml: ObjectDirective<HTMLElement, SanitizeHtmlBinding> = 
             render(el, binding);
         }
     },
+    unbind(el, _binding, _vnode, _oldVnode, isDestroy?: boolean) {
+        // Vue reuses an element across v-if/v-else branches; v-html clears its
+        // markup in that case, so do the same. Elements being destroyed keep it
+        // so leave transitions still show their content.
+        if (!isDestroy) {
+            el.innerHTML = "";
+        }
+    },
 };
 
 export default vSanitizeHtml;

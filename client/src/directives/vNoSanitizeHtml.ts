@@ -23,6 +23,12 @@ export const vNoSanitizeHtml: ObjectDirective<HTMLElement, NoSanitizeHtmlBinding
             el.innerHTML = binding.value ?? "";
         }
     },
+    unbind(el, _binding, _vnode, _oldVnode, isDestroy?: boolean) {
+        // Same element reuse cleanup as v-sanitize-html
+        if (!isDestroy) {
+            el.innerHTML = "";
+        }
+    },
 };
 
 export default vNoSanitizeHtml;

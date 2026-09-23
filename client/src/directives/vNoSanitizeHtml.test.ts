@@ -24,4 +24,16 @@ describe("v-no-sanitize-html", () => {
         await wrapper.setProps({ value: null });
         expect(wrapper.element.innerHTML).toBe("");
     });
+
+    test("clears its markup when a reused element no longer has the directive", async () => {
+        const Host = defineComponent({
+            props: { rich: { type: Boolean, default: true } },
+            template: `<div><pre v-if="rich" v-no-sanitize-html="'<b>rich</b>'" /><pre v-else class="plain">plain</pre></div>`,
+        });
+        const wrapper = mount(Host as object, { propsData: { rich: true } });
+        expect(wrapper.find("pre").element.innerHTML).toBe("<b>rich</b>");
+
+        await wrapper.setProps({ rich: false });
+        expect(wrapper.find("pre").element.innerHTML).toBe("plain");
+    });
 });
