@@ -19,11 +19,13 @@ const baseRules = {
     "vue/prop-name-casing": "warn",
     "vue/require-prop-types": "warn",
     "vue/require-default-prop": "warn",
-    "vue/no-v-html": "warn",
 
     // Increase the severity of some rules to errors
     "vue/attributes-order": "error",
     "vue/order-in-components": "error",
+    // Markup goes through v-sanitize-html (DOMPurify); v-no-sanitize-html is the
+    // reviewed exception for server/shipped markup, with a comment saying why.
+    "vue/no-v-html": "error",
     // v-no-sanitize-html skips DOMPurify, so each use has to disable this rule
     // inline with a reason after "--".
     "vue/no-restricted-syntax": [
