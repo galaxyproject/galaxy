@@ -27,7 +27,7 @@ function increaseHeadingLevel(node, level, increaseBy) {
 
     // create new headings with target level and copy contents + attributes
     Array.from(headings).forEach((heading) => {
-        const newTag = document.createElement(`h${targetLevel}`);
+        const newTag = heading.ownerDocument.createElement(`h${targetLevel}`);
         newTag.innerHTML = heading.innerHTML;
 
         Array.from(heading.attributes).forEach((attribute) => {
@@ -41,8 +41,8 @@ function increaseHeadingLevel(node, level, increaseBy) {
 
 export function useFormattedToolHelp(helpContent, headingLevelIncrease = 2) {
     const formattedContent = computed(() => {
-        const node = document.createElement("div");
-        node.innerHTML = unref(helpContent);
+        // DOMParser gives an inert document, so nothing in the help loads before it is sanitized
+        const node = new DOMParser().parseFromString(unref(helpContent), "text/html").body;
 
         const links = node.getElementsByTagName("a");
         Array.from(links).forEach((link) => {

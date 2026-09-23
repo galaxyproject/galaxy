@@ -4,6 +4,7 @@ import { mount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -209,5 +210,13 @@ describe("ToolsListCard", () => {
         const tags = wrapper.findAll(".curated-tag");
         expect(tags).toHaveLength(1);
         expect(tags.at(0)?.text()).toContain("Text Manipulation");
+    });
+
+    it("renders the help summary through v-sanitize-html", () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        const summary = "Filters <em>failed</em> datasets";
+        const { wrapper } = mountCard({ propsData: { summary } });
+        expect(sanitizeHtml).toHaveBeenCalledWith(summary, "default");
+        expect(wrapper.find("em").text()).toBe("failed");
     });
 });

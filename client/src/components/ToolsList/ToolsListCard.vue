@@ -368,8 +368,7 @@ const {
                 <BSkeleton />
             </div>
 
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <div v-else-if="props.summary && !showHelp" v-html="props.summary"></div>
+            <div v-else-if="props.summary && !showHelp" v-sanitize-html="props.summary"></div>
 
             <div v-if="props.help" class="mt-2">
                 <GLink

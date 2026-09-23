@@ -1,6 +1,8 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import ToolHelpRst from "./ToolHelpRst.vue";
 
@@ -37,5 +39,14 @@ describe("ToolHelp RST", () => {
 
         const help = wrapper.find(".form-help");
         expect(help.element).toContainHTML(expectedHelpText.trim());
+    });
+
+    it("renders the formatted help through v-sanitize-html with the links profile", () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        mount(ToolHelpRst, { propsData: { content: '<a href="https://galaxyproject.org">link</a>' }, localVue });
+        expect(sanitizeHtml).toHaveBeenCalledWith(
+            '<a href="https://galaxyproject.org" target="_blank">link</a>',
+            "links",
+        );
     });
 });

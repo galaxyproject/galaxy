@@ -1,6 +1,8 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import FormHidden from "./Elements/FormHidden.vue";
 import FormText from "./Elements/FormText.vue";
@@ -100,5 +102,12 @@ describe("FormElement", () => {
         await wrapper.setProps({ type: "text", value: "", attributes: { optional: false } });
         expect(wrapper.find(".ui-form-title-star").exists()).toBe(true);
         expect(wrapper.find(".ui-form-title-message").text()).toContain("required");
+    });
+
+    it("renders html help through v-sanitize-html", async () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        await wrapper.setProps({ help: "Use <b>bold</b> values" });
+        expect(sanitizeHtml).toHaveBeenLastCalledWith("Use <b>bold</b> values", "default");
+        expect(wrapper.find(".ui-form-info b").text()).toBe("bold");
     });
 });
