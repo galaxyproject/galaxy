@@ -7873,6 +7873,19 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             return any(e.child_collection.waiting_for_elements for e in self.elements)
         return top_level_waiting
 
+    def unpopulated_collections(self) -> list["DatasetCollection"]:
+        """The collections in this tree that are still waiting for elements."""
+        if self.populated_state == DatasetCollection.populated_states.NEW:
+            return [self]
+        if self.has_subcollections:
+            return [
+                unpopulated
+                for element in self.elements
+                if element.child_collection
+                for unpopulated in element.child_collection.unpopulated_collections()
+            ]
+        return []
+
     def mark_as_populated(self):
         self.populated_state = DatasetCollection.populated_states.OK
 

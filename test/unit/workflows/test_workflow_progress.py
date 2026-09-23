@@ -210,6 +210,18 @@ class TestWorkflowProgress(TestCase):
             more_work=False,
         )
 
+    def test_nested_collection_depends_on_unpopulated_subcollections(self):
+        collection = model.DatasetCollection(collection_type="list:list")
+        populated_child = model.DatasetCollection(collection_type="list")
+        unpopulated_child = model.DatasetCollection(collection_type="list", populated=False)
+        unpopulated_child.id = 11
+        for identifier, child in (("a", populated_child), ("b", unpopulated_child)):
+            model.DatasetCollectionElement(collection=collection, element=child, element_identifier=identifier)
+
+        assert modules.unpopulated_collection_dependencies(collection) == [
+            modules.SchedulingDependency(modules.DependencyType.DATASET_COLLECTION, 11)
+        ]
+
     def test_delay_inherited_from_delayed_step_is_not_untracked(self):
         self._setup_workflow(TEST_WORKFLOW_YAML)
         progress = self._new_workflow_progress()

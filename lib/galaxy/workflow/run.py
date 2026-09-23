@@ -359,7 +359,7 @@ class WorkflowInvoker:
                 )
                 raise modules.DelayedWorkflowEvaluation(
                     why=delayed_why,
-                    dependency=modules.SchedulingDependency(modules.DependencyType.JOB, job.id),
+                    dependencies=[modules.SchedulingDependency(modules.DependencyType.JOB, job.id)],
                 )
 
             if job.state != job.states.OK:
@@ -564,7 +564,7 @@ class WorkflowProgress:
                 delayed_why = f"dependent collection [{replacement.id}] not yet populated with datasets"
                 raise modules.DelayedWorkflowEvaluation(
                     why=delayed_why,
-                    dependency=modules.SchedulingDependency(modules.DependencyType.HDCA, replacement.id),
+                    dependencies=modules.unpopulated_collection_dependencies(replacement.collection),
                 )
 
         if isinstance(replacement, model.DatasetCollection):
@@ -575,7 +575,7 @@ class WorkflowProgress:
             if isinstance(replacement, model.HistoryDatasetAssociation):
                 if replacement.is_pending:
                     raise modules.DelayedWorkflowEvaluation(
-                        dependency=modules.SchedulingDependency(modules.DependencyType.HDA, replacement.id)
+                        dependencies=[modules.SchedulingDependency(modules.DependencyType.HDA, replacement.id)]
                     )
                 if not replacement.is_ok:
                     raise modules.FailWorkflowEvaluation(
@@ -589,7 +589,7 @@ class WorkflowProgress:
             else:
                 if not replacement.collection.populated:
                     raise modules.DelayedWorkflowEvaluation(
-                        dependency=modules.SchedulingDependency(modules.DependencyType.HDCA, replacement.id)
+                        dependencies=modules.unpopulated_collection_dependencies(replacement.collection)
                     )
                 pending = False
                 pending_dataset_instance = None
@@ -609,7 +609,9 @@ class WorkflowProgress:
                 if pending:
                     assert pending_dataset_instance is not None
                     raise modules.DelayedWorkflowEvaluation(
-                        dependency=modules.SchedulingDependency(modules.DependencyType.HDA, pending_dataset_instance.id)
+                        dependencies=[
+                            modules.SchedulingDependency(modules.DependencyType.HDA, pending_dataset_instance.id)
+                        ]
                     )
 
         return replacement
@@ -866,8 +868,8 @@ class WorkflowProgress:
             self.record_delay(de)
 
     def record_delay(self, delay: modules.DelayedWorkflowEvaluation) -> None:
-        if delay.dependency:
-            self.tracked_dependencies.add(delay.dependency)
+        if delay.dependencies:
+            self.tracked_dependencies.update(delay.dependencies)
         elif not delay.inherited:
             self.untracked_delays.append(delay.why or "no reason given")
 

@@ -97,10 +97,8 @@ def test_waits_for_tracked_job_to_finish():
 def test_failed_collection_population_reschedules():
     harness = SchedulingHarness()
     collection = model.DatasetCollection(collection_type="list", populated=False)
-    hdca = model.HistoryDatasetCollectionAssociation(collection=collection)
-    hdca.history = harness.history
-    hdca_id = harness.persist(hdca)
-    scheduler = RecordingScheduler(pending(SchedulingDependency(DependencyType.HDCA, hdca_id)))
+    collection_id = harness.persist(collection)
+    scheduler = RecordingScheduler(pending(SchedulingDependency(DependencyType.DATASET_COLLECTION, collection_id)))
 
     assert harness.attempt(scheduler) == 1
     assert harness.attempt(scheduler) == 1

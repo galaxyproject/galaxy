@@ -388,7 +388,7 @@ class WorkflowRequestMonitor(Monitors):
         # Group dependencies by type for batch queries
         job_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.JOB}
         hda_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.HDA}
-        hdca_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.HDCA}
+        collection_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.DATASET_COLLECTION}
         step_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.WORKFLOW_INVOCATION_STEP}
 
         if job_ids:
@@ -424,15 +424,14 @@ class WorkflowRequestMonitor(Monitors):
             if ready_count:
                 return True
 
-        if hdca_ids:
+        if collection_ids:
             # A collection that failed to populate must be rescheduled too, so the
             # invocation can fail instead of waiting forever.
             populated_count = session.execute(
                 select(func.count())
-                .select_from(model.HistoryDatasetCollectionAssociation)
-                .join(model.DatasetCollection)
+                .select_from(model.DatasetCollection)
                 .where(
-                    model.HistoryDatasetCollectionAssociation.id.in_(hdca_ids),
+                    model.DatasetCollection.id.in_(collection_ids),
                     model.DatasetCollection.populated_state != model.DatasetCollection.populated_states.NEW,
                 )
             ).scalar()
