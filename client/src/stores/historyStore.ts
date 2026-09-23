@@ -13,6 +13,7 @@ import {
 } from "@/api";
 import {
     type AnyHistoryEntry,
+    createNewHistory as createHistoryOnServer,
     getArchivedHistories,
     getPublishedHistories,
     getSharedHistories,
@@ -338,7 +339,16 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return setCurrentHistory(newHistory.id);
     }
 
-    async function createNewHistory() {
+    /**
+     * Creates a new history and makes it the current one.
+     * @param name name of the new history, the server's default when omitted
+     */
+    async function createNewHistory(name?: string) {
+        if (name) {
+            const namedHistory = await createHistoryOnServer(name);
+            await handleTotalCountChange(1);
+            return setCurrentHistory(namedHistory.id);
+        }
         const newHistory = (await createAndSelectNewHistory()) as HistoryDevDetailed;
         await handleTotalCountChange(1);
         return selectHistory(newHistory);

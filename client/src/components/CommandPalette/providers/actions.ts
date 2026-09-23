@@ -9,7 +9,6 @@ import {
     faUpload,
 } from "@fortawesome/free-solid-svg-icons";
 
-import { createNewHistory } from "@/api/histories";
 import { createPage } from "@/api/pages";
 import { Toast } from "@/composables/toast";
 import { useChatStore } from "@/stores/chatStore";
@@ -46,23 +45,10 @@ function uploadMethodItems(argQuery: string, ctx: PaletteContext): PaletteItem[]
 }
 
 async function createNamedHistory(name: string) {
-    const historyStore = useHistoryStore();
     try {
-        // the store's own creation takes no name, so the api call is followed by
-        // the same switch it would have done
-        const history = await createNewHistory(name);
-        await historyStore.setCurrentHistory(history.id);
+        await useHistoryStore().createNewHistory(name);
     } catch (error) {
         Toast.error(errorMessageAsString(error), "Failed to create history");
-        return;
-    }
-    try {
-        // the history exists either way: keep the store's paginated total and
-        // offset in step with it, exactly like `historyStore.createNewHistory`
-        await historyStore.handleTotalCountChange(1);
-    } catch (error) {
-        // a stale count is not worth reporting as a failed creation
-        console.debug("Command palette could not refresh the history count", error);
     }
 }
 

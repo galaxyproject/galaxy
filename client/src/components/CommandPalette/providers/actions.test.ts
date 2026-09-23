@@ -1,8 +1,6 @@
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type * as HistoriesApi from "@/api/histories";
-import { createNewHistory } from "@/api/histories";
 import type * as PagesApi from "@/api/pages";
 import { createPage } from "@/api/pages";
 import type { WorkflowSummary } from "@/api/workflows";
@@ -16,11 +14,6 @@ import { usePageStore } from "@/stores/pageStore";
 
 import type { PaletteContext, PaletteItem } from "../types";
 import { actionsProvider, slugify } from "./actions";
-
-vi.mock("@/api/histories", async (importOriginal) => ({
-    ...(await importOriginal<typeof HistoriesApi>()),
-    createNewHistory: vi.fn(),
-}));
 
 vi.mock("@/api/pages", async (importOriginal) => ({
     ...(await importOriginal<typeof PagesApi>()),
@@ -75,7 +68,6 @@ describe("actionsProvider", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         vi.clearAllMocks();
-        vi.mocked(createNewHistory).mockResolvedValue({ id: "hist-1" } as never);
         vi.mocked(createPage).mockResolvedValue({ id: "page-1" } as never);
         vi.mocked(loadWorkflows).mockResolvedValue({ data: [RNA_SEQ], totalMatches: 1 });
     });
@@ -116,42 +108,20 @@ describe("actionsProvider", () => {
         const [item] = await argumentItems("actions:new-history", " RNA run ");
         expect(item?.title).toBe("Create history named 'RNA run'");
 
-        const historyStore = useHistoryStore();
-        const setCurrentHistory = vi.spyOn(historyStore, "setCurrentHistory").mockResolvedValue(undefined);
-        const handleTotalCountChange = vi.spyOn(historyStore, "handleTotalCountChange").mockResolvedValue(undefined);
+        const createNewHistory = vi.spyOn(useHistoryStore(), "createNewHistory").mockResolvedValue(undefined);
         item?.handler?.(makeCtx());
-        await vi.waitFor(() => expect(setCurrentHistory).toHaveBeenCalledWith("hist-1"));
-        expect(createNewHistory).toHaveBeenCalledWith("RNA run");
-        // the store's own creation refreshes the paginated total, and so must this one
-        await vi.waitFor(() => expect(handleTotalCountChange).toHaveBeenCalledWith(1));
+        // the store creates the named history and switches to it
+        await vi.waitFor(() => expect(createNewHistory).toHaveBeenCalledWith("RNA run"));
+        expect(Toast.error).not.toHaveBeenCalled();
     });
 
-    it("reports a failed history creation without touching the total count", async () => {
-        vi.mocked(createNewHistory).mockRejectedValueOnce(new Error("nope"));
-
-        const historyStore = useHistoryStore();
-        const setCurrentHistory = vi.spyOn(historyStore, "setCurrentHistory").mockResolvedValue(undefined);
-        const handleTotalCountChange = vi.spyOn(historyStore, "handleTotalCountChange").mockResolvedValue(undefined);
+    it("reports a failed history creation", async () => {
+        vi.spyOn(useHistoryStore(), "createNewHistory").mockRejectedValueOnce(new Error("nope"));
 
         const [item] = await argumentItems("actions:new-history", "RNA run");
         item?.handler?.(makeCtx());
 
         await vi.waitFor(() => expect(Toast.error).toHaveBeenCalled());
-        expect(setCurrentHistory).not.toHaveBeenCalled();
-        expect(handleTotalCountChange).not.toHaveBeenCalled();
-    });
-
-    it("keeps a stale count from looking like a failed history creation", async () => {
-        const historyStore = useHistoryStore();
-        const setCurrentHistory = vi.spyOn(historyStore, "setCurrentHistory").mockResolvedValue(undefined);
-        vi.spyOn(historyStore, "handleTotalCountChange").mockRejectedValue(new Error("count is down"));
-
-        const [item] = await argumentItems("actions:new-history", "RNA run");
-        item?.handler?.(makeCtx());
-
-        await vi.waitFor(() => expect(setCurrentHistory).toHaveBeenCalledWith("hist-1"));
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        expect(Toast.error).not.toHaveBeenCalled();
     });
 
     it("routes workflow creation and import", async () => {
