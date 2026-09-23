@@ -86,6 +86,10 @@ async function onUserSearch(searchValue: string) {
     const { data, error } = await GalaxyApi().GET("/api/users", {
         params: { query: { f_email: searchValue, limit: 50 } },
     });
+    // A search is sent per keystroke; drop responses for queries the admin has typed past.
+    if (searchValue !== userSearch.value) {
+        return;
+    }
     if (error) {
         errorMessage.value = errorMessageAsString(error);
         return;
