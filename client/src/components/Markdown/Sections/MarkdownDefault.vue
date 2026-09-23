@@ -55,7 +55,7 @@ const { internalHelpReferences, MarkdownHelpPopovers } = useGxUris(renderedMarkd
 
 <template>
     <span>
-        <div ref="renderedMarkdownDiv" class="text-justify" v-html="renderedContent" />
+        <div ref="renderedMarkdownDiv" v-sanitize-html:markdown="renderedContent" class="text-justify" />
         <MarkdownHelpPopovers :elements="internalHelpReferences" />
     </span>
 </template>
