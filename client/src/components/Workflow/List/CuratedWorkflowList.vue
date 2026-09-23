@@ -2,8 +2,14 @@
 import { BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
-import { type CuratedWorkflow, type CuratedWorkflowSource, loadCuratedWorkflows } from "@/api/curatedWorkflows";
+import {
+    type CuratedWorkflow,
+    type CuratedWorkflowSortBy,
+    type CuratedWorkflowSource,
+    loadCuratedWorkflows,
+} from "@/api/curatedWorkflows";
 import { curatedHelpHtml, curatedWorkflowFilters } from "@/components/Workflow/List/curatedFilters";
+import { useConfig } from "@/composables/config";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -26,7 +32,16 @@ const IWC_URL = "https://iwc.galaxyproject.org";
 
 const breadcrumbItems = [{ title: "Workflows" }];
 
+// Only the iwc source orders by runnability. In local mode the server's default
+// is plain newest-first, which ListHeader's own initial "Update time" already
+// describes truthfully, so there's no separate default to offer.
+const RECOMMENDED_SORT = {
+    label: localize("Recommended"),
+    title: localize("Workflows that can run on this Galaxy first, then most recently updated"),
+};
+
 const userStore = useUserStore();
+const { config, isConfigLoaded } = useConfig();
 
 const limit = ref(24);
 const offset = ref(0);
@@ -34,7 +49,6 @@ const loading = ref(true);
 const overlay = ref(false);
 const filterText = ref("");
 const showAdvanced = ref(false);
-const listHeader = ref<any>(null);
 const workflows = ref<CuratedWorkflow[]>([]);
 const totalWorkflows = ref(0);
 const source = ref<CuratedWorkflowSource | null>(null);
@@ -54,8 +68,14 @@ const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.k
 
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 const currentListViewMode = computed(() => userStore.currentListViewPreferences.workflows || "grid");
-const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) ?? true);
-const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "update_time");
+const defaultSortOption = computed(() =>
+    config.value?.curated_workflows_source === "iwc" ? RECOMMENDED_SORT : undefined,
+);
+// Null until the user picks a sort, and again once they pick "Recommended".
+// Only an unsorted request gets the server's default order, which in iwc mode
+// puts workflows that run here first. ListHeader keeps no persisted sort
+// preference, so there is none to honour.
+const explicitSort = ref<{ sortBy: CuratedWorkflowSortBy; sortDesc: boolean } | null>(null);
 
 // Only consulted after the template's earlier branches have ruled out loading,
 // errors and the preparing/unavailable states, so these say nothing about them.
@@ -83,8 +103,8 @@ async function load(overlayLoading = false) {
     try {
         const data = await loadCuratedWorkflows({
             search: validatedFilterText(),
-            sortBy: sortBy.value,
-            sortDesc: sortDesc.value,
+            sortBy: explicitSort.value?.sortBy,
+            sortDesc: explicitSort.value?.sortDesc,
             limit: limit.value,
             offset: offset.value,
         });
@@ -141,7 +161,15 @@ async function onPageChange(page: number) {
     await load(true);
 }
 
-watch([filterText, sortBy, sortDesc], async () => {
+function onSortChanged(sortBy: string, sortDesc: boolean) {
+    explicitSort.value = { sortBy: sortBy as CuratedWorkflowSortBy, sortDesc };
+}
+
+function onSortDefault() {
+    explicitSort.value = null;
+}
+
+watch([filterText, explicitSort], async () => {
     offset.value = 0;
     await load(true);
 });
@@ -186,12 +214,16 @@ onMounted(() => load());
                 </template>
             </FilterMenu>
 
+            <!-- Waits for the config so ListHeader starts on the right default sort. -->
             <ListHeader
-                ref="listHeader"
+                v-if="isConfigLoaded"
                 list-id="workflows"
                 show-sort-options
                 show-view-toggle
-                :show-select-all="false" />
+                :show-select-all="false"
+                :default-sort-option="defaultSortOption"
+                @sort-changed="onSortChanged"
+                @sort-default="onSortDefault" />
         </div>
 
         <div v-if="loading" class="workflow-list-alert">

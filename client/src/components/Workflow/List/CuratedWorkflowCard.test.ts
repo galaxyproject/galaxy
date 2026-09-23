@@ -70,6 +70,7 @@ function iwcWorkflow(overrides: Partial<CuratedWorkflow> = {}): CuratedWorkflow 
         stored_workflow_id: null,
         trs_url: PINNED_TRS_URL,
         trs_fallback_url: BRANCH_TRS_URL,
+        missing_tools: [],
         ...overrides,
     };
 }
@@ -85,6 +86,7 @@ function localWorkflow(overrides: Partial<CuratedWorkflow> = {}): CuratedWorkflo
         release: null,
         trs_url: null,
         trs_fallback_url: null,
+        missing_tools: null,
         ...overrides,
     });
 }
@@ -116,6 +118,11 @@ function importActionOf(wrapper: ReturnType<typeof mountCard>) {
 async function clickImport(wrapper: ReturnType<typeof mountCard>, workflow: CuratedWorkflow) {
     await wrapper.find(`#g-card-action-curated-import-${workflow.id}`).trigger("click");
     await flushPromises();
+}
+
+function badgeById(wrapper: ReturnType<typeof mountCard>, id: string) {
+    const badges = wrapper.findComponent(GCard).props("badges") ?? [];
+    return badges.find((badge: { id: string }) => badge.id === id);
 }
 
 function actionIds(wrapper: ReturnType<typeof mountCard>): string[] {
@@ -250,6 +257,44 @@ describe("CuratedWorkflowCard", () => {
         expect(importTrsToolFromUrl).toHaveBeenCalledTimes(1);
         expect(routerPush).not.toHaveBeenCalled();
         expect(toastError).toHaveBeenCalled();
+    });
+
+    it("says a workflow is ready to run when nothing is missing", () => {
+        const wrapper = mountCard(iwcWorkflow({ missing_tools: [] }));
+
+        expect(badgeById(wrapper, "curated-runnable")).toMatchObject({ label: "Ready to run", variant: "success" });
+        expect(badgeById(wrapper, "curated-missing-tools")).toBeUndefined();
+    });
+
+    it("counts the missing tools and names them by their short id", () => {
+        const wrapper = mountCard(
+            iwcWorkflow({
+                missing_tools: [
+                    "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/0.23.4+galaxy0",
+                    "toolshed.g2.bx.psu.edu/repos/iuc/multiqc/multiqc/1.11+galaxy1",
+                    "wig_to_bigWig",
+                ],
+            }),
+        );
+        const badge = badgeById(wrapper, "curated-missing-tools");
+
+        expect(badge).toMatchObject({ label: "Needs 3 tools", variant: "warning" });
+        expect(badge.title).toBe("Not installed on this Galaxy: fastp, multiqc, wig_to_bigWig");
+        expect(badgeById(wrapper, "curated-runnable")).toBeUndefined();
+    });
+
+    it("keeps import enabled when tools are missing, so an admin can import and install them", () => {
+        const wrapper = mountCard(iwcWorkflow({ missing_tools: ["wig_to_bigWig"] }));
+
+        expect(badgeById(wrapper, "curated-missing-tools").label).toBe("Needs 1 tool");
+        expect(importActionOf(wrapper).disabled).toBe(false);
+    });
+
+    it("shows no runnability badge when the server did not check", () => {
+        const wrapper = mountCard(localWorkflow());
+
+        expect(badgeById(wrapper, "curated-runnable")).toBeUndefined();
+        expect(badgeById(wrapper, "curated-missing-tools")).toBeUndefined();
     });
 
     it("copies a locally hosted workflow instead of importing it through TRS", async () => {

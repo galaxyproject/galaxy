@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faExternalLinkAlt, faPlay, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle, faExternalLinkAlt, faPlay, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -55,8 +55,43 @@ const titleBadges = computed<CardBadge[]>(() =>
     })),
 );
 
+/** `toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/0.23.4` -> `fastp`; built-in ids pass through. */
+function shortToolName(toolId: string): string {
+    const parts = toolId.split("/");
+    return parts.length > 2 && parts.includes("repos") ? (parts[parts.length - 2] ?? toolId) : toolId;
+}
+
+const runnabilityBadge = computed<CardBadge | null>(() => {
+    const missingTools = workflow.value.missing_tools;
+    // Null means the server didn't check, which is not the same as nothing missing.
+    if (missingTools === null || missingTools === undefined) {
+        return null;
+    }
+    if (missingTools.length === 0) {
+        return {
+            id: "curated-runnable",
+            label: "Ready to run",
+            title: "Every tool this workflow uses is installed on this Galaxy",
+            icon: faCheck,
+            variant: "success",
+        };
+    }
+    const names = [...new Set(missingTools.map(shortToolName))];
+    return {
+        id: "curated-missing-tools",
+        label: `Needs ${names.length} ${names.length === 1 ? "tool" : "tools"}`,
+        title: `Not installed on this Galaxy: ${names.join(", ")}`,
+        icon: faExclamationTriangle,
+        variant: "warning",
+    };
+});
+
 const badges = computed<CardBadge[]>(() => {
     const cardBadges: CardBadge[] = [];
+
+    if (runnabilityBadge.value) {
+        cardBadges.push(runnabilityBadge.value);
+    }
 
     if (workflow.value.number_of_steps !== null && workflow.value.number_of_steps !== undefined) {
         cardBadges.push({

@@ -25,6 +25,9 @@ const FAKE_USER = getFakeRegisteredUser();
 /** Query parameters of every catalog request, in order. */
 let catalogQueries: URLSearchParams[] = [];
 
+/** What the mocked /api/configuration reports as curated_workflows_source. */
+let configSource = "iwc";
+
 /** Records any hit on the badge counts endpoint, which curated cards must never make. */
 const countsRequested = vi.fn();
 
@@ -131,12 +134,13 @@ describe("CuratedWorkflowList", () => {
         suppressBootstrapVueWarnings();
         vi.clearAllMocks();
         catalogQueries = [];
+        configSource = "iwc";
         server.use(
-            // WorkflowListTabs gates the curated tab on the config store, which
+            // WorkflowListTabs and the sort header read the config store, which
             // fetches eagerly when it is first instantiated.
             http.get("/api/configuration", ({ response }) => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                return response(200).json({ curated_workflows_source: "iwc" } as any);
+                return response(200).json({ curated_workflows_source: configSource } as any);
             }),
             http.get("/api/workflows/{workflow_id}/counts", ({ response }) => {
                 countsRequested();
@@ -289,5 +293,48 @@ describe("CuratedWorkflowList", () => {
         expect(wrapper.find("#curated-workflows-empty").exists()).toBe(true);
         expect(wrapper.find("#no-curated-workflow-found").exists()).toBe(false);
         expect(wrapper.findAll(".curated-workflow-card")).toHaveLength(0);
+    });
+
+    it("starts on Recommended and leaves the order to the server until the user picks a sort", async () => {
+        const wrapper = await mountCuratedList({ source: "iwc", total_matches: 1, workflows: [iwcWorkflow()] });
+
+        expect(wrapper.find("#sortby-default").classes()).toContain("g-pressed");
+        expect(wrapper.find("#sortby-update_time").classes()).not.toContain("g-pressed");
+        // Sending a sort at all would opt out of runnable-first ordering.
+        expect(catalogQueries).toHaveLength(1);
+        expect(catalogQueries[0]!.has("sort_by")).toBe(false);
+        expect(catalogQueries[0]!.has("sort_desc")).toBe(false);
+
+        await wrapper.find("#sortby-name").trigger("click");
+        await flushPromises();
+
+        expect(catalogQueries).toHaveLength(2);
+        expect(catalogQueries[1]!.get("sort_by")).toBe("name");
+        expect(catalogQueries[1]!.get("sort_desc")).toBe("true");
+        expect(wrapper.find("#sortby-default").classes()).not.toContain("g-pressed");
+
+        await wrapper.find("#sortby-default").trigger("click");
+        await flushPromises();
+
+        expect(catalogQueries).toHaveLength(3);
+        expect(catalogQueries[2]!.has("sort_by")).toBe(false);
+        expect(catalogQueries[2]!.has("sort_desc")).toBe(false);
+        expect(wrapper.find("#sortby-default").classes()).toContain("g-pressed");
+    });
+
+    it("offers no Recommended sort in local mode, where the server default is newest first", async () => {
+        configSource = "local";
+        const wrapper = await mountCuratedList({ source: "local", total_matches: 1, workflows: [localWorkflow()] });
+
+        expect(wrapper.find("#sortby-default").exists()).toBe(false);
+        expect(wrapper.find("#sortby-update_time").classes()).toContain("g-pressed");
+        expect(catalogQueries[0]!.has("sort_by")).toBe(false);
+
+        // Already newest first, so the first click on it flips to oldest first.
+        await wrapper.find("#sortby-update_time").trigger("click");
+        await flushPromises();
+
+        expect(catalogQueries[1]!.get("sort_by")).toBe("update_time");
+        expect(catalogQueries[1]!.get("sort_desc")).toBe("false");
     });
 });
