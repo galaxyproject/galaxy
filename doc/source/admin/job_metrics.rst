@@ -173,6 +173,27 @@ comma-separated string of cgroup parameter names.
 
 The cgroup plugin works on Linux only.
 
+pulsar_transfer
+~~~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+    - type: pulsar_transfer
+
+The pulsar_transfer plugin reports how long Pulsar spent staging a job's files, how many
+files it moved and how many bytes, separately for inputs (staged in before the job runs) and
+outputs (staged back out afterwards).
+
+It has no options, and unlike the other plugins it adds nothing to the job script -- staging
+happens either side of the job script, in Pulsar. Pulsar writes the measurements itself,
+whether or not this plugin is enabled; enabling it is what makes Galaxy record and display
+them. Pulsar 0.15.16 or newer is required, and jobs that did not run on Pulsar simply record
+nothing.
+
+The figures cover the transfers Pulsar itself performs. A destination configured so that
+*Galaxy* pushes and pulls the files (the ``transfer`` file action rather than
+``remote_transfer``) leaves Pulsar with little to do and will report close to zero.
+
 Overriding the Global Job Metrics Configuration
 -----------------------------------------------
 
