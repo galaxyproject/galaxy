@@ -80,9 +80,8 @@ async function searchTools(query: string, limit: number): Promise<PaletteItem[]>
     }
     const toolStore = useToolStore();
     await toolStore.fetchTools(trimmed);
-    // guarded lookup: a query like "constructor" must not resolve through the prototype chain
-    const resultIds = Object.hasOwn(toolStore.toolResults, trimmed) ? toolStore.toolResults[trimmed] : [];
-    return itemsForToolIds(resultIds ?? []).slice(0, limit);
+    // backend ranking order, restricted to tools the hydrated toolbox knows
+    return Object.values(toolStore.getToolsById(trimmed)).map(toolToItem).slice(0, limit);
 }
 
 /** The head of the hydrated toolbox, alphabetically, as the empty `t:` fallback */
