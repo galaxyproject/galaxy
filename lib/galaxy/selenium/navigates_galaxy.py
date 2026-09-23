@@ -635,7 +635,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     ):
         if timeout is None:
             timeout = self.wait_length(wait_type=wait_type)
-        return wait_on(f, on_str or "custom wait", timeout)
+        # Keep polling on any falsy result, like Selenium's WebDriverWait; wait_on alone
+        # stops on anything but None, so a condition returning False would not wait at all.
+        return wait_on(lambda: f() or None, on_str or "custom wait", timeout)
 
     def wait_for_history_to_have_hid(self, history_id, hid):
         def get_hids():
