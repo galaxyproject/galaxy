@@ -1024,9 +1024,7 @@ class SubWorkflowModule(WorkflowModule):
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
         subworkflow_progress = subworkflow_invoker.progress
-        # Propagate scheduling dependencies from subworkflow to parent
-        if subworkflow_progress.scheduling_dependencies:
-            progress.scheduling_dependencies.update(subworkflow_progress.scheduling_dependencies)
+        progress.record_subworkflow_delays(subworkflow_progress)
         outputs = {}
         for workflow_output in subworkflow.workflow_outputs:
             workflow_output_label = (
@@ -3509,10 +3507,31 @@ class SchedulingDependency:
     id: int
 
 
+@dataclass(frozen=True)
+class SchedulingDependencies:
+    """What the next scheduling attempt of an invocation waits on."""
+
+    tracked: frozenset[SchedulingDependency]
+    # Why steps were delayed without a tracked dependency. The invocation is
+    # scheduled again on the next iteration and the reasons are logged.
+    untracked: tuple[str, ...]
+    # The iteration stopped before scheduling everything it could.
+    more_work: bool
+
+
 class DelayedWorkflowEvaluation(Exception):
-    def __init__(self, why=None, dependency: SchedulingDependency | None = None):
+    def __init__(
+        self,
+        why=None,
+        dependency: SchedulingDependency | None = None,
+        *,
+        inherited: bool = False,
+    ):
         self.why = why
         self.dependency = dependency
+        # The step is delayed because another step of the invocation is delayed;
+        # that step's dependency covers this one.
+        self.inherited = inherited
 
 
 class CancelWorkflowEvaluation(Exception):

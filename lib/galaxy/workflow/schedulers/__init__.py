@@ -10,7 +10,7 @@ from abc import (
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from galaxy.workflow.modules import SchedulingDependency
+    from galaxy.workflow.modules import SchedulingDependencies
 
 
 class WorkflowSchedulingPlugin(metaclass=ABCMeta):
@@ -39,7 +39,7 @@ class WorkflowSchedulingPlugin(metaclass=ABCMeta):
 
 class ActiveWorkflowSchedulingPlugin(WorkflowSchedulingPlugin, metaclass=ABCMeta):
     @abstractmethod
-    def schedule(self, workflow_invocation) -> "set[SchedulingDependency]":
+    def schedule(self, workflow_invocation) -> "SchedulingDependencies":
         """Schedule the workflow invocation and return any scheduling
         dependencies that should be tracked for the next iteration.
         """

@@ -14,7 +14,7 @@ from . import ActiveWorkflowSchedulingPlugin
 
 if TYPE_CHECKING:
     from galaxy.model import WorkflowInvocation
-    from galaxy.workflow.modules import SchedulingDependency
+    from galaxy.workflow.modules import SchedulingDependencies
 
 
 log = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ class CoreWorkflowSchedulingPlugin(ActiveWorkflowSchedulingPlugin):
     def shutdown(self):
         pass
 
-    def schedule(self, workflow_invocation: "WorkflowInvocation") -> "set[SchedulingDependency]":
+    def schedule(self, workflow_invocation: "WorkflowInvocation") -> "SchedulingDependencies":
         workflow = workflow_invocation.workflow
         history = workflow_invocation.history
         request_context = context.WorkRequestContext(

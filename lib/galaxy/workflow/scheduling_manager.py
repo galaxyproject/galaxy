@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 from functools import partial
 from typing import (
+    NamedTuple,
     TYPE_CHECKING,
 )
 
@@ -28,7 +29,6 @@ from galaxy.schema.tasks import (
     RequestUser,
 )
 from galaxy.util import (
-    now,
     plugin_config,
     unicodify,
 )
@@ -39,6 +39,7 @@ from galaxy.web_stack.handlers import ConfiguresHandlers
 from galaxy.web_stack.message import WorkflowSchedulingMessage
 from galaxy.workflow.modules import (
     DependencyType,
+    SchedulingDependencies,
     SchedulingDependency,
 )
 
@@ -311,6 +312,16 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         self.app.application_stack.register_postfork_function(self.request_monitor.start)
 
 
+class InvocationTracking(NamedTuple):
+    """State of an invocation as observed by its last scheduling attempt."""
+
+    # Observed before the attempt schedules anything, so that changes committed
+    # while it runs are seen by the next attempt.
+    history_update_time: datetime | None
+    step_update_time: datetime | None
+    pending: SchedulingDependencies | None = None
+
+
 class WorkflowRequestMonitor(Monitors):
     def __init__(self, app: "MinimalManagerApp", workflow_scheduling_manager: WorkflowSchedulingManager) -> None:
         self.app = app
@@ -319,8 +330,7 @@ class WorkflowRequestMonitor(Monitors):
             name="WorkflowRequestMonitor.monitor_thread", target=self.__monitor, config=app.config
         )
         self.invocation_grabber = None
-        self.update_time_tracking_dict: dict[int, datetime] = {}
-        self.dependency_tracking_dict: dict[int, set[SchedulingDependency]] = {}
+        self.invocation_tracking: dict[int, InvocationTracking] = {}
         self_handler_tags = set(self.app.job_config.self_handler_tags)
         self_handler_tags.add(self.workflow_scheduling_manager.default_handler_id)
         handler_assignment_method = InvocationGrabber.get_grabbable_handler_assignment_method(
@@ -335,10 +345,16 @@ class WorkflowRequestMonitor(Monitors):
                 handler_tags=self_handler_tags,
             )
 
-    def ready_to_schedule_more(self, invocation: model.WorkflowInvocation):
-        # After process restart, in-memory dicts are empty — always schedule
-        # the first iteration so dependencies get (re-)captured.
-        if invocation.id not in self.update_time_tracking_dict:
+    def observe_invocation(self, invocation: model.WorkflowInvocation) -> InvocationTracking:
+        return InvocationTracking(
+            history_update_time=invocation.history.update_time,
+            step_update_time=invocation.get_last_workflow_invocation_step_update_time(),
+        )
+
+    def ready_to_schedule_more(self, invocation: model.WorkflowInvocation, observed: InvocationTracking) -> bool:
+        previous = self.invocation_tracking.get(invocation.id)
+        # Nothing tracked (e.g. after a restart): schedule so dependencies get captured.
+        if previous is None or previous.pending is None:
             return True
 
         # Always allow scheduling if maximum duration has been exceeded,
@@ -347,28 +363,23 @@ class WorkflowRequestMonitor(Monitors):
         if maximum_duration > 0 and invocation.seconds_since_created > maximum_duration:
             return True
 
-        last_schedule_time = self.update_time_tracking_dict[invocation.id]
-
-        # Check tracked dependencies — most precise signal
-        dependencies = self.dependency_tracking_dict.get(invocation.id)
-        if dependencies and self._any_dependency_satisfied(dependencies, invocation):
+        pending = previous.pending
+        if pending.more_work or pending.untracked:
+            return True
+        if pending.tracked and self._any_dependency_satisfied(pending.tracked, invocation):
             return True
 
-        # Fallback: check history update_time (covers HDA/HDCA inserts from DB triggers,
-        # also catches PartialJobExecution which creates new HDAs without recording a dependency)
-        if invocation.history.update_time > last_schedule_time:
-            return True
-
-        # Fallback: check workflow_invocation_step.update_time (catches pause step
-        # actions set via API, and job completions via Job.set_final_state)
-        if invocation_step_update_time := invocation.get_last_workflow_invocation_step_update_time():
-            if invocation_step_update_time > last_schedule_time:
-                return True
-
-        return False
+        # Changes not tied to a tracked dependency, e.g. the history being deleted.
+        # The update times are stamped when a transaction flushes but only become
+        # visible when it commits, so compare them against the values the last
+        # attempt observed.
+        return (
+            observed.history_update_time != previous.history_update_time
+            or observed.step_update_time != previous.step_update_time
+        )
 
     def _any_dependency_satisfied(
-        self, dependencies: set[SchedulingDependency], invocation: model.WorkflowInvocation
+        self, dependencies: frozenset[SchedulingDependency], invocation: model.WorkflowInvocation
     ) -> bool:
         session = Session.object_session(invocation)
         if session is None:
@@ -527,13 +538,11 @@ class WorkflowRequestMonitor(Monitors):
                     workflow_invocation.cancel_invocation_steps()
                     workflow_invocation.mark_cancelled()
                     session.commit()
-                    self.update_time_tracking_dict.pop(invocation_id, None)
-                    self.dependency_tracking_dict.pop(invocation_id, None)
+                    self.invocation_tracking.pop(invocation_id, None)
                     return False
 
                 if not workflow_invocation or not workflow_invocation.active:
-                    self.update_time_tracking_dict.pop(invocation_id, None)
-                    self.dependency_tracking_dict.pop(invocation_id, None)
+                    self.invocation_tracking.pop(invocation_id, None)
                     return False
 
                 # This ensures we're only ever working on the 'first' active
@@ -543,23 +552,32 @@ class WorkflowRequestMonitor(Monitors):
                     for i in workflow_invocation.history.workflow_invocations:
                         if i.active and i.id < workflow_invocation.id:
                             return False
-                if self.ready_to_schedule_more(workflow_invocation):
-                    self.update_time_tracking_dict[invocation_id] = now()
-                    scheduling_deps = workflow_scheduler.schedule(workflow_invocation)
-                    if scheduling_deps:
-                        self.dependency_tracking_dict[invocation_id] = scheduling_deps
-                    else:
-                        self.dependency_tracking_dict.pop(invocation_id, None)
+                observed = self.observe_invocation(workflow_invocation)
+                if self.ready_to_schedule_more(workflow_invocation, observed):
+                    pending = workflow_scheduler.schedule(workflow_invocation)
+                    self._log_untracked_delays(invocation_id, pending)
+                    self.invocation_tracking[invocation_id] = observed._replace(pending=pending)
                     log.debug("Workflow invocation [%s] scheduled", invocation_id)
             except Exception:
-                self.update_time_tracking_dict.pop(invocation_id, None)
-                self.dependency_tracking_dict.pop(invocation_id, None)
+                self.invocation_tracking.pop(invocation_id, None)
                 # TODO: eventually fail this - or fail it right away?
                 log.exception("Exception raised while attempting to schedule workflow request.")
                 return False
 
         # A workflow was obtained and scheduled...
         return True
+
+    def _log_untracked_delays(self, invocation_id: int, pending: SchedulingDependencies) -> None:
+        if not pending.untracked:
+            return
+        previous = self.invocation_tracking.get(invocation_id)
+        if previous and previous.pending and previous.pending.untracked == pending.untracked:
+            return
+        log.warning(
+            "Workflow invocation [%s] delayed for reasons that cannot be tracked, scheduling every iteration: %s",
+            invocation_id,
+            "; ".join(pending.untracked),
+        )
 
     def __active_invocation_ids(self, scheduler_id):
         handler = self.app.config.server_name
