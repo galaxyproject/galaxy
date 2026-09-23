@@ -549,9 +549,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         file_path = trans.app.object_store.get_filename(dataset_instance.dataset, auth=ObjectStoreAuth(user=trans.user))
         raw_content = open(file_path).read(1024 * 10)
         internal_markdown = resolve_job_markdown(trans, dataset_instance.creating_job, raw_content)
-        content, extra_attributes = ready_galaxy_markdown_for_export(trans, internal_markdown)
+        _, content_embed_expanded, extra_attributes = ready_galaxy_markdown_for_export(trans, internal_markdown)
         return ToolReportForDataset(
-            content=content,
+            content=content_embed_expanded,
             **extra_attributes,
         )
 
