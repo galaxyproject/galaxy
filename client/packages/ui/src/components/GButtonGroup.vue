@@ -22,8 +22,7 @@ const styleClasses = computed(() => {
 .g-button-group {
     display: inline-flex;
     gap: 0;
-    // Bootstrap's `.btn-group` set `vertical-align: middle`; without it a group placed
-    // next to standalone `.g-button`s (also `middle`) aligns on the baseline instead.
+    // Match Bootstrap's `.btn-group` so groups line up with standalone buttons.
     vertical-align: middle;
 
     // Matches Bootstrap's `.btn-group > .btn`, so a group given a width (`w-100`)
