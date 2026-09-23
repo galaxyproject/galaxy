@@ -185,7 +185,6 @@ describe("WorkflowInvocationShare", () => {
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
-        // The success message for sharing the workflow and history, then the copied link message
         expect(raisedToasts()).toEqual([
             { variant: "success", message: SHARE_SUCCESS_MSG },
             { variant: "info", message: CLIPBOARD_MSG },

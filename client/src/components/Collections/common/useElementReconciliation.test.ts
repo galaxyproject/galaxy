@@ -23,7 +23,7 @@ function fakeDataset(id: string, hid: number, name: string): HDASummary {
     return { id, hid, name, history_content_type: "dataset" } as unknown as HDASummary;
 }
 
-/** Nothing is ever invalid -- the default for tests that are about presence, not validity. */
+/** Nothing is ever invalid - the default for tests about presence, not validity. */
 const allValid = () => null;
 
 describe("useElementReconciliation", () => {
@@ -31,13 +31,11 @@ describe("useElementReconciliation", () => {
         it("projects retained choices onto the rebuilt candidates by id", () => {
             const { reconcileRetainedElements } = useElementReconciliation(allValid);
             const retained = [fakeDataset("a", 1, "one"), fakeDataset("b", 2, "two")];
-            // the rebuilt pool holds different objects, in a different order, with the
-            // names the creator has since mangled -- exactly what _elementsSetUp produces
+            // different objects, different order, renamed - exactly what _elementsSetUp produces
             const rebuilt = [fakeDataset("b", 2, "two (1)"), fakeDataset("a", 1, "one")];
 
             const kept = reconcileRetainedElements(retained, rebuilt);
 
-            // retained order wins, but the objects are the rebuilt ones
             expect(kept.map((element) => element.id)).toEqual(["a", "b"]);
             expect(kept[1]).toBe(rebuilt[0]);
             expect(toastError).not.toHaveBeenCalled();

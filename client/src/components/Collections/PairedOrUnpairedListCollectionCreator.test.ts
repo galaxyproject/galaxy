@@ -94,8 +94,7 @@ async function mountCreator(initialElements: HDASummary[]) {
     return wrapper;
 }
 
-/** Row ids as rendered by (our stub of) AG Grid -- this is the same identity contract
- *  (`RowT.id`, read by AG Grid's real `getRowId`) that the namespacing fix targets. */
+/** Row ids as our AG Grid stub renders them - the `RowT.id` contract the namespacing fix targets. */
 function gridRowIds(wrapper: ReturnType<typeof mount>): string[] {
     return wrapper.findAll(".grid-row").wrappers.map((row) => row.attributes("data-row-id") ?? "");
 }
@@ -132,8 +131,8 @@ describe("PairedOrUnpairedListCollectionCreator", () => {
         const a = buildFakeDataset("a", "sample_1", 1);
         const b = buildFakeDataset("b", "sample_2", 2);
 
-        // list:paired - an unpaired survivor is not headed into the collection, so saying it was
-        // "removed from the collection" would overstate what happened to the half that vanished
+        // list:paired - an unpaired survivor never reaches the collection, so it warns rather
+        // than claiming the vanished half was "removed from the collection"
         const wrapper = await mountCreator([a, b]);
         await wrapper.setProps({ initialElements: [a] });
         await flushPromises();
@@ -172,14 +171,12 @@ describe("PairedOrUnpairedListCollectionCreator", () => {
         await flushPromises();
         expect(gridRowIds(wrapper)).toEqual(["single:a"]);
 
-        // user-facing discard action: the "discard all remaining unpaired datasets" link
         await wrapper.find('[data-description="dismiss unmatched datasets"]').trigger("click");
         await flushPromises();
         expect(gridRowIds(wrapper)).toEqual([]);
 
-        // a is still present in history (e.g. next poll tick) alongside b having come back
-        // (e.g. undeleted); a must not reappear since the user explicitly discarded it, while
-        // b -- never discarded, just transiently missing -- is free to come back on its own.
+        // b comes back (undeleted) and a is still in the history: a stays gone because the user
+        // discarded it, b returns because it was only transiently missing
         await wrapper.setProps({ initialElements: [a, b] });
         await flushPromises();
 

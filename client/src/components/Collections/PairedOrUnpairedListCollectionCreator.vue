@@ -401,10 +401,8 @@ function addNewElementsToRowData(elements: HistoryItemSummary[]) {
  * a pair back to unpaired if only one side of it was removed), and leave everything
  * else (manual or auto pairs, identifiers, etc.) untouched.
  *
- * The sibling creators reconcile a flat selection and hand it to `reconcileRetainedElements`;
- * here the retained state is rows carrying the user's pairings, so only the notifications are
- * shared - a vanished pair has to read as one event, not two. Note this reconciles on presence
- * alone: unlike the siblings it never asks `isElementInvalid`, here or at `initialize()`.
+ * Unlike the sibling creators this reconciles on presence alone - it never asks
+ * `isElementInvalid` - so only the notifications are shared with them.
  */
 function reconcileWithInitialElements(newInitialElements: HistoryItemSummary[]) {
     const validIds = new Set(newInitialElements.map((el) => el.id));

@@ -65,14 +65,13 @@ async function mountCreator(initialElements: HDASummary[]) {
     return wrapper;
 }
 
-/** The forward/reverse slots, in that order, as ids -- empty slots render no view at all. */
+/** The forward/reverse slots as ids - an empty slot renders no view at all. */
 function pairedIds(wrapper: ReturnType<typeof mount>): string[] {
     return wrapper
         .findAllComponents(FixedIdentifierDatasetCollectionElementView)
         .wrappers.map((slot) => (slot.props("element") as HDASummary).id);
 }
 
-/** Click a dataset in the pick list the way a user filling the forward then reverse slot does. */
 async function clickDataset(wrapper: ReturnType<typeof mount>, id: string) {
     const view = wrapper
         .findAllComponents(DatasetCollectionElementView)

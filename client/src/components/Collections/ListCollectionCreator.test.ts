@@ -66,12 +66,10 @@ async function mountCreator(initialElements: HDASummary[]) {
     return wrapper;
 }
 
-/** Datasets the user has put in the list, as the multiselect currently sees them. */
 function inListElements(wrapper: ReturnType<typeof mount>): HDASummary[] {
     return wrapper.findComponent(FormSelectMany).props("value") as HDASummary[];
 }
 
-/** Click datasets in the multiselect the way a user filling the list does, in the order given. */
 async function selectIntoList(wrapper: ReturnType<typeof mount>, names: string[]) {
     for (const name of names) {
         const option = wrapper
@@ -94,8 +92,7 @@ describe("ListCollectionCreator", () => {
         await wrapper.setProps({ initialElements: refreshed });
         await flushPromises();
 
-        // the user's order survives, and what survives is the creator's own working copy of the
-        // dataset rather than the prop it was rebuilt from
+        // the user's order survives, holding the creator's working copies rather than the props
         expect(inListElements(wrapper).map((element) => element.id)).toEqual(["b", "a"]);
         expect(inListElements(wrapper)[0]).not.toBe(refreshed[1]);
         expect(toastError).not.toHaveBeenCalled();
