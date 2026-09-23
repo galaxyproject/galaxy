@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useWindowScroll } from "@vueuse/core";
+import { useScroll } from "@vueuse/core";
 import axios from "axios";
 import { parse } from "csv-parse/sync";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 
 import type { HDADetailed } from "@/api";
 import type { TableField } from "@/components/Common/GTable.types";
@@ -32,6 +32,16 @@ const offset = ref(0);
 const loading = ref(true);
 // TODO: add visual loading indicator
 const atEOF = ref(false);
+
+// The page layout scrolls in an inner container, not the window, so the
+// component owns its scroll container and watches it for arriving at the
+// bottom (within 100px) to load more chunks.
+const scrollContainer = ref<HTMLElement | null>(null);
+const { arrivedState, measure } = useScroll(scrollContainer, {
+    offset: {
+        bottom: 100,
+    },
+});
 
 const tabularData = reactive<{ rows: string[][] }>({
     rows: [],
@@ -88,17 +98,20 @@ const chunkUrl = computed(() => {
 });
 
 // Loading more data on user scroll to (near) bottom.
-const { y } = useWindowScroll();
-
-watch(y, (newY) => {
-    if (
-        atEOF.value !== true &&
-        loading.value === false &&
-        newY > document.body.scrollHeight - window.innerHeight - 100
-    ) {
-        nextChunk();
-    }
-});
+watch(
+    () => [arrivedState.bottom, loading.value, atEOF.value],
+    async ([, isLoading, isEOF]) => {
+        if (isLoading || isEOF) {
+            return;
+        }
+        // Let the DOM reflect any newly loaded rows before measuring.
+        await nextTick();
+        measure();
+        if (arrivedState.bottom) {
+            nextChunk();
+        }
+    },
+);
 
 function processChunk(chunk: TabularChunk) {
     // parsedChunk is a 2d array of strings
@@ -192,7 +205,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div>
+    <div ref="scrollContainer" class="h-100 overflow-auto">
         <!-- TODO loading spinner locked to top right -->
         <GTable
             compact
