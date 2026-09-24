@@ -1,11 +1,33 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, onMounted } from "vue";
 
 import { useConfig } from "@/composables/config";
+import { useAdminExtensionsStore } from "@/stores/adminExtensionsStore";
 
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
+interface PanelItem {
+    id: string;
+    title: string;
+    route?: string;
+    href?: string;
+    disabled?: boolean;
+}
+
+interface PanelSection {
+    title: string;
+    items: PanelItem[];
+}
+
 const { config, isConfigLoaded } = useConfig();
+
+const adminExtensionsStore = useAdminExtensionsStore();
+const { extensions } = storeToRefs(adminExtensionsStore);
+
+onMounted(() => {
+    adminExtensionsStore.loadExtensions();
+});
 
 const adminProperties = computed(() => {
     return {
@@ -15,8 +37,21 @@ const adminProperties = computed(() => {
     };
 });
 
-const sections = computed(() => {
-    return [
+const extensionSections = computed<PanelSection[]>(() => {
+    return extensions.value.map((extension) => ({
+        title: extension.section,
+        items: extension.items.map((item) => {
+            const id = `admin-link-ext-${extension.id}-${item.id}`;
+            if (item.target === "new_tab") {
+                return { id, title: item.title, href: item.url };
+            }
+            return { id, title: item.title, route: `/admin/extensions/${extension.id}/${item.id}` };
+        }),
+    }));
+});
+
+const sections = computed<PanelSection[]>(() => {
+    const builtIn: PanelSection[] = [
         {
             title: "Server",
             items: [
@@ -120,6 +155,7 @@ const sections = computed(() => {
             ],
         },
     ];
+    return [...builtIn, ...extensionSections.value];
 });
 </script>
 
@@ -137,7 +173,20 @@ const sections = computed(() => {
                         </h2>
                         <div class="toolSectionBody">
                             <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="toolTitle">
-                                <router-link v-if="!item.disabled" :id="item.id" class="title-link" :to="item.route">
+                                <a
+                                    v-if="item.href"
+                                    :id="item.id"
+                                    class="title-link"
+                                    :href="item.href"
+                                    target="_blank"
+                                    rel="noopener noreferrer">
+                                    <span class="name">{{ item.title }}</span>
+                                </a>
+                                <router-link
+                                    v-else-if="!item.disabled && item.route"
+                                    :id="item.id"
+                                    class="title-link"
+                                    :to="item.route">
                                     <span class="name">{{ item.title }}</span>
                                 </router-link>
                             </div>
