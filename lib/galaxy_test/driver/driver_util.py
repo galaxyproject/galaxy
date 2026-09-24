@@ -32,6 +32,10 @@ from galaxy.model.database_utils import (
     database_exists,
 )
 from galaxy.model.tool_shed_install import mapping as toolshed_mapping
+from galaxy.tool_util.unittest_utils import (
+    functional_test_tool_directory,
+    functional_test_tool_path,
+)
 from galaxy.tool_util.verify.interactor import (
     GalaxyInteractorApi,
     verify_tool,
@@ -72,10 +76,12 @@ GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
 GALAXY_TEST_FILE_DIR = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
 TOOL_SHED_TEST_DATA = os.path.join(galaxy_root, "lib", "tool_shed", "test", "test_data")
 TEST_WEBHOOKS_DIR = os.path.join(galaxy_root, "test", "functional", "webhooks")
-FRAMEWORK_TOOLS_DIR = os.path.join(GALAXY_TEST_DIRECTORY, "functional", "tools")
-FRAMEWORK_UPLOAD_TOOL_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "upload_tool_conf.xml")
-FRAMEWORK_SAMPLE_TOOLS_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "sample_tool_conf.xml")
-FRAMEWORK_DATATYPES_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "sample_datatypes_conf.xml")
+# Shipped with galaxy-tool-util, so these resolve without a checkout. Each conf sets
+# tool_path="${tool_conf_dir}", which points at the directory it is loaded from.
+FRAMEWORK_TOOLS_DIR = functional_test_tool_directory()
+FRAMEWORK_UPLOAD_TOOL_CONF = functional_test_tool_path("upload_tool_conf.xml")
+FRAMEWORK_SAMPLE_TOOLS_CONF = functional_test_tool_path("sample_tool_conf.xml")
+FRAMEWORK_DATATYPES_CONF = functional_test_tool_path("sample_datatypes_conf.xml")
 MIGRATED_TOOL_PANEL_CONFIG = "config/migrated_tools_conf.xml"
 INSTALLED_TOOL_PANEL_CONFIGS = [os.environ.get("GALAXY_TEST_SHED_TOOL_CONF", "config/shed_tool_conf.xml")]
 DEFAULT_LOCALES = "en"
