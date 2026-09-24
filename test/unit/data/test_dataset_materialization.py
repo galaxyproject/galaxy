@@ -1,3 +1,6 @@
+import gzip
+
+import pytest
 from sqlalchemy import select
 
 from galaxy.files.unittest_utils import TestPosixConfiguredFileSources
@@ -409,6 +412,50 @@ def test_deferred_hdas_basic_attached_file_sources(tmpdir):
     assert path
     _assert_path_contains_2_bed(path)
     _assert_2_bed_metadata(materialized_hda)
+
+
+HDF5_CONTENTS = b"\x89HDF\r\n\x1a\n\x00\x00\x00\x00\x00\x08\x08\x00\x04\x00\x10\x00\r\x00\r\n"
+GZIPPED_CRLF_CONTENTS = gzip.compress(b"a\tb\r\n" * 1000, mtime=0)
+
+
+@pytest.mark.parametrize(
+    "filename,extension,contents",
+    [
+        ("dataset.h5ad", "h5ad", HDF5_CONTENTS),
+        ("dataset.txt.gz", "txt.gz", GZIPPED_CRLF_CONTENTS),
+    ],
+)
+def test_deferred_binary_contents_not_converted(tmpdir, filename, extension, contents):
+    assert b"\r" in contents
+    root = tmpdir / "root"
+    root.mkdir()
+    (root / filename).write_binary(contents)
+    file_sources = TestPosixConfiguredFileSources(str(root))
+    fixture_context = setup_fixture_context_with_history()
+    store_dict = deferred_hda_model_store_dict(source_uri=f"gxfiles://test1/{filename}", metadata_deferred=True)
+    serialized_hda = store_dict["datasets"][0]
+    serialized_hda["extension"] = extension
+    serialized_hda["file_metadata"]["hashes"] = []
+    serialized_hda["file_metadata"]["sources"][0]["requested_transform"] = [
+        {"action": "datatype_groom"},
+        {"action": "to_posix_lines"},
+        {"action": "spaces_to_tabs"},
+    ]
+    perform_import_from_store_dict(fixture_context, store_dict)
+    deferred_hda = fixture_context.history.datasets[0]
+    materializer = materializer_factory(
+        True,
+        object_store=fixture_context.app.object_store,
+        file_sources=file_sources,
+    )
+    materialized_hda = materializer.ensure_materialized(deferred_hda)
+    materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
+    assert materialized_dataset.state == "ok"
+    assert materialized_dataset.sources[0].transform == []
+    path = fixture_context.app.object_store.get_filename(materialized_dataset)
+    with open(path, "rb") as f:
+        assert f.read() == contents
 
 
 def test_deferred_hdas_with_deferred_metadata():

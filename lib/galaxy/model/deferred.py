@@ -13,6 +13,7 @@ from sqlalchemy.orm.exc import DetachedInstanceError
 
 from galaxy.datatypes.sniff import (
     convert_function,
+    FilePrefix,
     stream_url_to_file,
 )
 from galaxy.exceptions import ObjectAttributeInvalidException
@@ -282,7 +283,7 @@ class DatasetInstanceMaterializer:
                 datatype_groom = True
             else:
                 raise Exception(f"Failed to materialize dataset, unknown transformation action {action} applied.")
-        if to_posix_lines or spaces_to_tabs:
+        if (to_posix_lines or spaces_to_tabs) and _is_convertible_text(path):
             convert_fxn = convert_function(to_posix_lines, spaces_to_tabs)
             convert_result = convert_fxn(path, False)
             assert convert_result.converted_path
@@ -325,6 +326,12 @@ class DatasetInstanceMaterializer:
             # TODO: implement test case...
             raise ObjectAttributeInvalidException("dataset does not contain any valid dataset sources")
         return best_source
+
+
+def _is_convertible_text(path: str) -> bool:
+    """Line ending and space conversion only applies to uncompressed text, as in regular uploads."""
+    file_prefix = FilePrefix(path)
+    return not file_prefix.binary and not file_prefix.compressed_format
 
 
 CollectionInputT = Union[HistoryDatasetCollectionAssociation, DatasetCollectionElement]
