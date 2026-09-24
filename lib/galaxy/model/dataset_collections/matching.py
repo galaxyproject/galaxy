@@ -3,6 +3,7 @@ from collections.abc import (
     Iterable,
 )
 from dataclasses import dataclass
+from itertools import product
 from typing import (
     Any,
     Optional,
@@ -25,10 +26,43 @@ class MatchingCollectionAxis:
 
     structure: Any
     axis_id: Hashable | None = None
+    axis_components: tuple[tuple[Hashable, int, int], ...] | None = None
+
+    def __post_init__(self):
+        if self.axis_components is None:
+            return
+
+        # A component identity must select exactly one part of the coordinate
+        # path. Refining an axis can rediscover the same component at a deeper
+        # rank, so retain its widest span and make the primary identity denote
+        # the complete refined axis.
+        components_by_id = {}
+        for component_id, start, stop in self.axis_components:
+            existing = components_by_id.get(component_id)
+            if existing is None or stop - start > existing[2] - existing[1]:
+                components_by_id[component_id] = (component_id, start, stop)
+        if self.axis_id is not None:
+            rank = len(self.structure.collection_type_description.collection_type.split(":"))
+            components_by_id[self.axis_id] = (self.axis_id, 0, rank)
+        self.axis_components = tuple(components_by_id.values())
 
     def coordinates(self):
         for coordinate_index, path in enumerate(self.structure.walk_coordinates()):
             yield path, coordinate_index
+
+    def components(self):
+        if self.axis_components is not None:
+            return self.axis_components
+        if self.axis_id is None:
+            return ()
+        rank = len(self.structure.collection_type_description.collection_type.split(":"))
+        return ((self.axis_id, 0, rank),)
+
+    def component_path_slice(self, axis_id):
+        for component_id, start, stop in self.components():
+            if component_id == axis_id:
+                return start, stop
+        return None
 
 
 @dataclass
@@ -38,6 +72,7 @@ class MatchingCollectionBinding:
     collection: Any
     axis_indices: tuple[int, ...]
     subcollection_type: Any = None
+    axis_path_slices: tuple[tuple[int | None, int | None], ...] | None = None
 
 
 @dataclass
@@ -69,6 +104,9 @@ class CollectionsToMatch:
 
     def items(self):
         return self.collections.items()
+
+    def pop(self, input_name):
+        return self.collections.pop(input_name)
 
 
 class MatchingCollections:
@@ -114,6 +152,10 @@ class MatchingCollections:
         return self._slices()
 
     def _slices(self):
+        # An empty known outer axis makes the whole product empty. Avoid
+        # querying the cardinality of a later uninitialized axis in that case.
+        if any(axis.structure.children_known and len(axis.structure) == 0 for axis in self.mapping_axes):
+            return
         axis_cardinalities = tuple(len(axis.structure) for axis in self.mapping_axes)
         for condition in self.conditions:
             condition_count = self._condition_coordinate_count(condition, axis_cardinalities)
@@ -163,7 +205,13 @@ class MatchingCollections:
 
     @staticmethod
     def _slice_binding(binding, coordinate_paths):
-        path = tuple(index for axis_index in binding.axis_indices for index in coordinate_paths[axis_index])
+        path = ()
+        for binding_axis_index, axis_index in enumerate(binding.axis_indices):
+            coordinate_path = coordinate_paths[axis_index]
+            if binding.axis_path_slices:
+                start, stop = binding.axis_path_slices[binding_axis_index]
+                coordinate_path = coordinate_path[start:stop]
+            path += coordinate_path
         collection = get_collection(binding.collection)
         element = None
         for depth, index in enumerate(path):
@@ -223,7 +271,7 @@ class MatchingCollections:
             if local_axis.axis_id is not None:
                 for inherited_index, inherited_axis in enumerate(axes):
                     if local_axis.axis_id == inherited_axis.axis_id:
-                        if not self._axes_have_compatible_shape(local_axis, inherited_axis):
+                        if not self._axis_is_covered_by_inherited(local_axis, inherited_axis):
                             raise exceptions.MessageException(CANNOT_MATCH_ERROR_MESSAGE)
                         combined_index = inherited_index
                         break
@@ -237,6 +285,7 @@ class MatchingCollections:
                 collection=binding.collection,
                 axis_indices=tuple(dict.fromkeys(local_axis_indices[index] for index in binding.axis_indices)),
                 subcollection_type=binding.subcollection_type,
+                axis_path_slices=binding.axis_path_slices,
             )
             for name, binding in self.bindings.items()
         }
@@ -253,6 +302,84 @@ class MatchingCollections:
         combined.subcollection_types = self.subcollection_types.copy()
         return combined
 
+    def without_bindings(self) -> "MatchingCollections":
+        """Retain mapping coordinates and conditions for a nested execution context."""
+        return self.from_axes(self.mapping_axes, conditions=self.conditions)
+
+    def extend_context(self, axes: Iterable[MatchingCollectionAxis]) -> "MatchingCollections":
+        """Add axes not already present in this execution context."""
+        combined_axes = list(self.mapping_axes)
+        for axis in axes:
+            for existing_axis in combined_axes:
+                if axis.axis_id is not None and axis.axis_id == existing_axis.axis_id:
+                    if not self._axis_is_covered_by_inherited(axis, existing_axis):
+                        raise exceptions.MessageException(CANNOT_MATCH_ERROR_MESSAGE)
+                    break
+            else:
+                combined_axes.append(axis)
+        return self.from_axes(combined_axes, conditions=self.conditions)
+
+    def refine_axis(
+        self,
+        axis_id: Hashable,
+        structure,
+        axis_components: tuple[tuple[Hashable, int, int], ...] | None = None,
+    ) -> "MatchingCollections":
+        """Replace an axis with a nested refinement while preserving its identity."""
+        axes = list(self.mapping_axes)
+        axis_index = next(
+            (index for index, axis in enumerate(axes) if axis.axis_id == axis_id),
+            None,
+        )
+        if axis_index is None:
+            raise exceptions.MessageException(CANNOT_MATCH_ERROR_MESSAGE)
+        old_axis = axes[axis_index]
+        old_types = old_axis.structure.collection_type_description.collection_type.split(":")
+        new_types = structure.collection_type_description.collection_type.split(":")
+        if len(new_types) < len(old_types) or new_types[: len(old_types)] != old_types:
+            raise exceptions.MessageException(CANNOT_MATCH_ERROR_MESSAGE)
+        if not old_axis.structure.children_known or not structure.children_known:
+            raise exceptions.MessageException(CANNOT_MATCH_ERROR_MESSAGE)
+        old_paths = [path for path, _ordinal in old_axis.coordinates()]
+        new_axis = MatchingCollectionAxis(
+            structure,
+            axis_id,
+            axis_components=axis_components if axis_components is not None else old_axis.components(),
+        )
+        new_paths = [path for path, _ordinal in new_axis.coordinates()]
+        new_to_old = []
+        for new_path in new_paths:
+            matching_old = [index for index, old_path in enumerate(old_paths) if new_path[: len(old_path)] == old_path]
+            if len(matching_old) != 1:
+                raise exceptions.MessageException(CANNOT_MATCH_ERROR_MESSAGE)
+            new_to_old.append(matching_old[0])
+        axes[axis_index] = new_axis
+
+        old_cardinalities = [len(axis.structure) for axis in self.mapping_axes]
+        new_cardinalities = [len(axis.structure) for axis in axes]
+        conditions = []
+        for condition in self.conditions:
+            if axis_index not in condition.axis_indices or len(condition.values) == 1:
+                conditions.append(condition)
+                continue
+            values = []
+            condition_cardinalities = [new_cardinalities[index] for index in condition.axis_indices]
+            for new_ordinals in product(*(range(cardinality) for cardinality in condition_cardinalities)):
+                old_ordinals = list(new_ordinals)
+                refined_position = condition.axis_indices.index(axis_index)
+                old_ordinals[refined_position] = new_to_old[new_ordinals[refined_position]]
+                old_index = 0
+                for condition_axis_index, ordinal in zip(condition.axis_indices, old_ordinals):
+                    old_index *= old_cardinalities[condition_axis_index]
+                    old_index += ordinal
+                values.append(condition.values[old_index])
+            conditions.append(MatchingCollectionCondition(condition.axis_indices, values))
+
+        refined = self.from_axes(axes, bindings=self.bindings.copy(), conditions=conditions)
+        refined.collections = self.collections.copy()
+        refined.subcollection_types = self.subcollection_types.copy()
+        return refined
+
     @staticmethod
     def _axes_have_compatible_shape(left, right):
         left_structure = left.structure
@@ -260,6 +387,41 @@ class MatchingCollections:
         if left_structure.children_known and right_structure.children_known:
             return left_structure.compatible_shape(right_structure)
         return left_structure.collection_type_description.compatible(right_structure.collection_type_description)
+
+    @classmethod
+    def _axes_have_compatible_or_refined_shape(cls, left, right):
+        if cls._axes_have_compatible_shape(left, right):
+            return True
+        left_rank = len(left.structure.collection_type_description.collection_type.split(":"))
+        right_rank = len(right.structure.collection_type_description.collection_type.split(":"))
+        if left_rank == right_rank:
+            return False
+        shallow, deep = (left, right) if left_rank < right_rank else (right, left)
+        shallow_types = shallow.structure.collection_type_description.collection_type.split(":")
+        deep_types = deep.structure.collection_type_description.collection_type.split(":")
+        if deep_types[: len(shallow_types)] != shallow_types:
+            return False
+        if not shallow.structure.children_known or not deep.structure.children_known:
+            return True
+        shallow_paths = [path for path, _ordinal in shallow.coordinates()]
+        deep_paths = [path for path, _ordinal in deep.coordinates()]
+        return all(
+            sum(deep_path[: len(shallow_path)] == shallow_path for shallow_path in shallow_paths) == 1
+            for deep_path in deep_paths
+        ) and (bool(shallow_paths) or not deep_paths)
+
+    @classmethod
+    def _axis_is_covered_by_inherited(cls, local, inherited):
+        if cls._axes_have_compatible_shape(local, inherited):
+            return True
+
+        # A nested workflow may rediscover only the remaining suffix of an
+        # axis that was established at its callable boundary. The inherited
+        # structure owns the complete coordinate path in that case; retaining
+        # it lets the local binding be sliced at the correct nested depth.
+        local_types = local.structure.collection_type_description.collection_type.split(":")
+        inherited_types = inherited.structure.collection_type_description.collection_type.split(":")
+        return len(local_types) < len(inherited_types) and inherited_types[-len(local_types) :] == local_types
 
     def map_over_action_tuples(self, input_name):
         if input_name not in self.action_tuples:

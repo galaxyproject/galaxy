@@ -4,6 +4,7 @@ from galaxy.model.dataset_collections import (
     registry,
     type_description,
 )
+from galaxy.model.dataset_collections.structure import UninitializedTree
 
 TYPE_REGISTRY = registry.DatasetCollectionTypesRegistry()
 TYPE_DESCRIPTION_FACTORY = type_description.CollectionTypeDescriptionFactory(TYPE_REGISTRY)
@@ -78,6 +79,20 @@ def test_empty_axis_produces_no_slices_and_keeps_output_type():
     assert matched.structure.collection_type_description.collection_type == "list"
 
 
+def test_empty_outer_axis_short_circuits_unknown_inner_axis():
+    empty = build_matching_collections(
+        ("empty", collection_instance(collection_type="list", elements=[]))
+    ).mapping_axes[0]
+    unknown = matching.MatchingCollectionAxis(
+        UninitializedTree(TYPE_DESCRIPTION_FACTORY.for_collection_type("list")),
+        "unknown-inner",
+    )
+    matched = matching.MatchingCollections.from_axes([empty, unknown])
+
+    assert list(matched.slice_collections()) == []
+    assert matched.structure.collection_type_description.collection_type == "list:list"
+
+
 def test_structure_only_axis_repeats_local_slices_and_conditions():
     outer = list_instance(ids=["X", "Y"])
     inner = list_instance(ids=["P", "Q", "R"])
@@ -145,6 +160,78 @@ def test_binding_can_span_multiple_axes():
     ]
 
 
+def test_refined_linked_axis_broadcasts_prefix_binding_across_suffix():
+    outer = build_matching_collections(("outer", list_instance(ids=["X", "Y"]))).mapping_axes[0]
+    inner = collection_instance(
+        collection_type="list:paired",
+        elements=[
+            collection_element("P", collection("paired", [hda_element("PF"), hda_element("PR")])),
+            collection_element("Q", collection("paired", [hda_element("QF"), hda_element("QR")])),
+        ],
+    )
+    refined_inner = build_matching_collections(("inner", inner)).mapping_axes[0]
+    nested = collection_instance(
+        collection_type="list:list:paired",
+        elements=[
+            collection_element("X", inner.collection),
+            collection_element(
+                "Y",
+                collection(
+                    "list:paired",
+                    [
+                        collection_element("P", collection("paired", [hda_element("YPF"), hda_element("YPR")])),
+                        collection_element("Q", collection("paired", [hda_element("YQF"), hda_element("YQR")])),
+                    ],
+                ),
+            ),
+        ],
+    )
+    peer = collection_instance(
+        collection_type="list:list",
+        elements=[
+            collection_element("X", list_instance(ids=["XP", "XQ"]).collection),
+            collection_element("Y", list_instance(ids=["YP", "YQ"]).collection),
+        ],
+    )
+    combined = matching.MatchingCollections.from_axes(
+        [outer, refined_inner],
+        bindings={
+            "nested": matching.MatchingCollectionBinding(
+                collection=nested,
+                axis_indices=(0, 1),
+                axis_path_slices=((0, None), (0, None)),
+            ),
+            "peer": matching.MatchingCollectionBinding(
+                collection=peer,
+                axis_indices=(0, 1),
+                axis_path_slices=((0, None), (0, 1)),
+            ),
+        },
+    )
+
+    slices = list(combined.slice_collections())
+    assert [items["peer"].element_identifier for items, _when in slices] == [
+        "XP",
+        "XP",
+        "XQ",
+        "XQ",
+        "YP",
+        "YP",
+        "YQ",
+        "YQ",
+    ]
+    assert [items["nested"].element_identifier for items, _when in slices] == [
+        "PF",
+        "PR",
+        "QF",
+        "QR",
+        "YPF",
+        "YPR",
+        "YQF",
+        "YQR",
+    ]
+
+
 def test_nested_axis_conditions_are_indexed_by_leaf_coordinate():
     nested = collection_instance(
         collection_type="list:list",
@@ -186,6 +273,114 @@ def test_equal_axis_identity_is_shared_when_composing_mapping():
 
     assert len(combined.mapping_axes) == 1
     assert [items["tool_input"].element_identifier for items, _when in combined.slice_collections()] == ["X", "Y"]
+
+
+def test_inherited_axis_covers_locally_rediscovered_suffix():
+    source = collection_instance(
+        collection_type="list:list:list",
+        elements=[
+            collection_element(
+                "X",
+                collection(
+                    "list:list",
+                    [
+                        collection_element("P", list_instance(ids=["XP1", "XP2"]).collection),
+                        collection_element("Q", list_instance(ids=["XQ1", "XQ2"]).collection),
+                    ],
+                ),
+            )
+        ],
+    )
+    inherited_to_match = matching.CollectionsToMatch()
+    inherited_to_match.add(
+        "boundary",
+        source,
+        subcollection_type=TYPE_DESCRIPTION_FACTORY.for_collection_type("list"),
+        axis_id="boundary-axis",
+    )
+    inherited = matching.MatchingCollections.for_collections(inherited_to_match, TYPE_DESCRIPTION_FACTORY)
+    assert inherited
+    assert inherited.structure.collection_type_description.collection_type == "list:list"
+
+    local_to_match = matching.CollectionsToMatch()
+    local_to_match.add(
+        "tool_input",
+        source,
+        subcollection_type=TYPE_DESCRIPTION_FACTORY.for_collection_type("list:list"),
+        axis_id="boundary-axis",
+    )
+    local = matching.MatchingCollections.for_collections(local_to_match, TYPE_DESCRIPTION_FACTORY)
+    assert local
+    assert local.structure.collection_type_description.collection_type == "list"
+
+    combined = local.with_inherited_mapping(inherited)
+
+    assert len(combined.mapping_axes) == 1
+    assert [items["tool_input"].element_identifier for items, _when in combined.slice_collections()] == ["P", "Q"]
+
+
+def test_inherited_axis_can_be_refined_by_ragged_materialized_output():
+    outer = list_instance(ids=["X", "Y"])
+    inherited = build_matching_collections_with_axis_id("boundary", outer)
+    inherited.when_values = [True, False]
+    inherited = inherited.without_bindings()
+    nested = collection_instance(
+        collection_type="list:list",
+        elements=[
+            collection_element("X", list_instance(ids=["XP", "XQ"]).collection),
+            collection_element("Y", list_instance(ids=["YR", "YS", "YT"]).collection),
+        ],
+    )
+    nested_structure = build_matching_collections(("nested", nested)).mapping_axes[0].structure
+
+    refined = inherited.refine_axis(("source-terminal", "boundary"), nested_structure)
+    refined.bindings = {
+        "nested": matching.MatchingCollectionBinding(
+            collection=nested,
+            axis_indices=(0,),
+            axis_path_slices=((0, None),),
+        ),
+        "outer": matching.MatchingCollectionBinding(
+            collection=outer,
+            axis_indices=(0,),
+            axis_path_slices=((0, 1),),
+        ),
+    }
+
+    slices = list(refined.slice_collections())
+    assert refined.structure.collection_type_description.collection_type == "list:list"
+    assert [items["nested"].element_identifier for items, _when in slices] == ["XP", "XQ", "YR", "YS", "YT"]
+    assert [items["outer"].element_identifier for items, _when in slices] == ["X", "X", "Y", "Y", "Y"]
+    assert [when for _items, when in slices] == [True, True, False, False, False]
+
+
+def test_empty_inherited_axis_can_be_refined_without_unknown_cardinality():
+    empty_outer = collection_instance(collection_type="list", elements=[])
+    inherited = build_matching_collections_with_axis_id("boundary", empty_outer).without_bindings()
+    empty_nested = collection_instance(collection_type="list:list", elements=[])
+    nested_structure = build_matching_collections(("nested", empty_nested)).mapping_axes[0].structure
+
+    refined = inherited.refine_axis(("source-terminal", "boundary"), nested_structure)
+
+    assert list(refined.slice_collections()) == []
+    assert refined.structure.collection_type_description.collection_type == "list:list"
+
+
+def test_primary_axis_component_always_selects_the_complete_refined_path():
+    nested = collection_instance(
+        collection_type="list:list",
+        elements=[collection_element("X", list_instance(ids=["XP", "XQ"]).collection)],
+    )
+    structure = build_matching_collections(("nested", nested)).mapping_axes[0].structure
+
+    axis = matching.MatchingCollectionAxis(
+        structure,
+        "linked",
+        (("source-local", 0, 2), ("linked", 0, 1), ("linked", 0, 2)),
+    )
+
+    assert axis.component_path_slice("linked") == (0, 2)
+    assert [component for component in axis.components() if component[0] == "linked"] == [("linked", 0, 2)]
 
 
 def test_same_collection_in_distinct_semantic_roles_remains_two_axes():
