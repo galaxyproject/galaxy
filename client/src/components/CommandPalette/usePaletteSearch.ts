@@ -10,7 +10,7 @@ import { isPaletteFetchError } from "./providers/errors";
 import { isProviderEnabled, type ScopeDefinition } from "./providers/scopes";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ResultSection } from "./types";
 import type { PaletteMode } from "./usePaletteMachine";
-import { BACKEND_RANKED_SCORE, scorePaletteItems } from "./utilities";
+import { BACKEND_RANKED_SCORE, isScopeTokenLike, scorePaletteItems } from "./utilities";
 
 const SEARCH_DEBOUNCE = 150;
 /** Cap per section on an empty query so defaults stay scannable */
@@ -116,12 +116,14 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
         if (!provider || !isProviderEnabled(providerId, ctx)) {
             return [];
         }
+        // an `xy:` still being typed is a filter, not a term for any backend
+        const localOnly = isScopeTokenLike(query.value);
         return withoutFailing(
             providerId,
             () =>
                 !query.value && provider.emptyQueryItems
                     ? provider.emptyQueryItems(ctx).slice(0, MAX_EMPTY_QUERY_ITEMS)
-                    : provider.search(query.value, ctx),
+                    : provider.search(query.value, ctx, { localOnly }),
             [],
         );
     }

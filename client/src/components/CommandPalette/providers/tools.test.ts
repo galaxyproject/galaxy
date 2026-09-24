@@ -99,15 +99,14 @@ describe("toolsProvider", () => {
         expect(backendSearches()).toEqual([]);
     });
 
-    it("keeps an unknown scope token out of the backend search", async () => {
+    it("matches a local-only query against the toolbox without a backend search", async () => {
         mockToolsApi();
         await hydrateToolStore();
         vi.mocked(axios.get).mockClear();
 
-        // `it:` is gated off on this instance, so it stays plain root text —
-        // but it is a filter the user is typing, not a tool to search for
-        await toolsProvider.search("it:", makeCtx());
+        const items = await toolsProvider.search("fastqc", makeCtx(), { localOnly: true });
 
+        expect(items.map((i) => i.id)).toEqual(["tools:fastqc_id"]);
         expect(backendSearches()).toEqual([]);
     });
 
