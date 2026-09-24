@@ -1,26 +1,51 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
-import { afterEach, describe, expect, it } from "vitest";
+import flushPromises from "flush-promises";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import GDropdown from "./GDropdown.vue";
+import GDropdownForm from "./GDropdownForm.vue";
 import GDropdownGroup from "./GDropdownGroup.vue";
 import GDropdownItem from "./GDropdownItem.vue";
+import GDropdownItemButton from "./GDropdownItemButton.vue";
 
 const localVue = getLocalVue();
 localVue.use(VueRouter);
 
 let wrapper: Wrapper<Vue> | undefined;
 
-function mountDropdown(items: string) {
+function mountTemplate(template: string, methods: Record<string, () => void> = {}) {
     wrapper = mount(
         {
-            components: { GDropdown, GDropdownGroup, GDropdownItem },
-            template: `<GDropdown text="Menu">${items}</GDropdown>`,
+            components: { GDropdown, GDropdownForm, GDropdownGroup, GDropdownItem, GDropdownItemButton },
+            template: `<div>${template}<button id="outside">Outside</button></div>`,
+            methods,
         } as object,
         { localVue, router: new VueRouter({ mode: "history" }), attachTo: document.body },
     );
     return wrapper;
+}
+
+function mountDropdown(items: string, methods: Record<string, () => void> = {}) {
+    return mountTemplate(`<GDropdown text="Menu">${items}</GDropdown>`, methods);
+}
+
+const MENU = `
+    <GDropdownItem>One</GDropdownItem>
+    <GDropdownItem disabled>Two</GDropdownItem>
+    <GDropdownItemButton>Three</GDropdownItemButton>
+    <GDropdownItemButton disabled>Four</GDropdownItemButton>
+    <GDropdownItem>Five</GDropdownItem>`;
+
+function focusedText() {
+    return document.activeElement?.textContent?.trim();
+}
+
+async function press(element: Wrapper<Vue> | Element, key: string, shiftKey = false) {
+    const target = "element" in element ? element.element : element;
+    target.dispatchEvent(new KeyboardEvent("keydown", { key, shiftKey, bubbles: true, cancelable: true }));
+    await flushPromises();
 }
 
 function isMenuOpen(wrapper: Wrapper<Vue>) {
@@ -122,6 +147,189 @@ describe("GDropdown.vue", () => {
             await wrapper.get("a.dropdown-item").trigger("click");
 
             expect(isMenuOpen(wrapper)).toBe(false);
+        });
+    });
+
+    describe("keyboard", () => {
+        it("opens with ArrowDown on the toggle and focuses the first item", async () => {
+            const wrapper = mountDropdown(MENU);
+
+            await press(wrapper.get(".dropdown-toggle"), "ArrowDown");
+
+            expect(isMenuOpen(wrapper)).toBe(true);
+            expect(focusedText()).toBe("One");
+        });
+
+        it("opens with ArrowUp on the toggle and focuses the last item", async () => {
+            const wrapper = mountDropdown(MENU);
+
+            await press(wrapper.get(".dropdown-toggle"), "ArrowUp");
+
+            expect(focusedText()).toBe("Five");
+        });
+
+        it("focuses the first item when opened with Enter or Space, but not with the mouse", async () => {
+            const wrapper = mountDropdown(MENU);
+            const toggle = wrapper.get(".dropdown-toggle");
+
+            // keyboard activation dispatches a click with no click count
+            await toggle.trigger("click");
+            await flushPromises();
+            expect(focusedText()).toBe("One");
+
+            await press(document.activeElement!, "Escape");
+            toggle.element.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 }));
+            await flushPromises();
+            expect(isMenuOpen(wrapper)).toBe(true);
+            expect(document.activeElement).toBe(toggle.element);
+        });
+
+        it("moves between enabled items with the arrow keys, Home and End", async () => {
+            const wrapper = mountDropdown(MENU);
+            await press(wrapper.get(".dropdown-toggle"), "ArrowDown");
+
+            await press(document.activeElement!, "ArrowDown");
+            expect(focusedText()).toBe("Three");
+            await press(document.activeElement!, "ArrowDown");
+            expect(focusedText()).toBe("Five");
+            await press(document.activeElement!, "ArrowDown");
+            expect(focusedText()).toBe("One");
+            await press(document.activeElement!, "ArrowUp");
+            expect(focusedText()).toBe("Five");
+            await press(document.activeElement!, "Home");
+            expect(focusedText()).toBe("One");
+            await press(document.activeElement!, "End");
+            expect(focusedText()).toBe("Five");
+        });
+
+        it("keeps items out of the tab order and marks disabled ones", () => {
+            const wrapper = mountDropdown(MENU);
+
+            const items = wrapper.findAll("[role='menuitem']").wrappers;
+            expect(items.map((item) => item.attributes("tabindex"))).toEqual(["-1", "-1", "-1", "-1", "-1"]);
+            expect(items[1]?.attributes("aria-disabled")).toBe("true");
+            expect(items[3]?.attributes("disabled")).toBe("disabled");
+        });
+
+        it("closes on Escape and returns focus to the toggle", async () => {
+            const wrapper = mountDropdown(MENU);
+            await press(wrapper.get(".dropdown-toggle"), "ArrowDown");
+
+            await press(document.activeElement!, "Escape");
+
+            expect(isMenuOpen(wrapper)).toBe(false);
+            expect(document.activeElement).toBe(wrapper.get(".dropdown-toggle").element);
+        });
+
+        it("leaves Escape alone while closed so enclosing dialogs still get it", async () => {
+            const wrapper = mountDropdown(MENU);
+            const onParentKeydown = vi.fn();
+            wrapper.element.addEventListener("keydown", onParentKeydown);
+
+            await press(wrapper.get(".dropdown-toggle"), "Escape");
+
+            expect(onParentKeydown).toHaveBeenCalledOnce();
+        });
+
+        it("stays open while Tab moves focus to a control inside the menu", async () => {
+            const wrapper = mountDropdown(`
+                <GDropdownGroup>
+                    <template v-slot:header><input id="filter" /></template>
+                    <GDropdownItem>One</GDropdownItem>
+                </GDropdownGroup>
+                <GDropdownForm><input id="remember" type="checkbox" /></GDropdownForm>`);
+            await press(wrapper.get(".dropdown-toggle"), "ArrowDown");
+            expect(focusedText()).toBe("One");
+
+            // jsdom does not move focus on Tab, so do what the browser would
+            await press(document.activeElement!, "Tab", true);
+            (wrapper.get("#filter").element as HTMLElement).focus();
+            await flushPromises();
+            expect(isMenuOpen(wrapper)).toBe(true);
+
+            await press(document.activeElement!, "Tab");
+            (wrapper.get("#remember").element as HTMLElement).focus();
+            await flushPromises();
+            expect(isMenuOpen(wrapper)).toBe(true);
+        });
+
+        it("closes when focus moves outside, without pulling it back to the toggle", async () => {
+            const wrapper = mountDropdown(MENU);
+            await press(wrapper.get(".dropdown-toggle"), "ArrowDown");
+
+            await press(document.activeElement!, "Tab");
+            expect(isMenuOpen(wrapper)).toBe(true);
+            (wrapper.get("#outside").element as HTMLElement).focus();
+            await flushPromises();
+
+            expect(isMenuOpen(wrapper)).toBe(false);
+            expect(document.activeElement).toBe(wrapper.get("#outside").element);
+        });
+
+        it("activates link items with Space and returns focus to the toggle", async () => {
+            const onSelect = vi.fn();
+            const wrapper = mountDropdown(`<GDropdownItem @click="onSelect">One</GDropdownItem>`, { onSelect });
+            await press(wrapper.get(".dropdown-toggle"), "ArrowDown");
+
+            await press(document.activeElement!, " ");
+
+            expect(onSelect).toHaveBeenCalledOnce();
+            expect(isMenuOpen(wrapper)).toBe(false);
+            expect(document.activeElement).toBe(wrapper.get(".dropdown-toggle").element);
+        });
+
+        it("keeps the keys it handles from ancestors, such as Bootstrap's document handler", async () => {
+            const wrapper = mountDropdown(MENU);
+            const onAncestorKeydown = vi.fn();
+            wrapper.element.addEventListener("keydown", onAncestorKeydown);
+
+            await press(wrapper.get(".dropdown-toggle"), "ArrowDown");
+            for (const key of ["ArrowDown", "ArrowUp", "Home", "End", "Enter", " "]) {
+                await press(document.activeElement!, key);
+            }
+            expect(onAncestorKeydown).not.toHaveBeenCalled();
+
+            await press(wrapper.get(".dropdown-toggle"), "a");
+            expect(onAncestorKeydown).toHaveBeenCalledOnce();
+        });
+
+        it("leaves keys typed into a control inside the menu alone", async () => {
+            const wrapper = mountDropdown(`<GDropdownForm><input id="name" /></GDropdownForm>${MENU}`);
+            await openMenu(wrapper);
+            const input = wrapper.get("#name").element as HTMLInputElement;
+            input.focus();
+
+            for (const key of ["ArrowDown", "ArrowUp", "Home", "End", " "]) {
+                const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+                input.dispatchEvent(event);
+                await flushPromises();
+                expect(event.defaultPrevented).toBe(false);
+                expect(document.activeElement).toBe(input);
+            }
+        });
+
+        it("lets a nested dropdown handle its own arrow keys", async () => {
+            const wrapper = mountTemplate(`
+                <GDropdown text="Outer">
+                    <GDropdownItem>Outer one</GDropdownItem>
+                    <GDropdownForm>
+                        <GDropdown text="Inner">
+                            <GDropdownItem>Inner one</GDropdownItem>
+                            <GDropdownItem>Inner two</GDropdownItem>
+                        </GDropdown>
+                    </GDropdownForm>
+                    <GDropdownItem>Outer two</GDropdownItem>
+                </GDropdown>`);
+            const [outerToggle, innerToggle] = wrapper.findAll(".dropdown-toggle").wrappers;
+            await press(outerToggle!, "ArrowDown");
+            (innerToggle!.element as HTMLElement).focus();
+            await press(innerToggle!, "ArrowDown");
+            expect(focusedText()).toBe("Inner one");
+
+            await press(document.activeElement!, "ArrowDown");
+            expect(focusedText()).toBe("Inner two");
+            await press(document.activeElement!, "ArrowDown");
+            expect(focusedText()).toBe("Inner one");
         });
     });
 });

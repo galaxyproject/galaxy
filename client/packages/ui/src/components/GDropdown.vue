@@ -4,6 +4,7 @@
  * Uses Bootstrap 4 CSS classes for styling, native DOM for click-outside.
  * Supports toggle text/slot, right-aligned menus, sizes, variants,
  * split buttons, dropup, no-caret, and menu/toggle class customization.
+ * Keyboard support follows the WAI-ARIA APG menu button pattern.
  */
 
 import { computed, nextTick, onBeforeUnmount, provide, ref } from "vue";
@@ -65,6 +66,7 @@ const emit = defineEmits<{
 
 const isOpen = ref(false);
 const dropdownEl = ref<HTMLDivElement>();
+const toggleEl = ref<HTMLButtonElement>();
 const menuEl = ref<HTMLDivElement>();
 const hasBeenOpened = ref(false);
 
@@ -94,22 +96,103 @@ function show() {
     hasBeenOpened.value = true;
     emit("show");
     nextTick(() => {
-        document.addEventListener("click", onClickOutside, true);
+        if (isOpen.value) {
+            document.addEventListener("click", onOutsideEvent, true);
+            document.addEventListener("focusin", onOutsideEvent, true);
+        }
     });
 }
 
-function hide() {
+function removeOutsideListeners() {
+    document.removeEventListener("click", onOutsideEvent, true);
+    document.removeEventListener("focusin", onOutsideEvent, true);
+}
+
+function hide(restoreFocus = true) {
     if (!isOpen.value) {
         return;
     }
+    // Focus would otherwise be lost to the page once the menu holding it is hidden
+    const focusInMenu = !!menuEl.value?.contains(document.activeElement);
     isOpen.value = false;
     emit("hide");
-    document.removeEventListener("click", onClickOutside, true);
+    removeOutsideListeners();
+    if (restoreFocus && focusInMenu) {
+        toggleEl.value?.focus();
+    }
 }
 
-function onClickOutside(event: Event) {
+function onOutsideEvent(event: Event) {
     if (dropdownEl.value && !dropdownEl.value.contains(event.target as Node)) {
+        hide(false);
+    }
+}
+
+function ownsMenuItem(element: HTMLElement) {
+    // Items of a nested dropdown belong to its menu, which handles its own keys
+    return element.closest('[role="menu"]') === menuEl.value;
+}
+
+function getMenuItems() {
+    const selector = '[role="menuitem"]:not([disabled]):not([aria-disabled="true"])';
+    return Array.from(menuEl.value?.querySelectorAll<HTMLElement>(selector) ?? []).filter(ownsMenuItem);
+}
+
+/** Focuses the item at `index`, wrapping around at both ends; -1 is the last item. */
+function focusMenuItem(index: number) {
+    const items = getMenuItems();
+    if (items.length) {
+        items[(index + items.length) % items.length]?.focus();
+    }
+}
+
+async function openAndFocusMenuItem(index: number) {
+    show();
+    await nextTick();
+    focusMenuItem(index);
+}
+
+function onToggleClick(event: MouseEvent) {
+    toggle(event);
+    // Clicks synthesized from Enter/Space have no click count
+    if (isOpen.value && event.detail === 0) {
+        nextTick(() => focusMenuItem(0));
+    }
+}
+
+function onKeydown(event: KeyboardEvent) {
+    const target = event.target as HTMLElement;
+    const onToggle = target === toggleEl.value;
+    const onMenuItem = target.getAttribute("role") === "menuitem" && ownsMenuItem(target);
+    const inMenuNavigation = onMenuItem || target === menuEl.value;
+    let handled = true;
+
+    if (event.key === "ArrowDown" && onToggle) {
+        openAndFocusMenuItem(0);
+    } else if (event.key === "ArrowUp" && onToggle) {
+        openAndFocusMenuItem(-1);
+    } else if (event.key === "ArrowDown" && inMenuNavigation) {
+        focusMenuItem(getMenuItems().indexOf(target) + 1);
+    } else if (event.key === "ArrowUp" && inMenuNavigation) {
+        focusMenuItem(Math.max(getMenuItems().indexOf(target), 0) - 1);
+    } else if ((event.key === "Home" || event.key === "End") && inMenuNavigation) {
+        focusMenuItem(event.key === "Home" ? 0 : -1);
+    } else if (event.key === "Escape" && isOpen.value) {
         hide();
+    } else if (event.key === " " && onMenuItem) {
+        // Space does not activate links natively
+        target.click();
+    } else {
+        handled = false;
+    }
+
+    // Enter activates the item natively, so only keep it from ancestors
+    if (handled || (event.key === "Enter" && onMenuItem)) {
+        // Bootstrap's document-level keydown handler would refocus the item, and GCard would take Space as a click
+        event.stopPropagation();
+    }
+    if (handled) {
+        event.preventDefault();
     }
 }
 
@@ -172,7 +255,7 @@ const shouldRenderMenu = computed(() => {
 });
 
 onBeforeUnmount(() => {
-    document.removeEventListener("click", onClickOutside, true);
+    removeOutsideListeners();
 });
 
 defineExpose({
@@ -198,6 +281,7 @@ defineExpose({
         <!-- Toggle button -->
         <button
             :id="toggleId"
+            ref="toggleEl"
             type="button"
             class="btn"
             :class="toggleBtnClasses"
@@ -205,7 +289,8 @@ defineExpose({
             aria-haspopup="menu"
             :aria-expanded="isOpen ? 'true' : 'false'"
             :aria-controls="shouldRenderMenu ? menuId : undefined"
-            @click="toggle">
+            @click="onToggleClick"
+            @keydown="onKeydown">
             <template v-if="!split">
                 <slot name="button-content">{{ text }}</slot>
             </template>
@@ -222,7 +307,7 @@ defineExpose({
             role="menu"
             :class="menuClasses"
             :aria-labelledby="toggleId"
-            @keydown.esc="hide">
+            @keydown="onKeydown">
             <slot />
         </div>
     </div>
