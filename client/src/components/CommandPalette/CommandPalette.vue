@@ -2,7 +2,7 @@
 import { faSearch, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useEventListener, watchDebounced, watchImmediate } from "@vueuse/core";
-import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useStartNewChat } from "@/components/GalaxyAI/useStartNewChat";
@@ -23,6 +23,7 @@ import { ALL_CATEGORY, availableCategories, categoryProviderId, type PaletteCate
 import { isPaletteFetchError } from "./providers/errors";
 import type { ScopeDefinition } from "./providers/scopes";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ResultSection } from "./types";
+import { usePaletteDialog } from "./usePaletteDialog";
 import { type PaletteMode, usePaletteMachine } from "./usePaletteMachine";
 import { BACKEND_RANKED_SCORE, scorePaletteItems } from "./utilities";
 
@@ -37,8 +38,6 @@ const MAX_ROOT_SECTION_ITEMS = 5;
 const MAX_CATEGORY_SECTION_ITEMS = 15;
 /** `selectedIndex` value selecting the category row instead of a result */
 const CATEGORY_ROW_INDEX = -1;
-/** Safety net for environments that never fire `transitionend` (jsdom, backgrounded tabs) */
-const CLOSE_TRANSITION_FALLBACK = 200;
 
 const ROOT_PLACEHOLDER = "Search Galaxy…  > actions · w: t: … scopes · ? help";
 const HELP_PLACEHOLDER = "Search shortcuts…";
@@ -85,6 +84,9 @@ const {
 const dialogElement = ref<HTMLDialogElement | null>(null);
 const inputElement = ref<HTMLInputElement | null>(null);
 const resultsElement = ref<HTMLElement | null>(null);
+const { closeDialog, onClickDialog, onDialogCancel, onDialogClose, onDialogMousedown, openDialog, paletteVisible } =
+    usePaletteDialog({ closePalette, dialogElement, handleEscape, inputElement, isPaletteOpen, resultsElement });
+
 const searching = ref(false);
 const sections = ref<ResultSection[]>([]);
 const selectedIndex = ref(0);
@@ -664,67 +666,6 @@ function onKeydown(event: KeyboardEvent) {
     }
 }
 
-/**
- * Pressing anywhere but a control keeps the caret in the input: a border, the
- * footer, a section title or the gap between two rows would otherwise take the
- * focus and leave the palette unusable by keyboard. Only the mousedown default
- * is dropped, so the click still lands — a row is still picked, a chip still
- * applies, the backdrop still closes — and selecting the typed text is untouched.
- */
-function onDialogMousedown(event: MouseEvent) {
-    const target = event.target as HTMLElement | null;
-    if (!target || target.closest("input, button")) {
-        return;
-    }
-    // Firefox drives a scrollbar drag off the same default, so a press on the
-    // result list's own scrollbar track is left to the browser
-    if (target === resultsElement.value && event.offsetX >= target.clientWidth) {
-        return;
-    }
-    event.preventDefault();
-}
-
-function onClickDialog(event: MouseEvent) {
-    if ((event.target as HTMLElement | null)?.tagName === "DIALOG") {
-        const rect = dialogElement.value?.getBoundingClientRect();
-        const insideX = rect && event.clientX >= rect.left && event.clientX <= rect.right;
-        const insideY = rect && event.clientY >= rect.top && event.clientY <= rect.bottom;
-        if (!(insideX && insideY)) {
-            closePalette();
-        }
-    }
-}
-
-/**
- * The browser's own escape handling closes a modal dialog outright. Escape in
- * the palette is stepwise, so the close request is cancelled and routed through
- * the same handler the input uses — the input's own escape never reaches here,
- * it prevents the keydown default before a close request is even made.
- */
-function onDialogCancel(event: Event) {
-    event.preventDefault();
-    if (handleEscape() === "close") {
-        closePalette();
-    }
-}
-
-/**
- * The dialog was closed by the platform, so the palette follows — unless the
- * event belongs to a close a reopen has already superseded. The browser fires
- * `close` in a task of its own, and a user gesture is allowed to overtake it, so
- * a ⌘K landing at the end of a fade-out is answered (the dialog is showing
- * again) before this event is delivered. Honoring it then would swallow the
- * press and leave the palette closed.
- */
-function onDialogClose() {
-    if (dialogElement.value?.open) {
-        return;
-    }
-    if (isPaletteOpen.value) {
-        closePalette();
-    }
-}
-
 watch(selectedIndex, () => {
     if (selectedItem.value) {
         document.getElementById(optionId(selectedIndex.value))?.scrollIntoView({ block: "nearest" });
@@ -770,110 +711,6 @@ watch(() => searchIdentity(mode.value), clearResults, { flush: "sync" });
 
 // the category is part of the mode, so a sweep across the row shares the debounce
 watchDebounced([text, mode], runSearch, { debounce: SEARCH_DEBOUNCE });
-
-/** Drives the enter/leave transition; the dialog element itself stays mounted */
-const paletteVisible = ref(false);
-/** Bumped by every open and close so a rapid toggle cancels the transition in flight */
-let transitionEpoch = 0;
-/** Disarms the close that is still waiting for its fade-out, if there is one */
-let cancelPendingClose: (() => void) | null = null;
-
-function prefersReducedMotion() {
-    return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-/** Two frames: the first paints the closed state, the second starts the transition */
-function afterNextFrame(callback: () => void) {
-    if (typeof requestAnimationFrame !== "function") {
-        callback();
-        return;
-    }
-    requestAnimationFrame(() => requestAnimationFrame(callback));
-}
-
-function clearPendingClose() {
-    cancelPendingClose?.();
-    cancelPendingClose = null;
-}
-
-async function openDialog() {
-    const epoch = ++transitionEpoch;
-    // a close still waiting on its fade-out is cancelled outright, listener and
-    // fallback timer included: a toggle landing mid-close reopens instead of
-    // being swallowed by the close it interrupted
-    clearPendingClose();
-    await nextTick();
-    const dialog = dialogElement.value;
-    if (!dialog || epoch !== transitionEpoch) {
-        return;
-    }
-    // still open while fading out, or genuinely closed and reopened from scratch
-    if (!dialog.open) {
-        try {
-            dialog.showModal();
-        } catch (e) {
-            // dialog may already be open, or the test environment lacks support
-        }
-    }
-    inputElement.value?.focus();
-    // a preserved query starts out selected: typing replaces it outright, while
-    // an arrow key drops the selection and carries on from where it left off
-    inputElement.value?.select();
-    if (prefersReducedMotion()) {
-        paletteVisible.value = true;
-        return;
-    }
-    afterNextFrame(() => {
-        if (epoch === transitionEpoch) {
-            paletteVisible.value = true;
-        }
-    });
-}
-
-function closeDialog() {
-    const epoch = ++transitionEpoch;
-    clearPendingClose();
-    paletteVisible.value = false;
-    const dialog = dialogElement.value;
-    if (!dialog?.open) {
-        return;
-    }
-    let timeout: ReturnType<typeof setTimeout> | null = null;
-    /** Disarms this close, whether it ran or was cancelled by a reopen */
-    function disarm() {
-        dialog?.removeEventListener("transitionend", onTransitionEnd);
-        if (timeout !== null) {
-            clearTimeout(timeout);
-            timeout = null;
-        }
-        cancelPendingClose = null;
-    }
-    function finishClose() {
-        disarm();
-        if (epoch !== transitionEpoch) {
-            // reopened mid-transition, the newer open owns the dialog now
-            return;
-        }
-        dialog?.close();
-    }
-    function onTransitionEnd(event: TransitionEvent) {
-        if (event.target === dialog) {
-            finishClose();
-        }
-    }
-    if (prefersReducedMotion()) {
-        finishClose();
-        return;
-    }
-    dialog.addEventListener("transitionend", onTransitionEnd);
-    timeout = setTimeout(finishClose, CLOSE_TRANSITION_FALLBACK);
-    cancelPendingClose = disarm;
-}
-
-onBeforeUnmount(() => {
-    transitionEpoch++;
-    clearPendingClose();
-});
 
 /** Bumped by every open, so a hydration landing after a close is dropped */
 let openEpoch = 0;
