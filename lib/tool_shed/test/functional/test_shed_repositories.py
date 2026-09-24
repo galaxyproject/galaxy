@@ -64,7 +64,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert update.homepage_url == "https://www.google.com"
         assert populator.get_repository(repository_id).homepage_url == "https://www.google.com"
 
-    def test_push_collaborator_can_update_repository_info(self):
+    def test_push_collaborator_can_update_repository_info(self) -> None:
         populator = self.populator
         email = "publishcollaborator@galaxyproject.org"
         username = "publishcollaborator"

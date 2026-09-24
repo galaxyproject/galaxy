@@ -8,6 +8,7 @@ from tool_shed_client.schema import (
 from ..base.api_util import email_to_username
 from ..base.playwrightbrowser import Locators
 from ..base.playwrighttestcase import PlaywrightTestCase
+from ..base.populators import ToolShedPopulator
 
 TEST_PASSWORD = "testpass"
 OWNER_EMAIL = "guipushowner@galaxyproject.org"
@@ -18,7 +19,7 @@ TEST_PREFIX = "guitestpushaccess"
 class TestFrontendPushAccess(PlaywrightTestCase):
     """Frontend tests for delegating publishing rights from the repository page."""
 
-    def test_owner_delegates_push_access(self):
+    def test_owner_delegates_push_access(self) -> None:
         owner = email_to_username(OWNER_EMAIL)
         collaborator = email_to_username(COLLABORATOR_EMAIL)
         collaborator_populator = self.user_populator(email=COLLABORATOR_EMAIL, password=TEST_PASSWORD)
@@ -50,7 +51,7 @@ class TestFrontendPushAccess(PlaywrightTestCase):
         api_asserts.assert_status_code_is(collaborator_populator.update_raw(repository, revoked_request), 403)
         assert self.populator.get_repository(repository.id).description == request.description
 
-    def test_push_access_lists_repository_owner_not_viewer(self):
+    def test_push_access_lists_repository_owner_not_viewer(self) -> None:
         owner = email_to_username(OWNER_EMAIL)
         repository = self._new_repository()
 
@@ -62,6 +63,6 @@ class TestFrontendPushAccess(PlaywrightTestCase):
         expect(page.locator(Locators.push_access)).not_to_contain_text("admin-user")
 
     def _new_repository(self) -> Repository:
-        owner_populator = self.user_populator(email=OWNER_EMAIL, password=TEST_PASSWORD)
+        owner_populator: ToolShedPopulator = self.user_populator(email=OWNER_EMAIL, password=TEST_PASSWORD)
         category = owner_populator.new_category(prefix=TEST_PREFIX)
         return owner_populator.new_repository(category.id, prefix=TEST_PREFIX)

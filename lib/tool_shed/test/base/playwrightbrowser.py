@@ -177,7 +177,7 @@ class PlaywrightShedBrowser(ShedBrowser):
             self._page.locator(".q-menu .q-item").filter(has_text=username).first.click()
             expect(self.push_access_entry(username)).to_be_visible()
 
-    def revoke_user_access(self, username: str):
+    def revoke_user_access(self, username: str) -> None:
         entry = self.push_access_entry(username)
         entry.locator(Locators.push_access_remove).click()
         expect(entry).to_have_count(0)
