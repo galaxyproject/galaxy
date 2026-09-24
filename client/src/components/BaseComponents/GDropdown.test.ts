@@ -361,6 +361,18 @@ describe("GDropdown.vue", () => {
             expect(focusedText()).toBe("One");
         });
 
+        it("renders a lazy menu when first opened", async () => {
+            const wrapper = mountTemplate(`<GDropdown lazy text="Menu">${MENU}</GDropdown>`);
+            const toggle = wrapper.get(".dropdown-toggle");
+            expect(wrapper.find(".dropdown-menu").exists()).toBe(false);
+            expect(toggle.attributes("aria-controls")).toBeUndefined();
+
+            await press(toggle, "ArrowDown");
+
+            expect(toggle.attributes("aria-controls")).toBe(wrapper.get(".dropdown-menu").attributes("id"));
+            expect(focusedText()).toBe("One");
+        });
+
         it("opens with ArrowUp on the toggle and focuses the last item", async () => {
             const wrapper = mountDropdown(MENU);
 
@@ -433,6 +445,22 @@ describe("GDropdown.vue", () => {
 
             expect(isMenuOpen(wrapper)).toBe(false);
             expect(document.activeElement).toBe(wrapper.get(".dropdown-toggle").element);
+        });
+
+        it("keeps an open menu's Escape from closing an enclosing dialog", async () => {
+            const wrapper = mountTemplate(`<dialog open><GDropdown text="Menu">${MENU}</GDropdown></dialog>`);
+            const onDialogKeydown = vi.fn();
+            wrapper.get("dialog").element.addEventListener("keydown", onDialogKeydown);
+            await press(wrapper.get(".dropdown-toggle"), "ArrowDown");
+
+            const escape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+            document.activeElement!.dispatchEvent(escape);
+            await flushPromises();
+
+            // A native <dialog> closes on an Escape keydown that was not cancelled
+            expect(escape.defaultPrevented).toBe(true);
+            expect(onDialogKeydown).not.toHaveBeenCalled();
+            expect(isMenuOpen(wrapper)).toBe(false);
         });
 
         it("leaves Escape alone while closed so enclosing dialogs still get it", async () => {
