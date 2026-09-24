@@ -17,25 +17,12 @@ import type {
 } from "../types";
 import { dedupePaletteItemsByEntity, rankPaletteItems } from "../utilities";
 import { fetchOrFail } from "./errors";
+import { PALETTE_LIMITS } from "./limits";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
 /** Entity type this provider records in the palette MRU (`useRecentPaletteItems`) */
 export const HISTORY_RECENT_TYPE = "history";
-
-/** Per section caps, kept small so both sections fit without scrolling */
-const RESULTS_LIMIT = 8;
-const RECENT_LIMIT = 5;
-const ROOT_LIMIT = 5;
-
-/** How many rows the root fan-out shows per searched listing */
-const ROOT_VARIANT_LIMIT = 3;
-
-/** Neither the unscoped fan-out nor a backend query runs on a single character */
-const MIN_QUERY_LENGTH = 2;
-
-/** Entries requested per fetch, for the own histories and the listings alike */
-const LIST_PAGE_SIZE = 25;
 
 /** Which cached list a scope reads: the user's own histories, or a listing */
 type HistoryVariant = "my" | HistoryListVariant;
@@ -202,18 +189,18 @@ async function ensureHydrated(variant: HistoryVariant): Promise<void> {
     if (variant === "my") {
         if (historyStore.histories.length === 0) {
             // nothing cached to fall back on, so a failure is reported
-            await fetchOrFail(() => historyStore.loadHistories(false, undefined, LIST_PAGE_SIZE));
+            await fetchOrFail(() => historyStore.loadHistories(false, undefined, PALETTE_LIMITS.page));
             markListRefreshed(key);
         } else {
-            refreshListWhenStale(key, () => historyStore.loadHistories(false, undefined, LIST_PAGE_SIZE));
+            refreshListWhenStale(key, () => historyStore.loadHistories(false, undefined, PALETTE_LIMITS.page));
         }
         return;
     }
     if (!historyStore.hasLoadedHistoryList(variant)) {
-        await fetchOrFail(() => historyStore.ensureHistoryListLoaded(variant, { limit: LIST_PAGE_SIZE }));
+        await fetchOrFail(() => historyStore.ensureHistoryListLoaded(variant, { limit: PALETTE_LIMITS.page }));
         markListRefreshed(key);
     } else {
-        refreshListWhenStale(key, () => historyStore.fetchHistoryList(variant, { limit: LIST_PAGE_SIZE }));
+        refreshListWhenStale(key, () => historyStore.fetchHistoryList(variant, { limit: PALETTE_LIMITS.page }));
     }
 }
 
@@ -222,11 +209,11 @@ async function searchBackend(variant: HistoryVariant, query: string): Promise<vo
     const historyStore = useHistoryStore();
     if (variant === "my") {
         await fetchQuietly(() =>
-            historyStore.loadHistories(false, HistoriesFilters.getQueryString(query), LIST_PAGE_SIZE),
+            historyStore.loadHistories(false, HistoriesFilters.getQueryString(query), PALETTE_LIMITS.page),
         );
         return;
     }
-    await fetchQuietly(() => historyStore.fetchHistoryList(variant, { search: query, limit: LIST_PAGE_SIZE }));
+    await fetchQuietly(() => historyStore.fetchHistoryList(variant, { search: query, limit: PALETTE_LIMITS.page }));
 }
 
 function rankHistories(histories: PaletteHistory[], variant: HistoryVariant, query: string): PaletteItem[] {
@@ -246,9 +233,9 @@ function rankHistories(histories: PaletteHistory[], variant: HistoryVariant, que
  */
 function cacheIsComplete(variant: HistoryVariant, cached: PaletteHistory[]): boolean {
     if (variant === "my") {
-        return cached.length < LIST_PAGE_SIZE && cached.length >= useHistoryStore().totalHistoryCount;
+        return cached.length < PALETTE_LIMITS.page && cached.length >= useHistoryStore().totalHistoryCount;
     }
-    return cached.length < LIST_PAGE_SIZE;
+    return cached.length < PALETTE_LIMITS.page;
 }
 
 /**
@@ -276,7 +263,12 @@ async function listItems(
     }
     const cached = cachedHistories(variant);
     const local = rankHistories(cached, variant, query);
-    if (cacheOnly || query.length < MIN_QUERY_LENGTH || cacheIsComplete(variant, cached) || local.length >= limit) {
+    if (
+        cacheOnly ||
+        query.length < PALETTE_LIMITS.minBackendQuery ||
+        cacheIsComplete(variant, cached) ||
+        local.length >= limit
+    ) {
         return local.slice(0, limit);
     }
     await searchBackend(variant, query);
@@ -296,7 +288,7 @@ function rootVariants(isAnonymous: boolean): HistoryListVariant[] {
  * `hp:` still find their listing unhydrated and hydrate it themselves. A failing
  * listing contributes nothing rather than costing the section its other rows.
  *
- * A whole page is fetched even though only {@link ROOT_VARIANT_LIMIT} rows are
+ * A whole page is fetched even though only `PALETTE_LIMITS.rootListing` rows are
  * shown: the backend matches loosely and orders by update time, so the newest
  * few rows it answers with are often ranked away here, and asking for exactly as
  * many rows as the section renders would leave it empty. The extra rows cost
@@ -306,9 +298,9 @@ async function variantItems(variant: HistoryListVariant, query: string): Promise
     const historyStore = useHistoryStore();
     const entries =
         (await fetchQuietly(() =>
-            historyStore.fetchHistoryList(variant, { search: query, limit: LIST_PAGE_SIZE, record: false }),
+            historyStore.fetchHistoryList(variant, { search: query, limit: PALETTE_LIMITS.page, record: false }),
         )) ?? [];
-    return rankHistories(entries.map(toPaletteHistory), variant, query).slice(0, ROOT_VARIANT_LIMIT);
+    return rankHistories(entries.map(toPaletteHistory), variant, query).slice(0, PALETTE_LIMITS.rootListing);
 }
 
 /**
@@ -323,13 +315,13 @@ async function rootItems(query: string, isAnonymous: boolean, localOnly = false)
     const listed = Promise.all(
         (localOnly ? [] : rootVariants(isAnonymous)).map((variant) => variantItems(variant, query)),
     );
-    const own = isAnonymous ? [] : await listItems("my", query, ROOT_LIMIT, true);
+    const own = isAnonymous ? [] : await listItems("my", query, PALETTE_LIMITS.rootOwn, true);
     const merged = dedupePaletteItemsByEntity([own, ...(await listed)].flat());
-    return rankPaletteItems(merged, query).slice(0, ROOT_LIMIT + ROOT_VARIANT_LIMIT);
+    return rankPaletteItems(merged, query).slice(0, PALETTE_LIMITS.rootOwn + PALETTE_LIMITS.rootListing);
 }
 
 /** Histories opened through the palette before, most recently used first */
-function recentItems(query: string, limit = RECENT_LIMIT): PaletteItem[] {
+function recentItems(query: string, limit = PALETTE_LIMITS.recent): PaletteItem[] {
     const historyStore = useHistoryStore();
     const { recentItems: recentEntries } = useRecentPaletteItems();
     const items = recentEntries(HISTORY_RECENT_TYPE).map((entry) => {
@@ -366,11 +358,11 @@ export const historiesProvider: CommandPaletteProvider = {
         if (ctx.isAnonymous) {
             return [];
         }
-        return recentItems("", ROOT_LIMIT);
+        return recentItems("", PALETTE_LIMITS.rootOwn);
     },
     /** Root mode fan-out over the cached own histories and the public listings */
     async search(query: string, ctx: PaletteContext, options: PaletteSearchOptions = {}) {
-        if (query.length < MIN_QUERY_LENGTH) {
+        if (query.length < PALETTE_LIMITS.minBackendQuery) {
             return [];
         }
         return rootItems(query, ctx.isAnonymous, options.localOnly);
@@ -386,7 +378,7 @@ export const historiesProvider: CommandPaletteProvider = {
      */
     async searchScoped(scope: ScopeDefinition, query: string) {
         const variant = listVariant(scope.variant);
-        const results = await listItems(variant, query, RESULTS_LIMIT);
+        const results = await listItems(variant, query, PALETTE_LIMITS.section);
         return [
             ...section("recent", "Recent", variant === "my" ? recentItems(query) : []),
             ...section(variant, resultsTitle(scope, query), results),

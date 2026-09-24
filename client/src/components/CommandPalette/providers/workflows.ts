@@ -15,30 +15,12 @@ import type {
 } from "../types";
 import { dedupePaletteItemsByEntity, rankPaletteItems } from "../utilities";
 import { fetchOrFail } from "./errors";
+import { PALETTE_LIMITS } from "./limits";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
 /** Entity type this provider records in the palette MRU (`useRecentPaletteItems`) */
 export const WORKFLOW_RECENT_TYPE = "workflow";
-
-/** Per section caps, kept small so several sections fit without scrolling */
-const RESULTS_LIMIT = 8;
-const BOOKMARKED_LIMIT = 5;
-const RECENT_LIMIT = 5;
-const ROOT_LIMIT = 5;
-
-/** How many rows the root fan-out shows per searched list */
-const ROOT_VARIANT_LIMIT = 3;
-
-/** Unscoped search only joins the fan-out once the query is specific enough */
-const MIN_ROOT_QUERY_LENGTH = 2;
-
-/**
- * How many entries one cached list holds. A list that came back shorter than a
- * full page is everything the backend has for it, so the cache can answer any
- * query on its own and no search request is needed.
- */
-const LIST_PAGE_SIZE = 25;
 
 /** Scope variant (`undefined` | `shared` | `published`) to store list variant */
 function listVariant(variant?: string): WorkflowListVariant {
@@ -141,13 +123,13 @@ async function listItems(
     if (!cacheOnly) {
         if (!workflowStore.isWorkflowListLoaded(variant)) {
             // nothing cached to fall back on, so a failure is reported
-            await fetchOrFail(() => workflowStore.fetchWorkflowList(variant, "", { limit: LIST_PAGE_SIZE }));
+            await fetchOrFail(() => workflowStore.fetchWorkflowList(variant, "", { limit: PALETTE_LIMITS.page }));
             markListRefreshed(refreshKey);
         } else {
             // stale-while-revalidate: the cached rows render now, the refreshed
             // ones land in the store for the next keystroke
             refreshListWhenStale(refreshKey, () =>
-                workflowStore.fetchWorkflowList(variant, "", { limit: LIST_PAGE_SIZE }),
+                workflowStore.fetchWorkflowList(variant, "", { limit: PALETTE_LIMITS.page }),
             );
         }
     }
@@ -156,11 +138,11 @@ async function listItems(
         latestFirst(cached).map((workflow) => workflowItem(workflow, variant)),
         query,
     );
-    const cacheIsComplete = cached.length < LIST_PAGE_SIZE;
+    const cacheIsComplete = cached.length < PALETTE_LIMITS.page;
     if (cacheOnly || !query || !queryBackend || cacheIsComplete || local.length >= limit) {
         return local.slice(0, limit);
     }
-    await fetchQuietly(() => workflowStore.fetchWorkflowList(variant, query, { limit: LIST_PAGE_SIZE }));
+    await fetchQuietly(() => workflowStore.fetchWorkflowList(variant, query, { limit: PALETTE_LIMITS.page }));
     const remote = workflowStore.getWorkflowList(variant, query).map((workflow) => workflowItem(workflow, variant));
     // the backend over-matches short searches (`search=zqx` comes back with the
     // whole list), so the merged rows are ranked locally just like the cache is
@@ -178,7 +160,7 @@ function rootVariants(isAnonymous: boolean): WorkflowListVariant[] {
  * and query, so the fetched rows are the matches for this query alone; a failing
  * variant contributes nothing rather than costing the whole section.
  *
- * A whole page is fetched even though only {@link ROOT_VARIANT_LIMIT} rows are
+ * A whole page is fetched even though only `PALETTE_LIMITS.rootListing` rows are
  * shown: the backend matches loosely and orders by update time, so the newest
  * few rows it answers with are often ranked away here, and asking for exactly as
  * many rows as the section renders would leave it empty. The extra rows cost
@@ -187,11 +169,12 @@ function rootVariants(isAnonymous: boolean): WorkflowListVariant[] {
 async function variantItems(variant: WorkflowListVariant, query: string): Promise<PaletteItem[]> {
     const workflowStore = useWorkflowStore();
     const workflows =
-        (await fetchQuietly(() => workflowStore.fetchWorkflowList(variant, query, { limit: LIST_PAGE_SIZE }))) ?? [];
+        (await fetchQuietly(() => workflowStore.fetchWorkflowList(variant, query, { limit: PALETTE_LIMITS.page }))) ??
+        [];
     return rankPaletteItems(
         workflows.map((workflow) => workflowItem(workflow, variant)),
         query,
-    ).slice(0, ROOT_VARIANT_LIMIT);
+    ).slice(0, PALETTE_LIMITS.rootListing);
 }
 
 /**
@@ -206,13 +189,13 @@ async function rootItems(query: string, isAnonymous: boolean, localOnly = false)
     const listed = Promise.all(
         (localOnly ? [] : rootVariants(isAnonymous)).map((variant) => variantItems(variant, query)),
     );
-    const own = isAnonymous ? [] : await listItems("my", query, ROOT_LIMIT, { cacheOnly: true });
+    const own = isAnonymous ? [] : await listItems("my", query, PALETTE_LIMITS.rootOwn, { cacheOnly: true });
     const merged = dedupePaletteItemsByEntity([own, ...(await listed)].flat());
-    return rankPaletteItems(merged, query).slice(0, ROOT_LIMIT + ROOT_VARIANT_LIMIT);
+    return rankPaletteItems(merged, query).slice(0, PALETTE_LIMITS.rootOwn + PALETTE_LIMITS.rootListing);
 }
 
 /** Workflows opened through the palette before, most recently used first */
-function recentItems(query: string, limit = RECENT_LIMIT): PaletteItem[] {
+function recentItems(query: string, limit = PALETTE_LIMITS.recent): PaletteItem[] {
     const workflowStore = useWorkflowStore();
     const { recentItems: recentEntries } = useRecentPaletteItems();
     const items = recentEntries(WORKFLOW_RECENT_TYPE).map((entry) => {
@@ -234,7 +217,7 @@ function recentItems(query: string, limit = RECENT_LIMIT): PaletteItem[] {
  * The user's own workflows as run rows, store first like the `w:` scope. Used by
  * the "Run workflow" action, which collects its workflow as an argument.
  */
-export function myWorkflowItems(query: string, limit = RESULTS_LIMIT): Promise<PaletteItem[]> {
+export function myWorkflowItems(query: string, limit = PALETTE_LIMITS.section): Promise<PaletteItem[]> {
     return listItems("my", query.trim(), limit);
 }
 
@@ -257,11 +240,11 @@ export const workflowsProvider: CommandPaletteProvider = {
         if (ctx.isAnonymous) {
             return [];
         }
-        return recentItems("", ROOT_LIMIT);
+        return recentItems("", PALETTE_LIMITS.rootOwn);
     },
     /** Root mode fan-out over the cached own list and the public ones */
     async search(query: string, ctx: PaletteContext, options: PaletteSearchOptions = {}) {
-        if (query.length < MIN_ROOT_QUERY_LENGTH) {
+        if (query.length < PALETTE_LIMITS.minBackendQuery) {
             return [];
         }
         return rootItems(query, ctx.isAnonymous, options.localOnly);
@@ -276,8 +259,8 @@ export const workflowsProvider: CommandPaletteProvider = {
     async searchScoped(scope: ScopeDefinition, query: string) {
         const variant = listVariant(scope.variant);
         const [bookmarked, results] = await Promise.all([
-            variant === "my" ? listItems("bookmarked", query, BOOKMARKED_LIMIT, { queryBackend: false }) : [],
-            listItems(variant, query, RESULTS_LIMIT),
+            variant === "my" ? listItems("bookmarked", query, PALETTE_LIMITS.recent, { queryBackend: false }) : [],
+            listItems(variant, query, PALETTE_LIMITS.section),
         ]);
         return [
             ...section("bookmarked", "Bookmarked", bookmarked),

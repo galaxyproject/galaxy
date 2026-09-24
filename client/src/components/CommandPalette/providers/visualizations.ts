@@ -7,6 +7,7 @@ import { shortDateLabel } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { PALETTE_LIMITS } from "./limits";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 
 /** Entity type used for the palette MRU list of visualizations */
@@ -17,10 +18,6 @@ const VARIANT = "my";
 
 /** Identity of the cached list in the palette's refresh bookkeeping */
 const REFRESH_KEY = "visualizations:my";
-
-/** Cap of a single rendered section */
-const MAX_RESULTS = 8;
-const MAX_RECENT = 5;
 
 /** Same click target the saved visualizations grid uses to open an item */
 export function visualizationDisplayPath(visualization: { id: string; type?: string | null }): string {
@@ -79,7 +76,11 @@ async function ensureHydrated(): Promise<void> {
  * histories, workflows, reports and tools ones, which search the backend there
  * too; the `v:` scope does the fetching.
  */
-async function searchVisualizations(query: string, limit = MAX_RESULTS, cacheOnly = false): Promise<PaletteItem[]> {
+async function searchVisualizations(
+    query: string,
+    limit = PALETTE_LIMITS.section,
+    cacheOnly = false,
+): Promise<PaletteItem[]> {
     const store = useVisualizationStore();
     if (!cacheOnly) {
         await ensureHydrated();
@@ -93,13 +94,13 @@ async function searchVisualizations(query: string, limit = MAX_RESULTS, cacheOnl
 }
 
 /** Latest visualizations of the user, newest first, straight from the cache */
-function latestItems(limit = MAX_RESULTS): PaletteItem[] {
+function latestItems(limit = PALETTE_LIMITS.section): PaletteItem[] {
     const store = useVisualizationStore();
     return store.getVisualizations(VARIANT).slice(0, limit).map(visualizationToItem);
 }
 
 /** Visualizations opened through the palette before, most recent first */
-function recentItems(limit = MAX_RECENT): PaletteItem[] {
+function recentItems(limit = PALETTE_LIMITS.recent): PaletteItem[] {
     const store = useVisualizationStore();
     const { recentItems: recent } = useRecentPaletteItems();
     return recent(VISUALIZATION_RECENT_TYPE)
@@ -135,7 +136,7 @@ export const visualizationsProvider: CommandPaletteProvider = {
         if (!query) {
             return latestItems();
         }
-        return searchVisualizations(query, MAX_RESULTS, true);
+        return searchVisualizations(query, PALETTE_LIMITS.section, true);
     },
     async searchScoped(_scope, query: string): Promise<ScopedSection[]> {
         if (!query) {

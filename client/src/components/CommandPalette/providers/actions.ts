@@ -19,10 +19,8 @@ import { slugify } from "@/utils/slug";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem } from "../types";
 import { type Gated, rankPaletteItems, visibleFor } from "../utilities";
+import { PALETTE_LIMITS } from "./limits";
 import { myWorkflowItems } from "./workflows";
-
-/** Per argument section cap, matching the scoped providers */
-const ARGUMENT_LIMIT = 8;
 
 /** Upload methods, filtered by config and login exactly like the upload panel */
 function uploadMethodItems(argQuery: string, ctx: PaletteContext): PaletteItem[] {
@@ -142,7 +140,7 @@ async function galaxyAiItems(argQuery: string): Promise<PaletteItem[]> {
               },
           ]
         : [];
-    return [...seeded, ...rankPaletteItems(existing, question).slice(0, ARGUMENT_LIMIT)];
+    return [...seeded, ...rankPaletteItems(existing, question).slice(0, PALETTE_LIMITS.section)];
 }
 
 const ACTIONS: Gated<PaletteItem>[] = [
@@ -229,7 +227,7 @@ const ACTIONS: Gated<PaletteItem>[] = [
             subtitle: "Pick one of your workflows and open its run form",
             title: "Run workflow",
             argumentMode: {
-                getItems: (argQuery: string) => myWorkflowItems(argQuery, ARGUMENT_LIMIT),
+                getItems: (argQuery: string) => myWorkflowItems(argQuery, PALETTE_LIMITS.section),
                 // there is nothing to run without picking a workflow first
                 immediate: true,
                 label: "pick a workflow",

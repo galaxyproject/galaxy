@@ -8,6 +8,7 @@ import localize from "@/utils/localization";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { PALETTE_LIMITS } from "./limits";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 
 /** MRU bucket the palette records dataset selections under */
@@ -18,10 +19,6 @@ const REFRESH_KEY = "datasets:latest";
 
 /** Maximum number of rows rendered per section */
 const SECTION_CAP = 6;
-/** Shortest query worth a backend round trip; below it the cache answers alone */
-const MIN_BACKEND_QUERY_LENGTH = 2;
-/** Page size of the unfiltered "latest" fetch */
-const LATEST_LIMIT = 25;
 
 /** Router location of a dataset preview */
 function datasetRoute(id: string): string {
@@ -76,7 +73,7 @@ function byUpdateTimeDesc(a: HDASummary, b: HDASummary): number {
 function cacheHoldsEveryDataset(): boolean {
     const datasetListStore = useDatasetListStore();
     // the total also counts collections, which the store drops, so compare it to the page size
-    return datasetListStore.hasLoadedLatest && datasetListStore.totalLatestMatches <= LATEST_LIMIT;
+    return datasetListStore.hasLoadedLatest && datasetListStore.totalLatestMatches <= PALETTE_LIMITS.page;
 }
 
 /**
@@ -86,10 +83,10 @@ function cacheHoldsEveryDataset(): boolean {
 async function ensureLatestHydrated(): Promise<void> {
     const datasetListStore = useDatasetListStore();
     if (!datasetListStore.hasLoadedLatest) {
-        await datasetListStore.ensureLatestLoaded(LATEST_LIMIT);
+        await datasetListStore.ensureLatestLoaded(PALETTE_LIMITS.page);
         markListRefreshed(REFRESH_KEY);
     } else {
-        refreshListWhenStale(REFRESH_KEY, () => datasetListStore.fetchDatasets({ limit: LATEST_LIMIT }));
+        refreshListWhenStale(REFRESH_KEY, () => datasetListStore.fetchDatasets({ limit: PALETTE_LIMITS.page }));
     }
 }
 
@@ -111,7 +108,7 @@ async function matchingDatasets(query: string, cacheOnly = false): Promise<HDASu
     }
     await ensureLatestHydrated();
     const cached = datasetListStore.searchCachedDatasets(query, SECTION_CAP);
-    if (cached.length >= SECTION_CAP || query.length < MIN_BACKEND_QUERY_LENGTH || cacheHoldsEveryDataset()) {
+    if (cached.length >= SECTION_CAP || query.length < PALETTE_LIMITS.minBackendQuery || cacheHoldsEveryDataset()) {
         return cached;
     }
     await datasetListStore.fetchDatasets({ search: query, limit: SECTION_CAP });
