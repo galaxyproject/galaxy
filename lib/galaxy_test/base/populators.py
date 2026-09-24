@@ -3084,6 +3084,7 @@ class BaseWorkflowPopulator(BasePopulator):
         wait: bool = True,
         assert_ok: bool = True,
         use_cached_job: bool = False,
+        timeout: timeout_type = DEFAULT_TIMEOUT,
     ) -> "RunJobsSummary":
         history_id = run_jobs_summary.history_id
         invocation_id = run_jobs_summary.invocation_id
@@ -3103,6 +3104,7 @@ class BaseWorkflowPopulator(BasePopulator):
             assert_ok=assert_ok,
             invocations=1,
             expected_response=200,
+            timeout=timeout,
         )
 
     def _request_to_summary(

@@ -1249,6 +1249,96 @@
             framework_test: "collection_semantics_cat_sample_sheet_0"
         workflow_editor: "accepts sample_sheet -> sample_sheet connection"
 
+- doc: |
+    ## Callable workflow boundaries
+
+    A subworkflow is a callable step. Mapping the call establishes ordered mapping
+    axes for the whole child workflow; it does not clone the child invocation once
+    per input element. **One child invocation is the permanent execution model.**
+    The jobs scheduled inside that invocation carry element cardinality and provenance.
+    Additional child invocation rows are not a future completion criterion for mapping.
+
+    Every executable child step inherits the call's axes, including a step with no data
+    dependency on the input that caused the call to map. A local child mapping axis is
+    appended after inherited axes and forms a Cartesian product. Linked inputs on the
+    same axis remain zipped. The declared child input type does not change: a direct
+    ``list`` input is still a ``list`` even when child outputs gain an outer ``list``.
+
+    ### Worked examples
+
+    Let the parent map a child call over ``A = [X, Y]`` and pass a direct collection
+    ``B = [P, Q, R]`` to another child input.
+
+    - A child step consuming the mapped dataset runs 2 jobs and produces ``list[A]``
+      ([framework assertions](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/workflow/subworkflow_mapping_per_step.gxwf-tests.yml),
+      [API cardinality test](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/api/test_workflows.py),
+      ``test_subworkflow_mapping_callable_boundary_job_cardinality``).
+    - A child step mapping over ``B`` runs 6 jobs and produces ``list[A]:list[B]`` in
+      stable ``A``-then-``B`` order (the same framework and API cardinality tests).
+    - A child step consuming both inputs has the same 6-coordinate product (the same
+      framework and API cardinality tests, plus matcher unit
+      ``test_independent_mapping_axes_cross_product_in_stable_order``).
+    - A child output wired directly to ``B`` runs no producer jobs, but is shaped as
+      ``list[A]:list[B]``. Each ``A`` element owns a distinct child collection while
+      both children share the original HDAs (the framework assertions and API
+      cardinality test above).
+    - A child output wired directly to the mapped dataset reuses the existing
+      ``list[A]`` object when it already covers the complete axis path (the framework
+      assertions and API cardinality test above; refined partial paths are pinned by
+      unit ``test_partial_refined_axis_passthrough_is_broadcast_over_missing_suffix``).
+    - An empty ``A`` schedules no child jobs and still produces correctly typed empty
+      outputs ([second framework case](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/workflow/subworkflow_mapping_per_step.gxwf-tests.yml)).
+      A false conditional coordinate is represented by skipped ``expression.json``
+      leaves rather than leaking the input value (API
+      ``test_run_workflow_conditional_subworkflow_step_map_over_expression_tool``).
+
+    At another nested callable boundary, inherited axes compose once in the same order;
+    they are not rediscovered or duplicated
+    ([nested framework assertions](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/workflow/subworkflow_mapping_nested_passthrough.gxwf-tests.yml)).
+    Scheduler recovery reconstructs these axis identities before downstream steps are
+    considered (integration
+    ``test_subworkflow_mapping_axes_survive_scheduling_rounds``).
+
+    ### Pass-through and representation boundaries
+
+    Dataset and collection pass-through outputs are supported. Materialized collection
+    wrappers preserve identifiers, order, collection type, and sample-sheet column/row
+    metadata. They are new structural objects, so collection-association tags are not
+    part of this guarantee; leaf HDAs (and their dataset metadata/tags) are shared.
+
+    Mapped parameter/``output_value`` pass-through is intentionally unsupported because
+    there is no dataset collection model object in which to persist the mapped values.
+    It requires a separate public type and persistence design (unit
+    ``test_mapped_parameter_passthrough_is_explicitly_unsupported`` in
+    [workflow module tests](https://github.com/galaxyproject/galaxy/blob/dev/test/unit/workflows/test_modules.py)).
+
+    One currently rejected topology is a branch-dependent declared suffix discovered
+    after more than one already-independent inherited axis—for example independent
+    ``A × B`` axes where only some branches reveal an additional ``C`` suffix. Encoding
+    that faithfully requires collapsing the Cartesian prefix into a dependent tree.
+    Galaxy rejects this shape rather than silently under-slicing or inventing duplicate
+    jobs (unit ``test_direct_linked_peer_deeper_than_embedded_component_is_rejected``
+    in the workflow module tests above).
+
+    ### Executable specification
+
+    The contract is pinned across layers:
+
+    - [workflow-editor terminal tests](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Workflow/Editor/modules/terminals.test.ts)
+      cover representative callable input/output signatures and connection order;
+    - [framework fixtures](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/workflow/subworkflow_mapping_per_step.gxwf.yml)
+      and their [assertions](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/workflow/subworkflow_mapping_per_step.gxwf-tests.yml)
+      cover inherited/local products, empty axes, and pass-throughs;
+    - [nested pass-through fixture](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/workflow/subworkflow_mapping_nested_passthrough.gxwf.yml)
+      covers composition across two callable boundaries;
+    - [API assertions](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy_test/api/test_workflows.py)
+      pin one child invocation, job cardinality, conditional skips, output shape, and
+      object ownership;
+    - [collection matcher tests](https://github.com/galaxyproject/galaxy/blob/dev/test/unit/data/dataset_collections/test_matching.py)
+      pin ordered products, linked zip behavior, refined axes, conditions, and empties;
+    - [scheduler recovery test](https://github.com/galaxyproject/galaxy/blob/dev/test/integration/test_workflow_scheduling_options.py)
+      pins persistence across scheduling rounds.
+
 - doc: "## Type Compatibility Algebra"
 - doc: |
     This section is for implementers. It describes the three operations that

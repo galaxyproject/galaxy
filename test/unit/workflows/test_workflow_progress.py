@@ -1,6 +1,7 @@
 from typing import cast
 
 from galaxy import model
+from galaxy.model.dataset_collections import matching
 from galaxy.util.unittest import TestCase
 from galaxy.workflow.run import (
     ModuleInjector,
@@ -153,6 +154,48 @@ class TestWorkflowProgress(TestCase):
         conn.output_step = self._step(2)
         assert progress.replacement_for_connection(conn) is hda
 
+    def test_output_mapping_is_persisted_and_recovered_as_references(self):
+        self._setup_workflow(TEST_WORKFLOW_YAML)
+        progress = self._new_workflow_progress()
+        invocation_step = self._invocation_step(2)
+        reference = matching.MatchingCollectionAxisReference("axis", "list")
+        output = object()
+
+        progress.set_step_outputs(
+            invocation_step,
+            {"out1": output},
+            output_mapping_axes={"out1": (reference,)},
+        )
+
+        assert invocation_step.output_mapping == {
+            "version": 1,
+            "outputs": {"out1": {"axes": [reference.to_dict()]}},
+        }
+        recovered = self._new_workflow_progress()
+        recovered.outputs[self._step(2).id] = {"out1": output}
+        assert recovered.recover_output_mapping(invocation_step)
+        assert recovered.output_mapping_axes[(self._step(2).id, "out1")] == (reference,)
+
+    def test_recovered_output_mapping_is_hydrated_once_per_progress(self):
+        self._setup_workflow(TEST_WORKFLOW_YAML)
+        progress = self._new_workflow_progress()
+        step_id = self._step(2).id
+        reference = matching.MatchingCollectionAxisReference("axis", "list")
+        progress.outputs[step_id] = {"out1": object()}
+        progress.output_mapping_axes[(step_id, "out1")] = (reference,)
+        hydrated_axis = object()
+        calls = []
+
+        def hydrate(_progress, output, references):
+            calls.append((output, references))
+            return (hydrated_axis,)
+
+        first = progress.mapping_axes_for_output(step_id, "out1", hydrate)
+        second = progress.mapping_axes_for_output(step_id, "out1", hydrate)
+
+        assert first == second == (hydrated_axis,)
+        assert calls == [(progress.outputs[step_id]["out1"], (reference,))]
+
     def test_remaining_steps_with_progress(self):
         self._setup_workflow(TEST_WORKFLOW_YAML)
         hda3 = model.HistoryDatasetAssociation()
@@ -177,6 +220,26 @@ class TestWorkflowProgress(TestCase):
         }
         replacement = progress.replacement_for_input(None, self._step(4), step_dict)
         assert replacement is hda3
+
+    def test_recovery_metadata_is_rebuilt_in_dependency_order(self):
+        self._setup_workflow(TEST_WORKFLOW_YAML)
+        self._set_previous_progress(
+            [
+                (100, {"output": model.HistoryDatasetAssociation()}),
+                (101, {"output": model.HistoryDatasetAssociation()}),
+                (102, {"out_file1": model.HistoryDatasetAssociation()}),
+                (103, {"out_file1": model.HistoryDatasetAssociation()}),
+                (104, {"out_file1": model.HistoryDatasetAssociation()}),
+            ]
+        )
+        recovery_order: list[int] = []
+        self.progress["recovery_order"] = recovery_order
+        self.invocation.workflow.steps.reverse()
+
+        progress = self._new_workflow_progress()
+        assert progress.remaining_steps() == []
+
+        assert recovery_order.index(100) < recovery_order.index(102) < recovery_order.index(104)
 
     # TODO: Replace multiple true HDA with HDCA
     # TODO: Test explicit delay
@@ -254,7 +317,14 @@ class MockModule:
     def decode_runtime_state(self, step, runtime_state):
         return True
 
+    def recover_outputs(self, invocation_step, progress):
+        step_id = invocation_step.workflow_step.id
+        if step_id in self.progress:
+            progress.set_step_outputs(invocation_step, self.progress[step_id])
+
     def recover_mapping(self, invocation_step, progress):
         step_id = invocation_step.workflow_step.id
+        if (recovery_order := self.progress.get("recovery_order")) is not None:
+            recovery_order.append(step_id)
         if step_id in self.progress:
             progress.set_step_outputs(invocation_step, self.progress[step_id])

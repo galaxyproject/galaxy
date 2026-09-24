@@ -17,6 +17,7 @@ from galaxy.model import (
     WorkflowInvocationStep,
 )
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.model.dataset_collections import matching
 from galaxy.schema.invocation import (
     CancelReason,
     FAILURE_REASONS_EXPECTED,
@@ -44,6 +45,7 @@ from galaxy.workflow.run_request import (
     workflow_run_config_to_request,
     WorkflowRunConfig,
 )
+from galaxy.workflow.steps import order_workflow_steps_with_levels
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesHistoryContext
@@ -401,6 +403,7 @@ class WorkflowProgress:
         replacement_dict: dict[str, str] | None = None,
         subworkflow_collection_info=None,
         when_values=None,
+        inherited_input_axes=None,
     ) -> None:
         self.outputs: dict[int, Any] = {}
         self.module_injector = module_injector
@@ -416,6 +419,9 @@ class WorkflowProgress:
         self.subworkflow_collection_info = subworkflow_collection_info
         self.subworkflow_structure = subworkflow_collection_info.structure if subworkflow_collection_info else None
         self.when_values = when_values
+        self.inherited_input_axes = inherited_input_axes or {}
+        self.output_mapping_axes: dict[tuple[int, str], tuple[Any, ...]] = {}
+        self._hydrated_output_mapping_axes: dict[tuple[int, str], tuple[matching.MatchingCollectionAxis, ...]] = {}
 
     @property
     def maximum_jobs_to_schedule_or_none(self) -> int | None:
@@ -437,6 +443,7 @@ class WorkflowProgress:
         # TODO: Wouldn't a generator be much better here so we don't have to reason about
         # steps we are no where near ready to schedule?
         remaining_steps = []
+        scheduled_step_invocations = {}
         step_invocations_by_id = self.workflow_invocation.step_invocations_by_step_id()
         self.module_injector.inject_all(self.workflow_invocation.workflow, param_map=self.param_map)
         for step in steps:
@@ -454,9 +461,22 @@ class WorkflowProgress:
 
             invocation_step = step_invocations_by_id.get(step_id, None)
             if invocation_step and invocation_step.state == "scheduled":
-                self._recover_mapping(invocation_step)
+                scheduled_step_invocations[step_id] = invocation_step
             else:
                 remaining_steps.append((step, invocation_step))
+
+        for invocation_step in scheduled_step_invocations.values():
+            assert invocation_step.workflow_step.module
+            invocation_step.workflow_step.module.recover_outputs(invocation_step, self)
+
+        step_levels = order_workflow_steps_with_levels(steps)
+        ordered_step_indices = [index for level in step_levels or [] for index in level]
+        if not ordered_step_indices:
+            ordered_step_indices = list(range(len(steps)))
+        for step_index in ordered_step_indices:
+            step = steps[step_index]
+            if invocation_step := scheduled_step_invocations.get(step.id):
+                self._recover_mapping(invocation_step)
         return remaining_steps
 
     def replacement_for_input(
@@ -652,13 +672,28 @@ class WorkflowProgress:
         return replacement_dict
 
     def set_step_outputs(
-        self, invocation_step: WorkflowInvocationStep, outputs: dict[str, Any], already_persisted: bool = False
+        self,
+        invocation_step: WorkflowInvocationStep,
+        outputs: dict[str, Any],
+        already_persisted: bool = False,
+        collection_info=None,
+        output_mapping_axes=None,
     ) -> None:
         step = invocation_step.workflow_step
         if invocation_step.output_value:
             outputs[invocation_step.output_value.workflow_output.output_name] = invocation_step.output_value.value
         self.outputs[step.id] = outputs
+        if output_mapping_axes is None and collection_info:
+            axes = tuple(collection_info.mapping_axes)
+            output_mapping_axes = dict.fromkeys(outputs, axes)
+        effective_output_mapping_axes = output_mapping_axes or {}
+        for output_name, axes in effective_output_mapping_axes.items():
+            self.output_mapping_axes[(step.id, output_name)] = tuple(axes)
         if not already_persisted:
+            invocation_step.output_mapping = self._serialize_output_mapping(
+                outputs,
+                effective_output_mapping_axes,
+            )
             for output_name, output_object in outputs.items():
                 if hasattr(output_object, "history_content_type"):
                     invocation_step.add_output(output_name, output_object)
@@ -682,6 +717,78 @@ class WorkflowProgress:
                     workflow_output,
                     output=output,
                 )
+
+    @staticmethod
+    def _serialize_output_mapping(outputs, output_mapping_axes) -> dict[str, Any]:
+        output_entries = {}
+        for output_name in outputs:
+            axes = output_mapping_axes.get(output_name, ())
+            references = [
+                (
+                    axis
+                    if isinstance(axis, matching.MatchingCollectionAxisReference)
+                    else matching.MatchingCollectionAxisReference.from_axis(axis)
+                )
+                for axis in axes
+            ]
+            output_entries[output_name] = {"axes": [reference.to_dict() for reference in references]}
+        return {"version": 1, "outputs": output_entries}
+
+    @staticmethod
+    def _deserialize_output_mapping(value) -> dict[str, tuple[matching.MatchingCollectionAxisReference, ...]]:
+        if not isinstance(value, dict) or set(value) != {"version", "outputs"}:
+            raise MessageException("Persisted workflow output mapping has unexpected fields")
+        if value["version"] != 1:
+            raise MessageException(f"Unknown persisted workflow output mapping version [{value['version']!r}]")
+        output_entries = value["outputs"]
+        if not isinstance(output_entries, dict):
+            raise MessageException("Persisted workflow output mapping outputs must be an object")
+        output_mapping_axes = {}
+        try:
+            for output_name, output_entry in output_entries.items():
+                if not isinstance(output_name, str):
+                    raise ValueError("Output names must be strings")
+                if not isinstance(output_entry, dict) or set(output_entry) != {"axes"}:
+                    raise ValueError(f"Output mapping entry [{output_name}] has unexpected fields")
+                axes = output_entry["axes"]
+                if not isinstance(axes, list):
+                    raise ValueError(f"Output mapping axes [{output_name}] must be a list")
+                output_mapping_axes[output_name] = tuple(
+                    matching.MatchingCollectionAxisReference.from_dict(axis) for axis in axes
+                )
+        except ValueError as exc:
+            raise MessageException(f"Invalid persisted workflow output mapping: {exc}") from exc
+        return output_mapping_axes
+
+    def recover_output_mapping(self, invocation_step: WorkflowInvocationStep) -> bool:
+        output_mapping = invocation_step.output_mapping
+        if output_mapping is None:
+            return False
+        output_mapping_axes = self._deserialize_output_mapping(output_mapping)
+        outputs = self.outputs.get(invocation_step.workflow_step_id, {})
+        self.set_step_outputs(
+            invocation_step,
+            outputs,
+            already_persisted=True,
+            output_mapping_axes=output_mapping_axes,
+        )
+        return True
+
+    def mapping_axes_for_output(self, step_id, output_name, hydrator):
+        key = (step_id, output_name)
+        axes = self.output_mapping_axes.get(key)
+        if axes is None or not axes:
+            return axes
+        if all(isinstance(axis, matching.MatchingCollectionAxis) for axis in axes):
+            return axes
+        if not all(isinstance(axis, matching.MatchingCollectionAxisReference) for axis in axes):
+            raise MessageException("Recovered workflow output mapping mixes axis values and references")
+        hydrated_axes = self._hydrated_output_mapping_axes.get(key)
+        if hydrated_axes is None:
+            output = self.outputs[step_id][output_name]
+            hydrated_axes = tuple(hydrator(self, output, axes))
+            self._hydrated_output_mapping_axes[key] = hydrated_axes
+        return hydrated_axes
 
     def _record_workflow_output(self, step: "WorkflowStep", workflow_output: "WorkflowOutput", output: Any) -> None:
         if output is NO_REPLACEMENT:
@@ -771,6 +878,7 @@ class WorkflowProgress:
     ) -> "WorkflowProgress":
         subworkflow = subworkflow_invocation.workflow
         subworkflow_inputs = {}
+        inherited_input_axes = {}
         for input_subworkflow_step in subworkflow.input_steps:
             connection_found = False
             subworkflow_step_id = input_subworkflow_step.id
@@ -783,6 +891,13 @@ class WorkflowProgress:
                         is_data=is_data,
                     )
                     subworkflow_inputs[subworkflow_step_id] = replacement
+                    if subworkflow_collection_info:
+                        binding = subworkflow_collection_info.bindings.get(input_connection.input_name)
+                        if binding:
+                            inherited_input_axes[subworkflow_step_id] = tuple(
+                                subworkflow_collection_info.mapping_axes[axis_index]
+                                for axis_index in binding.axis_indices
+                            )
                     connection_found = True
                     break
 
@@ -824,6 +939,7 @@ class WorkflowProgress:
             replacement_dict=self.replacement_dict,
             subworkflow_collection_info=subworkflow_collection_info,
             when_values=when_values,
+            inherited_input_axes=inherited_input_axes,
         )
 
     def raw_to_galaxy(self, value: dict):

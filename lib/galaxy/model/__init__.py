@@ -10728,6 +10728,7 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         ForeignKey("implicit_collection_jobs.id"), index=True
     )
     action: Mapped[bytes | None] = mapped_column(MutableJSONType)
+    output_mapping: Mapped[dict[str, Any] | None] = mapped_column(JSONType)
 
     workflow_step: Mapped[WorkflowStep] = relationship("WorkflowStep")
     job: Mapped[Optional["Job"]] = relationship(back_populates="workflow_invocation_step", uselist=False)

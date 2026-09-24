@@ -1,0 +1,43 @@
+class: GalaxyWorkflow
+doc: |
+  A nested subworkflow with no dependency on the outer mapped input still
+  inherits that callable axis. Its direct collection pass-through is shaped
+  once at the nested callable boundary.
+inputs:
+  outer_mapping_source:
+    type: collection
+    collection_type: list
+  direct_collection:
+    type: collection
+    collection_type: list
+outputs:
+  nested_passthrough:
+    outputSource: outer/nested_passthrough
+steps:
+  outer:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        mapped_dataset: data
+        direct_collection:
+          type: collection
+          collection_type: list
+      outputs:
+        nested_passthrough:
+          outputSource: nested/nested_passthrough
+      steps:
+        nested:
+          in:
+            direct_collection: direct_collection
+          run:
+            class: GalaxyWorkflow
+            inputs:
+              direct_collection:
+                type: collection
+                collection_type: list
+            outputs:
+              nested_passthrough:
+                outputSource: direct_collection/output
+    in:
+      mapped_dataset: outer_mapping_source
+      direct_collection: direct_collection

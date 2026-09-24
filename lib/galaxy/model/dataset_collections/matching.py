@@ -1,36 +1,428 @@
-from typing import Optional
+from collections.abc import (
+    Iterable,
+    Iterator,
+)
+from dataclasses import dataclass
+from itertools import product
+from typing import (
+    Any,
+    cast,
+    Literal,
+    TYPE_CHECKING,
+    TypeAlias,
+)
+
+from typing_extensions import TypedDict
 
 from galaxy import exceptions
-from galaxy.util import bunch
 from .structure import (
     get_collection,
     get_structure,
+    Leaf,
     leaf,
 )
 
+if TYPE_CHECKING:
+    from galaxy.model import (
+        DatasetCollection,
+        DatasetCollectionElement,
+    )
+    from .structure import (
+        BaseTree,
+        CollectionLike,
+    )
+    from .type_description import (
+        CollectionTypeDescription,
+        CollectionTypeDescriptionFactory,
+    )
+
 CANNOT_MATCH_ERROR_MESSAGE = "Cannot match collection types."
+
+# The identity of a mapping axis. Two axes with equal identities describe the
+# same dimension and are merged rather than multiplied when compositions of
+# mappings (e.g. nested workflow invocations) meet:
+# - a literal ``str``/``int`` names an axis directly (input name, HDCA id);
+# - ``("workflow-map", invocation id, sources)`` is the linked axis a mapped
+#   workflow invocation established, identified by its sorted
+#   (workflow step id, output name) source pairs;
+# - ``("axis-prefix", parent identity, rank)`` is the outermost ``rank``
+#   levels of another axis;
+# - ``("consumer-residual", source identities, covered rank)`` is what remains
+#   of the source axes after a consumer covered ``covered rank`` levels.
+MappingAxisId: TypeAlias = (
+    str
+    | int
+    | tuple[Literal["workflow-map"], int, tuple[tuple[int, str], ...]]
+    | tuple[Literal["axis-prefix"], "MappingAxisId", int]
+    | tuple[Literal["consumer-residual"], tuple["MappingAxisId", ...], int]
+)
+
+# One component of a refined axis: the component's identity and the
+# ``[path_start, path_stop)`` slice of the axis coordinate path it owns.
+AxisComponentSpan: TypeAlias = tuple[MappingAxisId, int, int]
+
+
+class LiteralAxisIdDict(TypedDict):
+    kind: Literal["literal"]
+    value: str | int
+
+
+class WorkflowMapSourceDict(TypedDict):
+    workflow_step_id: int
+    output_name: str
+
+
+class WorkflowMapAxisIdDict(TypedDict):
+    kind: Literal["workflow_map"]
+    invocation_id: int
+    sources: list[WorkflowMapSourceDict]
+
+
+class AxisPrefixAxisIdDict(TypedDict):
+    kind: Literal["axis_prefix"]
+    parent: "MappingAxisIdDict"
+    rank: int
+
+
+class ConsumerResidualAxisIdDict(TypedDict):
+    kind: Literal["consumer_residual"]
+    source_axes: list["MappingAxisIdDict"]
+    covered_rank: int
+
+
+# The persisted JSON form of a MappingAxisId, discriminated by ``kind``. The
+# in-memory tuple tags are hyphenated ("workflow-map"); the dict kinds use
+# underscores ("workflow_map").
+MappingAxisIdDict: TypeAlias = (
+    LiteralAxisIdDict | WorkflowMapAxisIdDict | AxisPrefixAxisIdDict | ConsumerResidualAxisIdDict
+)
+
+
+class AxisComponentDict(TypedDict):
+    """The persisted JSON form of an AxisComponentSpan."""
+
+    id: MappingAxisIdDict
+    path_start: int
+    path_stop: int
+
+
+class AxisReferenceDict(TypedDict):
+    """The persisted JSON form of a MatchingCollectionAxisReference."""
+
+    id: MappingAxisIdDict
+    rank: int
+    collection_type: str
+    components: list[AxisComponentDict]
+
+
+def mapping_axis_id_to_dict(axis_id: MappingAxisId) -> MappingAxisIdDict:
+    """Encode a mapping-axis identity without relying on tuple JSON coercion."""
+    if isinstance(axis_id, (str, int)) and not isinstance(axis_id, bool):
+        return {"kind": "literal", "value": axis_id}
+    if isinstance(axis_id, tuple) and axis_id:
+        kind = axis_id[0]
+        if kind == "workflow-map" and len(axis_id) == 3:
+            _kind, invocation_id, sources = axis_id
+            if not isinstance(invocation_id, int) or isinstance(invocation_id, bool):
+                raise ValueError("workflow-map invocation ID must be an integer")
+            if not isinstance(sources, tuple):
+                raise ValueError("workflow-map sources must be a tuple")
+            encoded_sources: list[WorkflowMapSourceDict] = []
+            for source in sources:
+                if (
+                    not isinstance(source, tuple)
+                    or len(source) != 2
+                    or not isinstance(source[0], int)
+                    or isinstance(source[0], bool)
+                    or not isinstance(source[1], str)
+                ):
+                    raise ValueError("workflow-map sources must contain workflow-step ID/output-name pairs")
+                encoded_sources.append({"workflow_step_id": source[0], "output_name": source[1]})
+            if tuple(sorted(sources)) != sources:
+                raise ValueError("workflow-map sources must be canonically ordered")
+            return {
+                "kind": "workflow_map",
+                "invocation_id": invocation_id,
+                "sources": encoded_sources,
+            }
+        if kind == "axis-prefix" and len(axis_id) == 3:
+            # The recursive call validates the parent identity.
+            parent_axis_id = cast("MappingAxisId", axis_id[1])
+            rank = axis_id[2]
+            if not isinstance(rank, int) or isinstance(rank, bool) or rank <= 0:
+                raise ValueError("axis-prefix rank must be a positive integer")
+            return {
+                "kind": "axis_prefix",
+                "parent": mapping_axis_id_to_dict(parent_axis_id),
+                "rank": rank,
+            }
+        if kind == "consumer-residual" and len(axis_id) == 3:
+            # The recursive calls validate the source identities.
+            source_axis_ids = cast("tuple[MappingAxisId, ...]", axis_id[1])
+            covered_rank = axis_id[2]
+            if not isinstance(source_axis_ids, tuple):
+                raise ValueError("consumer-residual source axes must be a tuple")
+            if not isinstance(covered_rank, int) or isinstance(covered_rank, bool) or covered_rank < 0:
+                raise ValueError("consumer-residual covered rank must be a non-negative integer")
+            return {
+                "kind": "consumer_residual",
+                "source_axes": [mapping_axis_id_to_dict(source_axis_id) for source_axis_id in source_axis_ids],
+                "covered_rank": covered_rank,
+            }
+    raise ValueError(f"Unsupported mapping-axis identity [{axis_id!r}]")
+
+
+def mapping_axis_id_from_dict(axis_id: Any) -> MappingAxisId:
+    """Decode the explicit JSON form of a mapping-axis identity.
+
+    ``axis_id`` is untrusted persisted JSON; every field is validated.
+    """
+    if not isinstance(axis_id, dict):
+        raise ValueError("mapping-axis identity must be an object")
+    kind = axis_id.get("kind")
+    if kind == "literal":
+        if set(axis_id) != {"kind", "value"}:
+            raise ValueError("literal mapping-axis identity has unexpected fields")
+        value = axis_id["value"]
+        if not isinstance(value, (str, int)) or isinstance(value, bool):
+            raise ValueError("literal mapping-axis identity must be a string or integer")
+        return value
+    if kind == "workflow_map":
+        if set(axis_id) != {"kind", "invocation_id", "sources"}:
+            raise ValueError("workflow-map identity has unexpected fields")
+        invocation_id = axis_id["invocation_id"]
+        sources = axis_id["sources"]
+        if not isinstance(invocation_id, int) or isinstance(invocation_id, bool):
+            raise ValueError("workflow-map invocation ID must be an integer")
+        if not isinstance(sources, list):
+            raise ValueError("workflow-map sources must be a list")
+        decoded_sources: list[tuple[int, str]] = []
+        for source in sources:
+            if not isinstance(source, dict) or set(source) != {"workflow_step_id", "output_name"}:
+                raise ValueError("workflow-map source has unexpected fields")
+            workflow_step_id = source["workflow_step_id"]
+            output_name = source["output_name"]
+            if (
+                not isinstance(workflow_step_id, int)
+                or isinstance(workflow_step_id, bool)
+                or not isinstance(output_name, str)
+            ):
+                raise ValueError("workflow-map sources must contain workflow-step ID/output-name pairs")
+            decoded_sources.append((workflow_step_id, output_name))
+        decoded_sources_tuple = tuple(decoded_sources)
+        if tuple(sorted(decoded_sources_tuple)) != decoded_sources_tuple:
+            raise ValueError("workflow-map sources must be canonically ordered")
+        return ("workflow-map", invocation_id, decoded_sources_tuple)
+    if kind == "axis_prefix":
+        if set(axis_id) != {"kind", "parent", "rank"}:
+            raise ValueError("axis-prefix identity has unexpected fields")
+        rank = axis_id["rank"]
+        if not isinstance(rank, int) or isinstance(rank, bool) or rank <= 0:
+            raise ValueError("axis-prefix rank must be a positive integer")
+        return ("axis-prefix", mapping_axis_id_from_dict(axis_id["parent"]), rank)
+    if kind == "consumer_residual":
+        if set(axis_id) != {"kind", "source_axes", "covered_rank"}:
+            raise ValueError("consumer-residual identity has unexpected fields")
+        source_axes = axis_id["source_axes"]
+        covered_rank = axis_id["covered_rank"]
+        if not isinstance(source_axes, list):
+            raise ValueError("consumer-residual source axes must be a list")
+        if not isinstance(covered_rank, int) or isinstance(covered_rank, bool) or covered_rank < 0:
+            raise ValueError("consumer-residual covered rank must be a non-negative integer")
+        return (
+            "consumer-residual",
+            tuple(mapping_axis_id_from_dict(source_axis_id) for source_axis_id in source_axes),
+            covered_rank,
+        )
+    raise ValueError(f"Unknown mapping-axis identity kind [{kind!r}]")
+
+
+@dataclass(frozen=True)
+class MatchingCollectionAxisReference:
+    """Durable lineage for an axis, without its executable collection tree."""
+
+    axis_id: MappingAxisId
+    collection_type: str
+    axis_components: tuple[AxisComponentSpan, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.collection_type:
+            raise ValueError("Mapping-axis collection type must not be empty")
+        rank = self.rank
+        for _component_id, start, stop in self.axis_components:
+            if start < 0 or stop <= start or stop > rank:
+                raise ValueError("Mapping-axis component span is outside the axis rank")
+
+    @property
+    def rank(self) -> int:
+        return len(self.collection_type.split(":"))
+
+    @classmethod
+    def from_axis(cls, axis: "MatchingCollectionAxis") -> "MatchingCollectionAxisReference":
+        if axis.axis_id is None:
+            raise ValueError("Cannot persist a mapping axis without an identity")
+        collection_type = axis.structure.collection_type_description.collection_type
+        return cls(axis.axis_id, collection_type, axis.components())
+
+    def to_dict(self) -> AxisReferenceDict:
+        return {
+            "id": mapping_axis_id_to_dict(self.axis_id),
+            "rank": self.rank,
+            "collection_type": self.collection_type,
+            "components": [
+                {
+                    "id": mapping_axis_id_to_dict(component_id),
+                    "path_start": path_start,
+                    "path_stop": path_stop,
+                }
+                for component_id, path_start, path_stop in self.axis_components
+            ],
+        }
+
+    @classmethod
+    def from_dict(cls, value: Any) -> "MatchingCollectionAxisReference":
+        """Decode an ``AxisReferenceDict``; ``value`` is untrusted persisted JSON."""
+        if not isinstance(value, dict) or set(value) != {"id", "rank", "collection_type", "components"}:
+            raise ValueError("Mapping-axis reference has unexpected fields")
+        collection_type = value["collection_type"]
+        rank = value["rank"]
+        components = value["components"]
+        if not isinstance(collection_type, str) or not collection_type:
+            raise ValueError("Mapping-axis collection type must be a non-empty string")
+        expected_rank = len(collection_type.split(":"))
+        if not isinstance(rank, int) or isinstance(rank, bool) or rank != expected_rank:
+            raise ValueError("Mapping-axis rank does not match its collection type")
+        if not isinstance(components, list):
+            raise ValueError("Mapping-axis components must be a list")
+        decoded_components: list[AxisComponentSpan] = []
+        for component in components:
+            if not isinstance(component, dict) or set(component) != {"id", "path_start", "path_stop"}:
+                raise ValueError("Mapping-axis component has unexpected fields")
+            path_start = component["path_start"]
+            path_stop = component["path_stop"]
+            if (
+                not isinstance(path_start, int)
+                or isinstance(path_start, bool)
+                or not isinstance(path_stop, int)
+                or isinstance(path_stop, bool)
+            ):
+                raise ValueError("Mapping-axis component spans must be integers")
+            decoded_components.append((mapping_axis_id_from_dict(component["id"]), path_start, path_stop))
+        return cls(
+            mapping_axis_id_from_dict(value["id"]),
+            collection_type,
+            tuple(decoded_components),
+        )
+
+
+@dataclass
+class MatchingCollectionAxis:
+    """One independently iterable dimension of an implicit map-over."""
+
+    structure: "BaseTree"
+    axis_id: MappingAxisId | None = None
+    axis_components: tuple[AxisComponentSpan, ...] | None = None
+
+    def __post_init__(self) -> None:
+        if self.axis_components is None:
+            return
+
+        # A component identity must select exactly one part of the coordinate
+        # path. Refining an axis can rediscover the same component at a deeper
+        # rank, so retain its widest span and make the primary identity denote
+        # the complete refined axis.
+        components_by_id: dict[MappingAxisId, AxisComponentSpan] = {}
+        for component_id, start, stop in self.axis_components:
+            existing = components_by_id.get(component_id)
+            if existing is None or stop - start > existing[2] - existing[1]:
+                components_by_id[component_id] = (component_id, start, stop)
+        if self.axis_id is not None:
+            rank = len(self.structure.collection_type_description.collection_type.split(":"))
+            components_by_id[self.axis_id] = (self.axis_id, 0, rank)
+        self.axis_components = tuple(components_by_id.values())
+
+    def coordinates(self) -> Iterator[tuple[tuple[int, ...], int]]:
+        for coordinate_index, path in enumerate(self.structure.walk_coordinates()):
+            yield path, coordinate_index
+
+    def components(self) -> tuple[AxisComponentSpan, ...]:
+        if self.axis_components is not None:
+            return self.axis_components
+        if self.axis_id is None:
+            return ()
+        rank = len(self.structure.collection_type_description.collection_type.split(":"))
+        return ((self.axis_id, 0, rank),)
+
+    def component_path_slice(self, axis_id: MappingAxisId) -> tuple[int, int] | None:
+        for component_id, start, stop in self.components():
+            if component_id == axis_id:
+                return start, stop
+        return None
+
+
+@dataclass
+class MatchingCollectionBinding:
+    """An input collection sliced by one or more ordered axes."""
+
+    collection: "CollectionLike"
+    axis_indices: tuple[int, ...]
+    # Declared as a string by tool inputs and as a description object by
+    # workflow map-over planning; both are accepted throughout.
+    subcollection_type: "str | CollectionTypeDescription | None" = None
+    axis_path_slices: tuple[tuple[int | None, int | None], ...] | None = None
+
+
+@dataclass
+class MatchingCollectionCondition:
+    """Condition values indexed over a specific ordered set of axes."""
+
+    axis_indices: tuple[int, ...]
+    values: list[bool | None]
+
+
+@dataclass
+class CollectionToMatch:
+    """One input's collection and how it participates in matching."""
+
+    hdca: "CollectionLike"
+    # Declared as a string by tool inputs and as a description object by
+    # workflow map-over planning; both are accepted throughout.
+    subcollection_type: "str | CollectionTypeDescription | None" = None
+    linked: bool = True
+    axis_id: MappingAxisId | None = None
 
 
 class CollectionsToMatch:
     """Structure representing a set of collections that need to be matched up
-    when running tools (possibly workflows in the future as well).
+    when running tools and workflow steps.
     """
 
-    def __init__(self):
-        self.collections = {}
+    def __init__(self) -> None:
+        self.collections: dict[str, CollectionToMatch] = {}
 
-    def add(self, input_name, hdca, subcollection_type=None, linked=True):
-        self.collections[input_name] = bunch.Bunch(
+    def add(
+        self,
+        input_name: str,
+        hdca: "CollectionLike",
+        subcollection_type: "str | CollectionTypeDescription | None" = None,
+        linked: bool = True,
+        axis_id: MappingAxisId | None = None,
+    ) -> None:
+        self.collections[input_name] = CollectionToMatch(
             hdca=hdca,
             subcollection_type=subcollection_type,
             linked=linked,
+            axis_id=axis_id,
         )
 
-    def has_collections(self):
+    def has_collections(self) -> bool:
         return len(self.collections) > 0
 
-    def items(self):
+    def items(self) -> Iterable[tuple[str, CollectionToMatch]]:
         return self.collections.items()
+
+    def pop(self, input_name: str) -> CollectionToMatch:
+        return self.collections.pop(input_name)
 
 
 class MatchingCollections:
@@ -43,17 +435,24 @@ class MatchingCollections:
     service - hence the complexity now.
     """
 
-    def __init__(self):
-        self.linked_structure = None
-        self.unlinked_structures = []
-        self.collections = {}
-        self.subcollection_types = {}
-        self.action_tuples = {}
-        self.when_values = None
+    def __init__(self) -> None:
+        self.linked_structure: BaseTree | None = None
+        self.collections: dict[str, CollectionLike] = {}
+        self.subcollection_types: dict[str, str | CollectionTypeDescription | None] = {}
+        self.action_tuples: dict[str, list[tuple[str, int]]] = {}
+        self.mapping_axes: list[MatchingCollectionAxis] = []
+        self.bindings: dict[str, MatchingCollectionBinding] = {}
+        self.conditions: list[MatchingCollectionCondition] = []
+        self._when_values: list[bool | None] | None = None
 
     def __attempt_add_to_linked_match(
-        self, input_name, hdca, child_collection, collection_type_description, subcollection_type
-    ):
+        self,
+        input_name: str,
+        hdca: "CollectionLike",
+        child_collection: "DatasetCollection",
+        collection_type_description: "CollectionTypeDescription",
+        subcollection_type: "str | CollectionTypeDescription | None",
+    ) -> None:
         structure = get_structure(
             child_collection, collection_type_description, leaf_subcollection_type=subcollection_type
         )
@@ -67,41 +466,316 @@ class MatchingCollections:
             self.collections[input_name] = hdca
             self.subcollection_types[input_name] = subcollection_type
 
-    def slice_collections(self):
-        self.linked_structure.when_values = self.when_values
-        return self.linked_structure.walk_collections({k: get_collection(v) for k, v in self.collections.items()})
+    def slice_collections(self) -> Iterator[tuple[dict[str, "DatasetCollectionElement"], bool | None]]:
+        """Yield slices across every mapping axis in stable outer-to-inner order."""
+        return self._slices()
 
-    def subcollection_mapping_type(self, input_name):
+    def _slices(self) -> Iterator[tuple[dict[str, "DatasetCollectionElement"], bool | None]]:
+        # An empty known outer axis makes the whole product empty. Avoid
+        # querying the cardinality of a later uninitialized axis in that case.
+        if any(axis.structure.children_known and len(axis.structure) == 0 for axis in self.mapping_axes):
+            return
+        axis_cardinalities = tuple(len(axis.structure) for axis in self.mapping_axes)
+        for condition in self.conditions:
+            condition_count = self._condition_coordinate_count(condition, axis_cardinalities)
+            if len(condition.values) not in (1, condition_count):
+                raise ValueError("Condition values do not match mapping coordinates")
+        for coordinates in self._coordinate_product(0, []):
+            coordinate_paths = [path for path, _ordinal in coordinates]
+            sliced_collections = {
+                input_name: self._slice_binding(binding, coordinate_paths)
+                for input_name, binding in self.bindings.items()
+            }
+            coordinate_when_values = [
+                self._condition_value(condition, coordinates, axis_cardinalities) for condition in self.conditions
+            ]
+            if any(when_value is False for when_value in coordinate_when_values):
+                combined_when_value = False
+            elif any(when_value is True for when_value in coordinate_when_values):
+                combined_when_value = True
+            else:
+                combined_when_value = None
+            yield sliced_collections, combined_when_value
+
+    def _coordinate_product(
+        self, axis_index: int, coordinates: list[tuple[tuple[int, ...], int]]
+    ) -> Iterator[list[tuple[tuple[int, ...], int]]]:
+        if axis_index < len(self.mapping_axes):
+            for coordinate in self.mapping_axes[axis_index].coordinates():
+                yield from self._coordinate_product(axis_index + 1, [*coordinates, coordinate])
+            return
+        yield coordinates
+
+    def _condition_value(
+        self,
+        condition: MatchingCollectionCondition,
+        coordinates: list[tuple[tuple[int, ...], int]],
+        axis_cardinalities: tuple[int, ...],
+    ) -> bool | None:
+        coordinate_index = 0
+        for axis_index in condition.axis_indices:
+            _path, axis_ordinal = coordinates[axis_index]
+            coordinate_index *= axis_cardinalities[axis_index]
+            coordinate_index += axis_ordinal
+        values = condition.values
+        if len(values) == 1:
+            return values[0]
+        return values[coordinate_index]
+
+    @staticmethod
+    def _condition_coordinate_count(condition: MatchingCollectionCondition, axis_cardinalities: tuple[int, ...]) -> int:
+        count = 1
+        for axis_index in condition.axis_indices:
+            count *= axis_cardinalities[axis_index]
+        return count
+
+    @staticmethod
+    def _slice_binding(
+        binding: MatchingCollectionBinding, coordinate_paths: list[tuple[int, ...]]
+    ) -> "DatasetCollectionElement":
+        path: tuple[int, ...] = ()
+        for binding_axis_index, axis_index in enumerate(binding.axis_indices):
+            coordinate_path = coordinate_paths[axis_index]
+            if binding.axis_path_slices:
+                start, stop = binding.axis_path_slices[binding_axis_index]
+                coordinate_path = coordinate_path[start:stop]
+            path += coordinate_path
+        collection = get_collection(binding.collection)
+        element = None
+        for depth, index in enumerate(path):
+            element = collection[index]
+            if depth < len(path) - 1:
+                collection = element.child_collection
+        # An empty coordinate path (a binding with no axes) is never produced
+        # by planning, so an element is always selected.
+        return cast("DatasetCollectionElement", element)
+
+    @property
+    def when_values(self) -> list[bool | None] | None:
+        return self._when_values
+
+    @when_values.setter
+    def when_values(self, when_values: list[bool | None] | None) -> None:
+        self._when_values = when_values
+        self.conditions = [
+            condition for condition in self.conditions if condition.axis_indices != tuple(range(len(self.mapping_axes)))
+        ]
+        if when_values:
+            self.conditions.append(
+                MatchingCollectionCondition(
+                    axis_indices=tuple(range(len(self.mapping_axes))),
+                    values=when_values,
+                )
+            )
+
+    def subcollection_mapping_type(self, input_name: str) -> "str | CollectionTypeDescription | None":
         return self.subcollection_types[input_name]
 
     @property
-    def structure(self):
-        """Yield cross product of all unlinked collections structures to linked collection structure."""
-        effective_structure = leaf
-        for unlinked_structure in self.unlinked_structures:
-            effective_structure = effective_structure.multiply(unlinked_structure)
-        linked_structure = self.linked_structure
-        if linked_structure is None:
-            linked_structure = leaf
-        effective_structure = effective_structure.multiply(linked_structure)
-        effective_structure.when_values = self.when_values
-        return None if effective_structure.is_leaf else effective_structure
+    def structure(self) -> "BaseTree | None":
+        """Cross product of every mapping axis structure, or None when nothing is mapped over."""
+        effective_structure: Leaf | BaseTree = leaf
+        for axis in self.mapping_axes:
+            effective_structure = effective_structure.multiply(axis.structure)
+        return None if isinstance(effective_structure, Leaf) else effective_structure
 
-    def map_over_action_tuples(self, input_name):
+    @classmethod
+    def from_axes(
+        cls,
+        axes: Iterable[MatchingCollectionAxis],
+        bindings: dict[str, MatchingCollectionBinding] | None = None,
+        conditions: Iterable[MatchingCollectionCondition] | None = None,
+    ) -> "MatchingCollections":
+        matching_collections = cls()
+        matching_collections.mapping_axes = list(axes)
+        matching_collections.bindings = bindings or {}
+        matching_collections.conditions = list(conditions or [])
+        return matching_collections
+
+    def with_inherited_mapping(self, inherited: "MatchingCollections") -> "MatchingCollections":
+        """Compose local mapping with inherited axes without inheriting parent bindings."""
+        axes = list(inherited.mapping_axes)
+        local_axis_indices = {}
+        for local_index, local_axis in enumerate(self.mapping_axes):
+            combined_index = None
+            if local_axis.axis_id is not None:
+                for inherited_index, inherited_axis in enumerate(axes):
+                    if local_axis.axis_id == inherited_axis.axis_id:
+                        if not self._axis_is_covered_by_inherited(local_axis, inherited_axis):
+                            raise exceptions.MessageException(CANNOT_MATCH_ERROR_MESSAGE)
+                        combined_index = inherited_index
+                        break
+            if combined_index is None:
+                combined_index = len(axes)
+                axes.append(local_axis)
+            local_axis_indices[local_index] = combined_index
+
+        bindings = {
+            name: MatchingCollectionBinding(
+                collection=binding.collection,
+                axis_indices=tuple(dict.fromkeys(local_axis_indices[index] for index in binding.axis_indices)),
+                subcollection_type=binding.subcollection_type,
+                axis_path_slices=binding.axis_path_slices,
+            )
+            for name, binding in self.bindings.items()
+        }
+        conditions = list(inherited.conditions)
+        conditions.extend(
+            MatchingCollectionCondition(
+                axis_indices=tuple(local_axis_indices[index] for index in condition.axis_indices),
+                values=condition.values,
+            )
+            for condition in self.conditions
+        )
+        combined = self.from_axes(axes, bindings, conditions)
+        combined.collections = self.collections.copy()
+        combined.subcollection_types = self.subcollection_types.copy()
+        return combined
+
+    def without_bindings(self) -> "MatchingCollections":
+        """Retain mapping coordinates and conditions for a nested execution context."""
+        return self.from_axes(self.mapping_axes, conditions=self.conditions)
+
+    def extend_context(self, axes: Iterable[MatchingCollectionAxis]) -> "MatchingCollections":
+        """Add axes not already present in this execution context."""
+        combined_axes = list(self.mapping_axes)
+        for axis in axes:
+            for existing_axis in combined_axes:
+                if axis.axis_id is not None and axis.axis_id == existing_axis.axis_id:
+                    if not self._axis_is_covered_by_inherited(axis, existing_axis):
+                        raise exceptions.MessageException(CANNOT_MATCH_ERROR_MESSAGE)
+                    break
+            else:
+                combined_axes.append(axis)
+        return self.from_axes(combined_axes, conditions=self.conditions)
+
+    def refine_axis(
+        self,
+        axis_id: MappingAxisId,
+        structure: "BaseTree",
+        axis_components: tuple[AxisComponentSpan, ...] | None = None,
+    ) -> "MatchingCollections":
+        """Replace an axis with a nested refinement while preserving its identity."""
+        axes = list(self.mapping_axes)
+        axis_index = next(
+            (index for index, axis in enumerate(axes) if axis.axis_id == axis_id),
+            None,
+        )
+        if axis_index is None:
+            raise exceptions.MessageException(CANNOT_MATCH_ERROR_MESSAGE)
+        old_axis = axes[axis_index]
+        old_types = old_axis.structure.collection_type_description.collection_type.split(":")
+        new_types = structure.collection_type_description.collection_type.split(":")
+        if len(new_types) < len(old_types) or new_types[: len(old_types)] != old_types:
+            raise exceptions.MessageException(CANNOT_MATCH_ERROR_MESSAGE)
+        if not old_axis.structure.children_known or not structure.children_known:
+            raise exceptions.MessageException(CANNOT_MATCH_ERROR_MESSAGE)
+        old_paths = [path for path, _ordinal in old_axis.coordinates()]
+        new_axis = MatchingCollectionAxis(
+            structure,
+            axis_id,
+            axis_components=axis_components if axis_components is not None else old_axis.components(),
+        )
+        new_paths = [path for path, _ordinal in new_axis.coordinates()]
+        new_to_old = []
+        for new_path in new_paths:
+            matching_old = [index for index, old_path in enumerate(old_paths) if new_path[: len(old_path)] == old_path]
+            if len(matching_old) != 1:
+                raise exceptions.MessageException(CANNOT_MATCH_ERROR_MESSAGE)
+            new_to_old.append(matching_old[0])
+        axes[axis_index] = new_axis
+
+        old_cardinalities = [len(axis.structure) for axis in self.mapping_axes]
+        new_cardinalities = [len(axis.structure) for axis in axes]
+        conditions = []
+        for condition in self.conditions:
+            if axis_index not in condition.axis_indices or len(condition.values) == 1:
+                conditions.append(condition)
+                continue
+            values = []
+            condition_cardinalities = [new_cardinalities[index] for index in condition.axis_indices]
+            for new_ordinals in product(*(range(cardinality) for cardinality in condition_cardinalities)):
+                old_ordinals = list(new_ordinals)
+                refined_position = condition.axis_indices.index(axis_index)
+                old_ordinals[refined_position] = new_to_old[new_ordinals[refined_position]]
+                old_index = 0
+                for condition_axis_index, ordinal in zip(condition.axis_indices, old_ordinals):
+                    old_index *= old_cardinalities[condition_axis_index]
+                    old_index += ordinal
+                values.append(condition.values[old_index])
+            conditions.append(MatchingCollectionCondition(condition.axis_indices, values))
+
+        refined = self.from_axes(axes, bindings=self.bindings.copy(), conditions=conditions)
+        refined.collections = self.collections.copy()
+        refined.subcollection_types = self.subcollection_types.copy()
+        return refined
+
+    @staticmethod
+    def _axes_have_compatible_shape(left: MatchingCollectionAxis, right: MatchingCollectionAxis) -> bool:
+        left_structure = left.structure
+        right_structure = right.structure
+        if left_structure.children_known and right_structure.children_known:
+            return left_structure.compatible_shape(right_structure)
+        return left_structure.collection_type_description.compatible(right_structure.collection_type_description)
+
+    @classmethod
+    def _axes_have_compatible_or_refined_shape(
+        cls, left: MatchingCollectionAxis, right: MatchingCollectionAxis
+    ) -> bool:
+        if cls._axes_have_compatible_shape(left, right):
+            return True
+        left_rank = len(left.structure.collection_type_description.collection_type.split(":"))
+        right_rank = len(right.structure.collection_type_description.collection_type.split(":"))
+        if left_rank == right_rank:
+            return False
+        shallow, deep = (left, right) if left_rank < right_rank else (right, left)
+        shallow_types = shallow.structure.collection_type_description.collection_type.split(":")
+        deep_types = deep.structure.collection_type_description.collection_type.split(":")
+        if deep_types[: len(shallow_types)] != shallow_types:
+            return False
+        if not shallow.structure.children_known or not deep.structure.children_known:
+            return True
+        shallow_paths = [path for path, _ordinal in shallow.coordinates()]
+        deep_paths = [path for path, _ordinal in deep.coordinates()]
+        return all(
+            sum(deep_path[: len(shallow_path)] == shallow_path for shallow_path in shallow_paths) == 1
+            for deep_path in deep_paths
+        ) and (bool(shallow_paths) or not deep_paths)
+
+    @classmethod
+    def _axis_is_covered_by_inherited(cls, local: MatchingCollectionAxis, inherited: MatchingCollectionAxis) -> bool:
+        if cls._axes_have_compatible_shape(local, inherited):
+            return True
+
+        # A nested workflow may rediscover only the remaining suffix of an
+        # axis that was established at its callable boundary. The inherited
+        # structure owns the complete coordinate path in that case; retaining
+        # it lets the local binding be sliced at the correct nested depth.
+        local_types = local.structure.collection_type_description.collection_type.split(":")
+        inherited_types = inherited.structure.collection_type_description.collection_type.split(":")
+        return len(local_types) < len(inherited_types) and inherited_types[-len(local_types) :] == local_types
+
+    def map_over_action_tuples(self, input_name: str) -> list[tuple[str, int]]:
         if input_name not in self.action_tuples:
             collection_instance = self.collections[input_name]
             self.action_tuples[input_name] = get_collection(collection_instance).dataset_action_tuples
         return self.action_tuples[input_name]
 
-    def is_mapped_over(self, input_name):
+    def is_mapped_over(self, input_name: str) -> bool:
         return input_name in self.collections
 
     @staticmethod
-    def for_collections(collections_to_match, collection_type_descriptions) -> Optional["MatchingCollections"]:
+    def for_collections(
+        collections_to_match: CollectionsToMatch,
+        collection_type_descriptions: "CollectionTypeDescriptionFactory",
+    ) -> "MatchingCollections | None":
         if not collections_to_match.has_collections():
             return None
 
         matching_collections = MatchingCollections()
+        unlinked_axes: list[MatchingCollectionAxis] = []
+        unlinked_bindings: list[tuple[str, CollectionLike, str | CollectionTypeDescription | None]] = []
+        linked_axis_id: MappingAxisId | None = None
         for input_key, to_match in sorted(collections_to_match.items()):
             hdca = to_match.hdca
             # Resolve the contained collection: for an HDCA this is
@@ -116,6 +790,10 @@ class MatchingCollections:
             subcollection_type = to_match.subcollection_type
 
             if to_match.linked:
+                if to_match.axis_id is not None:
+                    if linked_axis_id is not None and linked_axis_id != to_match.axis_id:
+                        raise exceptions.MessageException(CANNOT_MATCH_ERROR_MESSAGE)
+                    linked_axis_id = to_match.axis_id
                 matching_collections.__attempt_add_to_linked_match(
                     input_key, hdca, child_collection, collection_type_description, subcollection_type
                 )
@@ -125,6 +803,34 @@ class MatchingCollections:
                     collection_type_description,
                     leaf_subcollection_type=subcollection_type,
                 )
-                matching_collections.unlinked_structures.append(structure)
+                unlinked_axes.append(
+                    MatchingCollectionAxis(
+                        structure=structure,
+                        axis_id=to_match.axis_id,
+                    )
+                )
+                unlinked_bindings.append((input_key, hdca, subcollection_type))
+
+        matching_collections.mapping_axes.extend(unlinked_axes)
+        for axis_index, (input_key, hdca, subcollection_type) in enumerate(unlinked_bindings):
+            matching_collections.bindings[input_key] = MatchingCollectionBinding(
+                collection=hdca,
+                axis_indices=(axis_index,),
+                subcollection_type=subcollection_type,
+            )
+        if matching_collections.linked_structure is not None:
+            linked_axis_index = len(matching_collections.mapping_axes)
+            matching_collections.mapping_axes.append(
+                MatchingCollectionAxis(
+                    structure=matching_collections.linked_structure,
+                    axis_id=linked_axis_id,
+                )
+            )
+            for input_key, hdca in matching_collections.collections.items():
+                matching_collections.bindings[input_key] = MatchingCollectionBinding(
+                    collection=hdca,
+                    axis_indices=(linked_axis_index,),
+                    subcollection_type=matching_collections.subcollection_types[input_key],
+                )
 
         return matching_collections

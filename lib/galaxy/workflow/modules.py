@@ -50,7 +50,10 @@ from galaxy.model import (
 )
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.dataset_collections.adapters import PromoteCollectionElementToCollectionAdapter
-from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
+from galaxy.model.dataset_collections.type_description import (
+    COLLECTION_TYPE_DESCRIPTION_FACTORY,
+    CollectionTypeDescription,
+)
 from galaxy.model.dataset_collections.types.sample_sheet_util import validate_column_definitions
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import (
@@ -155,7 +158,9 @@ from galaxy.util.template import fill_template
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
 from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.workflow.map_over import (
+    collect_output_mapping_axes,
     MapOverPlanner,
+    shape_passthrough_output,
 )
 from galaxy.workflow.workflow_parameter_input_definitions import (
     get_default_parameter,
@@ -700,10 +705,8 @@ class WorkflowModule:
             "Attempting to perform invocation step action on module that does not support actions."
         )
 
-    def recover_mapping(self, invocation_step, progress):
-        """Re-populate progress object with information about connections
-        from previously executed steps recorded via invocation_steps.
-        """
+    def recover_outputs(self, invocation_step, progress):
+        """Restore persisted step outputs without dereferencing dependencies."""
         outputs = {}
 
         for output_dataset_assoc in invocation_step.output_datasets:
@@ -713,6 +716,21 @@ class WorkflowModule:
             outputs[output_dataset_collection_assoc.output_name] = output_dataset_collection_assoc.dataset_collection
 
         progress.set_step_outputs(invocation_step, outputs, already_persisted=True)
+
+    def recover_mapping(self, invocation_step, progress):
+        """Reconstruct mapping metadata after persisted outputs are available."""
+        if progress.recover_output_mapping(invocation_step):
+            return
+        if progress.subworkflow_collection_info is None:
+            return
+        outputs = progress.outputs.get(invocation_step.workflow_step_id, {})
+        collection_info = self.plan_map_over(progress, invocation_step.workflow_step, self.get_all_inputs())
+        progress.set_step_outputs(
+            invocation_step,
+            outputs,
+            already_persisted=True,
+            collection_info=collection_info,
+        )
 
     def get_informal_replacement_parameters(self, step) -> list[str]:
         """Return a list of informal replacement parameters.
@@ -897,6 +915,7 @@ class SubWorkflowModule(WorkflowModule):
         all_inputs = self.get_all_inputs()
         collection_info = self.plan_map_over(progress, step, all_inputs)
 
+        iteration_elements_iter: Iterable[tuple[dict[str, Any] | None, bool | None]]
         if collection_info:
             iteration_elements_iter = collection_info.slice_collections()
         else:
@@ -918,6 +937,8 @@ class SubWorkflowModule(WorkflowModule):
                 extra_step_state = {}
                 for step_input in step.inputs:
                     step_input_name = step_input.name
+                    if step_input_name is None:
+                        continue
                     if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
                         value = iteration_elements[step_input_name]  # noqa: B023
                     else:
@@ -942,7 +963,7 @@ class SubWorkflowModule(WorkflowModule):
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
         subworkflow_progress = subworkflow_invoker.progress
-        outputs = {}
+        resolved_outputs = []
         for workflow_output in subworkflow.workflow_outputs:
             workflow_output_label = (
                 workflow_output.label or f"{workflow_output.workflow_step.order_index}:{workflow_output.output_name}"
@@ -958,9 +979,87 @@ class SubWorkflowModule(WorkflowModule):
                         dependent_workflow_step_id=step.id,
                     )
                 )
+            resolved_outputs.append((workflow_output, workflow_output_label, replacement))
+
+        # Resolving a later output can delay this step until a subsequent
+        # scheduling iteration. Do not materialize pass-through collections
+        # until every output is available or each retry would leave behind a
+        # new, unreferenced history collection.
+        outputs = {}
+        for workflow_output, workflow_output_label, replacement in resolved_outputs:
+            replacement = shape_passthrough_output(
+                trans,
+                invocation_step,
+                workflow_output,
+                workflow_output_label,
+                replacement,
+                collection_info,
+            )
             outputs[workflow_output_label] = replacement
-        progress.set_step_outputs(invocation_step, outputs)
+        output_mapping_axes = collect_output_mapping_axes(subworkflow, subworkflow_progress, collection_info)
+        progress.set_step_outputs(invocation_step, outputs, output_mapping_axes=output_mapping_axes)
         return None
+
+    def recover_outputs(self, invocation_step, progress):
+        super().recover_outputs(invocation_step, progress)
+        outputs = progress.outputs[invocation_step.workflow_step_id]
+        subworkflow_invocation = progress._subworkflow_invocation(invocation_step.workflow_step)
+        for output_value in subworkflow_invocation.output_values:
+            workflow_output = output_value.workflow_output
+            output_label = (
+                workflow_output.label or f"{workflow_output.workflow_step.order_index}:{workflow_output.output_name}"
+            )
+            value = output_value.value
+            if isinstance(value, NoReplacement) or (
+                isinstance(value, dict) and value.get("__class__") == "NoReplacement"
+            ):
+                value = NO_REPLACEMENT
+            outputs[output_label] = value
+        progress.set_step_outputs(invocation_step, outputs, already_persisted=True)
+
+    def recover_mapping(self, invocation_step, progress):
+        if invocation_step.output_mapping is not None or progress.subworkflow_collection_info is None:
+            super().recover_mapping(invocation_step, progress)
+            return
+        outputs = dict(progress.outputs.get(invocation_step.workflow_step_id, {}))
+        for output_dataset_assoc in invocation_step.output_datasets:
+            outputs[output_dataset_assoc.output_name] = output_dataset_assoc.dataset
+        for output_dataset_collection_assoc in invocation_step.output_dataset_collections:
+            outputs[output_dataset_collection_assoc.output_name] = output_dataset_collection_assoc.dataset_collection
+
+        step = invocation_step.workflow_step
+        collection_info = self.plan_map_over(progress, step, self.get_all_inputs())
+        subworkflow_invoker = progress.subworkflow_invoker(
+            self.trans,
+            step,
+            subworkflow_collection_info=collection_info,
+        )
+        subworkflow_invoker.progress.remaining_steps()
+        for workflow_output in subworkflow_invoker.workflow.workflow_outputs:
+            output_label = (
+                workflow_output.label or f"{workflow_output.workflow_step.order_index}:{workflow_output.output_name}"
+            )
+            if output_label in outputs:
+                continue
+            try:
+                replacement = subworkflow_invoker.progress.get_replacement_workflow_output(workflow_output)
+            except KeyError:
+                continue
+            if isinstance(replacement, NoReplacement) or (
+                isinstance(replacement, dict) and replacement.get("__class__") == "NoReplacement"
+            ):
+                outputs[output_label] = NO_REPLACEMENT
+        output_mapping_axes = collect_output_mapping_axes(
+            subworkflow_invoker.workflow,
+            subworkflow_invoker.progress,
+            collection_info,
+        )
+        progress.set_step_outputs(
+            invocation_step,
+            outputs,
+            already_persisted=True,
+            output_mapping_axes=output_mapping_axes,
+        )
 
     def get_runtime_state(self):
         state = DefaultToolState()
@@ -2171,7 +2270,7 @@ class PickValueModule(WorkflowModule):
                     replacements.append(replacement)
             output = self._pick_from_replacements(trans, invocation_step, mode, replacements)
 
-        progress.set_step_outputs(invocation_step, {"output": output})
+        progress.set_step_outputs(invocation_step, {"output": output}, collection_info=collection_info)
         self._apply_post_job_actions(trans, step, output, progress.effective_replacement_dict())
         return None
 
@@ -2184,7 +2283,7 @@ class PickValueModule(WorkflowModule):
         input_names = {d["name"] for d in all_inputs}
 
         per_element_outputs: list[tuple[str, Any]] = []
-        for iteration_elements, _when_value in collection_info.slice_collections():
+        for iteration_elements, when_value in collection_info.slice_collections():
             # For each slice, extract per-element replacements
             replacements = []
             for input_dict in all_inputs:
@@ -2198,7 +2297,13 @@ class PickValueModule(WorkflowModule):
                 if replacement is not NO_REPLACEMENT:
                     replacements.append(replacement)
 
-            element_output = self._pick_from_replacements(trans, invocation_step, mode, replacements)
+            if when_value is False:
+                if mode == "all_non_null":
+                    element_output = self._create_collection_from_list(trans, invocation_step, [])
+                else:
+                    element_output = self._create_skipped_output(trans, invocation_step)
+            else:
+                element_output = self._pick_from_replacements(trans, invocation_step, mode, replacements)
             # Track the identifier from the first mapped input for naming
             first_mapped = (
                 next(
@@ -2212,7 +2317,13 @@ class PickValueModule(WorkflowModule):
             per_element_outputs.append((identifier, element_output))
 
         # Build the output collection from per-element outputs
-        return self._create_mapped_output_collection(trans, history, mode, per_element_outputs)
+        return self._create_mapped_output_collection(
+            trans,
+            history,
+            mode,
+            per_element_outputs,
+            collection_info.structure,
+        )
 
     def _create_skipped_output(self, trans: "ProvidesHistoryContext", invocation_step):
         """Create a skipped HDA for first_or_skip when all inputs are null."""
@@ -2253,49 +2364,56 @@ class PickValueModule(WorkflowModule):
         )
         return hdca
 
-    def _create_mapped_output_collection(self, trans: "ProvidesHistoryContext", history, mode, per_element_outputs):
+    def _create_mapped_output_collection(
+        self,
+        trans: "ProvidesHistoryContext",
+        history,
+        mode,
+        per_element_outputs,
+        mapping_structure,
+    ):
         """Create an implicit output collection from per-element pick results.
 
-        For single-value modes (first_non_null, etc.), creates a flat list of HDAs.
-        For all_non_null mode, creates a list:list where each element is a sub-collection.
+        Preserve the complete effective mapping structure. For all_non_null,
+        append the list produced at each mapped coordinate.
         """
         collection_manager = trans.app.dataset_collection_manager
-        if mode == "all_non_null":
-            # Each element is an HDCA — build list:list
-            elements = []
-            for identifier, hdca in per_element_outputs:
-                elements.append(
-                    dict(
-                        name=identifier,
-                        src="hdca",
-                        id=hdca.id,
+        output_values = iter(output for _identifier, output in per_element_outputs)
+        output_suffix = ":list" if mode == "all_non_null" else ""
+
+        def build_identifiers(structure):
+            identifiers = []
+            for identifier, child_structure in structure.children:
+                if child_structure.is_leaf:
+                    output = next(output_values)
+                    identifiers.append(
+                        dict(
+                            name=identifier,
+                            src="hdca" if mode == "all_non_null" else "hda",
+                            id=output.id,
+                        )
                     )
-                )
-            return collection_manager.create(
-                trans,
-                history,
-                name="Pick Value - mapped all non-null",
-                collection_type="list:list",
-                element_identifiers=elements,
-            )
-        else:
-            # Each element is an HDA — build flat list
-            elements = []
-            for identifier, hda in per_element_outputs:
-                elements.append(
-                    dict(
-                        name=identifier,
-                        src="hda",
-                        id=hda.id,
+                else:
+                    identifiers.append(
+                        dict(
+                            name=identifier,
+                            src="new_collection",
+                            collection_type=(
+                                child_structure.collection_type_description.collection_type + output_suffix
+                            ),
+                            element_identifiers=build_identifiers(child_structure),
+                        )
                     )
-                )
-            return collection_manager.create(
-                trans,
-                history,
-                name="Pick Value - mapped",
-                collection_type="list",
-                element_identifiers=elements,
-            )
+            return identifiers
+
+        mapping_collection_type = mapping_structure.collection_type_description.collection_type
+        return collection_manager.create(
+            trans,
+            history,
+            name="Pick Value - mapped all non-null" if mode == "all_non_null" else "Pick Value - mapped",
+            collection_type=mapping_collection_type + output_suffix,
+            element_identifiers=build_identifiers(mapping_structure),
+        )
 
     def _apply_post_job_actions(self, trans: "ProvidesAppContext", step, output, replacement_dict):
         """Apply post job actions directly to module output via ActionBox.
@@ -3022,6 +3140,7 @@ class ToolModule(WorkflowModule):
         collection_info = self.plan_map_over(progress, step, all_inputs)
 
         param_combinations = []
+        iteration_elements_iter: Iterable[tuple[dict[str, Any] | None, bool | None]]
         if collection_info:
             iteration_elements_iter = collection_info.slice_collections()
         else:
@@ -3063,7 +3182,7 @@ class ToolModule(WorkflowModule):
                     ):
                         mapping_type = collection_info.subcollection_mapping_type(prefixed_name)
                         if (
-                            hasattr(mapping_type, "collection_type")
+                            isinstance(mapping_type, CollectionTypeDescription)
                             and mapping_type.collection_type == "single_datasets"
                         ):
                             replacement = PromoteCollectionElementToCollectionAdapter(replacement)
@@ -3106,6 +3225,8 @@ class ToolModule(WorkflowModule):
                 extra_step_state = {}
                 for step_input in step.inputs:
                     step_input_name = step_input.name
+                    if step_input_name is None:
+                        continue
                     if step_input_name in execution_state.inputs:
                         continue
                     if step_input_name in all_inputs_by_name:
@@ -3124,10 +3245,10 @@ class ToolModule(WorkflowModule):
                             value = progress.replacement_for_connection(step_input.connections[0], is_data=True)
                     extra_step_state[step_input_name] = value
 
-                if when_value is not False:
-                    when_value = evaluate_value_from_expressions(
-                        progress, step, execution_state=execution_state, extra_step_state=extra_step_state
-                    )
+                # The enclosing branch already excludes when_value is False.
+                when_value = evaluate_value_from_expressions(
+                    progress, step, execution_state=execution_state, extra_step_state=extra_step_state
+                )
             if when_value is not None:
                 # Track this more formally ?
                 execution_state.inputs["__when_value__"] = when_value
@@ -3212,7 +3333,12 @@ class ToolModule(WorkflowModule):
         else:
             step_outputs.update(execution_tracker.output_datasets)
             step_outputs.update(execution_tracker.output_collections)
-        progress.set_step_outputs(invocation_step, step_outputs, already_persisted=not invocation_step.is_new)
+        progress.set_step_outputs(
+            invocation_step,
+            step_outputs,
+            already_persisted=not invocation_step.is_new,
+            collection_info=collection_info,
+        )
 
         if collection_info:
             step_inputs = mapping_params.param_template

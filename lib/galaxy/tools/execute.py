@@ -12,6 +12,7 @@ from collections.abc import (
     Callable,
     Sequence,
 )
+from collections.abc import Iterable
 from typing import (
     Any,
     NamedTuple,
@@ -35,6 +36,7 @@ from galaxy.model.dataset_collections.structure import (
     get_collection,
     get_structure,
     tool_output_to_structure,
+    Tree,
 )
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_util.parameters.state import (
@@ -530,7 +532,7 @@ class ExecutionTracker:
 
     @staticmethod
     def _collection_info_to_collection_hids_element_ids(
-        items: list[model.DatasetCollectionElement | model.HistoryDatasetCollectionAssociation],
+        items: Iterable[model.DatasetCollectionElement | model.HistoryDatasetCollectionAssociation],
     ) -> tuple[list[int], list[str]]:
         element_ids = []
         collection_hids = []
@@ -623,6 +625,7 @@ class ExecutionTracker:
         collection_info = self.collection_info
         assert collection_info
         structure = collection_info.structure
+        assert structure is not None
         if hasattr(tool_output, "default_identifier_source"):
             # Switch the structure for outputs if the output specified a default_identifier_source
             collection_type_descriptions = trans.app.dataset_collection_manager.collection_type_descriptions
@@ -632,7 +635,7 @@ class ExecutionTracker:
                 collection_type_description = collection_type_descriptions.for_collection_type(
                     source_collection.collection.collection_type
                 )
-                _structure = structure.for_dataset_collection(
+                _structure = Tree.for_dataset_collection(
                     source_collection.collection, collection_type_description=collection_type_description
                 )
                 if structure.compatible_shape(_structure):
@@ -773,8 +776,10 @@ class ExecutionTracker:
                     trans.sa_session.add(implicit_collection_jobs)
                 collection_info = self.collection_info
                 assert collection_info
+                mapped_structure = collection_info.structure
+                assert mapped_structure is not None
                 implicit_collection.collection.finalize(
-                    collection_type_description=collection_info.structure.collection_type_description
+                    collection_type_description=mapped_structure.collection_type_description
                 )
 
                 # Mark implicit HDCA as copied
@@ -806,9 +811,9 @@ class ExecutionTracker:
     def walk_implicit_collections(self):
         collection_info = self.collection_info
         assert collection_info
-        return collection_info.structure.walk_collections(
-            {k: get_collection(v) for k, v in self.implicit_collections.items()}
-        )
+        structure = collection_info.structure
+        assert structure is not None
+        return structure.walk_collections({k: get_collection(v) for k, v in self.implicit_collections.items()})
 
     def new_execution_slices(self):
         if self.collection_info is None:
