@@ -199,11 +199,10 @@ export default [
                 }),
             },
             {
-                path: "form/manage_users_and_groups_for_role",
-                component: FormGeneric,
+                path: "form/edit_role",
+                component: RoleForm,
                 props: (route) => ({
-                    url: `/admin/manage_users_and_groups_for_role?id=${route.query.id}`,
-                    redirect: "/admin/roles",
+                    roleId: route.query.id,
                 }),
             },
             {
@@ -231,14 +230,6 @@ export default [
             {
                 path: "form/create_quota",
                 component: QuotaForm,
-            },
-            {
-                path: "form/rename_role",
-                component: FormGeneric,
-                props: (route) => ({
-                    url: `/admin/rename_role?id=${route.query.id}`,
-                    redirect: "/admin/roles",
-                }),
             },
             {
                 path: "form/rename_group",

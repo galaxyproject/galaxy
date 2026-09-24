@@ -529,91 +529,6 @@ class AdminGalaxy(controller.BaseUIController):
 
     @web.legacy_expose_api
     @web.require_admin
-    def rename_role(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        id = kwd.get("id")
-        if not id:
-            return self.message_exception(trans, "No role id received for renaming.")
-        role = get_role(trans, id)
-        if trans.request.method == "GET":
-            return {
-                "title": f"Change role name and description for '{role.name}'",
-                "inputs": [
-                    {"name": "name", "label": "Name", "value": role.name},
-                    {"name": "description", "label": "Description", "value": role.description},
-                ],
-            }
-        else:
-            old_name = role.name
-            new_name = util.restore_text(payload.get("name"))
-            new_description = util.restore_text(payload.get("description"))
-            if not new_name:
-                return self.message_exception(trans, "Enter a valid role name.")
-            else:
-                existing_role = (
-                    trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.name == new_name).first()
-                )
-                if existing_role and existing_role.id != role.id:
-                    return self.message_exception(trans, "A role with that name already exists.")
-                else:
-                    if not (role.name == new_name and role.description == new_description):
-                        role.name = new_name
-                        role.description = new_description
-                        trans.sa_session.add(role)
-                        trans.sa_session.commit()
-            return {"message": f"Role '{old_name}' has been renamed to '{new_name}'."}
-
-    @web.legacy_expose_api
-    @web.require_admin
-    def manage_users_and_groups_for_role(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        role_id = kwd.get("id")
-        if not role_id:
-            return self.message_exception(trans, f"Invalid role id ({str(role_id)}) received")
-        role = get_role(trans, role_id)
-        if trans.request.method == "GET":
-            in_users = []
-            all_users = []
-            in_groups = []
-            all_groups = []
-            for user in (
-                trans.sa_session.query(trans.app.model.User)
-                .filter(trans.app.model.User.table.c.deleted == false())
-                .order_by(trans.app.model.User.table.c.email)
-            ):
-                if user in [x.user for x in role.users]:
-                    in_users.append(trans.security.encode_id(user.id))
-                all_users.append((user.email, trans.security.encode_id(user.id)))
-            for group in (
-                trans.sa_session.query(trans.app.model.Group)
-                .filter(trans.app.model.Group.deleted == false())
-                .order_by(trans.app.model.Group.name)
-            ):
-                if group in [x.group for x in role.groups]:
-                    in_groups.append(trans.security.encode_id(group.id))
-                all_groups.append((group.name, trans.security.encode_id(group.id)))
-            return {
-                "title": f"Role '{role.name}'",
-                "message": f"Role '{role.name}' is currently associated with {len(in_users)} user(s) and {len(in_groups)} group(s).",
-                "status": "info",
-                "inputs": [
-                    build_select_input("in_groups", "Groups", all_groups, in_groups),
-                    build_select_input("in_users", "Users", all_users, in_users),
-                ],
-            }
-        else:
-            user_ids = [trans.security.decode_id(id) for id in util.listify(payload.get("in_users"))]
-            group_ids = [trans.security.decode_id(id) for id in util.listify(payload.get("in_groups"))]
-            try:
-                trans.app.security_agent.set_role_user_and_group_associations(
-                    role, user_ids=user_ids, group_ids=group_ids
-                )
-                return {
-                    "message": f"Role '{role.name}' has been updated with {len(user_ids)} associated users and {len(group_ids)} associated groups."
-                }
-            except RequestParameterInvalidException:
-                return self.message_exception(trans, "One or more invalid user/group id has been provided.")
-
-    @web.legacy_expose_api
-    @web.require_admin
     def groups_list(self, trans: GalaxyWebTransaction, **kwargs):
         return self.group_list_grid(trans, **kwargs)
 
@@ -756,16 +671,6 @@ def get_user(trans: GalaxyWebTransaction, user_id):
     if not user:
         return trans.show_error_message(f"User not found for id ({str(user_id)})")
     return user
-
-
-def get_role(trans: GalaxyWebTransaction, id):
-    """Get a Role from the database by id."""
-    # Load user from database
-    id = trans.security.decode_id(id)
-    role = trans.sa_session.query(trans.model.Role).get(id)
-    if not role:
-        return trans.show_error_message(f"Role not found for id ({str(id)})")
-    return role
 
 
 def get_group(trans: GalaxyWebTransaction, id):
