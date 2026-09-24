@@ -8,6 +8,7 @@
  *   Content:   .html (innerHTML instead of textContent)
  *   Styling:   .v-danger
  *   Behavior:  .onoverflow (only show tooltip when text overflows with ellipsis)
+ *   Menus:     hidden while a menu toggle (aria-haspopup) owned by the element is expanded
  *
  * Value forms:
  *   v-g-tooltip                           → reads element's title attribute
@@ -204,6 +205,17 @@ async function updatePosition(el: HTMLElement, state: TooltipState) {
     state.arrowEl.dataset.placement = placement;
 }
 
+// Menu buttons (GDropdown, BNavItemDropdown) render their toggle as a direct child of the tooltip host.
+const POPUP_TOGGLE_SELECTOR = '[aria-haspopup]:not([aria-haspopup="false"])';
+
+function findPopupToggle(el: HTMLElement): HTMLElement | null {
+    return el.matches(POPUP_TOGGLE_SELECTOR) ? el : el.querySelector(`:scope > ${POPUP_TOGGLE_SELECTOR}`);
+}
+
+function isPopupOpen(el: HTMLElement) {
+    return findPopupToggle(el)?.getAttribute("aria-expanded") === "true";
+}
+
 function showTooltip(el: HTMLElement) {
     const state = stateMap.get(el);
     if (!state) {
@@ -213,7 +225,8 @@ function showTooltip(el: HTMLElement) {
     if (
         (el as HTMLButtonElement).disabled ||
         el.hasAttribute("disabled") ||
-        el.getAttribute("aria-disabled") === "true"
+        el.getAttribute("aria-disabled") === "true" ||
+        isPopupOpen(el)
     ) {
         return;
     }
@@ -295,11 +308,11 @@ function hideTooltip(el: HTMLElement) {
 }
 
 function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg?: string): () => void {
-    const listeners: Array<[string, EventListener]> = [];
+    const listeners: Array<[string, EventListener, boolean]> = [];
 
-    function addListener(event: string, handler: EventListener) {
-        el.addEventListener(event, handler);
-        listeners.push([event, handler]);
+    function addListener(event: string, handler: EventListener, capture = false) {
+        el.addEventListener(event, handler, capture);
+        listeners.push([event, handler, capture]);
     }
 
     const focusOnly = (modifiers.focus || arg === "focus") && !modifiers.hover && arg !== "hover";
@@ -314,6 +327,12 @@ function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg
             hideTooltip(el);
         }
     };
+    // Otherwise the tooltip shown on focus stays on top of the menu that the click opens
+    const clickHandler = () => {
+        if (findPopupToggle(el)) {
+            hideTooltip(el);
+        }
+    };
 
     if (!focusOnly) {
         addListener("mouseenter", hoverShowHandler);
@@ -322,10 +341,12 @@ function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg
     addListener("focusin", focusShowHandler);
     addListener("focusout", hideHandler);
     addListener("keydown", keyHandler);
+    // Capture phase, because menu toggles stop the click from bubbling
+    addListener("click", clickHandler, true);
 
     return () => {
-        for (const [event, handler] of listeners) {
-            el.removeEventListener(event, handler);
+        for (const [event, handler, capture] of listeners) {
+            el.removeEventListener(event, handler, capture);
         }
     };
 }
