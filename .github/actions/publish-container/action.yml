@@ -1,0 +1,59 @@
+name: 'Publish Container Image'
+description: 'Download tested image artifact and publish to registries'
+inputs:
+  image_tag:
+    description: 'Image tag to download and publish'
+    required: true
+  quay_username:
+    description: 'Quay.io username'
+    required: true
+  quay_password:
+    description: 'Quay.io password'
+    required: true
+  dockerhub_username:
+    description: 'DockerHub username'
+    required: true
+  dockerhub_password:
+    description: 'DockerHub password'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Download tested image artifact
+      uses: actions/download-artifact@v8
+      with:
+        name: galaxy-image-${{ inputs.image_tag }}
+        path: /tmp
+
+    - name: Decompress and load tested image
+      shell: bash
+      run: |
+        gunzip /tmp/galaxy-image.tar.gz
+        docker load < /tmp/galaxy-image.tar
+
+    - name: Login to Quay.io
+      uses: docker/login-action@v4
+      with:
+        registry: quay.io
+        username: ${{ inputs.quay_username }}
+        password: ${{ inputs.quay_password }}
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v4
+      with:
+        username: ${{ inputs.dockerhub_username }}
+        password: ${{ inputs.dockerhub_password }}
+
+    - name: Tag and push image
+      shell: bash
+      run: |
+        # Tag for Quay.io
+        docker tag galaxy/galaxy-min:${{ inputs.image_tag }} quay.io/galaxyproject/galaxy-min:${{ inputs.image_tag }}
+
+        # Push to both registries
+        docker push galaxy/galaxy-min:${{ inputs.image_tag }}
+        docker push quay.io/galaxyproject/galaxy-min:${{ inputs.image_tag }}
+
+        echo "Published galaxy/galaxy-min:${{ inputs.image_tag }}"
+        echo "Published quay.io/galaxyproject/galaxy-min:${{ inputs.image_tag }}"
