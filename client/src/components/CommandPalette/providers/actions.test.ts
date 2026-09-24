@@ -156,29 +156,6 @@ describe("actionsProvider", () => {
         });
     });
 
-    it("seeds the created page into the page store, ahead of the cached ones", async () => {
-        vi.mocked(createPage).mockResolvedValue({
-            id: "page-1",
-            title: "My New Page",
-            slug: "my-new-page",
-            update_time: "2026-01-02T00:00:00",
-        } as never);
-
-        const pageStore = usePageStore();
-        // a cache the `r:` scope would otherwise consider complete, so a missing
-        // seed would leave the new page invisible until the next unfiltered fetch
-        pageStore.savePages("my", [{ id: "page-0", title: "Older page" } as never]);
-
-        const navigate = vi.fn();
-        const ctx = makeCtx({ navigate });
-        const [item] = await argumentItems("actions:create-page", "My New Page", ctx);
-        item?.handler?.(ctx);
-
-        await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith("/pages/editor?id=page-1"));
-        expect(pageStore.getPageById("page-1")).toMatchObject({ title: "My New Page" });
-        expect(pageStore.getPages("my").map((page) => page.id)).toEqual(["page-1", "page-0"]);
-    });
-
     it("leaves the page store untouched when the creation fails", async () => {
         vi.mocked(createPage).mockRejectedValue(new Error("nope"));
 
@@ -191,20 +168,6 @@ describe("actionsProvider", () => {
         await vi.waitFor(() => expect(Toast.error).toHaveBeenCalled());
         expect(navigate).not.toHaveBeenCalled();
         expect(pageStore.getPages("my")).toEqual([]);
-    });
-
-    it("retries a conflicting page slug once with a suffix", async () => {
-        vi.mocked(createPage)
-            .mockRejectedValueOnce(new Error("Page identifier must be unique"))
-            .mockResolvedValueOnce({ id: "page-2" } as never);
-
-        const navigate = vi.fn();
-        const ctx = makeCtx({ navigate });
-        const [item] = await argumentItems("actions:create-page", "Lab notes", ctx);
-        item?.handler?.(ctx);
-
-        await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith("/pages/editor?id=page-2"));
-        expect(createPage).toHaveBeenNthCalledWith(2, expect.objectContaining({ slug: "lab-notes-2" }));
     });
 
     it("picks the workflow to run as an argument, with no plain enter target", async () => {

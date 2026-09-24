@@ -7,7 +7,9 @@
 import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
-import { loadPages, type LoadPagesOptions, type PageSummary } from "@/api/pages";
+import { createPage, loadPages, type LoadPagesOptions, type PageDetails, type PageSummary } from "@/api/pages";
+import { errorMessageAsString } from "@/utils/simple-error";
+import { slugify } from "@/utils/slug";
 
 /** `my` = pages owned by the current user, `published` = published (and shared) pages. */
 export type PageListVariant = "my" | "published";
@@ -27,6 +29,11 @@ export type FetchPagesOptions = Omit<LoadPagesOptions, "showOwn" | "showShared" 
      */
     record?: boolean;
 };
+
+/** The backend rejects a slug the user already has with this message */
+function isSlugConflict(error: unknown): boolean {
+    return /must be unique/i.test(String(errorMessageAsString(error, "")));
+}
 
 export const usePageStore = defineStore("pageStore", () => {
     const summariesById = ref<Record<string, PageSummary>>({});
@@ -179,6 +186,30 @@ export const usePageStore = defineStore("pageStore", () => {
         return getPages.value(variant);
     }
 
+    /**
+     * Creates an empty markdown page with a slug derived from `title`, retrying a
+     * slug the user already owns once with a `-2` suffix, and puts it at the head of
+     * the user's listing: a consumer rendering that listing from the cache would
+     * otherwise not show it until the next unfiltered fetch.
+     */
+    async function createMarkdownPage(title: string): Promise<PageDetails> {
+        // a title made of punctuation alone would leave no slug to send
+        const slug = slugify(title, "page");
+        let page: PageDetails;
+        try {
+            page = await createPage({ title, slug, content_format: "markdown" });
+        } catch (error) {
+            if (!isSlugConflict(error)) {
+                throw error;
+            }
+            // one retry is enough: the suffixed slug is free unless the user
+            // already owns both, which is worth reporting
+            page = await createPage({ title, slug: `${slug}-2`, content_format: "markdown" });
+        }
+        savePages("my", [page], true);
+        return page;
+    }
+
     return {
         // state
         summariesById,
@@ -197,5 +228,6 @@ export const usePageStore = defineStore("pageStore", () => {
         removePage,
         fetchPages,
         fetchPagesOnce,
+        createMarkdownPage,
     };
 });
