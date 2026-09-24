@@ -117,6 +117,8 @@ class UsersService(ServiceBase):
         if trans.anonymous or (user and user.id != user_id and not trans.user_is_admin):
             raise glx_exceptions.InsufficientPermissionsException("Access denied.")
         user = self.user_manager.by_id(user_id)
+        if user is None:
+            raise glx_exceptions.ObjectNotFound("User not found.")
         return user
 
     def get_extra_preferences(self, trans: ProvidesUserContext) -> dict[str, Any] | None:

@@ -584,3 +584,11 @@ class TestUsersApi(ApiTestCase):
         user_roles = response.json()
         assert len(user_roles) == 1
         assert user_roles[0]["type"] == PRIVATE_ROLE_TYPE
+
+    @requires_admin
+    def test_user_roles_404_for_unknown_user(self):
+        unknown_user_id = self._unknown_user_id()
+        self._assert_status_code_is(self._get(f"users/{unknown_user_id}/roles", admin=True), 404)
+
+    def _unknown_user_id(self) -> str:
+        return self._get("configuration/encode/999999999", admin=True).json()["encoded_id"]
