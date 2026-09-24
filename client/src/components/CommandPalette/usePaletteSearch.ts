@@ -264,18 +264,16 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
         return limitSections(await categorySections(category, ctx), MAX_CATEGORY_SECTION_ITEMS);
     }
 
-    /**
-     * A category is a soft scope: the provider's own scoped search runs it where
-     * there is one, everything else falls back to its unscoped — and therefore
-     * cache-only — root search.
-     */
+    /** Search of the provider a category narrows to, through the category's scope */
     async function categorySections(category: PaletteCategory, ctx: PaletteContext): Promise<ResultSection[]> {
         const providerId = categoryProviderId(category);
         const provider = providerId ? findPaletteProvider(providerId) : undefined;
         if (!provider || !isProviderEnabled(provider.id, ctx)) {
             return [];
         }
-        return providerSections(provider, category.scope, ctx);
+        // scoped searches cannot run `localOnly`, so an `xy:` being typed takes the root search
+        const scope = isScopeTokenLike(query.value) ? undefined : category.scope;
+        return providerSections(provider, scope, ctx);
     }
 
     async function providerSections(
