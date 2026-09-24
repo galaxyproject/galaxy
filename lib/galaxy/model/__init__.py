@@ -9467,6 +9467,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         copied_step.order_index = self.order_index
         copied_step.type = self.type
         copied_step.tool_id = self.tool_id
+        copied_step.dynamic_tool = self.dynamic_tool
         copied_step.tool_version = self.tool_version
         copied_step.tool_inputs = self.tool_inputs
         copied_step.tool_errors = self.tool_errors

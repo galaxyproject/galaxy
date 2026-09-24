@@ -10077,6 +10077,35 @@ outer_input:
             workflow = self.workflow_populator.download_workflow(workflow_id)
             assert workflow["steps"]["0"]["tool_representation"]["class"] == "GalaxyUserTool"
 
+    def test_user_defined_tool_step_survives_workflow_rename(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
+            workflow_id = self.workflow_populator.create_workflow(workflow)
+            update_response = self._update_workflow(
+                workflow_id,
+                {
+                    "steps": {
+                        "0": {
+                            "content_id": "basecommand",
+                            "id": 1,
+                            "input_connections": {},
+                            "name": "Base command tool",
+                            "tool_uuid": unprivileged_tool["uuid"],
+                            "type": "tool",
+                        }
+                    },
+                },
+            )
+            assert update_response.status_code == 200, update_response.text
+            rename_response = self._update_workflow(workflow_id, {"name": "renamed"})
+            assert rename_response.status_code == 200, rename_response.text
+            workflow = self.workflow_populator.download_workflow(workflow_id)
+            assert workflow["name"] == "renamed"
+            assert workflow["steps"]["0"]["tool_uuid"] == unprivileged_tool["uuid"]
+
     def _build_user_defined_workflow_dict(self) -> dict[str, Any]:
         return {
             "a_galaxy_workflow": "true",
