@@ -20,6 +20,8 @@ const REFRESH_KEY = "datasets:latest";
 const SECTION_CAP = 6;
 /** Shortest query worth a backend round trip; below it the cache answers alone */
 const MIN_BACKEND_QUERY_LENGTH = 2;
+/** Page size of the unfiltered "latest" fetch */
+const LATEST_LIMIT = 25;
 
 /** Router location of a dataset preview */
 function datasetRoute(id: string): string {
@@ -68,15 +70,13 @@ function byUpdateTimeDesc(a: HDASummary, b: HDASummary): number {
 
 /**
  * Whether the cached "latest" list is everything the backend has. The unfiltered
- * fetch reports the total, so a cache that reaches it can answer any query with
- * its local name filter and no search request is worth sending.
+ * fetch reports the total, so when one page covered it the cache can answer any
+ * query with its local name filter and no search request is worth sending.
  */
 function cacheHoldsEveryDataset(): boolean {
     const datasetListStore = useDatasetListStore();
-    return (
-        datasetListStore.hasLoadedLatest &&
-        datasetListStore.latestDatasetIds.length >= datasetListStore.totalLatestMatches
-    );
+    // the total also counts collections, which the store drops, so compare it to the page size
+    return datasetListStore.hasLoadedLatest && datasetListStore.totalLatestMatches <= LATEST_LIMIT;
 }
 
 /**
@@ -86,10 +86,10 @@ function cacheHoldsEveryDataset(): boolean {
 async function ensureLatestHydrated(): Promise<void> {
     const datasetListStore = useDatasetListStore();
     if (!datasetListStore.hasLoadedLatest) {
-        await datasetListStore.ensureLatestLoaded();
+        await datasetListStore.ensureLatestLoaded(LATEST_LIMIT);
         markListRefreshed(REFRESH_KEY);
     } else {
-        refreshListWhenStale(REFRESH_KEY, () => datasetListStore.fetchDatasets());
+        refreshListWhenStale(REFRESH_KEY, () => datasetListStore.fetchDatasets({ limit: LATEST_LIMIT }));
     }
 }
 

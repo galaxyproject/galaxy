@@ -125,6 +125,23 @@ describe("datasetsProvider", () => {
         expect(loadDatasets).not.toHaveBeenCalled();
     });
 
+    it("treats the cache as complete when the backend total also counts collections", async () => {
+        const collection = {
+            id: "c1",
+            name: "paired list",
+            history_content_type: "dataset_collection",
+            update_time: "2026-01-04T00:00:00",
+        } as unknown as HDASummary;
+        mockLoadDatasets([ALPHA, collection, BETA]);
+        await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx());
+        vi.mocked(loadDatasets).mockClear();
+
+        const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "zz", makeCtx());
+
+        expect(sections).toEqual([]);
+        expect(loadDatasets).not.toHaveBeenCalled();
+    });
+
     it("refreshes the cached datasets in the background once they go stale", async () => {
         mockLoadDatasets();
         await datasetsProvider.searchScoped!(DATASETS_SCOPE, "", makeCtx());
@@ -143,7 +160,7 @@ describe("datasetsProvider", () => {
         mockLoadDatasets([ALPHA, BETA, GAMMA]);
         // the first page does not cover everything the backend reports, so the
         // cache cannot answer a query on its own
-        vi.mocked(loadDatasets).mockImplementationOnce(async () => ({ data: [ALPHA, BETA], totalMatches: 3 }));
+        vi.mocked(loadDatasets).mockImplementationOnce(async () => ({ data: [ALPHA, BETA], totalMatches: 30 }));
 
         const sections = await datasetsProvider.searchScoped!(DATASETS_SCOPE, "gamma", makeCtx());
 
