@@ -99,9 +99,16 @@ describe("GPopover", () => {
     it("relocates the popover to the document body", async () => {
         await showPopover("bottom", "bottom");
 
-        // Vue 2.7 has no built-in Teleport, so a bare <Teleport> leaves the popover nested in an
-        // unknown element and still subject to ancestor clipping. Being a direct child of body is
-        // the whole point of the escape hatch.
+        // Being a direct child of body is what keeps it clear of ancestor clipping.
         expect(popoverEl().parentElement).toBe(document.body);
+    });
+
+    it("removes the relocated popover when unmounted", async () => {
+        await showPopover("bottom", "bottom");
+
+        wrapper?.destroy();
+        wrapper = undefined;
+
+        expect(document.body.querySelector(".popover")).toBeNull();
     });
 });

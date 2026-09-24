@@ -28,10 +28,6 @@ import {
     shift,
 } from "@floating-ui/dom";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-// Vue 2.7 has no built-in Teleport -- a bare <Teleport> silently renders as an unknown element
-// and the popover stays put, trapped by whatever ancestor clipping it was meant to escape.
-// @ts-ignore missing types
-import Vue2Teleport from "vue2-teleport";
 
 type TriggerType = "hover" | "click" | "click blur" | "hover focus" | "manual" | "manual hover" | "focus";
 
@@ -343,9 +339,19 @@ function teardownListeners() {
     activeListeners = [];
 }
 
+// Move the popover out of its placeholder so ancestor overflow or transforms can't clip it. Done by
+// hand rather than with vue2-teleport so the component has no Vue-2-only dependency.
+function relocate() {
+    const el = popoverEl.value;
+    if (el && el.parentElement !== document.body) {
+        document.body.appendChild(el);
+    }
+}
+
 onMounted(() => {
     // Delay setup slightly to ensure target elements are in DOM
     nextTick(() => {
+        relocate();
         setupListeners();
         if (props.show) {
             isVisible.value = true;
@@ -364,6 +370,8 @@ watch(
 onBeforeUnmount(() => {
     teardownListeners();
     cleanupAutoUpdate?.();
+    // Vue only removes the placeholder, which no longer holds the relocated popover.
+    popoverEl.value?.remove();
 });
 
 defineExpose({
@@ -374,7 +382,7 @@ defineExpose({
 </script>
 
 <template>
-    <Vue2Teleport to="body">
+    <span class="g-popover-host" hidden>
         <div
             v-show="showState"
             ref="popoverEl"
@@ -396,7 +404,7 @@ defineExpose({
                 <slot>{{ content }}</slot>
             </div>
         </div>
-    </Vue2Teleport>
+    </span>
 </template>
 
 <style scoped lang="scss">

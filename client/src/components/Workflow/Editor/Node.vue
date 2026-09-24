@@ -68,21 +68,21 @@
                     aria-label="tool recommendations">
                     <i class="fa fa-arrow-right" />
                 </GButton>
-                <GPopover
-                    v-if="isEnabled && !readonly"
-                    :target="popoverId"
-                    triggers="hover"
-                    placement="bottom"
-                    :show.sync="popoverShow">
-                    <div>
-                        <Recommendations
-                            v-if="popoverShow"
-                            :step-id="id"
-                            :datatypes-mapper="datatypesMapper"
-                            @onCreate="onCreate" />
-                    </div>
-                </GPopover>
             </GButtonGroup>
+            <GPopover
+                v-if="isEnabled && !readonly"
+                :target="popoverId"
+                triggers="hover"
+                placement="bottom"
+                :show.sync="popoverShow">
+                <div>
+                    <Recommendations
+                        v-if="popoverShow"
+                        :step-id="id"
+                        :datatypes-mapper="datatypesMapper"
+                        @onCreate="onCreate" />
+                </div>
+            </GPopover>
             <i :class="iconClass" />
             <span v-if="step.when" v-g-tooltip.hover title="This step is conditionally executed.">
                 <FontAwesomeIcon :icon="faCodeBranch" />
