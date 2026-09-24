@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { dropdownHideKey } from "@galaxyproject/galaxy-ui";
 import { BNavItemDropdown } from "bootstrap-vue";
 import { type PropType, provide, ref } from "vue";
 
@@ -10,7 +11,7 @@ import TextShort from "@/components/Common/TextShort.vue";
 
 const dropdown = ref<InstanceType<typeof BNavItemDropdown>>();
 
-provide("g-dropdown-hide", () => {
+provide(dropdownHideKey, () => {
     dropdown.value?.hide();
 });
 
