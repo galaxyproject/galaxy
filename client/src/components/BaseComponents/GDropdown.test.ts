@@ -94,6 +94,17 @@ describe("GDropdown.vue", () => {
             expect(wrapper.get(".dropdown-menu").attributes("aria-labelledby")).toBe(toggle.attributes("id"));
         });
 
+        it("names a split menu after its main button", () => {
+            const wrapper = mountTemplate(
+                `<GDropdown split text="Create"><GDropdownItem>List</GDropdownItem></GDropdown>`,
+            );
+
+            const [main, toggle] = wrapper.findAll(".dropdown > button").wrappers;
+            expect(main?.attributes("id")).toBeTruthy();
+            expect(wrapper.get(".dropdown-menu").attributes("aria-labelledby")).toBe(main?.attributes("id"));
+            expect(toggle?.text()).toBe("More options for Create");
+        });
+
         it("reflects the open state in aria-expanded", async () => {
             const wrapper = mountDropdown(`<GDropdownItem>Action</GDropdownItem>`);
             const toggle = wrapper.get(".dropdown-toggle");
