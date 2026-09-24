@@ -233,10 +233,12 @@ class OIDC(BaseUIController):
             return {"message": message}
 
     @web.expose
-    def get_logout_url(self, trans: "GalaxyWebTransaction", provider=None, **kwargs):
+    def get_logout_url(self, trans: "GalaxyWebTransaction", provider=None, logout_all=False, **kwargs):
         idp_provider = provider if provider else trans.get_cookie(name=PROVIDER_COOKIE_NAME)
         if idp_provider:
-            return trans.response.send_redirect(url_for(controller="authnz", action="logout", provider=idp_provider))
+            return trans.response.send_redirect(
+                url_for(controller="authnz", action="logout", provider=idp_provider, logout_all=logout_all)
+            )
 
     @web.expose
     @web.json
