@@ -553,6 +553,49 @@ interface Rootadmintoolshed extends Component {
     search_results: SelectorTemplate;
     upgrade_notification: SelectorTemplate;
 }
+interface Rootadminquota extends Component {
+    add_new: SelectorTemplate;
+    items: SelectorTemplate;
+    form: SelectorTemplate;
+    source_label: SelectorTemplate;
+    groups: SelectorTemplate;
+    groups_input: SelectorTemplate;
+    group_option: SelectorTemplate;
+    users: SelectorTemplate;
+    users_input: SelectorTemplate;
+    user_option: SelectorTemplate;
+    selected_user: SelectorTemplate;
+    remove_selected_user: SelectorTemplate;
+    submit: SelectorTemplate;
+}
+interface Rootadminrole extends Component {
+    form: SelectorTemplate;
+    users: SelectorTemplate;
+    users_input: SelectorTemplate;
+    user_option: SelectorTemplate;
+    selected_user: SelectorTemplate;
+    remove_selected_user: SelectorTemplate;
+    groups: SelectorTemplate;
+    groups_input: SelectorTemplate;
+    group_option: SelectorTemplate;
+    selected_group: SelectorTemplate;
+    remove_selected_group: SelectorTemplate;
+    submit: SelectorTemplate;
+}
+interface Rootadminuser_roles_groups extends Component {
+    form: SelectorTemplate;
+    roles: SelectorTemplate;
+    roles_input: SelectorTemplate;
+    role_option: SelectorTemplate;
+    selected_role: SelectorTemplate;
+    remove_selected_role: SelectorTemplate;
+    groups: SelectorTemplate;
+    groups_input: SelectorTemplate;
+    group_option: SelectorTemplate;
+    selected_group: SelectorTemplate;
+    remove_selected_group: SelectorTemplate;
+    submit: SelectorTemplate;
+}
 interface Rootadminindex extends Component {
     datatypes: SelectorTemplate;
     dependencies: SelectorTemplate;
@@ -577,6 +620,9 @@ interface Rootadmin extends Component {
     manage_dependencies: Rootadminmanage_dependencies;
     manage_jobs: Rootadminmanage_jobs;
     toolshed: Rootadmintoolshed;
+    quota: Rootadminquota;
+    role: Rootadminrole;
+    user_roles_groups: Rootadminuser_roles_groups;
     index: Rootadminindex;
     warning: SelectorTemplate;
     jobs_title: SelectorTemplate;
