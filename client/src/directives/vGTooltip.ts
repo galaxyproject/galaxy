@@ -359,13 +359,23 @@ function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipSta
         state.contentEl.textContent = content;
     }
     // Set aria-label so icon-only buttons have an accessible name
-    if (content) {
-        el.setAttribute("aria-label", content);
-        el.dataset.gTooltipAriaLabel = "1";
-    } else if (el.dataset.gTooltipAriaLabel) {
-        el.removeAttribute("aria-label");
-        el.dataset.gTooltipAriaLabel = "";
+    const target = getLabelTarget(el);
+    const labelledHere = !!target.dataset.gTooltipAriaLabel;
+    // A menu toggle with visible text or a label of its own is already named
+    const namedToggle =
+        target !== el && !labelledHere && (target.hasAttribute("aria-label") || !!target.textContent?.trim());
+    if (content && !namedToggle) {
+        target.setAttribute("aria-label", content);
+        target.dataset.gTooltipAriaLabel = "1";
+    } else if (labelledHere) {
+        target.removeAttribute("aria-label");
+        target.dataset.gTooltipAriaLabel = "";
     }
+}
+
+/** The element to name: the toggle of a menu button, since its wrapper has no role. */
+function getLabelTarget(el: HTMLElement) {
+    return findPopupToggle(el) ?? el;
 }
 
 export const vGTooltip: ObjectDirective<HTMLElement> = {
@@ -442,10 +452,11 @@ export const vGTooltip: ObjectDirective<HTMLElement> = {
         state.tooltipEl.remove();
         restoreNativeTooltip(el);
         el.removeAttribute("aria-describedby");
-        if (el.dataset.gTooltipAriaLabel) {
-            el.removeAttribute("aria-label");
+        const labelTarget = getLabelTarget(el);
+        if (labelTarget.dataset.gTooltipAriaLabel) {
+            labelTarget.removeAttribute("aria-label");
         }
-        delete el.dataset.gTooltipAriaLabel;
+        delete labelTarget.dataset.gTooltipAriaLabel;
         stateMap.delete(el);
     },
 };
