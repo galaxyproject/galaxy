@@ -560,12 +560,10 @@ sections:
     title: Using a tool in a workflow
     kind: reference
     body: |
-      A workflow step can use a user-defined tool in two ways.
-
-      **Embed the definition.** In a format2 workflow (`.gxwf.yml`), put the
-      tool definition under the step's `run` key. The workflow is then
-      self-contained: whoever imports it gets a private copy of the tool, as
-      long as they have the `Custom Tool Execution` role.
+      In a format2 workflow (`.gxwf.yml`), put the tool definition under the
+      step's `run` key. The workflow is then self-contained: whoever imports it
+      gets a private copy of the tool, as long as they have the
+      `Custom Tool Execution` role.
 
       ```yaml
       class: GalaxyWorkflow
@@ -597,18 +595,5 @@ sections:
             input_file: text_file
       ```
 
-      **Reference a tool that is already registered.** A native (`.ga`)
-      workflow step names the tool by its `uuid` in `tool_uuid`. Set
-      `content_id` and `tool_id` to the tool's own `id`, or leave them out.
-      Galaxy rejects a step whose `tool_id` names something else, including
-      the tool's `uuid`. The workflow editor inserts user-defined tools this
-      way.
-
-      A `uuid` pins one exact version of a tool. Saving a changed tool gives it
-      a new `uuid`, so a workflow keeps using the old version until its step is
-      updated.
-
-      Galaxy's own `.ga` export embeds the tool definition as
-      `tool_representation` and leaves out `tool_uuid`, which only means
-      something to the tool's owner on the server that created it. Importing
-      the file creates a private copy of the tool for the importing user.
+      Galaxy's `.ga` export works the same way: it includes the tool definition
+      as `tool_representation`.
