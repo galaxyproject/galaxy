@@ -17,12 +17,12 @@ import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { useUserStore } from "@/stores/userStore";
 import { localize } from "@/utils/localization";
 
-import { findPaletteProvider, paletteProviders, rankPaletteItems } from "./providers";
-import { actionsProvider } from "./providers/actions";
+import { helpSections } from "./paletteHelp";
+import { findPaletteProvider, paletteProviders } from "./providers";
 import { ALL_CATEGORY, availableCategories, categoryProviderId, type PaletteCategory } from "./providers/categories";
 import { isPaletteFetchError } from "./providers/errors";
-import { ACTIONS_SCOPE, availableScopes, type ScopeDefinition } from "./providers/scopes";
-import type { CommandPaletteProvider, PaletteContext, PaletteItem } from "./types";
+import type { ScopeDefinition } from "./providers/scopes";
+import type { CommandPaletteProvider, PaletteContext, PaletteItem, ResultSection } from "./types";
 import { type PaletteMode, usePaletteMachine } from "./usePaletteMachine";
 import { BACKEND_RANKED_SCORE, scorePaletteItems } from "./utilities";
 
@@ -42,12 +42,6 @@ const CLOSE_TRANSITION_FALLBACK = 200;
 
 const ROOT_PLACEHOLDER = "Search Galaxy…  > actions · w: t: … scopes · ? help";
 const HELP_PLACEHOLDER = "Search shortcuts…";
-
-interface ResultSection {
-    id: string;
-    items: PaletteItem[];
-    title: string;
-}
 
 /** One key hint rendered in the footer, driven by the current palette mode */
 interface FooterHint {
@@ -275,70 +269,6 @@ function buildContext(): PaletteContext {
     };
 }
 
-/** One help row per scope, selecting it turns the scope into a badge */
-function scopeHelpItem(scope: ScopeDefinition): PaletteItem {
-    return {
-        id: `help:${scope.key}`,
-        handler: () => enterScope(scope),
-        keywords: scope.key,
-        shortcut: scope.key === ACTIONS_SCOPE.key ? scope.key : `${scope.key}:`,
-        title: `${localize("Search")} ${localize(scope.label).toLowerCase()}`,
-    };
-}
-
-/** A key binding row: the description reads as the title, the keys as the badge */
-function helpKeyItem(id: string, keys: string, title: string, keywords: string): PaletteItem {
-    return { id: `help:key:${id}`, keywords, shortcut: keys, title: localize(title) };
-}
-
-/** The bindings the palette answers to, documented in the help panel */
-function helpKeyItems(): PaletteItem[] {
-    return [
-        helpKeyItem("open", "↵", "Open the selected result", "enter return open run"),
-        helpKeyItem("secondary", "⇧↵", "Secondary action, or the options of an action", "shift enter options argument"),
-        helpKeyItem(
-            "new-tab",
-            `${modifierLabel.value}↵`,
-            "Open in a new tab, keeping the palette open",
-            "command control meta enter tab window",
-        ),
-        helpKeyItem("navigate", "↑↓", "Move through the results", "arrow up down navigate select"),
-        helpKeyItem("category", "←→", "Move between categories, once the category row is selected", "arrow left right"),
-        helpKeyItem("remove", "⌫", "Remove the active filter", "backspace delete scope action badge"),
-        helpKeyItem("escape", "esc", "Clear the text, then the filter, then close", "escape back close clear"),
-    ];
-}
-
-/**
- * One help row per action the user has: selecting it applies the `>` badge and
- * pre-fills the action's own title, so the row is the only one left to run.
- * Enter therefore means the same thing on every help row — it rewrites the
- * input, it never navigates.
- */
-function actionHelpItems(ctx: PaletteContext): PaletteItem[] {
-    return (actionsProvider.emptyQueryItems?.(ctx) ?? []).map((action) => ({
-        id: `help:action:${action.id}`,
-        handler: () => {
-            enterScope(ACTIONS_SCOPE);
-            setText(action.title);
-        },
-        icon: action.icon,
-        keywords: [action.keywords, action.subtitle].filter(Boolean).join(" "),
-        shortcut: ACTIONS_SCOPE.key,
-        // the action titles are rendered as they are everywhere else, so the
-        // pre-filled query keeps matching the row it came from
-        title: action.title,
-    }));
-}
-
-function helpSections(ctx: PaletteContext): ResultSection[] {
-    return [
-        { id: "help:scopes", items: availableScopes(ctx).map(scopeHelpItem), title: "Scopes" },
-        { id: "help:actions", items: actionHelpItems(ctx), title: "Actions" },
-        { id: "help:keys", items: helpKeyItems(), title: "Keys" },
-    ].map((section) => ({ ...section, items: rankPaletteItems(section.items, query.value) }));
-}
-
 /** One provider failing must never cost the user every other section */
 function withoutFailing<T>(providerId: string, run: () => T | Promise<T>, fallback: T): Promise<T> {
     return Promise.resolve()
@@ -460,7 +390,7 @@ async function actionSections(action: PaletteItem, ctx: PaletteContext): Promise
 function modeSections(activeMode: PaletteMode, ctx: PaletteContext): Promise<ResultSection[]> | ResultSection[] {
     switch (activeMode.type) {
         case "help":
-            return helpSections(ctx);
+            return helpSections(ctx, query.value, modifierLabel.value, { enterScope, setText });
         case "action":
             return actionSections(activeMode.action, ctx);
         case "scoped":

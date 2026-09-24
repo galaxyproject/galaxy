@@ -97,6 +97,9 @@ export interface ScopedSection {
     title: string;
 }
 
+/** A titled group of rows as the palette renders it, whichever search produced it */
+export type ResultSection = ScopedSection;
+
 /**
  * A source of palette results. Sync providers (navigation, actions) filter
  * local data; async providers (tools, and per-entity searches later) may
