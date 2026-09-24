@@ -83,6 +83,9 @@ const uid = useUid("g-dropdown-");
 const toggleId = computed(() => `${uid.value}-toggle`);
 const menuId = computed(() => `${uid.value}-menu`);
 
+// Bound only when set: Vue 2 strips an attribute bound to undefined on every render, dropping v-g-tooltip's label
+const toggleLabelAttrs = computed(() => (props.ariaLabel ? { "aria-label": props.ariaLabel } : {}));
+
 const menuPlacement = computed<Placement>(() => {
     if (props.dropup) {
         return props.right ? "top-end" : "top-start";
@@ -369,7 +372,7 @@ defineExpose({
             aria-haspopup="menu"
             :aria-expanded="isOpen ? 'true' : 'false'"
             :aria-controls="shouldRenderMenu ? menuId : undefined"
-            :aria-label="ariaLabel"
+            v-bind="toggleLabelAttrs"
             @click="onToggleClick"
             @keydown="onKeydown">
             <template v-if="!split">

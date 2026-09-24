@@ -135,14 +135,20 @@ describe("vGTooltip", () => {
             vGTooltip.unbind?.(host, bindingForCleanup(), undefined as unknown as VNode, undefined as unknown as VNode);
         });
 
-        test("hides when the toggle of a GDropdown is clicked", async () => {
-            const wrapper = mount(
+        function mountDropdown(template: string) {
+            return mount(
                 {
                     components: { GDropdown, GDropdownItem },
                     directives: { "g-tooltip": vGTooltip },
-                    template: `<GDropdown v-g-tooltip title="More options" text="Menu"><GDropdownItem>One</GDropdownItem></GDropdown>`,
+                    template,
                 } as object,
                 { attachTo: document.body },
+            );
+        }
+
+        test("hides when the toggle of a GDropdown is clicked", async () => {
+            const wrapper = mountDropdown(
+                `<GDropdown v-g-tooltip title="More options" text="Menu"><GDropdownItem>One</GDropdownItem></GDropdown>`,
             );
             wrapper.element.dispatchEvent(new Event("mouseenter"));
             await advanceTooltipHoverDelay(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
@@ -154,6 +160,41 @@ describe("vGTooltip", () => {
             wrapper.get(".dropdown-item").element.dispatchEvent(new Event("focusin", { bubbles: true }));
             expect(getRenderedTooltip()).toBeNull();
 
+            wrapper.destroy();
+        });
+
+        test("names an icon-only toggle instead of the element", async () => {
+            const wrapper = mountDropdown(
+                `<GDropdown v-g-tooltip title="More options"><template v-slot:button-content><svg /></template></GDropdown>`,
+            );
+            const toggle = wrapper.get(".dropdown-toggle");
+
+            expect(toggle.attributes("aria-label")).toBe("More options");
+            expect(wrapper.attributes("aria-label")).toBeUndefined();
+
+            // The name has to survive GDropdown's own re-renders
+            await toggle.trigger("click");
+            expect(toggle.attributes("aria-expanded")).toBe("true");
+            expect(toggle.attributes("aria-label")).toBe("More options");
+
+            vGTooltip.unbind?.(
+                wrapper.element as HTMLElement,
+                bindingForCleanup(),
+                undefined as unknown as VNode,
+                undefined as unknown as VNode,
+            );
+            expect(toggle.attributes("aria-label")).toBeUndefined();
+            wrapper.destroy();
+        });
+
+        test("keeps the name of a toggle with text or its own label", () => {
+            const wrapper = mountDropdown(`<div>
+                <GDropdown v-g-tooltip id="text" title="More options" text="Menu" />
+                <GDropdown v-g-tooltip id="labelled" title="Upload examples" aria-label="Upload" />
+            </div>`);
+
+            expect(wrapper.get("#text .dropdown-toggle").attributes("aria-label")).toBeUndefined();
+            expect(wrapper.get("#labelled .dropdown-toggle").attributes("aria-label")).toBe("Upload");
             wrapper.destroy();
         });
 
