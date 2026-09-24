@@ -118,7 +118,7 @@ def test_login_redirect_targets_the_login_entry_point():
     assert urlparse(location).path == "/login"
 
 
-@pytest.mark.parametrize("path", ["/login", "/login/start"])
+@pytest.mark.parametrize("path", ["/login", "/login/start", "/login/reset_password"])
 def test_login_routes_are_not_themselves_gated(path):
     """The whole chain lands on one of these, so gating either one is an infinite loop.
 

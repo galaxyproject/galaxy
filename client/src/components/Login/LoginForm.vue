@@ -110,7 +110,10 @@ async function submitLogin() {
         }
 
         if (response.data.expired_user) {
-            window.location.href = withPrefix(`/login/start?expired_user=${response.data.expired_user}`);
+            await router.push({
+                path: "/login/start",
+                query: { expired_user: response.data.expired_user },
+            });
         } else if (connectExternalProvider.value) {
             window.location.href = withPrefix("/user/external_ids?connect_external=true");
         } else if (response.data.redirect) {
@@ -201,6 +204,7 @@ function returnToLogin() {
                                             <span v-localize>Forgot password?</span>
 
                                             <a
+                                                id="reset-password-link"
                                                 v-localize
                                                 href="javascript:void(0)"
                                                 role="button"

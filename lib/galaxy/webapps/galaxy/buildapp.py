@@ -223,8 +223,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/carbon_emissions_calculations")
     webapp.add_client_route("/help/terms/{term_id}")
     webapp.add_client_route("/datatypes")
-    webapp.add_client_route("/login/start")
-    webapp.add_client_route("/register/start")
+    populate_auth_client_routes(webapp)
     webapp.add_client_route("/tools/list")
     webapp.add_client_route("/tools/list/ontologies")
     webapp.add_client_route("/tools/json")
@@ -357,6 +356,12 @@ def postfork_setup():
     from galaxy.app import app
 
     app.application_stack.log_startup()
+
+
+def populate_auth_client_routes(webapp: WebApplication) -> None:
+    webapp.add_client_route("/login/start")
+    webapp.add_client_route("/login/reset_password")
+    webapp.add_client_route("/register/start")
 
 
 def populate_api_routes(webapp: WebApplication, app: MinimalApp):
