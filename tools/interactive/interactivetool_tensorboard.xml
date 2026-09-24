@@ -1,12 +1,15 @@
 <tool id="interactive_tool_tensorboard" tool_type="interactive" name="TensorBoard" version="2.21.0" profile="23.0">
     <icon src="tensorboard.png"/>
     <description>Visualize and explore tensorboard logs from machine/deep learning experiments</description>
+    <macros>
+        <token name="@PORT@">6006</token>
+    </macros>
     <requirements>
         <container type="docker">quay.io/galaxy/tensorboard:2.21.0</container>
     </requirements>
     <entry_points>
         <entry_point name="TensorBoard" requires_domain="True">
-            <port>6006</port>
+            <port>@PORT@</port>
         </entry_point>
     </entry_points>
     <stdio>
@@ -38,7 +41,7 @@
         tensorboard
             --logdir logs
             --host 0.0.0.0
-            --port 6006
+            --port @PORT@
     ]]></command>
     <inputs>
         <conditional name="input_source">
