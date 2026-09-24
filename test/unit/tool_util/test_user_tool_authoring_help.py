@@ -18,7 +18,6 @@ import pytest
 import yaml
 from cwl_utils.expression import do_eval as cwl_do_eval
 from cwl_utils.types import CWLObjectType
-from gxformat2 import python_to_workflow
 
 from galaxy.tool_util.lint import lint_user_tool_source
 from galaxy.tool_util_models import UserToolSource
@@ -266,13 +265,12 @@ def test_documented_yaml_fragments_validate_and_lint(section_id: str, source: st
     WORKFLOW_BLOCKS,
     ids=[section_id for section_id, _ in WORKFLOW_BLOCKS],
 )
-def test_documented_workflows_convert_with_embedded_tools(section_id: str, source: str) -> None:
-    native = python_to_workflow(yaml.safe_load(source), None, workflow_directory=None)
-    tool_steps = [step for step in native["steps"].values() if step["type"] == "tool"]
-    assert tool_steps, section_id
+def test_documented_workflows_embed_valid_tools(section_id: str, source: str) -> None:
+    runs = [step["run"] for step in yaml.safe_load(source)["steps"].values() if "run" in step]
+    assert runs, section_id
 
-    for step in tool_steps:
-        tool = UserToolSource.model_validate(step["tool_representation"])
+    for run in runs:
+        tool = UserToolSource.model_validate(run)
         assert lint_user_tool_source(tool) == [], section_id
         evaluated_command = _do_eval(tool.shell_command, _runtime_inputs(tool), _javascript_requirements(tool))
         _assert_shell_syntax(evaluated_command)
