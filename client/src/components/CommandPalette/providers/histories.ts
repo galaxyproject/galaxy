@@ -3,7 +3,6 @@ import { faHdd } from "@fortawesome/free-solid-svg-icons";
 import type { AnyHistory } from "@/api";
 import type { AnyHistoryEntry } from "@/api/histories";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
-import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { type HistoryListVariant, useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { relativeUpdatedLabel } from "@/utils/dates";
@@ -15,8 +14,8 @@ import type {
     PaletteSearchOptions,
     ScopedSection,
 } from "../types";
-import { rankPaletteItems } from "../utilities";
 import { PALETTE_LIMITS } from "./limits";
+import { recentPaletteItems, type RecentRows } from "./recent";
 import type { ScopeDefinition } from "./scopes";
 import { type ListingSearch, rootListItems, storeFirstItems, type StoreFirstList } from "./storeFirst";
 
@@ -217,20 +216,15 @@ function listingSearch(variant: HistoryListVariant): ListingSearch {
 /** Histories opened through the palette before, most recently used first */
 function recentItems(query: string, limit = PALETTE_LIMITS.recent): PaletteItem[] {
     const historyStore = useHistoryStore();
-    const { recentItems: recentEntries } = useRecentPaletteItems();
-    const items = recentEntries(HISTORY_RECENT_TYPE).map((entry) => {
-        const summary = historyStore.storedHistories[entry.id] ?? historyStore.listedHistories[entry.id];
-        return summary
-            ? historyItem(toPaletteHistory(summary), "recent", "my")
-            : {
-                  id: itemId("recent", entry.id),
-                  icon: faHdd,
-                  mru: { type: HISTORY_RECENT_TYPE, id: entry.id },
-                  title: entry.name,
-                  to: entry.to ?? viewUrl(entry.id),
-              };
-    });
-    return rankPaletteItems(items, query).slice(0, limit);
+    const rows: RecentRows = {
+        type: HISTORY_RECENT_TYPE,
+        stored: (entry) => {
+            const summary = historyStore.storedHistories[entry.id] ?? historyStore.listedHistories[entry.id];
+            return summary ? historyItem(toPaletteHistory(summary), "recent", "my") : undefined;
+        },
+        fallback: (entry) => ({ id: itemId("recent", entry.id), icon: faHdd, to: viewUrl(entry.id) }),
+    };
+    return recentPaletteItems(rows, query, limit);
 }
 
 function resultsTitle(scope: ScopeDefinition, query: string): string {

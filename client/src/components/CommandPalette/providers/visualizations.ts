@@ -1,12 +1,12 @@
 import { faChartBar } from "@fortawesome/free-solid-svg-icons";
 
 import type { VisualizationSummary } from "@/api/visualizations";
-import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { useVisualizationStore } from "@/stores/visualizationStore";
 import { shortDateLabel } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteItem, ScopedSection } from "../types";
 import { PALETTE_LIMITS } from "./limits";
+import { recentPaletteItems, type RecentRows } from "./recent";
 import { ensureListHydrated, storeFirstItems, type StoreFirstList } from "./storeFirst";
 
 /** Entity type used for the palette MRU list of visualizations */
@@ -66,22 +66,20 @@ function latestItems(limit = PALETTE_LIMITS.section): PaletteItem[] {
 /** Visualizations opened through the palette before, most recent first */
 function recentItems(limit = PALETTE_LIMITS.recent): PaletteItem[] {
     const store = useVisualizationStore();
-    const { recentItems: recent } = useRecentPaletteItems();
-    return recent(VISUALIZATION_RECENT_TYPE)
-        .slice(0, limit)
-        .map((entry) => {
-            // prefer the cached summary, which carries a current type and date
-            const cachedSummary = store.getVisualizationSummary(entry.id);
-            return cachedSummary
-                ? visualizationToItem(cachedSummary)
-                : {
-                      id: `visualizations:${entry.id}`,
-                      icon: faChartBar,
-                      mru: { type: VISUALIZATION_RECENT_TYPE, id: entry.id },
-                      title: entry.name,
-                      to: entry.to ?? visualizationDisplayPath({ id: entry.id }),
-                  };
-        });
+    const rows: RecentRows = {
+        type: VISUALIZATION_RECENT_TYPE,
+        stored: (entry) => {
+            // the cached summary carries a current type and date
+            const summary = store.getVisualizationSummary(entry.id);
+            return summary ? visualizationToItem(summary) : undefined;
+        },
+        fallback: (entry) => ({
+            id: `visualizations:${entry.id}`,
+            icon: faChartBar,
+            to: visualizationDisplayPath({ id: entry.id }),
+        }),
+    };
+    return recentPaletteItems(rows, "", limit);
 }
 
 function sectionsWithItems(sections: ScopedSection[]): ScopedSection[] {
