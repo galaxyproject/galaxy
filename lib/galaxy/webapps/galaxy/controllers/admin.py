@@ -529,36 +529,6 @@ class AdminGalaxy(controller.BaseUIController):
     def groups_list(self, trans: GalaxyWebTransaction, **kwargs):
         return self.group_list_grid(trans, **kwargs)
 
-    @web.legacy_expose_api
-    @web.require_admin
-    def rename_group(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        id = kwd.get("id")
-        if not id:
-            return self.message_exception(trans, "No group id received for renaming.")
-        group = get_group(trans, id)
-        if trans.request.method == "GET":
-            return {
-                "title": f"Change group name for '{group.name}'",
-                "inputs": [{"name": "name", "label": "Name", "value": group.name}],
-            }
-        else:
-            old_name = group.name
-            new_name = util.restore_text(payload.get("name"))
-            if not new_name:
-                return self.message_exception(trans, "Enter a valid group name.")
-            else:
-                existing_group = (
-                    trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.name == new_name).first()
-                )
-                if existing_group and existing_group.id != group.id:
-                    return self.message_exception(trans, "A group with that name already exists.")
-                else:
-                    if not (group.name == new_name):
-                        group.name = new_name
-                        trans.sa_session.add(group)
-                        trans.sa_session.commit()
-            return {"message": f"Group '{old_name}' has been renamed to '{new_name}'."}
-
     @web.expose
     @web.require_admin
     def create_new_user(self, trans: GalaxyWebTransaction, **kwd):
@@ -566,16 +536,6 @@ class AdminGalaxy(controller.BaseUIController):
 
 
 # ---- Utility methods -------------------------------------------------------
-
-
-def get_group(trans: GalaxyWebTransaction, id):
-    """Get a Group from the database by id."""
-    # Load user from database
-    id = trans.security.decode_id(id)
-    group = trans.sa_session.query(trans.model.Group).get(id)
-    if not group:
-        return trans.show_error_message(f"Group not found for id ({str(id)})")
-    return group
 
 
 def get_quota(trans: GalaxyWebTransaction, id):

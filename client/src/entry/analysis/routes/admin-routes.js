@@ -202,7 +202,7 @@ export default [
                 }),
             },
             {
-                path: "form/manage_users_and_roles_for_group",
+                path: "form/edit_group",
                 component: GroupForm,
                 props: (route) => ({
                     groupId: route.query.id,
@@ -226,14 +226,6 @@ export default [
             {
                 path: "form/create_quota",
                 component: QuotaForm,
-            },
-            {
-                path: "form/rename_group",
-                component: FormGeneric,
-                props: (route) => ({
-                    url: `/admin/rename_group?id=${route.query.id}`,
-                    redirect: "/admin/groups",
-                }),
             },
             {
                 path: "form/rename_quota",
