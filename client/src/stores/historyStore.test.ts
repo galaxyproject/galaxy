@@ -238,4 +238,18 @@ describe("historyStore — createNewHistory", () => {
         expect(store.currentHistoryId).toBe("named-history");
         expect(store.totalHistoryCount).toBe(4);
     });
+
+    it("still switches to a named history when the count refresh fails", async () => {
+        server.use(
+            http.get("/api/histories/count", ({ response }) =>
+                response("5XX").json({ err_msg: "count is down", err_code: 500 }, { status: 500 }),
+            ),
+        );
+        const store = useHistoryStore();
+
+        await expect(store.createNewHistory("RNA run")).resolves.toBeUndefined();
+
+        expect(requested).toEqual(["create RNA run", "select named-history"]);
+        expect(store.currentHistoryId).toBe("named-history");
+    });
 });

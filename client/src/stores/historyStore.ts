@@ -346,8 +346,14 @@ export const useHistoryStore = defineStore("historyStore", () => {
     async function createNewHistory(name?: string) {
         if (name) {
             const namedHistory = await createHistoryOnServer(name);
-            await handleTotalCountChange(1);
-            return setCurrentHistory(namedHistory.id);
+            await setCurrentHistory(namedHistory.id);
+            // the history exists, so a failed count refresh must not read as a failed creation
+            try {
+                await handleTotalCountChange(1);
+            } catch (error) {
+                console.debug("Could not refresh the history count", error);
+            }
+            return;
         }
         const newHistory = (await createAndSelectNewHistory()) as HistoryDevDetailed;
         await handleTotalCountChange(1);
