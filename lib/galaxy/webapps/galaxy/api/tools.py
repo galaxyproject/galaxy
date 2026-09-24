@@ -52,6 +52,7 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     ClaimLandingPayload,
     CreateToolLandingRequestPayload,
+    DatasetInteractiveToolList,
     ToolLandingRequest,
     ToolRequestDetailedModel,
 )
@@ -91,7 +92,10 @@ from galaxy.web import (
 )
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
-from galaxy.webapps.galaxy.api.common import serve_workbook
+from galaxy.webapps.galaxy.api.common import (
+    HistoryDatasetIDPathParam,
+    serve_workbook,
+)
 from galaxy.webapps.galaxy.services.base import tool_request_detailed_to_model
 from galaxy.webapps.galaxy.services.tools import (
     get_tool,
@@ -179,6 +183,7 @@ async def get_files(request: Request, files: list[UploadFile] | None = None):
 class FetchTools:
     service: ToolsService = depends(ToolsService)
     landing_manager: LandingRequestManager = depends(LandingRequestManager)
+    hda_manager: HDAManager = depends(HDAManager)
 
     @router.post("/api/tools/fetch", summary="Upload files to Galaxy", route_class_override=JsonApiRoute)
     def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
@@ -441,6 +446,19 @@ class FetchTools:
     )
     def tool_tags(self, trans: ProvidesHistoryContext = DependsOnTrans) -> dict[str, list[str]]:
         return self.service.curated_tool_tags_by_id(trans)
+
+    @router.get(
+        "/api/datasets/{dataset_id}/interactive_tools",
+        summary="Return the interactive tools with a data input that accepts this dataset.",
+        operation_id="datasets__interactive_tools",
+    )
+    def dataset_interactive_tools(
+        self,
+        dataset_id: HistoryDatasetIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> DatasetInteractiveToolList:
+        hda = self.hda_manager.get_accessible(dataset_id, trans.user)
+        return self.service.interactive_tools_for_dataset(trans, hda)
 
     @router.get(
         "/api/tools/{tool_id}/interop",
