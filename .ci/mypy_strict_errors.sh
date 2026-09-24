@@ -1,8 +1,9 @@
 #!/bin/sh
 #
-# Print the number of mypy errors that the current checkout would have if
-# most green-list flags (see mypy.ini) were forced on for the whole codebase,
-# excluding lib/galaxy_test/. Must be run from the repository root, with mypy
+# Print the mypy errors that the current checkout would have if most
+# green-list flags (see mypy.ini) were forced on for the whole codebase, one
+# sorted, normalised (no "severity" key) JSON object per line, excluding
+# lib/galaxy_test/ and test/. Must be run from the repository root, with mypy
 # and its dependencies already installed.
 #
 # --disallow-untyped-calls is deliberately left out: unlike the other flags,
@@ -13,7 +14,8 @@
 # it, which isn't what this check is meant to enforce.
 #
 # Used by .github/workflows/mypy_strict_ratchet.yaml to compare a pull
-# request's head against its target branch.
+# request's head against its target branch, and to report which new errors it
+# introduces.
 
 set -e
 
@@ -22,6 +24,7 @@ trap 'rm -f "$output"' EXIT
 
 set +e
 (cd lib && mypy \
+    --output json \
     --disallow-any-generics \
     --disallow-untyped-decorators \
     --disallow-untyped-defs \
@@ -31,13 +34,12 @@ mypy_exit_code=$?
 set -e
 
 # mypy exits 0 (no errors) or 1 (errors found) on a normal run; anything else
-# is a crash or config problem, and the error count in $output can't be
-# trusted (e.g. "errors prevented further checking" still contains a line or
-# two matching ": error:", so it would otherwise look like a very low count).
+# is a crash or config problem, and $output can't be trusted to contain only
+# well-formed JSON error records.
 if [ "$mypy_exit_code" -gt 1 ]; then
     cat "$output" >&2
     echo "mypy exited with status $mypy_exit_code, see output above" >&2
     exit 1
 fi
 
-grep ": error:" "$output" | grep -vc 'galaxy_test/'
+jq -c 'select(.file | startswith("galaxy_test/") | not) | del(.severity)' "$output" | sort

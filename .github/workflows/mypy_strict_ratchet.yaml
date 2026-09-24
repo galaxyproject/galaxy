@@ -3,7 +3,7 @@ on:
   pull_request:
     paths:
       - '**.py'
-      - '.ci/mypy_strict_count.sh'
+      - '.ci/mypy_strict_errors.sh'
       - '.github/workflows/mypy_strict_ratchet.yaml'
       - lib/galaxy/dependencies/**
       - mypy.ini
@@ -27,10 +27,10 @@ jobs:
         uses: astral-sh/setup-uv@v10.1.0
         with:
           python-version: '3.10'
-      - name: Copy the counting script out of the checkout
+      - name: Copy the errors script out of the checkout
         # so it still works once we `git checkout` the target branch below,
         # which may predate this script.
-        run: cp .ci/mypy_strict_count.sh /tmp/mypy_strict_count.sh
+        run: cp .ci/mypy_strict_errors.sh /tmp/mypy_strict_errors.sh
       - name: Install mypy and its dependencies
         run: |
           uv venv
@@ -38,30 +38,40 @@ jobs:
             -r lib/galaxy/dependencies/pinned-typecheck-requirements.txt \
             -r lib/galaxy/dependencies/pinned-requirements.txt \
             -r lib/galaxy/dependencies/pinned-test-requirements.txt
-      - name: Count mypy strict errors on the PR head
-        id: head
+      - name: Run mypy strict checks on the PR head
         run: |
           . .venv/bin/activate
-          echo "count=$(sh /tmp/mypy_strict_count.sh)" >> "$GITHUB_OUTPUT"
+          sh /tmp/mypy_strict_errors.sh > /tmp/head_errors.jsonl
       - name: Check out the target branch
         run: |
           git fetch --depth=1 origin "$BASE_SHA"
           git checkout "$BASE_SHA"
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-      - name: Count mypy strict errors on the target branch
-        id: base
+      - name: Run mypy strict checks on the target branch
         run: |
           . .venv/bin/activate
-          echo "count=$(sh /tmp/mypy_strict_count.sh)" >> "$GITHUB_OUTPUT"
+          sh /tmp/mypy_strict_errors.sh > /tmp/base_errors.jsonl
       - name: Compare
         run: |
-          echo "PR head errors: $HEAD_COUNT"
-          echo "Target branch (${GITHUB_BASE_REF}) errors: $BASE_COUNT"
-          if [ "$HEAD_COUNT" -gt "$BASE_COUNT" ]; then
-            echo "::error::The number of mypy errors under a fully strict configuration (excluding test/ and lib/galaxy_test/) increased from $BASE_COUNT to $HEAD_COUNT. Please add type annotations to the new or changed code."
+          # Both files are sorted (see .ci/mypy_strict_errors.sh), so `comm -13`
+          # prints the lines unique to the second file, i.e. the errors that
+          # are new on the PR head. Errors fixed elsewhere by the same PR
+          # don't offset them, any new error fails the check.
+          comm -13 /tmp/base_errors.jsonl /tmp/head_errors.jsonl > /tmp/new_errors.jsonl
+          if [ -s /tmp/new_errors.jsonl ]; then
+            {
+              echo "### New mypy errors under a fully strict configuration"
+              echo
+              jq -r '"- `lib/\(.file):\(.line)`: \(.message) [`\(.code)`]"' /tmp/new_errors.jsonl
+            } >> "$GITHUB_STEP_SUMMARY"
+            # Also annotate the offending lines directly, so they show up on
+            # the PR's "Files changed" tab. Capped since GitHub only shows a
+            # handful of annotations there; the full list is in the summary
+            # above regardless.
+            head -n 20 /tmp/new_errors.jsonl \
+              | jq -r '"::error file=lib/\(.file),line=\(.line),col=\(.column)::\(.message) [\(.code)]"'
+
+            echo "::error::This PR introduces new mypy errors under a fully strict configuration (excluding test/ and lib/galaxy_test/). See the new errors above, or in the job summary."
             exit 1
           fi
-        env:
-          HEAD_COUNT: ${{ steps.head.outputs.count }}
-          BASE_COUNT: ${{ steps.base.outputs.count }}
