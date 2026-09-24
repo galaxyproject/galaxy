@@ -5,6 +5,7 @@ import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { AnyHistory, RegisteredUser } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -45,17 +46,37 @@ const anonymousDisabledOptions = expectedOptions.filter((option) => !anonymousOp
 const activeHistory = { id: "history_a", name: "Active History", deleted: false, purged: false, archived: false };
 const deletedHistory = { id: "history_b", name: "Deleted History", deleted: true, purged: false, archived: false };
 
-async function createWrapper(propsData: object, userData?: any) {
+// options still shown for a history owned by someone else
+const unownedHistoryOptions = [
+    "Show Histories Side-by-Side",
+    "Copy History",
+    "Export Tool References",
+    "Export History to File",
+    "Extract Workflow",
+    "Show Invocations",
+    "Show History Graph",
+    "Show History Notebooks",
+];
+
+async function createWrapper(propsData: { history: Partial<AnyHistory> }, userData?: RegisteredUser) {
     const pinia = createPinia();
 
+    const historyUserId = "user_id" in propsData.history ? propsData.history.user_id : userData?.id || null;
+
     const wrapper = shallowMount(HistoryOptions as object, {
-        propsData,
+        propsData: {
+            history: { ...propsData.history, user_id: historyUserId },
+        },
         localVue,
         pinia,
     });
 
     const userStore = useUserStore();
-    userStore.currentUser = { ...userStore.currentUser, ...userData };
+    if (userData) {
+        userStore.currentUser = userData;
+    } else {
+        userStore.currentUser = { isAnonymous: true, nice_total_disk_usage: "0 bytes", total_disk_usage: 0 };
+    }
 
     const historyStore = useHistoryStore();
     vi.spyOn(historyStore, "currentHistoryId", "get").mockReturnValue("current_history_id");
@@ -74,12 +95,8 @@ describe("History Navigation", () => {
         const { wrapper } = await createWrapper(
             {
                 history: { id: "current_history_id" },
-                histories: [],
             },
-            {
-                id: "user.id",
-                email: "user.email",
-            },
+            getFakeRegisteredUser(),
         );
 
         const dropDown = wrapper.find("*[data-description='history options']");
@@ -92,7 +109,6 @@ describe("History Navigation", () => {
     it("disables options for anonymous users", async () => {
         const { wrapper } = await createWrapper({
             history: { id: "current_history_id" },
-            histories: [],
         });
 
         const dropDown = wrapper.find("*[data-description='history options']");
@@ -108,7 +124,6 @@ describe("History Navigation", () => {
     it("prompts anonymous users to log in", async () => {
         const { wrapper } = await createWrapper({
             history: { id: "current_history_id" },
-            histories: [],
         });
 
         const dropDown = wrapper.find("*[data-description='history options']");
@@ -117,6 +132,21 @@ describe("History Navigation", () => {
         disabledOptionElements.wrappers.forEach((option) => {
             expect((option.attributes("title") as string).toLowerCase()).toContain("log in");
         });
+    });
+
+    it("hides owner-only options for a history not owned by the current user", async () => {
+        const { wrapper } = await createWrapper(
+            {
+                history: { ...activeHistory, user_id: "someone_else" },
+            },
+            getFakeRegisteredUser({ id: "fake_user_id" }),
+        );
+
+        const dropDown = wrapper.find("*[data-description='history options']");
+        const optionElements = dropDown.findAll("bdropdownitem-stub");
+        const optionTexts = optionElements.wrappers.map((el) => el.text());
+
+        expect(optionTexts).toStrictEqual(unownedHistoryOptions);
     });
 
     it("shows 'Delete History' for an active history", async () => {

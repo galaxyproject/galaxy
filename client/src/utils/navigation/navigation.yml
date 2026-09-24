@@ -1322,8 +1322,25 @@ admin:
     selectors:
       add_new: '[data-description="grid action create new quota"]'
       items: '#quotas-grid table tr'
-      add_form: "[url='/admin/create_quota']"
-      add_form_submit: "[url='/admin/create_quota'] #submit:not([aria-disabled])"
+      form: '#admin-quota-form'
+      source_label: '#admin-quota-source-label'
+      groups: '#admin-quota-groups .multiselect'
+      groups_input: '#admin-quota-groups input.multiselect__input'
+      group_option:
+        type: xpath
+        selector: "//div[@id='admin-quota-groups']//span[contains(@class, 'multiselect__option')]/span[text()='${name}']"
+      users: '#admin-quota-users .multiselect'
+      users_input: '#admin-quota-users input.multiselect__input'
+      user_option:
+        type: xpath
+        selector: "//div[@id='admin-quota-users']//span[contains(@class, 'multiselect__option')]/span[text()='${email}']"
+      selected_user:
+        type: xpath
+        selector: "//div[@id='admin-quota-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]"
+      remove_selected_user:
+        type: xpath
+        selector: "//div[@id='admin-quota-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]/i[contains(@class, 'multiselect__tag-icon')]"
+      submit: '#admin-quota-submit'
 
   index:
     selectors:
