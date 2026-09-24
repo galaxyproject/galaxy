@@ -5,7 +5,7 @@
  */
 import type { PaletteItem, PaletteSearchOptions } from "../types";
 import { dedupePaletteItemsByEntity, rankPaletteItems } from "../utilities";
-import { fetchOrFail } from "./errors";
+import { PaletteFetchError } from "./errors";
 import { PALETTE_LIMITS } from "./limits";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 
@@ -43,19 +43,26 @@ async function searchQuietly(search: () => Promise<PaletteItem[]>): Promise<Pale
 }
 
 /**
- * Fills an empty cache once — a failure is reported then, there being nothing to
- * fall back on — and afterwards only refreshes it in the background once stale
- * (see {@link refreshListWhenStale}). The stores share a request already running,
- * so a keystroke landing during the very first fetch waits for it instead of
- * rendering the still empty cache as "no results".
+ * Fetches the listing once, and afterwards only refreshes it in the background
+ * once stale (see {@link refreshListWhenStale}). The stores share a request
+ * already running, so a keystroke landing during the very first fetch waits for
+ * it instead of rendering the still empty cache as "no results".
  */
 export async function ensureListHydrated(list: StoreFirstList): Promise<void> {
-    if (!list.isLoaded()) {
-        await fetchOrFail(() => list.fetchListing());
-        markListRefreshed(list.key);
-    } else {
+    if (list.isLoaded()) {
         refreshListWhenStale(list.key, () => list.fetchListing());
+        return;
     }
+    try {
+        await list.fetchListing();
+    } catch (error) {
+        // only a cache with nothing to fall back on reports the failure
+        if (list.cachedItems().length === 0) {
+            throw new PaletteFetchError(error);
+        }
+        console.debug("Command palette could not fetch a list", list.key, error);
+    }
+    markListRefreshed(list.key);
 }
 
 /**
