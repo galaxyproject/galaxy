@@ -1,5 +1,7 @@
 import { faHdd } from "@fortawesome/free-solid-svg-icons";
 
+import type { AnyHistory } from "@/api";
+import type { AnyHistoryEntry } from "@/api/histories";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { type HistoryListVariant, useHistoryStore } from "@/stores/historyStore";
@@ -38,21 +40,35 @@ const LIST_PAGE_SIZE = 25;
 /** Which cached list a scope reads: the user's own histories, or a listing */
 type HistoryVariant = "my" | HistoryListVariant;
 
-/**
- * The fields this provider reads off a history. The store keeps the user's own
- * histories (`AnyHistory`, serialized without `username`) apart from the shared,
- * published and archived listings (`AnyHistoryEntry`, which carry the owner), so
- * the two sources are narrowed to their common, optional shape here.
- */
-interface HistoryEntryLike {
+/** The fields a palette row reads off a history, whichever store list it came from */
+interface PaletteHistory {
     id: string;
     name: string;
-    annotation?: string | null;
-    count?: number;
+    annotation: string | null;
+    count: number;
+    /** The owner's username; unset for own histories, which are serialized without one */
     owner?: string;
-    tags?: string[];
-    update_time?: string;
-    username?: string;
+    tags: string[];
+    update_time: string;
+}
+
+/**
+ * Narrows the store's two history shapes once: the user's own histories
+ * (`AnyHistory`) and the shared, published and archived listings
+ * (`AnyHistoryEntry`). The backend serializes the owner as `username`; `owner`
+ * only exists on the listing types.
+ */
+function toPaletteHistory(history: AnyHistory | AnyHistoryEntry): PaletteHistory {
+    const owner = ("username" in history && history.username) || ("owner" in history && history.owner) || undefined;
+    return {
+        id: history.id,
+        name: history.name,
+        annotation: history.annotation,
+        count: history.count,
+        owner,
+        tags: history.tags,
+        update_time: history.update_time,
+    };
 }
 
 /** Scope variant (`undefined` | `shared` | `published` | `archived`) to list */
@@ -89,16 +105,15 @@ function itemId(sectionId: string, historyId: string): string {
  * and `ha:`, both served by endpoints that never return another user's history)
  * count an entry without an owner as owned.
  */
-function ownsHistory(history: HistoryEntryLike, variant: HistoryVariant): boolean {
-    const owner = history.username ?? history.owner;
-    if (owner) {
-        return useUserStore().matchesCurrentUsername(owner);
+function ownsHistory(history: PaletteHistory, variant: HistoryVariant): boolean {
+    if (history.owner) {
+        return useUserStore().matchesCurrentUsername(history.owner);
     }
     return variant === "my" || variant === "archived";
 }
 
 /** The annotation says more than a bare item count, so it wins when present */
-function describeContents(history: HistoryEntryLike): string | undefined {
+function describeContents(history: PaletteHistory): string | undefined {
     const annotation = history.annotation?.trim();
     if (annotation) {
         return annotation;
@@ -113,7 +128,7 @@ function describeContents(history: HistoryEntryLike): string | undefined {
  * One result row. Enter opens the history in the history view; histories the
  * current user owns additionally switch to it on shift+enter.
  */
-function historyItem(history: HistoryEntryLike, sectionId: string, variant: HistoryVariant): PaletteItem {
+function historyItem(history: PaletteHistory, sectionId: string, variant: HistoryVariant): PaletteItem {
     const historyStore = useHistoryStore();
     const isCurrent = historyStore.currentHistoryId === history.id;
     const owned = ownsHistory(history, variant);
@@ -121,7 +136,7 @@ function historyItem(history: HistoryEntryLike, sectionId: string, variant: Hist
         isCurrent ? "(current)" : undefined,
         describeContents(history),
         // the owner is only worth a line for histories that are not the user's own
-        owned ? undefined : (history.owner ?? history.username) && `by ${history.owner ?? history.username}`,
+        owned ? undefined : history.owner && `by ${history.owner}`,
         relativeUpdatedLabel(history.update_time),
     ]
         .filter(Boolean)
@@ -129,7 +144,7 @@ function historyItem(history: HistoryEntryLike, sectionId: string, variant: Hist
     return {
         id: itemId(sectionId, history.id),
         icon: faHdd,
-        keywords: [history.owner, history.username, ...(history.tags ?? [])].filter(Boolean).join(" "),
+        keywords: [history.owner, ...history.tags].filter(Boolean).join(" "),
         mru: { type: HISTORY_RECENT_TYPE, id: history.id },
         title: history.name,
         to: viewUrl(history.id),
@@ -148,8 +163,8 @@ function historyItem(history: HistoryEntryLike, sectionId: string, variant: Hist
 }
 
 /** Newest first, so an empty query renders the "Latest" section as promised */
-function latestFirst(histories: HistoryEntryLike[]): HistoryEntryLike[] {
-    return [...histories].sort((a, b) => (b.update_time ?? "").localeCompare(a.update_time ?? ""));
+function latestFirst(histories: PaletteHistory[]): PaletteHistory[] {
+    return [...histories].sort((a, b) => b.update_time.localeCompare(a.update_time));
 }
 
 /** A failing background fetch degrades to whatever the store already holds */
@@ -163,12 +178,10 @@ async function fetchQuietly<T>(fetch: () => Promise<T>): Promise<T | undefined> 
 }
 
 /** The cached histories of one variant, straight from the store */
-function cachedHistories(variant: HistoryVariant): HistoryEntryLike[] {
+function cachedHistories(variant: HistoryVariant): PaletteHistory[] {
     const historyStore = useHistoryStore();
-    if (variant === "my") {
-        return historyStore.histories as unknown as HistoryEntryLike[];
-    }
-    return historyStore.getListedHistories(variant) as unknown as HistoryEntryLike[];
+    const histories = variant === "my" ? historyStore.histories : historyStore.getListedHistories(variant);
+    return histories.map(toPaletteHistory);
 }
 
 /**
@@ -216,7 +229,7 @@ async function searchBackend(variant: HistoryVariant, query: string): Promise<vo
     await fetchQuietly(() => historyStore.fetchHistoryList(variant, { search: query, limit: LIST_PAGE_SIZE }));
 }
 
-function rankHistories(histories: HistoryEntryLike[], variant: HistoryVariant, query: string): PaletteItem[] {
+function rankHistories(histories: PaletteHistory[], variant: HistoryVariant, query: string): PaletteItem[] {
     return rankPaletteItems(
         latestFirst(histories).map((history) => historyItem(history, variant, variant)),
         query,
@@ -231,7 +244,7 @@ function rankHistories(histories: HistoryEntryLike[], variant: HistoryVariant, q
  * The own histories additionally carry a total whenever the app paginated the
  * list itself — it stays zero otherwise, and a short page is all there is.
  */
-function cacheIsComplete(variant: HistoryVariant, cached: HistoryEntryLike[]): boolean {
+function cacheIsComplete(variant: HistoryVariant, cached: PaletteHistory[]): boolean {
     if (variant === "my") {
         return cached.length < LIST_PAGE_SIZE && cached.length >= useHistoryStore().totalHistoryCount;
     }
@@ -295,7 +308,7 @@ async function variantItems(variant: HistoryListVariant, query: string): Promise
         (await fetchQuietly(() =>
             historyStore.fetchHistoryList(variant, { search: query, limit: LIST_PAGE_SIZE, record: false }),
         )) ?? [];
-    return rankHistories(entries as unknown as HistoryEntryLike[], variant, query).slice(0, ROOT_VARIANT_LIMIT);
+    return rankHistories(entries.map(toPaletteHistory), variant, query).slice(0, ROOT_VARIANT_LIMIT);
 }
 
 /**
@@ -320,11 +333,9 @@ function recentItems(query: string, limit = RECENT_LIMIT): PaletteItem[] {
     const historyStore = useHistoryStore();
     const { recentItems: recentEntries } = useRecentPaletteItems();
     const items = recentEntries(HISTORY_RECENT_TYPE).map((entry) => {
-        const summary = (historyStore.storedHistories[entry.id] ?? historyStore.listedHistories[entry.id]) as
-            | HistoryEntryLike
-            | undefined;
+        const summary = historyStore.storedHistories[entry.id] ?? historyStore.listedHistories[entry.id];
         return summary
-            ? historyItem(summary, "recent", "my")
+            ? historyItem(toPaletteHistory(summary), "recent", "my")
             : {
                   id: itemId("recent", entry.id),
                   icon: faHdd,
