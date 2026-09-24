@@ -142,7 +142,7 @@ export const invocationsProvider: CommandPaletteProvider = {
     },
     /**
      * Root mode fan-out: this provider only filters what the store already
-     * holds, unlike the histories, workflows, pages and tools ones, which
+     * holds, unlike the histories, workflows, reports and tools ones, which
      * search the backend there too. The `i:` scope is the one that fetches.
      */
     search(query: string) {
