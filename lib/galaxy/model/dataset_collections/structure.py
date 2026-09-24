@@ -1,5 +1,6 @@
 """Module for reasoning about structure of and matching hierarchical collections of data."""
 
+from collections.abc import Iterator
 from typing import (
     TYPE_CHECKING,
     TypeAlias,
@@ -44,8 +45,36 @@ leaf = Leaf()
 
 
 class BaseTree:
-    def __init__(self, collection_type_description):
+    """Shared interface of collection structures whose depth is known.
+
+    ``Tree`` holds enumerated children; ``UninitializedTree`` knows only its
+    collection type. Callers must check ``children_known`` before asking
+    about cardinality or coordinates.
+    """
+
+    children_known: bool
+
+    def __init__(self, collection_type_description: "CollectionTypeDescription") -> None:
         self.collection_type_description = collection_type_description
+
+    @property
+    def is_leaf(self) -> bool:
+        return False
+
+    def __len__(self) -> int:
+        raise NotImplementedError("Cannot compute the cardinality of a collection whose children are not known")
+
+    def walk_coordinates(self, prefix: tuple[int, ...] = ()) -> Iterator[tuple[int, ...]]:
+        raise NotImplementedError("Cannot walk the coordinates of a collection whose children are not known")
+
+    def compatible_shape(self, other_structure: "BaseTree") -> bool:
+        raise NotImplementedError("Cannot compare the shape of a collection whose children are not known")
+
+    def clone(self) -> "BaseTree":
+        raise NotImplementedError()
+
+    def multiply(self, other_structure) -> "BaseTree":
+        raise NotImplementedError()
 
 
 class UninitializedTree(BaseTree):
@@ -53,13 +82,6 @@ class UninitializedTree(BaseTree):
 
     def clone(self):
         return self
-
-    @property
-    def is_leaf(self):
-        return False
-
-    def __len__(self):
-        raise Exception("Unknown length")
 
     def multiply(self, other_structure):
         if other_structure.is_leaf:
@@ -142,10 +164,6 @@ class Tree(BaseTree):
                 sub_collections = dict_map(lambda collection: get_element(collection).child_collection, collection_dict)
                 for element, _when_value in substructure._walk_collections(sub_collections):
                     yield element, when_value
-
-    @property
-    def is_leaf(self):
-        return False
 
     def compatible_shape(self, other_structure):
         """Symmetric sibling-matching check.
@@ -269,7 +287,7 @@ def get_collection(
 def get_structure(
     collection: "DatasetCollection",
     collection_type_description: "CollectionTypeDescription",
-    leaf_subcollection_type: str | None = None,
+    leaf_subcollection_type: "str | CollectionTypeDescription | None" = None,
 ):
     """Build a Tree (or UninitializedTree) describing a collection's shape.
 
