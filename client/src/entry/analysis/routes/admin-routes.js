@@ -23,6 +23,7 @@ import NotificationForm from "@/components/admin/Notifications/NotificationForm.
 import NotificationsManagement from "@/components/admin/Notifications/NotificationsManagement.vue";
 import QuotaForm from "@/components/admin/QuotaForm.vue";
 import ResetMetadata from "@/components/admin/ResetMetadata.vue";
+import ResetUserPasswordForm from "@/components/admin/ResetUserPasswordForm.vue";
 import RoleForm from "@/components/admin/RoleForm.vue";
 import SanitizeAllow from "@/components/admin/SanitizeAllow.vue";
 import UserRolesGroupsForm from "@/components/admin/UserRolesGroupsForm.vue";
@@ -181,13 +182,9 @@ export default [
             // forms
             {
                 path: "form/reset_user_password",
-                component: FormGeneric,
+                component: ResetUserPasswordForm,
                 props: (route) => ({
-                    title: "Reset passwords",
-                    url: `/admin/reset_user_password?id=${route.query.id}`,
-                    icon: "fa-user",
-                    submitTitle: "Save new password",
-                    redirect: "/admin/users",
+                    userId: route.query.id,
                 }),
             },
             {

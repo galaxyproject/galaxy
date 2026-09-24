@@ -564,42 +564,8 @@ class AdminGalaxy(controller.BaseUIController):
     def create_new_user(self, trans: GalaxyWebTransaction, **kwd):
         return trans.response.send_redirect(web.url_for(controller="user", action="create", cntrller="admin"))
 
-    @web.legacy_expose_api
-    @web.require_admin
-    def reset_user_password(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        users = {user_id: get_user(trans, user_id) for user_id in util.listify(kwd.get("id"))}
-        if users:
-            if trans.request.method == "GET":
-                return {
-                    "message": f"Changes password(s) for: {', '.join(user.email for user in users.values())}.",
-                    "status": "info",
-                    "inputs": [
-                        {"name": "password", "label": "New password", "type": "password"},
-                        {"name": "confirm", "label": "Confirm password", "type": "password"},
-                    ],
-                }
-            else:
-                password = payload.get("password")
-                confirm = payload.get("confirm")
-                try:
-                    for user in users.values():
-                        self.user_manager.set_password(trans, user, password, confirm)
-                except RequestParameterInvalidException as e:
-                    return self.message_exception(trans, str(e))
-                return {"message": f"Passwords reset for {len(users)} user(s)."}
-        else:
-            return self.message_exception(trans, "Please specify user ids.")
-
 
 # ---- Utility methods -------------------------------------------------------
-
-
-def get_user(trans: GalaxyWebTransaction, user_id):
-    """Get a User from the database by id."""
-    user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
-    if not user:
-        return trans.show_error_message(f"User not found for id ({str(user_id)})")
-    return user
 
 
 def get_group(trans: GalaxyWebTransaction, id):
