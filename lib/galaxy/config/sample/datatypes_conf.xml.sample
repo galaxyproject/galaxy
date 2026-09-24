@@ -247,6 +247,9 @@
         <infer_from suffix="hdf5" />
         <visualization plugin="h5web" />
     </datatype>
+    <!-- XPS Datatypes -->
+    <datatype extension="nxxps" type="galaxy.datatypes.xps:NXxps" mimetype="application/octet-stream" display_in_upload="true" description="NeXus HDF5 file conforming to the NXxps application definition for X-ray photoelectron spectroscopy." description_url="https://manual.nexusformat.org/classes/applications/NXxps.html"/>
+    <datatype extension="vamas" type="galaxy.datatypes.xps:Vamas" mimetype="text/plain" display_in_upload="true" description="ISO 14976 VAMAS surface analysis file (XPS, AES, ...)." description_url="https://www.iso.org/standard/24269.html"/>
     <datatype extension="scool" type="galaxy.datatypes.binary:H5" mimetype="application/octet-stream" display_in_upload="true" subclass="true"/>
     <datatype extension="grib" type="galaxy.datatypes.binary:Grib" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="loom" type="galaxy.datatypes.binary:Loom" description="An HDF5-based Loom File" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -440,14 +443,6 @@
     <datatype extension="dlib" type="galaxy.datatypes.binary:DlibSQlite" display_in_upload="true"/>
     <datatype extension="elib" type="galaxy.datatypes.binary:ElibSQlite" display_in_upload="true"/>
     <datatype extension="hlf" type="galaxy.datatypes.proteomics:XHunterAslFormat" mimetype="application/octet-stream" display_in_upload="true"/>
-    <!-- XPS Datatypes -->
-    <datatype extension="vamas" type="galaxy.datatypes.xps:Vamas" mimetype="text/plain" display_in_upload="true" description="ISO 14976 VAMAS surface analysis file (XPS, AES, ...)." description_url="https://www.iso.org/standard/25919.html">
-        <infer_from suffix="vms" />
-    </datatype>
-    <datatype extension="xps.tsv" type="galaxy.datatypes.xps:XpsTabular" mimetype="text/plain" display_in_upload="true" description="Tabular export of an XPS spectrum (binding energy vs. intensity)."/>
-    <datatype extension="nxxps" type="galaxy.datatypes.xps:NXxps" mimetype="application/octet-stream" display_in_upload="true" description="NeXus HDF5 file conforming to the NXxps application definition for X-ray photoelectron spectroscopy." description_url="https://manual.nexusformat.org/classes/applications/NXxps.html">
-        <infer_from suffix="nxs" />
-    </datatype>
     <datatype extension="idpdb" type="galaxy.datatypes.binary:IdpDB" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="sf3" type="galaxy.datatypes.proteomics:Sf3" display_in_upload="true"/>
     <datatype extension="cps" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true"/>
@@ -1303,6 +1298,7 @@
     <sniffer type="galaxy.datatypes.binary:Anndata"/>
     <sniffer type="galaxy.datatypes.binary:Biom2"/>
     <sniffer type="galaxy.datatypes.binary:HexrdMaterials"/>
+    <sniffer type="galaxy.datatypes.xps:NXxps"/>
     <sniffer type="galaxy.datatypes.binary:H5"/>
     <sniffer type="galaxy.datatypes.binary:Grib"/>
     <sniffer type="galaxy.datatypes.binary:HexrdImagesNpz"/>
@@ -1552,6 +1548,7 @@
     <sniffer type="galaxy.datatypes.text:BCSLmodel"/>
     <sniffer type="galaxy.datatypes.text:StormSample"/>
     <sniffer type="galaxy.datatypes.text:StormCheck"/>
+    <sniffer type="galaxy.datatypes.xps:Vamas"/>
     <sniffer type="galaxy.datatypes.text:SourmashSignature"/>
   </sniffers>
 </datatypes>

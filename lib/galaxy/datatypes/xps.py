@@ -2,15 +2,11 @@
 X-ray Photoelectron Spectroscopy (XPS) Datatypes
 
 Datatypes for surface analysis data produced by X-ray photoelectron
-spectroscopy (XPS, also known as ESCA). Three related formats are provided:
+spectroscopy (XPS, also known as ESCA). Two related formats are provided:
 
 * :class:`Vamas` - the ISO 14976 VAMAS standard plain-text format, the
   open interchange format for surface analysis data (XPS, AES, ISS, ...).
-  See https://www.iso.org/standard/25919.html (ISO 14976).
-* :class:`XpsTabular` - a tabular export of an XPS spectrum (binding energy
-  vs. intensity, optionally with kinetic energy and counts), as produced by
-  many instrument software packages and tools such as CasaXPS or Galaxies
-  processing tools when exporting a single region/scan to text.
+  See https://www.iso.org/standard/24269.html (ISO 14976).
 * :class:`NXxps` - a NeXus HDF5 file conforming to the ``NXxps`` application
   definition (which extends ``NXmpes``), the recommended HDF5-based format
   for XPS data exchange.
@@ -18,10 +14,9 @@ spectroscopy (XPS, also known as ESCA). Three related formats are provided:
 """
 
 import logging
-from typing import (
-    IO,
-    Optional,
-)
+from typing import Optional
+
+import h5py
 
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import H5
@@ -31,8 +26,10 @@ from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
 )
-from galaxy.datatypes.tabular import Tabular
-from galaxy.util import nice_size
+from galaxy.util import (
+    nice_size,
+    unicodify,
+)
 
 log = logging.getLogger(__name__)
 
@@ -43,22 +40,20 @@ log = logging.getLogger(__name__)
 # carry any of these values.
 _VAMAS_TECHNIQUES = {
     "AES",
-    "AES-DEPTH",
+    "AES diff",
+    "AES dir",
     "EDX",
+    "ELS",
     "FABMS",
-    "FABMS-EM",
+    "FABMS energy spec",
     "ISS",
-    "MALDI",
-    "MAPS",
-    "RBS",
     "SIMS",
-    "SIMS-DEPTH",
+    "SIMS energy spec",
     "SNMS",
-    "SNMS-DEPTH",
+    "SNMS energy spec",
+    "UPS",
     "XPS",
-    "XPS-DEPTH",
-    "XPS-MAPPING",
-    "XPS-AREA",
+    "XRF",
 }
 
 
@@ -68,16 +63,15 @@ class Vamas(Text):
     ISO 14976 VAMAS surface analysis file (XPS).
 
     The VAMAS standard is the open, vendor-neutral interchange format for
-    surface analysis data. The file is plain text and is organised as a
-    sequence of blocks; the first block is the *experiment* header whose
-    fifth non-empty line is the technique keyword (``XPS`` for X-ray
-    photoelectron spectroscopy).
+    surface analysis data. The file is plain text and is organised as an
+    experiment header followed by blocks containing a technique keyword
+    (``XPS`` for X-ray photoelectron spectroscopy).
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('test.vamas')
+    >>> fname = get_test_fname('test.vms')
     >>> Vamas().sniff(fname)
     True
-    >>> fname = get_test_fname('test.xps.tsv')
+    >>> fname = get_test_fname('sequence.fasta')
     >>> Vamas().sniff(fname)
     False
     """
@@ -96,124 +90,19 @@ class Vamas(Text):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determine whether the file is a VAMAS (ISO 14976) XPS file.
 
-        The sniffer looks for the characteristic VAMAS header: a first line
-        that identifies the format (commonly starting with ``VAMAS`` or a
-        specimen comment) followed, within the first handful of header
-        lines, by a technique keyword from the ISO 14976 list (``XPS``,
-        ``XPS-DEPTH``, ...).
+        The sniffer requires the standard format identifier followed by a
+        technique keyword from the ISO 14976 list (``XPS``, ``AES``, ...).
+        The keyword occurs in each data block and its line number varies
+        with the experiment header, so the complete sniff prefix is searched.
         """
-        header_lines: list[str] = []
-        for line in file_prefix.line_iterator():
-            line = line.strip()
-            if not line:
-                continue
-            header_lines.append(line)
-            if len(header_lines) >= 8:
-                break
-        if len(header_lines) < 5:
+        lines = file_prefix.line_iterator()
+        try:
+            identifier = next(lines).strip()
+        except StopIteration:
             return False
-        # The first line is the format/specimen comment; many writers start
-        # it with the literal token "VAMAS" but the standard only requires a
-        # (possibly empty) comment, so we do not mandate it.
-        first = header_lines[0]
-        looks_like_vamas = first.startswith("VAMAS") or "VAMAS" in first.upper()
-        # The technique keyword is the 5th line of the experiment header
-        # per ISO 14976, but real-world files are not always strict. Accept
-        # any of the header lines being a known technique keyword.
-        technique_found = any(line in _VAMAS_TECHNIQUES for line in header_lines)
-        return looks_like_vamas and technique_found
-
-
-@build_sniff_from_prefix
-class XpsTabular(Tabular):
-    """
-    Tabular export of an XPS spectrum.
-
-    A two- or three-column, tab-separated table of an XPS region scan as
-    exported by instrument software or processing tools. The first column is
-    the binding energy (in eV, decreasing), followed by intensity (counts or
-    counts-per-second). An optional third column may hold kinetic energy.
-
-    >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('test.xps.tsv')
-    >>> XpsTabular().sniff(fname)
-    True
-    >>> fname = get_test_fname('test.vamas')
-    >>> XpsTabular().sniff(fname)
-    False
-    """
-
-    file_ext = "xps.tsv"
-    comment_lines = 0
-
-    def __init__(self, **kwd):
-        super().__init__(**kwd)
-        self.column_names = ["Binding Energy (eV)", "Intensity"]
-
-    def display_peek(self, dataset: DatasetProtocol) -> str:
-        """Returns formatted html of peek."""
-        return self.make_html_table(dataset, column_names=self.column_names)
-
-    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        data_lines = 0
-        ncols = 0
-        column_names = self.column_names
-        if dataset.has_data():
-            with open(dataset.get_file_name()) as fh:
-                for idx, line in enumerate(fh):
-                    line = line.rstrip("\r\n")
-                    if not line or line.startswith("#"):
-                        continue
-                    fields = line.split("\t")
-                    if idx == 0 and not self.is_float(fields[0]):
-                        # treat as header
-                        column_names = [c.strip() for c in fields]
-                        continue
-                    data_lines += 1
-                    ncols = max(ncols, len(fields))
-        dataset.metadata.data_lines = data_lines
-        dataset.metadata.comment_lines = 0
-        dataset.metadata.columns = ncols
-        dataset.metadata.column_names = column_names
-        dataset.metadata.column_types = ["float"] * ncols
-        dataset.metadata.delimiter = "\t"
-
-    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
-        """Determine whether the file is a tabular XPS spectrum export.
-
-        We require a header row whose first column names a binding-energy
-        axis (case-insensitive, recognising common spellings such as
-        "Binding Energy", "BE", "BE (eV)") followed by at least one data
-        row of two or more numeric columns.
-        """
-        fh: IO = file_prefix.string_io()
-        header = fh.readline()
-        if not header:
+        if identifier != "VAMAS Surface Chemical Analysis Standard Data Transfer Format 1988 May 4":
             return False
-        fields = [c.strip().lower() for c in header.rstrip("\r\n").split("\t")]
-        if len(fields) < 2:
-            return False
-        first_col = fields[0]
-        if not _is_be_label(first_col):
-            return False
-        # require at least one numeric data row
-        for line in fh:
-            line = line.rstrip("\r\n")
-            if not line or line.startswith("#"):
-                continue
-            cells = line.split("\t")
-            if len(cells) < 2 or not self.is_float(cells[0]) or not self.is_float(cells[1]):
-                return False
-            return True
-        return False
-
-
-def _is_be_label(label: str) -> bool:
-    label = label.strip().lower()
-    if not label:
-        return False
-    # Recognise "binding energy", "be", "be (ev)", "binding energy (ev)" ...
-    return label.startswith("binding energy") or label in {"be", "be (ev)", "binding_energy"}
+        return any(line.strip() in _VAMAS_TECHNIQUES for line in lines)
 
 
 class NXxps(H5):
@@ -258,6 +147,27 @@ class NXxps(H5):
             return f"NeXus NXxps XPS data ({nice_size(dataset.get_size())})"
 
 
+def _read_definition(group: h5py.Group) -> Optional[str]:
+    """Return the ``definition`` field of *group* as text, or ``None``."""
+    if not isinstance(group, h5py.Group):
+        return None
+    value = group.get("definition")
+    if value is None:
+        return None
+    try:
+        raw = value[()]
+    except Exception:
+        log.debug("Could not read NeXus 'definition' field", exc_info=True)
+        return None
+    if hasattr(raw, "tolist"):
+        raw = raw.tolist()
+    if isinstance(raw, list):
+        raw = raw[0] if len(raw) == 1 else None
+    if raw is None:
+        return None
+    return unicodify(raw).strip()
+
+
 def _nxxps_definition_matches(filename: str, expected: str) -> bool:
     """Return ``True`` if *filename* is a NeXus HDF5 file whose (default)
     ``NXentry`` carries a ``definition`` field equal to *expected*.
@@ -269,35 +179,19 @@ def _nxxps_definition_matches(filename: str, expected: str) -> bool:
     * any top-level group whose ``NX_class`` attribute is ``NXentry`` and
       whose ``definition`` field matches.
     """
-    import h5py
-
     try:
         with h5py.File(filename, "r", locking=False) as handle:
-            def _read_definition(group) -> Optional[str]:
-                value = group.get("definition")
-                if value is None:
-                    return None
-                try:
-                    raw = value[()]
-                except Exception:
-                    return None
-                if isinstance(raw, bytes):
-                    raw = raw.decode()
-                if hasattr(raw, "tolist"):
-                    raw = raw.tolist()
-                return str(raw).strip() if raw is not None else None
-
             # 1. Honour the NeXus ``default`` attribute on the root group.
             default = handle.attrs.get("default")
             if default is not None:
                 default = default.decode() if isinstance(default, bytes) else str(default)
                 entry = handle.get(default)
-                if entry is not None and _read_definition(entry) == expected:
+                if _read_definition(entry) == expected:
                     return True
 
             # 2. Common convention: a group literally named "entry".
             entry = handle.get("entry")
-            if entry is not None and _read_definition(entry) == expected:
+            if _read_definition(entry) == expected:
                 return True
 
             # 3. Scan top-level groups for an NXentry with a matching definition.
@@ -311,5 +205,6 @@ def _nxxps_definition_matches(filename: str, expected: str) -> bool:
                 if nx_class == "NXentry" and _read_definition(group) == expected:
                     return True
     except Exception:
+        log.debug("Could not inspect NeXus application definition in %s", filename, exc_info=True)
         return False
     return False

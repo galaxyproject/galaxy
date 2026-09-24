@@ -83,6 +83,15 @@ def test_matches_any():
     assert not fasta_datatype.matches_any([fastq_datatype.__class__, h5_datatype.__class__])
 
 
+def test_xps_sniffers_precede_generic_datatypes():
+    datatypes_registry = example_datatype_registry_for_sample()
+    sniff_order = datatypes_registry.sniff_order
+
+    assert sniff.guess_ext(sniff.get_test_fname("test.vms"), sniff_order) == "vamas"
+    assert sniff.guess_ext(sniff.get_test_fname("test.nxs.xps"), sniff_order) == "nxxps"
+    assert sniff.guess_ext(sniff.get_test_fname("test.mz5"), sniff_order) == "h5"
+
+
 def test_sniff_compressed_dynamic_datatypes_default_on():
     # With auto sniffing on, verify the sniffers work and the files match what is expected
     # when coming from guess_ext.
