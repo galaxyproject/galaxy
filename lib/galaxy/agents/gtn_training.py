@@ -133,6 +133,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             limit: int = 5,
         ) -> str:
             """Search GTN tutorials using vector search over titles, descriptions, and content."""
+            over_budget = self._charge_tool_budget()
+            if over_budget:
+                return over_budget
             try:
                 embeddings, persist_dir = self._vector_search_dependencies()
                 if not self.gtn_db:
@@ -156,6 +159,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             limit: int = 5,
         ) -> str:
             """Search workflow vectors for end-to-end analysis workflows relevant to the query."""
+            over_budget = self._charge_tool_budget()
+            if over_budget:
+                return over_budget
             try:
                 embeddings, persist_dir = self._vector_search_dependencies()
                 if not self.gtn_db:
@@ -184,6 +190,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             limit: int = 5,
         ) -> str:
             """Search FAQ vectors for relevant questions and answers."""
+            over_budget = self._charge_tool_budget()
+            if over_budget:
+                return over_budget
             try:
                 embeddings, persist_dir = self._vector_search_dependencies()
                 if not self.gtn_db:
