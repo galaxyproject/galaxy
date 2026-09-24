@@ -8,7 +8,10 @@ from galaxy.model.dataset_collections import (
     registry,
     type_description,
 )
-from galaxy.model.dataset_collections.structure import UninitializedTree
+from galaxy.model.dataset_collections.structure import (
+    BaseTree,
+    UninitializedTree,
+)
 
 TYPE_REGISTRY = registry.DatasetCollectionTypesRegistry()
 TYPE_DESCRIPTION_FACTORY = type_description.CollectionTypeDescriptionFactory(TYPE_REGISTRY)
@@ -104,7 +107,7 @@ def test_independent_mapping_axes_cross_product_in_stable_order():
         ("Y", "Q", None),
         ("Y", "R", None),
     ]
-    assert matched.structure.collection_type_description.collection_type == "list:list"
+    assert structure_of(matched).collection_type_description.collection_type == "list:list"
 
 
 def test_linked_inputs_slice_in_zip_order():
@@ -123,7 +126,7 @@ def test_empty_axis_produces_no_slices_and_keeps_output_type():
     matched = build_matching_collections(("empty", empty))
 
     assert list(matched.slice_collections()) == []
-    assert matched.structure.collection_type_description.collection_type == "list"
+    assert structure_of(matched).collection_type_description.collection_type == "list"
 
 
 def test_empty_outer_axis_short_circuits_unknown_inner_axis():
@@ -137,7 +140,7 @@ def test_empty_outer_axis_short_circuits_unknown_inner_axis():
     matched = matching.MatchingCollections.from_axes([empty, unknown])
 
     assert list(matched.slice_collections()) == []
-    assert matched.structure.collection_type_description.collection_type == "list:list"
+    assert structure_of(matched).collection_type_description.collection_type == "list:list"
 
 
 def test_structure_only_axis_repeats_local_slices_and_conditions():
@@ -158,7 +161,7 @@ def test_structure_only_axis_repeats_local_slices_and_conditions():
         ("Q", False),
         ("R", False),
     ]
-    assert combined.structure.collection_type_description.collection_type == "list:list"
+    assert structure_of(combined).collection_type_description.collection_type == "list:list"
 
 
 def test_inherited_axis_preserves_identity_without_parent_binding():
@@ -347,7 +350,7 @@ def test_inherited_axis_covers_locally_rediscovered_suffix():
     )
     inherited = matching.MatchingCollections.for_collections(inherited_to_match, TYPE_DESCRIPTION_FACTORY)
     assert inherited
-    assert inherited.structure.collection_type_description.collection_type == "list:list"
+    assert structure_of(inherited).collection_type_description.collection_type == "list:list"
 
     local_to_match = matching.CollectionsToMatch()
     local_to_match.add(
@@ -358,7 +361,7 @@ def test_inherited_axis_covers_locally_rediscovered_suffix():
     )
     local = matching.MatchingCollections.for_collections(local_to_match, TYPE_DESCRIPTION_FACTORY)
     assert local
-    assert local.structure.collection_type_description.collection_type == "list"
+    assert structure_of(local).collection_type_description.collection_type == "list"
 
     combined = local.with_inherited_mapping(inherited)
 
@@ -395,7 +398,7 @@ def test_inherited_axis_can_be_refined_by_ragged_materialized_output():
     }
 
     slices = list(refined.slice_collections())
-    assert refined.structure.collection_type_description.collection_type == "list:list"
+    assert structure_of(refined).collection_type_description.collection_type == "list:list"
     assert [items["nested"].element_identifier for items, _when in slices] == ["XP", "XQ", "YR", "YS", "YT"]
     assert [items["outer"].element_identifier for items, _when in slices] == ["X", "X", "Y", "Y", "Y"]
     assert [when for _items, when in slices] == [True, True, False, False, False]
@@ -410,7 +413,7 @@ def test_empty_inherited_axis_can_be_refined_without_unknown_cardinality():
     refined = inherited.refine_axis("source-terminal-boundary", nested_structure)
 
     assert list(refined.slice_collections()) == []
-    assert refined.structure.collection_type_description.collection_type == "list:list"
+    assert structure_of(refined).collection_type_description.collection_type == "list:list"
 
 
 def test_primary_axis_component_always_selects_the_complete_refined_path():
@@ -550,6 +553,12 @@ def build_collections_to_match(*items):
             collection_instance, subcollection_type = item, None
         to_match.add(f"input_{i}", collection_instance, subcollection_type)
     return to_match
+
+
+def structure_of(matched: matching.MatchingCollections) -> BaseTree:
+    structure = matched.structure
+    assert structure is not None
+    return structure
 
 
 def build_matching_collections(*named_items):

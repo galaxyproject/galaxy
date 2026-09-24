@@ -900,6 +900,7 @@ class SubWorkflowModule(WorkflowModule):
         all_inputs = self.get_all_inputs()
         collection_info = self.plan_map_over(progress, step, all_inputs)
 
+        iteration_elements_iter: Iterable[tuple[dict[str, Any] | None, bool | None]]
         if collection_info:
             iteration_elements_iter = collection_info.slice_collections()
         else:
@@ -921,6 +922,8 @@ class SubWorkflowModule(WorkflowModule):
                 extra_step_state = {}
                 for step_input in step.inputs:
                     step_input_name = step_input.name
+                    if step_input_name is None:
+                        continue
                     if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
                         value = iteration_elements[step_input_name]  # noqa: B023
                     else:
@@ -3025,6 +3028,7 @@ class ToolModule(WorkflowModule):
         collection_info = self.plan_map_over(progress, step, all_inputs)
 
         param_combinations = []
+        iteration_elements_iter: Iterable[tuple[dict[str, Any] | None, bool | None]]
         if collection_info:
             iteration_elements_iter = collection_info.slice_collections()
         else:
@@ -3109,6 +3113,8 @@ class ToolModule(WorkflowModule):
                 extra_step_state = {}
                 for step_input in step.inputs:
                     step_input_name = step_input.name
+                    if step_input_name is None:
+                        continue
                     if step_input_name in execution_state.inputs:
                         continue
                     if step_input_name in all_inputs_by_name:
@@ -3127,10 +3133,10 @@ class ToolModule(WorkflowModule):
                             value = progress.replacement_for_connection(step_input.connections[0], is_data=True)
                     extra_step_state[step_input_name] = value
 
-                if when_value is not False:
-                    when_value = evaluate_value_from_expressions(
-                        progress, step, execution_state=execution_state, extra_step_state=extra_step_state
-                    )
+                # The enclosing branch already excludes when_value is False.
+                when_value = evaluate_value_from_expressions(
+                    progress, step, execution_state=execution_state, extra_step_state=extra_step_state
+                )
             if when_value is not None:
                 # Track this more formally ?
                 execution_state.inputs["__when_value__"] = when_value

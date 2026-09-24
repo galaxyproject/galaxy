@@ -34,9 +34,6 @@ class Leaf:
     def multiply(self, other_structure):
         return other_structure.clone()
 
-    def sliced_collection_type(self, collection):
-        return input
-
     def __str__(self):
         return "Leaf[]"
 
@@ -67,13 +64,16 @@ class BaseTree:
     def walk_coordinates(self, prefix: tuple[int, ...] = ()) -> Iterator[tuple[int, ...]]:
         raise NotImplementedError("Cannot walk the coordinates of a collection whose children are not known")
 
+    def walk_collections(self, collection_dict):
+        raise NotImplementedError("Cannot walk the elements of a collection whose children are not known")
+
     def compatible_shape(self, other_structure: "BaseTree") -> bool:
         raise NotImplementedError("Cannot compare the shape of a collection whose children are not known")
 
     def clone(self) -> "BaseTree":
         raise NotImplementedError()
 
-    def multiply(self, other_structure) -> "BaseTree":
+    def multiply(self, other_structure: "Leaf | BaseTree") -> "BaseTree":
         raise NotImplementedError()
 
 
@@ -222,8 +222,9 @@ class Tree(BaseTree):
 
 
 def tool_output_to_structure(get_sliced_input_collection_structure, tool_output, collections_manager):
+    tree: BaseTree
     if not tool_output.collection:
-        tree = leaf
+        return leaf
     else:
         collection_type_descriptions = collections_manager.collection_type_descriptions
         # Okay this is ToolCollectionOutputStructure not a Structure - different
@@ -248,7 +249,7 @@ def tool_output_to_structure(get_sliced_input_collection_structure, tool_output,
 
             tree = UninitializedTree(collection_type_descriptions.for_collection_type(collection_type))
 
-    if not tree.children_known and tree.collection_type_description.collection_type == "paired":
+    if isinstance(tree, UninitializedTree) and tree.collection_type_description.collection_type == "paired":
         # TODO: We don't need to return UninitializedTree for pairs I think, we should build
         # a paired tree for the known structure here.
         pass

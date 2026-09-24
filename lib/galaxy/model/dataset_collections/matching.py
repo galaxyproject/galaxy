@@ -8,7 +8,6 @@ from typing import (
     Any,
     cast,
     Literal,
-    Optional,
     TYPE_CHECKING,
     TypeAlias,
 )
@@ -19,10 +18,15 @@ from galaxy import exceptions
 from .structure import (
     get_collection,
     get_structure,
+    Leaf,
     leaf,
 )
 
 if TYPE_CHECKING:
+    from galaxy.model import (
+        DatasetCollection,
+        DatasetCollectionElement,
+    )
     from .structure import (
         BaseTree,
         CollectionLike,
@@ -86,7 +90,9 @@ class ConsumerResidualAxisIdDict(TypedDict):
     covered_rank: int
 
 
-# The persisted JSON form of a MappingAxisId, discriminated by ``kind``.
+# The persisted JSON form of a MappingAxisId, discriminated by ``kind``. The
+# in-memory tuple tags are hyphenated ("workflow-map"); the dict kinds use
+# underscores ("workflow_map").
 MappingAxisIdDict: TypeAlias = (
     LiteralAxisIdDict | WorkflowMapAxisIdDict | AxisPrefixAxisIdDict | ConsumerResidualAxisIdDict
 )
@@ -388,7 +394,7 @@ class CollectionToMatch:
 
 class CollectionsToMatch:
     """Structure representing a set of collections that need to be matched up
-    when running tools (possibly workflows in the future as well).
+    when running tools and workflow steps.
     """
 
     def __init__(self) -> None:
@@ -431,8 +437,6 @@ class MatchingCollections:
 
     def __init__(self) -> None:
         self.linked_structure: BaseTree | None = None
-        self.unlinked_structures: list[BaseTree] = []
-        self.unlinked_collections: list[tuple[str, CollectionLike]] = []
         self.collections: dict[str, CollectionLike] = {}
         self.subcollection_types: dict[str, str | CollectionTypeDescription | None] = {}
         self.action_tuples: dict[str, list[tuple[str, int]]] = {}
@@ -442,8 +446,13 @@ class MatchingCollections:
         self._when_values: list[bool | None] | None = None
 
     def __attempt_add_to_linked_match(
-        self, input_name, hdca, child_collection, collection_type_description, subcollection_type
-    ):
+        self,
+        input_name: str,
+        hdca: "CollectionLike",
+        child_collection: "DatasetCollection",
+        collection_type_description: "CollectionTypeDescription",
+        subcollection_type: "str | CollectionTypeDescription | None",
+    ) -> None:
         structure = get_structure(
             child_collection, collection_type_description, leaf_subcollection_type=subcollection_type
         )
@@ -457,11 +466,11 @@ class MatchingCollections:
             self.collections[input_name] = hdca
             self.subcollection_types[input_name] = subcollection_type
 
-    def slice_collections(self):
+    def slice_collections(self) -> Iterator[tuple[dict[str, "DatasetCollectionElement"], bool | None]]:
         """Yield slices across every mapping axis in stable outer-to-inner order."""
         return self._slices()
 
-    def _slices(self):
+    def _slices(self) -> Iterator[tuple[dict[str, "DatasetCollectionElement"], bool | None]]:
         # An empty known outer axis makes the whole product empty. Avoid
         # querying the cardinality of a later uninitialized axis in that case.
         if any(axis.structure.children_known and len(axis.structure) == 0 for axis in self.mapping_axes):
@@ -488,14 +497,21 @@ class MatchingCollections:
                 combined_when_value = None
             yield sliced_collections, combined_when_value
 
-    def _coordinate_product(self, axis_index, coordinates):
+    def _coordinate_product(
+        self, axis_index: int, coordinates: list[tuple[tuple[int, ...], int]]
+    ) -> Iterator[list[tuple[tuple[int, ...], int]]]:
         if axis_index < len(self.mapping_axes):
             for coordinate in self.mapping_axes[axis_index].coordinates():
                 yield from self._coordinate_product(axis_index + 1, [*coordinates, coordinate])
             return
         yield coordinates
 
-    def _condition_value(self, condition, coordinates, axis_cardinalities):
+    def _condition_value(
+        self,
+        condition: MatchingCollectionCondition,
+        coordinates: list[tuple[tuple[int, ...], int]],
+        axis_cardinalities: tuple[int, ...],
+    ) -> bool | None:
         coordinate_index = 0
         for axis_index in condition.axis_indices:
             _path, axis_ordinal = coordinates[axis_index]
@@ -507,14 +523,16 @@ class MatchingCollections:
         return values[coordinate_index]
 
     @staticmethod
-    def _condition_coordinate_count(condition, axis_cardinalities):
+    def _condition_coordinate_count(condition: MatchingCollectionCondition, axis_cardinalities: tuple[int, ...]) -> int:
         count = 1
         for axis_index in condition.axis_indices:
             count *= axis_cardinalities[axis_index]
         return count
 
     @staticmethod
-    def _slice_binding(binding: MatchingCollectionBinding, coordinate_paths: list[tuple[int, ...]]):
+    def _slice_binding(
+        binding: MatchingCollectionBinding, coordinate_paths: list[tuple[int, ...]]
+    ) -> "DatasetCollectionElement":
         path: tuple[int, ...] = ()
         for binding_axis_index, axis_index in enumerate(binding.axis_indices):
             coordinate_path = coordinate_paths[axis_index]
@@ -528,7 +546,9 @@ class MatchingCollections:
             element = collection[index]
             if depth < len(path) - 1:
                 collection = element.child_collection
-        return element
+        # An empty coordinate path (a binding with no axes) is never produced
+        # by planning, so an element is always selected.
+        return cast("DatasetCollectionElement", element)
 
     @property
     def when_values(self) -> list[bool | None] | None:
@@ -552,12 +572,12 @@ class MatchingCollections:
         return self.subcollection_types[input_name]
 
     @property
-    def structure(self):
-        """Yield cross product of all unlinked collections structures to linked collection structure."""
-        effective_structure = leaf
+    def structure(self) -> "BaseTree | None":
+        """Cross product of every mapping axis structure, or None when nothing is mapped over."""
+        effective_structure: Leaf | BaseTree = leaf
         for axis in self.mapping_axes:
             effective_structure = effective_structure.multiply(axis.structure)
-        return None if effective_structure.is_leaf else effective_structure
+        return None if isinstance(effective_structure, Leaf) else effective_structure
 
     @classmethod
     def from_axes(
@@ -691,7 +711,7 @@ class MatchingCollections:
         return refined
 
     @staticmethod
-    def _axes_have_compatible_shape(left, right):
+    def _axes_have_compatible_shape(left: MatchingCollectionAxis, right: MatchingCollectionAxis) -> bool:
         left_structure = left.structure
         right_structure = right.structure
         if left_structure.children_known and right_structure.children_known:
@@ -699,7 +719,9 @@ class MatchingCollections:
         return left_structure.collection_type_description.compatible(right_structure.collection_type_description)
 
     @classmethod
-    def _axes_have_compatible_or_refined_shape(cls, left, right):
+    def _axes_have_compatible_or_refined_shape(
+        cls, left: MatchingCollectionAxis, right: MatchingCollectionAxis
+    ) -> bool:
         if cls._axes_have_compatible_shape(left, right):
             return True
         left_rank = len(left.structure.collection_type_description.collection_type.split(":"))
@@ -721,7 +743,7 @@ class MatchingCollections:
         ) and (bool(shallow_paths) or not deep_paths)
 
     @classmethod
-    def _axis_is_covered_by_inherited(cls, local, inherited):
+    def _axis_is_covered_by_inherited(cls, local: MatchingCollectionAxis, inherited: MatchingCollectionAxis) -> bool:
         if cls._axes_have_compatible_shape(local, inherited):
             return True
 
@@ -733,7 +755,7 @@ class MatchingCollections:
         inherited_types = inherited.structure.collection_type_description.collection_type.split(":")
         return len(local_types) < len(inherited_types) and inherited_types[-len(local_types) :] == local_types
 
-    def map_over_action_tuples(self, input_name):
+    def map_over_action_tuples(self, input_name: str) -> list[tuple[str, int]]:
         if input_name not in self.action_tuples:
             collection_instance = self.collections[input_name]
             self.action_tuples[input_name] = get_collection(collection_instance).dataset_action_tuples
@@ -746,7 +768,7 @@ class MatchingCollections:
     def for_collections(
         collections_to_match: CollectionsToMatch,
         collection_type_descriptions: "CollectionTypeDescriptionFactory",
-    ) -> Optional["MatchingCollections"]:
+    ) -> "MatchingCollections | None":
         if not collections_to_match.has_collections():
             return None
 
@@ -781,8 +803,6 @@ class MatchingCollections:
                     collection_type_description,
                     leaf_subcollection_type=subcollection_type,
                 )
-                matching_collections.unlinked_structures.append(structure)
-                matching_collections.unlinked_collections.append((input_key, hdca))
                 unlinked_axes.append(
                     MatchingCollectionAxis(
                         structure=structure,
