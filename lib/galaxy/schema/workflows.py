@@ -21,7 +21,6 @@ from galaxy.schema.fields import (
 from galaxy.schema.schema import (
     AnnotationField,
     CreatorOrganization,
-    DatasetState,
     HistoryContentType,
     InputDataCollectionStep,
     InputDataStep,
@@ -34,6 +33,7 @@ from galaxy.schema.schema import (
     ToolStep,
     WorkflowInput,
 )
+from galaxy.schema.states import DatasetState
 
 TargetHistoryIdField = Field(
     None,

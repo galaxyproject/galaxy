@@ -48,13 +48,12 @@ from galaxy.schema.fields import (
     ModelClassField,
 )
 from galaxy.schema.states import (
-    DatasetCollectionPopulatedState as DatasetCollectionPopulatedState,
-    DatasetSourceTransformActionType as DatasetSourceTransformActionType,
-    DatasetSourceTransformActionTypeLiteral as DatasetSourceTransformActionTypeLiteral,
-    DatasetState as DatasetState,
-    DatasetValidatedState as DatasetValidatedState,
-    JobState as JobState,
-    ToolRequestState as ToolRequestState,
+    DatasetCollectionPopulatedState,
+    DatasetSourceTransformActionType,
+    DatasetState,
+    DatasetValidatedState,
+    JobState,
+    ToolRequestState,
 )
 from galaxy.schema.tours import TourDetails
 from galaxy.schema.types import (
@@ -4380,11 +4379,3 @@ class SanitizedString(str):
             core_schema.str_schema(),
             serialization=core_schema.to_string_ser_schema(),
         )
-
-
-# Keep the module's existing star-import surface while naming the moved alias
-# explicitly for static analysis.
-__all__ = (
-    "DatasetSourceTransformActionTypeLiteral",
-    *(name for name in globals() if not name.startswith("_") and name != "DatasetSourceTransformActionTypeLiteral"),
-)

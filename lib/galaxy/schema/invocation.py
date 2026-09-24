@@ -37,15 +37,15 @@ from galaxy.schema.schema import (
     INVOCATION_MODEL_CLASS,
     INVOCATION_STEP_MODEL_CLASS,
     JOB_MODEL_CLASS,
-    JobState,
     Model,
     StoreContentSource,
     UpdateTimeField,
     WithModelClass,
 )
 from galaxy.schema.states import (
-    InvocationState as InvocationState,
-    InvocationStepState as InvocationStepState,
+    InvocationState,
+    InvocationStepState,
+    JobState,
 )
 from .workflows import (
     INPUTS_BY_DESCRIPTION,

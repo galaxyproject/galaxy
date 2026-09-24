@@ -19,9 +19,9 @@ from galaxy.model.base import check_database_connection
 from galaxy.schema.invocation import (
     FailureReason,
     InvocationFailureDatasetFailed,
-    InvocationState,
     InvocationUnexpectedFailure,
 )
+from galaxy.schema.states import InvocationState
 from galaxy.schema.tasks import (
     MaterializeDatasetInstanceTaskRequest,
     RequestUser,
