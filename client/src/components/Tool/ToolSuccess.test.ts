@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { computed } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import type { JobRequest } from "@/api/jobs";
+import type { JobRequest, JobResponse, ResponseVal } from "@/api/jobs";
 import jobInformationResponse from "@/components/JobInformation/testData/jobInformationResponse.json";
 import { useConfig } from "@/composables/config";
 
@@ -71,14 +71,14 @@ const TEST_JOB_RESPONSE = {
     jobs: [jobInformationResponse],
     outputs: [],
     output_collections: [],
-};
+} as unknown as JobResponse;
 
 // Selectors
 const SELECTORS = {
     PAGINATION_ITEM: ".page-item .page-link",
 };
 
-async function mountToolSuccess(latestResponse: Record<string, unknown> | null, currentUser: unknown = null) {
+async function mountToolSuccess(latestResponse: ResponseVal | null, currentUser: unknown = null) {
     const testPinia = createTestingPinia({
         createSpy: vi.fn,
         stubActions: false,
@@ -127,7 +127,6 @@ describe("ToolSuccess", () => {
                 {
                     jobDef: TEST_JOB_DEF,
                     jobResponse: TEST_JOB_RESPONSE,
-                    toolName: TEST_TOOL_NAME,
                 },
                 currentUser,
             );
@@ -144,7 +143,6 @@ describe("ToolSuccess", () => {
             wrapper = await mountToolSuccess({
                 jobDef: TEST_JOB_DEF,
                 jobResponse: TEST_JOB_RESPONSE,
-                toolName: TEST_TOOL_NAME,
             });
         });
 
@@ -160,8 +158,13 @@ describe("ToolSuccess", () => {
     });
 
     describe("with outputs", () => {
-        const TEST_OUTPUT = { id: "output_id", hid: 1, name: "output1" };
-        const TEST_OUTPUT_COLLECTION = { id: "collection_id", hid: 2, name: "collection1" };
+        const TEST_OUTPUT = { id: "output_id", hid: 1, name: "output1", history_content_type: "dataset" };
+        const TEST_OUTPUT_COLLECTION = {
+            id: "collection_id",
+            hid: 2,
+            name: "collection1",
+            history_content_type: "dataset_collection",
+        };
 
         it("passes both dataset and collection outputs through to ToolSuccessOutputs", async () => {
             const wrapper = await mountToolSuccess({
@@ -170,8 +173,7 @@ describe("ToolSuccess", () => {
                     ...TEST_JOB_RESPONSE,
                     outputs: [TEST_OUTPUT],
                     output_collections: [TEST_OUTPUT_COLLECTION],
-                },
-                toolName: TEST_TOOL_NAME,
+                } as unknown as JobResponse,
             });
 
             const outputs = wrapper.findComponent(ToolSuccessOutputs);
@@ -190,9 +192,8 @@ describe("ToolSuccess", () => {
                 jobDef: TEST_JOB_DEF,
                 jobResponse: {
                     ...TEST_JOB_RESPONSE,
-                    jobs: [jobInformationResponse, SECOND_JOB],
+                    jobs: [jobInformationResponse, SECOND_JOB] as unknown as JobResponse["jobs"],
                 },
-                toolName: TEST_TOOL_NAME,
             });
         });
 
