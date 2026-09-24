@@ -139,7 +139,13 @@ async function listItems(
         query,
     );
     const cacheIsComplete = cached.length < PALETTE_LIMITS.page;
-    if (cacheOnly || !query || !queryBackend || cacheIsComplete || local.length >= limit) {
+    if (
+        cacheOnly ||
+        query.length < PALETTE_LIMITS.minBackendQuery ||
+        !queryBackend ||
+        cacheIsComplete ||
+        local.length >= limit
+    ) {
         return local.slice(0, limit);
     }
     await fetchQuietly(() => workflowStore.fetchWorkflowList(variant, query, { limit: PALETTE_LIMITS.page }));
