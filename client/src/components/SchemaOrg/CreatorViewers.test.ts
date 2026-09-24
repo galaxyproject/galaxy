@@ -40,6 +40,18 @@ describe.each(CASES)("$name", ({ component, propsData, prefix }) => {
         expect(document.getElementById(target)).not.toBeNull();
     });
 
+    it("anchors its popover to a named button so keyboard users can open it", async () => {
+        wrapper = mount(component as object, { attachTo: document.body, propsData });
+        await wrapper.vm.$nextTick();
+        await wrapper.vm.$nextTick();
+
+        const target = document.getElementById(wrapper.findComponent(GPopover).props("target"));
+
+        expect(target?.tagName).toBe("BUTTON");
+        expect(target?.getAttribute("title")).toEqual(expect.stringContaining("details"));
+        expect(target?.getAttribute("aria-expanded")).toBe("false");
+    });
+
     it("gives each instance a distinct popover target", () => {
         const first = mount(component as object, { attachTo: document.body, propsData });
         const second = mount(component as object, { attachTo: document.body, propsData });

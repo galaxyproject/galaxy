@@ -1,6 +1,8 @@
 <template>
     <span itemprop="creator" itemscope itemtype="https://schema.org/Organization">
-        <FontAwesomeIcon :id="popoverTarget" :icon="faBuilding" />
+        <GLink :id="popoverTarget" dark thin type="button" title="Show organization details">
+            <FontAwesomeIcon :icon="faBuilding" />
+        </GLink>
 
         <GPopover triggers="click blur" :target="popoverTarget" title="Organization">
             <GTable :items="items" :fields="fields" />
