@@ -11,8 +11,9 @@ import TextShort from "@/components/Common/TextShort.vue";
 
 const dropdown = ref<InstanceType<typeof BNavItemDropdown>>();
 
-provide(dropdownHideKey, () => {
-    dropdown.value?.hide();
+// BNavItemDropdown's hide() does not refocus the toggle by default, unlike GDropdown's
+provide(dropdownHideKey, (restoreFocus = true) => {
+    dropdown.value?.hide(restoreFocus);
 });
 
 interface BaseMenuItem {
