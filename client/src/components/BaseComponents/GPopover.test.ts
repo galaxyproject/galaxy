@@ -242,6 +242,236 @@ describe("GPopover hover", () => {
         expect(isShown()).toBe(true);
     });
 
+    // A 24px trigger at the start of a row of buttons, with a wider popover 10px below it.
+    function layOut(target: Element) {
+        const place = (el: Element, x: number, y: number, width: number, height: number) =>
+            vi.spyOn(el, "getBoundingClientRect").mockReturnValue({
+                x,
+                y,
+                width,
+                height,
+                left: x,
+                top: y,
+                right: x + width,
+                bottom: y + height,
+            } as DOMRect);
+        place(target, 134, 0, 24, 20);
+        place(popoverEl(), 8, 30, 276, 100);
+    }
+
+    function pointer(type: string, on: EventTarget, x: number, y: number, pointerType = "mouse") {
+        on.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: x, clientY: y, pointerType }));
+    }
+
+    // A browser reports pointerleave before mouseleave.
+    function leave(el: Element, x: number, y: number, pointerType = "mouse") {
+        pointer("pointerleave", el, x, y, pointerType);
+        el.dispatchEvent(new MouseEvent("mouseleave"));
+    }
+
+    it("stays open while the pointer crosses from the trigger towards the popover", async () => {
+        const target = await openByHover();
+        layOut(target);
+
+        leave(target, 158.5, 12);
+        for (const [x, y] of [
+            [162, 16],
+            [168, 22],
+            [175, 28],
+        ] as const) {
+            pointer("pointermove", document, x, y);
+            await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS * 2);
+        }
+        popoverEl().dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS * 2);
+
+        expect(isShown()).toBe(true);
+    });
+
+    it("closes once the pointer moves along the trigger's row instead", async () => {
+        const target = await openByHover();
+        layOut(target);
+
+        leave(target, 158.5, 10);
+        pointer("pointermove", document, 162, 10);
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS * 2);
+        expect(isShown()).toBe(true);
+
+        pointer("pointermove", document, 185, 10);
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
+        expect(isShown()).toBe(false);
+    });
+
+    it("leaves the controls beside the trigger free to click", async () => {
+        const target = await openByHover();
+        layOut(target);
+        const neighbour = document.createElement("button");
+        const onClick = vi.fn();
+        neighbour.addEventListener("click", onClick);
+        document.body.appendChild(neighbour);
+
+        leave(target, 158.5, 10);
+        pointer("pointermove", document, 162, 10);
+        pointer("pointerdown", neighbour, 162, 10);
+        neighbour.click();
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
+
+        // The popover renders only its own parts, so nothing covers the page next to the trigger.
+        expect([...popoverEl().children].map((child) => child.className)).toEqual(["arrow", "popover-body"]);
+        expect(onClick).toHaveBeenCalledOnce();
+        expect(isShown()).toBe(false);
+    });
+
+    it.each([
+        ["edge", 146, -0.5],
+        ["half of a side edge", 158.5, 4],
+    ])("closes after the usual delay when the pointer leaves through the trigger's far %s", async (_side, x, y) => {
+        const target = await openByHover();
+        layOut(target);
+
+        leave(target, x, y);
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
+
+        expect(isShown()).toBe(false);
+    });
+
+    it("stays open across the gap on the way back to the trigger", async () => {
+        const target = await openByHover();
+        layOut(target);
+        leave(target, 146, 20.5);
+        popoverEl().dispatchEvent(new MouseEvent("mouseenter"));
+
+        leave(popoverEl(), 146, 29.5);
+        pointer("pointermove", document, 146, 25);
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS * 2);
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS * 2);
+
+        expect(isShown()).toBe(true);
+    });
+
+    // How long GPopover waits on a crossing pointer that stopped moving.
+    const HOVER_BRIDGE_REST_MS = 300;
+
+    it("closes once the pointer rests short of the popover", async () => {
+        const target = await openByHover();
+        layOut(target);
+
+        leave(target, 158.5, 12);
+        await advance(HOVER_BRIDGE_REST_MS / 2);
+        // Each move inside the area restarts the wait.
+        pointer("pointermove", document, 162, 16);
+        await advance(HOVER_BRIDGE_REST_MS + INTERACTIVE_POPOVER_CLOSE_DELAY_MS - 1);
+        expect(isShown()).toBe(true);
+
+        await advance(1);
+        expect(isShown()).toBe(false);
+    });
+
+    it("stays open when the pointer rests over the popover", async () => {
+        const target = await openByHover();
+        layOut(target);
+        vi.spyOn(popoverEl(), "matches").mockImplementation((selector) => selector === ":hover");
+
+        leave(target, 158.5, 12);
+        await advance(HOVER_BRIDGE_REST_MS + INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
+
+        expect(isShown()).toBe(true);
+    });
+
+    function appendToBody<T extends Element>(el: T) {
+        document.body.appendChild(el);
+        return el;
+    }
+
+    it.each<[string, string, () => void]>([
+        [
+            "the pointer leaves the window",
+            "mouse",
+            () => document.body.dispatchEvent(new PointerEvent("pointerout", { bubbles: true, relatedTarget: null })),
+        ],
+        [
+            "the pointer enters an iframe",
+            "mouse",
+            () => {
+                const frame = appendToBody(document.createElement("iframe"));
+                document.body.dispatchEvent(new PointerEvent("pointerout", { bubbles: true, relatedTarget: frame }));
+            },
+        ],
+        [
+            "a pen leaves range",
+            "pen",
+            () =>
+                document.body.dispatchEvent(
+                    new PointerEvent("pointerleave", { pointerType: "pen", relatedTarget: null }),
+                ),
+        ],
+        ["the pointer is cancelled", "pen", () => pointer("pointercancel", document.body, 162, 16, "pen")],
+        [
+            "an element scrolls",
+            "mouse",
+            () => appendToBody(document.createElement("div")).dispatchEvent(new Event("scroll")),
+        ],
+        ["the wheel turns", "mouse", () => document.body.dispatchEvent(new WheelEvent("wheel", { bubbles: true }))],
+    ])("closes after the usual delay when %s mid-crossing", async (_event, pointerType, dispatch) => {
+        const target = await openByHover();
+        layOut(target);
+
+        leave(target, 158.5, 12, pointerType);
+        dispatch();
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
+
+        expect(isShown()).toBe(false);
+    });
+
+    it("keeps crossing while the pointer passes between elements in the area", async () => {
+        const target = await openByHover();
+        layOut(target);
+        const passed = appendToBody(document.createElement("div"));
+
+        leave(target, 158.5, 12);
+        passed.dispatchEvent(new PointerEvent("pointerout", { bubbles: true, relatedTarget: document.body }));
+        passed.dispatchEvent(new PointerEvent("pointerleave", { relatedTarget: document.body }));
+        pointer("pointermove", document, 162, 16);
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS * 2);
+
+        expect(isShown()).toBe(true);
+    });
+
+    it("drops a crossing's listeners and timers when unmounted mid-way", async () => {
+        const target = await mountWithTrigger({ triggers: "hover", show: true });
+        layOut(target);
+        const added = vi.spyOn(document, "addEventListener");
+        const removed = vi.spyOn(document, "removeEventListener");
+
+        leave(target, 158.5, 12);
+        const unmounted = wrapper!;
+        unmounted.destroy();
+        wrapper = undefined;
+
+        expect(added).toHaveBeenCalled();
+        for (const [type, handler] of added.mock.calls) {
+            expect(removed).toHaveBeenCalledWith(type, handler, true);
+        }
+        expect(vi.getTimerCount()).toBe(0);
+        pointer("pointermove", document, 400, 400);
+        await advance(HOVER_BRIDGE_REST_MS + INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
+        expect(unmounted.emitted("update:show")).toBeUndefined();
+
+        added.mockRestore();
+        removed.mockRestore();
+    });
+
+    it("does not hold the popover open for touch", async () => {
+        const target = await openByHover();
+        layOut(target);
+
+        leave(target, 162, 16, "touch");
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
+
+        expect(isShown()).toBe(false);
+    });
+
     it("closes once the pointer has left both the trigger and the popover", async () => {
         const target = await openByHover();
         target.dispatchEvent(new MouseEvent("mouseleave"));

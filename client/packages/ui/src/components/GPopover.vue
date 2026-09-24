@@ -21,6 +21,7 @@ import { arrow, type ComputePositionConfig, flip, offset, type Placement, shift 
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import { useFloatingPosition } from "../composables/floatingPosition";
+import { computeHoverBridge, computeHoverGap, isPointInPolygon, type Point } from "../utils/hoverBridge";
 import {
     DEFAULT_TOOLTIP_HOVER_DELAY_MS,
     INTERACTIVE_POPOVER_CLOSE_DELAY_MS,
@@ -178,10 +179,17 @@ const closeDelay = useDelayedAction(INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
 function cancelScheduled() {
     openDelay.clear();
     closeDelay.clear();
+    endHoverBridge();
+}
+
+// The pointer reached the trigger or the popover, so a pending close or crossing is over.
+function holdOpen() {
+    closeDelay.clear();
+    endHoverBridge();
 }
 
 function scheduleOpen() {
-    closeDelay.clear();
+    holdOpen();
     if (!showState.value && !openDelay.isScheduled()) {
         openDelay.schedule(showPopover);
     }
@@ -190,6 +198,94 @@ function scheduleOpen() {
 function scheduleClose() {
     openDelay.clear();
     closeDelay.schedule(hidePopover);
+}
+
+// Where the pointer may go after leaving the trigger or popover without closing it (safe triangle).
+let hoverBridge: Point[] | null = null;
+
+// floating-ui's safePolygon ends a crossing 40 ms after the pointer stops; slower hands get longer here.
+const HOVER_BRIDGE_REST_MS = 300;
+const bridgeRest = useDelayedAction(HOVER_BRIDGE_REST_MS);
+
+function leaveHoverBridge() {
+    endHoverBridge();
+    scheduleClose();
+}
+
+function onBridgeMove(event: Event) {
+    const { clientX, clientY } = event as PointerEvent;
+    if (hoverBridge && isPointInPolygon([clientX, clientY], hoverBridge)) {
+        bridgeRest.schedule(onBridgeRest);
+    } else {
+        leaveHoverBridge();
+    }
+}
+
+// A pointer that stopped short of both elements is no longer crossing.
+function onBridgeRest() {
+    if ([resolveTarget(), popoverEl.value].some((el) => el?.matches(":hover"))) {
+        holdOpen();
+    } else {
+        leaveHoverBridge();
+    }
+}
+
+// No more pointer events arrive here once the pointer leaves the window or enters an iframe, or a pen leaves range.
+function onBridgeOut(event: Event) {
+    const next = (event as PointerEvent).relatedTarget;
+    if (!next || next instanceof HTMLIFrameElement) {
+        leaveHoverBridge();
+    }
+}
+
+// Captured to see any element's scroll; a scroll or wheel leaves the stored area stale.
+const bridgeListeners: Array<[string, (event: Event) => void]> = [
+    ["pointermove", onBridgeMove],
+    ["pointerdown", leaveHoverBridge],
+    ["pointercancel", leaveHoverBridge],
+    ["pointerout", onBridgeOut],
+    ["pointerleave", onBridgeOut],
+    ["scroll", leaveHoverBridge],
+    ["wheel", leaveHoverBridge],
+];
+
+// A mouse or pen heading from one element to the other keeps the popover open (WCAG 2.1 SC 1.4.13, hoverable).
+function startHoverBridge(event: Event, leavingTrigger: boolean) {
+    const { pointerType, clientX, clientY } = event as PointerEvent;
+    const target = resolveTarget();
+    if (pointerType === "touch" || !showState.value || !target || !popoverEl.value) {
+        return;
+    }
+    const triggerRect = target.getBoundingClientRect();
+    const popoverRect = popoverEl.value.getBoundingClientRect();
+    // Heading back, only the gap straight between the two counts, so the trigger's row stays out.
+    const bridge = leavingTrigger
+        ? computeHoverBridge([clientX, clientY], triggerRect, popoverRect)
+        : computeHoverGap(triggerRect, popoverRect);
+    // Nothing to cross when leaving away from the other element or when the two touch; mouseleave closes as usual.
+    if (!bridge.length) {
+        return;
+    }
+    hoverBridge = bridge;
+    for (const [type, handler] of bridgeListeners) {
+        document.addEventListener(type, handler, { capture: true, passive: true });
+    }
+    bridgeRest.schedule(onBridgeRest);
+}
+
+function endHoverBridge() {
+    hoverBridge = null;
+    bridgeRest.clear();
+    for (const [type, handler] of bridgeListeners) {
+        document.removeEventListener(type, handler, true);
+    }
+}
+
+// pointerleave, which runs first, may have started a crossing; otherwise close after the usual delay.
+function onHoverLeave() {
+    if (!hoverBridge) {
+        scheduleClose();
+    }
 }
 
 function showPopover() {
@@ -275,7 +371,8 @@ function setupListeners() {
 
     if (parsedTriggers.value.has("hover")) {
         listen(target, "mouseenter", scheduleOpen);
-        listen(target, "mouseleave", scheduleClose);
+        listen(target, "pointerleave", (event) => startHoverBridge(event, true));
+        listen(target, "mouseleave", onHoverLeave);
     }
 
     if (parsedTriggers.value.has("focus")) {
@@ -303,8 +400,9 @@ function setupListeners() {
 
     // Keep popover open when hovering over it
     if (parsedTriggers.value.has("hover") && popoverEl.value) {
-        listen(popoverEl.value, "mouseenter", closeDelay.clear);
-        listen(popoverEl.value, "mouseleave", scheduleClose);
+        listen(popoverEl.value, "mouseenter", holdOpen);
+        listen(popoverEl.value, "pointerleave", (event) => startHoverBridge(event, false));
+        listen(popoverEl.value, "mouseleave", onHoverLeave);
     }
 }
 
