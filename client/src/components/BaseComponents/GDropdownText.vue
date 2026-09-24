@@ -1,7 +1,5 @@
-<script setup lang="ts"></script>
+<script lang="ts">
+import { GDropdownText } from "@galaxyproject/galaxy-ui";
 
-<template>
-    <div class="dropdown-item-text" role="presentation">
-        <slot />
-    </div>
-</template>
+export default GDropdownText;
+</script>

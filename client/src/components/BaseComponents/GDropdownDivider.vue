@@ -1,5 +1,5 @@
-<script setup lang="ts"></script>
+<script lang="ts">
+import { GDropdownDivider } from "@galaxyproject/galaxy-ui";
 
-<template>
-    <div class="dropdown-divider" role="separator" />
-</template>
+export default GDropdownDivider;
+</script>
