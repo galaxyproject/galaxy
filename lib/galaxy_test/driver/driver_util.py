@@ -46,6 +46,7 @@ from galaxy.util import (
     download_to_file,
     galaxy_directory,
 )
+from galaxy.util.properties import running_from_source
 from galaxy.webapps.base.api import build_route_name_index
 from galaxy.webapps.galaxy.fast_app import (
     _build_merged_openapi,
@@ -70,12 +71,8 @@ from galaxy_test.base.env import (
 )
 from .test_logging import logging_config_file
 
-galaxy_root = galaxy_directory()
 DEFAULT_CONFIG_PREFIX = "GALAXY"
-GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
 GALAXY_TEST_FILE_DIR = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
-TOOL_SHED_TEST_DATA = os.path.join(galaxy_root, "lib", "tool_shed", "test", "test_data")
-TEST_WEBHOOKS_DIR = os.path.join(galaxy_root, "test", "functional", "webhooks")
 # Shipped with galaxy-tool-util, so these resolve without a checkout. Each conf sets
 # tool_path="${tool_conf_dir}", which points at the directory it is loaded from.
 FRAMEWORK_TOOLS_DIR = functional_test_tool_directory()
@@ -89,6 +86,14 @@ TOOL_SEARCH_INDEX_TIMEOUT = 300
 DEFAULT_TOOL_TEST_WAIT: int = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 60))
 
 log = logging.getLogger("test_driver")
+
+
+def tool_shed_test_data() -> str:
+    return os.path.join(galaxy_directory(), "lib", "tool_shed", "test", "test_data")
+
+
+def functional_test_webhooks_dir() -> str:
+    return os.path.join(galaxy_directory(), "test", "functional", "webhooks")
 
 
 # Global variable to pass database contexts around - only needed for the numbered
@@ -164,7 +169,7 @@ def setup_galaxy_config(
     if use_test_file_dir:
         first_test_file_dir = ensure_test_file_dir_set()
         if not os.path.isabs(first_test_file_dir):
-            first_test_file_dir = os.path.join(galaxy_root, first_test_file_dir)
+            first_test_file_dir = os.path.join(galaxy_directory(), first_test_file_dir)
         library_import_dir = first_test_file_dir
         import_dir = os.path.join(first_test_file_dir, "users")
         if os.path.exists(import_dir):
@@ -175,7 +180,12 @@ def setup_galaxy_config(
         user_library_import_dir = None
         library_import_dir = None
     job_config_file = os.environ.get("GALAXY_TEST_JOB_CONFIG_FILE", default_job_config_file)
-    tool_path = os.environ.get("GALAXY_TEST_TOOL_PATH", "tools")
+    # Left unset off a checkout so GalaxyAppConfiguration resolves the bundled tools out of
+    # galaxy-app; the test webhooks only exist in a checkout.
+    tool_path = os.environ.get("GALAXY_TEST_TOOL_PATH")
+    if tool_path is None and running_from_source:
+        tool_path = "tools"
+    webhooks_dir = functional_test_webhooks_dir() if running_from_source else None
     tool_data_table_config_path = _tool_data_table_config_path(default_tool_data_table_config_path)
     default_data_manager_config = None
     for data_manager_config in ["config/data_manager_conf.xml", "data_manager_conf.xml"]:
@@ -254,7 +264,7 @@ def setup_galaxy_config(
         use_tasked_jobs=True,
         use_heartbeat=False,
         user_library_import_dir=user_library_import_dir,
-        webhooks_dir=TEST_WEBHOOKS_DIR,
+        webhooks_dir=webhooks_dir,
         logging=logging,
         monitor_thread_join_timeout=5,
         object_store_store_by="uuid",
@@ -330,7 +340,7 @@ def _resolve_relative_config_paths(config_option):
     if config_option is not None:
         resolved = []
         for path in config_option.split(","):
-            resolved.append(os.path.join(galaxy_root, path.strip()))
+            resolved.append(os.path.join(galaxy_directory(), path.strip()))
         return ",".join(resolved)
 
 
@@ -463,7 +473,12 @@ def _get_static_settings():
     This mainly consists of the filesystem locations of url-mapped
     static resources.
     """
-    static_dir = os.path.join(galaxy_root, "static")
+    if not running_from_source:
+        # build_url_map falls back to the assets in galaxy-web-apps and galaxy-web-client;
+        # naming directories here would override them with paths that do not exist.
+        return dict(static_enabled=True, static_cache_time=360)
+
+    static_dir = os.path.join(galaxy_directory(), "static")
 
     # TODO: these should be copied from config/galaxy.ini
     return dict(
@@ -966,7 +981,7 @@ def launch_server(
         galaxy_config = interactive_tool_defaults
 
     if enable_realtime_mapping or os.environ.get("GALAXY_TEST_GRAVITY"):
-        galaxy_config["root"] = galaxy_root
+        galaxy_config["root"] = galaxy_directory()
         state_dir, stop_command = launch_gravity(port=port, galaxy_config=galaxy_config)
         gravity_wrapper = GravityServerWrapper(name, host, port, state_dir, stop_command)
         gravity_wrapper.wait_for_server()
