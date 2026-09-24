@@ -169,7 +169,14 @@ function onDisplay($event: MouseEvent) {
             transparent
             @click.stop="onDelete($event)">
             <FontAwesomeIcon v-if="isDataset" :icon="faTrash" />
-            <GDropdown v-else ref="deleteCollectionMenu" size="sm" variant="link" no-caret toggle-class="p-0 m-0">
+            <GDropdown
+                v-else
+                ref="deleteCollectionMenu"
+                size="sm"
+                variant="link"
+                no-caret
+                toggle-class="p-0 m-0"
+                :aria-label="localize('Delete')">
                 <template v-slot:button-content>
                     <FontAwesomeIcon :icon="faTrash" />
                 </template>
