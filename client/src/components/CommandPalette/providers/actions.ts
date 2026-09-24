@@ -9,13 +9,11 @@ import {
     faUpload,
 } from "@fortawesome/free-solid-svg-icons";
 
-import { createPage } from "@/api/pages";
 import { Toast } from "@/composables/toast";
 import { useChatStore } from "@/stores/chatStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { usePageStore } from "@/stores/pageStore";
 import { errorMessageAsString } from "@/utils/simple-error";
-import { slugify } from "@/utils/slug";
 
 import type { CommandPaletteProvider, PaletteContext, PaletteItem } from "../types";
 import { type Gated, rankPaletteItems, visibleFor } from "../utilities";
@@ -62,29 +60,9 @@ function namedHistoryItems(argQuery: string): PaletteItem[] {
     ];
 }
 
-/** The backend rejects a slug that the user already has with this message */
-function isSlugConflict(error: unknown): boolean {
-    return /must be unique/i.test(String(errorMessageAsString(error, "")));
-}
-
-async function createTitledPage(title: string, ctx: PaletteContext) {
-    // a title made of punctuation alone would leave no slug to send
-    const slug = slugify(title, "page");
+async function createTitledReport(title: string, ctx: PaletteContext) {
     try {
-        let page;
-        try {
-            page = await createPage({ title, slug, content_format: "markdown" });
-        } catch (error) {
-            if (!isSlugConflict(error)) {
-                throw error;
-            }
-            // one retry is enough: the suffixed slug is free unless the user
-            // already owns both, which is worth reporting
-            page = await createPage({ title, slug: `${slug}-2`, content_format: "markdown" });
-        }
-        // the `r:` scope renders from the store and stops asking the backend once
-        // it holds every page, so the new one has to be seeded or it stays hidden
-        usePageStore().savePages("my", [page], true);
+        const page = await usePageStore().createMarkdownPage(title);
         ctx.navigate?.(`/pages/editor?id=${page.id}`);
     } catch (error) {
         Toast.error(errorMessageAsString(error), "Failed to create report");
@@ -103,7 +81,7 @@ function titledPageItems(argQuery: string): PaletteItem[] {
             icon: faFileAlt,
             title: `Create report titled '${title}'`,
             handler: (ctx: PaletteContext) => {
-                void createTitledPage(title, ctx);
+                void createTitledReport(title, ctx);
             },
         },
     ];
