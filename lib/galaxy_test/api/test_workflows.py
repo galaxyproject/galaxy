@@ -10410,6 +10410,48 @@ outer_input:
             import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(import_response, 403)
 
+    def test_refactor_upgrade_all_steps_keeps_user_defined_tool_step(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            workflow_id = self.workflow_populator.create_workflow(
+                self._build_user_defined_tool_run_workflow_dict("basecommand", unprivileged_tool["uuid"])
+            )
+            actions = [{"action_type": "upgrade_all_steps"}]
+            dry_run_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=True)
+            self._assert_status_code_is(dry_run_response, 200)
+            refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=False)
+            self._assert_status_code_is(refactor_response, 200)
+            step = self.workflow_populator.download_workflow(workflow_id, style="instance")["steps"]["1"]
+            assert step["tool_id"] == "basecommand"
+            assert step["tool_uuid"] == unprivileged_tool["uuid"]
+
+    def test_refactor_upgrade_user_defined_tool_step_rejected(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            workflow_id = self.workflow_populator.create_workflow(
+                self._build_user_defined_tool_run_workflow_dict("basecommand", unprivileged_tool["uuid"])
+            )
+            actions = [{"action_type": "upgrade_tool", "step": {"order_index": 1}}]
+            refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=True)
+            self._assert_status_code_is(refactor_response, 400)
+            assert "user-defined tool" in refactor_response.json()["err_msg"]
+
+    def test_refactor_upgrade_admin_dynamic_tool_step(self):
+        tool_id = f"admin_basecommand_{uuid4().hex[:8]}"
+        dynamic_tool = self.dataset_populator.create_tool(
+            dict(TOOL_WITH_SHELL_COMMAND, **{"class": "GalaxyTool", "id": tool_id})
+        )
+        workflow_dict = self._build_user_defined_tool_run_workflow_dict(tool_id, dynamic_tool["uuid"])
+        del workflow_dict["steps"]["1"]["tool_representation"]
+        workflow_id = self.workflow_populator.create_workflow(workflow_dict)
+        actions = [{"action_type": "upgrade_tool", "step": {"order_index": 1}}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=True)
+        self._assert_status_code_is(refactor_response, 200)
+
     def _assert_user_defined_tool_step_copied(self, workflow_id: str, unprivileged_tool: dict[str, Any]) -> None:
         step = self.workflow_populator.download_workflow(workflow_id, style="instance")["steps"]["1"]
         assert step["tool_id"] == unprivileged_tool["tool_id"]
