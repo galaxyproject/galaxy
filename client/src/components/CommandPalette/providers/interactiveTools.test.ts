@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useEntryPointStore } from "@/stores/entryPointStore";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
 import { interactiveToolsProvider } from "./interactiveTools";
 import { PALETTE_SCOPES } from "./scopes";
 
@@ -57,14 +57,6 @@ const ENTRY_POINT = {
 };
 
 const IT_SCOPE = PALETTE_SCOPES.find((scope) => scope.key === "it")!;
-
-function makeCtx(): PaletteContext {
-    return {
-        canUseUnprivilegedTools: false,
-        config: { interactivetools_enable: true },
-        isAnonymous: false,
-    };
-}
 
 /** `/api/tools` returns the toolbox, `/api/entry_points` the running tools */
 function mockApi(entryPoints: unknown[] = []) {
