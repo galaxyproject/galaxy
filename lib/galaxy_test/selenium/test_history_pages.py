@@ -342,13 +342,10 @@ class TestHistoryPages(SeleniumTestCase, UsesUploadActivity):
 
     # --- Drag-and-Drop Tests ---
 
-    @selenium_only("seletools drag_and_drop requires Selenium webdriver")
     @selenium_test
     @managed_history
     def test_drag_dataset_to_page_editor(self):
         """Drag a dataset from history panel and drop on page editor."""
-        from seletools.actions import drag_and_drop
-
         self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.history_panel_wait_for_hid_ok(1)
 
@@ -361,14 +358,14 @@ class TestHistoryPages(SeleniumTestCase, UsesUploadActivity):
 
         editor = self.components.pages.history.markdown_editor.wait_for_visible()
 
-        drag_and_drop(self.driver, source=dataset_element, target=editor)
+        self.drag_and_drop(dataset_element, editor)
         self.sleep_for(self.wait_types.UX_RENDER)
 
         value = self.components.pages.history.markdown_editor.wait_for_value()
         assert "history_dataset_display" in value
         self.screenshot("history_page_drag_drop_dataset")
 
-    @selenium_only("seletools drag_and_drop requires Selenium webdriver")
+    @selenium_only("Needs a held-drag gesture - asserts dragover styling mid-drag via action_chains")
     @selenium_test
     @managed_history
     def test_drag_drop_visual_feedback(self):
