@@ -2,6 +2,9 @@
 /**
  * Floating-ui popover with BPopover's props and triggers ("manual" adds no listeners; "boundary" is unused).
  * Styled with Bootstrap's popover classes until Bootstrap CSS goes.
+ *
+ * Hover popovers also open on keyboard focus (WCAG 2.1 SC 2.1.1), persist while hovered or focused and close on
+ * Escape (SC 1.4.13). Click popovers are non-modal dialogs (APG disclosure pattern).
  */
 
 import { arrow, type ComputePositionConfig, flip, offset, type Placement, shift } from "@floating-ui/dom";
@@ -41,6 +44,8 @@ const props = withDefaults(
         show?: boolean;
         /** Custom CSS class on the popover element */
         customClass?: string;
+        /** Accessible name for a click popover without a title; falls back to the trigger */
+        ariaLabel?: string;
     }>(),
     {
         target: undefined,
@@ -51,6 +56,7 @@ const props = withDefaults(
         content: undefined,
         show: undefined,
         customClass: undefined,
+        ariaLabel: undefined,
     },
 );
 
@@ -330,6 +336,9 @@ function toggleEscapeListener(listening: boolean) {
 
 async function onVisibilityChange(visible: boolean) {
     toggleEscapeListener(visible);
+    if (isDialog.value) {
+        resolveTarget()?.setAttribute("aria-expanded", String(visible));
+    }
     if (visible) {
         relocate();
         await nextTick();
@@ -378,18 +387,43 @@ const parsedTriggers = computed(() => {
     return result;
 });
 
+// Click popovers hold content the user acts on, so they are non-modal dialogs rather than tooltips.
+const isDialog = computed(() => parsedTriggers.value.has("click"));
 // Only popovers the page opens and closes on its own ("manual" alone) leave Escape to the page.
 const opensOnInteraction = computed(() => ["hover", "focus", "click"].some((t) => parsedTriggers.value.has(t)));
+const titleId = computed(() => `${popoverId.value}-title`);
+const triggerId = ref<string>();
 
-let linkedAttributes: Array<{ el: Element; attribute: string }> = [];
+// A dialog needs an accessible name: its title, else ariaLabel, else the trigger that opens it.
+function dialogName(hasTitle: boolean) {
+    if (hasTitle) {
+        return { "aria-labelledby": titleId.value };
+    }
+    if (props.ariaLabel) {
+        return { "aria-label": props.ariaLabel };
+    }
+    return triggerId.value ? { "aria-labelledby": triggerId.value } : {};
+}
+
+let attributeCleanups: Array<() => void> = [];
 
 // Appends the popover id to an id-list attribute, keeping ids others (e.g. v-g-tooltip) put there.
 function linkIdReference(el: Element, attribute: string) {
+    const id = popoverId.value;
     const ids = (el.getAttribute(attribute) ?? "").split(/\s+/).filter(Boolean);
-    if (!ids.includes(popoverId.value)) {
-        el.setAttribute(attribute, [...ids, popoverId.value].join(" "));
+    if (!ids.includes(id)) {
+        el.setAttribute(attribute, [...ids, id].join(" "));
     }
-    linkedAttributes.push({ el, attribute });
+    attributeCleanups.push(() => removeIdReference(el, attribute, id));
+}
+
+// Sets an attribute on the trigger for as long as the listeners are attached.
+function setTriggerAttribute(el: Element, attribute: string, value: string) {
+    const previous = el.getAttribute(attribute);
+    el.setAttribute(attribute, value);
+    attributeCleanups.push(() =>
+        previous === null ? el.removeAttribute(attribute) : el.setAttribute(attribute, previous),
+    );
 }
 
 function removeIdReference(el: Element, attribute: string, id: string) {
@@ -400,6 +434,9 @@ function removeIdReference(el: Element, attribute: string, id: string) {
         el.removeAttribute(attribute);
     }
 }
+
+const TABBABLE_SELECTOR =
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 // :focus-visible tells keyboard focus apart from the focus a mouse click leaves on a button.
 function isKeyboardFocus(element: EventTarget | null) {
@@ -468,21 +505,59 @@ function setupListeners() {
         }
     }
 
-    if (parsedTriggers.value.has("click")) {
-        listen(target, "click", togglePopover);
+    if (isDialog.value && popoverEl.value) {
+        const popover = popoverEl.value;
+        const closesOnBlur = parsedTriggers.value.has("blur");
 
-        if (parsedTriggers.value.has("blur")) {
-            // Close on click outside
+        // Opening moves focus in, as the popover renders at the end of the page, out of keyboard order.
+        triggerId.value = target.id || undefined;
+        setTriggerAttribute(target, "aria-haspopup", "dialog");
+        setTriggerAttribute(target, "aria-expanded", String(showState.value));
+        linkIdReference(target, "aria-controls");
+
+        listen(target, "click", () => {
+            const opening = !showState.value;
+            togglePopover();
+            if (opening) {
+                nextTick(() => popover.focus({ preventScroll: true }));
+            }
+        });
+
+        // Tabbing out of either end goes back to the trigger rather than past the end of the page.
+        listen(popover, "keydown", (event) => {
+            const keyEvent = event as KeyboardEvent;
+            if (keyEvent.key !== "Tab") {
+                return;
+            }
+            const tabbable = popover.querySelectorAll<HTMLElement>(TABBABLE_SELECTOR);
+            const edge = keyEvent.shiftKey ? tabbable[0] : tabbable[tabbable.length - 1];
+            const onContainer = document.activeElement === popover;
+            if (!edge || document.activeElement === edge || (onContainer && keyEvent.shiftKey)) {
+                keyEvent.preventDefault();
+                (target as HTMLElement).focus();
+                if (closesOnBlur) {
+                    hidePopover();
+                }
+            }
+        });
+
+        if (closesOnBlur) {
             const outsideClickHandler = (e: Event) => {
-                if (
-                    showState.value &&
-                    !target.contains(e.target as Node) &&
-                    !popoverEl.value?.contains(e.target as Node)
-                ) {
+                if (showState.value && !target.contains(e.target as Node) && !popover.contains(e.target as Node)) {
                     hidePopover();
                 }
             };
             listen(document, "click", outsideClickHandler, true);
+
+            // A null relatedTarget (window blur, click on nothing focusable) is left to the click handler.
+            const onFocusOut = (event: Event) => {
+                const next = (event as FocusEvent).relatedTarget;
+                if (next instanceof Node && !target.contains(next) && !popover.contains(next)) {
+                    hidePopover();
+                }
+            };
+            listen(target, "focusout", onFocusOut);
+            listen(popover, "focusout", onFocusOut);
         }
     }
 
@@ -507,10 +582,9 @@ function teardownListeners() {
         el.removeEventListener(event, handler, capture);
     }
     activeListeners = [];
-    for (const { el, attribute } of linkedAttributes) {
-        removeIdReference(el, attribute, popoverId.value);
-    }
-    linkedAttributes = [];
+    // Reversed, so an attribute set twice ends up with its original value.
+    attributeCleanups.reverse().forEach((cleanup) => cleanup());
+    attributeCleanups = [];
 }
 
 // Out of the placeholder so ancestors can't clip it; a trigger in a modal <dialog> keeps it in that top-layer dialog.
@@ -575,10 +649,12 @@ defineExpose({
             ref="popoverEl"
             class="popover b-popover"
             :class="[customClass, `bs-popover-${basePlacement}`]"
-            role="tooltip"
+            :role="isDialog ? 'dialog' : 'tooltip'"
+            :tabindex="isDialog ? -1 : undefined"
+            v-bind="isDialog ? dialogName(Boolean(title || $slots.title)) : {}"
             :style="{ transform: `translate(${x}px, ${y}px)` }">
             <div ref="arrowEl" class="arrow" :style="arrowStyle" />
-            <div v-if="title || $slots.title" class="popover-header">
+            <div v-if="title || $slots.title" :id="titleId" class="popover-header">
                 <slot name="title">{{ title }}</slot>
             </div>
             <div class="popover-body">

@@ -939,3 +939,134 @@ describe("GPopover click", () => {
         expect(isShown()).toBe(false);
     });
 });
+
+describe("GPopover click dialog", () => {
+    afterEach(() => {
+        wrapper?.destroy();
+        wrapper = undefined;
+        document.body.innerHTML = "";
+    });
+
+    async function openByClick() {
+        const target = await mountWithTrigger({ triggers: "click blur", title: "Person" });
+        target.click();
+        await nextTick();
+        await nextTick();
+        return target;
+    }
+
+    function pressTab(on: Element, shiftKey = false) {
+        const event = new KeyboardEvent("keydown", { key: "Tab", shiftKey, bubbles: true, cancelable: true });
+        on.dispatchEvent(event);
+        return event;
+    }
+
+    it("marks the trigger as a disclosure for a labelled dialog", async () => {
+        const target = await mountWithTrigger({ triggers: "click blur", title: "Person" });
+
+        const header = popoverEl().querySelector(".popover-header")!;
+        expect(popoverEl().getAttribute("role")).toBe("dialog");
+        expect(popoverEl().getAttribute("aria-labelledby")).toBe(header.id);
+        expect(header.textContent?.trim()).toBe("Person");
+        expect(target.getAttribute("aria-haspopup")).toBe("dialog");
+        expect(target.getAttribute("aria-controls")).toBe(popoverEl().id);
+        expect(target.getAttribute("aria-expanded")).toBe("false");
+        expect(target.hasAttribute("aria-describedby")).toBe(false);
+    });
+
+    it("names an untitled dialog after its trigger", async () => {
+        const target = await mountWithTrigger({ triggers: "click blur" });
+
+        expect(popoverEl().getAttribute("aria-labelledby")).toBe(target.id);
+    });
+
+    it("prefers an explicit aria-label for an untitled dialog", async () => {
+        await mountWithTrigger({ triggers: "click blur", ariaLabel: "Person details" });
+
+        expect(popoverEl().getAttribute("aria-label")).toBe("Person details");
+        expect(popoverEl().hasAttribute("aria-labelledby")).toBe(false);
+    });
+
+    it("moves focus into the popover when opened", async () => {
+        const target = await openByClick();
+
+        expect(isShown()).toBe(true);
+        expect(target.getAttribute("aria-expanded")).toBe("true");
+        expect(document.activeElement).toBe(popoverEl());
+    });
+
+    it("closes on Escape and returns focus to the trigger", async () => {
+        const target = await openByClick();
+
+        document.activeElement!.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+        );
+        await nextTick();
+
+        expect(isShown()).toBe(false);
+        expect(target.getAttribute("aria-expanded")).toBe("false");
+        expect(document.activeElement).toBe(target);
+    });
+
+    it("closes when focus moves somewhere else", async () => {
+        await openByClick();
+        const elsewhere = document.createElement("button");
+        document.body.appendChild(elsewhere);
+
+        elsewhere.focus();
+        await nextTick();
+
+        expect(isShown()).toBe(false);
+    });
+
+    it("stays open when tabbing back to the trigger without blur", async () => {
+        const target = await mountWithTrigger({ triggers: "click", title: "Person" });
+        target.click();
+        await nextTick();
+        await nextTick();
+        const link = popoverEl().querySelector("a")!;
+        link.focus();
+
+        pressTab(link);
+        await nextTick();
+
+        expect(document.activeElement).toBe(target);
+        expect(isShown()).toBe(true);
+    });
+
+    it("tabs from the popover container into its content", async () => {
+        await openByClick();
+
+        expect(pressTab(popoverEl()).defaultPrevented).toBe(false);
+    });
+
+    it("returns to the trigger when tabbing past the end of the popover", async () => {
+        const target = await openByClick();
+        const link = popoverEl().querySelector("a")!;
+        link.focus();
+
+        expect(pressTab(link).defaultPrevented).toBe(true);
+        await nextTick();
+
+        expect(document.activeElement).toBe(target);
+        expect(isShown()).toBe(false);
+    });
+
+    it("returns to the trigger when shift-tabbing out of the popover", async () => {
+        const target = await openByClick();
+
+        expect(pressTab(popoverEl(), true).defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(target);
+    });
+
+    it("restores the trigger's attributes when unmounted", async () => {
+        const target = await mountWithTrigger({ triggers: "click blur", title: "Person" });
+
+        wrapper?.destroy();
+        wrapper = undefined;
+
+        expect(target.hasAttribute("aria-haspopup")).toBe(false);
+        expect(target.hasAttribute("aria-expanded")).toBe(false);
+        expect(target.hasAttribute("aria-controls")).toBe(false);
+    });
+});
