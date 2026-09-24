@@ -1,8 +1,4 @@
-"""Dependency-free state types shared by Galaxy's ORM and API schemas.
-
-Keeping these definitions in a lightweight schema leaf module lets the ORM use
-the canonical API state types without constructing the Pydantic schema graph.
-"""
+"""State types shared by Galaxy models and API schemas."""
 
 from enum import Enum
 from typing import Literal
