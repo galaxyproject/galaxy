@@ -80,6 +80,7 @@ let stopAutoUpdate: (() => void) | undefined;
 let menuPositioned: Promise<void> = Promise.resolve();
 
 const uid = useUid("g-dropdown-");
+const splitButtonId = computed(() => `${uid.value}-button`);
 const toggleId = computed(() => `${uid.value}-toggle`);
 const menuId = computed(() => `${uid.value}-menu`);
 
@@ -353,6 +354,7 @@ defineExpose({
         <!-- Split button: action button + toggle -->
         <button
             v-if="split"
+            :id="splitButtonId"
             type="button"
             class="btn"
             :class="[`btn-${variant}`, size ? `btn-${size}` : '']"
@@ -378,7 +380,7 @@ defineExpose({
             <template v-if="!split">
                 <slot name="button-content">{{ text }}</slot>
             </template>
-            <span v-if="split" class="sr-only">Toggle Dropdown</span>
+            <span v-if="split" class="sr-only">{{ text ? `More options for ${text}` : "More options" }}</span>
         </button>
 
         <!-- Dropdown menu -->
@@ -390,7 +392,7 @@ defineExpose({
             tabindex="-1"
             role="menu"
             :class="menuClasses"
-            :aria-labelledby="toggleId"
+            :aria-labelledby="split ? splitButtonId : toggleId"
             @keydown="onKeydown">
             <slot />
         </div>
