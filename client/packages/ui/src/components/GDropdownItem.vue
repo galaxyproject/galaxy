@@ -78,6 +78,7 @@ function onClick(event: MouseEvent) {
         :to="to"
         :target="target"
         :title="title"
+        :aria-current="active ? 'true' : undefined"
         role="menuitem"
         tabindex="-1"
         @click.native="onClick">
@@ -90,6 +91,7 @@ function onClick(event: MouseEvent) {
         :target="target"
         :title="title"
         :aria-disabled="disabled || undefined"
+        :aria-current="active ? 'true' : undefined"
         role="menuitem"
         tabindex="-1"
         @click="onClick">

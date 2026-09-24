@@ -403,6 +403,19 @@ describe("GDropdown.vue", () => {
             expect(focusedText()).toBe("Five");
         });
 
+        it("marks the active item as the current one", () => {
+            const wrapper = mountDropdown(`
+                <GDropdownItem active>One</GDropdownItem>
+                <GDropdownItem to="/histories/list" active>Two</GDropdownItem>
+                <GDropdownItemButton active>Three</GDropdownItemButton>
+                <GDropdownItem>Four</GDropdownItem>`);
+
+            const current = wrapper
+                .findAll("[role='menuitem']")
+                .wrappers.map((item) => item.attributes("aria-current"));
+            expect(current).toEqual(["true", "true", "true", undefined]);
+        });
+
         it("keeps items out of the tab order and marks disabled ones", () => {
             const wrapper = mountDropdown(MENU);
 
