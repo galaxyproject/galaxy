@@ -1,7 +1,6 @@
 import { faSitemap } from "@fortawesome/free-solid-svg-icons";
 
 import type { WorkflowSummary } from "@/api/workflows";
-import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore, type WorkflowListVariant } from "@/stores/workflowStore";
 import { relativeUpdatedLabel } from "@/utils/dates";
@@ -13,8 +12,8 @@ import type {
     PaletteSearchOptions,
     ScopedSection,
 } from "../types";
-import { rankPaletteItems } from "../utilities";
 import { PALETTE_LIMITS } from "./limits";
+import { recentPaletteItems, type RecentRows } from "./recent";
 import type { ScopeDefinition } from "./scopes";
 import { type ListingSearch, rootListItems, storeFirstItems, type StoreFirstList } from "./storeFirst";
 
@@ -115,20 +114,15 @@ function listingSearch(variant: WorkflowListVariant): ListingSearch {
 /** Workflows opened through the palette before, most recently used first */
 function recentItems(query: string, limit = PALETTE_LIMITS.recent): PaletteItem[] {
     const workflowStore = useWorkflowStore();
-    const { recentItems: recentEntries } = useRecentPaletteItems();
-    const items = recentEntries(WORKFLOW_RECENT_TYPE).map((entry) => {
-        const summary = workflowStore.getWorkflowSummaryById(entry.id);
-        return summary
-            ? workflowItem(summary, "recent")
-            : {
-                  id: itemId("recent", entry.id),
-                  icon: faSitemap,
-                  mru: { type: WORKFLOW_RECENT_TYPE, id: entry.id },
-                  title: entry.name,
-                  to: entry.to ?? runUrl(entry.id),
-              };
-    });
-    return rankPaletteItems(items, query).slice(0, limit);
+    const rows: RecentRows = {
+        type: WORKFLOW_RECENT_TYPE,
+        stored: (entry) => {
+            const summary = workflowStore.getWorkflowSummaryById(entry.id);
+            return summary ? workflowItem(summary, "recent") : undefined;
+        },
+        fallback: (entry) => ({ id: itemId("recent", entry.id), icon: faSitemap, to: runUrl(entry.id) }),
+    };
+    return recentPaletteItems(rows, query, limit);
 }
 
 /**
