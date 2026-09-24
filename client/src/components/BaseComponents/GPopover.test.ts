@@ -553,6 +553,13 @@ describe("GPopover hover", () => {
         expect(newTarget.getAttribute("aria-describedby")).toBe(popoverEl().id);
     });
 
+    it("announces a popover that was mounted open", async () => {
+        await mountWithTrigger({ triggers: "hover", show: true });
+        await nextTick();
+
+        expect(wrapper!.emitted("shown")).toHaveLength(1);
+    });
+
     it("closes once the pointer has left both the trigger and the popover", async () => {
         const target = await openByHover();
         target.dispatchEvent(new MouseEvent("mouseleave"));

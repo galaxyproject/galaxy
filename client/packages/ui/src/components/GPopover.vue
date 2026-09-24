@@ -299,18 +299,17 @@ function togglePopover() {
     showState.value = !showState.value;
 }
 
-watch(
-    () => showState.value,
-    async (visible) => {
-        if (visible) {
-            relocate();
-            await nextTick();
-            emit("shown");
-        } else {
-            emit("hidden");
-        }
-    },
-);
+async function onVisibilityChange(visible: boolean) {
+    if (visible) {
+        relocate();
+        await nextTick();
+        emit("shown");
+    } else {
+        emit("hidden");
+    }
+}
+
+watch(() => showState.value, onVisibilityChange);
 
 // Watch for external show prop changes
 watch(
@@ -463,8 +462,9 @@ onMounted(() => {
         }
         relocate();
         setupListeners();
-        if (props.show) {
-            isVisible.value = true;
+        // The watcher above only sees changes, so a popover mounted open is set up here.
+        if (showState.value) {
+            onVisibilityChange(true);
         }
     });
 });
