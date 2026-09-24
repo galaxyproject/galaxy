@@ -555,6 +555,33 @@ describe("GPopover hover", () => {
         expect(wrapper!.emitted("shown")).toHaveLength(1);
     });
 
+    it("reports hover opens and closes through show.sync", async () => {
+        const target = await mountWithTrigger({ triggers: "hover", show: false });
+
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        await wrapper!.setProps({ show: true });
+        target.dispatchEvent(new MouseEvent("mouseleave"));
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
+
+        expect(wrapper!.emitted("update:show")).toEqual([[true], [false]]);
+    });
+
+    it.each([
+        ["open", false],
+        ["close", true],
+    ])("drops a pending %s when unmounted", async (_pending, show) => {
+        const target = await mountWithTrigger({ triggers: "hover", show });
+        target.dispatchEvent(new MouseEvent(show ? "mouseleave" : "mouseenter"));
+
+        const unmounted = wrapper!;
+        unmounted.destroy();
+        wrapper = undefined;
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+
+        expect(unmounted.emitted("update:show")).toBeUndefined();
+    });
+
     it("closes once the pointer has left both the trigger and the popover", async () => {
         const target = await openByHover();
         target.dispatchEvent(new MouseEvent("mouseleave"));
@@ -621,5 +648,41 @@ describe("GPopover description", () => {
         wrapper = undefined;
 
         expect(target.getAttribute("aria-describedby")).toBe("existing-hint");
+    });
+});
+
+describe("GPopover click", () => {
+    afterEach(() => {
+        wrapper?.destroy();
+        wrapper = undefined;
+        document.body.innerHTML = "";
+    });
+
+    async function openByClick() {
+        const target = await mountWithTrigger({ triggers: "click blur", title: "Person" });
+        target.click();
+        await nextTick();
+        return target;
+    }
+
+    it("closes on a click outside the trigger and popover", async () => {
+        await openByClick();
+        const outside = document.createElement("div");
+        document.body.appendChild(outside);
+
+        outside.click();
+        await nextTick();
+
+        expect(isShown()).toBe(false);
+    });
+
+    it("closes when the trigger is clicked again", async () => {
+        const target = await openByClick();
+        expect(isShown()).toBe(true);
+
+        target.click();
+        await nextTick();
+
+        expect(isShown()).toBe(false);
     });
 });
