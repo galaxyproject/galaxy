@@ -145,6 +145,23 @@ describe("GPopover", () => {
         expect(popoverEl().parentElement).toBe(dialog);
     });
 
+    it("sets nothing up when unmounted before its deferred setup ran", async () => {
+        const target = document.createElement("button");
+        target.id = "short-lived-trigger";
+        const mountPoint = document.createElement("div");
+        document.body.append(target, mountPoint);
+
+        const shortLived = mount(GPopover as object, {
+            attachTo: mountPoint,
+            propsData: { target: "short-lived-trigger", triggers: "hover" },
+        });
+        shortLived.destroy();
+        await nextTick();
+        await nextTick();
+
+        expect(target.hasAttribute("aria-describedby")).toBe(false);
+    });
+
     it("removes the relocated popover when unmounted", async () => {
         await showPopover("bottom", "bottom");
 

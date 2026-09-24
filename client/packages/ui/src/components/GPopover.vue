@@ -452,9 +452,15 @@ function relocate() {
     }
 }
 
+// The deferred setup below can land after a same-tick unmount, and would then leak listeners.
+let unmounted = false;
+
 onMounted(() => {
     // Delay setup slightly to ensure target elements are in DOM
     nextTick(() => {
+        if (unmounted) {
+            return;
+        }
         relocate();
         setupListeners();
         if (props.show) {
@@ -469,7 +475,7 @@ watch(
     () => props.target,
     () => {
         nextTick(() => {
-            if (resolveTarget() !== boundTarget) {
+            if (!unmounted && resolveTarget() !== boundTarget) {
                 setupListeners();
             }
         });
@@ -477,6 +483,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
+    unmounted = true;
     teardownListeners();
     // Vue only removes the placeholder, which no longer holds the relocated popover.
     popoverEl.value?.remove();
