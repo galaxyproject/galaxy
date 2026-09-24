@@ -9,24 +9,33 @@ import GPopover from "./GPopover.vue";
 
 // happy-dom gives every element a zero-sized rect, so whatever placement floating-ui would
 // really resolve to here is meaningless. Pin it and assert on what the component does with it.
-const resolved = vi.hoisted(() => ({ placement: "bottom" }));
+const resolved = vi.hoisted(() => ({
+    placement: "bottom",
+    middlewareOptions: {} as Record<string, unknown>,
+}));
 
 vi.mock("@floating-ui/dom", () => ({
-    computePosition: () =>
-        Promise.resolve({
+    computePosition: (
+        _reference: unknown,
+        _floating: unknown,
+        config: { middleware: Array<{ name: string; options?: unknown }> },
+    ) => {
+        resolved.middlewareOptions = Object.fromEntries(config.middleware.map(({ name, options }) => [name, options]));
+        return Promise.resolve({
             x: 0,
             y: 0,
             placement: resolved.placement,
             middlewareData: { arrow: { x: 8 } },
-        }),
+        });
+    },
     autoUpdate: (_reference: unknown, _floating: unknown, update: () => void) => {
         update();
         return () => {};
     },
     arrow: () => ({ name: "arrow", fn: () => ({}) }),
-    flip: () => ({ name: "flip", fn: () => ({}) }),
+    flip: (options?: unknown) => ({ name: "flip", options, fn: () => ({}) }),
     offset: () => ({ name: "offset", fn: () => ({}) }),
-    shift: () => ({ name: "shift", fn: () => ({}) }),
+    shift: (options?: unknown) => ({ name: "shift", options, fn: () => ({}) }),
 }));
 
 let wrapper: Wrapper<Vue> | undefined;
@@ -41,7 +50,7 @@ function popoverEl() {
     return el;
 }
 
-async function showPopover(placement: string, resolvedPlacement: string) {
+async function showPopover(placement: string, resolvedPlacement: string, propsData: Record<string, unknown> = {}) {
     resolved.placement = resolvedPlacement;
 
     const target = document.createElement("button");
@@ -50,7 +59,7 @@ async function showPopover(placement: string, resolvedPlacement: string) {
 
     wrapper = mount(GPopover as object, {
         attachTo: document.body,
-        propsData: { target: "trigger", placement, show: false },
+        propsData: { target: "trigger", placement, show: false, ...propsData },
         slots: { default: "body content" },
     });
 
@@ -91,6 +100,14 @@ describe("GPopover", () => {
         await showPopover("bottomleft", "bottom-start");
 
         expect([...popoverEl().classList]).not.toContain("bs-popover-bottom-start");
+    });
+
+    it("keeps window-bounded popovers inside the viewport rather than the trigger's scroll container", async () => {
+        await showPopover("topleft", "top-start", { boundary: "window" });
+
+        // altBoundary would check the trigger's clipping ancestors instead of the popover's (the viewport).
+        expect(resolved.middlewareOptions.flip).not.toEqual(expect.objectContaining({ altBoundary: true }));
+        expect(resolved.middlewareOptions.shift).not.toEqual(expect.objectContaining({ altBoundary: true }));
     });
 
     it("positions the arrow along the popover edge", async () => {

@@ -13,7 +13,7 @@
  * - Title via prop or #title slot
  * - Content via prop or default slot
  * - Programmatic show/hide via v-model (:show.sync)
- * - boundary prop (currently always uses window via altBoundary)
+ * - boundary prop accepted for BPopover compatibility; flip/shift use the viewport, or the containing dialog
  * - custom-class prop
  */
 
@@ -45,7 +45,10 @@ const props = withDefaults(
         triggers?: TriggerType;
         /** Placement relative to target */
         placement?: string;
-        /** Boundary for positioning (currently just flags altBoundary) */
+        /**
+         * Accepted for BPopover compatibility; flip/shift keep the popover in the viewport,
+         * or in the containing dialog when it was relocated into one
+         */
         boundary?: string;
         /** Title text (or use #title slot) */
         title?: string;
@@ -138,12 +141,7 @@ function mapPlacement(p: string): Placement {
 }
 
 function getConfig(): Partial<ComputePositionConfig> {
-    const useAltBoundary = props.boundary === "window";
-    const middleware = [
-        offset(10),
-        flip({ altBoundary: useAltBoundary }),
-        shift({ altBoundary: useAltBoundary, padding: 5 }),
-    ];
+    const middleware = [offset(10), flip(), shift({ padding: 5 })];
     if (arrowEl.value) {
         middleware.push(arrow({ element: arrowEl.value }));
     }
