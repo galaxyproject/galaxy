@@ -1,5 +1,7 @@
 <template>
     <section class="external-id">
+        <BreadcrumbHeading :items="breadcrumbItems" />
+
         <b-alert :show="!!connectExternal" variant="info">
             You are logged in. You can now connect the Galaxy user account with the email <i>{{ userEmail }}</i
             >, to your preferred external provider.
@@ -18,10 +20,6 @@
                 @dismissed="errorMessage = null"
                 >{{ errorMessage }}</b-alert
             >
-
-            <hgroup class="external-id-title">
-                <h1 class="h-lg">Manage External Identities</h1>
-            </hgroup>
 
             <p>
                 Users with existing Galaxy user accounts (e.g., via Galaxy username and password) can associate their
@@ -81,12 +79,14 @@ import { capitalizeFirstLetter } from "@/utils/strings";
 
 import svc from "./service";
 
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        BreadcrumbHeading,
         ExternalLogin,
     },
     setup() {
@@ -99,6 +99,7 @@ export default {
         const galaxy = getGalaxyInstance();
         return {
             items: [],
+            breadcrumbItems: [{ title: "User Preferences", to: "/user" }, { title: "Manage External Identities" }],
             showHelp: true,
             loading: false,
             doomedItem: null,

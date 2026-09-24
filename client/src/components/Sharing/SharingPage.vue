@@ -4,7 +4,7 @@ import { BFormCheckbox } from "bootstrap-vue";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 
 import type { AnyShareableItemWithStatus, ShareOption } from "@/api";
-import { isShareableHistoryWithStatus } from "@/api";
+import { GalaxyApi, isShareableHistoryWithStatus } from "@/api";
 import { getGalaxyInstance } from "@/app";
 import { getFullAppUrl } from "@/app/utils";
 import { useToast } from "@/composables/toast";
@@ -197,15 +197,18 @@ const newUsername = ref("");
 const slugSet = computed(() => itemUrl.slug != "__slug__" && itemUrl.prefix != "__username__");
 
 async function setUsername() {
-    axios
-        .put(`${getAppRoot()}api/users/${getGalaxyInstance().user.id}/information/inputs`, {
-            username: newUsername.value || "",
-        })
-        .then((response) => {
-            hasUsername.value = true;
-            getSharing();
-        })
-        .catch(onError);
+    const { error } = await GalaxyApi().PUT("/api/users/{user_id}", {
+        params: { path: { user_id: getGalaxyInstance().user.id } },
+        body: { username: newUsername.value || "" },
+    });
+
+    if (error) {
+        onError(error);
+        return;
+    }
+
+    hasUsername.value = true;
+    getSharing();
 }
 
 const embedable = computed(
