@@ -166,6 +166,11 @@ DOI_VALID_VALUES = [
     "doi:10.1234567890/42",  # longer prefix
     "doi:10.1234/42ab:%&*$//crazy-suffix/%/&/",
     "doi:10.1234/aa",
+    "http://doi.org/10.1234/42",
+    "stillvalid:10.1234/42",
+    "dx.doi.org:10.1234/42",
+    "https://dx.doi.org:10.1234/42",
+    "httpss://dx.doi.org:10.1234/42",
 ]
 
 
@@ -175,12 +180,11 @@ def test_validate_doi_pass(input):
 
 
 DOI_INVALID_VALUES = [
-    "http://doi.org/10.1234/42",
-    "invalid:10.1234/42",
     "doi:11.1234/42",
     "doi:101234/42",
     "doi:10. 1234/42",
     "doi:10.abc/42",
+    "10.1234 /42/a b",
     "doi:10.1234/ 42",
     "doi:10.1234/42/a b",
 ]
@@ -233,9 +237,10 @@ def test_ready_name_for_url(input_name, expected_output):
         ("Galaxy102-[name].fastqsanger.gz ", 'filename="Galaxy102-[name].fastqsanger.gz"'),
     ],
 )
-def test_to_content_disposition(target, expected_substring):
-    result = util.to_content_disposition(target)
-    assert result.startswith("attachment; ")
+@pytest.mark.parametrize("disposition", ["attachment", "inline"])
+def test_to_content_disposition(target, expected_substring, disposition):
+    result = util.to_content_disposition(target, disposition=disposition)
+    assert result.startswith(f"{disposition}; ")
     assert expected_substring in result
     # Ensure no trailing whitespace in the header value
     assert result == result.strip()

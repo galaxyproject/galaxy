@@ -37,7 +37,11 @@ from galaxy.util.checkers import (
     COMPRESSION_CHECK_FUNCTIONS,
     is_tar,
 )
-from galaxy.util.path import StrPath
+from galaxy.util.path import (
+    safe_contains,
+    safe_relpath,
+    StrPath,
+)
 
 try:
     import pylibmagic  # noqa: F401  # isort:skip
@@ -92,13 +96,21 @@ stream_url_to_file = partial(files_stream_url_to_file, prefix="gx_url_paste")
 
 
 def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts):
+    # ``name`` can be user-controlled (e.g. the ``files_N|NAME`` of an ad-hoc
+    # ``force_composite`` upload), so it must never resolve outside of the
+    # dataset's extra files directory.
+    file_output_path = os.path.join(extra_files, name)
+    if not name or not safe_relpath(name) or not safe_contains(os.path.realpath(extra_files), file_output_path):
+        raise ValueError(
+            f"Invalid composite file name '{name}'; must be a relative path inside the dataset's extra files directory"
+        )
+
     if not is_binary:
         if upload_opts.get("space_to_tab"):
             convert_newlines_sep2tabs(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
         else:
             convert_newlines(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
 
-    file_output_path = os.path.join(extra_files, name)
     shutil.move(src_path, file_output_path)
 
     # groom the dataset file content if required by the corresponding datatype definition
@@ -836,6 +848,8 @@ def handle_compressed_file(
     if check_compressed_function:
         is_compressed, is_valid = check_compressed_function(filename, check_content=check_content)
         compressed_type = file_prefix.compressed_format
+    if is_compressed and not is_valid:
+        is_valid = _sniffs_as_compressed_html_container(file_prefix, datatypes_registry, ext)
     if is_compressed and is_valid:
         if ext in AUTO_DETECT_EXTENSIONS:
             # attempt to sniff for a keep-compressed datatype (observing the sniff order)
@@ -873,6 +887,15 @@ def handle_compressed_file(
     elif not is_compressed or not check_content:
         is_valid = True
     return HandleCompressedFileResponse(is_valid, ext, uncompressed_path, compressed_type, is_compressed)
+
+
+def _sniffs_as_compressed_html_container(file_prefix: FilePrefix, datatypes_registry, ext: str) -> bool:
+    if ext in AUTO_DETECT_EXTENSIONS:
+        candidates = datatypes_registry.sniff_order
+    else:
+        candidates = [datatypes_registry.get_datatype_by_extension(ext)]
+    candidates = [d for d in candidates if d is not None and d.allow_compressed_html_content]
+    return bool(candidates) and run_sniffers_raw(file_prefix, candidates) is not None
 
 
 def handle_uploaded_dataset_file(filename, *args, **kwds) -> str:

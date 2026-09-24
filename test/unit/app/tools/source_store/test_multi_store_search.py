@@ -34,6 +34,7 @@ class _FakeToolbox:
         for entry in entries:
             self.tool_index.add_entry(entry)
         self._views = views
+        self._reload_count = 0
 
     def panel_views(self):
         return [SimpleNamespace(id=view_id) for view_id in self._views]

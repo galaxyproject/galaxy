@@ -19,6 +19,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from starlette.datastructures import MutableHeaders
 from starlette.middleware.cors import CORSMiddleware
+from starlette.routing import Route
 from tuspyserver import create_tus_router
 
 from galaxy.exceptions import TooManyRequestsException
@@ -286,19 +287,22 @@ def get_mcp_lifespan(gx_app):
 
 
 def include_mcp(app: FastAPI, gx_app, mcp_app):
-    """Mount the MCP server if it was initialized."""
+    """Expose the MCP server's HTTP routes if it was initialized."""
     if mcp_app is None:
         return
 
     try:
         mcp_path = gx_app.config.mcp_server_path
-        # Requests served by the mounted sub-app see request.app == mcp_app, so
+        # Requests served by the MCP app see request.app == mcp_app, so
         # share the parent's route name index for UrlBuilder._url_path_for.
         mcp_app.state.route_name_index = app.state.route_name_index
-        app.mount(mcp_path, mcp_app)
-        log.info(f"MCP server (Streamable HTTP) mounted at {mcp_path}")
+        # Exact routes avoid the WSGI catch-all swallowing the mount's slash redirect.
+        # Dispatch through the MCP app to retain its request-context middleware.
+        for route in mcp_app.routes:
+            app.router.routes.append(Route(route.path, endpoint=mcp_app, include_in_schema=False))
+        log.info(f"MCP server (Streamable HTTP) available at {mcp_path}")
     except Exception as e:
-        log.error(f"Failed to mount MCP server: {e}")
+        log.error(f"Failed to register MCP server routes: {e}")
 
 
 def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
@@ -322,6 +326,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     root_path = "" if gx_app.config.galaxy_url_prefix == "/" else gx_app.config.galaxy_url_prefix
     mcp_app, mcp_lifespan = get_mcp_lifespan(gx_app)
 
+    lifespan = None
     if mcp_lifespan:
 
         @asynccontextmanager
@@ -329,9 +334,9 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
             async with mcp_lifespan(app):
                 yield
 
-        app = get_fastapi_instance(root_path=root_path, lifespan=combined_lifespan)
-    else:
-        app = get_fastapi_instance(root_path=root_path)
+        lifespan = combined_lifespan
+
+    app = get_fastapi_instance(root_path=root_path, lifespan=lifespan)
 
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
@@ -350,7 +355,11 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     include_mcp(app, gx_app, mcp_app)
     app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     if gx_app.config.galaxy_url_prefix != "/":
-        parent_app = FastAPI()
+        # The ASGI server only runs the lifespan of the app it is handed, and
+        # Starlette does not propagate lifespan events to mounted sub-apps, so
+        # the wrapper served here needs the lifespan that starts the MCP
+        # Streamable HTTP session manager.
+        parent_app = FastAPI(lifespan=lifespan)
         parent_app.mount(gx_app.config.galaxy_url_prefix, app=app)
         return parent_app
     return app

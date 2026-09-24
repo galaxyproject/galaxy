@@ -419,74 +419,6 @@ class AdminGalaxy(controller.BaseUIController):
 
     @web.legacy_expose_api
     @web.require_admin
-    def create_quota(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        if trans.request.method == "GET":
-            all_users = []
-            all_groups = []
-            labels = trans.app.object_store.get_quota_source_map().get_quota_source_labels()
-            label_options = [("Default Quota", "__default__")]
-            label_options.extend([(label, label) for label in labels])
-            for user in (
-                trans.sa_session.query(trans.app.model.User)
-                .filter(trans.app.model.User.table.c.deleted == false())
-                .order_by(trans.app.model.User.table.c.email)
-            ):
-                all_users.append((user.email, trans.security.encode_id(user.id)))
-            for group in (
-                trans.sa_session.query(trans.app.model.Group)
-                .filter(trans.app.model.Group.deleted == false())
-                .order_by(trans.app.model.Group.name)
-            ):
-                all_groups.append((group.name, trans.security.encode_id(group.id)))
-            default_options = [("No", "no")]
-            for type_ in trans.app.model.DefaultQuotaAssociation.types:
-                default_options.append((f"Yes, {type_}", type_))
-            rval: dict = {
-                "title": "Create Quota",
-                "inputs": [
-                    {"name": "name", "label": "Name"},
-                    {"name": "description", "label": "Description"},
-                    {"name": "amount", "label": "Amount", "help": 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"'},
-                    {
-                        "name": "operation",
-                        "label": "Assign, increase by amount, or decrease by amount?",
-                        "options": [("=", "="), ("+", "+"), ("-", "-")],
-                    },
-                    {
-                        "name": "default",
-                        "label": "Is this quota a default for a class of users (if yes, what type)?",
-                        "options": default_options,
-                        "help": "Warning: Any users or groups associated with this quota will be disassociated.",
-                    },
-                ],
-            }
-            if len(label_options) > 1:
-                rval["inputs"].append(
-                    {
-                        "name": "quota_source_label",
-                        "label": "Apply quota to labeled object stores.",
-                        "options": label_options,
-                    }
-                )
-            rval["inputs"].extend(
-                [
-                    build_select_input("in_groups", "Groups", all_groups, []),
-                    build_select_input("in_users", "Users", all_users, []),
-                ]
-            )
-            return rval
-        else:
-            try:
-                quota_source_label = payload.get("quota_source_label")
-                if quota_source_label == "__default__":
-                    payload["quota_source_label"] = None
-                quota, message = self.quota_manager.create_quota(payload, decode_id=trans.security.decode_id)
-                return {"message": message}
-            except ActionInputError as e:
-                return self.message_exception(trans, e.err_msg)
-
-    @web.legacy_expose_api
-    @web.require_admin
     def rename_quota(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         id = kwd.get("id")
         if not id:
@@ -503,53 +435,6 @@ class AdminGalaxy(controller.BaseUIController):
         else:
             try:
                 return {"message": self.quota_manager.rename_quota(quota, util.Params(payload))}
-            except ActionInputError as e:
-                return self.message_exception(trans, e.err_msg)
-
-    @web.legacy_expose_api
-    @web.require_admin
-    def manage_users_and_groups_for_quota(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        quota_id = kwd.get("id")
-        if not quota_id:
-            return self.message_exception(trans, f"Invalid quota id ({str(quota_id)}) received")
-        quota = get_quota(trans, quota_id)
-        if trans.request.method == "GET":
-            in_users = []
-            all_users = []
-            in_groups = []
-            all_groups = []
-            for user in (
-                trans.sa_session.query(trans.app.model.User)
-                .filter(trans.app.model.User.table.c.deleted == false())
-                .order_by(trans.app.model.User.table.c.email)
-            ):
-                if user in [x.user for x in quota.users]:
-                    in_users.append(trans.security.encode_id(user.id))
-                all_users.append((user.email, trans.security.encode_id(user.id)))
-            for group in (
-                trans.sa_session.query(trans.app.model.Group)
-                .filter(trans.app.model.Group.deleted == false())
-                .order_by(trans.app.model.Group.name)
-            ):
-                if group in [x.group for x in quota.groups]:
-                    in_groups.append(trans.security.encode_id(group.id))
-                all_groups.append((group.name, trans.security.encode_id(group.id)))
-            return {
-                "title": f"Quota '{quota.name}'",
-                "message": f"Quota '{quota.name}' is currently associated with {len(in_users)} user(s) and {len(in_groups)} group(s).",
-                "status": "info",
-                "inputs": [
-                    build_select_input("in_groups", "Groups", all_groups, in_groups),
-                    build_select_input("in_users", "Users", all_users, in_users),
-                ],
-            }
-        else:
-            try:
-                return {
-                    "message": self.quota_manager.manage_users_and_groups_for_quota(
-                        quota, util.Params(payload), decode_id=trans.security.decode_id
-                    )
-                }
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 

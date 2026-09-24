@@ -14,7 +14,6 @@ from .upload_activity_helpers import UsesUploadActivity
 
 
 class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivity):
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_file(self):
         self.upload_context("local-file").stage_local_file(self.get_filename("1.sam")).start()
@@ -26,10 +25,12 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
         self.history_panel_click_item_title(hid=1, wait=True)
         self.assert_item_summary_includes(1, "28 lines")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_pasted_url_content(self):
-        pasted_content = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/LICENSE.txt"
+        pasted_content = self.test_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/LICENSE.txt",
+            file_path="LICENSE.txt",
+        )
         self.upload_context("paste-content").stage_paste_content(pasted_content).start()
 
         self.history_panel_wait_for_hid_ok(1)
@@ -60,7 +61,6 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
         for data in paste_content:
             assert f'"paste_content":"{data}"' in request_json
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_simplest(self):
         self.upload_context("local-file").stage_local_file(self.get_filename("1.sam")).start()
@@ -77,7 +77,6 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
         self.history_panel_click_item_title(hid=1, wait=True)
         self.assert_item_dbkey_displayed_as(1, "?")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_deferred(self):
         uploader = self.upload_context("paste-links")
@@ -90,7 +89,6 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
         self.history_panel_click_item_title(hid=hid, wait=True)
         self.screenshot("history_panel_dataset_deferred")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_list(self):
         self.upload_context("local-file").stage_local_file(self.get_filename("1.tabular")).to_list("Test List").start()
@@ -98,7 +96,6 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
         self.history_panel_wait_for_hid_ok(1)
         self.assert_item_name(1, "Test List")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_pair(self):
         uploader = self.upload_context("local-file")
@@ -109,7 +106,6 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
         self.history_panel_wait_for_hid_ok(1)
         self.assert_item_name(1, "Test Pair")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_pair_specify_extension(self):
         uploader = self.upload_context("local-file")
@@ -120,7 +116,6 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
         self.history_panel_wait_for_hid_ok(1)
         self.assert_item_name(1, "Test Pair")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_paired_list(self):
         uploader = self.upload_context("local-file")
@@ -131,7 +126,6 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
         self.history_panel_wait_for_hid_ok(1)
         self.assert_item_name(1, "Test Paired List")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
@@ -174,7 +168,6 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         # self.history_panel_wait_for_hid_ok(6)
         # self.screenshot("rules_example_1_6_download_complete")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
@@ -198,7 +191,9 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         # self.history_panel_wait_for_hid_ok(2)
         # self.screenshot("rules_example_2_5_download_complete")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
+    @selenium_only(
+        "Rule editor Apply is intercepted by a closing vue-multiselect dropdown in rule_builder_swap_columns"
+    )
     @selenium_test
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
@@ -232,7 +227,6 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.rule_builder_set_collection_name("PRJDB3920")
         self.screenshot("rules_example_3_14_paired_identifier_set")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
@@ -268,7 +262,6 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         rule_builder.main_button_ok.wait_for_and_click()
         rule_builder.view_source.wait_for_visible()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
@@ -302,7 +295,6 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.rule_builder_set_mapping("collection-name", "E")
         self.screenshot("rules_example_5_9_mapping")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
@@ -334,7 +326,6 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.rule_builder_set_collection_name("PRJNA355367")
         self.screenshot("rules_example_6_7_named")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.local
     def test_rules_deferred_datasets(self):
@@ -376,7 +367,6 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.history_panel_wait_for_hid_deferred(6)
         self.screenshot("rules_deferred_datasets_8_download_complete")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.local
     def test_rules_deferred_list(self):
@@ -421,12 +411,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         # first_cell = table_elem.find_elements(By.CSS_SELECTOR, "td")[0]
         # aggrid
         first_cell = table_elem.find_elements(By.CSS_SELECTOR, ".ag-cell")[0]
-        action_chains = self.action_chains()
-        action_chains.move_to_element(first_cell)
-        action_chains.click(first_cell)
-        for _ in range(15):
-            action_chains.send_keys(Keys.ARROW_RIGHT)
-        action_chains.perform()
+        self.move_to_and_click(first_cell)
+        self.send_keys_to_page(Keys.ARROW_RIGHT * 15)
 
     def _setup_uniprot_example(self):
         self.upload_context("local-file").stage_local_file(self.get_filename("rules/uniprot.tsv")).start()

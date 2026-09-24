@@ -461,6 +461,12 @@ def parse_requirements_from_xml(xml_root, parse_resources_and_credentials: bool 
     '1.3.3'
     >>> reqs[0].type
     'binary'
+    >>> either_order = '''<container type="docker">bwa:latest</container><requirement>bwa</requirement>'''
+    >>> reqs, containers = load_requirements(either_order)
+    >>> reqs[0].name
+    'bwa'
+    >>> containers[0].identifier
+    'bwa:latest'
     """
     requirements_elem = xml_root.find("requirements")
 

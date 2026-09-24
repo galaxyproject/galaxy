@@ -65,6 +65,24 @@ preferences:
               required: False
 
     # Used in file_sources_conf.yml
+    gitlab:
+        description: Your GitLab account
+        inputs:
+            - name: token
+              label: GitLab personal access token
+              type: password
+              required: False
+
+    # Used in file_sources_conf.yml
+    arc:
+        description: Your DataPLANT DataHUB account
+        inputs:
+            - name: token
+              label: DataHUB personal access token
+              type: password
+              required: False
+
+    # Used in file_sources_conf.yml
     owncloud:
         description: Your External OwnCloud account
         inputs:

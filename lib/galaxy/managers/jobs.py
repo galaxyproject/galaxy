@@ -109,6 +109,7 @@ from galaxy.tool_util.parameters import (
     dereference,
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
+    restore_non_finite_floats,
     ToolParameterBundleModel,
 )
 from galaxy.tools import Tool
@@ -2144,9 +2145,9 @@ def summarize_job_outputs(job: model.Job, tool, params):
 
 def get_jobs_to_check_at_startup(session: galaxy_scoped_session, track_jobs_in_database: bool, config):
     if track_jobs_in_database:
-        in_list = (Job.states.QUEUED, Job.states.RUNNING, Job.states.STOPPED)
+        in_list = (Job.states.QUEUED, Job.states.RUNNING, Job.states.STOPPED, Job.states.FINISHING)
     else:
-        in_list = (Job.states.NEW, Job.states.QUEUED, Job.states.RUNNING)
+        in_list = (Job.states.NEW, Job.states.QUEUED, Job.states.RUNNING, Job.states.FINISHING)
 
     stmt = (
         select(Job)
@@ -2245,6 +2246,8 @@ class JobSubmitter:
         if tool.parameters is None:
             raise RequestParameterInvalidException(f"Tool {tool.id} has no parameters defined")
         parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
+        # The persisted request stores non-finite floats as JSON-safe sentinel strings.
+        tool_state = restore_non_finite_floats(tool_state, parameter_bundle)
         return (
             dereference(tool_state, parameter_bundle, dereference_callback, dereference_collection_callback),
             new_hdas,

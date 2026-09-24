@@ -67,11 +67,6 @@ the following considerations:
 - Cookies: get_cookies
 - Storage: set_local_storage, remove_local_storage
 
-**Known Limitations:**
-1. wait_for_element_count_of_at_least() - Not implemented (raises NotImplementedError)
-   - Playwright doesn't have an equivalent to Selenium's element count waiting
-   - Use wait_for_present() and then check length of find_elements() instead
-
 Implementation Details
 ----------------------
 **Locator Strategy:**
@@ -113,6 +108,7 @@ See Also
 
 import abc
 import logging
+from collections.abc import Sequence
 from contextlib import contextmanager
 from typing import (
     Any,
@@ -149,12 +145,28 @@ from .has_driver_protocol import (
     BackendType,
     Cookie,
     HasElementLocator,
+    HOVER_AWAY_OFFSET,
     TimeoutCallback,
     WaitTypeT,
+)
+from .keys import (
+    Key,
+    validate_key_press,
 )
 from .playwright_element import PlaywrightElement
 from .wait_methods_mixin import WaitMethodsMixin
 from .web_element_protocol import WebElementProtocol
+
+# Innermost element the pointer is currently over, or null when only the page itself is.
+HOVERED_ELEMENT_RECT_JS = """() => {
+    const hovered = document.querySelectorAll(":hover");
+    const target = hovered[hovered.length - 1];
+    if (!target || target === document.body || target === document.documentElement) {
+        return null;
+    }
+    const { x, y, width, height } = target.getBoundingClientRect();
+    return { x, y, width, height };
+}"""
 
 logger = logging.getLogger(__name__)
 
@@ -179,20 +191,6 @@ class PlaywrightResources(NamedTuple):
     page: Page
 
 
-class PlaywrightKeys:
-    """Mapping of Selenium Keys to Playwright key names."""
-
-    ENTER = "Enter"
-    ESCAPE = "Escape"
-    BACKSPACE = "Backspace"
-    TAB = "Tab"
-    SPACE = " "
-    ARROW_DOWN = "ArrowDown"
-    ARROW_UP = "ArrowUp"
-    ARROW_LEFT = "ArrowLeft"
-    ARROW_RIGHT = "ArrowRight"
-
-
 class PlaywrightBy:
     """Locator strategy constants matching Selenium's By class."""
 
@@ -210,7 +208,6 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
     """Playwright-backed implementation of HasDriver interface."""
 
     by: type[PlaywrightBy] = PlaywrightBy
-    keys: type[PlaywrightKeys] = PlaywrightKeys
     axe_script_url: str = DEFAULT_AXE_SCRIPT_URL
     axe_skip: bool = False
     _current_frame: Frame | FrameLocator | None = None
@@ -524,6 +521,20 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             selector = self._selenium_locator_to_playwright_selector(*selector_template)
         self._frame_or_page.locator(selector).first.select_option(value=value)
 
+    def select_by_visible_text(self, selector_template: HasElementLocator, text: str) -> None:
+        """
+        Select an option from a <select> element by the text shown to the user.
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple for the select element
+            text: The visible text of the option to select
+        """
+        if isinstance(selector_template, Target):
+            selector = self._target_to_playwright_selector(selector_template)
+        else:
+            selector = self._selenium_locator_to_playwright_selector(*selector_template)
+        self._frame_or_page.locator(selector).first.select_option(label=text)
+
     def _timeout_in_ms(self, timeout=UNSPECIFIED_TIMEOUT, wait_type: WaitTypeT | None = None, **kwds) -> float:
         """
         Convert timeout from seconds to milliseconds.
@@ -581,8 +592,8 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             self._frame_or_page.wait_for_selector(selector, state="visible", timeout=timeout_ms)
 
             # Wait for element to be enabled
-            def is_enabled() -> bool:
-                return locator.is_enabled()
+            def is_enabled() -> bool | None:
+                return True if locator.is_enabled() else None
 
             wait_on(is_enabled, "locator to be enabled", timeout=timeout_ms / 1000)
 
@@ -616,7 +627,19 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
     def _wait_on_condition_count(self, locator_tuple: tuple, n: int, message: str, **kwds) -> None:
         """Wait for at least N elements."""
-        raise NotImplementedError("wait_for_element_count_of_at_least not yet implemented for Playwright")
+        timeout_ms = self._timeout_in_ms(**kwds)
+        selector = self._selenium_locator_to_playwright_selector(*locator_tuple)
+        locator = self._frame_or_page.locator(selector)
+
+        # wait_on keeps polling only while the condition returns None.
+        def enough_elements() -> bool | None:
+            return True if locator.count() >= n else None
+
+        try:
+            wait_on(enough_elements, message, timeout=timeout_ms / 1000)
+        except TimeoutAssertionError as e:
+            raise PlaywrightTimeoutException(self._timeout_message(message)) from e
+        return None
 
     # TODO: typevar here Any needs to be return type of condition_func thunk.
     def _wait_on_custom(self, condition_func, message: str, **kwds) -> Any:
@@ -625,7 +648,9 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         if timeout is UNSPECIFIED_TIMEOUT:
             timeout = self.timeout_handler(kwds.get("wait_type"))
 
-        return wait_on(condition_func, message, timeout)
+        # Match Selenium's WebDriverWait, which keeps polling on any falsy result;
+        # wait_on alone stops on anything but None.
+        return wait_on(lambda: condition_func() or None, message, timeout)
 
     def _unwrap_element(self, element: WebElementProtocol) -> ElementHandle:
         """
@@ -704,6 +729,34 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         self._frame_or_page.locator(selector).first.click()
 
+    def active_element(self) -> WebElementProtocol:
+        handle = self._frame_or_page.evaluate_handle("document.activeElement").as_element()
+        assert handle is not None, "No element currently has focus"
+        return PlaywrightElement(handle, self)
+
+    def press(
+        self,
+        *keys: Key | str,
+        modifiers: Sequence[Key] = (),
+        element: WebElementProtocol | None = None,
+    ) -> None:
+        validate_key_press(keys, modifiers)
+        if not keys:
+            return
+        if element is not None:
+            self._unwrap_element(element).focus()
+        keyboard = self.page.keyboard
+        held: list[Key] = []
+        try:
+            for modifier in modifiers:
+                keyboard.down(modifier.value)
+                held.append(modifier)
+            for key in keys:
+                keyboard.press(key.value if isinstance(key, Key) else key)
+        finally:
+            for modifier in reversed(held):
+                keyboard.up(modifier.value)
+
     def send_enter(self, element: WebElementProtocol | None = None) -> None:
         """
         Send ENTER key.
@@ -711,10 +764,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         Args:
             element: Optional element to send key to. If None, sends to page.
         """
-        if element is None:
-            self.page.keyboard.press(self.keys.ENTER)
-        else:
-            self._send_key_to_element(self.keys.ENTER, self._unwrap_element(element))
+        self.press(Key.ENTER, element=element)
 
     def send_escape(self, element: WebElementProtocol | None = None) -> None:
         """
@@ -723,10 +773,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         Args:
             element: Optional element to send key to. If None, sends to page.
         """
-        if element is None:
-            self.page.keyboard.press(self.keys.ESCAPE)
-        else:
-            self._send_key_to_element(self.keys.ESCAPE, self._unwrap_element(element))
+        self.press(Key.ESCAPE, element=element)
 
     def send_backspace(self, element: WebElementProtocol | None = None) -> None:
         """
@@ -735,10 +782,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         Args:
             element: Optional element to send key to. If None, sends to page.
         """
-        if element is None:
-            self.page.keyboard.press(self.keys.BACKSPACE)
-        else:
-            self._send_key_to_element(self.keys.BACKSPACE, self._unwrap_element(element))
+        self.press(Key.BACKSPACE, element=element)
 
     def aggressive_clear(self, element: WebElementProtocol) -> None:
         """
@@ -755,17 +799,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         self.page.evaluate("element => element.value = ''", unwrapped)
         # Then send backspaces to trigger any input events
         for _ in range(25):
-            unwrapped.press(self.keys.BACKSPACE)
-
-    def _send_key_to_element(self, key: str, element: ElementHandle) -> None:
-        """
-        Internal: Send a key press to a specific element.
-
-        Args:
-            key: The key to send
-            element: ElementHandle to send key to
-        """
-        element.press(key)
+            self.press(Key.BACKSPACE, element=element)
 
     def hover(self, element: WebElementProtocol) -> None:
         """
@@ -782,6 +816,30 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         # UI elements (e.g. delete-terminal-button) intercept pointer events.
         # Hover is non-destructive so this is safe.
         element.hover(force=True)
+
+    def hover_away(self) -> None:
+        """
+        Move the mouse off whatever element it is currently over.
+
+        Used to dismiss hover-triggered UI such as tooltips. Playwright exposes no
+        read of the current pointer position, so this cannot be the relative move the
+        Selenium backend makes. Instead the page reports which element is hovered and
+        the pointer moves clear of that element's box.
+        """
+        rect = self.page.evaluate(HOVERED_ELEMENT_RECT_JS)
+        if rect is None:
+            # nothing but the page itself is hovered - already away from everything
+            return
+        x = rect["x"] + rect["width"] + HOVER_AWAY_OFFSET
+        y = rect["y"] + rect["height"] + HOVER_AWAY_OFFSET
+        viewport = self.page.viewport_size
+        if viewport is not None:
+            # past the far edge there is nowhere to land, so leave on the near side instead
+            if x >= viewport["width"]:
+                x = max(0.0, rect["x"] - HOVER_AWAY_OFFSET)
+            if y >= viewport["height"]:
+                y = max(0.0, rect["y"] - HOVER_AWAY_OFFSET)
+        self.page.mouse.move(x, y)
 
     def move_to_and_click(self, element: WebElementProtocol) -> None:
         """
@@ -830,17 +888,17 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
     def action_chains(self):
         """
-        Return action chains object (for Playwright, returns None as not needed).
+        Refuse to hand out an action chain builder.
 
-        Playwright handles actions differently than Selenium, so this method
-        returns None to maintain API compatibility.
-
-        Returns:
-            None (Playwright doesn't use ActionChains pattern)
+        Selenium's ActionChains has no Playwright equivalent. Returning a stub let
+        callers compose a chain whose methods then failed on this object, so raise
+        something that names the alternative instead.
         """
-        # Playwright doesn't use action chains - return a placeholder object
-        # that indicates it exists but isn't used the same way
-        return self
+        raise NotImplementedError(
+            "action_chains() is Selenium-only - express the gesture instead: hover(), "
+            "hover_away(), move_to_and_click(), double_click() and drag_and_drop() here, "
+            "or shift_click(), send_keys_to_page() and mouse_drag() on NavigatesGalaxy."
+        )
 
     def switch_to_frame(self, frame_reference: str | int | ElementHandle | PlaywrightElement = "frame"):
         """
@@ -894,6 +952,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             # Assume it's an ElementHandle representing a frame
             # Get the content_frame from the element
             self._current_frame = frame_reference.content_frame()
+        return self._current_frame
 
     def switch_to_default_content(self):
         """

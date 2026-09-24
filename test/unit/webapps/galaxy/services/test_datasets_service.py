@@ -44,7 +44,7 @@ def _service_for_display(
     service = DatasetsService(*(MagicMock() for _ in range(10)))
     dataset_instance = MagicMock()
     dataset_instance.datatype.is_archive_download.return_value = is_archive
-    dataset_instance.datatype.download_content_disposition.return_value = 'attachment; filename="Galaxy1.txt"'
+    dataset_instance.datatype.content_disposition.return_value = 'attachment; filename="Galaxy1.txt"'
     dataset_instance.datatype.display_data.return_value = ("display-data", {})
     cast(MagicMock, service.hda_manager).get_accessible.return_value = dataset_instance
 

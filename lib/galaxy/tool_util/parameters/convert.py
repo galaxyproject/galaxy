@@ -51,6 +51,7 @@ from galaxy.tool_util_models.tool_source import (
     JsonTestCollectionDefDict,
     JsonTestDatasetDefDict,
 )
+from galaxy.util.json import restore_inf_nan
 from .state import (
     JobInternalToolState,
     JobRuntimeToolState,
@@ -235,6 +236,29 @@ def strictify(relaxed_state: RelaxedRequestToolState, input_models: ToolParamete
 def _deferred_url_default_request(url: str) -> dict[str, Any]:
     """Build the deferred dataset request used to materialize a data param's url_default."""
     return DataRequestUri(url=url, ext="auto", deferred=True).model_dump()
+
+
+def restore_non_finite_floats(
+    internal_state: RequestInternalToolState,
+    input_models: ToolParameterBundle,
+) -> RequestInternalToolState:
+    """Decode infinity/NaN sentinel strings back into floats for float parameters.
+
+    ``galaxy.util.json.safe_dumps`` encodes non-finite floats as sentinel strings so Galaxy's
+    JSON stays valid, and that encoding is what gets persisted in a tool request. Request
+    validation accepts the sentinels but does not rewrite the state, so decode them here -
+    keyed off the parameter model so ordinary strings that merely look like a sentinel are
+    left alone.
+    """
+
+    def restore_callback(parameter: ToolParameterT, value: Any):
+        if isinstance(parameter, FloatParameterModel):
+            restored = restore_inf_nan(value)
+            if restored is not value:
+                return restored
+        return VISITOR_NO_REPLACEMENT
+
+    return RequestInternalToolState(visit_input_values(input_models, internal_state, restore_callback))
 
 
 def dereference(

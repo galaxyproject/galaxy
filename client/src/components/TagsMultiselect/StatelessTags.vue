@@ -182,13 +182,16 @@ function onTagClicked(tag: string) {
 
 <style lang="scss" scoped>
 .stateless-tags {
-    .toggle-link {
+    // Extra classes out-rank GButton's scoped rules (padding, solid hover pill).
+    .toggle-link.g-button.g-transparent:not(.g-pressed) {
         padding: 0;
         border: none;
 
         &:hover {
             background-color: transparent;
             border: none;
+            color: var(--color-blue-700);
+            text-decoration: underline;
         }
     }
 }

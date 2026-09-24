@@ -10,6 +10,7 @@ from abc import (
     ABC,
     abstractmethod,
 )
+from collections.abc import Sequence
 from typing import (
     Any,
     Generic,
@@ -25,6 +26,7 @@ from .has_driver_protocol import (
     TimeoutCallback,
     WaitTypeT,
 )
+from .keys import Key
 from .web_element_protocol import WebElementProtocol
 
 
@@ -302,6 +304,10 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """Hover mouse over element."""
         self._driver_impl.hover(element)
 
+    def hover_away(self) -> None:
+        """Move the mouse off whatever element it is currently over."""
+        self._driver_impl.hover_away()
+
     def move_to_and_click(self, element: WebElementProtocol) -> None:
         """Move mouse to element and click."""
         self._driver_impl.move_to_and_click(element)
@@ -323,6 +329,19 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         return self._driver_impl.action_chains()
 
     # Keyboard interactions
+
+    def active_element(self) -> WebElementProtocol:
+        """Return the element that currently has focus."""
+        return self._driver_impl.active_element()
+
+    def press(
+        self,
+        *keys: Key | str,
+        modifiers: Sequence[Key] = (),
+        element: WebElementProtocol | None = None,
+    ) -> None:
+        """Press keys in order, holding modifiers across the sequence."""
+        self._driver_impl.press(*keys, modifiers=modifiers, element=element)
 
     def send_enter(self, element: WebElementProtocol | None = None):
         """Send ENTER key to element or active element."""
@@ -374,6 +393,16 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
             value: The value attribute of the option to select
         """
         return self._driver_impl.select_by_value(selector_template, value)
+
+    def select_by_visible_text(self, selector_template: HasElementLocator, text: str) -> None:
+        """
+        Select an option from a <select> element by the text shown to the user.
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple for the select element
+            text: The visible text of the option to select
+        """
+        return self._driver_impl.select_by_visible_text(selector_template, text)
 
     # Frame switching
 

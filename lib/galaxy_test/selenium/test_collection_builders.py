@@ -1,6 +1,5 @@
 from .framework import (
     managed_history,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -10,7 +9,6 @@ from .upload_activity_helpers import UsesUploadActivity
 class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_build_list_simple_hidden(self):
@@ -22,7 +20,6 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
         self.collection_builder_create()
         self._wait_for_hid_visible(3)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_build_list_and_show_items(self):
@@ -35,7 +32,6 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
         self.collection_builder_create()
         self._wait_for_hid_visible(3)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_build_paired_list_auto_matched(self):
@@ -56,7 +52,6 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
         self._wait_for_hid_visible(3)
         self._wait_for_hid_visible(4)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_build_paired_list_manual_matched(self):
@@ -82,7 +77,6 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
         self._wait_for_hid_visible(3)
         self._wait_for_hid_visible(4)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_build_paired_unpaired_list(self):
@@ -99,7 +93,6 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
         self.collection_builder_create()
         self._wait_for_hid_visible(7)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_build_list_of_lists(self):
@@ -120,7 +113,6 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
         self.collection_builder_create()
         self._wait_for_hid_visible(9)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_build_paired_list_show_original(self):
@@ -146,7 +138,6 @@ class TestCollectionBuilders(SeleniumTestCase, UsesUploadActivity):
         self._wait_for_hid_visible(3)
         self._wait_for_hid_visible(4)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_build_simple_list_via_rules_hidden(self):

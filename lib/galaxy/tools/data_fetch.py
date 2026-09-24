@@ -33,7 +33,9 @@ from galaxy.files.uris import (
 )
 from galaxy.util import (
     in_directory,
+    safe_contains,
     safe_makedirs,
+    safe_relpath,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import CompressedFile
@@ -490,11 +492,21 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                 extra_files_path = f"{path}_extra"
                 staged_extra_files = extra_files_path
                 os.mkdir(extra_files_path)
+                # Names come from the request and may be nested (``a/b``), but must
+                # never resolve outside of the extra files directory.
+                real_extra_files_path = os.path.realpath(extra_files_path)
+
+                def check_extra_file_name(name):
+                    if not name or not safe_relpath(name):
+                        raise UploadProblemException(
+                            f"Invalid extra file name '{name}'; must be a relative path inside the dataset's extra files directory"
+                        )
+                    return name
 
                 def walk_extra_files(items, prefix=""):
                     for item in items:
                         if "elements" in item:
-                            name = item.get("name")
+                            name = check_extra_file_name(item.get("name"))
                             if not prefix:
                                 item_prefix = name
                             else:
@@ -502,12 +514,17 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                             walk_extra_files(item.get("elements"), prefix=item_prefix)
                         else:
                             src_name, src_path, _ = _has_src_to_path(upload_config, item)
+                            check_extra_file_name(src_name)
                             if prefix:
                                 rel_path = os.path.join(prefix, src_name)
                             else:
                                 rel_path = src_name
 
-                            file_output_path = os.path.join(extra_files_path, rel_path)
+                            file_output_path = os.path.join(real_extra_files_path, rel_path)
+                            if not safe_contains(real_extra_files_path, file_output_path):
+                                raise UploadProblemException(
+                                    f"Invalid extra file name '{rel_path}'; must be a relative path inside the dataset's extra files directory"
+                                )
                             parent_dir = os.path.dirname(file_output_path)
                             if not os.path.exists(parent_dir):
                                 safe_makedirs(parent_dir)

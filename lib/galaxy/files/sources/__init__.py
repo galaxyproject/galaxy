@@ -359,6 +359,12 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         uri_root = self.get_uri_root()
         return uri_join(uri_root, path)
 
+    def uri_from_write_result(self, path_or_uri: str) -> str:
+        """Normalize a write result without prefixing a service-assigned absolute URI."""
+        if "://" in path_or_uri:
+            return path_or_uri
+        return self.uri_from_path(path_or_uri)
+
     def _parse_common_props(self, config: FilesSourceProperties):
         self._file_sources_config = config.file_sources_config
         self.id = config.id
@@ -415,7 +421,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
             "type": self.plugin_type,
             "label": self.label,
             "doc": self.doc,
-            "writable": self.writable,
+            "writable": self.get_writable(),
             "browsable": self.get_browsable(),
             "requires_roles": self.requires_roles,
             "requires_groups": self.requires_groups,

@@ -12,11 +12,22 @@ from .framework import (
     UsesHistoryItemAssertions,
 )
 
+BED_URLS = [
+    "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+    "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/2.bed",
+]
+
 
 class TestUploadActivityCollection(SeleniumTestCase, UsesHistoryItemAssertions):
     """Tests for direct collection creation through the upload activity panel."""
 
     ensure_registered = True
+
+    def _bed_urls(self) -> list[str]:
+        return [
+            self.test_http_server.get_url(remote_url=url, file_path=f"test-data/{url.rsplit('/', 1)[1]}")
+            for url in BED_URLS
+        ]
 
     def _navigate_to_upload_method(self, method_id):
         """Navigate to a specific upload method via the activity bar.
@@ -71,11 +82,7 @@ class TestUploadActivityCollection(SeleniumTestCase, UsesHistoryItemAssertions):
         self._navigate_to_upload_method("paste-links")
 
         # Paste two URLs
-        test_urls = [
-            "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
-            "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/2.bed",
-        ]
-        self._paste_urls_and_add(test_urls)
+        self._paste_urls_and_add(self._bed_urls())
 
         # Enable collection creation
         self._enable_collection_creation("Test List Collection")
@@ -98,11 +105,7 @@ class TestUploadActivityCollection(SeleniumTestCase, UsesHistoryItemAssertions):
         self._navigate_to_upload_method("paste-links")
 
         # Paste two URLs (will be paired as forward/reverse)
-        test_urls = [
-            "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
-            "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/2.bed",
-        ]
-        self._paste_urls_and_add(test_urls)
+        self._paste_urls_and_add(self._bed_urls())
 
         # Enable collection creation as list:paired
         self._enable_collection_creation("Test Paired Collection", collection_type="list:paired")

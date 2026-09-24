@@ -62,6 +62,8 @@ from galaxy.util.config_templates import partial_model
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
 
+MAX_ANNOTATION_SIZE = 65536  # Unicode characters, not UTF-8 bytes.
+
 USER_MODEL_CLASS = Literal["User"]
 GROUP_MODEL_CLASS = Literal["Group"]
 HDA_MODEL_CLASS = Literal["HistoryDatasetAssociation"]
@@ -131,6 +133,7 @@ class JobState(str, Enum):
     WAITING = "waiting"
     QUEUED = "queued"
     RUNNING = "running"
+    FINISHING = "finishing"
     OK = "ok"
     ERROR = "error"
     FAILED = "failed"
@@ -551,7 +554,7 @@ class GroupModel(Model, WithModelClass):
     """User group model"""
 
     model_class: GROUP_MODEL_CLASS = ModelClassField(GROUP_MODEL_CLASS)
-    id: DecodedDatabaseIdField = Field(
+    id: EncodedDatabaseIdField = Field(
         ...,  # ...
         title="ID",
         description="Encoded group ID",
@@ -1423,6 +1426,7 @@ class UpdateHistoryContentsPayload(Model):
         None,
         title="Annotation",
         description="A user-defined annotation for this item.",
+        max_length=MAX_ANNOTATION_SIZE,
     )
     tags: TagCollection | None = Field(
         None,
@@ -1615,7 +1619,7 @@ AnyHistoryView = Annotated[
 
 class UpdateHistoryPayload(Model):
     name: str | None = None
-    annotation: str | None = None
+    annotation: str | None = Field(default=None, max_length=MAX_ANNOTATION_SIZE)
     tags: TagCollection | None = None
     published: bool | None = None
     importable: bool | None = None
@@ -4114,6 +4118,7 @@ class CreatePagePayload(PageSummaryBase):
         default=None,
         title="Annotation",
         description="Annotation that will be attached to the page.",
+        max_length=MAX_ANNOTATION_SIZE,
     )
     invocation_id: DecodedDatabaseIdField | None = Field(
         None,
@@ -4148,6 +4153,7 @@ class UpdatePagePayload(PageSummaryBase):
         default=None,
         title="Annotation",
         description="Annotation that will be attached to the page.",
+        max_length=MAX_ANNOTATION_SIZE,
     )
     edit_source: str | None = Field(
         default=None,

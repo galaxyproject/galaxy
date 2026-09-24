@@ -128,7 +128,6 @@ export function getWorkflowFilters(activeList = "my", isAnonymous = false) {
             },
             undefined,
             false,
-            false,
         );
     } else if (activeList === "shared_with_me") {
         return new Filtering(
@@ -151,7 +150,6 @@ export function getWorkflowFilters(activeList = "my", isAnonymous = false) {
             },
             undefined,
             false,
-            false,
         );
     } else {
         const publishedFilters: Record<string, any> = {
@@ -173,6 +171,6 @@ export function getWorkflowFilters(activeList = "my", isAnonymous = false) {
                 menuItem: true,
             };
         }
-        return new Filtering(publishedFilters, undefined, false, false);
+        return new Filtering(publishedFilters, undefined, false);
     }
 }

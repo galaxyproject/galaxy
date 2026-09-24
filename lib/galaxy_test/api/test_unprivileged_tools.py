@@ -184,3 +184,21 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             assert not any(
                 dynamic_tool["uuid"] == t["uuid"] for t in dynamic_tools
             ), f"Dynamic tool {dynamic_tool['uuid']} still in dynamic tools list {dynamic_tools}"
+
+    def test_create_unprivileged_rejects_unparseable_shell_command(self):
+        """A shell_command with an unbalanced '$(' is refused at create time.
+
+        It can never be evaluated, so storing it only buys a job that fails with
+        an internal expression-scanner error (#23147).
+        """
+        representation = dict(TOOL_WITH_SHELL_COMMAND)
+        representation["shell_command"] = 'n="$(wc -l < "$INPUT)"\ncat out.txt > output.fastq\n'
+        with self.dataset_populator.user_tool_execute_permissions():
+            response = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**representation), assert_ok=False
+            )
+        assert response["err_code"] == 400008, response
+        assert "Unterminated expression in tool shell_command at line 1, column 4" in response["err_msg"]
+        # The message names the escape that makes a literal shell substitution work.
+        assert "\\$(" in response["err_msg"]
+        assert "uuid" not in response

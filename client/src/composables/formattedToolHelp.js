@@ -46,7 +46,9 @@ export function useFormattedToolHelp(helpContent, headingLevelIncrease = 2) {
 
         const links = node.getElementsByTagName("a");
         Array.from(links).forEach((link) => {
-            link.target = "_blank";
+            if (!link.getAttribute("href")?.startsWith("#")) {
+                link.target = "_blank";
+            }
         });
 
         const images = node.getElementsByTagName("img");

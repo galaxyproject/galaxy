@@ -1617,7 +1617,7 @@ class MinimalJobWrapper(HasResourceParameters):
         self.sa_session.add(job)
         self.sa_session.commit()
 
-    def change_state(self, state, info=False, flush=True, job=None):
+    def change_state(self, state, info=False, flush=True, job=None, update_output_states=True):
         if job is None:
             job = self.get_job()
             self.sa_session.refresh(job)
@@ -1639,7 +1639,7 @@ class MinimalJobWrapper(HasResourceParameters):
             job.info = info
         state_changed = job.set_state(state)
         self.sa_session.add(job)
-        if state_changed:
+        if state_changed and update_output_states:
             job.update_output_states(self.app.application_stack.supports_skip_locked())
         if flush:
             self.sa_session.commit()
@@ -1697,7 +1697,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 if tag_limit := destination_total_concurrent_jobs.get(tag):
                     destination_tag_limits[tag] = tag_limit
 
-        conditions = [Job.id == job.id]
+        conditions = [Job.id == job.id, Job.state.in_((Job.states.NEW, Job.states.RESUBMITTED))]
 
         if job.user_id:
             user_job_count = (
@@ -2888,7 +2888,9 @@ class MinimalJobWrapper(HasResourceParameters):
 
     def _report_error(self):
         job = self.get_job()
-        tool = self.app.toolbox.tool_for_job(job, check_access=False)
+        tool = self.tool
+        if tool is None and (toolbox := self.app.toolbox_or_none) is not None:
+            tool = toolbox.tool_for_job(job, check_access=False)
         for dataset in job.output_datasets:
             self.app.error_reports.default_error_plugin.submit_report(dataset, job, tool, user_submission=False)
 

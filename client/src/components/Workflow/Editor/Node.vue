@@ -29,6 +29,8 @@
                     v-if="credentials.length > 0"
                     v-g-tooltip.hover
                     class="node-credentials py-0 inline-icon-button"
+                    transparent
+                    icon-only
                     color="blue"
                     size="small"
                     aria-label="tool has credentials"

@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
-import type { HDASummary } from "@/api";
+import { type HDASummary, isHDA } from "@/api";
 import { loadDatasets } from "@/api/datasets";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -64,12 +64,13 @@ export const useDatasetListStore = defineStore("datasetListStore", () => {
         isLoading.value = true;
         loadError.value = undefined;
         try {
-            const { data, totalMatches } = await loadDatasets({
+            const { data: historyItems, totalMatches } = await loadDatasets({
                 sortBy: "update_time",
                 sortDesc: true,
                 limit,
                 search,
             });
+            const data = historyItems.filter(isHDA);
             saveDatasets(data);
             if (!search) {
                 latestDatasetIds.value = dedupeIds(data.map((dataset) => dataset.id));

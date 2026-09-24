@@ -35,8 +35,8 @@ shed_data_manager_conf_xml_template = """<?xml version="1.0"?>
 <data_managers>
 </data_managers>
 """
-# Global variable to pass database contexts around - only needed for older
-# Tool Shed twill tests that didn't utilize the API for such interactions.
+# Global variable to pass database contexts around - only needed for the numbered
+# Tool Shed tests that assert against the database instead of the API.
 tool_shed_context = None
 
 

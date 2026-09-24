@@ -151,11 +151,13 @@ def search(trans: ProvidesUserContext, q: str, page: int = 1, page_size: int = 1
     )
 
     results = repo_search.search(trans, search_term, page, page_size, boosts)
-    results["hostname"] = deprecated_hostname()
+    results["hostname"] = deprecated_hostname(app)
     return results
 
 
-def deprecated_hostname() -> str:
+def deprecated_hostname(app: ToolShedApp) -> str:
+    if tool_shed_url := app.config.tool_shed_url:
+        return tool_shed_url.rstrip("/") + "/"
     return web.url_for("/", qualified=True)
 
 
@@ -310,7 +312,7 @@ def index_repositories_paginated(
         page=index_request.page,
         page_size=index_request.page_size,
         hits=list(results),
-        hostname=deprecated_hostname(),
+        hostname=deprecated_hostname(app),
     )
 
 

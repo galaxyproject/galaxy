@@ -58,6 +58,17 @@ const {
 
 const { warningMessage: objectStoreWarningMessage, handlePrivateStoreSelection } = usePrivateObjectStoreConfirmation();
 
+const historyDiverged = computed(
+    () => !!targetHistoryId.value && !!currentHistoryId.value && targetHistoryId.value !== currentHistoryId.value,
+);
+const targetHistoryName = computed(() =>
+    targetHistoryId.value ? historyStore.getHistoryNameById(targetHistoryId.value) : "",
+);
+const currentHistoryName = computed(() =>
+    currentHistoryId.value ? historyStore.getHistoryNameById(currentHistoryId.value) : "",
+);
+const mismatchAlertKey = computed(() => `${targetHistoryId.value}-${currentHistoryId.value}`);
+
 // Keep targetHistoryId in sync with currentHistoryId
 watch(
     currentHistoryId,
@@ -111,6 +122,10 @@ async function handleObjectStoreSelection(selection: { object_store_id: string |
 
 function handleCancel() {
     router.push("/upload");
+}
+
+function handleUnknownMethod() {
+    router.replace("/upload");
 }
 
 function handleStart() {
@@ -177,6 +192,19 @@ function handleReadyStateChange(ready: boolean) {
                 <GAlert v-if="objectStoreWarningMessage" show variant="warning" class="mb-0 mt-2 py-1">
                     {{ objectStoreWarningMessage }}
                 </GAlert>
+
+                <GAlert
+                    v-if="historyDiverged"
+                    :key="mismatchAlertKey"
+                    variant="warning"
+                    dismissible
+                    class="mb-0 mt-2 py-1"
+                    data-test-id="upload-history-mismatch-alert">
+                    <span v-localize>
+                        The current history changed. These uploads will go to "{{ targetHistoryName }}" (the target
+                        history), not to current history "{{ currentHistoryName }}".
+                    </span>
+                </GAlert>
             </div>
 
             <!-- Upload Method Content (scrollable) -->
@@ -191,7 +219,8 @@ function handleReadyStateChange(ready: boolean) {
             </div>
         </div>
         <div v-else class="flex-grow-1 text-center text-muted py-5">
-            <p>Loading...</p>
+            <p>Unknown import method.</p>
+            <GButton color="blue" @click="handleUnknownMethod">Back to import methods</GButton>
         </div>
 
         <!-- Fixed Footer -->

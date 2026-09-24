@@ -92,6 +92,7 @@ dependencies = [
     "python-multipart",  # required to support form parsing in FastAPI/Starlette
     "python-slugify",
     "PyYAML",
+    "quickjs-ng>=0.16.2.1; python_version >= '3.10'",  # QuickJS worker for CWL/ECMAScript expression evaluation
     "refgenconf>=0.13.0",  # https://github.com/refgenie/refgenconf/pull/149
     "regex",
     "requests",
@@ -187,12 +188,14 @@ typecheck = [
     "types-docutils",
     "types-Markdown",
     "types-paramiko",
+    "types-protobuf",
     "types-python-dateutil",
     "types-python-slugify",
     "types-PyYAML",
     "types-requests",
     "types-setuptools",
     "types-six",
+    "types-webob",
 ]
 
 [tool.black]

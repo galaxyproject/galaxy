@@ -417,6 +417,40 @@ class Bz2DynamicCompressedArchive(DynamicCompressedArchive):
     compressed_format = "bz2"
 
 
+WARC_VERSION_PREFIXES = (b"WARC/1.0", b"WARC/1.1")
+WARC_REQUIRED_FIELDS = (b"WARC-Type:", b"WARC-Record-ID:", b"Content-Length:")
+WARC_HEADER_LIMIT = 8192
+
+
+@build_sniff_from_prefix
+class Warc(CompressedArchive):
+    """Web ARChive, gzip-compressed and kept compressed."""
+
+    file_ext = "warc.gz"
+    compressed_format = "gzip"
+    is_binary = "maybe"
+    display_behavior = "download"
+    allow_datatype_change = False
+    allow_compressed_html_content = True
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        The version line must be at byte 0 and every required field must start
+        a line of the first header block (up to the first blank line, max 8K,
+        so payload bytes past the blank line never match). Truncated headers
+        and indented fields do not match.
+        """
+        header = file_prefix.contents_header_bytes[:WARC_HEADER_LIMIT]
+        if not header.startswith(WARC_VERSION_PREFIXES):
+            return False
+        header_block = header.split(b"\r\n\r\n", 1)[0].split(b"\n\n", 1)[0]
+        lines = header_block.splitlines()[1:]
+        return all(any(line.startswith(field) for line in lines) for field in WARC_REQUIRED_FIELDS)
+
+    def get_mime(self) -> str:
+        return "application/gzip"
+
+
 class CompressedZipArchive(CompressedArchive):
     """
     Class describing an compressed binary file
@@ -1657,6 +1691,46 @@ class H5(Binary):
         return Exception(status_code, message)
 
 
+class NetCDF4(H5):
+    """
+    Class describing a netCDF4 file (HDF5-based).
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test_tas.netcdf4')
+    >>> NetCDF4().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mz5')
+    >>> NetCDF4().sniff(fname)
+    False
+    """
+
+    file_ext = "netcdf4"
+    edam_format = "format_3650"
+
+    def sniff(self, filename):
+        if not super().sniff(filename):
+            return False
+        try:
+            with h5py.File(filename, "r", locking=False) as f:
+                return "_NCProperties" in f.attrs
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary netCDF4 file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return f"Binary netCDF4 file ({nice_size(dataset.get_size())})"
+
+
 class Loom(H5):
     """
     Class describing a Loom file: http://loompy.org/
@@ -2030,7 +2104,7 @@ class Anndata(H5):
                     # if X matrix has actual data
                     shape = anndata_file["X"].attrs.get("shape")
                     if shape is not None:
-                        dataset.metadata.shape = tuple(shape)
+                        dataset.metadata.shape = tuple(int(dim) for dim in shape)
                     elif hasattr(anndata_file["X"], "shape") and anndata_file["X"].shape is not None:
                         dataset.metadata.shape = tuple(anndata_file["X"].shape)
 
@@ -5546,3 +5620,36 @@ class Safetensors(Binary):
         except Exception:
             # Any exception during parsing means it's not a valid safetensors file
             return False
+
+
+@build_sniff_from_prefix
+class TensorBoardEvents(Binary):
+    """TensorBoard event log file."""
+
+    file_ext = "tfevents"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Detect a TensorBoard event log.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname("tensorboard.tfevents")
+        >>> TensorBoardEvents().sniff(fname)
+        True
+        >>> fname = get_test_fname("cellpose_model_safetensors.safetensors")
+        >>> TensorBoardEvents().sniff(fname)
+        False
+        """
+        data = file_prefix.contents_header_bytes
+
+        if len(data) < 16:
+            return False
+
+        record_length = struct.unpack("<Q", data[:8])[0]
+
+        if record_length == 0 or 12 + record_length + 4 > len(data):
+            return False
+
+        payload = data[12 : 12 + record_length]
+
+        return b"brain.Event:" in payload

@@ -1,8 +1,6 @@
 """Integration tests for realtime tools."""
 
-import json
 import os
-import subprocess
 from typing import (
     Any,
 )
@@ -27,11 +25,10 @@ from .test_containerized_jobs import (
     DOCKERIZED_JOB_CONFIG_FILE,
 )
 from .test_kubernetes_runner import (
+    ingress_for_tool,
     job_config as kubernetes_job_config,
-    KubeSetupConfigTuple,
-    persistent_volume,
-    persistent_volume_claim,
-    TOOL_DIR,
+    KubernetesDatasetPopulator,
+    KubernetesVolumesMixin,
 )
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -242,7 +239,9 @@ class TestKubeInteractiveToolsRemoteProxyIntegration(AbstractTestCases.BaseInter
 
 
 @integration_util.skip_unless_kubernetes()
-class TestKubernetesNativeInteractiveToolsIntegration(AbstractTestCases.BaseInteractiveToolsTestCase):
+class TestKubernetesNativeInteractiveToolsIntegration(
+    KubernetesVolumesMixin, AbstractTestCases.BaseInteractiveToolsTestCase
+):
     """Interactive tools submitted through ``KubernetesJobRunner`` itself.
 
     ``TestKubeInteractiveToolsRemoteProxyIntegration`` covers interactive tools on
@@ -253,55 +252,29 @@ class TestKubernetesNativeInteractiveToolsIntegration(AbstractTestCases.BaseInte
     proxy and can run wherever a cluster is available.
     """
 
+    dataset_populator: KubernetesDatasetPopulator
     jobs_directory: str
-    persistent_volume_claims: list[KubeSetupConfigTuple]
-    persistent_volumes: list[KubeSetupConfigTuple]
+    claim_prefix = "it-"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
         cls.jobs_directory = os.path.realpath(cls._test_driver.mkdtemp())
-        volumes = [
-            (cls.jobs_directory, "it-jobs-directory-volume", "it-jobs-directory-claim"),
-            (TOOL_DIR, "it-tool-directory-volume", "it-tool-directory-claim"),
-        ]
-        cls.persistent_volumes = []
-        cls.persistent_volume_claims = []
-        for path, volume, claim in volumes:
-            volume_obj = persistent_volume(path, volume)
-            volume_obj.setup()
-            cls.persistent_volumes.append(volume_obj)
-            claim_obj = persistent_volume_claim(volume, claim)
-            claim_obj.setup()
-            cls.persistent_volume_claims.append(claim_obj)
+        cls.setup_persistent_volumes(cls.jobs_directory)
         super().handle_galaxy_config_kwds(config)
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
-        config["job_config_file"] = kubernetes_job_config(
-            cls.jobs_directory,
-            jobs_directory_claim="it-jobs-directory-claim",
-            tool_directory_claim="it-tool-directory-claim",
-        ).path
+        config["job_config_file"] = kubernetes_job_config(cls.jobs_directory, claim_prefix=cls.claim_prefix).path
         config["default_job_shell"] = "/bin/sh"
         config["interactivetools_proxy_host"] = KUBERNETES_PROXY_HOST
 
     @classmethod
     def tearDownClass(cls) -> None:
-        for claim in cls.persistent_volume_claims:
-            claim.teardown()
-        for volume in cls.persistent_volumes:
-            volume.teardown()
+        cls.teardown_persistent_volumes()
         super().tearDownClass()
-
-    @staticmethod
-    def ingress_for_tool(tool_id: str) -> dict[str, Any]:
-        ingresses = json.loads(subprocess.check_output(["kubectl", "get", "ingress", "-o", "json"]))["items"]
-        matching = [
-            i
-            for i in ingresses
-            if (i["metadata"].get("annotations") or {}).get("app.galaxyproject.org/tool_id") == tool_id
-        ]
-        assert len(matching) == 1, f"Expected exactly one ingress for {tool_id}, got {matching}"
-        return matching[0]
 
     def test_entry_point_and_ingress(self, history_id: str) -> None:
         response_dict = self.dataset_populator.run_tool("interactivetool_simple", {}, history_id)
@@ -311,7 +284,7 @@ class TestKubernetesNativeInteractiveToolsIntegration(AbstractTestCases.BaseInte
 
         # interactivetool_simple declares requires_domain, so the runner routes it by
         # host and the ingress path stays at the root.
-        ingress = self.ingress_for_tool("interactivetool_simple")
+        ingress = ingress_for_tool("interactivetool_simple")
         rules = ingress["spec"]["rules"]
         assert len(rules) == 1, rules
         assert rules[0]["host"].endswith(f".{KUBERNETES_PROXY_HOST}"), rules[0]["host"]

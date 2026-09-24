@@ -30,7 +30,7 @@ GalaxyGoogleDriveFileSystem: type[AbstractFileSystem] | None
 
 if GoogleDriveFileSystem is not None:
 
-    class _GalaxyGoogleDriveFileSystem(GoogleDriveFileSystem):
+    class _GalaxyGoogleDriveFileSystem(GoogleDriveFileSystem):  # type: ignore[misc]  # fsspec is untyped
         def __init__(self, access_token: str, **kwargs):
             self._galaxy_credentials = Credentials(token=access_token)
             super().__init__(token="galaxy", **kwargs)

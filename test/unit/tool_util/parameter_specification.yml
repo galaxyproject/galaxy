@@ -144,6 +144,29 @@ gx_boolean:
     - parameter: "true"
     - parameter: {__class__: 'ConnectedValue3'}
 
+gx_numeric_zero_user:
+  request_valid:
+    - {}
+    - integer: 0
+      float: 0.0
+      optional_integer: 0
+      optional_float: 0.0
+    - optional_integer: null
+      optional_float: null
+  request_invalid:
+    - integer: null
+    - float: null
+    - integer: false
+    - float: false
+    - optional_integer: false
+    - optional_float: false
+  test_case_json_valid:
+    - {}
+    - integer: 0
+      float: 0.0
+      optional_integer: 0
+      optional_float: 0.0
+
 gx_boolean_user:
   request_valid:
     - parameter: True

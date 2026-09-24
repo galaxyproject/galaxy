@@ -17,6 +17,20 @@ def test_root(appconfig):
     assert appconfig.root == os.path.abspath(".")
 
 
+def test_user_toolbox_filters_default_to_empty(appconfig):
+    assert appconfig.user_tool_filters == []
+    assert appconfig.user_tool_section_filters == []
+    assert appconfig.user_tool_label_filters == []
+    assert not appconfig.has_user_tool_filters
+
+
+@pytest.mark.parametrize("option", ["user_tool_filters", "user_tool_section_filters", "user_tool_label_filters"])
+def test_user_toolbox_filters_preserve_configured_entries(option):
+    appconfig = config.GalaxyAppConfiguration(override_tempdir=False, **{option: "custom:first, custom:second"})
+    assert getattr(appconfig, option) == ["custom:first", "custom:second"]
+    assert appconfig.has_user_tool_filters
+
+
 def test_common_base_config(appconfig):
     assert appconfig.shed_tools_dir == os.path.join(appconfig.data_dir, "shed_tools")
     assert (

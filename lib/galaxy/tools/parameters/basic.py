@@ -86,6 +86,7 @@ from galaxy.util import (
 from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.hash_util import HASH_NAMES
+from galaxy.util.json import safe_dumps
 from galaxy.util.rules_dsl import RuleSet
 from . import (
     dynamic_options,
@@ -191,7 +192,12 @@ class ParameterValueError(ValueError):
         as_dict["message_suffix"] = self.message_suffix
         as_dict["parameter_name"] = self.parameter_name
         if self.parameter_value is not NO_PARAMETER_VALUE:
-            as_dict["parameter_value"] = self.parameter_value
+            try:
+                safe_dumps(self.parameter_value)
+            except (TypeError, ValueError):
+                pass
+            else:
+                as_dict["parameter_value"] = self.parameter_value
         if self.is_dynamic is not None:
             as_dict["is_dynamic"] = self.is_dynamic
         return as_dict

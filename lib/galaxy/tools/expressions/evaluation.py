@@ -1,21 +1,70 @@
-import json
-import os
-import subprocess
+from collections.abc import Sequence
 from typing import (
+    cast,
     Optional,
 )
 
-from cwl_utils.expression import do_eval as _do_eval
+from cwl_utils.errors import SubstitutionError
+from cwl_utils.expression import (
+    do_eval as _do_eval,
+    needs_parsing,
+    scanner,
+)
 from cwl_utils.types import (
     CWLObjectType,
     CWLOutputType,
 )
 
+from galaxy.exceptions import MessageException
 from galaxy.tool_util_models.tool_source import JavascriptRequirement
-from .util import find_engine
+from .js_engine import (
+    build_evaluate_program,
+    evaluate_program,
+    register,
+)
 
-FILE_DIRECTORY = os.path.normpath(os.path.dirname(os.path.join(__file__)))
-NODE_ENGINE = os.path.join(FILE_DIRECTORY, "cwlNodeEngine.js")
+# How much of an unparseable template is quoted back to its author.
+TEMPLATE_SNIPPET_LENGTH = 80
+
+
+class ExpressionTemplateError(MessageException):
+    """A ``$(...)``/``${...}`` block in a tool template does not parse."""
+
+
+def validate_expression_template(expression: str, description: str = "command template") -> None:
+    """Reject a template the expression scanner cannot read before evaluating it."""
+    if not needs_parsing(expression):
+        return
+    consumed = len(expression) - len(expression.lstrip())
+    scan = expression.strip()
+    while True:
+        try:
+            window = scanner(scan)
+        except SubstitutionError as exc:
+            raise ExpressionTemplateError(_unterminated_message(expression, scan, consumed, description)) from exc
+        if window is None:
+            return
+        start, end = window
+        if scan[start] == "\\" and scan[start : end + 1] in ("\\$(", "\\${"):
+            # interpolate() consumes the escaped opener along with the backslash.
+            end += 1
+        consumed += end
+        scan = scan[end:]
+
+
+def _unterminated_message(expression: str, scan: str, consumed: int, description: str) -> str:
+    offsets = [offset for offset in (scan.find("$("), scan.find("${")) if offset >= 0]
+    position = consumed + (min(offsets) if offsets else 0)
+    line = expression.count("\n", 0, position) + 1
+    column = position - expression.rfind("\n", 0, position)
+    snippet = expression[position : position + TEMPLATE_SNIPPET_LENGTH]
+    if len(expression) > position + TEMPLATE_SNIPPET_LENGTH:
+        snippet += "..."
+    return (
+        f"Unterminated expression in tool {description} at line {line}, column {column}: {snippet!r}. "
+        "'$(' opens a Galaxy expression, so the parentheses and quotes inside it have to balance; "
+        "write '\\$(' to pass a literal shell command substitution through to the shell."
+    )
 
 
 def do_eval(
@@ -25,12 +74,19 @@ def do_eval(
     outdir: str | None = None,
     tmpdir: str | None = None,
     context: Optional["CWLOutputType"] = None,
+    sandbox_command: Sequence[str] | None = None,
 ):
+    validate_expression_template(expression)
+    # Register the QuickJS worker for cwl_utils JavaScript evaluations.
+    # ``sandbox_command`` optionally adds an OS-level jail around the worker.
+    register()
     requirements: list[CWLObjectType] = []
     if javascript_requirements:
         for req in javascript_requirements:
             if expression_lib := req.expression_lib:
-                requirements.append({"class": "InlineJavascriptRequirement", "expressionLib": expression_lib})  # type: ignore[dict-item] # very strange, a list[str] literal works
+                requirements.append(
+                    {"class": "InlineJavascriptRequirement", "expressionLib": cast(CWLOutputType, expression_lib)}
+                )
             else:
                 requirements.append({"class": "InlineJavascriptRequirement"})
     else:
@@ -44,11 +100,14 @@ def do_eval(
         {},
         context=context,
         cwlVersion="v1.2.1",
+        sandbox_command=sandbox_command,
     )
 
 
 def evaluate(config, input):
-    application = find_engine(config)
+    # ``config`` is retained for backwards compatibility but is no longer used: the
+    # expression runs in the Python worker with QuickJS.
+    register()
 
     default_context = {
         "engineConfig": [],
@@ -61,15 +120,5 @@ def evaluate(config, input):
     new_input = default_context
     new_input.update(input)
 
-    sp = subprocess.Popen(
-        [application, NODE_ENGINE], shell=False, close_fds=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE
-    )
-    input_str = f"{json.dumps(new_input)}\n\n"
-    input_bytes = input_str.encode("utf-8")
-    stdoutdata, stderrdata = sp.communicate(input_bytes)
-    if sp.returncode != 0:
-        message = f"Expression engine returned non-zero exit code on evaluation of\n{json.dumps(new_input, indent=4)}{stdoutdata}{stderrdata}"
-        raise Exception(message)
-
-    rval_raw = stdoutdata.decode("utf-8")
-    return json.loads(rval_raw)
+    program = build_evaluate_program(new_input)
+    return evaluate_program(program)

@@ -26,6 +26,7 @@
   </section>
   <section id="send" name="Send Data">
     <!-- <tool file="data_export/send.xml" /> -->
+    <tool file="data_export/export_remote_0.1.0.xml" />
     <tool file="data_export/export_remote.xml" />
   </section>
   <section id="collection_operations" name="Collection Operations">

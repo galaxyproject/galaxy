@@ -1,6 +1,12 @@
 from .evaluation import (
     do_eval,
     evaluate,
+    ExpressionTemplateError,
+    validate_expression_template,
+)
+from .js_engine import (
+    register,
+    resolve_isolation_command,
 )
 from .script import (
     EXPRESSION_SCRIPT_CALL,
@@ -14,6 +20,10 @@ __all__ = (
     "evaluate",
     "EXPRESSION_SCRIPT_CALL",
     "EXPRESSION_SCRIPT_NAME",
+    "ExpressionTemplateError",
     "find_engine",
+    "register",
+    "resolve_isolation_command",
+    "validate_expression_template",
     "write_evalute_script",
 )

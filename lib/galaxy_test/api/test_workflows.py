@@ -24,7 +24,11 @@ from requests import (
 from galaxy.exceptions import error_codes
 from galaxy.tool_util_models import UserToolSource
 from galaxy.util import UNKNOWN
-from galaxy.util.unittest_utils import skip_if_github_down
+from galaxy.util.unittest_utils import (
+    skip_if_dockstore_down,
+    skip_if_github_down,
+    skip_if_workflowhub_down,
+)
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.api_asserts import assert_error_message_contains
 from galaxy_test.base.populators import (
@@ -38,6 +42,7 @@ from galaxy_test.base.populators import (
     WorkflowPopulator,
 )
 from galaxy_test.base.workflow_fixtures import (
+    DEFAULT_FILE_DATASET_INPUT_LOCATION,
     NESTED_WORKFLOW_WITH_CONDITIONAL_SUBWORKFLOW_AND_DISCONNECTED_MAP_OVER_SOURCE,
     WORKFLOW_FLAT_CROSS_PRODUCT,
     WORKFLOW_INPUTS_AS_OUTPUTS,
@@ -73,6 +78,11 @@ from galaxy_test.base.workflow_fixtures import (
 )
 from ._framework import ApiTestCase
 from .sharable import SharingApiTests
+
+
+def _default_file_location(test_http_server) -> str:
+    return test_http_server.get_url(remote_url=DEFAULT_FILE_DATASET_INPUT_LOCATION, file_path="test-data/1.bed")
+
 
 WORKFLOW_SIMPLE = """
 class: GalaxyWorkflow
@@ -1437,6 +1447,37 @@ steps:
             step_annotations = {step["annotation"] for step in imported_workflow["steps"].values()}
             assert "input1 description" in step_annotations
 
+    def test_long_annotations_round_trip(self):
+        # Multibyte on purpose: the bound counts characters, the dropped indexes counted bytes.
+        annotation = "\u00e9" * 30_000
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_SIMPLE)
+        editable = self._download_workflow(workflow_id, style="editor")
+        editable["annotation"] = annotation
+        next(iter(editable["steps"].values()))["annotation"] = annotation
+        self._assert_status_code_is(self._update_workflow(workflow_id, editable), 200)
+
+        updated = self._download_workflow(workflow_id)
+        assert updated["annotation"] == annotation
+        assert annotation in {step["annotation"] for step in updated["steps"].values()}
+
+    @pytest.mark.parametrize("target", ["workflow", "step"])
+    @pytest.mark.parametrize("operation", ["import", "update"])
+    def test_annotation_size_limit(self, target, operation):
+        # Exact bound lives in galaxy.model; this covers both legacy write paths returning a 400.
+        oversized = "a" * 100_000
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_SIMPLE)
+        editable = self._download_workflow(workflow_id, style="editor")
+        if target == "workflow":
+            editable["annotation"] = oversized
+        else:
+            next(iter(editable["steps"].values()))["annotation"] = oversized
+        if operation == "import":
+            response = self._post("workflows", data={"workflow": json.dumps(editable)})
+        else:
+            response = self._update_workflow(workflow_id, editable)
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Annotation too large")
+
     def test_import_subworkflows(self):
         def get_subworkflow_content_id(workflow_id):
             workflow_contents = self._download_workflow(workflow_id, style="editor")
@@ -1482,8 +1523,8 @@ steps:
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 403)
 
-    def test_url_import(self, mock_http_server):
-        url = mock_http_server.get_url(
+    def test_url_import(self, test_http_server):
+        url = test_http_server.get_url(
             remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga",
             file_path="lib/galaxy_test/base/data/test_workflow_1.ga",
             content_type="application/json",
@@ -1549,6 +1590,7 @@ steps:
         workflow = self._download_workflow(workflow_id)
         assert workflow["readme"] == big_but_valid_readme
 
+    @skip_if_dockstore_down
     def test_trs_import(self):
         trs_payload = {
             "archive_source": "trs_tool",
@@ -1578,6 +1620,7 @@ steps:
         reuploaded_workflow = self._download_workflow(reuploaded_workflow_id)
         assert reuploaded_workflow.get("source_metadata") is None
 
+    @skip_if_dockstore_down
     def test_trs_import_from_dockstore_trs_url(self):
         trs_payload = {
             "archive_source": "trs_tool",
@@ -1615,6 +1658,7 @@ steps:
         reuploaded_workflow = self._download_workflow(reuploaded_workflow_id)
         assert reuploaded_workflow.get("source_metadata") is None
 
+    @skip_if_workflowhub_down
     def test_trs_import_from_workflowhub_trs_url(self):
         trs_payload = {
             "archive_source": "trs_tool",
@@ -1724,6 +1768,7 @@ steps:
         subworkflow = self._get_subworkflow_dict(workflow)
         assert subworkflow.get("source_metadata") == {"url": base64_url}
 
+    @skip_if_dockstore_down
     @skip_if_github_down
     def test_import_ga_workflow_with_trs_url_subworkflow(self):
         """Test importing a .ga workflow where a subworkflow is referenced via a TRS URL."""
@@ -1749,6 +1794,7 @@ steps:
         assert source_metadata["trs_version_id"] == "master"
         assert source_metadata["trs_url"] == trs_url
 
+    @skip_if_dockstore_down
     @skip_if_github_down
     def test_import_ga_workflow_with_trs_id_subworkflow(self):
         """Test importing a .ga workflow where a subworkflow is referenced via TRS server + tool ID + version."""
@@ -7313,10 +7359,10 @@ data_input:
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert len(content.splitlines()) == 3, content
 
-    def test_run_with_default_file_dataset_input(self):
+    def test_run_with_default_file_dataset_input(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
             run_response = self._run_workflow(
-                WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
+                WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT.format(location=_default_file_location(test_http_server)),
                 history_id=history_id,
                 wait=True,
                 assert_ok=True,
@@ -7329,10 +7375,10 @@ data_input:
             assert dataset_details["file_ext"] == "txt"
             assert "chr1" in dataset_details["peek"]
 
-    def test_run_with_default_file_dataset_input_and_explicit_input(self):
+    def test_run_with_default_file_dataset_input_and_explicit_input(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
             run_response = self._run_workflow(
-                WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
+                WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT.format(location=_default_file_location(test_http_server)),
                 test_data="""
 default_file_input:
   value: 1.fasta
@@ -7353,10 +7399,10 @@ default_file_input:
                 in dataset_details["peek"]
             )
 
-    def test_run_with_default_file_in_step_inline(self):
+    def test_run_with_default_file_in_step_inline(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
             self._run_workflow(
-                WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT,
+                WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT.format(location=_default_file_location(test_http_server)),
                 history_id=history_id,
                 wait=True,
                 assert_ok=True,

@@ -77,22 +77,3 @@ export function abortBatchController(batchId: string): void {
         controller.abort();
     }
 }
-
-/**
- * Cancels all active uploads by aborting every registered controller.
- * Uses a `Set` to avoid calling `.abort()` twice on shared controllers.
- */
-export function abortAllUploadControllers(): void {
-    const seen = new Set<AbortController>();
-    for (const controller of uploadControllers.values()) {
-        seen.add(controller);
-    }
-    for (const controller of batchControllers.values()) {
-        seen.add(controller);
-    }
-    for (const controller of seen) {
-        if (!controller.signal.aborted) {
-            controller.abort();
-        }
-    }
-}

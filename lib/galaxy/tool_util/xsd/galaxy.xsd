@@ -637,11 +637,11 @@ serve as complete descriptions of the runtime of a tool.
 
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:sequence>
-      <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="container" type="Container" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="resource" type="Resource" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="credentials" type="Credentials" minOccurs="0" maxOccurs="unbounded">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="requirement" type="Requirement"/>
+      <xs:element name="container" type="Container"/>
+      <xs:element name="resource" type="Resource"/>
+      <xs:element name="credentials" type="Credentials">
         <!-- Ensure unique credential names across variables and secrets -->
         <xs:unique name="uniqueCredentialNames">
           <xs:selector xpath="variable|secret"/>
@@ -653,7 +653,7 @@ serve as complete descriptions of the runtime of a tool.
           <xs:field xpath="@inject_as_env"/>
         </xs:unique>
       </xs:element>
-    </xs:sequence>
+    </xs:choice>
   </xs:complexType>
   <xs:complexType name="Requirement">
     <xs:annotation>
@@ -1806,6 +1806,20 @@ discouraged, to use the value specified as `truevalue` or `falsevalue`.
 
 Data input parameters can be given as a file name. The file should exist in the
 `test-data` folder. Multiple files can be specified as comma separated list.
+
+Note that it is possible to use compressed (gz, bz2) files in the `test-data` folder
+also for decompressed data types which is useful for large test data files.
+Galaxy will unzip these files on upload.
+
+```xml
+<param value="test.bed.gz" ftype="bed">
+```
+
+Unzipping won't be done for compressed data types, e.g.
+
+```xml
+<param value="test.fastq.gz" ftype="fastq.gz">
+```
 
 #### ``select``
 
@@ -4980,7 +4994,7 @@ of "type" specified for this expression block.
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="ExpressionType">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Type of expression defined by this expression block. The only current valid option is ecma5.1 - which will evaluate the expression in a sandbox using node. The option still must be specified to allow a different default in the future.</xs:documentation>
+            <xs:documentation xml:lang="en">Type of expression defined by this expression block. The only current valid option is ecma5.1 - which will evaluate the expression in a QuickJS worker subprocess. The option still must be specified to allow a different default in the future.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
