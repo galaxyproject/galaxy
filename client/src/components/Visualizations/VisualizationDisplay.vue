@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
-import { onBeforeUnmount, onMounted, ref } from "vue";
-import { onBeforeRouteLeave } from "vue-router/composables";
+import { storeToRefs } from "pinia";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import type { NavigationGuard } from "vue-router";
+import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router/composables";
 
-import { GalaxyApi } from "@/api";
+import { GalaxyApi, isRegisteredUser } from "@/api";
+import { useUserStore } from "@/stores/userStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
@@ -20,22 +23,26 @@ const emit = defineEmits<{
     (e: "load"): void;
 }>();
 
+const { currentUser } = storeToRefs(useUserStore());
+
 const errorMessage = ref<string>("");
 const isLoading = ref<boolean>(true);
 const hasUnsavedChanges = ref<boolean>(false);
 const visualizationConfig = ref();
 const visualizationTitle = ref<string | undefined>();
+// Only an owner can save in place; for anyone else the plugin creates their own copy.
+const ownedVisualizationId = ref<string | undefined>();
+
+// Remount the iframe when its visualization identity changes.
+const frameKey = computed(() => `${props.visualization}:${props.visualizationId ?? props.datasetId}`);
 
 function handleLoad() {
     isLoading.value = false;
     emit("load");
 }
 
-function handleChange(payload: Record<string, any>) {
-    if (payload.visualization_saved === undefined) {
-        return;
-    }
-    hasUnsavedChanges.value = !payload.visualization_saved;
+function handleSaved(saved: boolean) {
+    hasUnsavedChanges.value = !saved;
 }
 
 function onUnload(e: BeforeUnloadEvent) {
@@ -45,15 +52,20 @@ function onUnload(e: BeforeUnloadEvent) {
     }
 }
 
-onBeforeRouteLeave((to, from, next) => {
+const confirmDiscard: NavigationGuard = (to, from, next) => {
     if (hasUnsavedChanges.value && !window.confirm("Unsaved changes will be lost. Continue?")) {
         next(false);
     } else {
         next();
     }
-});
+};
+
+onBeforeRouteLeave(confirmDiscard);
+// Switching tab or dataset keeps the same route record, so it arrives as an update.
+onBeforeRouteUpdate(confirmDiscard);
 
 onMounted(async () => {
+    window.addEventListener("beforeunload", onUnload);
     if (props.visualizationId) {
         const { data, error } = await GalaxyApi().GET("/api/visualizations/{id}", {
             params: { path: { id: props.visualizationId } },
@@ -63,15 +75,14 @@ onMounted(async () => {
         } else if (data?.latest_revision?.config) {
             visualizationConfig.value = data.latest_revision.config;
             visualizationTitle.value = data.title;
-            errorMessage.value = "";
+            const owner = isRegisteredUser(currentUser.value) && data.user_id === currentUser.value.id;
+            ownedVisualizationId.value = owner ? props.visualizationId : undefined;
         } else {
             errorMessage.value = "Failed to access visualization details.";
         }
     } else {
         visualizationConfig.value = { dataset_id: props.datasetId };
     }
-
-    window.addEventListener("beforeunload", onUnload);
 });
 
 onBeforeUnmount(() => window.removeEventListener("beforeunload", onUnload));
@@ -88,11 +99,12 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", onUnload));
 
         <VisualizationFrame
             v-if="visualizationConfig"
+            :key="frameKey"
             :config="visualizationConfig"
             :name="props.visualization"
             :title="visualizationTitle"
-            :visualization-id="props.visualizationId"
-            @change="handleChange"
+            :visualization-id="ownedVisualizationId"
+            @saved="handleSaved"
             @load="handleLoad" />
     </div>
 </template>

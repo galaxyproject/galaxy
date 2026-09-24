@@ -19,6 +19,7 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "change", payload: Record<string, any>): void;
+    (e: "saved", saved: boolean): void;
     (e: "load"): void;
 }>();
 
@@ -30,8 +31,17 @@ const errorMessage = ref<string>("");
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 
 function onFrameMessage(event: MessageEvent) {
-    if (event.data?.from === "galaxy-visualization") {
-        emitChange(event.data);
+    const message = event.data;
+    if (message?.from !== "galaxy-visualization") {
+        return;
+    }
+    // Saved state is reported as it happens, so a guard never runs against a stale answer.
+    if (message.visualization_saved !== undefined) {
+        emit("saved", message.visualization_saved);
+    }
+    // A change rebuilds persisted content from the config, so a message without one is not a change.
+    if (message.visualization_config !== undefined) {
+        emitChange(message);
     }
 }
 
