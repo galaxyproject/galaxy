@@ -47,14 +47,14 @@ from galaxy.schema.fields import (
     literal_to_value,
     ModelClassField,
 )
-from galaxy.schema.states import (
-    DatasetCollectionPopulatedState,
-    DatasetSourceTransformActionType,
+from galaxy.schema.states import (  # noqa: F401 - Re-export legacy state names.
+    DatasetCollectionPopulatedState as DatasetCollectionPopulatedState,
+    DatasetSourceTransformActionType as DatasetSourceTransformActionType,
     DatasetSourceTransformActionTypeLiteral as DatasetSourceTransformActionTypeLiteral,
-    DatasetState,
-    DatasetValidatedState,
-    JobState,
-    ToolRequestState,
+    DatasetState as DatasetState,
+    DatasetValidatedState as DatasetValidatedState,
+    JobState as JobState,
+    ToolRequestState as ToolRequestState,
 )
 from galaxy.schema.tours import TourDetails
 from galaxy.schema.types import (

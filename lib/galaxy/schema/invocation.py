@@ -44,8 +44,8 @@ from galaxy.schema.schema import (
     WithModelClass,
 )
 from galaxy.schema.states import (
-    InvocationState,
-    InvocationStepState,
+    InvocationState as InvocationState,
+    InvocationStepState as InvocationStepState,
 )
 from .workflows import (
     INPUTS_BY_DESCRIPTION,
