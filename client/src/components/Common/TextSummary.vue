@@ -17,6 +17,8 @@ interface Props {
     component?: string;
     /** If `true`, shows the full text */
     showExpandText?: boolean;
+    /** If `true`, renders the description as HTML (through v-sanitize-html) instead of plain text */
+    isHtml?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -42,7 +44,11 @@ const textTooLong = computed(() => {
 <template>
     <div class="text-summary" :class="{ 'text-summary-short': !showDetails || props.oneLineSummary }">
         <component :is="props.component" ref="refOneLineSummary">
-            <div class="html-paragraph d-inline-block overflow-hidden w-100" v-html="props.description" />
+            <div
+                v-if="props.isHtml"
+                v-sanitize-html="props.description"
+                class="html-paragraph d-inline-block overflow-hidden w-100" />
+            <div v-else class="html-paragraph d-inline-block overflow-hidden w-100">{{ props.description }}</div>
         </component>
 
         <span
