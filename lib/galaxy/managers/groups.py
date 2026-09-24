@@ -92,7 +92,7 @@ class GroupsManager:
         """
         sa_session = trans.sa_session
         group = self._get_group(sa_session, group_id)
-        if name := payload.name:
+        if (name := payload.name) and name != group.name:
             self._check_duplicated_group_name(sa_session, name)
             group.name = name
             sa_session.commit()
