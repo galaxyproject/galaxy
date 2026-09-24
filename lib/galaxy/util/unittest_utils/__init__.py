@@ -40,7 +40,10 @@ def skip_if_site_down(url: str) -> Callable[[Callable[P, T]], Callable[P, T]]:
 
 
 skip_if_github_down = skip_if_site_down("https://github.com/")
+skip_if_dockstore_down = skip_if_site_down("https://dockstore.org/")
 skip_if_workflowhub_down = skip_if_site_down("https://workflowhub.eu/")
+skip_if_quay_down = skip_if_site_down("https://quay.io/")
+skip_if_galaxy_depot_down = skip_if_site_down("https://depot.galaxyproject.org/")
 
 
 def _identity(func: Callable[P, T]) -> Callable[P, T]:
