@@ -1413,7 +1413,7 @@ libraries:
     selectors:
       add_items_button: '.add-library-items-datasets'
       add_items_menu: '.add-library-items-datasets .dropdown-menu'
-      add_items_options: '.add-library-items-datasets .dropdown-menu div a'
+      add_items_options: '.add-library-items-datasets .dropdown-menu a.dropdown-item'
       add_folder: '.add-library-items-folder'
       add_to_history: '.add-to-history'
       add_to_history_datasets: '.add-to-history-datasets'
