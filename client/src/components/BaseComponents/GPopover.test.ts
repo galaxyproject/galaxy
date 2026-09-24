@@ -7,8 +7,7 @@ import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, INTERACTIVE_POPOVER_CLOSE_DELAY_MS } fr
 
 import GPopover from "./GPopover.vue";
 
-// happy-dom gives every element a zero-sized rect, so whatever placement floating-ui would
-// really resolve to here is meaningless. Pin it and assert on what the component does with it.
+// happy-dom rects are all zero-sized, so pin the resolved placement instead of computing it.
 const resolved = vi.hoisted(() => ({
     placement: "bottom",
     middlewareOptions: {} as Record<string, unknown>,
@@ -40,8 +39,7 @@ vi.mock("@floating-ui/dom", () => ({
 
 let wrapper: Wrapper<Vue> | undefined;
 
-// Queried off the document rather than the wrapper subtree so these stay valid whichever
-// container the popover ends up rendering into.
+// Queried off the document, since the popover relocates out of the wrapper.
 function popoverEl() {
     const el = document.body.querySelector(".popover");
     if (!el) {
@@ -66,8 +64,7 @@ async function showPopover(placement: string, resolvedPlacement: string, propsDa
     // Positioning only kicks in when `show` transitions, so toggle rather than mounting shown.
     await wrapper.setProps({ show: true });
 
-    // The arrow offset is the only signal that computePosition has actually resolved; the
-    // placement class already holds a default before then.
+    // The arrow offset is the only sign that computePosition has resolved.
     await vi.waitFor(() => {
         if (!popoverEl().querySelector(".arrow")?.getAttribute("style")?.includes("left")) {
             throw new Error("popover not positioned yet");
@@ -91,8 +88,7 @@ describe("GPopover", () => {
     ])("placement %s resolving to %s gets the %s arrow class", async (placement, resolvedPlacement, expectedClass) => {
         await showPopover(placement, resolvedPlacement);
 
-        // Bootstrap only defines arrow styling for the four base sides, so an aligned
-        // placement still has to map onto its base side or the arrow renders untriangled.
+        // Bootstrap styles the arrow only for the four base sides.
         expect([...popoverEl().classList]).toContain(expectedClass);
     });
 
@@ -140,8 +136,7 @@ describe("GPopover", () => {
         });
         await wrapper.setProps({ show: true });
 
-        // A modal dialog renders in the top layer and makes everything outside it inert, so a
-        // popover appended to the body would be hidden behind it and unusable.
+        // Outside a modal dialog the popover would sit below the top layer and be inert.
         expect(popoverEl().parentElement).toBe(dialog);
     });
 

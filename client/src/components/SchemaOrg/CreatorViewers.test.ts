@@ -35,9 +35,7 @@ describe.each(CASES)("$name", ({ component, propsData, prefix }) => {
 
         const target = wrapper.findComponent(GPopover).props("target");
 
-        // Regression guard. These viewers used to pass `$refs['button'] || 'works-lazily'`, but
-        // $refs is empty on first render and is not reactive, so the target stayed the junk
-        // string and the popover could never open until something else forced a re-render.
+        // The old `$refs['button'] || 'works-lazily'` target never resolved: $refs is empty on first render.
         expect(target).toEqual(expect.stringContaining(prefix));
         expect(document.getElementById(target)).not.toBeNull();
     });
@@ -49,8 +47,7 @@ describe.each(CASES)("$name", ({ component, propsData, prefix }) => {
         const firstTarget = first.findComponent(GPopover).props("target");
         const secondTarget = second.findComponent(GPopover).props("target");
 
-        // A workflow can list several creators, and duplicate ids would make every popover
-        // resolve to whichever icon happened to be first in the document.
+        // Duplicate ids would anchor every creator's popover to the first icon.
         expect(firstTarget).not.toEqual(secondTarget);
 
         first.destroy();

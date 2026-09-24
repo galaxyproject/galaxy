@@ -77,8 +77,7 @@ export default {
             faOrcid,
             faUser,
             faExternalLinkAlt,
-            // An element id rather than a template ref: $refs is empty on first render and isn't
-            // reactive, so a ref-based target never resolves until something re-renders.
+            // An id, not a template ref: $refs is empty on first render and not reactive.
             popoverTarget: useUid("person-viewer-").value,
             implicitMicrodataProperties: ["name", "givenName", "email", "familyName", "url", "identifier"],
             thing: this.person,

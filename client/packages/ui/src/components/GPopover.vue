@@ -1,21 +1,7 @@
 <script setup lang="ts">
 /**
- * Popover component using @floating-ui/dom for positioning.
- * Replaces BPopover from bootstrap-vue.
- *
- * NOTE: Uses Bootstrap CSS class names (popover, b-popover, popover-header, popover-body)
- * for styling compatibility. Replace with custom g-popover styles when dropping Bootstrap CSS.
- *
- * Supports:
- * - String target (element ID) or HTMLElement ref
- * - Trigger modes: hover, focus, click ("click blur" also closes on outside click), manual
- *   (no listeners of its own; "manual hover" still opens on hover, as with BPopover)
- * - Placement with flip/shift
- * - Title via prop or #title slot
- * - Content via prop or default slot
- * - Programmatic show/hide via v-model (:show.sync)
- * - boundary prop accepted for BPopover compatibility; flip/shift use the viewport, or the containing dialog
- * - custom-class prop
+ * Floating-ui popover with BPopover's props and triggers ("manual" adds no listeners; "boundary" is unused).
+ * Styled with Bootstrap's popover classes until Bootstrap CSS goes.
  */
 
 import { arrow, type ComputePositionConfig, flip, offset, type Placement, shift } from "@floating-ui/dom";
@@ -154,9 +140,7 @@ const {
     middlewareData,
 } = useFloatingPosition(resolveTarget, popoverEl, showState, getConfig);
 
-// Bootstrap only defines .bs-popover-top/-right/-bottom/-left, and every arrow triangle rule
-// hangs off those four, so an aligned floating-ui placement has to collapse to its base side --
-// "bs-popover-bottom-start" matches no rule and leaves the arrow untriangled.
+// Bootstrap styles the arrow only for the four base sides, not for aligned placements like bottom-start.
 const basePlacement = computed(() => actualPlacement.value.split("-")[0]);
 
 const arrowStyle = computed(() => {
@@ -167,8 +151,7 @@ const arrowStyle = computed(() => {
     };
 });
 
-// Same timing as GTooltip and Popper: hovering opens after the shared delay, and leaving closes after
-// a short grace period that reaching the popover (or returning to the trigger) cancels.
+// GTooltip's timing: open after the shared delay; close after a grace period that reaching the other element cancels.
 const openDelay = useDelayedAction(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
 const closeDelay = useDelayedAction(INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
 
@@ -347,8 +330,7 @@ const parsedTriggers = computed(() => {
 
 let linkedAttributes: Array<{ el: Element; attribute: string }> = [];
 
-// Adds the popover id to an id-list attribute such as aria-describedby, keeping ids other components
-// (a v-g-tooltip on the same trigger, say) have put there.
+// Appends the popover id to an id-list attribute, keeping ids others (e.g. v-g-tooltip) put there.
 function linkIdReference(el: Element, attribute: string) {
     const ids = (el.getAttribute(attribute) ?? "").split(/\s+/).filter(Boolean);
     if (!ids.includes(popoverId.value)) {
@@ -439,10 +421,7 @@ function teardownListeners() {
     linkedAttributes = [];
 }
 
-// Move the popover out of its placeholder so ancestor overflow or transforms can't clip it. Done by
-// hand rather than with vue2-teleport so the component has no Vue-2-only dependency. A trigger inside
-// a modal <dialog> keeps its popover in that dialog: the rest of the page sits below the top layer
-// and is inert while the dialog is open.
+// Out of the placeholder so ancestors can't clip it; a trigger in a modal <dialog> keeps it in that top-layer dialog.
 function relocate() {
     const el = popoverEl.value;
     const container = resolveTarget()?.closest("dialog") ?? document.body;
@@ -469,8 +448,7 @@ onMounted(() => {
     });
 });
 
-// An inline `() => $refs.x` target is a new function on every parent render; rebinding the same element
-// would drop a pending hover open or close.
+// Inline `() => $refs.x` targets change every render; rebinding the same element would drop pending timers.
 watch(
     () => props.target,
     () => {
@@ -523,20 +501,15 @@ defineExpose({
     top: 0;
     left: 0;
     z-index: 1060;
-    // Bootstrap spaces .bs-popover-* from the trigger with a margin, but floating-ui ignores margins,
-    // so bottom/right placements ended up further away than top/left. offset() alone sets the gap.
+    // floating-ui ignores margins, so reset Bootstrap's .bs-popover-* margin and let offset() set the gap.
     margin: 0;
 
     .arrow {
-        // The arrow middleware already centers this on the reference element, so Bootstrap's
-        // horizontal margin would just shift it back off-center.
+        // arrow() already centres it; Bootstrap's margin would shift it off-centre.
         margin: 0;
     }
 
-    // GTable declares inline-size containment so it can drive its own container queries. That
-    // makes its width independent of its contents, so it reports no intrinsic width at all --
-    // and this box is shrink-to-fit, so it would collapse to the width of the title while the
-    // table spilled out the side. Opt out of containment.
+    // GTable's inline-size containment gives it no intrinsic width, collapsing this shrink-to-fit box.
     :deep(.g-table-container) {
         container-type: normal;
     }

@@ -1,7 +1,4 @@
-/**
- * What a GPopover anchors to: an element id, an element, or a getter such as `() => $refs.x`, where a
- * component instance resolves to its root element. Kept in its own module so Vue compiles no runtime
- * check for the prop, which would reject every element and function with "null is not a constructor".
- */
+// Own module, so Vue skips the runtime prop check: [String, null, Function] rejects elements and functions.
+/** Element id, element, or getter such as `() => $refs.x` (a component resolves to its root element) */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type PopoverTarget = string | Element | (() => any);
