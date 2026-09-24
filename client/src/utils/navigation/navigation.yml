@@ -1344,6 +1344,60 @@ admin:
         selector: "//div[@id='admin-quota-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]/i[contains(@class, 'multiselect__tag-icon')]"
       submit: '#admin-quota-submit'
 
+  role:
+    selectors:
+      form: '#admin-role-form'
+      users: '#role-users .multiselect'
+      users_input: '#role-users input.multiselect__input'
+      user_option:
+        type: xpath
+        selector: "//div[@id='role-users']//span[contains(@class, 'multiselect__option')]/span[text()='${email}']"
+      selected_user:
+        type: xpath
+        selector: "//div[@id='role-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]"
+      remove_selected_user:
+        type: xpath
+        selector: "//div[@id='role-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]/i[contains(@class, 'multiselect__tag-icon')]"
+      groups: '#role-groups .multiselect'
+      groups_input: '#role-groups input.multiselect__input'
+      group_option:
+        type: xpath
+        selector: "//div[@id='role-groups']//span[contains(@class, 'multiselect__option')]/span[text()='${name}']"
+      selected_group:
+        type: xpath
+        selector: "//div[@id='role-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]"
+      remove_selected_group:
+        type: xpath
+        selector: "//div[@id='role-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/i[contains(@class, 'multiselect__tag-icon')]"
+      submit: '#role-submit'
+
+  user_roles_groups:
+    selectors:
+      form: '#admin-user-roles-groups-form'
+      roles: '#admin-user-roles .multiselect'
+      roles_input: '#admin-user-roles input.multiselect__input'
+      role_option:
+        type: xpath
+        selector: "//div[@id='admin-user-roles']//span[contains(@class, 'multiselect__option')]/span[text()='${name}']"
+      selected_role:
+        type: xpath
+        selector: "//div[@id='admin-user-roles']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]"
+      remove_selected_role:
+        type: xpath
+        selector: "//div[@id='admin-user-roles']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/i[contains(@class, 'multiselect__tag-icon')]"
+      groups: '#admin-user-groups .multiselect'
+      groups_input: '#admin-user-groups input.multiselect__input'
+      group_option:
+        type: xpath
+        selector: "//div[@id='admin-user-groups']//span[contains(@class, 'multiselect__option')]/span[text()='${name}']"
+      selected_group:
+        type: xpath
+        selector: "//div[@id='admin-user-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]"
+      remove_selected_group:
+        type: xpath
+        selector: "//div[@id='admin-user-groups']//span[contains(@class, 'multiselect__tag')][span[text()='${name}']]/i[contains(@class, 'multiselect__tag-icon')]"
+      submit: '#admin-user-roles-groups-submit'
+
   index:
     selectors:
       datatypes: '#admin-link-datatypes'

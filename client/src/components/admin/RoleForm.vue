@@ -158,7 +158,7 @@ fetchData();
 <template>
     <div>
         <LoadingSpan v-if="loading" />
-        <div v-else>
+        <div v-else id="admin-role-form">
             <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
             <template v-if="!loadFailed">
                 <FormCard :title="isEditMode ? `Role '${savedName}'` : 'Create a new Role'" icon="fa-file-contract">
