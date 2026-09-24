@@ -309,11 +309,7 @@ function modeSections(activeMode: PaletteMode, ctx: PaletteContext): Promise<Res
 
 let searchEpoch = 0;
 
-/**
- * Identity of what is being searched — the badge or category the results belong
- * under. Only the query may change without it changing, so anything else
- * invalidates the sections on screen the moment it does.
- */
+/** Badge or category the results belong to; any change but the query invalidates them */
 function searchIdentity(activeMode: PaletteMode): string {
     switch (activeMode.type) {
         case "scoped":
@@ -577,8 +573,7 @@ watch(selectedIndex, () => {
     }
 });
 
-// sync, so the old mode's rows never render, or run on enter, under the new badge;
-// the getter reads `mode` itself because a sync watcher can see a stale computed
+// sync so old rows never show under a new badge; reads `mode` as a sync watcher can see a stale computed
 watch(() => searchIdentity(mode.value), clearResults, { flush: "sync" });
 
 // the category is part of the mode, so a sweep across the row shares the debounce

@@ -28,11 +28,7 @@ function invocationRoute(invocationId: string): string {
     return `/workflows/invocations/${invocationId}`;
 }
 
-/**
- * Names come from the history and workflow stores, which
- * `fetchLatestInvocationsWithNames` populates before it resolves -- never fetched
- * here, so rendering a row never triggers a request.
- */
+/** Names are read from the stores only, so rendering a row never triggers a request */
 function invocationNames(invocation: WorkflowInvocation) {
     const historyStore = useHistoryStore();
     const workflowStore = useWorkflowStore();
@@ -57,15 +53,7 @@ function invocationToItem(invocation: WorkflowInvocation): PaletteItem {
     };
 }
 
-/**
- * Resolves the history and workflow names the rows are displayed with.
- *
- * The invocations grid's `getData` starts these lookups but does not await
- * them, so rows rendered right after the fetch would show bare ids. Both stores
- * share their in-flight request per id, so awaiting the same lookups here adds
- * no requests. A failing lookup only costs a name, never the row, and is
- * therefore ignored.
- */
+/** Awaits the name lookups `getData` only starts, so fresh rows show names; a failed lookup only costs a name */
 async function fetchInvocationNames(invocations: WorkflowInvocation[]): Promise<void> {
     const historyStore = useHistoryStore();
     const workflowStore = useWorkflowStore();

@@ -161,8 +161,7 @@ export const useToolStore = defineStore("toolStore", () => {
             if (!q?.trim()) {
                 return toolsById.value;
             } else {
-                // Own-property check: a query like "constructor" must not resolve
-                // through the prototype chain and reach filterTools as a non-array.
+                // own-property check: "constructor" must not reach filterTools from the prototype
                 const results = Object.hasOwn(toolResults.value, q) ? toolResults.value[q] : undefined;
                 return filterTools(toolsById.value, results || []);
             }

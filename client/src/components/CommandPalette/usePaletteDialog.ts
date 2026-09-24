@@ -16,11 +16,7 @@ interface PaletteDialogOptions {
     handleEscape: () => EscapeResult;
 }
 
-/**
- * The native `<dialog>` behind the palette: its DOM event handlers and the
- * class-toggled open/close transition. The element stays mounted; `openDialog`
- * and `closeDialog` follow the palette's open state.
- */
+/** The palette's always-mounted `<dialog>`: DOM handlers and the class-toggled open/close transition */
 export function usePaletteDialog(options: PaletteDialogOptions) {
     const { dialogElement, inputElement, resultsElement, isPaletteOpen, closePalette, handleEscape } = options;
 

@@ -7,10 +7,7 @@ function isNewTabModifier(key: string) {
     return key === "Meta" || key === "Control";
 }
 
-/**
- * Window-wide key tracking for the palette: the held modifiers its hints preview
- * and the global ctrl/cmd+K shortcut calling `onToggle`.
- */
+/** Window key tracking: held modifiers for the hint preview, ctrl/cmd+K for `onToggle` */
 export function usePaletteModifiers(onToggle: () => void) {
     const eventStore = useEventStore();
 

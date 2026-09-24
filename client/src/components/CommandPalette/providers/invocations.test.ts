@@ -108,8 +108,7 @@ describe("invocationsProvider", () => {
         );
         await flushPromises();
 
-        // the grid's `getData` only starts these lookups -- the provider awaits
-        // them, so rows rendered right after the fetch show names, not bare ids
+        // `getData` only starts these lookups; the provider awaits them so fresh rows show names
         expect(settled).toBe(false);
         expect(fetchWorkflowForInstanceIdCached.mock.calls.map(([id]) => id)).toEqual(["wf1", "wf2", "unknown_wf"]);
         // cached histories are not looked up again

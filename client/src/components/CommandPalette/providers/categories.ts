@@ -1,12 +1,7 @@
 import type { PaletteContext } from "../types";
 import { findScope, isScopeAvailable, type ScopeDefinition } from "./scopes";
 
-/**
- * One entry of the root mode category row. Every category but "All" narrows the
- * results down to a single provider: through the scope it borrows where it has
- * one — which also decides whether the category may be offered at all — and
- * through the provider's plain root search otherwise.
- */
+/** A root-row tab; all but "All" narrow to one provider, through its scope when it has one */
 export interface PaletteCategory {
     /** Unique, also the suffix of the row's `data-description` */
     id: string;

@@ -5,11 +5,7 @@ import { isScopeAvailable, type ScopeDefinition } from "./providers/scopes";
 import type { PaletteContext, PaletteItem } from "./types";
 import { parsePaletteQuery } from "./utilities";
 
-/**
- * What the palette is currently searching. Everything but `root` is rendered
- * as a removable badge chip in front of the input; `root` may be narrowed to a
- * category instead, unset while "All" is active.
- */
+/** What the palette searches; non-root modes render as a badge chip, `root` may narrow to a category */
 export type PaletteMode =
     | { type: "root"; category?: PaletteCategory }
     | { type: "scoped"; scope: ScopeDefinition }

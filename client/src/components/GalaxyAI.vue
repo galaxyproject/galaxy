@@ -233,8 +233,7 @@ function consumeSeededQuestion() {
         return;
     }
     query.value = props.initialQuestion;
-    // Consumed: `Analysis.vue` keys every `/galaxyai` route alike, so dropping
-    // `?q=` keeps this component (and the prefilled question) mounted.
+    // `Analysis.vue` keys `/galaxyai` routes alike, so dropping `?q=` keeps the question mounted
     const { q: _seeded, ...otherQuery } = route.query;
     router.replace({ path: route.path, query: otherQuery });
 }

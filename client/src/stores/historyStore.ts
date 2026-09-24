@@ -339,10 +339,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return setCurrentHistory(newHistory.id);
     }
 
-    /**
-     * Creates a new history and makes it the current one.
-     * @param name name of the new history, the server's default when omitted
-     */
+    /** Creates a history, named when `name` is given, and makes it current */
     async function createNewHistory(name?: string) {
         if (name) {
             const namedHistory = await createHistoryOnServer(name);
