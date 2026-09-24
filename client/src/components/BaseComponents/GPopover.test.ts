@@ -485,3 +485,40 @@ describe("GPopover hover", () => {
         expect(isShown()).toBe(false);
     });
 });
+
+describe("GPopover description", () => {
+    afterEach(() => {
+        wrapper?.destroy();
+        wrapper = undefined;
+        document.body.innerHTML = "";
+    });
+
+    it("describes its hover trigger with the popover", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+
+        expect(popoverEl().getAttribute("role")).toBe("tooltip");
+        expect(target.getAttribute("aria-describedby")).toBe(popoverEl().id);
+    });
+
+    it("keeps existing descriptions and restores them when unmounted", async () => {
+        const target = document.createElement("button");
+        target.id = "described-trigger";
+        target.setAttribute("aria-describedby", "existing-hint");
+        const mountPoint = document.createElement("div");
+        document.body.append(target, mountPoint);
+
+        wrapper = mount(GPopover as object, {
+            attachTo: mountPoint,
+            propsData: { target: "described-trigger", triggers: "hover focus" },
+        });
+        await nextTick();
+        await nextTick();
+
+        expect(target.getAttribute("aria-describedby")).toBe(`existing-hint ${popoverEl().id}`);
+
+        wrapper.destroy();
+        wrapper = undefined;
+
+        expect(target.getAttribute("aria-describedby")).toBe("existing-hint");
+    });
+});

@@ -21,6 +21,7 @@ import { arrow, type ComputePositionConfig, flip, offset, type Placement, shift 
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import { useFloatingPosition } from "../composables/floatingPosition";
+import { useUid } from "../composables/uid";
 import { computeHoverBridge, computeHoverGap, isPointInPolygon, type Point } from "../utils/hoverBridge";
 import {
     DEFAULT_TOOLTIP_HOVER_DELAY_MS,
@@ -73,6 +74,7 @@ const emit = defineEmits<{
     (e: "hidden"): void;
 }>();
 
+const popoverId = useUid("g-popover-");
 const popoverEl = ref<HTMLDivElement>();
 const arrowEl = ref<HTMLDivElement>();
 const isVisible = ref(false);
@@ -350,6 +352,27 @@ const parsedTriggers = computed(() => {
     return result;
 });
 
+let linkedAttributes: Array<{ el: Element; attribute: string }> = [];
+
+// Adds the popover id to an id-list attribute such as aria-describedby, keeping ids other components
+// (a v-g-tooltip on the same trigger, say) have put there.
+function linkIdReference(el: Element, attribute: string) {
+    const ids = (el.getAttribute(attribute) ?? "").split(/\s+/).filter(Boolean);
+    if (!ids.includes(popoverId.value)) {
+        el.setAttribute(attribute, [...ids, popoverId.value].join(" "));
+    }
+    linkedAttributes.push({ el, attribute });
+}
+
+function removeIdReference(el: Element, attribute: string, id: string) {
+    const ids = (el.getAttribute(attribute) ?? "").split(/\s+/).filter((existing) => existing && existing !== id);
+    if (ids.length) {
+        el.setAttribute(attribute, ids.join(" "));
+    } else {
+        el.removeAttribute(attribute);
+    }
+}
+
 let activeListeners: Array<{ el: EventTarget; event: string; handler: (e: Event) => void; capture: boolean }> = [];
 
 function listen(el: EventTarget, event: string, handler: (e: Event) => void, capture = false) {
@@ -373,6 +396,11 @@ function setupListeners() {
         listen(target, "mouseenter", scheduleOpen);
         listen(target, "pointerleave", (event) => startHoverBridge(event, true));
         listen(target, "mouseleave", onHoverLeave);
+    }
+
+    if (parsedTriggers.value.has("hover") || parsedTriggers.value.has("focus")) {
+        // Screen readers announce the popover content as the trigger's description, as for GTooltip.
+        linkIdReference(target, "aria-describedby");
     }
 
     if (parsedTriggers.value.has("focus")) {
@@ -412,6 +440,10 @@ function teardownListeners() {
         el.removeEventListener(event, handler, capture);
     }
     activeListeners = [];
+    for (const { el, attribute } of linkedAttributes) {
+        removeIdReference(el, attribute, popoverId.value);
+    }
+    linkedAttributes = [];
 }
 
 // Move the popover out of its placeholder so ancestor overflow or transforms can't clip it. Done by
@@ -462,6 +494,7 @@ defineExpose({
     <span class="g-popover-host" hidden>
         <div
             v-show="showState"
+            :id="popoverId"
             ref="popoverEl"
             class="popover b-popover"
             :class="[customClass, `bs-popover-${basePlacement}`]"
