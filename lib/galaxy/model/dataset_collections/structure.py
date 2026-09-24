@@ -188,6 +188,23 @@ class Tree(BaseTree):
 
         return True
 
+    def compatible_prefix_shape(self, other_structure: "Tree") -> bool:
+        """Check that this tree has the same coordinates through its leaf depth.
+
+        The other tree may continue below those leaves. Compare children
+        directly so an empty nested collection is still accounted for.
+        """
+        if len(self.children) != len(other_structure.children):
+            return False
+        for (_, child), (_, other_child) in zip(self.children, other_structure.children):
+            if child.is_leaf:
+                continue
+            if not isinstance(child, Tree) or not isinstance(other_child, Tree):
+                return False
+            if not child.compatible_prefix_shape(other_child):
+                return False
+        return True
+
     def __len__(self):
         return sum(len(c[1]) for c in self.children)
 

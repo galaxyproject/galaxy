@@ -20,6 +20,7 @@ from .structure import (
     get_structure,
     Leaf,
     leaf,
+    Tree,
 )
 
 if TYPE_CHECKING:
@@ -753,7 +754,13 @@ class MatchingCollections:
         # it lets the local binding be sliced at the correct nested depth.
         local_types = local.structure.collection_type_description.collection_type.split(":")
         inherited_types = inherited.structure.collection_type_description.collection_type.split(":")
-        return len(local_types) < len(inherited_types) and inherited_types[-len(local_types) :] == local_types
+        if len(local_types) >= len(inherited_types) or inherited_types[-len(local_types) :] != local_types:
+            return False
+        local_structure = local.structure
+        inherited_structure = inherited.structure
+        if isinstance(local_structure, Tree) and isinstance(inherited_structure, Tree):
+            return local_structure.compatible_prefix_shape(inherited_structure)
+        return False
 
     def map_over_action_tuples(self, input_name: str) -> list[tuple[str, int]]:
         if input_name not in self.action_tuples:

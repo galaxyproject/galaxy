@@ -2,6 +2,7 @@ from typing import Any
 
 import pytest
 
+from galaxy import exceptions
 from galaxy.model.dataset_collections import (
     matching,
     query,
@@ -367,6 +368,76 @@ def test_inherited_axis_covers_locally_rediscovered_suffix():
 
     assert len(combined.mapping_axes) == 1
     assert [items["tool_input"].element_identifier for items, _when in combined.slice_collections()] == ["P", "Q"]
+
+
+def test_inherited_axis_rejects_locally_rediscovered_suffix_with_extra_outer_element():
+    inherited_source = collection_instance(
+        collection_type="list:list",
+        elements=[
+            collection_element("X", list_instance(ids=["XP"]).collection),
+            collection_element("Y", list_instance(ids=["YP"]).collection),
+        ],
+    )
+    local_source = list_instance(ids=["X", "Y", "Z"])
+    inherited = build_matching_collections_with_axis_id("boundary", inherited_source)
+    local = build_matching_collections_with_axis_id("tool_input", local_source)
+    local.mapping_axes[0].axis_id = inherited.mapping_axes[0].axis_id
+
+    with pytest.raises(exceptions.MessageException, match="Cannot match collection types"):
+        local.with_inherited_mapping(inherited)
+
+
+def test_inherited_axis_rejects_locally_rediscovered_suffix_with_different_nested_shape():
+    inherited_source = collection_instance(
+        collection_type="list:list:list",
+        elements=[
+            collection_element(
+                "X",
+                collection(
+                    "list:list",
+                    [
+                        collection_element("P", list_instance(ids=["XP"]).collection),
+                        collection_element("Q", list_instance(ids=["XQ"]).collection),
+                    ],
+                ),
+            )
+        ],
+    )
+    local_source = collection_instance(
+        collection_type="list:list",
+        elements=[collection_element("X", list_instance(ids=["XP"]).collection)],
+    )
+    inherited = build_matching_collections_with_axis_id("boundary", inherited_source)
+    local = build_matching_collections_with_axis_id("tool_input", local_source)
+    local.mapping_axes[0].axis_id = inherited.mapping_axes[0].axis_id
+
+    with pytest.raises(exceptions.MessageException, match="Cannot match collection types"):
+        local.with_inherited_mapping(inherited)
+
+
+def test_inherited_axis_accepts_locally_rediscovered_suffix_with_empty_nested_collection():
+    inherited_source = collection_instance(
+        collection_type="list:list:list",
+        elements=[
+            collection_element("X", collection("list:list", [])),
+            collection_element(
+                "Y",
+                collection("list:list", [collection_element("P", list_instance(ids=["YP"]).collection)]),
+            ),
+        ],
+    )
+    local_source = collection_instance(
+        collection_type="list:list",
+        elements=[
+            collection_element("X", collection("list", [])),
+            collection_element("Y", list_instance(ids=["P"]).collection),
+        ],
+    )
+    inherited = build_matching_collections_with_axis_id("boundary", inherited_source)
+    local = build_matching_collections_with_axis_id("tool_input", local_source)
+    local.mapping_axes[0].axis_id = inherited.mapping_axes[0].axis_id
+
+    assert len(local.with_inherited_mapping(inherited).mapping_axes) == 1
 
 
 def test_inherited_axis_can_be_refined_by_ragged_materialized_output():
