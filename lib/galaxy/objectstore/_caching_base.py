@@ -21,6 +21,7 @@ from galaxy.exceptions import (
 from galaxy.objectstore import (
     ConcreteObjectStore,
     DataStream,
+    DiskPath,
 )
 from galaxy.util import (
     directory_hash_id,
@@ -533,6 +534,11 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
     def staging_path(self) -> str:
         """First shard's cache path. For shard-aware operations, use ``_cache_shards``."""
         return self._cache_shards.paths[0]
+
+    def get_disk_paths(self) -> DiskPath:
+        # Every cache shard is a real on-disk directory a job container needs mounted,
+        # not just ``staging_path`` (which is only the first shard).
+        return DiskPath(object_store_cache_paths=list(self._cache_shards.paths), extra_dirs=self.extra_dirs)
 
     @property
     def cache_size(self) -> float:

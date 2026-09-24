@@ -27,6 +27,7 @@ Galaxy Deployment & Administration
    mq
    dependency_resolvers
    container_resolvers
+   containerized_metadata
    conda_faq
    user_defined_tools
    db_migration

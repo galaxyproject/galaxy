@@ -622,6 +622,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                     compute_job_directory=remote_job_directory,
                 )
                 self._rewrite_container_for_compute_environment(container, compute_environment)
+            metadata_container = self._get_metadata_container(
+                job_wrapper, job_directory_type="pulsar", working_directory=remote_job_directory
+            )
 
             # Pulsar handles ``create_tool_working_directory`` and
             # ``include_work_dir_outputs`` details.
@@ -634,6 +637,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 include_work_dir_outputs=False,
                 remote_command_params=remote_command_params,
                 remote_job_directory=remote_job_directory,
+                metadata_container=metadata_container,
             )
         except UnsupportedPulsarException:
             log.exception("failure running job %d, unsupported Pulsar target", job_wrapper.job_id)
