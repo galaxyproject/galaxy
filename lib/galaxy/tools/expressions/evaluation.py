@@ -4,18 +4,67 @@ from typing import (
     Optional,
 )
 
-from cwl_utils.expression import do_eval as _do_eval
+from cwl_utils.errors import SubstitutionError
+from cwl_utils.expression import (
+    do_eval as _do_eval,
+    needs_parsing,
+    scanner,
+)
 from cwl_utils.types import (
     CWLObjectType,
     CWLOutputType,
 )
 
+from galaxy.exceptions import MessageException
 from galaxy.tool_util_models.tool_source import JavascriptRequirement
 from .js_engine import (
     build_evaluate_program,
     evaluate_program,
     register,
 )
+
+# How much of an unparseable template is quoted back to its author.
+TEMPLATE_SNIPPET_LENGTH = 80
+
+
+class ExpressionTemplateError(MessageException):
+    """A ``$(...)``/``${...}`` block in a tool template does not parse."""
+
+
+def validate_expression_template(expression: str, description: str = "command template") -> None:
+    """Reject a template the expression scanner cannot read before evaluating it."""
+    if not needs_parsing(expression):
+        return
+    consumed = len(expression) - len(expression.lstrip())
+    scan = expression.strip()
+    while True:
+        try:
+            window = scanner(scan)
+        except SubstitutionError as exc:
+            raise ExpressionTemplateError(_unterminated_message(expression, scan, consumed, description)) from exc
+        if window is None:
+            return
+        start, end = window
+        if scan[start] == "\\" and scan[start : end + 1] in ("\\$(", "\\${"):
+            # interpolate() consumes the escaped opener along with the backslash.
+            end += 1
+        consumed += end
+        scan = scan[end:]
+
+
+def _unterminated_message(expression: str, scan: str, consumed: int, description: str) -> str:
+    offsets = [offset for offset in (scan.find("$("), scan.find("${")) if offset >= 0]
+    position = consumed + (min(offsets) if offsets else 0)
+    line = expression.count("\n", 0, position) + 1
+    column = position - expression.rfind("\n", 0, position)
+    snippet = expression[position : position + TEMPLATE_SNIPPET_LENGTH]
+    if len(expression) > position + TEMPLATE_SNIPPET_LENGTH:
+        snippet += "..."
+    return (
+        f"Unterminated expression in tool {description} at line {line}, column {column}: {snippet!r}. "
+        "'$(' opens a Galaxy expression, so the parentheses and quotes inside it have to balance; "
+        "write '\\$(' to pass a literal shell command substitution through to the shell."
+    )
 
 
 def do_eval(
@@ -27,6 +76,7 @@ def do_eval(
     context: Optional["CWLOutputType"] = None,
     sandbox_command: Sequence[str] | None = None,
 ):
+    validate_expression_template(expression)
     # Register the QuickJS worker for cwl_utils JavaScript evaluations.
     # ``sandbox_command`` optionally adds an OS-level jail around the worker.
     register()

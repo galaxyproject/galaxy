@@ -2295,6 +2295,15 @@ class TestToolsApi(ApiTestCase, TestsTools):
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         response = self._run("validation_empty_dataset", history_id, inputs)
         self._assert_status_code_is(response, 400)
+        error = response.json()
+        assert error["err_msg"] == (
+            "Parameter 'input1': The selected dataset is empty, this tool expects non-empty files."
+        )
+        assert error["param_errors"]["input1"] == {
+            "message": "Parameter 'input1': The selected dataset is empty, this tool expects non-empty files.",
+            "message_suffix": "The selected dataset is empty, this tool expects non-empty files.",
+            "parameter_name": "input1",
+        }
 
     @skip_without_tool("validation_repeat")
     def test_validation_in_repeat(self, history_id):
