@@ -10156,6 +10156,129 @@ outer_input:
                 t["representation"]["name"] == TOOL_WITH_SHELL_COMMAND["name"] for t in owned
             ), f"Expected an owned UDT after workflow import: {owned}"
 
+    def _build_user_defined_tool_run_workflow_dict(self, content_id: Optional[str], tool_uuid: str) -> dict[str, Any]:
+        return {
+            "a_galaxy_workflow": "true",
+            "name": "wf running a UDT",
+            "annotation": "",
+            "format-version": "0.1",
+            "steps": {
+                "0": {
+                    "id": 0,
+                    "type": "data_input",
+                    "label": "input",
+                    "tool_state": json.dumps({"name": "input"}),
+                    "inputs": [{"name": "input", "description": ""}],
+                    "input_connections": {},
+                    "workflow_outputs": [],
+                    "uuid": str(uuid4()),
+                },
+                "1": {
+                    "id": 1,
+                    "type": "tool",
+                    "content_id": content_id,
+                    "tool_uuid": tool_uuid,
+                    "tool_state": "{}",
+                    "input_connections": {"input": {"id": 0, "output_name": "output"}},
+                    "workflow_outputs": [{"output_name": "output", "label": "udt_output"}],
+                    "post_job_actions": {},
+                    "uuid": str(uuid4()),
+                },
+            },
+        }
+
+    def _run_user_defined_tool_workflow(self, workflow_id: str, history_id: str) -> str:
+        hda = self.dataset_populator.new_dataset(history_id, content="abc", wait=True)
+        invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+            workflow_id, history_id=history_id, inputs={"0": self._ds_entry(hda)}
+        )
+        self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+        invocation = self.workflow_populator.get_invocation(invocation_id)
+        output = self.dataset_populator.get_history_dataset_details(
+            history_id, dataset_id=invocation["outputs"]["udt_output"]["id"]
+        )
+        assert output["state"] == "ok", output
+        content = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=output["id"])
+        assert content == "abc\n"
+        return invocation_id
+
+    def _assert_user_defined_tool_step_resolves(self, workflow_id: str, unprivileged_tool: dict[str, Any]) -> None:
+        tool_id = unprivileged_tool["tool_id"]
+        tool_uuid = unprivileged_tool["uuid"]
+        instance_step = self.workflow_populator.download_workflow(workflow_id, style="instance")["steps"]["1"]
+        assert instance_step["tool_id"] == tool_id
+        assert instance_step["tool_uuid"] == tool_uuid
+        editor_step = self.workflow_populator.download_workflow(workflow_id, style="editor")["steps"]["1"]
+        assert editor_step["content_id"] == tool_id
+        assert editor_step["tool_uuid"] == tool_uuid
+        assert not editor_step["errors"]
+        preview_step = self.workflow_populator.download_workflow(workflow_id, style="preview")["steps"][1]
+        assert preview_step["tool_id"] == tool_id
+        with self.dataset_populator.test_history() as history_id:
+            run_form = self.workflow_populator.download_workflow(workflow_id, style="run", history_id=history_id)
+        assert run_form["step_version_changes"] == []
+        assert run_form["steps"][1]["id"] == tool_id
+        export_step = self.workflow_populator.download_workflow(workflow_id, style="ga")["steps"]["1"]
+        assert export_step["content_id"] == tool_id
+        assert export_step["tool_id"] == tool_id
+        assert export_step["tool_representation"]["class"] == "GalaxyUserTool"
+
+    def test_user_defined_tool_step_tool_id_derived_from_dynamic_tool(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            for content_id in ("cat_user_defined", unprivileged_tool["uuid"], None):
+                workflow_id = self.workflow_populator.create_workflow(
+                    self._build_user_defined_tool_run_workflow_dict(content_id, unprivileged_tool["uuid"])
+                )
+                self._assert_user_defined_tool_step_resolves(workflow_id, unprivileged_tool)
+
+    def test_user_defined_tool_step_referenced_by_uuid_runs(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            workflow_id = self.workflow_populator.create_workflow(
+                self._build_user_defined_tool_run_workflow_dict(unprivileged_tool["uuid"], unprivileged_tool["uuid"])
+            )
+            with self.dataset_populator.test_history() as history_id:
+                invocation_id = self._run_user_defined_tool_workflow(workflow_id, history_id)
+                bco_path = self.workflow_populator.download_invocation_to_store(invocation_id, extension="bco.json")
+                with open(bco_path) as f:
+                    bco = json.load(f)
+                software_names = [p["name"] for p in bco["execution_domain"]["software_prerequisites"]]
+                assert "basecommand" in software_names
+                assert unprivileged_tool["uuid"] not in software_names
+                crate = self.workflow_populator.get_ro_crate(invocation_id)
+                step_names = [e["name"] for e in crate.get_entities() if e.type == "HowToStep"]
+                assert "basecommand" in step_names
+
+    def test_user_defined_tool_workflow_export_round_trip(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            workflow_id = self.workflow_populator.create_workflow(
+                self._build_user_defined_tool_run_workflow_dict(unprivileged_tool["uuid"], unprivileged_tool["uuid"])
+            )
+            native = self.workflow_populator.download_workflow(workflow_id, style="ga")
+            native_reimported_id = self.workflow_populator.import_workflow(native)["id"]
+            self._assert_user_defined_tool_step_resolves(native_reimported_id, unprivileged_tool)
+
+            format2 = self.workflow_populator.download_workflow(workflow_id, style="format2")
+            format2_runs = [step["run"] for step in format2["steps"].values() if "run" in step]
+            assert [run["class"] for run in format2_runs] == ["GalaxyUserTool"], format2
+            format2_reimported_id = self.workflow_populator.upload_yaml_workflow(format2)
+            # The embedded representation is imported as a new UDT owned by the user.
+            reimported_step = self.workflow_populator.download_workflow(format2_reimported_id, style="instance")[
+                "steps"
+            ]["1"]
+            assert reimported_step["tool_id"] == "basecommand"
+            assert reimported_step["tool_uuid"] not in (None, unprivileged_tool["uuid"])
+            with self.dataset_populator.test_history() as history_id:
+                self._run_user_defined_tool_workflow(format2_reimported_id, history_id)
+
     def _invoke_paused_workflow(self, history_id):
         workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
         workflow_id = self.workflow_populator.create_workflow(workflow)

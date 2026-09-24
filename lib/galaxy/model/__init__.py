@@ -9301,6 +9301,20 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         return self.dynamic_tool and self.dynamic_tool.uuid
 
     @property
+    def user_defined_tool(self) -> Optional["DynamicTool"]:
+        dynamic_tool = self.dynamic_tool
+        return dynamic_tool if dynamic_tool is not None and not dynamic_tool.public else None
+
+    @property
+    def effective_tool_id(self) -> Optional[str]:
+        # A user-defined tool's id is neither unique nor registered in the toolbox, so
+        # steps referencing one are identified by ``dynamic_tool`` alone and any stored
+        # ``tool_id`` is ignored.
+        if (user_defined_tool := self.user_defined_tool) is not None:
+            return user_defined_tool.tool_id
+        return self.tool_id
+
+    @property
     def is_input_type(self) -> bool:
         return bool(self.type and self.type in self.STEP_TYPE_TO_INPUT_TYPE)
 
@@ -9420,7 +9434,7 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
     def content_id(self):
         content_id = None
         if self.type == "tool":
-            content_id = self.tool_id
+            content_id = self.effective_tool_id
         elif self.type == "subworkflow":
             content_id = self.subworkflow.id
         else:

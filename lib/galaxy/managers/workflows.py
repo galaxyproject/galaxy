@@ -1148,12 +1148,13 @@ class WorkflowContentsManager(UsesAnnotations):
             step_model = None
             if step.type == "tool":
                 incoming: dict[str, Any] = {}
+                tool_id = step.effective_tool_id
                 tool = trans.app.toolbox.get_tool(
-                    step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid, user=trans.user
+                    tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid, user=trans.user
                 )
                 if not tool:
                     raise exceptions.MessageException(
-                        f"Following tool missing or inaccessible: '{step.tool_id}/{step.tool_uuid}'"
+                        f"Following tool missing or inaccessible: '{tool_id}/{step.tool_uuid}'"
                     )
                 assert step.state is not None
                 params_to_incoming(incoming, tool.inputs, step.state.inputs, trans.app)
@@ -1326,8 +1327,9 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_dicts.append(step_dict)
                 continue
             if step.type == "tool":
-                tool = trans.app.toolbox.get_tool(step.tool_id, step.tool_version)
-                step_dict["tool_id"] = step.tool_id
+                tool_id = step.effective_tool_id
+                tool = trans.app.toolbox.get_tool(tool_id, step.tool_version, tool_uuid=step.tool_uuid, user=trans.user)
+                step_dict["tool_id"] = tool_id
                 step_dict["tool_version"] = step.tool_version
                 step_dict["label"] = step.label or tool.name
                 step_dict["inputs"] = do_inputs(tool.inputs, step.state.inputs, "", step)
@@ -1683,7 +1685,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "when": step.when_expression,
             }
             if step.type == "tool":
-                step_dict["tool_id"] = content_id if allow_upgrade else step.tool_id
+                step_dict["tool_id"] = content_id if allow_upgrade else step.effective_tool_id
                 step_dict["tool_uuid"] = str(step.tool_uuid) if step.tool_uuid else None
             # Add tool shed repository information and post-job actions to step dict.
             if isinstance(module, ToolModule):
@@ -1885,7 +1887,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict = {
                 "id": step_id,
                 "type": step_type,
-                "tool_id": step.tool_id,
+                "tool_id": step.effective_tool_id,
                 "tool_uuid": str(step.tool_uuid) if step.tool_uuid else None,
                 "tool_version": step.tool_version,
                 "annotation": self.get_item_annotation_str(sa_session, stored.user, step),
@@ -2339,15 +2341,15 @@ class WorkflowContentsManager(UsesAnnotations):
         tools = []
         for step in workflow.steps:
             if step.type == "tool":
-                if step.tool_id:
+                if tool_id := step.effective_tool_id:
                     if {
-                        "tool_id": step.tool_id,
+                        "tool_id": tool_id,
                         "tool_version": step.tool_version,
                         "tool_uuid": str(step.tool_uuid) if step.tool_uuid else None,
                     } not in tools:
                         tools.append(
                             {
-                                "tool_id": step.tool_id,
+                                "tool_id": tool_id,
                                 "tool_version": step.tool_version,
                                 "tool_uuid": str(step.tool_uuid) if step.tool_uuid else None,
                             }

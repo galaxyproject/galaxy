@@ -17,7 +17,7 @@ class SoftwarePrerequisiteTracker:
         if step.type != "tool":
             # TODO: walk subworkflow steps someday...
             return
-        tool_id = step.tool_id
+        tool_id = step.effective_tool_id
         if tool_id in self._recorded_tools:
             return
 
