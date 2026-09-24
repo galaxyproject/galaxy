@@ -1,3 +1,5 @@
+import pytest
+
 from galaxy.model.dataset_collections import (
     matching,
     query,
@@ -8,6 +10,39 @@ from galaxy.model.dataset_collections.structure import UninitializedTree
 
 TYPE_REGISTRY = registry.DatasetCollectionTypesRegistry()
 TYPE_DESCRIPTION_FACTORY = type_description.CollectionTypeDescriptionFactory(TYPE_REGISTRY)
+
+
+def test_mapping_axis_reference_json_round_trip():
+    axis_id = (
+        "axis-prefix",
+        ("workflow-map", 83, ((107, "output"), (108, "forward"))),
+        1,
+    )
+    reference = matching.MatchingCollectionAxisReference(
+        axis_id=axis_id,
+        collection_type="list:list",
+        axis_components=(
+            (("workflow-map", 83, ((107, "output"),)), 0, 1),
+            (axis_id, 0, 2),
+        ),
+    )
+
+    encoded = reference.to_dict()
+
+    assert matching.MatchingCollectionAxisReference.from_dict(encoded) == reference
+    assert encoded["id"]["kind"] == "axis_prefix"
+    assert encoded["id"]["parent"]["kind"] == "workflow_map"
+
+
+def test_mapping_axis_reference_rejects_rank_mismatch():
+    encoded = matching.MatchingCollectionAxisReference(
+        axis_id="axis",
+        collection_type="list",
+    ).to_dict()
+    encoded["rank"] = 2
+
+    with pytest.raises(ValueError, match="rank does not match"):
+        matching.MatchingCollectionAxisReference.from_dict(encoded)
 
 
 def test_pairs_match():

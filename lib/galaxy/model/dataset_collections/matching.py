@@ -20,6 +20,173 @@ from .structure import (
 CANNOT_MATCH_ERROR_MESSAGE = "Cannot match collection types."
 
 
+def mapping_axis_id_to_dict(axis_id: Hashable) -> dict[str, Any]:
+    """Encode a mapping-axis identity without relying on tuple JSON coercion."""
+    if isinstance(axis_id, (str, int)) and not isinstance(axis_id, bool):
+        return {"kind": "literal", "value": axis_id}
+    if isinstance(axis_id, tuple) and axis_id:
+        kind = axis_id[0]
+        if kind == "workflow-map" and len(axis_id) == 3:
+            _kind, invocation_id, sources = axis_id
+            if not isinstance(invocation_id, int) or isinstance(invocation_id, bool):
+                raise ValueError("workflow-map invocation ID must be an integer")
+            if not isinstance(sources, tuple):
+                raise ValueError("workflow-map sources must be a tuple")
+            encoded_sources = []
+            for source in sources:
+                if (
+                    not isinstance(source, tuple)
+                    or len(source) != 2
+                    or not isinstance(source[0], int)
+                    or isinstance(source[0], bool)
+                    or not isinstance(source[1], str)
+                ):
+                    raise ValueError("workflow-map sources must contain workflow-step ID/output-name pairs")
+                encoded_sources.append({"workflow_step_id": source[0], "output_name": source[1]})
+            if tuple(sorted(sources)) != sources:
+                raise ValueError("workflow-map sources must be canonically ordered")
+            return {
+                "kind": "workflow_map",
+                "invocation_id": invocation_id,
+                "sources": encoded_sources,
+            }
+        if kind == "axis-prefix" and len(axis_id) == 3:
+            _kind, parent_axis_id, rank = axis_id
+            if not isinstance(rank, int) or isinstance(rank, bool) or rank <= 0:
+                raise ValueError("axis-prefix rank must be a positive integer")
+            return {
+                "kind": "axis_prefix",
+                "parent": mapping_axis_id_to_dict(parent_axis_id),
+                "rank": rank,
+            }
+    raise ValueError(f"Unsupported mapping-axis identity [{axis_id!r}]")
+
+
+def mapping_axis_id_from_dict(axis_id: dict[str, Any]) -> Hashable:
+    """Decode the explicit JSON form of a mapping-axis identity."""
+    if not isinstance(axis_id, dict):
+        raise ValueError("mapping-axis identity must be an object")
+    kind = axis_id.get("kind")
+    if kind == "literal":
+        if set(axis_id) != {"kind", "value"}:
+            raise ValueError("literal mapping-axis identity has unexpected fields")
+        value = axis_id["value"]
+        if not isinstance(value, (str, int)) or isinstance(value, bool):
+            raise ValueError("literal mapping-axis identity must be a string or integer")
+        return value
+    if kind == "workflow_map":
+        if set(axis_id) != {"kind", "invocation_id", "sources"}:
+            raise ValueError("workflow-map identity has unexpected fields")
+        invocation_id = axis_id["invocation_id"]
+        sources = axis_id["sources"]
+        if not isinstance(invocation_id, int) or isinstance(invocation_id, bool):
+            raise ValueError("workflow-map invocation ID must be an integer")
+        if not isinstance(sources, list):
+            raise ValueError("workflow-map sources must be a list")
+        decoded_sources = []
+        for source in sources:
+            if not isinstance(source, dict) or set(source) != {"workflow_step_id", "output_name"}:
+                raise ValueError("workflow-map source has unexpected fields")
+            workflow_step_id = source["workflow_step_id"]
+            output_name = source["output_name"]
+            if (
+                not isinstance(workflow_step_id, int)
+                or isinstance(workflow_step_id, bool)
+                or not isinstance(output_name, str)
+            ):
+                raise ValueError("workflow-map sources must contain workflow-step ID/output-name pairs")
+            decoded_sources.append((workflow_step_id, output_name))
+        decoded_sources_tuple = tuple(decoded_sources)
+        if tuple(sorted(decoded_sources_tuple)) != decoded_sources_tuple:
+            raise ValueError("workflow-map sources must be canonically ordered")
+        return ("workflow-map", invocation_id, decoded_sources_tuple)
+    if kind == "axis_prefix":
+        if set(axis_id) != {"kind", "parent", "rank"}:
+            raise ValueError("axis-prefix identity has unexpected fields")
+        rank = axis_id["rank"]
+        if not isinstance(rank, int) or isinstance(rank, bool) or rank <= 0:
+            raise ValueError("axis-prefix rank must be a positive integer")
+        return ("axis-prefix", mapping_axis_id_from_dict(axis_id["parent"]), rank)
+    raise ValueError(f"Unknown mapping-axis identity kind [{kind!r}]")
+
+
+@dataclass(frozen=True)
+class MatchingCollectionAxisReference:
+    """Durable lineage for an axis, without its executable collection tree."""
+
+    axis_id: Hashable
+    collection_type: str
+    axis_components: tuple[tuple[Hashable, int, int], ...] = ()
+
+    def __post_init__(self):
+        if not self.collection_type:
+            raise ValueError("Mapping-axis collection type must not be empty")
+        rank = self.rank
+        for _component_id, start, stop in self.axis_components:
+            if start < 0 or stop <= start or stop > rank:
+                raise ValueError("Mapping-axis component span is outside the axis rank")
+
+    @property
+    def rank(self) -> int:
+        return len(self.collection_type.split(":"))
+
+    @classmethod
+    def from_axis(cls, axis: "MatchingCollectionAxis") -> "MatchingCollectionAxisReference":
+        if axis.axis_id is None:
+            raise ValueError("Cannot persist a mapping axis without an identity")
+        collection_type = axis.structure.collection_type_description.collection_type
+        return cls(axis.axis_id, collection_type, axis.components())
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": mapping_axis_id_to_dict(self.axis_id),
+            "rank": self.rank,
+            "collection_type": self.collection_type,
+            "components": [
+                {
+                    "id": mapping_axis_id_to_dict(component_id),
+                    "path_start": path_start,
+                    "path_stop": path_stop,
+                }
+                for component_id, path_start, path_stop in self.axis_components
+            ],
+        }
+
+    @classmethod
+    def from_dict(cls, value: dict[str, Any]) -> "MatchingCollectionAxisReference":
+        if not isinstance(value, dict) or set(value) != {"id", "rank", "collection_type", "components"}:
+            raise ValueError("Mapping-axis reference has unexpected fields")
+        collection_type = value["collection_type"]
+        rank = value["rank"]
+        components = value["components"]
+        if not isinstance(collection_type, str) or not collection_type:
+            raise ValueError("Mapping-axis collection type must be a non-empty string")
+        expected_rank = len(collection_type.split(":"))
+        if not isinstance(rank, int) or isinstance(rank, bool) or rank != expected_rank:
+            raise ValueError("Mapping-axis rank does not match its collection type")
+        if not isinstance(components, list):
+            raise ValueError("Mapping-axis components must be a list")
+        decoded_components = []
+        for component in components:
+            if not isinstance(component, dict) or set(component) != {"id", "path_start", "path_stop"}:
+                raise ValueError("Mapping-axis component has unexpected fields")
+            path_start = component["path_start"]
+            path_stop = component["path_stop"]
+            if (
+                not isinstance(path_start, int)
+                or isinstance(path_start, bool)
+                or not isinstance(path_stop, int)
+                or isinstance(path_stop, bool)
+            ):
+                raise ValueError("Mapping-axis component spans must be integers")
+            decoded_components.append((mapping_axis_id_from_dict(component["id"]), path_start, path_stop))
+        return cls(
+            mapping_axis_id_from_dict(value["id"]),
+            collection_type,
+            tuple(decoded_components),
+        )
+
+
 @dataclass
 class MatchingCollectionAxis:
     """One independently iterable dimension of an implicit map-over."""
