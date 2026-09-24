@@ -317,4 +317,10 @@ defineExpose({
 .dropdown-toggle-no-caret::after {
     display: none !important;
 }
+
+// Bootstrap's translucent focus shadow is below 3:1 against white
+.dropdown-toggle:focus-visible {
+    outline: 2px solid var(--color-blue-600);
+    outline-offset: 2px;
+}
 </style>
