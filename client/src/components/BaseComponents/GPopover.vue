@@ -195,6 +195,7 @@ watch(
         cleanupAutoUpdate = null;
 
         if (visible) {
+            relocate();
             await nextTick();
             const target = resolveTarget();
             if (target && popoverEl.value) {
@@ -340,11 +341,14 @@ function teardownListeners() {
 }
 
 // Move the popover out of its placeholder so ancestor overflow or transforms can't clip it. Done by
-// hand rather than with vue2-teleport so the component has no Vue-2-only dependency.
+// hand rather than with vue2-teleport so the component has no Vue-2-only dependency. A trigger inside
+// a modal <dialog> keeps its popover in that dialog: the rest of the page sits below the top layer
+// and is inert while the dialog is open.
 function relocate() {
     const el = popoverEl.value;
-    if (el && el.parentElement !== document.body) {
-        document.body.appendChild(el);
+    const container = resolveTarget()?.closest("dialog") ?? document.body;
+    if (el && el.parentElement !== container) {
+        container.appendChild(el);
     }
 }
 

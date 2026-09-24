@@ -103,6 +103,28 @@ describe("GPopover", () => {
         expect(popoverEl().parentElement).toBe(document.body);
     });
 
+    it("stays inside the dialog that holds its target", async () => {
+        const dialog = document.createElement("dialog");
+        document.body.appendChild(dialog);
+        const target = document.createElement("button");
+        target.id = "dialog-trigger";
+        dialog.appendChild(target);
+        // attachTo replaces the element it is given, so mount onto a stand-in inside the dialog.
+        const mountPoint = document.createElement("div");
+        dialog.appendChild(mountPoint);
+
+        wrapper = mount(GPopover as object, {
+            attachTo: mountPoint,
+            propsData: { target: "dialog-trigger", show: false },
+            slots: { default: "body content" },
+        });
+        await wrapper.setProps({ show: true });
+
+        // A modal dialog renders in the top layer and makes everything outside it inert, so a
+        // popover appended to the body would be hidden behind it and unusable.
+        expect(popoverEl().parentElement).toBe(dialog);
+    });
+
     it("removes the relocated popover when unmounted", async () => {
         await showPopover("bottom", "bottom");
 
