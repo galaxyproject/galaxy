@@ -19,6 +19,7 @@ from sqlalchemy import (
     exc,
     select,
     true,
+    update,
 )
 from sqlalchemy.exc import NoResultFound
 
@@ -43,6 +44,7 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.model import (
+    GalaxySession,
     Job,
     User,
     UserAddress,
@@ -554,41 +556,31 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             else:
                 return user, "User not found."
 
-    def set_password(self, trans, user, password, confirm=None) -> None:
-        """Set a password for an authorized caller; raise RequestParameterInvalidException if invalid."""
-        if message := self.__set_password(trans, user, password, confirm):
-            raise exceptions.RequestParameterInvalidException(message)
-
     def __set_password(self, trans: ProvidesUserContext, user, password, confirm):
         if not password:
             return "Please provide a new password."
         if user:
-            # Validate the new password
-            message = validate_password(trans, password, confirm)
-            if message:
-                return message
-            else:
-                # Save new password
-                user.set_password_cleartext(password)
-                # Preserve the caller's session, if any.
-                stmt = select(self.app.model.GalaxySession).where(
-                    and_(
-                        self.app.model.GalaxySession.user_id == user.id,
-                        self.app.model.GalaxySession.is_valid == true(),
-                    )
-                )
-                if trans.galaxy_session:
-                    stmt = stmt.where(self.app.model.GalaxySession.id != trans.galaxy_session.id)
-                for other_galaxy_session in trans.sa_session.scalars(stmt):
-                    other_galaxy_session.is_valid = False
-                    trans.sa_session.add(other_galaxy_session)
-                self.expire_reset_tokens(trans, user)
-                trans.sa_session.add(user)
-                trans.sa_session.commit()
-                trans.log_event("User change password")
-                log.info("Password changed for user %s.", user.id)
+            try:
+                self.set_password(trans, user, password, confirm=confirm)
+            except exceptions.RequestParameterInvalidException as e:
+                return e.err_msg
         else:
             return "Failed to determine user, access denied."
+
+    def set_password(self, trans: ProvidesUserContext, user: User, password: str, confirm: str | None = None) -> None:
+        """Validate and set a new password, and log the user out of every other session."""
+        if message := validate_password(trans, password, password if confirm is None else confirm):
+            raise exceptions.RequestParameterInvalidException(message)
+        user.set_password_cleartext(password)
+        stmt = update(GalaxySession).where(GalaxySession.user_id == user.id, GalaxySession.is_valid == true())
+        if trans.galaxy_session:
+            stmt = stmt.where(GalaxySession.id != trans.galaxy_session.id)
+        trans.sa_session.execute(stmt.values(is_valid=False))
+        self.expire_reset_tokens(trans, user)
+        trans.sa_session.add(user)
+        trans.sa_session.commit()
+        trans.log_event("User change password")
+        log.info("Password changed for user %s.", user.id)
 
     def set_roles(self, user: User, role_ids: list[int]) -> None:
         """Replace the user's role associations; the private role is kept."""

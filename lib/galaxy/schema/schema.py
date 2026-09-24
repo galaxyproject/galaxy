@@ -427,6 +427,10 @@ class RemoteUserCreationPayload(Model):
     remote_user_email: str = UserEmailField
 
 
+class UserPasswordResetPayload(Model):
+    password: str = Field(default=..., title="Password", description="The new password of the user.")
+
+
 class UserDeletionPayload(Model):
     purge: bool = Field(
         default=False,

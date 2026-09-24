@@ -6359,6 +6359,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{user_id}/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set a new password for a user. */
+        put: operations["reset_user_password_api_users__user_id__password_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{user_id}/recalculate_disk_usage": {
         parameters: {
             query?: never;
@@ -26841,6 +26858,14 @@ export interface components {
             object_store_id: string;
             /** Total Disk Usage */
             total_disk_usage: number;
+        };
+        /** UserPasswordResetPayload */
+        UserPasswordResetPayload: {
+            /**
+             * Password
+             * @description The new password of the user.
+             */
+            password: string;
         };
         /** UserQuota */
         UserQuota: {
@@ -53008,6 +53033,52 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["UserObjectstoreUsage"][];
                 };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    reset_user_password_api_users__user_id__password_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserPasswordResetPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {

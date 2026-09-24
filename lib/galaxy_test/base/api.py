@@ -1,4 +1,5 @@
 import os
+import re
 from contextlib import contextmanager
 from typing import (
     Any,
@@ -178,6 +179,18 @@ class UsesApiTestCaseMixin:
             self.user_api_key = original_api_key
             self.galaxy_interactor.api_key = original_interactor_key
             self.galaxy_interactor.cookies = original_cookies
+
+    def _login_browser_session(self, session: requests.Session, email: str, password: str) -> None:
+        """Log ``session`` in through the login form, for routes that need a browser session rather than an API key."""
+        login_page = session.get(urljoin(self.url, "login/start"))
+        assert_status_code_is(login_page, 200)
+        csrf_token_match = re.search(r'session_csrf_token = "(.*)"', login_page.text)
+        assert csrf_token_match
+        login_response = session.post(
+            urljoin(self.url, "user/login"),
+            data={"login": email, "password": password, "session_csrf_token": csrf_token_match.group(1)},
+        )
+        assert_status_code_is(login_response, 200)
 
     def _get_current_history_id(self) -> str:
         """Return the current session's history ID (works for anonymous users)."""

@@ -37,6 +37,7 @@ from galaxy.schema.schema import (
     RoleListResponse,
     UserGroupsUpdatePayload,
     UserModel,
+    UserPasswordResetPayload,
     UserRolesUpdatePayload,
 )
 from galaxy.security.idencoding import IdEncodingHelper
@@ -383,3 +384,6 @@ class UsersService(ServiceBase):
     ) -> GroupModelListResponse:
         self.user_manager.set_groups(self.get_user(trans, user_id), payload.group_ids)
         return self.get_user_groups(trans, user_id)
+
+    def reset_password(self, trans: ProvidesUserContext, user_id: int, payload: UserPasswordResetPayload) -> None:
+        self.user_manager.set_password(trans, self.get_user(trans, user_id), payload.password)

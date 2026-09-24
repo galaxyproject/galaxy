@@ -68,6 +68,7 @@ from galaxy.schema.schema import (
     UserExtraPreferencesPayload,
     UserExtraPreferencesUpdated,
     UserGroupsUpdatePayload,
+    UserPasswordResetPayload,
     UserRolesUpdatePayload,
     UserUpdatePayload,
 )
@@ -814,6 +815,21 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> RoleListResponse:
         return self.service.set_user_roles(trans=trans, user_id=user_id, payload=payload)
+
+    @router.put(
+        "/api/users/{user_id}/password",
+        name="reset_user_password",
+        summary="Set a new password for a user.",
+        require_admin=True,
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def reset_password(
+        self,
+        user_id: UserIdPathParam,
+        payload: UserPasswordResetPayload,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> None:
+        self.service.reset_password(trans=trans, user_id=user_id, payload=payload)
 
     @router.get(
         "/api/users/{user_id}/groups",
