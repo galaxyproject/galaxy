@@ -6,7 +6,7 @@ import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { usePageStore } from "@/stores/pageStore";
 import { useUserStore } from "@/stores/userStore";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
 import { PaletteFetchError } from "./errors";
 import { resetListRefreshTracking } from "./refresh";
 import { reportsProvider } from "./reports";
@@ -15,10 +15,6 @@ import { findScope, type ScopeDefinition } from "./scopes";
 vi.mock("@/api/pages", () => ({
     loadPages: vi.fn(),
 }));
-
-function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false, ...overrides };
-}
 
 function mockPage(id: string, overrides: Partial<PageSummary> = {}): PageSummary {
     return {

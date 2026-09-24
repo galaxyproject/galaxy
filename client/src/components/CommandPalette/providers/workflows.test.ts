@@ -6,7 +6,7 @@ import { loadWorkflows } from "@/api/workflows";
 import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { useUserStore } from "@/stores/userStore";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
 import { PaletteFetchError } from "./errors";
 import { resetListRefreshTracking } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
@@ -87,10 +87,6 @@ function mockWorkflowsApi() {
         const matched = query ? data.filter((entry) => entry.name.toLowerCase().includes(query)) : data;
         return { data: matched, totalMatches: matched.length };
     });
-}
-
-function makeCtx(isAnonymous = false): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous };
 }
 
 function signIn(username = "me") {
@@ -268,7 +264,7 @@ describe("workflowsProvider", () => {
 
     it("stays out of the unscoped fan-out for short queries", async () => {
         expect(await workflowsProvider.search("v", makeCtx())).toEqual([]);
-        expect(await workflowsProvider.search("v", makeCtx(true))).toEqual([]);
+        expect(await workflowsProvider.search("v", makeCtx({ isAnonymous: true }))).toEqual([]);
         expect(loadWorkflows).not.toHaveBeenCalled();
     });
 
@@ -351,7 +347,7 @@ describe("workflowsProvider", () => {
     });
 
     it("searches the public list alone for an anonymous root query", async () => {
-        const items = await workflowsProvider.search("public", makeCtx(true));
+        const items = await workflowsProvider.search("public", makeCtx({ isAnonymous: true }));
 
         expect(items.map((i) => i.title)).toEqual(["Public metagenomics"]);
         expect(vi.mocked(loadWorkflows).mock.calls.map(([args]) => args.filterText)).toEqual(["public is:published"]);
@@ -370,6 +366,6 @@ describe("workflowsProvider", () => {
         recent = [{ type: "workflow", id: "wf1", name: "RNA-seq analysis" }];
 
         expect(workflowsProvider.emptyQueryItems?.(makeCtx())?.map((i) => i.title)).toEqual(["RNA-seq analysis"]);
-        expect(workflowsProvider.emptyQueryItems?.(makeCtx(true))).toEqual([]);
+        expect(workflowsProvider.emptyQueryItems?.(makeCtx({ isAnonymous: true }))).toEqual([]);
     });
 });
