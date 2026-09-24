@@ -163,7 +163,7 @@ async function updatePanelView(panel: Panel) {
             :panel-view="defaultPanelView"
             @onSelect="updatePanelView" />
 
-        <GDropdownGroup v-for="group in groupedPanelViews" :id="group.type" :key="group.type">
+        <GDropdownGroup v-for="group in groupedPanelViews" :id="group.type" :key="group.type" :aria-label="group.title">
             <template v-slot:header>
                 <small class="font-weight-bold">{{ group.title }}</small>
             </template>

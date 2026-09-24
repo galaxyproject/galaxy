@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import VueRouter from "vue-router";
 
 import GDropdown from "./GDropdown.vue";
+import GDropdownGroup from "./GDropdownGroup.vue";
 import GDropdownItem from "./GDropdownItem.vue";
 
 const localVue = getLocalVue();
@@ -14,7 +15,7 @@ let wrapper: Wrapper<Vue> | undefined;
 function mountDropdown(items: string) {
     wrapper = mount(
         {
-            components: { GDropdown, GDropdownItem },
+            components: { GDropdown, GDropdownGroup, GDropdownItem },
             template: `<GDropdown text="Menu">${items}</GDropdown>`,
         } as object,
         { localVue, router: new VueRouter({ mode: "history" }), attachTo: document.body },
@@ -57,6 +58,31 @@ describe("GDropdown.vue", () => {
             expect(toggle.attributes("aria-expanded")).toBe("false");
             await openMenu(wrapper);
             expect(toggle.attributes("aria-expanded")).toBe("true");
+        });
+
+        it("names item groups after their header", () => {
+            const wrapper = mountDropdown(`
+                <GDropdownGroup header="Admins Only"><GDropdownItem>Import</GDropdownItem></GDropdownGroup>
+                <GDropdownGroup><GDropdownItem>Other</GDropdownItem></GDropdownGroup>`);
+
+            const [labelled, unlabelled] = wrapper.findAll("[role='group']").wrappers;
+            const header = wrapper.get(".dropdown-header");
+            expect(header.attributes("id")).toBeTruthy();
+            expect(labelled?.attributes("aria-labelledby")).toBe(header.attributes("id"));
+            expect(header.text()).toBe("Admins Only");
+            expect(unlabelled?.attributes("aria-labelledby")).toBeUndefined();
+        });
+
+        it("does not name a group after a #header slot, which can hold a control", () => {
+            const wrapper = mountDropdown(`
+                <GDropdownGroup aria-label="Ontologies">
+                    <template v-slot:header><input placeholder="Filter ontologies" /></template>
+                    <GDropdownItem>Topic</GDropdownItem>
+                </GDropdownGroup>`);
+
+            const group = wrapper.get("[role='group']");
+            expect(group.attributes("aria-labelledby")).toBeUndefined();
+            expect(group.attributes("aria-label")).toBe("Ontologies");
         });
     });
 
