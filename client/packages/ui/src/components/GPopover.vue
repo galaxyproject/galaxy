@@ -515,7 +515,6 @@ defineExpose({
     top: 0;
     left: 0;
     z-index: 1060;
-    max-width: 276px;
     // Bootstrap spaces .bs-popover-* from the trigger with a margin, but floating-ui ignores margins,
     // so bottom/right placements ended up further away than top/left. offset() alone sets the gap.
     margin: 0;
