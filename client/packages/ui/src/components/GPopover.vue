@@ -254,7 +254,12 @@ const parsedTriggers = computed(() => {
     return result;
 });
 
-let activeListeners: Array<{ el: Element; event: string; handler: (e: Event) => void }> = [];
+let activeListeners: Array<{ el: EventTarget; event: string; handler: (e: Event) => void; capture: boolean }> = [];
+
+function listen(el: EventTarget, event: string, handler: (e: Event) => void, capture = false) {
+    el.addEventListener(event, handler, capture);
+    activeListeners.push({ el, event, handler, capture });
+}
 
 function setupListeners() {
     teardownListeners();
@@ -269,31 +274,17 @@ function setupListeners() {
     }
 
     if (parsedTriggers.value.has("hover")) {
-        const enterHandler = () => scheduleOpen();
-        const leaveHandler = () => scheduleClose();
-        target.addEventListener("mouseenter", enterHandler);
-        target.addEventListener("mouseleave", leaveHandler);
-        activeListeners.push(
-            { el: target, event: "mouseenter", handler: enterHandler },
-            { el: target, event: "mouseleave", handler: leaveHandler },
-        );
+        listen(target, "mouseenter", scheduleOpen);
+        listen(target, "mouseleave", scheduleClose);
     }
 
     if (parsedTriggers.value.has("focus")) {
-        const focusHandler = () => showPopover();
-        const blurHandler = () => hidePopover();
-        target.addEventListener("focus", focusHandler);
-        target.addEventListener("blur", blurHandler);
-        activeListeners.push(
-            { el: target, event: "focus", handler: focusHandler },
-            { el: target, event: "blur", handler: blurHandler },
-        );
+        listen(target, "focus", showPopover);
+        listen(target, "blur", hidePopover);
     }
 
     if (parsedTriggers.value.has("click")) {
-        const clickHandler = () => togglePopover();
-        target.addEventListener("click", clickHandler);
-        activeListeners.push({ el: target, event: "click", handler: clickHandler });
+        listen(target, "click", togglePopover);
 
         if (parsedTriggers.value.has("blur")) {
             // Close on click outside
@@ -306,28 +297,21 @@ function setupListeners() {
                     hidePopover();
                 }
             };
-            document.addEventListener("click", outsideClickHandler, true);
-            activeListeners.push({ el: document as any, event: "click", handler: outsideClickHandler });
+            listen(document, "click", outsideClickHandler, true);
         }
     }
 
     // Keep popover open when hovering over it
     if (parsedTriggers.value.has("hover") && popoverEl.value) {
-        const popoverEnter = () => closeDelay.clear();
-        const popoverLeave = () => scheduleClose();
-        popoverEl.value.addEventListener("mouseenter", popoverEnter);
-        popoverEl.value.addEventListener("mouseleave", popoverLeave);
-        activeListeners.push(
-            { el: popoverEl.value, event: "mouseenter", handler: popoverEnter },
-            { el: popoverEl.value, event: "mouseleave", handler: popoverLeave },
-        );
+        listen(popoverEl.value, "mouseenter", closeDelay.clear);
+        listen(popoverEl.value, "mouseleave", scheduleClose);
     }
 }
 
 function teardownListeners() {
     cancelScheduled();
-    for (const { el, event, handler } of activeListeners) {
-        el.removeEventListener(event, handler);
+    for (const { el, event, handler, capture } of activeListeners) {
+        el.removeEventListener(event, handler, capture);
     }
     activeListeners = [];
 }
