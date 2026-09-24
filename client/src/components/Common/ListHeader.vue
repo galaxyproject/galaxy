@@ -194,8 +194,8 @@ defineExpose({
                     <FontAwesomeIcon :icon="faCog" fixed-width />
                 </template>
 
-                <GDropdownGroup>
-                    <h6 class="dropdown-header">
+                <GDropdownGroup aria-label="Show/Hide Columns">
+                    <template v-slot:header>
                         Show/Hide Columns
                         <GButton
                             v-if="isAColumnNotVisible"
@@ -205,7 +205,7 @@ defineExpose({
                             @click="onResetColumns">
                             <FontAwesomeIcon :icon="faUndo" fixed-width />
                         </GButton>
-                    </h6>
+                    </template>
 
                     <GDropdownItem
                         v-for="column in columnOptions"
