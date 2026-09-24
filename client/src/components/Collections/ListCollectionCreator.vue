@@ -21,8 +21,6 @@ import HelpText from "../Help/HelpText.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 import DatasetCollectionElementView from "@/components/Collections/ListDatasetCollectionElementView.vue";
 
-const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this collection");
-
 interface Props {
     historyId: string;
     initialElements: HistoryItemSummary[];
@@ -89,6 +87,7 @@ const {
     hideSourceItems,
     onUpdateHideSourceItems,
     isElementInvalid,
+    reconcileRetainedElements,
     collectionName,
     onUpdateCollectionName,
     onCollectionCreate,
@@ -124,24 +123,7 @@ function _elementsSetUp() {
     }
 
     // for inListElements, reset their values (in order) to datasets from workingElements
-    const inListElementsPrev = inListElements.value;
-    inListElements.value = [];
-    inListElementsPrev.forEach((prevElem) => {
-        const matchingElem = workingElements.value.find((e) => e.id === prevElem.id);
-
-        if (matchingElem) {
-            const problem = isElementInvalid(matchingElem);
-            if (problem) {
-                const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
-                Toast.error(invalidMsg, localize("Invalid element"));
-            } else {
-                inListElements.value.push(matchingElem);
-            }
-        } else {
-            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("has been removed from the collection")}`;
-            Toast.error(invalidMsg, localize("Invalid element"));
-        }
-    });
+    inListElements.value = reconcileRetainedElements(inListElements.value, workingElements.value);
 
     // _ensureElementIds();
     _validateElements();

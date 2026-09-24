@@ -8,8 +8,14 @@ import { ref } from "vue";
 
 import type { HDASummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
+import { Toast } from "@/composables/toast";
 
 import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
+
+vi.mock("@/composables/toast");
+
+const toastError = vi.mocked(Toast.error);
+const toastWarning = vi.mocked(Toast.warning);
 
 const localVue = getLocalVue(true);
 
@@ -37,13 +43,14 @@ vi.mock("@/composables/useAgGrid", () => ({
 
 const { server, http } = useServerMock();
 beforeEach(() => {
+    vi.clearAllMocks();
     server.use(
         http.get("/api/configuration", ({ response }) => response(200).json({})),
         http.get("/api/genomes", ({ response }) => response(200).json([])),
     );
 });
 
-function buildFakeDataset(id: string, name: string): HDASummary {
+function buildFakeDataset(id: string, name: string, hid = 1): HDASummary {
     return {
         id,
         name,
@@ -55,7 +62,7 @@ function buildFakeDataset(id: string, name: string): HDASummary {
         create_time: "2024-01-01T00:00:00",
         update_time: "2024-01-01T00:00:00",
         history_id: "history-1",
-        hid: 1,
+        hid,
         type_id: "dataset",
         type: "file",
         tags: [],
@@ -87,8 +94,7 @@ async function mountCreator(initialElements: HDASummary[]) {
     return wrapper;
 }
 
-/** Row ids as rendered by (our stub of) AG Grid -- this is the same identity contract
- *  (`RowT.id`, read by AG Grid's real `getRowId`) that the namespacing fix targets. */
+/** Row ids as our AG Grid stub renders them - the `RowT.id` contract the namespacing fix targets. */
 function gridRowIds(wrapper: ReturnType<typeof mount>): string[] {
     return wrapper.findAll(".grid-row").wrappers.map((row) => row.attributes("data-row-id") ?? "");
 }
@@ -121,6 +127,39 @@ describe("PairedOrUnpairedListCollectionCreator", () => {
         expect(survivorRowId).not.toBe(pairRowId);
     });
 
+    it("warns rather than errors for the vanished half of a pair that could never have been one", async () => {
+        const a = buildFakeDataset("a", "sample_1", 1);
+        const b = buildFakeDataset("b", "sample_2", 2);
+
+        // list:paired - an unpaired survivor never reaches the collection, so it warns rather
+        // than claiming the vanished half was "removed from the collection"
+        const wrapper = await mountCreator([a, b]);
+        await wrapper.setProps({ initialElements: [a] });
+        await flushPromises();
+
+        expect(toastError).not.toHaveBeenCalled();
+        expect(toastWarning).toHaveBeenCalledTimes(1);
+        expect(toastWarning).toHaveBeenCalledWith(
+            "2: sample_2 is no longer available and was removed from the pairing list",
+            "Dataset unavailable",
+        );
+    });
+
+    it("describes a wholly vanished pair in one notification rather than one per side", async () => {
+        const a = buildFakeDataset("a", "sample_1", 1);
+        const b = buildFakeDataset("b", "sample_2", 2);
+
+        const wrapper = await mountCreator([a, b]);
+        await wrapper.setProps({ initialElements: [] });
+        await flushPromises();
+
+        expect(toastError).toHaveBeenCalledTimes(1);
+        expect(toastError).toHaveBeenCalledWith(
+            "1: sample_1, 2: sample_2 has been removed from the collection",
+            "Invalid element",
+        );
+    });
+
     it("does not resurrect a discarded survivor after history-delete splits an auto-paired pair", async () => {
         const a = buildFakeDataset("a", "sample_1");
         const b = buildFakeDataset("b", "sample_2");
@@ -132,14 +171,12 @@ describe("PairedOrUnpairedListCollectionCreator", () => {
         await flushPromises();
         expect(gridRowIds(wrapper)).toEqual(["single:a"]);
 
-        // user-facing discard action: the "discard all remaining unpaired datasets" link
         await wrapper.find('[data-description="dismiss unmatched datasets"]').trigger("click");
         await flushPromises();
         expect(gridRowIds(wrapper)).toEqual([]);
 
-        // a is still present in history (e.g. next poll tick) alongside b having come back
-        // (e.g. undeleted); a must not reappear since the user explicitly discarded it, while
-        // b -- never discarded, just transiently missing -- is free to come back on its own.
+        // b comes back (undeleted) and a is still in the history: a stays gone because the user
+        // discarded it, b returns because it was only transiently missing
         await wrapper.setProps({ initialElements: [a, b] });
         await flushPromises();
 
