@@ -293,6 +293,17 @@ describe("GDropdown.vue", () => {
             expect(onAncestorKeydown).toHaveBeenCalledOnce();
         });
 
+        it("keeps Enter and Space on the toggle from ancestors, which could take them as a click", async () => {
+            const wrapper = mountDropdown(MENU);
+            const onAncestorKeydown = vi.fn();
+            wrapper.element.addEventListener("keydown", onAncestorKeydown);
+
+            await press(wrapper.get(".dropdown-toggle"), "Enter");
+            await press(wrapper.get(".dropdown-toggle"), " ");
+
+            expect(onAncestorKeydown).not.toHaveBeenCalled();
+        });
+
         it("leaves keys typed into a control inside the menu alone", async () => {
             const wrapper = mountDropdown(`<GDropdownForm><input id="name" /></GDropdownForm>${MENU}`);
             await openMenu(wrapper);

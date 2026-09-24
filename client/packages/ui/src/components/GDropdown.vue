@@ -186,8 +186,9 @@ function onKeydown(event: KeyboardEvent) {
         handled = false;
     }
 
-    // Enter activates the item natively, so only keep it from ancestors
-    if (handled || (event.key === "Enter" && onMenuItem)) {
+    // Enter on an item, and Enter or Space on the toggle, activate natively: only keep them from ancestors
+    const activatesNatively = event.key === "Enter" ? onMenuItem || onToggle : event.key === " " && onToggle;
+    if (handled || activatesNatively) {
         // Bootstrap's document-level keydown handler would refocus the item, and GCard would take Space as a click
         event.stopPropagation();
     }
