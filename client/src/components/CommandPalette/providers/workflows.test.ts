@@ -201,6 +201,16 @@ describe("workflowsProvider", () => {
         expect(vi.mocked(loadWorkflows).mock.calls.some(([args]) => args.filterText === "zebrafish")).toBe(true);
     });
 
+    it("stays local for a single character", async () => {
+        // a full page keeps the cache incomplete, so only the length holds the query back
+        const page = Array.from({ length: 25 }, (_, index) => workflow(`filler-${index}`, `Filler ${index}`));
+        vi.mocked(loadWorkflows).mockImplementation(async () => ({ data: page, totalMatches: page.length }));
+
+        await scopedSections(OWN_SCOPE, "z");
+
+        expect(vi.mocked(loadWorkflows).mock.calls.some(([args]) => args.filterText === "z")).toBe(false);
+    });
+
     it("drops backend rows the query does not match", async () => {
         // a full page keeps the cache incomplete, so the query reaches the
         // backend — which answers a short search with everything it has
