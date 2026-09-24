@@ -1,7 +1,7 @@
 /**
  * Stale-while-revalidate for the store backed palette lists.
  *
- * Every scoped provider (workflows, histories, pages, visualizations, datasets,
+ * Every scoped provider (workflows, histories, reports, visualizations, datasets,
  * invocations) hydrates its store once and then answers keystrokes from that
  * cache. Without this helper the cache would stay as old as the first palette
  * use for the rest of the session -- a workflow renamed in another tab would

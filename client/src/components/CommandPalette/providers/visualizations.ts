@@ -76,7 +76,7 @@ async function ensureHydrated(): Promise<void> {
  *
  * @param cacheOnly never request anything, not even to hydrate an empty cache —
  * this provider answers the root fan-out from the cache alone, unlike the
- * histories, workflows, pages and tools ones, which search the backend there
+ * histories, workflows, reports and tools ones, which search the backend there
  * too; the `v:` scope does the fetching.
  */
 async function searchVisualizations(query: string, limit = MAX_RESULTS, cacheOnly = false): Promise<PaletteItem[]> {

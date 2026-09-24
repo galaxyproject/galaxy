@@ -210,8 +210,8 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
         providers.forEach((provider) => {
             providerItems(provider.id, ctx)
                 // root mode is not local for every provider — tools, and the
-                // listing searches of histories, workflows and pages, do reach the
-                // backend — so a rejection is ordinary here: it costs its own
+                // listing searches of histories, workflows and reports, do reach
+                // the backend — so a rejection is ordinary here: it costs its own
                 // section rather than the spinner it would leave running
                 .catch(() => [] as PaletteItem[])
                 .then((items) => {
