@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 
 from galaxy.model.dataset_collections import (
@@ -13,7 +15,7 @@ TYPE_DESCRIPTION_FACTORY = type_description.CollectionTypeDescriptionFactory(TYP
 
 
 def test_mapping_axis_reference_json_round_trip():
-    axis_id = (
+    axis_id: matching.MappingAxisId = (
         "axis-prefix",
         ("workflow-map", 83, ((107, "output"), (108, "forward"))),
         1,
@@ -46,8 +48,8 @@ def test_mapping_axis_reference_rejects_rank_mismatch():
 
 
 def test_consumer_residual_axis_identity_json_round_trip():
-    source = ("workflow-map", 83, ((107, "output"),))
-    axis_id = ("consumer-residual", (source, ("axis-prefix", source, 1)), 1)
+    source: matching.MappingAxisId = ("workflow-map", 83, ((107, "output"),))
+    axis_id: matching.MappingAxisId = ("consumer-residual", (source, ("axis-prefix", source, 1)), 1)
 
     encoded = matching.mapping_axis_id_to_dict(axis_id)
 
@@ -64,7 +66,7 @@ def test_lists_of_same_cardinality_match():
 
 
 def test_nested_lists_match():
-    nested_list = nested_list = example_list_of_paired_datasets()
+    nested_list = example_list_of_paired_datasets()
     assert_can_match(nested_list, nested_list)
 
 
@@ -162,14 +164,14 @@ def test_structure_only_axis_repeats_local_slices_and_conditions():
 def test_inherited_axis_preserves_identity_without_parent_binding():
     source = list_instance(ids=["X", "Y"])
     to_match = matching.CollectionsToMatch()
-    to_match.add("source", source, axis_id=("invocation", 1, "boundary", 2))
+    to_match.add("source", source, axis_id=("workflow-map", 1, ((2, "boundary"),)))
     matched = matching.MatchingCollections.for_collections(to_match, TYPE_DESCRIPTION_FACTORY)
     assert matched
 
     local = build_matching_collections(("local", list_instance(ids=["P", "Q"])))
     combined = local.with_inherited_mapping(matched)
 
-    assert combined.mapping_axes[0].axis_id == ("invocation", 1, "boundary", 2)
+    assert combined.mapping_axes[0].axis_id == ("workflow-map", 1, ((2, "boundary"),))
     assert "source" not in combined.bindings
 
 
@@ -378,7 +380,7 @@ def test_inherited_axis_can_be_refined_by_ragged_materialized_output():
     )
     nested_structure = build_matching_collections(("nested", nested)).mapping_axes[0].structure
 
-    refined = inherited.refine_axis(("source-terminal", "boundary"), nested_structure)
+    refined = inherited.refine_axis("source-terminal-boundary", nested_structure)
     refined.bindings = {
         "nested": matching.MatchingCollectionBinding(
             collection=nested,
@@ -405,7 +407,7 @@ def test_empty_inherited_axis_can_be_refined_without_unknown_cardinality():
     empty_nested = collection_instance(collection_type="list:list", elements=[])
     nested_structure = build_matching_collections(("nested", empty_nested)).mapping_axes[0].structure
 
-    refined = inherited.refine_axis(("source-terminal", "boundary"), nested_structure)
+    refined = inherited.refine_axis("source-terminal-boundary", nested_structure)
 
     assert list(refined.slice_collections()) == []
     assert refined.structure.collection_type_description.collection_type == "list:list"
@@ -561,7 +563,7 @@ def build_matching_collections(*named_items):
 
 def build_matching_collections_with_axis_id(name, collection):
     to_match = matching.CollectionsToMatch()
-    to_match.add(name, collection, axis_id=("source-terminal", name))
+    to_match.add(name, collection, axis_id=f"source-terminal-{name}")
     matched = matching.MatchingCollections.for_collections(to_match, TYPE_DESCRIPTION_FACTORY)
     assert matched
     return matched
@@ -706,7 +708,9 @@ class MockHDAElement:
         self.columns = None
 
 
-collection_instance = MockCollectionInstance
-collection = MockCollection
-collection_element = MockCollectionElement
-hda_element = MockHDAElement
+# Typed Any so the mocks pass where the matching API expects real
+# collection instances (CollectionLike).
+collection_instance: Any = MockCollectionInstance
+collection: Any = MockCollection
+collection_element: Any = MockCollectionElement
+hda_element: Any = MockHDAElement

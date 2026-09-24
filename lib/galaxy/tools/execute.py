@@ -12,6 +12,7 @@ from collections.abc import (
     Callable,
     Sequence,
 )
+from collections.abc import Iterable
 from typing import (
     Any,
     NamedTuple,
@@ -530,7 +531,7 @@ class ExecutionTracker:
 
     @staticmethod
     def _collection_info_to_collection_hids_element_ids(
-        items: list[model.DatasetCollectionElement | model.HistoryDatasetCollectionAssociation],
+        items: Iterable[model.DatasetCollectionElement | model.HistoryDatasetCollectionAssociation],
     ) -> tuple[list[int], list[str]]:
         element_ids = []
         collection_hids = []

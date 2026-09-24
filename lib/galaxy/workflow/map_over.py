@@ -183,6 +183,8 @@ class MapOverPlanner:
         known_input_names = {input_dict["name"] for input_dict in all_inputs}
         for step_input in step.inputs:
             step_input_name = step_input.name
+            if step_input_name is None:
+                continue
             input_in_execution_state = step_input_name not in known_input_names
             if input_in_execution_state:
                 maybe_collection = progress.replacement_for_connection(
