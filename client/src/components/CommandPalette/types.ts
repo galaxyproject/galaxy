@@ -117,6 +117,8 @@ export interface ResultSection extends ScopedSection {
  * A source of palette results. Sync providers (navigation, actions) filter
  * local data; async providers (tools, and per-entity searches later) may
  * call the backend.
+ *
+ * Every `query` arrives trimmed by the palette, so providers never trim it again.
  */
 export interface CommandPaletteProvider {
     id: string;

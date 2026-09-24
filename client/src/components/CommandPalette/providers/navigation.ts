@@ -145,8 +145,7 @@ export const navigationProvider: CommandPaletteProvider = {
      * the full list of destinations without one.
      */
     searchScoped(_scope, query: string, ctx: PaletteContext): ScopedSection[] {
-        const trimmed = query.trim();
-        const items = trimmed ? rankPaletteItems(navigationItems(ctx), trimmed) : navigationItems(ctx);
-        return [{ id: "results", items, title: trimmed ? "Navigation" : "Destinations" }];
+        const items = query ? rankPaletteItems(navigationItems(ctx), query) : navigationItems(ctx);
+        return [{ id: "results", items, title: query ? "Navigation" : "Destinations" }];
     },
 };

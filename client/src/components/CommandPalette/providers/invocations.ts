@@ -146,16 +146,14 @@ export const invocationsProvider: CommandPaletteProvider = {
      * search the backend there too. The `i:` scope is the one that fetches.
      */
     search(query: string) {
-        const trimmed = query.trim();
-        if (!trimmed) {
+        if (!query) {
             return [];
         }
-        return filterInvocations(useInvocationStore().latestInvocations, trimmed).slice(0, SECTION_CAP);
+        return filterInvocations(useInvocationStore().latestInvocations, query).slice(0, SECTION_CAP);
     },
     async searchScoped(_scope: ScopeDefinition, query: string): Promise<ScopedSection[]> {
-        const trimmed = query.trim();
         const invocations = await ensureLatestInvocations();
-        if (!trimmed) {
+        if (!query) {
             // "Latest" keeps the server's order (most recently created first) and drops
             // whatever the "Recent" section already shows.
             const recent = recentInvocationItems();
@@ -163,6 +161,6 @@ export const invocationsProvider: CommandPaletteProvider = {
             const latest = invocations.map(invocationToItem).filter((item) => !recentIds.has(item.id));
             return [...section("recent", "Recent", recent), ...section("latest", "Latest", latest)];
         }
-        return section("results", "Invocations", filterInvocations(invocations, trimmed));
+        return section("results", "Invocations", filterInvocations(invocations, query));
     },
 };

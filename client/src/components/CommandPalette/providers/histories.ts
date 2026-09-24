@@ -351,11 +351,10 @@ export const historiesProvider: CommandPaletteProvider = {
     },
     /** Root mode fan-out over the cached own histories and the public listings */
     async search(query: string, ctx: PaletteContext) {
-        const trimmed = query.trim();
-        if (trimmed.length < MIN_QUERY_LENGTH) {
+        if (query.length < MIN_QUERY_LENGTH) {
             return [];
         }
-        return rootItems(trimmed, ctx.isAnonymous);
+        return rootItems(query, ctx.isAnonymous);
     },
     /**
      * `h:` shows the palette recents on top of the user's own listing; `hs:`,
@@ -368,11 +367,10 @@ export const historiesProvider: CommandPaletteProvider = {
      */
     async searchScoped(scope: ScopeDefinition, query: string) {
         const variant = listVariant(scope.variant);
-        const trimmed = query.trim();
-        const results = await listItems(variant, trimmed, RESULTS_LIMIT);
+        const results = await listItems(variant, query, RESULTS_LIMIT);
         return [
-            ...section("recent", "Recent", variant === "my" ? recentItems(trimmed) : []),
-            ...section(variant, resultsTitle(scope, trimmed), results),
+            ...section("recent", "Recent", variant === "my" ? recentItems(query) : []),
+            ...section(variant, resultsTitle(scope, query), results),
         ];
     },
 };

@@ -253,11 +253,10 @@ export const workflowsProvider: CommandPaletteProvider = {
     },
     /** Root mode fan-out over the cached own list and the public ones */
     async search(query: string, ctx: PaletteContext) {
-        const trimmed = query.trim();
-        if (trimmed.length < MIN_ROOT_QUERY_LENGTH) {
+        if (query.length < MIN_ROOT_QUERY_LENGTH) {
             return [];
         }
-        return rootItems(trimmed, ctx.isAnonymous);
+        return rootItems(query, ctx.isAnonymous);
     },
     /**
      * `w:` shows bookmarks, palette recents and the user's latest workflows;
@@ -268,15 +267,14 @@ export const workflowsProvider: CommandPaletteProvider = {
      */
     async searchScoped(scope: ScopeDefinition, query: string) {
         const variant = listVariant(scope.variant);
-        const trimmed = query.trim();
         const [bookmarked, results] = await Promise.all([
-            variant === "my" ? listItems("bookmarked", trimmed, BOOKMARKED_LIMIT, { queryBackend: false }) : [],
-            listItems(variant, trimmed, RESULTS_LIMIT),
+            variant === "my" ? listItems("bookmarked", query, BOOKMARKED_LIMIT, { queryBackend: false }) : [],
+            listItems(variant, query, RESULTS_LIMIT),
         ]);
         return [
             ...section("bookmarked", "Bookmarked", bookmarked),
-            ...section("recent", "Recent", variant === "my" ? recentItems(trimmed) : []),
-            ...section(variant, resultsTitle(scope, trimmed), results),
+            ...section("recent", "Recent", variant === "my" ? recentItems(query) : []),
+            ...section(variant, resultsTitle(scope, query), results),
         ];
     },
 };

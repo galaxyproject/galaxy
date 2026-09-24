@@ -195,11 +195,10 @@ export const reportsProvider: CommandPaletteProvider = {
     },
     /** Unscoped fan-out over the cached own pages and the published ones */
     async search(query: string, ctx: PaletteContext) {
-        const trimmed = query.trim();
-        if (trimmed.length < MIN_ROOT_QUERY_LENGTH) {
+        if (query.length < MIN_ROOT_QUERY_LENGTH) {
             return [];
         }
-        return rootItems(trimmed, ctx.isAnonymous);
+        return rootItems(query, ctx.isAnonymous);
     },
     /**
      * `r:` own pages as Recent + list sections, `rp:` the published list alone.
@@ -215,10 +214,9 @@ export const reportsProvider: CommandPaletteProvider = {
         if (ctx.isAnonymous && variant === "my") {
             return [];
         }
-        const trimmed = query.trim();
-        const recent = variant === "my" ? recentItems(trimmed, RECENT_LIMIT) : [];
+        const recent = variant === "my" ? recentItems(query, RECENT_LIMIT) : [];
         const recentIds = new Set(recent.map((item) => item.id));
-        const listed = (await storeFirstItems(variant, trimmed, SECTION_LIMIT + recentIds.size))
+        const listed = (await storeFirstItems(variant, query, SECTION_LIMIT + recentIds.size))
             .filter((item) => !recentIds.has(item.id))
             .slice(0, SECTION_LIMIT);
 
@@ -228,7 +226,7 @@ export const reportsProvider: CommandPaletteProvider = {
         }
         sections.push({
             id: variant === "published" ? "published" : "latest",
-            title: trimmed ? scope.label : "Latest",
+            title: query ? scope.label : "Latest",
             items: listed,
         });
         return sections;

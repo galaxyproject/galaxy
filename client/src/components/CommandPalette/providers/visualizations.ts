@@ -132,22 +132,20 @@ export const visualizationsProvider: CommandPaletteProvider = {
     },
     /** Root mode fan-out, ranking the cached visualizations without a request */
     async search(query: string) {
-        const trimmed = query.trim();
-        if (!trimmed) {
+        if (!query) {
             return latestItems();
         }
-        return searchVisualizations(trimmed, MAX_RESULTS, true);
+        return searchVisualizations(query, MAX_RESULTS, true);
     },
     async searchScoped(_scope, query: string): Promise<ScopedSection[]> {
-        const trimmed = query.trim();
-        if (!trimmed) {
+        if (!query) {
             await ensureHydrated();
             return sectionsWithItems([
                 { id: "recent", items: recentItems(), title: "Recent" },
                 { id: "latest", items: latestItems(), title: "Latest visualizations" },
             ]);
         }
-        const items = await searchVisualizations(trimmed);
+        const items = await searchVisualizations(query);
         return sectionsWithItems([{ id: "results", items, title: "Visualizations" }]);
     },
 };

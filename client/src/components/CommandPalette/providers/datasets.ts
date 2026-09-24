@@ -145,20 +145,18 @@ export const datasetsProvider: CommandPaletteProvider = {
     },
     /** Root mode fan-out, filtering the cached summaries without a request */
     async search(query: string, ctx: PaletteContext) {
-        const trimmed = query.trim();
-        if (ctx.isAnonymous || !trimmed) {
+        if (ctx.isAnonymous || !query) {
             return [];
         }
-        const found = (await matchingDatasets(trimmed, true)).map(datasetToItem);
-        return rankPaletteItems(found, trimmed).slice(0, SECTION_CAP);
+        const found = (await matchingDatasets(query, true)).map(datasetToItem);
+        return rankPaletteItems(found, query).slice(0, SECTION_CAP);
     },
     async searchScoped(_scope, query: string, ctx: PaletteContext) {
         if (ctx.isAnonymous) {
             return [];
         }
-        const trimmed = query.trim();
-        const recent = recentItems(trimmed);
-        if (!trimmed) {
+        const recent = recentItems(query);
+        if (!query) {
             const datasetListStore = useDatasetListStore();
             await ensureLatestHydrated();
             const latest = [...datasetListStore.latestDatasets].sort(byUpdateTimeDesc).map(datasetToItem);
@@ -171,7 +169,7 @@ export const datasetsProvider: CommandPaletteProvider = {
                 },
             ]);
         }
-        const found = rankPaletteItems((await matchingDatasets(trimmed)).map(datasetToItem), trimmed);
+        const found = rankPaletteItems((await matchingDatasets(query)).map(datasetToItem), query);
         return toSections([
             { id: "recent", items: recent, title: localize("Recent") },
             { id: "results", items: withoutItems(found, recent).slice(0, SECTION_CAP), title: localize("Datasets") },
