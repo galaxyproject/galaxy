@@ -69,13 +69,13 @@ function onClick(event: MouseEvent) {
 </script>
 
 <template>
+    <!-- A disabled item is a plain anchor: RouterLink navigates before any click handler here could cancel it -->
     <router-link
-        v-if="to"
+        v-if="to && !disabled"
         :class="classes"
         :to="to"
         :target="target"
         :title="title"
-        :aria-disabled="disabled || undefined"
         role="menuitem"
         tabindex="-1"
         @click.native="onClick">
@@ -84,7 +84,7 @@ function onClick(event: MouseEvent) {
     <a
         v-else
         :class="classes"
-        :href="href ?? '#'"
+        :href="!disabled && href ? href : '#'"
         :target="target"
         :title="title"
         :aria-disabled="disabled || undefined"

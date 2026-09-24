@@ -131,6 +131,19 @@ describe("GDropdown.vue", () => {
             expect(isMenuOpen(wrapper)).toBe(false);
         });
 
+        it("do not navigate when disabled", async () => {
+            const wrapper = mountDropdown(`<GDropdownItem disabled to="/histories/list">Histories</GDropdownItem>`);
+            const startPath = wrapper.vm.$router.currentRoute.fullPath;
+            await openMenu(wrapper);
+
+            const item = wrapper.get("a.dropdown-item");
+            await item.trigger("click");
+
+            expect(wrapper.vm.$router.currentRoute.fullPath).toBe(startPath);
+            expect(item.attributes("href")).toBe("#");
+            expect(item.attributes("aria-disabled")).toBe("true");
+        });
+
         it("close the menu when an href item is clicked", async () => {
             const wrapper = mountDropdown(`<GDropdownItem href="https://example.org/">External</GDropdownItem>`);
             await openMenu(wrapper);
