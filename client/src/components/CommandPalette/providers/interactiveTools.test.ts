@@ -58,6 +58,9 @@ const ENTRY_POINT = {
 
 const IT_SCOPE = PALETTE_SCOPES.find((scope) => scope.key === "it")!;
 
+// the `it:` scope only exists where interactive tools are enabled
+const itCtx = () => makeCtx({ config: { interactivetools_enable: true } });
+
 /** `/api/tools` returns the toolbox, `/api/entry_points` the running tools */
 function mockApi(entryPoints: unknown[] = []) {
     vi.mocked(axios.get).mockImplementation(async (url: string) => {
@@ -69,7 +72,7 @@ function mockApi(entryPoints: unknown[] = []) {
 }
 
 async function scopedSearch(query: string) {
-    return (await interactiveToolsProvider.searchScoped?.(IT_SCOPE, query, makeCtx())) ?? [];
+    return (await interactiveToolsProvider.searchScoped?.(IT_SCOPE, query, itCtx())) ?? [];
 }
 
 describe("interactiveToolsProvider", () => {
@@ -134,7 +137,7 @@ describe("interactiveToolsProvider", () => {
         const running = sections[0]!.items[0]!;
 
         expect(running.secondaryAction?.label).toBe("Stop");
-        running.secondaryAction?.run?.(makeCtx());
+        running.secondaryAction?.run?.(itCtx());
         await Promise.resolve();
         await Promise.resolve();
 
@@ -144,6 +147,6 @@ describe("interactiveToolsProvider", () => {
 
     it("contributes nothing to the unscoped search", async () => {
         mockApi([ENTRY_POINT]);
-        expect(await interactiveToolsProvider.search("jupyter", makeCtx())).toEqual([]);
+        expect(await interactiveToolsProvider.search("jupyter", itCtx())).toEqual([]);
     });
 });
