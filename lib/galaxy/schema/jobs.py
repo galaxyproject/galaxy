@@ -205,6 +205,14 @@ class EncodedJobDetails(JobSummary):
         description="",
     )
     user_id: EncodedDatabaseIdField | None = Field(default=None, description="User ID of user that ran this job")
+    implicit_collection_jobs_id: EncodedDatabaseIdField | None = Field(
+        default=None,
+        title="Implicit Collection Jobs ID",
+        description=(
+            "Encoded ID of the ImplicitCollectionJobs group this job belongs to, "
+            "or null if the job was not mapped over a collection."
+        ),
+    )
 
 
 class JobDestinationParams(Model):

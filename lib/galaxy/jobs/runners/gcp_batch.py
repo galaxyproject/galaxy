@@ -313,7 +313,9 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         task_spec = batch_v1.TaskSpec()
         task_spec.runnables = [runnable]
         task_spec.max_retry_count = params["max_retry_count"]
-        task_spec.max_run_duration = max_run_duration
+        # Setting this attribute automatically converts a duration string to the
+        # right Duration type, but the declared type is Duration, not str.
+        task_spec.max_run_duration = max_run_duration  # type: ignore[assignment]
 
         # Set compute resources
         compute_resource = batch_v1.ComputeResource()

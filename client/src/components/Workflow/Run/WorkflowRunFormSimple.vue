@@ -778,7 +778,9 @@ onBeforeMount(() => {
     border-left: 1px solid $gray-200;
     border-right: 1px solid $gray-200;
     border-bottom: 1px solid $gray-200;
-    animation: slideDown 0.2s ease-in-out;
+    // Fade only: a transform or height animation moves the toggles while the
+    // panel is appearing, so a click that starts on a row can land on another.
+    animation: fadeIn 0.2s ease-in-out;
 }
 
 .settings-row {
@@ -811,16 +813,12 @@ onBeforeMount(() => {
     font-size: 0.9em;
 }
 
-@keyframes slideDown {
+@keyframes fadeIn {
     from {
         opacity: 0;
-        transform: scaleY(0);
-        max-height: 0;
     }
     to {
         opacity: 1;
-        transform: scaleY(1);
-        max-height: 400px;
     }
 }
 </style>

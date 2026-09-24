@@ -22,6 +22,7 @@ from typing import (
     cast,
     Literal,
     NamedTuple,
+    Protocol,
     TYPE_CHECKING,
 )
 
@@ -118,8 +119,12 @@ def galaxy_timeout_handler(timeout_multiplier: float = 1):
 DEFAULT_WAIT_TYPE = WAIT_TYPES.DATABASE_OPERATION
 
 
-class NullTourCallback:
-    def handle_step(self, step, step_index: int):
+class TourCallbackProtocol(Protocol):
+    def handle_step(self, step: dict[str, Any], step_index: int) -> None: ...
+
+
+class NullTourCallback(TourCallbackProtocol):
+    def handle_step(self, step: dict[str, Any], step_index: int) -> None:
         pass
 
 
@@ -1889,8 +1894,6 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         workflow_run.run_workflow.wait_for_visible()
         if workflow_run.expanded_form.is_absent:
             workflow_run.runtime_setting_button.wait_for_and_click()
-            # Wait for the settings panel slideDown animation (0.2s) to complete
-            self.sleep_for(self.wait_types.UX_RENDER)
             expand_link = workflow_run.expand_form_link.wait_for_clickable()
             # A plain click doesn't work reliably on GButton components due to
             # an internal tooltip element - move to the element first.
@@ -2640,7 +2643,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             not self.is_logged_in()
         ), "Clicked to logged out and UI reflects a logout, but API still thinks a user is logged in."
 
-    def run_tour(self, path, skip_steps=None, sleep_on_steps=None, tour_callback=None):
+    def run_tour(
+        self,
+        path: str,
+        skip_steps: list[str] | None = None,
+        sleep_on_steps: dict[str, int | float] | None = None,
+        tour_callback: TourCallbackProtocol | None = None,
+    ) -> None:
         skip_steps = skip_steps or []
         sleep_on_steps = sleep_on_steps or {}
         if tour_callback is None:
@@ -2675,9 +2684,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         last_timeout: SeleniumTimeoutException | None = None
         for _ in range(2):
             if not tooltip_component.is_absent:
-                move_away_chain = self.action_chains()
-                move_away_chain.move_by_offset(100, 100)
-                move_away_chain.perform()
+                self.hover_away()
             try:
                 tooltip_component.wait_for_absent()
                 return
@@ -2764,7 +2771,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def assert_no_error_message(self):
         self.components._.messages.error.assert_absent_or_hidden()
 
-    def run_tour_step(self, step, step_index: int, tour_callback):
+    def run_tour_step(self, step: dict[str, Any], step_index: int, tour_callback: TourCallbackProtocol) -> None:
         element_str = step.get("element", None)
         if element_str is None:
             component = step.get("component", None)

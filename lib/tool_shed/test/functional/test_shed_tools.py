@@ -1,6 +1,9 @@
+from urllib.parse import quote
+
 from tool_shed_client.schema.trs import (
     Tool,
     ToolClass,
+    ToolVersion,
 )
 from tool_shed_client.trs_util import encode_identifier
 from ..base.api import ShedApiTestCase
@@ -96,3 +99,38 @@ class TestShedToolsApi(ShedApiTestCase):
         content = tool_response.text
         assert "Add_a_column1" in content
         assert "<tool " in content
+
+    def test_trs_stock_tools(self):
+        for tool_id in [
+            "__SAMPLE_SHEET_TO_TABULAR__",
+            "__FILTER_FROM_FILE__",
+            "__FLATTEN__",
+            "Filter1",
+            "sort1",
+            "Show beginning1",
+        ]:
+            encoded_id = quote(tool_id, safe="")
+            url = f"ga4gh/trs/v2/tools/{encoded_id}"
+            response = self.api_interactor.get(url)
+            response.raise_for_status()
+            tool = Tool(**response.json())
+            assert tool.url == response.url
+            assert tool.id == tool_id
+            assert tool.organization == "galaxyproject"
+            response = self.api_interactor.get(f"{url}/versions")
+            response.raise_for_status()
+            versions = [ToolVersion(**version) for version in response.json()]
+            assert versions == tool.versions
+            assert versions
+            for version in versions:
+                response = self.api_interactor.get(f"tools/{encoded_id}/versions/{quote(version.id, safe='')}")
+                response.raise_for_status()
+                assert version.url == response.url
+                parsed = response.json()
+                assert parsed["id"] == tool_id
+                assert parsed["version"] == version.id
+
+    def test_trs_unknown_stock_tool(self):
+        for suffix in ["", "/versions"]:
+            response = self.api_interactor.get(f"ga4gh/trs/v2/tools/unknown_stock_tool{suffix}")
+            assert response.status_code == 404

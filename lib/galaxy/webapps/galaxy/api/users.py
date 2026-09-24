@@ -152,6 +152,17 @@ CustomBuildCreationBody = Body(
 UserCreationBody = Body(default=..., title="Create User", description="The values to add create a user.")
 AnyUserModel = DetailedUserModel | AnonUserModel
 
+# Disable changing these when enable_account_interface is false.
+ACCOUNT_IDENTITY_FIELDS = frozenset({"active", "username"})
+
+
+def ensure_account_modification_allowed(trans: ProvidesUserContext, message: str) -> None:
+    """Reject non-admin account changes when ``enable_account_interface`` is disabled."""
+    # Enforced in the controller rather than UserManager because OIDC profile sync writes these
+    # same fields through the manager precisely when the option is off.
+    if not trans.app.config.enable_account_interface and not trans.user_is_admin:
+        raise exceptions.ConfigDoesNotAllowException(message)
+
 
 @router.cbv
 class FastAPIUsers:
@@ -672,6 +683,8 @@ class FastAPIUsers:
         current_user = trans.user
         user_to_update = self.service.get_non_anonymous_user_full(trans, user_id, deleted=deleted)
         data = payload.model_dump(exclude_unset=True)
+        if not ACCOUNT_IDENTITY_FIELDS.isdisjoint(data):
+            ensure_account_modification_allowed(trans, "Account modification is not allowed in this Galaxy instance")
         self.service.user_deserializer.deserialize(user_to_update, data, user=current_user, trans=trans)
         return self.service.user_to_detailed_model(user_to_update)
 
@@ -704,6 +717,7 @@ class FastAPIUsers:
                 self.service.user_manager.delete(user_to_update)
         else:
             if trans.user == user_to_update:
+                ensure_account_modification_allowed(trans, "Account deletion is not allowed in this Galaxy instance")
                 self.service.user_manager.delete(user_to_update)
             else:
                 raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
@@ -944,6 +958,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         """
         payload = payload or {}
         user = self._get_user(trans, id)
+        ensure_account_modification_allowed(trans, "Account modification is not allowed in this Galaxy instance")
         # Update email
         if "email" in payload:
             email = payload.get("email")
@@ -1057,11 +1072,12 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         }
 
     @expose_api
-    def set_password(self, trans: ProvidesAppContext, id, payload=None, **kwd):
+    def set_password(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         Allows to the logged-in user to change own password.
         """
         payload = payload or {}
+        ensure_account_modification_allowed(trans, "Password changes are not allowed in this Galaxy instance")
         user, message = self.user_manager.change_password(trans, id=id, **payload)
         if user is None:
             raise exceptions.AuthenticationRequired(message)
@@ -1178,6 +1194,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             function = factory.build_filter_function(filter_name)
             if function is None:
                 errors[f"{filter_type}|{filter_name}"] = "Filter function not found."
+                continue
 
             short_description, description = None, None
             doc_string = docstring_trim(function.__doc__)

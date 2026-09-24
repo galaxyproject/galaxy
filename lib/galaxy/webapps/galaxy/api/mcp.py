@@ -19,6 +19,7 @@ from fastmcp import (
     settings as fastmcp_settings,
 )
 from starlette.datastructures import URL
+from starlette.routing import Route
 
 from galaxy.agents.operations import AgentOperationsManager
 from galaxy.managers.users import UserManager
@@ -1478,7 +1479,11 @@ def get_mcp_app(gx_app):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.revert_page_revision(page_id, revision_id)
 
-    mcp_app = mcp.http_app(path="/")
+    mcp_path = gx_app.config.mcp_server_path.rstrip("/") or "/"
+    mcp_app = mcp.http_app(path=mcp_path)
+    if mcp_path != "/":
+        mcp_route = next(route for route in mcp_app.routes if isinstance(route, Route) and route.path == mcp_path)
+        mcp_app.router.routes.append(Route(f"{mcp_path}/", endpoint=mcp_route.endpoint, methods=mcp_route.methods))
     mcp_app.state.mcp_server = mcp
 
     logger.info("MCP server initialized (Streamable HTTP)")

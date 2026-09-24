@@ -22,9 +22,11 @@ from galaxy.tool_util.verify.interactor import (
     compare_expected_metadata_to_api_response,
     GalaxyInteractorApi,
     get_metadata_to_test,
+    InputStagingError,
     PathOrLocation,
     POLLING_BACKOFF,
     POLLING_DELTA,
+    RunToolException,
 )
 from galaxy.tool_util.verify.wait import DEFAULT_POLLING_DELTA
 
@@ -301,7 +303,9 @@ def _dropping_server(drop_first: bool = True):
 
     SO_LINGER 0 forces an RST rather than a clean FIN, which is what a
     pooled connection looks like when the server has closed it and urllib3
-    has not noticed yet.
+    has not noticed yet. The request is read before the reset so urllib3
+    sees a read error; a reset that lands while it is still connecting is a
+    connect error, which urllib3 retries for every method, POST included.
     """
     accepts = []
     listener = socket.socket()
@@ -318,6 +322,7 @@ def _dropping_server(drop_first: bool = True):
                 return
             accepts.append(1)
             if not dropped:
+                conn.recv(65536)
                 conn.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
                 conn.close()
                 dropped = True
@@ -414,3 +419,44 @@ def test_configured_polling_delta_paces_job_status_checks(mocked):
     started = time.monotonic()
     interactor.wait_for_job("job1")
     assert time.monotonic() - started >= delta
+
+
+@pytest.mark.parametrize("diagnostics", ["ok", "unavailable", "invalid_json"])
+def test_staging_diagnostics_leave_original_error_alone(interactor, mocked, diagnostics):
+    interactor.uploads = {"input.txt": {"src": "hda", "id": "hda1"}}
+    url = f"{API}/histories/hist1/contents/hda1"
+    if diagnostics == "unavailable":
+        mocked.get(url, status=503)
+    elif diagnostics == "invalid_json":
+        mocked.get(url, body="not JSON")
+    else:
+        mocked.get(url, json={"state": "ok"})
+
+    interactor.raise_for_failed_staged_inputs("hist1", RunToolException("Original error"))
+
+
+def test_staging_diagnostics_continue_after_a_failed_lookup(interactor, mocked):
+    interactor.uploads = {f"input{i}.txt": {"src": "hda", "id": f"hda{i}"} for i in range(1, 5)}
+    original_error = RunToolException("Original error")
+    mocked.get(f"{API}/histories/hist1/contents/hda1", status=404)
+    mocked.get(f"{API}/histories/hist1/contents/hda2", json={"name": "good.txt", "state": "ok"})
+    mocked.get(
+        f"{API}/histories/hist1/contents/hda3",
+        json={"name": "broken.txt", "state": "error", "misc_info": "Checksum mismatch"},
+    )
+    mocked.get(
+        f"{API}/histories/hist1/contents/hda4",
+        json={"name": "empty-info.txt", "state": "error", "misc_info": None},
+    )
+
+    with pytest.raises(InputStagingError) as exc:
+        interactor.raise_for_failed_staged_inputs("hist1", original_error)
+
+    message = str(exc.value)
+    assert "input3.txt" in message
+    assert "broken.txt" in message
+    assert "Checksum mismatch" in message
+    assert "empty-info.txt" in message
+    assert "No dataset error details available." in message
+    assert "good.txt" not in message
+    assert exc.value.__cause__ is original_error

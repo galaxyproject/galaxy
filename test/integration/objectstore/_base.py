@@ -30,7 +30,7 @@ OBJECT_STORE_RUCIO_USERNAME = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RU
 OBJECT_STORE_RUCIO_RSE_NAME = "TEST"
 OBJECT_STORE_RUCIO_ACCESS = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_ACCESS", "rucio")
 OBJECT_STORE_RUCIO_IMAGE = os.environ.get(
-    "GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_IMAGE", "savannah.ornl.gov/ndip/public-docker/rucio:40.2.0"
+    "GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_IMAGE", "savannah.ornl.gov/ndip/public-docker/rucio:40.2.0-pg"
 )
 
 OBJECT_STORE_CONFIG = string.Template("""
@@ -141,7 +141,6 @@ def wait_rucio_ready(container_name):
 def start_rucio(container_name):
     ports = [(OBJECT_STORE_PORT, 80)]
     docker_run(OBJECT_STORE_RUCIO_IMAGE, container_name, ports=ports)
-
     wait_rucio_ready(container_name)
 
 

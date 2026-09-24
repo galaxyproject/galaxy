@@ -1,7 +1,6 @@
 from galaxy.selenium.navigates_galaxy import edit_details
 from .framework import (
     retry_assertion_during_transitions,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -17,7 +16,6 @@ HISTORY_PANEL_VIOLATION_EXCEPTIONS = ["heading-order", "label"]
 class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_history_panel_landing_state(self):
         self.assert_initial_history_panel_state_correct()
@@ -28,13 +26,11 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
         toggle = editor.toggle
         toggle.wait_for_visible()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_history_panel_rename(self):
         self.history_panel_rename(NEW_HISTORY_NAME)
         self.assert_name_changed()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_history_rename_cancel_with_escape(self):
         editable_text_input_element = self.history_panel_name_input()
@@ -53,7 +49,6 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
         history_editor.annotation_input.wait_for_clickable()
         history_editor.tags_input.wait_for_clickable()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_history_panel_annotations_change(self):
         history_panel = self.components.history_panel
@@ -92,7 +87,6 @@ class TestHistoryPanel(SeleniumTestCase, UsesUploadActivity):
             is_equal=True,
         )
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_history_panel_tags_change(self):
         def create_tags(size):

@@ -406,6 +406,8 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             history = self.manager.most_recent(
                 trans.user, filters=(model.History.deleted == false()), current_history=trans.history
             )
+            if history is None:
+                raise glx_exceptions.ObjectNotFound("No accessible history found.")
         else:
             history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
         return self._serialize_history(trans, history, serialization_params)

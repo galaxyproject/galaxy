@@ -86,8 +86,8 @@ def test_simple_path_get(hash_value: str, error_message: str | None):
             assert "error_message" not in hda_result
 
 
-def test_simple_uri_get(mock_http_server):
-    url = mock_http_server.get_url(
+def test_simple_uri_get(test_http_server):
+    url = test_http_server.get_url(
         remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
         file_path="test-data/1.bed",
     )
@@ -116,32 +116,32 @@ def test_simple_uri_get(mock_http_server):
 
 
 @responses.activate
-def test_drs_uri_named_from_drs_metadata(mock_http_server):
-    _mock_drs_object(_bed_content_url(mock_http_server), name="sample.bed")
+def test_drs_uri_named_from_drs_metadata(test_http_server):
+    _mock_drs_object(_bed_content_url(test_http_server), name="sample.bed")
     hda_result = _fetch_drs_element()
     assert hda_result["state"] == "ok"
     assert hda_result["name"] == "sample.bed"
 
 
 @responses.activate
-def test_drs_uri_named_from_drs_metadata_via_access_id(mock_http_server):
-    _mock_drs_object(_bed_content_url(mock_http_server), name="sample.bed", access_id="https")
+def test_drs_uri_named_from_drs_metadata_via_access_id(test_http_server):
+    _mock_drs_object(_bed_content_url(test_http_server), name="sample.bed", access_id="https")
     hda_result = _fetch_drs_element()
     assert hda_result["state"] == "ok"
     assert hda_result["name"] == "sample.bed"
 
 
 @responses.activate
-def test_drs_uri_explicit_name_wins(mock_http_server):
-    _mock_drs_object(_bed_content_url(mock_http_server), name="sample.bed")
+def test_drs_uri_explicit_name_wins(test_http_server):
+    _mock_drs_object(_bed_content_url(test_http_server), name="sample.bed")
     hda_result = _fetch_drs_element(name="user supplied name")
     assert hda_result["state"] == "ok"
     assert hda_result["name"] == "user supplied name"
 
 
 @responses.activate
-def test_drs_uri_without_name_falls_back_to_uri_basename(mock_http_server):
-    _mock_drs_object(_bed_content_url(mock_http_server))
+def test_drs_uri_without_name_falls_back_to_uri_basename(test_http_server):
+    _mock_drs_object(_bed_content_url(test_http_server))
     hda_result = _fetch_drs_element()
     assert hda_result["state"] == "ok"
     assert hda_result["name"] == DRS_OBJECT_ID
@@ -164,23 +164,23 @@ def test_drs_uri_without_name_falls_back_to_uri_basename(mock_http_server):
     ],
 )
 @responses.activate
-def test_drs_uri_name_is_sanitized(mock_http_server, drs_name, expected_name):
-    _mock_drs_object(_bed_content_url(mock_http_server), name=drs_name)
+def test_drs_uri_name_is_sanitized(test_http_server, drs_name, expected_name):
+    _mock_drs_object(_bed_content_url(test_http_server), name=drs_name)
     hda_result = _fetch_drs_element()
     assert hda_result["state"] == "ok"
     assert hda_result["name"] == expected_name
 
 
 @responses.activate
-def test_drs_uri_overlong_name_is_truncated(mock_http_server):
-    _mock_drs_object(_bed_content_url(mock_http_server), name="a" * 300)
+def test_drs_uri_overlong_name_is_truncated(test_http_server):
+    _mock_drs_object(_bed_content_url(test_http_server), name="a" * 300)
     hda_result = _fetch_drs_element()
     assert hda_result["state"] == "ok"
     assert hda_result["name"] == "a" * 255
 
 
-def _bed_content_url(mock_http_server) -> str:
-    return mock_http_server.get_url(
+def _bed_content_url(test_http_server) -> str:
+    return test_http_server.get_url(
         remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
         file_path="test-data/1.bed",
     )
@@ -189,7 +189,7 @@ def _bed_content_url(mock_http_server) -> str:
 def _mock_drs_object(content_url: str, name: Any = None, access_id: str | None = None) -> None:
     """Register mock responses for a DRS object resolving to ``content_url``."""
     # The DRS API endpoints are mocked below, but the payload itself is served by the
-    # real local mock_http_server; the download also goes through requests now, so it
+    # real local test_http_server; the download also goes through requests now, so it
     # has to be exempted from the responses mock.
     responses.add_passthru(content_url)
     access_method: dict[str, Any] = {"type": "https"}
@@ -345,8 +345,8 @@ def test_incorrect_sha1():
         )
 
 
-def test_deferred_uri_get(mock_http_server):
-    url = mock_http_server.get_url(
+def test_deferred_uri_get(test_http_server):
+    url = test_http_server.get_url(
         remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
         status=404,
         body="Not Found",
@@ -399,8 +399,8 @@ def test_simple_list_path_get():
         assert destination["object_id"] == 76
 
 
-def test_hdas_single_url_error(mock_http_server):
-    url_12_bed = mock_http_server.get_url(
+def test_hdas_single_url_error(test_http_server):
+    url_12_bed = test_http_server.get_url(
         remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
         status=404,
         body="Not Found",
@@ -437,8 +437,8 @@ def test_hdas_single_url_error(mock_http_server):
         assert f"Failed to fetch url {url_12_bed}" in error
 
 
-def test_hdca_collection_element_failed(mock_http_server):
-    url_12_bed = mock_http_server.get_url(
+def test_hdca_collection_element_failed(test_http_server):
+    url_12_bed = test_http_server.get_url(
         remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
         status=404,
         body="Not Found",
@@ -471,8 +471,8 @@ def test_hdca_collection_element_failed(mock_http_server):
         assert f"Failed to fetch url {url_12_bed}" in error
 
 
-def test_hdca_allow_failed_collections(mock_http_server):
-    url_12_bed = mock_http_server.get_url(
+def test_hdca_allow_failed_collections(test_http_server):
+    url_12_bed = test_http_server.get_url(
         remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
         status=404,
         body="Not Found",

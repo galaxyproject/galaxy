@@ -155,6 +155,10 @@ class SmartTarget:
         """Select an option from a <select> element by its value attribute."""
         self._has_driver.select_by_value(self._target, value)
 
+    def select_by_visible_text(self, text: str):
+        """Select an option from a <select> element by the text shown to the user."""
+        self._has_driver.select_by_visible_text(self._target, text)
+
     def axe_eval(self) -> AxeResults:
         return self._has_driver.axe_eval(context=self._target.element_locator[1])
 

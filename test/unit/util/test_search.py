@@ -149,3 +149,22 @@ def test_filter_terms_defaults():
     kept = [t.text for t in filtered.terms]
     # of, and, -, RDH, by dropped for length; everything else survives.
     assert kept == ["Copy", "Genomic", "Assembly", "analysis", "shared", "user", "nedflanders"]
+
+
+def test_filter_terms_caps_filtered_and_quoted_terms():
+    # Keyed and quoted terms each become their own SQL predicate, so they need
+    # a bound too or a single request can build an arbitrarily large WHERE.
+    query = " ".join(f"name:x{i}" for i in range(500)) + " " + " ".join(f"'q{i}'" for i in range(500))
+    parsed = parse_filters_structured(query, {"name": "name"})
+    filtered = filter_terms(parsed)
+    explicit = [t for t in filtered.terms if isinstance(t, FilteredTerm) or t.quoted]
+    assert 0 < len(explicit) <= 10
+
+
+def test_filter_terms_keeps_typical_filtered_queries_intact():
+    parsed = parse_filters_structured(
+        "tag:foo tag:bar name:'rna seq' user:alice is:published 'exact phrase' Genomic",
+        {"tag": "tag", "name": "name", "user": "user", "is": "is"},
+    )
+    filtered = filter_terms(parsed)
+    assert filtered.terms == parsed.terms

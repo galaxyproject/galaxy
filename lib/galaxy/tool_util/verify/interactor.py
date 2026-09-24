@@ -54,6 +54,7 @@ from galaxy.tool_util.parser.interface import (
     ToolSourceTestOutputs,
     XmlTestCollectionDefDict,
 )
+from galaxy.tool_util.parser.util import FLOAT_OUTPUT_ATTRIBUTES
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tool_util_models.testing_types import (
     AssertionList,
@@ -70,6 +71,7 @@ from galaxy.util.hash_util import (
     memory_bound_hexdigest,
     parse_checksum_hash,
 )
+from galaxy.util.json import restore_inf_nan
 from . import (
     verify,
     verify_job_metadata,
@@ -358,7 +360,14 @@ class GalaxyInteractorApi:
         params = {"tool_version": tool_version} if tool_version else None
         response = self._get(url, data=params)
         assert response.status_code == 200, f"Non 200 response from tool test API. [{response.content}]"
-        return response.json()
+        tool_tests = cast(list[ToolTestDescriptionDict], response.json())
+        for tool_test in tool_tests:
+            for output in tool_test["outputs"]:
+                attributes = output["attributes"]
+                for attribute_name in FLOAT_OUTPUT_ATTRIBUTES:
+                    if attribute_name in attributes:
+                        attributes[attribute_name] = restore_inf_nan(attributes[attribute_name])
+        return tool_tests
 
     def verify_output_collection(
         self, output_collection_def, output_collection_id, history, tool_id, tool_version=None
@@ -1142,6 +1151,25 @@ class GalaxyInteractorApi:
         dataset_json = self._get(f"histories/{history_id}/contents/{id}").json()
         return dataset_json
 
+    def raise_for_failed_staged_inputs(self, history_id: str, error: Exception) -> None:
+        """Explain failed input uploads without masking an error if diagnostics are unavailable."""
+        problems = []
+        for name, reference in self.uploads.items():
+            try:
+                response = self._get(f"histories/{history_id}/contents/{reference['id']}")
+                response.raise_for_status()
+                dataset = response.json()
+                if dataset["state"] == "error":
+                    info = dataset.get("misc_info") or "No dataset error details available."
+                    problems.append(
+                        f"Staged input '{name}': dataset '{dataset['name']}' (id: {reference['id']}) "
+                        f"is in the error state:\n{info}"
+                    )
+            except Exception:
+                log.warning("Could not retrieve staging diagnostics for input %s", name, exc_info=True)
+        if problems:
+            raise InputStagingError("\n".join(problems)) from error
+
     def jobs_for_tool_request(self, tool_request_id: str) -> list[dict[str, Any]]:
         job_list_response = self._get(f"tool_requests/{tool_request_id}")
         job_list_response.raise_for_status()
@@ -1511,6 +1539,10 @@ class RunToolException(Exception):
         self.dynamic_param_error = dynamic_param_error
 
 
+class InputStagingError(Exception):
+    """A tool test failed with one or more errored input uploads."""
+
+
 # Galaxy specific methods - rest of this can be used with arbitrary files and such.
 def verify_hid(
     filename: str | None,
@@ -1849,16 +1881,14 @@ def verify_tool(
             tool_response = galaxy_interactor.resolve_tool_submission(submission)
             data_list, jobs = tool_response.outputs, tool_response.jobs
             data_collection_list = tool_response.output_collections
-        except (RunToolException, RequestParameterInvalidException) as e:
-            tool_inputs = getattr(e, "inputs", None)
-            tool_execution_exception = e
-            if not testdef.expect_failure:
-                raise e
-            else:
-                expected_failure_occurred = True
         except Exception as e:
+            tool_inputs = getattr(e, "inputs", tool_inputs)
             tool_execution_exception = e
-            raise e
+            galaxy_interactor.raise_for_failed_staged_inputs(test_history, e)
+            if isinstance(e, (RunToolException, RequestParameterInvalidException)) and testdef.expect_failure:
+                expected_failure_occurred = True
+            else:
+                raise
 
         if not expected_failure_occurred:
             try:
@@ -1872,6 +1902,9 @@ def verify_tool(
             except Exception as e:
                 job_output_exceptions = [e]
                 raise e
+    except InputStagingError:
+        input_staging_exc_info = sys.exc_info()
+        raise
     finally:
         if credential_cleanup:
             credential_cleanup()
@@ -1944,6 +1977,7 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
         galaxy_interactor.wait_for_job(job["id"], history, maxseconds)
     except Exception as e:
         job_failed = True
+        galaxy_interactor.raise_for_failed_staged_inputs(history, e)
         if not testdef.expect_failure:
             found_exceptions.append(e)
 

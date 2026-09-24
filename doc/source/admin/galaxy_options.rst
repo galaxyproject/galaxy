@@ -5641,7 +5641,7 @@
     Define toolbox filters
     (https://galaxyproject.org/user-defined-toolbox-filters/) that
     users may use to restrict the tools to display.
-:Default: ``examples:restrict_upload_to_admins, examples:restrict_encode``
+:Default: ``None``
 :Type: str
 
 
@@ -5653,7 +5653,7 @@
     Define toolbox filters
     (https://galaxyproject.org/user-defined-toolbox-filters/) that
     users may use to restrict the tool sections to display.
-:Default: ``examples:restrict_text``
+:Default: ``None``
 :Type: str
 
 
@@ -5665,7 +5665,7 @@
     Define toolbox filters
     (https://galaxyproject.org/user-defined-toolbox-filters/) that
     users may use to restrict the tool labels to display.
-:Default: ``examples:restrict_upload_to_admins, examples:restrict_encode``
+:Default: ``None``
 :Type: str
 
 

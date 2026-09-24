@@ -7,6 +7,13 @@ import pytest
 
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.model.item_attrs import add_item_annotation
+from galaxy.schema.schema import MAX_ANNOTATION_SIZE
+
+
+@pytest.fixture(scope="module")
+def init_model(engine):
+    model.Base.metadata.create_all(engine)
 
 
 def test_get_uuid():
@@ -89,11 +96,29 @@ ANNOTATION_MODELS = model.ItemAnnotationAssociation.__subclasses__()
 
 @pytest.mark.parametrize("annotation_model", ANNOTATION_MODELS, ids=lambda cls: cls.__name__)
 def test_annotation_size_limit(annotation_model):
-    at_limit = "a" * model.MAX_ANNOTATION_SIZE
+    at_limit = "a" * MAX_ANNOTATION_SIZE
     assert annotation_model(annotation=None).annotation is None
     assert annotation_model(annotation=at_limit).annotation == at_limit
     with pytest.raises(RequestParameterInvalidException, match="Annotation too large"):
         annotation_model(annotation=at_limit + "a")
+
+
+@pytest.mark.parametrize("item_class", [model.History, model.LibraryDatasetCollectionAssociation])
+def test_update_item_annotation(session, item_class):
+    first, second = item_class(), item_class()
+    session.add_all([first, second])
+    session.flush()
+    original = add_item_annotation(session, None, first, "original")
+    session.flush()
+    other = add_item_annotation(session, None, second, "other")
+    session.flush()
+    assert original is not other
+    with pytest.raises(RequestParameterInvalidException):
+        add_item_annotation(session, None, first, "a" * (MAX_ANNOTATION_SIZE + 1))
+    assert original.annotation == "original"
+    assert add_item_annotation(session, None, first, "updated") is original
+    assert original.annotation == "updated"
+    assert other.annotation == "other"
 
 
 def test_annotation_columns_are_not_indexed():

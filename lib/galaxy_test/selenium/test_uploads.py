@@ -27,7 +27,10 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
 
     @selenium_test
     def test_upload_pasted_url_content(self):
-        pasted_content = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/LICENSE.txt"
+        pasted_content = self.test_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/LICENSE.txt",
+            file_path="LICENSE.txt",
+        )
         self.upload_context("paste-content").stage_paste_content(pasted_content).start()
 
         self.history_panel_wait_for_hid_ok(1)

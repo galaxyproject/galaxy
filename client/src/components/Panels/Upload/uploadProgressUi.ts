@@ -131,10 +131,11 @@ export interface UploadItemDisplayInfo {
     icon?: IconDefinition;
     iconTitle?: string;
     badges: UploadItemDisplayBadge[];
+    sourceUrl?: string;
 }
 
 /**
- * Get display information for an upload item (method icon, deferred badge, etc.).
+ * Get display information for an upload item (method icon, deferred badge, source URL, etc.).
  */
 export function getUploadItemDisplayInfo(item: UploadItem): UploadItemDisplayInfo {
     const badges: UploadItemDisplayBadge[] = [];
@@ -157,7 +158,15 @@ export function getUploadItemDisplayInfo(item: UploadItem): UploadItemDisplayInf
         icon: uploadMethod?.icon,
         iconTitle: uploadMethod?.name,
         badges,
+        sourceUrl: getUploadItemSourceUrl(item),
     };
+}
+
+function getUploadItemSourceUrl(item: UploadItem): string | undefined {
+    if (item.uploadMode !== "paste-links" && item.uploadMode !== "remote-files") {
+        return undefined;
+    }
+    return item.url || undefined;
 }
 
 export interface BatchDisplayInfo {

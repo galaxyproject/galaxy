@@ -71,6 +71,7 @@ keywords = ["Galaxy"]
 [project.optional-dependencies]
 test = [
     "galaxy-config",
+    "galaxy-test-base",
     "hvac",
     "pytest",
     "roc-validator",

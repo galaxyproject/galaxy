@@ -645,6 +645,11 @@ fi
 
 setup_python
 
+if [ "$GALAXY_TEST_DRIVER_BACKEND" = "playwright" ] && [ ${#install_playwright_browers[@]} -eq 0 ]; then
+    # backend selected by environment rather than by the -playwright flag
+    install_playwright_browers=(chromium)
+fi
+
 if [ -n "$install_playwright_browers" ]; then
     playwright install "${install_playwright_browers[@]}"
 fi

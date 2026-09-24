@@ -5,8 +5,8 @@ import { BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import type { HDASummary, HistorySummary } from "@/api";
-import { copyDatasets, deleteDataset, loadDatasets } from "@/api/datasets";
+import { type HistoryItemSummary, type HistorySummary, isHDA } from "@/api";
+import { copyHistoryItems, deleteDataset, loadDatasets } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
 import type { RowIcon } from "@/components/Common/GTable.types";
 import { STATES } from "@/components/History/Content/model/states";
@@ -68,7 +68,7 @@ const loading = ref(true);
 const overlay = ref(false);
 const sortDesc = ref(true);
 const sortBy = ref("update_time");
-const rows = ref<HDASummary[]>([]);
+const rows = ref<HistoryItemSummary[]>([]);
 const selectedItemIds = ref<string[]>([]);
 const totalDatasets = ref(0);
 const visibleColumns = ref<string[]>(["name", "tags", "history_id", "extension", "update_time"]);
@@ -133,7 +133,11 @@ async function onTags(tags: string[], index: number) {
     }
 
     try {
-        await updateTags(item?.id as string, "HistoryDatasetAssociation", tags);
+        const itemClass =
+            item?.history_content_type === "dataset"
+                ? "HistoryDatasetAssociation"
+                : "HistoryDatasetCollectionAssociation";
+        await updateTags(item?.id as string, itemClass, tags);
     } catch (e: any) {
         Toast.error(`Failed to update tags: ${e}`);
     }
@@ -168,7 +172,7 @@ function onSelectAll() {
     }
 }
 
-function onRowSelect(event: { item: HDASummary; index: number; selected: boolean }) {
+function onRowSelect(event: { item: HistoryItemSummary; index: number; selected: boolean }) {
     const index = selectedItemIds.value.indexOf(event.item.id);
     if (index > -1) {
         selectedItemIds.value.splice(index, 1);
@@ -243,32 +247,32 @@ function openBulkCopyModal() {
 }
 
 async function onBulkCopy(targetHistory: HistorySummary) {
-    const datasetIdsToCopy = [...selectedItemIds.value];
-    const totalSelected = datasetIdsToCopy.length;
+    const itemsToCopy = rows.value.filter((item) => selectedItemIds.value.includes(item.id));
+    const totalSelected = itemsToCopy.length;
 
     try {
         overlay.value = true;
         bulkCopyLoading.value = true;
 
-        const { copiedDatasets, failedDatasetIds } = await copyDatasets(datasetIdsToCopy, targetHistory.id);
+        const { copiedItems, failedItemIds } = await copyHistoryItems(itemsToCopy, targetHistory.id);
 
-        const copiedCount = copiedDatasets.length;
-        const failedCount = failedDatasetIds.length;
+        const copiedCount = copiedItems.length;
+        const failedCount = failedItemIds.length;
 
         if (failedCount === 0) {
-            Toast.success(`Copied ${copiedCount} dataset${copiedCount !== 1 ? "s" : ""} to ${targetHistory.name}.`);
+            Toast.success(`Copied ${copiedCount} item${copiedCount !== 1 ? "s" : ""} to ${targetHistory.name}.`);
             selectedItemIds.value = [];
         } else if (copiedCount > 0) {
             Toast.error(
-                `Copied ${copiedCount} of ${totalSelected} dataset${totalSelected !== 1 ? "s" : ""}. Failed to copy ${failedCount} dataset${failedCount !== 1 ? "s" : ""}.`,
+                `Copied ${copiedCount} of ${totalSelected} item${totalSelected !== 1 ? "s" : ""}. Failed to copy ${failedCount} item${failedCount !== 1 ? "s" : ""}.`,
             );
-            selectedItemIds.value = failedDatasetIds;
+            selectedItemIds.value = failedItemIds;
         } else {
             // Keep original selection so the user can retry the failed copy.
-            Toast.error(`Failed to copy ${totalSelected} dataset${totalSelected !== 1 ? "s" : ""}.`);
+            Toast.error(`Failed to copy ${totalSelected} item${totalSelected !== 1 ? "s" : ""}.`);
         }
     } catch (e: any) {
-        Toast.error(`Failed to copy datasets: ${e?.message ?? String(e)}`);
+        Toast.error(`Failed to copy history items: ${e?.message ?? String(e)}`);
     } finally {
         bulkCopyLoading.value = false;
 
@@ -276,7 +280,10 @@ async function onBulkCopy(targetHistory: HistorySummary) {
     }
 }
 
-function getDatasetStatusIcon(item: HDASummary): RowIcon | undefined {
+function getDatasetStatusIcon(item: HistoryItemSummary): RowIcon | undefined {
+    if (!isHDA(item)) {
+        return undefined;
+    }
     if (item.purged) {
         return { icon: faBurn, class: "text-danger", title: "Purged" };
     }

@@ -188,6 +188,7 @@ from galaxy.schema.schema import (
     DatasetValidatedState,
     InvocationsStateCounts,
     JobState,
+    MAX_ANNOTATION_SIZE,
     ToolRequestState,
 )
 from galaxy.schema.workflow.comments import WorkflowCommentModel
@@ -260,7 +261,6 @@ _datatypes_registry = None
 
 MAX_WORKFLOW_README_SIZE = 20000
 MAX_WORKFLOW_HELP_SIZE = 40000
-MAX_ANNOTATION_SIZE = 65536
 STR_TO_STR_DICT = dict[str, str]
 
 
@@ -1750,6 +1750,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     )
 
     @property
+    def implicit_collection_jobs_id(self) -> int | None:
+        """Id of the ImplicitCollectionJobs group this job belongs to, if it was mapped over."""
+        icj_assoc = self.implicit_collection_jobs_association
+        return icj_assoc.implicit_collection_jobs_id if icj_assoc is not None else None
+
+    @property
     def effective_workflow_invocation_step(self) -> Optional["WorkflowInvocationStep"]:
         """The WorkflowInvocationStep backing this job, including mapped steps.
 
@@ -1794,6 +1800,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         "tool_id",
         "tool_version",
         "history_id",
+        "implicit_collection_jobs_id",
     ]
 
     _numeric_metric = JobMetricNumeric
@@ -10850,12 +10857,8 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
 
         sub_invocation = subworkflow_assoc.subworkflow_invocation
 
-        # Leverage subworkflow's completion state if available
-        if sub_invocation.state == InvocationState.COMPLETED.value:
-            return True
-
-        # Otherwise check the subworkflow
-        return sub_invocation.is_complete
+        # The child must have its completion recorded before the parent can complete.
+        return sub_invocation.state == InvocationState.COMPLETED.value
 
     @property
     def preferred_object_stores(self) -> WorkflowInvocationStepObjectStores:
@@ -12292,7 +12295,7 @@ class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
 
 # Item annotation classes.
 class ItemAnnotationAssociation:
-    """Bounds annotation length; the column itself is unbounded TEXT."""
+    """Enforce the annotation limit for legacy API and internal writes that bypass input schemas."""
 
     @validates("annotation")
     def validates_annotation(self, key, annotation):

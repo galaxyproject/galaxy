@@ -1,4 +1,4 @@
-"""A local mock HTTP server for replacing external test dependencies.
+"""A local HTTP server that serves test fixtures in place of external dependencies.
 
 Replaces httpstat.us, usegalaxy.org, and raw.githubusercontent.com URLs
 with a local server. Supports configurable status codes, file serving,
@@ -12,6 +12,7 @@ import os
 import re
 import threading
 import time
+from collections.abc import Generator
 from dataclasses import (
     dataclass,
     field,
@@ -39,7 +40,7 @@ class Route:
     support_ranges: bool = False
 
 
-class MockHTTPRequestHandler(BaseHTTPRequestHandler):
+class TestHTTPRequestHandler(BaseHTTPRequestHandler):
     routes: dict[str, Route] = {}
 
     def _handle_request(self) -> None:
@@ -108,10 +109,10 @@ class MockHTTPRequestHandler(BaseHTTPRequestHandler):
         pass
 
 
-class MockHttpServer:
-    """A local mock HTTP server with a per-test URL factory.
+class TestHttpServer:
+    """A local HTTP server with a per-test URL factory.
 
-    When running locally, registers routes on the mock server and returns local URLs.
+    When running locally, registers routes on the local server and returns local URLs.
     When targeting a remote Galaxy (GALAXY_TEST_EXTERNAL), returns the remote URL
     and skips the test if the remote site is down.
     """
@@ -119,7 +120,7 @@ class MockHttpServer:
     def __init__(
         self,
         base_url: str | None,
-        handler_class: type[MockHTTPRequestHandler] | None,
+        handler_class: type[TestHTTPRequestHandler] | None,
         is_remote: bool,
     ):
         self.base_url = base_url
@@ -142,7 +143,7 @@ class MockHttpServer:
         support_ranges: bool = False,
         redirect_to_self: bool = False,
     ) -> str:
-        """Register a mock endpoint and return its URL, or return remote_url with skip-if-down.
+        """Register an endpoint and return its URL, or return remote_url with skip-if-down.
 
         Args:
             remote_url: The real URL to use when targeting a remote Galaxy server.
@@ -169,7 +170,7 @@ class MockHttpServer:
             filename = os.path.basename(file_path)
         else:
             filename = os.path.basename(urlparse(remote_url).path)
-        path = f"/mock/{self._counter}/{filename}" if filename else f"/mock/{self._counter}"
+        path = f"/served/{self._counter}/{filename}" if filename else f"/served/{self._counter}"
 
         if file_path is not None:
             file_path_obj = Path(file_path)
@@ -201,8 +202,8 @@ class MockHttpServer:
         return url
 
 
-def start_mock_http_server(host: str = "127.0.0.1", port: int = 0) -> tuple[HTTPServer, str]:
-    """Start a mock HTTP server in a daemon thread.
+def start_test_http_server(host: str = "127.0.0.1", port: int = 0) -> tuple[HTTPServer, str]:
+    """Start the test HTTP server in a daemon thread.
 
     Args:
         host: Address to bind to. Defaults to 127.0.0.1.
@@ -211,8 +212,21 @@ def start_mock_http_server(host: str = "127.0.0.1", port: int = 0) -> tuple[HTTP
     Returns:
         Tuple of (server, base_url).
     """
-    server = HTTPServer((host, port), MockHTTPRequestHandler)
+    server = HTTPServer((host, port), TestHTTPRequestHandler)
     actual_port = server.server_address[1]
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return server, f"http://{host}:{actual_port}"
+
+
+@pytest.fixture(scope="session")
+def test_http_server() -> Generator[TestHttpServer, None, None]:
+    """Session-scoped test HTTP server, re-exported by the conftest of every suite that needs it."""
+    if os.environ.get("GALAXY_TEST_EXTERNAL"):
+        yield TestHttpServer(base_url=None, handler_class=None, is_remote=True)
+    else:
+        server, base_url = start_test_http_server()
+        try:
+            yield TestHttpServer(base_url=base_url, handler_class=TestHTTPRequestHandler, is_remote=False)
+        finally:
+            server.shutdown()
