@@ -15,11 +15,10 @@ import type {
     PaletteSearchOptions,
     ScopedSection,
 } from "../types";
-import { dedupePaletteItemsByEntity, rankPaletteItems } from "../utilities";
-import { fetchOrFail } from "./errors";
+import { rankPaletteItems } from "../utilities";
 import { PALETTE_LIMITS } from "./limits";
-import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
+import { type ListingSearch, rootListItems, storeFirstItems, type StoreFirstList } from "./storeFirst";
 
 /** Entity type this provider records in the palette MRU (`useRecentPaletteItems`) */
 export const HISTORY_RECENT_TYPE = "history";
@@ -149,19 +148,11 @@ function historyItem(history: PaletteHistory, sectionId: string, variant: Histor
     };
 }
 
-/** Newest first, so an empty query renders the "Latest" section as promised */
-function latestFirst(histories: PaletteHistory[]): PaletteHistory[] {
-    return [...histories].sort((a, b) => b.update_time.localeCompare(a.update_time));
-}
-
-/** A failing background fetch degrades to whatever the store already holds */
-async function fetchQuietly<T>(fetch: () => Promise<T>): Promise<T | undefined> {
-    try {
-        return await fetch();
-    } catch (error) {
-        console.debug("Command palette could not fetch histories", error);
-        return undefined;
-    }
+/** Rows of one list, newest first so an empty query renders "Latest" as promised */
+function historyRows(histories: PaletteHistory[], variant: HistoryVariant): PaletteItem[] {
+    return [...histories]
+        .sort((a, b) => b.update_time.localeCompare(a.update_time))
+        .map((history) => historyItem(history, variant, variant));
 }
 
 /** The cached histories of one variant, straight from the store */
@@ -172,152 +163,55 @@ function cachedHistories(variant: HistoryVariant): PaletteHistory[] {
 }
 
 /**
- * Fills an empty cache once; a populated cache answers the keystroke as is and
- * is only refreshed in the background (see {@link refreshListWhenStale}).
- *
- * Both store calls share whatever request is already running, so a keystroke
- * landing during the very first fetch waits for it instead of rendering the
- * still empty cache as "no results".
- *
- * Every variant is fetched one page at a time, the own histories included: the
- * palette renders a handful of rows and asks the backend again for anything the
- * page cannot answer, so pulling an unbounded list would be wasted work.
+ * One history list, store first. Every variant is fetched one page at a time,
+ * the own histories included: the palette renders a handful of rows and asks the
+ * backend again for anything the page cannot answer, so pulling an unbounded list
+ * would be wasted work.
  */
-async function ensureHydrated(variant: HistoryVariant): Promise<void> {
+function historyList(variant: HistoryVariant): StoreFirstList {
     const historyStore = useHistoryStore();
-    const key = `histories:${variant}`;
-    if (variant === "my") {
-        if (historyStore.histories.length === 0) {
-            // nothing cached to fall back on, so a failure is reported
-            await fetchOrFail(() => historyStore.loadHistories(false, undefined, PALETTE_LIMITS.page));
-            markListRefreshed(key);
-        } else {
-            refreshListWhenStale(key, () => historyStore.loadHistories(false, undefined, PALETTE_LIMITS.page));
-        }
-        return;
-    }
-    if (!historyStore.hasLoadedHistoryList(variant)) {
-        await fetchOrFail(() => historyStore.ensureHistoryListLoaded(variant, { limit: PALETTE_LIMITS.page }));
-        markListRefreshed(key);
-    } else {
-        refreshListWhenStale(key, () => historyStore.fetchHistoryList(variant, { limit: PALETTE_LIMITS.page }));
-    }
-}
-
-/** Asks the backend for `query` through the store, which merges the result in */
-async function searchBackend(variant: HistoryVariant, query: string): Promise<void> {
-    const historyStore = useHistoryStore();
-    if (variant === "my") {
-        await fetchQuietly(() =>
-            historyStore.loadHistories(false, HistoriesFilters.getQueryString(query), PALETTE_LIMITS.page),
-        );
-        return;
-    }
-    await fetchQuietly(() => historyStore.fetchHistoryList(variant, { search: query, limit: PALETTE_LIMITS.page }));
-}
-
-function rankHistories(histories: PaletteHistory[], variant: HistoryVariant, query: string): PaletteItem[] {
-    return rankPaletteItems(
-        latestFirst(histories).map((history) => historyItem(history, variant, variant)),
-        query,
-    );
+    return {
+        key: `histories:${variant}`,
+        isLoaded: () =>
+            variant === "my" ? historyStore.histories.length > 0 : historyStore.hasLoadedHistoryList(variant),
+        fetchListing: () =>
+            variant === "my"
+                ? historyStore.loadHistories(false, undefined, PALETTE_LIMITS.page)
+                : historyStore.fetchHistoryList(variant, { limit: PALETTE_LIMITS.page }),
+        cachedItems: () => historyRows(cachedHistories(variant), variant),
+        // a short page is the whole list; the own histories additionally carry a
+        // total whenever the app paginated them itself, and it stays zero otherwise
+        isComplete: () => {
+            const cached = cachedHistories(variant).length;
+            const total = variant === "my" ? historyStore.totalHistoryCount : 0;
+            return cached < PALETTE_LIMITS.page && cached >= total;
+        },
+        async searchItems(query) {
+            if (variant === "my") {
+                // merged into the own histories, which the cache read picks up
+                await historyStore.loadHistories(false, HistoriesFilters.getQueryString(query), PALETTE_LIMITS.page);
+                return [];
+            }
+            const found = await historyStore.fetchHistoryList(variant, { search: query, limit: PALETTE_LIMITS.page });
+            return historyRows(found.map(toPaletteHistory), variant);
+        },
+    };
 }
 
 /**
- * Whether the cache holds everything the backend has, in which case it can
- * answer any query on its own.
- *
- * Every list is fetched a page at a time, so a short page is the whole list.
- * The own histories additionally carry a total whenever the app paginated the
- * list itself — it stays zero otherwise, and a short page is all there is.
+ * The root answer's search of one listing: its matches alone, which are not the
+ * listing, so `record: false` keeps them out of it — `hs:` and `hp:` still find
+ * their listing unhydrated and hydrate it themselves.
  */
-function cacheIsComplete(variant: HistoryVariant, cached: PaletteHistory[]): boolean {
-    if (variant === "my") {
-        return cached.length < PALETTE_LIMITS.page && cached.length >= useHistoryStore().totalHistoryCount;
-    }
-    return cached.length < PALETTE_LIMITS.page;
-}
-
-/**
- * Store first section data: the cached list renders instantly and answers every
- * keystroke locally. The backend is only asked when the cache is empty, or when
- * an incomplete cache cannot fill the section for the current query — its result
- * is merged into the store (deduplicated by id there) and read back from the
- * same cache.
- *
- * @param variant which cached list to read
- * @param query free text filter, already trimmed
- * @param limit section cap
- * @param cacheOnly never request anything, not even to hydrate an empty cache.
- * The root fan-out passes it for the user's own histories, which it filters
- * locally; the listings it does search on the backend, see {@link variantItems}.
- */
-async function listItems(
-    variant: HistoryVariant,
-    query: string,
-    limit: number,
-    cacheOnly = false,
-): Promise<PaletteItem[]> {
-    if (!cacheOnly) {
-        await ensureHydrated(variant);
-    }
-    const cached = cachedHistories(variant);
-    const local = rankHistories(cached, variant, query);
-    if (
-        cacheOnly ||
-        query.length < PALETTE_LIMITS.minBackendQuery ||
-        cacheIsComplete(variant, cached) ||
-        local.length >= limit
-    ) {
-        return local.slice(0, limit);
-    }
-    await searchBackend(variant, query);
-    return rankHistories(cachedHistories(variant), variant, query).slice(0, limit);
-}
-
-/** The listings the root fan-out searches, next to the cached own histories */
-function rootVariants(isAnonymous: boolean): HistoryListVariant[] {
-    // an anonymous visitor has neither own nor shared-with-me histories
-    return isAnonymous ? ["published"] : ["shared", "published"];
-}
-
-/**
- * One backend search for the root fan-out, answering with the matches it
- * returned rather than with the whole cached listing. A handful of hits for one
- * query is not the listing, so `record: false` keeps them out of it: `hs:` and
- * `hp:` still find their listing unhydrated and hydrate it themselves. A failing
- * listing contributes nothing rather than costing the section its other rows.
- *
- * A whole page is fetched even though only `PALETTE_LIMITS.rootListing` rows are
- * shown: the backend matches loosely and orders by update time, so the newest
- * few rows it answers with are often ranked away here, and asking for exactly as
- * many rows as the section renders would leave it empty. The extra rows cost
- * nothing beyond the one request the listing already makes.
- */
-async function variantItems(variant: HistoryListVariant, query: string): Promise<PaletteItem[]> {
-    const historyStore = useHistoryStore();
-    const entries =
-        (await fetchQuietly(() =>
-            historyStore.fetchHistoryList(variant, { search: query, limit: PALETTE_LIMITS.page, record: false }),
-        )) ?? [];
-    return rankHistories(entries.map(toPaletteHistory), variant, query).slice(0, PALETTE_LIMITS.rootListing);
-}
-
-/**
- * Root mode results: the cached own histories answer the keystroke instantly,
- * while the shared and published listings are searched on the backend — the
- * palette is the one place that finds a history without being told where it
- * lives. Copies of one history collapse into the own row, which may be made
- * current; the palette's debounce keeps the request volume down.
- */
-async function rootItems(query: string, isAnonymous: boolean, localOnly = false): Promise<PaletteItem[]> {
-    // the searches start before the cache is filtered, so they run in parallel
-    const listed = Promise.all(
-        (localOnly ? [] : rootVariants(isAnonymous)).map((variant) => variantItems(variant, query)),
-    );
-    const own = isAnonymous ? [] : await listItems("my", query, PALETTE_LIMITS.rootOwn, true);
-    const merged = dedupePaletteItemsByEntity([own, ...(await listed)].flat());
-    return rankPaletteItems(merged, query).slice(0, PALETTE_LIMITS.rootOwn + PALETTE_LIMITS.rootListing);
+function listingSearch(variant: HistoryListVariant): ListingSearch {
+    return async (query) => {
+        const found = await useHistoryStore().fetchHistoryList(variant, {
+            search: query,
+            limit: PALETTE_LIMITS.page,
+            record: false,
+        });
+        return historyRows(found.map(toPaletteHistory), variant);
+    };
 }
 
 /** Histories opened through the palette before, most recently used first */
@@ -360,12 +254,12 @@ export const historiesProvider: CommandPaletteProvider = {
         }
         return recentItems("", PALETTE_LIMITS.rootOwn);
     },
-    /** Root mode fan-out over the cached own histories and the public listings */
-    async search(query: string, ctx: PaletteContext, options: PaletteSearchOptions = {}) {
-        if (query.length < PALETTE_LIMITS.minBackendQuery) {
-            return [];
-        }
-        return rootItems(query, ctx.isAnonymous, options.localOnly);
+    /** Root mode: the cached own histories, and the shared and published listings searched */
+    search(query: string, ctx: PaletteContext, options: PaletteSearchOptions = {}) {
+        // an anonymous visitor has neither own nor shared-with-me histories
+        const listings: HistoryListVariant[] = ctx.isAnonymous ? ["published"] : ["shared", "published"];
+        const own = ctx.isAnonymous ? undefined : historyList("my");
+        return rootListItems(query, own, listings.map(listingSearch), options);
     },
     /**
      * `h:` shows the palette recents on top of the user's own listing; `hs:`,
@@ -378,7 +272,7 @@ export const historiesProvider: CommandPaletteProvider = {
      */
     async searchScoped(scope: ScopeDefinition, query: string) {
         const variant = listVariant(scope.variant);
-        const results = await listItems(variant, query, PALETTE_LIMITS.section);
+        const results = await storeFirstItems(historyList(variant), query, PALETTE_LIMITS.section);
         return [
             ...section("recent", "Recent", variant === "my" ? recentItems(query) : []),
             ...section(variant, resultsTitle(scope, query), results),
