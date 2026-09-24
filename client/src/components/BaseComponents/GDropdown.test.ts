@@ -83,6 +83,17 @@ describe("GDropdown.vue", () => {
             expect(wrapper.get(".dropdown-item").attributes("role")).toBe("menuitem");
         });
 
+        it("puts aria-label on the toggle, which names the menu", () => {
+            const wrapper = mountTemplate(
+                `<GDropdown aria-label="Upload examples"><GDropdownItem>One</GDropdownItem></GDropdown>`,
+            );
+
+            const toggle = wrapper.get(".dropdown-toggle");
+            expect(toggle.attributes("aria-label")).toBe("Upload examples");
+            expect(wrapper.get(".dropdown").attributes("aria-label")).toBeUndefined();
+            expect(wrapper.get(".dropdown-menu").attributes("aria-labelledby")).toBe(toggle.attributes("id"));
+        });
+
         it("reflects the open state in aria-expanded", async () => {
             const wrapper = mountDropdown(`<GDropdownItem>Action</GDropdownItem>`);
             const toggle = wrapper.get(".dropdown-toggle");

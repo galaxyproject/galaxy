@@ -185,13 +185,7 @@ watch([ontologiesFilter, sortOrder, showing], async () => {
                         <HelpText uri="galaxy.tools.ontologies.operation" text="What is an EDAM Operation?" />
                     </BBadge>
 
-                    <GDropdown
-                        block
-                        :disabled="loading"
-                        variant="link"
-                        toggle-class="text-decoration-none"
-                        aria-label="Choose whether to show operations, topics, or all"
-                        size="sm">
+                    <GDropdown block :disabled="loading" variant="link" toggle-class="text-decoration-none" size="sm">
                         <template v-slot:button-content>
                             <span class="sr-only">Choose whether to show operations, topics, or all</span>
                             <FontAwesomeIcon :icon="faFilter" />

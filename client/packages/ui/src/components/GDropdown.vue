@@ -41,6 +41,8 @@ const props = withDefaults(
         disabled?: boolean;
         /** Lazy render menu content */
         lazy?: boolean;
+        /** Accessible name of the toggle, which also names the menu; for toggles without visible text */
+        ariaLabel?: string;
     }>(),
     {
         text: undefined,
@@ -57,6 +59,7 @@ const props = withDefaults(
         menuClass: undefined,
         disabled: false,
         lazy: false,
+        ariaLabel: undefined,
     },
 );
 
@@ -366,6 +369,7 @@ defineExpose({
             aria-haspopup="menu"
             :aria-expanded="isOpen ? 'true' : 'false'"
             :aria-controls="shouldRenderMenu ? menuId : undefined"
+            :aria-label="ariaLabel"
             @click="onToggleClick"
             @keydown="onKeydown">
             <template v-if="!split">
