@@ -6324,6 +6324,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{user_id}/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return the groups this user is a member of. */
+        get: operations["get_user_groups_api_users__user_id__groups_get"];
+        /** Replace the groups this user is a member of. */
+        put: operations["set_user_groups_api_users__user_id__groups_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{user_id}/objectstore_usage": {
         parameters: {
             query?: never;
@@ -6370,7 +6388,8 @@ export interface paths {
          * @description Return a list of roles associated with this user. Only admins can see user roles.
          */
         get: operations["get_user_roles_api_users__user_id__roles_get"];
-        put?: never;
+        /** Replace the roles associated with this user. The user's private role is kept. */
+        put: operations["set_user_roles_api_users__user_id__roles_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -26625,6 +26644,14 @@ export interface components {
                 [key: string]: string | boolean | number;
             } | null;
         };
+        /** UserGroupsUpdatePayload */
+        UserGroupsUpdatePayload: {
+            /**
+             * Group IDs
+             * @description Groups the user is a member of, replacing the current ones.
+             */
+            group_ids: string[];
+        };
         /**
          * UserModel
          * @description User in a transaction context.
@@ -26841,6 +26868,14 @@ export interface components {
             quota_source_label?: string | null;
             /** Total Disk Usage */
             total_disk_usage: number;
+        };
+        /** UserRolesUpdatePayload */
+        UserRolesUpdatePayload: {
+            /**
+             * Role IDs
+             * @description Roles to associate with the user, replacing the current ones. The user's private role is always kept.
+             */
+            role_ids: string[];
         };
         /** UserServiceCredentialsListResponse */
         UserServiceCredentialsListResponse: components["schemas"]["UserServiceCredentialsResponse"][];
@@ -48600,6 +48635,8 @@ export interface operations {
                 limit?: number | null;
                 /** @description Number of roles to skip. */
                 offset?: number | null;
+                /** @description Leave out the private role of each user. */
+                exclude_private?: boolean;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -52856,6 +52893,98 @@ export interface operations {
             };
         };
     };
+    get_user_groups_api_users__user_id__groups_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupModelListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    set_user_groups_api_users__user_id__groups_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserGroupsUpdatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupModelListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     get_user_objectstore_usage_api_users__user_id__objectstore_usage_get: {
         parameters: {
             query?: never;
@@ -52965,6 +53094,54 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    set_user_roles_api_users__user_id__roles_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the user. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserRolesUpdatePayload"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

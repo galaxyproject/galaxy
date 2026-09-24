@@ -22,6 +22,7 @@ TEST_USER_EMAIL_UNDELETE = "user_for_undelete_test@bx.psu.edu"
 TEST_USER_EMAIL_SHOW = "user_for_show_test@bx.psu.edu"
 TEST_USER_EMAIL_UPDATE = "user_for_email_update_test@bx.psu.edu"
 TEST_USER_EMAIL_UPDATED = "user_for_email_update_test_changed@bx.psu.edu"
+TEST_USER_EMAIL_ROLES_AND_GROUPS = "user_for_roles_and_groups_test@bx.psu.edu"
 
 
 class TestUsersApi(ApiTestCase):
@@ -589,6 +590,72 @@ class TestUsersApi(ApiTestCase):
     def test_user_roles_404_for_unknown_user(self):
         unknown_user_id = self._unknown_user_id()
         self._assert_status_code_is(self._get(f"users/{unknown_user_id}/roles", admin=True), 404)
+
+    @requires_admin
+    @requires_new_user
+    def test_set_user_roles_keeps_private_role(self):
+        user = self._setup_user(TEST_USER_EMAIL_ROLES_AND_GROUPS)
+        role_id = DatasetPopulator(self.galaxy_interactor).create_role([])["id"]
+
+        response = self._put(f"users/{user['id']}/roles", {"role_ids": [role_id]}, admin=True, json=True)
+        self._assert_status_code_is(response, 200)
+        types_by_id = {role["id"]: role["type"] for role in response.json()}
+        assert len(types_by_id) == 2
+        assert types_by_id[role_id] == "admin"
+        assert PRIVATE_ROLE_TYPE in types_by_id.values()
+
+        response = self._put(f"users/{user['id']}/roles", {"role_ids": []}, admin=True, json=True)
+        self._assert_status_code_is(response, 200)
+        assert [role["type"] for role in response.json()] == [PRIVATE_ROLE_TYPE]
+        assert [role["type"] for role in self._get(f"users/{user['id']}/roles", admin=True).json()] == [
+            PRIVATE_ROLE_TYPE
+        ]
+
+    @requires_admin
+    @requires_new_user
+    def test_user_groups(self):
+        user = self._setup_user(TEST_USER_EMAIL_ROLES_AND_GROUPS)
+        group_id = DatasetPopulator(self.galaxy_interactor).create_group()["id"]
+
+        response = self._put(f"users/{user['id']}/groups", {"group_ids": [group_id]}, admin=True, json=True)
+        self._assert_status_code_is(response, 200)
+        assert [group["id"] for group in response.json()] == [group_id]
+        assert [group["id"] for group in self._get(f"users/{user['id']}/groups", admin=True).json()] == [group_id]
+        group_users = self._get(f"groups/{group_id}/users", admin=True).json()
+        assert [group_user["id"] for group_user in group_users] == [user["id"]]
+
+        response = self._put(f"users/{user['id']}/groups", {"group_ids": []}, admin=True, json=True)
+        self._assert_status_code_is(response, 200)
+        assert response.json() == []
+
+    @requires_admin
+    @requires_new_user
+    def test_user_groups_leave_out_deleted_groups(self):
+        user = self._setup_user(TEST_USER_EMAIL_ROLES_AND_GROUPS)
+        populator = DatasetPopulator(self.galaxy_interactor)
+        kept_group_id = populator.create_group(user_ids=[user["id"]])["id"]
+        deleted_group_id = populator.create_group(user_ids=[user["id"]])["id"]
+        self._assert_status_code_is(self._delete(f"groups/{deleted_group_id}", admin=True), 200)
+
+        response = self._get(f"users/{user['id']}/groups", admin=True)
+        self._assert_status_code_is(response, 200)
+        assert [group["id"] for group in response.json()] == [kept_group_id]
+
+    @requires_admin
+    def test_set_user_roles_and_groups_404_for_unknown_user(self):
+        unknown_user_id = self._unknown_user_id()
+        self._assert_status_code_is(self._get(f"users/{unknown_user_id}/groups", admin=True), 404)
+        roles_response = self._put(f"users/{unknown_user_id}/roles", {"role_ids": []}, admin=True, json=True)
+        self._assert_status_code_is(roles_response, 404)
+        groups_response = self._put(f"users/{unknown_user_id}/groups", {"group_ids": []}, admin=True, json=True)
+        self._assert_status_code_is(groups_response, 404)
+
+    @requires_new_user
+    def test_user_roles_and_groups_only_admin(self):
+        user_id = DatasetPopulator(self.galaxy_interactor).user_id()
+        self._assert_status_code_is(self._put(f"users/{user_id}/roles", {"role_ids": []}, json=True), 403)
+        self._assert_status_code_is(self._get(f"users/{user_id}/groups"), 403)
+        self._assert_status_code_is(self._put(f"users/{user_id}/groups", {"group_ids": []}, json=True), 403)
 
     def _unknown_user_id(self) -> str:
         return self._get("configuration/encode/999999999", admin=True).json()["encoded_id"]

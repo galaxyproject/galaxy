@@ -2968,6 +2968,20 @@ class GroupModelListResponse(RootModel):
     root: list[GroupModel]
 
 
+class UserRolesUpdatePayload(Model):
+    role_ids: list[DecodedDatabaseIdField] = Field(
+        title="Role IDs",
+        description="Roles to associate with the user, replacing the current ones. The user's private role is always kept.",
+    )
+
+
+class UserGroupsUpdatePayload(Model):
+    group_ids: list[DecodedDatabaseIdField] = Field(
+        title="Group IDs",
+        description="Groups the user is a member of, replacing the current ones.",
+    )
+
+
 # The tuple should probably be another proper model instead?
 # Keeping it as a Tuple for now for backward compatibility
 # TODO: Use Tuple again when `make update-client-api-schema` supports them

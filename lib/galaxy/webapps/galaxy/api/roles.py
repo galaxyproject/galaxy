@@ -45,6 +45,11 @@ OffsetRolesQueryParam: int | None = Query(
     title="Offset",
     description="Number of roles to skip.",
 )
+ExcludePrivateRolesQueryParam: bool = Query(
+    default=False,
+    title="Exclude private roles",
+    description="Leave out the private role of each user.",
+)
 
 
 # Empty paths (e.g. /api/roles) only work if a prefix is defined right here.
@@ -63,8 +68,11 @@ class FastAPIRoles:
         search: str | None = SearchRolesQueryParam,
         limit: int | None = LimitRolesQueryParam,
         offset: int | None = OffsetRolesQueryParam,
+        exclude_private: bool = ExcludePrivateRolesQueryParam,
     ) -> RoleListResponse:
-        return self.service.get_index(trans=trans, search=search, limit=limit, offset=offset)
+        return self.service.get_index(
+            trans=trans, search=search, limit=limit, offset=offset, exclude_private=exclude_private
+        )
 
     @router.get("/api/roles/{id}")
     def show(self, id: RoleIDPathParam, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:

@@ -160,6 +160,17 @@ class TestRolesApi(ApiTestCase):
         assert len(data) == 0
 
     @requires_admin
+    def test_list_exclude_private(self):
+        user_role_id = self.dataset_populator.user_private_role_id()
+        role = self._create_role()
+        response = self._get("roles", data={"exclude_private": True}, admin=True)
+        assert_status_code_is(response, 200)
+        role_ids = [r["id"] for r in response.json()]
+        assert role["id"] in role_ids
+        assert user_role_id not in role_ids
+        assert all(r["type"] != "private" for r in response.json())
+
+    @requires_admin
     def test_create_only_admin(self):
         response = self._post("roles", json=True)
         assert_status_code_is(response, 403)

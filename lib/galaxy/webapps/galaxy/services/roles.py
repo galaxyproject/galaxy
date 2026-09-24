@@ -46,8 +46,11 @@ class RolesService(ServiceBase):
         search: str | None = None,
         limit: int | None = None,
         offset: int | None = 0,
+        exclude_private: bool = False,
     ) -> RoleListResponse:
-        roles = self.role_manager.list_displayable_roles(trans, search=search, limit=limit, offset=offset or 0)
+        roles = self.role_manager.list_displayable_roles(
+            trans, search=search, limit=limit, offset=offset or 0, exclude_private=exclude_private
+        )
         role_ids = {r.id for r in roles}
         private_role_emails = get_private_role_user_emails_dict(trans.sa_session, role_ids=role_ids)
         data = [role_to_model(role, private_role_emails.get(role.id, role.name)) for role in roles]

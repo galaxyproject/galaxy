@@ -52,6 +52,7 @@ from galaxy.model.db.user import (
     _cleanup_nonprivate_user_roles,
     get_user_by_email,
     get_user_by_username,
+    get_user_groups,
 )
 from galaxy.security.validate_user_input import (
     VALID_EMAIL_RE,
@@ -588,6 +589,21 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 log.info("Password changed for user %s.", user.id)
         else:
             return "Failed to determine user, access denied."
+
+    def set_roles(self, user: User, role_ids: list[int]) -> None:
+        """Replace the user's role associations; the private role is kept."""
+        self.app.security_agent.set_user_group_and_role_associations(user, role_ids=role_ids)
+        # The associations are written with bulk statements, so the loaded collection is stale.
+        self.session().refresh(user)
+
+    def set_groups(self, user: User, group_ids: list[int]) -> None:
+        """Replace the groups the user is a member of."""
+        self.app.security_agent.set_user_group_and_role_associations(user, group_ids=group_ids)
+        self.session().refresh(user)
+
+    def get_groups(self, user: User) -> list[tuple[int, str]]:
+        """Return (id, name) of the non-deleted groups the user is a member of."""
+        return get_user_groups(self.session(), user.id)
 
     def impersonate(self, trans: "GalaxyWebTransaction", user):
         if not trans.app.config.allow_user_impersonation:

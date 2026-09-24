@@ -30,10 +30,14 @@ from galaxy.schema.schema import (
     AnonUserModel,
     DetailedUserModel,
     FlexibleUserIdType,
+    GroupModel,
+    GroupModelListResponse,
     LimitedUserModel,
     MaybeLimitedUserModel,
     RoleListResponse,
+    UserGroupsUpdatePayload,
     UserModel,
+    UserRolesUpdatePayload,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import UserVaultWrapper
@@ -359,7 +363,23 @@ class UsersService(ServiceBase):
                 rval.append(UserModel(**user_dict))
         return rval
 
-    def get_user_roles(self, trans: ProvidesUserContext, user_id):
+    def get_user_roles(self, trans: ProvidesUserContext, user_id: int) -> RoleListResponse:
         user = self.get_user(trans, user_id)
         roles = [ura.role for ura in user.roles]
         return RoleListResponse(root=[role_to_model(r) for r in roles])
+
+    def set_user_roles(
+        self, trans: ProvidesUserContext, user_id: int, payload: UserRolesUpdatePayload
+    ) -> RoleListResponse:
+        self.user_manager.set_roles(self.get_user(trans, user_id), payload.role_ids)
+        return self.get_user_roles(trans, user_id)
+
+    def get_user_groups(self, trans: ProvidesUserContext, user_id: int) -> GroupModelListResponse:
+        groups = self.user_manager.get_groups(self.get_user(trans, user_id))
+        return GroupModelListResponse(root=[GroupModel(id=group_id, name=name) for group_id, name in groups])
+
+    def set_user_groups(
+        self, trans: ProvidesUserContext, user_id: int, payload: UserGroupsUpdatePayload
+    ) -> GroupModelListResponse:
+        self.user_manager.set_groups(self.get_user(trans, user_id), payload.group_ids)
+        return self.get_user_groups(trans, user_id)

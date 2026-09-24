@@ -79,6 +79,7 @@ class RoleManager(base.ModelManager[model.Role]):
         search: str | None = None,
         limit: int | None = None,
         offset: int = 0,
+        exclude_private: bool = False,
     ) -> list[Role]:
         return get_displayable_roles(
             trans.sa_session,
@@ -87,6 +88,7 @@ class RoleManager(base.ModelManager[model.Role]):
             search=search,
             limit=limit,
             offset=offset,
+            exclude_private=exclude_private,
         )
 
     def create_role(self, trans: ProvidesUserContext, role_definition_model: RoleDefinitionModel) -> model.Role:

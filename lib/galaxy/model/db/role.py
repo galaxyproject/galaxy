@@ -82,8 +82,11 @@ def get_displayable_roles(
     search: str | None = None,
     limit: int | None = None,
     offset: int = 0,
+    exclude_private: bool = False,
 ):
     stmt = select(Role).where(Role.deleted == false())
+    if exclude_private:
+        stmt = stmt.where(Role.type != Role.types.PRIVATE)
     if not user_is_admin:
         if trans_user:
             # Non-admin users see: all non-private/non-sharing roles,
