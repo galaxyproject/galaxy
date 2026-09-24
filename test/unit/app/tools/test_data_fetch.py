@@ -111,6 +111,41 @@ def test_simple_uri_get(mock_http_server):
         assert hda_result["name"] == "1.bed"
 
 
+@pytest.mark.parametrize(
+    "body,expected_transform",
+    [
+        (b"a\tb\r\nc\td\r\n", [{"action": "to_posix_lines"}]),
+        (b"a\tb\nc\td\n", []),
+        (b"\x89HDF\r\n\x1a\n\x00\x00\r\x00", []),
+    ],
+)
+def test_uri_get_records_applied_transform(mock_http_server, body, expected_transform):
+    url = mock_http_server.get_url(remote_url="https://example.org/transform-test", body=body)
+    with _execute_context(allow_localhost=True) as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdas",
+                    },
+                    "elements": [
+                        {
+                            "src": "url",
+                            "url": url,
+                            "ext": "data",
+                            "to_posix_lines": True,
+                        }
+                    ],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        hda_result = output["elements"][0]
+        assert hda_result["state"] == "ok"
+        assert hda_result["sources"][0]["transform"] == expected_transform
+
+
 @responses.activate
 def test_drs_uri_named_from_drs_metadata(mock_http_server):
     _mock_drs_object(_bed_content_url(mock_http_server), name="sample.bed")

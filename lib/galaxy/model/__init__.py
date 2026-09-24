@@ -5278,7 +5278,8 @@ class DatasetSource(Base, Dictifiable, Serializable):
     dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset.id"), index=True)
     source_uri: Mapped[Optional[str]] = mapped_column(TEXT)
     extra_files_path: Mapped[Optional[str]] = mapped_column(TEXT)
-    # actions actually applied to this source when creating the dataset.
+    # actions actually applied to this source when creating the dataset. An empty list means the
+    # source was processed and stored unmodified, None that it has not been processed (or predates tracking).
     transform: Mapped[Optional[TRANSFORM_ACTIONS]] = mapped_column(MutableJSONType)
     # actions that may be applied to this source when creating the dataset
     requested_transform: Mapped[Optional[REQUESTED_TRANSFORM_ACTIONS]] = mapped_column(MutableJSONType)
