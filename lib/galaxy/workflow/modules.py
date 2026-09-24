@@ -2438,6 +2438,21 @@ class ToolModule(WorkflowModule):
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException(f"No content id could be located for for step [{d}]")
         module = super().from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)
+        # Steps that embed ``tool_representation`` are exported workflows, which may carry any
+        # tool_id, and still import. A step that references a user-defined tool only by uuid
+        # must name it consistently.
+        if (
+            tool_id is not None
+            and tool_uuid is not None
+            and not d.get("tool_representation")
+            and module.tool
+            and module.tool.is_unprivileged_tool
+            and tool_id != module.tool.id
+        ):
+            raise exceptions.RequestParameterInvalidException(
+                f"tool_id '{tool_id}' does not match user-defined tool {tool_uuid} (id '{module.tool.id}'); "
+                f"omit tool_id or pass '{module.tool.id}' when referencing a tool by tool_uuid"
+            )
         module.post_job_actions = d.get("post_job_actions", {})
         module.workflow_outputs = d.get("workflow_outputs", [])
         if module.tool:

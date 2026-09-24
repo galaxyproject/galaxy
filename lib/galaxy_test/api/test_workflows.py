@@ -21,6 +21,7 @@ from requests import (
     delete,
     get,
     post,
+    Response,
 )
 
 from galaxy.exceptions import error_codes
@@ -10055,24 +10056,7 @@ outer_input:
             unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
                 UserToolSource(**TOOL_WITH_SHELL_COMMAND)
             )
-            # Workflow doesn't matter, we're replacing it in the update
-            workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
-            workflow_id = self.workflow_populator.create_workflow(workflow)
-            update_response = self._update_workflow(
-                workflow_id,
-                {
-                    "steps": {
-                        "0": {
-                            "content_id": "cat_user_defined",
-                            "id": 1,
-                            "input_connections": {"datasets": []},
-                            "name": "Concatenate Files",
-                            "tool_uuid": unprivileged_tool["uuid"],
-                            "type": "tool",
-                        }
-                    },
-                },
-            )
+            workflow_id, update_response = self._update_user_defined_workflow_step(unprivileged_tool, "basecommand")
             assert update_response.status_code == 200, update_response.text
             workflow = self.workflow_populator.download_workflow(workflow_id)
             assert workflow["steps"]["0"]["tool_representation"]["class"] == "GalaxyUserTool"
@@ -10106,7 +10090,112 @@ outer_input:
             assert workflow["name"] == "renamed"
             assert workflow["steps"]["0"]["tool_uuid"] == unprivileged_tool["uuid"]
 
-    def _build_user_defined_workflow_dict(self) -> dict[str, Any]:
+    def test_user_defined_workflow_update_rejects_mismatched_tool_id(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            _, update_response = self._update_user_defined_workflow_step(unprivileged_tool, "cat_user_defined")
+            self._assert_status_code_is(update_response, 400)
+            assert (
+                f"tool_id 'cat_user_defined' does not match user-defined tool {unprivileged_tool['uuid']} "
+                "(id 'basecommand'); omit tool_id or pass 'basecommand' when referencing a tool by tool_uuid"
+            ) in update_response.json()["err_msg"]
+
+    def _update_user_defined_workflow_step(
+        self, unprivileged_tool: dict[str, Any], content_id: str
+    ) -> tuple[str, Response]:
+        # Workflow doesn't matter, we're replacing it in the update
+        workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        return workflow_id, self._update_workflow(
+            workflow_id,
+            {
+                "steps": {
+                    "0": {
+                        "content_id": content_id,
+                        "id": 1,
+                        "input_connections": {"datasets": []},
+                        "name": "Concatenate Files",
+                        "tool_uuid": unprivileged_tool["uuid"],
+                        "type": "tool",
+                    }
+                },
+            },
+        )
+
+    def test_create_workflow_rejects_user_defined_tool_uuid_as_tool_id(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            tool_uuid = unprivileged_tool["uuid"]
+            wf = self._build_user_defined_workflow_dict(content_id=tool_uuid, tool_uuid=tool_uuid)
+            response = self._post("workflows", data={"workflow": json.dumps(wf)})
+            self._assert_status_code_is(response, 400)
+            assert (
+                f"tool_id '{tool_uuid}' does not match user-defined tool {tool_uuid} (id 'basecommand')"
+                in response.json()["err_msg"]
+            )
+
+    def test_create_workflow_with_user_defined_tool_uuid_and_matching_tool_id(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            wf = self._build_user_defined_workflow_dict(content_id="basecommand", tool_uuid=unprivileged_tool["uuid"])
+            response = self._post("workflows", data={"workflow": json.dumps(wf)})
+            assert response.status_code == 200, response.text
+            downloaded = self.workflow_populator.download_workflow(response.json()["id"])
+            step_dict = downloaded["steps"]["0"]
+            assert step_dict["tool_id"] == "basecommand"
+            assert step_dict["tool_uuid"] == unprivileged_tool["uuid"]
+
+            reimport_response = self._post("workflows", data={"workflow": json.dumps(downloaded)})
+            assert reimport_response.status_code == 200, reimport_response.text
+
+    def test_create_workflow_with_user_defined_tool_uuid_only(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            wf = self._build_user_defined_workflow_dict(tool_uuid=unprivileged_tool["uuid"])
+            response = self._post("workflows", data={"workflow": json.dumps(wf)})
+            assert response.status_code == 200, response.text
+            downloaded = self.workflow_populator.download_workflow(response.json()["id"])
+            assert downloaded["steps"]["0"]["tool_uuid"] == unprivileged_tool["uuid"]
+
+    def test_import_exported_workflow_with_mismatched_user_defined_tool_id(self):
+        # Exports write the stored tool_id verbatim next to the embedded representation,
+        # so a step saved with a mismatched tool_id must still import.
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            wf = self._build_user_defined_workflow_dict(
+                content_id="cat_user_defined",
+                tool_id="cat_user_defined",
+                tool_uuid=unprivileged_tool["uuid"],
+                tool_representation=TOOL_WITH_SHELL_COMMAND,
+            )
+            response = self._post("workflows", data={"workflow": json.dumps(wf)})
+            assert response.status_code == 200, response.text
+
+    def test_build_module_rejects_mismatched_user_defined_tool_id(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            tool_uuid = unprivileged_tool["uuid"]
+            response = self._post(
+                "workflows/build_module",
+                data={"type": "tool", "tool_id": tool_uuid, "tool_uuid": tool_uuid, "inputs": {}},
+                json=True,
+            )
+            self._assert_status_code_is(response, 400)
+            assert "omit tool_id or pass 'basecommand'" in response.json()["err_msg"]
+
+    def _build_user_defined_workflow_dict(self, **tool_reference) -> dict[str, Any]:
         return {
             "a_galaxy_workflow": "true",
             "name": "wf with embedded UDT",
@@ -10117,7 +10206,6 @@ outer_input:
                     "id": 0,
                     "type": "tool",
                     "name": "Embedded user tool",
-                    "tool_representation": TOOL_WITH_SHELL_COMMAND,
                     "input_connections": {},
                     "inputs": [],
                     "outputs": [],
@@ -10126,6 +10214,7 @@ outer_input:
                     "tool_state": "{}",
                     "label": None,
                     "uuid": str(uuid4()),
+                    **(tool_reference or {"tool_representation": TOOL_WITH_SHELL_COMMAND}),
                 },
             },
         }
@@ -10178,6 +10267,8 @@ outer_input:
                     "type": "tool",
                     "content_id": content_id,
                     "tool_uuid": tool_uuid,
+                    # Export shape: the representation lets a mismatched stored content_id import.
+                    "tool_representation": TOOL_WITH_SHELL_COMMAND,
                     "tool_state": "{}",
                     "input_connections": {"input": {"id": 0, "output_name": "output"}},
                     "workflow_outputs": [{"output_name": "output", "label": "udt_output"}],
