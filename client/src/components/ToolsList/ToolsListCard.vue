@@ -341,6 +341,7 @@ const {
                 icon-only
                 transparent
                 inline
+                aria-label="Tool info"
                 style="cursor: help"
                 @click="showPopover = !showPopover">
                 <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
