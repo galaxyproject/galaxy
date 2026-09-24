@@ -6,9 +6,14 @@ from galaxy.schema.fields import (
     Security,
 )
 from galaxy.schema.schema import (
+    GroupModel,
+    GroupModelListResponse,
     RoleDefinitionModel,
     RoleListResponse,
     RoleModelResponse,
+    RoleUpdatePayload,
+    RoleUserListResponse,
+    RoleUserResponse,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.base.controller import url_for
@@ -55,6 +60,23 @@ class RolesService(ServiceBase):
     def create(self, trans: ProvidesUserContext, role_definition_model: RoleDefinitionModel):
         role = self.role_manager.create_role(trans, role_definition_model)
         return role_to_model(role)
+
+    def update(
+        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, payload: RoleUpdatePayload
+    ) -> RoleModelResponse:
+        role = self.role_manager.get(trans, id)
+        role = self.role_manager.update_role(trans, role, payload)
+        return role_to_model(role)
+
+    def get_users(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> RoleUserListResponse:
+        role = self.role_manager.get(trans, id)
+        users = self.role_manager.get_users(trans, role)
+        return RoleUserListResponse(root=[RoleUserResponse(id=user_id, email=email) for user_id, email in users])
+
+    def get_groups(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> GroupModelListResponse:
+        role = self.role_manager.get(trans, id)
+        groups = self.role_manager.get_groups(trans, role)
+        return GroupModelListResponse(root=[GroupModel(id=group_id, name=name) for group_id, name in groups])
 
     def delete(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> RoleModelResponse:
         role = self.role_manager.get(trans, id)

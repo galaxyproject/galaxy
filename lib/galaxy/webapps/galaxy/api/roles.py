@@ -11,9 +11,12 @@ from fastapi import (
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.schema import (
+    GroupModelListResponse,
     RoleDefinitionModel,
     RoleListResponse,
     RoleModelResponse,
+    RoleUpdatePayload,
+    RoleUserListResponse,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -72,6 +75,23 @@ class FastAPIRoles:
         self, trans: ProvidesUserContext = DependsOnTrans, role_definition_model: RoleDefinitionModel = Body(...)
     ) -> RoleModelResponse:
         return self.service.create(trans, role_definition_model)
+
+    @router.put("/api/roles/{id}", require_admin=True, summary="Update a role's name, description, users and groups")
+    def update(
+        self,
+        id: RoleIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: RoleUpdatePayload = Body(...),
+    ) -> RoleModelResponse:
+        return self.service.update(trans, id, payload)
+
+    @router.get("/api/roles/{id}/users", require_admin=True, summary="List the users associated with a role")
+    def users(self, id: RoleIDPathParam, trans: ProvidesUserContext = DependsOnTrans) -> RoleUserListResponse:
+        return self.service.get_users(trans, id)
+
+    @router.get("/api/roles/{id}/groups", require_admin=True, summary="List the groups associated with a role")
+    def groups(self, id: RoleIDPathParam, trans: ProvidesUserContext = DependsOnTrans) -> GroupModelListResponse:
+        return self.service.get_groups(trans, id)
 
     @router.delete("/api/roles/{id}", require_admin=True)
     def delete(self, id: RoleIDPathParam, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:

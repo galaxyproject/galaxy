@@ -21,8 +21,15 @@ from galaxy.exceptions import (
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import Role
-from galaxy.model.db.role import get_displayable_roles
-from galaxy.schema.schema import RoleDefinitionModel
+from galaxy.model.db.role import (
+    get_displayable_roles,
+    get_role_groups,
+    get_role_users,
+)
+from galaxy.schema.schema import (
+    RoleDefinitionModel,
+    RoleUpdatePayload,
+)
 from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
@@ -88,9 +95,7 @@ class RoleManager(base.ModelManager[model.Role]):
         user_ids = role_definition_model.user_ids or []
         group_ids = role_definition_model.group_ids or []
 
-        stmt = select(Role).where(Role.name == name).limit(1)
-        if trans.sa_session.scalars(stmt).first():
-            raise Conflict(f"A role with that name already exists [{name}]")
+        self._check_duplicated_role_name(trans, name)
 
         role_type = role_definition_model.role_type  # TODO: allow non-admins to create roles
 
@@ -109,6 +114,38 @@ class RoleManager(base.ModelManager[model.Role]):
 
         trans.sa_session.commit()
         return role
+
+    def update_role(self, trans: ProvidesUserContext, role: model.Role, payload: RoleUpdatePayload) -> model.Role:
+        if payload.name is not None:
+            if not payload.name:
+                raise RequestParameterInvalidException("Enter a valid role name.")
+            self._check_duplicated_role_name(trans, payload.name, exclude_role_id=role.id)
+            role.name = payload.name
+        if payload.description is not None:
+            role.description = payload.description
+        trans.sa_session.add(role)
+        # Commits the name and description together with the associations.
+        trans.app.security_agent.set_role_user_and_group_associations(
+            role, user_ids=payload.user_ids, group_ids=payload.group_ids
+        )
+        return role
+
+    def get_users(self, trans: ProvidesUserContext, role: model.Role) -> list[tuple[int, str]]:
+        """Return (id, email) of the role's non-deleted users."""
+        return get_role_users(trans.sa_session, role.id)
+
+    def get_groups(self, trans: ProvidesUserContext, role: model.Role) -> list[tuple[int, str]]:
+        """Return (id, name) of the role's non-deleted groups."""
+        return get_role_groups(trans.sa_session, role.id)
+
+    def _check_duplicated_role_name(
+        self, trans: ProvidesUserContext, name: str, exclude_role_id: int | None = None
+    ) -> None:
+        stmt = select(Role).where(Role.name == name)
+        if exclude_role_id is not None:
+            stmt = stmt.where(Role.id != exclude_role_id)
+        if trans.sa_session.scalars(stmt.limit(1)).first():
+            raise Conflict(f"A role with that name already exists [{name}]")
 
     def delete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
         role.deleted = True

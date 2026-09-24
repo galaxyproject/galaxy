@@ -4981,10 +4981,28 @@ export interface paths {
         };
         /** Show */
         get: operations["show_api_roles__id__get"];
-        put?: never;
+        /** Update a role's name, description, users and groups */
+        put: operations["update_api_roles__id__put"];
         post?: never;
         /** Delete */
         delete: operations["delete_api_roles__id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/roles/{id}/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the groups associated with a role */
+        get: operations["groups_api_roles__id__groups_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -5018,6 +5036,23 @@ export interface paths {
         put?: never;
         /** Undelete */
         post: operations["undelete_api_roles__id__undelete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/roles/{id}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the users associated with a role */
+        get: operations["users_api_roles__id__users_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -13900,6 +13935,8 @@ export interface components {
              */
             name: string;
         };
+        /** GroupModelListResponse */
+        GroupModelListResponse: components["schemas"]["GroupModel"][];
         /** GroupQuota */
         GroupQuota: {
             /**
@@ -22265,6 +22302,38 @@ export interface components {
              * @description The relative URL to access this item.
              */
             url: string;
+        };
+        /** RoleUpdatePayload */
+        RoleUpdatePayload: {
+            /** Description */
+            description?: string | null;
+            /**
+             * Group IDs
+             * @description Groups to associate with the role, replacing the current ones. Omit to leave them unchanged.
+             */
+            group_ids?: string[] | null;
+            /** Name */
+            name?: string | null;
+            /**
+             * User IDs
+             * @description Users to associate with the role, replacing the current ones. Omit to leave them unchanged.
+             */
+            user_ids?: string[] | null;
+        };
+        /** RoleUserListResponse */
+        RoleUserListResponse: components["schemas"]["RoleUserResponse"][];
+        /** RoleUserResponse */
+        RoleUserResponse: {
+            /**
+             * Email
+             * @description Email of the user
+             */
+            email: string;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
         };
         /** RootModel[dict[str, int]] */
         RootModel_dict_str__int__: {
@@ -48659,6 +48728,54 @@ export interface operations {
             };
         };
     };
+    update_api_roles__id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the role. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleUpdatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     delete_api_roles__id__delete: {
         parameters: {
             query?: never;
@@ -48681,6 +48798,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    groups_api_roles__id__groups_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the role. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupModelListResponse"];
                 };
             };
             /** @description Request Error */
@@ -48769,6 +48930,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    users_api_roles__id__users_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the role. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleUserListResponse"];
                 };
             };
             /** @description Request Error */

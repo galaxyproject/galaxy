@@ -13,6 +13,8 @@ from sqlalchemy import (
 )
 
 from galaxy.model import (
+    Group,
+    GroupRoleAssociation,
     Role,
     User,
     UserRoleAssociation,
@@ -111,6 +113,28 @@ def get_displayable_roles(
     if limit is not None:
         stmt = stmt.limit(limit)
     return session.scalars(stmt).all()
+
+
+def get_role_users(session: galaxy_scoped_session, role_id: int) -> list[tuple[int, str]]:
+    """Return (id, email) of the non-deleted users associated with a role, ordered by email."""
+    stmt = (
+        select(User.id, User.email)
+        .join(UserRoleAssociation, UserRoleAssociation.user_id == User.id)
+        .where(UserRoleAssociation.role_id == role_id, User.deleted == false())
+        .order_by(User.email)
+    )
+    return [(user_id, email) for user_id, email in session.execute(stmt)]
+
+
+def get_role_groups(session: galaxy_scoped_session, role_id: int) -> list[tuple[int, str]]:
+    """Return (id, name) of the non-deleted groups associated with a role, ordered by name."""
+    stmt = (
+        select(Group.id, Group.name)
+        .join(GroupRoleAssociation, GroupRoleAssociation.group_id == Group.id)
+        .where(GroupRoleAssociation.role_id == role_id, Group.deleted == false())
+        .order_by(Group.name)
+    )
+    return [(group_id, name) for group_id, name in session.execute(stmt)]
 
 
 def get_private_role_user_emails_dict(session, role_ids: set[int] | None = None) -> dict[int, str]:
