@@ -1,10 +1,5 @@
 <script setup lang="ts">
-/**
- * Form inside a dropdown menu, replacing BDropdownForm from bootstrap-vue.
- * The default padding stands in for bootstrap-vue's .b-dropdown-form; callers override it wholesale
- * rather than layering, since competing bootstrap spacing utilities are decided by stylesheet order
- * rather than by which one the caller passed.
- */
+/** Replaces BDropdownForm. formClass replaces the default padding, as clashing spacing utilities win by CSS order. */
 
 withDefaults(
     defineProps<{

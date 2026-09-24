@@ -1,13 +1,5 @@
 <script setup lang="ts">
-/**
- * Dropdown menu item replacing BDropdownItem from bootstrap-vue.
- * Renders as a router-link when `to` is provided, otherwise always renders as `<a>` (defaulting to
- * href="#") to match BDropdownItem's behavior. This is required for Selenium compatibility:
- * label-based selectors use By.LINK_TEXT which only finds <a> elements, and select_dropdown_item()
- * uses CSS selector "a.dropdown-item".
- * TODO: once Selenium selectors are updated, consider rendering action items as <button> (semantically
- * more correct for non-navigation actions).
- */
+/** Replaces BDropdownItem. Always an <a>, since Selenium finds items by link text and "a.dropdown-item". */
 
 import { computed, inject } from "vue";
 
@@ -59,9 +51,7 @@ function onClick(event: MouseEvent) {
         event.preventDefault();
         return;
     }
-    // Cancel navigation only for action items, whose href is "#" (passed explicitly or defaulted).
-    // A real href has to navigate -- cancelling it also kills target="_blank", so external links
-    // would never open. Matches BLink, which BDropdownItem rendered through.
+    // Only "#" action items cancel navigation: a real href must open, target="_blank" included
     if (!props.to && (!props.href || props.href === "#")) {
         event.preventDefault();
     }
