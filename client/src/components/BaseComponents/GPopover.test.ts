@@ -1,6 +1,9 @@
 import { mount, type Wrapper } from "@vue/test-utils";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type Vue from "vue";
+import { nextTick } from "vue";
+
+import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, INTERACTIVE_POPOVER_CLOSE_DELAY_MS } from "@/utils/tooltipTiming";
 
 import GPopover from "./GPopover.vue";
 
@@ -132,5 +135,123 @@ describe("GPopover", () => {
         wrapper = undefined;
 
         expect(document.body.querySelector(".popover")).toBeNull();
+    });
+});
+
+// Mounts next to a trigger element and waits for GPopover's deferred listener setup.
+async function mountWithTrigger(propsData: Record<string, unknown>) {
+    const target = document.createElement("button");
+    target.id = "interactive-trigger";
+    const mountPoint = document.createElement("div");
+    document.body.append(target, mountPoint);
+
+    wrapper = mount(GPopover as object, {
+        attachTo: mountPoint,
+        propsData: { target: "interactive-trigger", ...propsData },
+        slots: { default: "<a href='#'>popover link</a>" },
+    });
+    await nextTick();
+    await nextTick();
+
+    return target;
+}
+
+function isShown() {
+    return (popoverEl() as HTMLElement).style.display !== "none";
+}
+
+async function advance(ms: number) {
+    vi.advanceTimersByTime(ms);
+    await nextTick();
+}
+
+describe("GPopover hover", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        wrapper?.destroy();
+        wrapper = undefined;
+        document.body.innerHTML = "";
+        vi.useRealTimers();
+    });
+
+    async function openByHover() {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        return target;
+    }
+
+    it("does not reopen from a pending hover once the parent closed it", async () => {
+        const target = await mountWithTrigger({ triggers: "hover", show: false });
+
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS / 3);
+        await wrapper!.setProps({ show: true });
+        await wrapper!.setProps({ show: false });
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+
+        expect(isShown()).toBe(false);
+        expect(wrapper!.emitted("update:show")).toBeUndefined();
+    });
+
+    it("opens after the shared hover delay", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS - 1);
+        expect(isShown()).toBe(false);
+
+        await advance(1);
+        expect(isShown()).toBe(true);
+    });
+
+    it("does not open when the pointer passes over the trigger", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS / 2);
+        target.dispatchEvent(new MouseEvent("mouseleave"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS * 2);
+
+        expect(isShown()).toBe(false);
+    });
+
+    it("stays open while the pointer moves from the trigger onto the popover", async () => {
+        const target = await openByHover();
+
+        target.dispatchEvent(new MouseEvent("mouseleave"));
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS / 2);
+        popoverEl().dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS * 2);
+
+        expect(isShown()).toBe(true);
+    });
+
+    it("stays open when the pointer returns from the popover to the trigger", async () => {
+        const target = await openByHover();
+        target.dispatchEvent(new MouseEvent("mouseleave"));
+        popoverEl().dispatchEvent(new MouseEvent("mouseenter"));
+
+        popoverEl().dispatchEvent(new MouseEvent("mouseleave"));
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS * 2);
+
+        expect(isShown()).toBe(true);
+    });
+
+    it("closes once the pointer has left both the trigger and the popover", async () => {
+        const target = await openByHover();
+        target.dispatchEvent(new MouseEvent("mouseleave"));
+        popoverEl().dispatchEvent(new MouseEvent("mouseenter"));
+
+        popoverEl().dispatchEvent(new MouseEvent("mouseleave"));
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS - 1);
+        expect(isShown()).toBe(true);
+
+        await advance(1);
+        expect(isShown()).toBe(false);
     });
 });

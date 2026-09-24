@@ -21,6 +21,11 @@ import { arrow, type ComputePositionConfig, flip, offset, type Placement, shift 
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import { useFloatingPosition } from "../composables/floatingPosition";
+import {
+    DEFAULT_TOOLTIP_HOVER_DELAY_MS,
+    INTERACTIVE_POPOVER_CLOSE_DELAY_MS,
+    useDelayedAction,
+} from "../utils/tooltipTiming";
 
 type TriggerType = "hover" | "click" | "click blur" | "hover focus" | "manual" | "manual hover" | "focus";
 
@@ -165,15 +170,40 @@ const arrowStyle = computed(() => {
     };
 });
 
+// Same timing as GTooltip and Popper: hovering opens after the shared delay, and leaving closes after
+// a short grace period that reaching the popover (or returning to the trigger) cancels.
+const openDelay = useDelayedAction(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+const closeDelay = useDelayedAction(INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
+
+function cancelScheduled() {
+    openDelay.clear();
+    closeDelay.clear();
+}
+
+function scheduleOpen() {
+    closeDelay.clear();
+    if (!showState.value && !openDelay.isScheduled()) {
+        openDelay.schedule(showPopover);
+    }
+}
+
+function scheduleClose() {
+    openDelay.clear();
+    closeDelay.schedule(hidePopover);
+}
+
 function showPopover() {
+    cancelScheduled();
     showState.value = true;
 }
 
 function hidePopover() {
+    cancelScheduled();
     showState.value = false;
 }
 
 function togglePopover() {
+    cancelScheduled();
     showState.value = !showState.value;
 }
 
@@ -194,6 +224,8 @@ watch(
 watch(
     () => props.show,
     (val) => {
+        // The parent decided, so a pending hover open or close must not undo it.
+        cancelScheduled();
         if (val !== undefined) {
             isVisible.value = val;
         }
@@ -223,22 +255,6 @@ const parsedTriggers = computed(() => {
 });
 
 let activeListeners: Array<{ el: Element; event: string; handler: (e: Event) => void }> = [];
-let hoverHideTimeout: ReturnType<typeof setTimeout> | null = null;
-
-function cancelHoverHide() {
-    if (hoverHideTimeout !== null) {
-        clearTimeout(hoverHideTimeout);
-        hoverHideTimeout = null;
-    }
-}
-
-function deferredHide() {
-    cancelHoverHide();
-    hoverHideTimeout = setTimeout(() => {
-        hidePopover();
-        hoverHideTimeout = null;
-    }, 100);
-}
 
 function setupListeners() {
     teardownListeners();
@@ -253,11 +269,8 @@ function setupListeners() {
     }
 
     if (parsedTriggers.value.has("hover")) {
-        const enterHandler = () => {
-            cancelHoverHide();
-            showPopover();
-        };
-        const leaveHandler = () => deferredHide();
+        const enterHandler = () => scheduleOpen();
+        const leaveHandler = () => scheduleClose();
         target.addEventListener("mouseenter", enterHandler);
         target.addEventListener("mouseleave", leaveHandler);
         activeListeners.push(
@@ -298,13 +311,10 @@ function setupListeners() {
         }
     }
 
-    // Keep popover open when hovering over it (bridges the offset gap)
+    // Keep popover open when hovering over it
     if (parsedTriggers.value.has("hover") && popoverEl.value) {
-        const popoverEnter = () => {
-            cancelHoverHide();
-            showPopover();
-        };
-        const popoverLeave = () => deferredHide();
+        const popoverEnter = () => closeDelay.clear();
+        const popoverLeave = () => scheduleClose();
         popoverEl.value.addEventListener("mouseenter", popoverEnter);
         popoverEl.value.addEventListener("mouseleave", popoverLeave);
         activeListeners.push(
@@ -315,7 +325,7 @@ function setupListeners() {
 }
 
 function teardownListeners() {
-    cancelHoverHide();
+    cancelScheduled();
     for (const { el, event, handler } of activeListeners) {
         el.removeEventListener(event, handler);
     }
