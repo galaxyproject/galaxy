@@ -290,7 +290,7 @@ a.btn {
 
 .btn-transparent-background {
     // A wrapper for buttons with transparent background when hovering over it.
-    // `.g-button` is listed alongside `.btn` for buttons migrated off bootstrap-vue.
+    // Also GButton (migrated off bootstrap-vue).
     .btn,
     .g-button {
         background-color: transparent !important;
@@ -305,8 +305,7 @@ a.btn {
         color: $brand-dark;
     }
 
-    // GButton's own scoped variant rules are more specific than a two-class selector,
-    // so the colours have to be forced for it.
+    // GButton's scoped variants out-rank this; force the colours.
     .g-button:hover {
         color: $brand-info !important;
     }
