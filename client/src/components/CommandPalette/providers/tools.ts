@@ -3,8 +3,14 @@ import { faWrench } from "@fortawesome/free-solid-svg-icons";
 import { type Tool, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
-import type { CommandPaletteProvider, PaletteItem, ScopedSection } from "../types";
-import { isScopeTokenLike, rankPaletteItems } from "../utilities";
+import type {
+    CommandPaletteProvider,
+    PaletteContext,
+    PaletteItem,
+    PaletteSearchOptions,
+    ScopedSection,
+} from "../types";
+import { rankPaletteItems } from "../utilities";
 import type { ScopeDefinition } from "./scopes";
 
 /**
@@ -113,10 +119,8 @@ export const toolsProvider: CommandPaletteProvider = {
     emptyQueryItems() {
         return recentToolItems();
     },
-    async search(query: string) {
-        // an unknown or gated `xy:` token is a filter mid-typing, not a tool
-        // name — matching it locally keeps it away from the backend
-        if (isScopeTokenLike(query)) {
+    async search(query: string, _ctx: PaletteContext, options: PaletteSearchOptions = {}) {
+        if (options.localOnly) {
             await ensureHydrated();
             return localMatches(query, MAX_RESULTS);
         }

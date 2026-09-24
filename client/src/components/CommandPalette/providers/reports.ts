@@ -6,7 +6,13 @@ import { type PageListVariant, usePageStore } from "@/stores/pageStore";
 import { useUserStore } from "@/stores/userStore";
 import { shortDateLabel } from "@/utils/dates";
 
-import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
+import type {
+    CommandPaletteProvider,
+    PaletteContext,
+    PaletteItem,
+    PaletteSearchOptions,
+    ScopedSection,
+} from "../types";
 import { dedupePaletteItemsByEntity, rankPaletteItems } from "../utilities";
 import { PaletteFetchError } from "./errors";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
@@ -154,9 +160,9 @@ async function publishedItems(query: string, limit: number): Promise<PaletteItem
  * debounce keeps the request volume down. An anonymous visitor has no own pages,
  * so the public ones are the whole answer.
  */
-async function rootItems(query: string, isAnonymous: boolean): Promise<PaletteItem[]> {
+async function rootItems(query: string, isAnonymous: boolean, localOnly = false): Promise<PaletteItem[]> {
     // the search starts before the cache is filtered, so the two run in parallel
-    const published = publishedItems(query, ROOT_VARIANT_LIMIT);
+    const published = localOnly ? Promise.resolve([]) : publishedItems(query, ROOT_VARIANT_LIMIT);
     const own = isAnonymous ? [] : await storeFirstItems("my", query, RECENT_LIMIT, true);
     const merged = dedupePaletteItemsByEntity([...own, ...(await published)]);
     return rankPaletteItems(merged, query).slice(0, RECENT_LIMIT + ROOT_VARIANT_LIMIT);
@@ -194,11 +200,11 @@ export const reportsProvider: CommandPaletteProvider = {
         return recentItems("", RECENT_LIMIT);
     },
     /** Unscoped fan-out over the cached own pages and the published ones */
-    async search(query: string, ctx: PaletteContext) {
+    async search(query: string, ctx: PaletteContext, options: PaletteSearchOptions = {}) {
         if (query.length < MIN_ROOT_QUERY_LENGTH) {
             return [];
         }
-        return rootItems(query, ctx.isAnonymous);
+        return rootItems(query, ctx.isAnonymous, options.localOnly);
     },
     /**
      * `r:` own pages as Recent + list sections, `rp:` the published list alone.
