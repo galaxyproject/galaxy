@@ -1,7 +1,6 @@
 import { faSitemap } from "@fortawesome/free-solid-svg-icons";
 
 import type { WorkflowInvocation } from "@/api/invocations";
-import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -10,6 +9,7 @@ import { shortDateLabel } from "@/utils/dates";
 import type { CommandPaletteProvider, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
 import { PALETTE_LIMITS } from "./limits";
+import { recentPaletteItems, type RecentRows } from "./recent";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
@@ -108,22 +108,20 @@ function filterInvocations(invocations: WorkflowInvocation[], query: string): Pa
 /** Remembered invocations, refreshed against the store cache when it knows them */
 function recentInvocationItems(): PaletteItem[] {
     const invocationStore = useInvocationStore();
-    const { recentItems } = useRecentPaletteItems();
-    return recentItems(INVOCATION_RECENT_TYPE).map((recent) => {
-        const invocation = invocationStore.latestInvocations.find(
-            (candidate: WorkflowInvocation) => candidate.id === recent.id,
-        );
-        if (invocation) {
-            return invocationToItem(invocation);
-        }
-        return {
-            id: `invocations:${recent.id}`,
+    const rows: RecentRows = {
+        type: INVOCATION_RECENT_TYPE,
+        stored: (entry) => {
+            const invocation = invocationStore.latestInvocations.find((candidate) => candidate.id === entry.id);
+            return invocation ? invocationToItem(invocation) : undefined;
+        },
+        fallback: (entry) => ({
+            id: `invocations:${entry.id}`,
             icon: faSitemap,
-            mru: { type: INVOCATION_RECENT_TYPE, id: recent.id },
-            title: recent.name || `Invocation ${recent.id}`,
-            to: recent.to ?? invocationRoute(recent.id),
-        };
-    });
+            title: entry.name || `Invocation ${entry.id}`,
+            to: invocationRoute(entry.id),
+        }),
+    };
+    return recentPaletteItems(rows, "", PALETTE_LIMITS.section);
 }
 
 function section(id: string, title: string, items: PaletteItem[]): ScopedSection[] {

@@ -1,7 +1,6 @@
 import { faFile } from "@fortawesome/free-solid-svg-icons";
 
 import type { HDASummary } from "@/api";
-import { type RecentPaletteItem, useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { useDatasetListStore } from "@/stores/datasetListStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
@@ -9,6 +8,7 @@ import localize from "@/utils/localization";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
 import { PALETTE_LIMITS } from "./limits";
+import { recentPaletteItems, type RecentRows } from "./recent";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 
 /** MRU bucket the palette records dataset selections under */
@@ -45,16 +45,6 @@ function datasetToItem(dataset: HDASummary): PaletteItem {
         subtitle: datasetSubtitle(dataset),
         title: dataset.name || localize("Unnamed dataset"),
         to: datasetRoute(dataset.id),
-    };
-}
-
-function recentToItem(entry: RecentPaletteItem): PaletteItem {
-    return {
-        id: `datasets:${entry.id}`,
-        icon: faFile,
-        mru: { type: DATASET_RECENT_TYPE, id: entry.id },
-        title: entry.name || localize("Unnamed dataset"),
-        to: entry.to ?? datasetRoute(entry.id),
     };
 }
 
@@ -116,8 +106,16 @@ async function matchingDatasets(query: string, cacheOnly = false): Promise<HDASu
 }
 
 function recentItems(query: string): PaletteItem[] {
-    const { recentItems: remembered } = useRecentPaletteItems();
-    return rankPaletteItems(remembered(DATASET_RECENT_TYPE).map(recentToItem), query).slice(0, SECTION_CAP);
+    const rows: RecentRows = {
+        type: DATASET_RECENT_TYPE,
+        fallback: (entry) => ({
+            id: `datasets:${entry.id}`,
+            icon: faFile,
+            title: entry.name || localize("Unnamed dataset"),
+            to: datasetRoute(entry.id),
+        }),
+    };
+    return recentPaletteItems(rows, query, SECTION_CAP);
 }
 
 /** Drops items already shown in an earlier section */

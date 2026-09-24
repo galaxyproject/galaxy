@@ -1,7 +1,6 @@
 import { faFileAlt } from "@fortawesome/free-solid-svg-icons";
 
 import type { PageSummary } from "@/api/pages";
-import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { type PageListVariant, usePageStore } from "@/stores/pageStore";
 import { useUserStore } from "@/stores/userStore";
 import { shortDateLabel } from "@/utils/dates";
@@ -13,8 +12,8 @@ import type {
     PaletteSearchOptions,
     ScopedSection,
 } from "../types";
-import { rankPaletteItems } from "../utilities";
 import { PALETTE_LIMITS } from "./limits";
+import { recentPaletteItems, type RecentRows } from "./recent";
 import type { ScopeDefinition } from "./scopes";
 import { rootListItems, storeFirstItems, type StoreFirstList } from "./storeFirst";
 
@@ -109,22 +108,17 @@ async function publishedSearch(query: string): Promise<PaletteItem[]> {
 /** Items the user opened through the palette before, best match first */
 function recentItems(query: string, limit: number): PaletteItem[] {
     const pageStore = usePageStore();
-    const { recentItems: readRecentItems } = useRecentPaletteItems();
-    const items = readRecentItems(PAGE_MRU_TYPE).map((recent) => {
-        const page = pageStore.getPageById(recent.id);
-        return page
-            ? // the palette remembers pages from both scopes, so the editor is
-              // offered on the owner's username rather than on the scope
-              { ...pageToItem(page, "published"), to: recent.to ?? pageDisplayPath(recent.id) }
-            : {
-                  id: `pages:${recent.id}`,
-                  icon: faFileAlt,
-                  mru: { type: PAGE_MRU_TYPE, id: recent.id },
-                  title: recent.name,
-                  to: recent.to ?? pageDisplayPath(recent.id),
-              };
-    });
-    return rankPaletteItems(items, query).slice(0, limit);
+    const rows: RecentRows = {
+        type: PAGE_MRU_TYPE,
+        stored: (entry) => {
+            const page = pageStore.getPageById(entry.id);
+            // the palette remembers pages from both scopes, so the editor is
+            // offered on the owner's username rather than on the scope
+            return page ? { ...pageToItem(page, "published"), to: entry.to ?? pageDisplayPath(entry.id) } : undefined;
+        },
+        fallback: (entry) => ({ id: `pages:${entry.id}`, icon: faFileAlt, to: pageDisplayPath(entry.id) }),
+    };
+    return recentPaletteItems(rows, query, limit);
 }
 
 export const reportsProvider: CommandPaletteProvider = {
