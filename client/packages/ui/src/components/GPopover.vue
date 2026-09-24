@@ -374,6 +374,8 @@ function listen(el: EventTarget, event: string, handler: (e: Event) => void, cap
     activeListeners.push({ el, event, handler, capture });
 }
 
+let boundTarget: Element | null = null;
+
 function setupListeners() {
     teardownListeners();
 
@@ -381,6 +383,7 @@ function setupListeners() {
     if (!target) {
         return;
     }
+    boundTarget = target;
 
     if (parsedTriggers.value.has("hover")) {
         listen(target, "mouseenter", scheduleOpen);
@@ -425,6 +428,7 @@ function setupListeners() {
 }
 
 function teardownListeners() {
+    boundTarget = null;
     cancelScheduled();
     for (const { el, event, handler, capture } of activeListeners) {
         el.removeEventListener(event, handler, capture);
@@ -459,11 +463,16 @@ onMounted(() => {
     });
 });
 
-// Re-setup listeners if target changes
+// An inline `() => $refs.x` target is a new function on every parent render; rebinding the same element
+// would drop a pending hover open or close.
 watch(
     () => props.target,
     () => {
-        nextTick(() => setupListeners());
+        nextTick(() => {
+            if (resolveTarget() !== boundTarget) {
+                setupListeners();
+            }
+        });
     },
 );
 

@@ -507,6 +507,35 @@ describe("GPopover hover", () => {
         expect(isShown()).toBe(false);
     });
 
+    it("keeps a pending open when the target is re-passed as a new function for the same element", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS / 2);
+        await wrapper!.setProps({ target: () => target });
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS / 2);
+
+        expect(isShown()).toBe(true);
+    });
+
+    it("moves its listeners to a new target element", async () => {
+        const oldTarget = await mountWithTrigger({ triggers: "hover" });
+        const newTarget = document.createElement("button");
+        document.body.appendChild(newTarget);
+
+        await wrapper!.setProps({ target: newTarget });
+        await nextTick();
+        oldTarget.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        expect(isShown()).toBe(false);
+
+        newTarget.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        expect(isShown()).toBe(true);
+        expect(oldTarget.hasAttribute("aria-describedby")).toBe(false);
+        expect(newTarget.getAttribute("aria-describedby")).toBe(popoverEl().id);
+    });
+
     it("closes once the pointer has left both the trigger and the popover", async () => {
         const target = await openByHover();
         target.dispatchEvent(new MouseEvent("mouseleave"));
