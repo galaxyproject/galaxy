@@ -528,17 +528,14 @@ defineExpose({
     // GTable declares inline-size containment so it can drive its own container queries. That
     // makes its width independent of its contents, so it reports no intrinsic width at all --
     // and this box is shrink-to-fit, so it would collapse to the width of the title while the
-    // table spilled out the side. Opt out of containment, and let long unbroken values like
-    // email addresses wrap so the table still fits within max-width.
+    // table spilled out the side. Opt out of containment.
     :deep(.g-table-container) {
         container-type: normal;
     }
 
-    :deep(.g-table) {
-        th,
-        td {
-            overflow-wrap: anywhere;
-        }
+    // Long values such as email addresses may break anywhere; headers and labels keep whole words.
+    :deep(.g-table td:not(:first-child)) {
+        overflow-wrap: anywhere;
     }
 }
 </style>
