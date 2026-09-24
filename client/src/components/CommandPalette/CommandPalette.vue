@@ -23,6 +23,7 @@ import { isPaletteFetchError } from "./providers/errors";
 import type { ScopeDefinition } from "./providers/scopes";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ResultSection } from "./types";
 import { usePaletteDialog } from "./usePaletteDialog";
+import { secondaryLabelFor, usePaletteFooter } from "./usePaletteFooter";
 import { type PaletteMode, usePaletteMachine } from "./usePaletteMachine";
 import { usePaletteModifiers } from "./usePaletteModifiers";
 import { BACKEND_RANKED_SCORE, scorePaletteItems } from "./utilities";
@@ -38,18 +39,6 @@ const MAX_ROOT_SECTION_ITEMS = 5;
 const MAX_CATEGORY_SECTION_ITEMS = 15;
 /** `selectedIndex` value selecting the category row instead of a result */
 const CATEGORY_ROW_INDEX = -1;
-
-const ROOT_PLACEHOLDER = "Search Galaxy…  > actions · w: t: … scopes · ? help";
-const HELP_PLACEHOLDER = "Search shortcuts…";
-
-/** One key hint rendered in the footer, driven by the current palette mode */
-interface FooterHint {
-    /** Emphasized hint — the binding the next `↵` would trigger */
-    active?: boolean;
-    id: string;
-    keys: string;
-    label: string;
-}
 
 const { isPaletteOpen, closePalette, togglePalette } = useCommandPalette();
 const { addRecentItem } = useRecentPaletteItems();
@@ -119,89 +108,15 @@ const badgeText = computed(() => (badgeLabel.value ? localize(badgeLabel.value) 
 
 const badgeAriaLabel = computed(() => `${localize("Remove filter")}: ${badgeText.value}`);
 
-const placeholder = computed(() => {
-    const activeMode = mode.value;
-    if (activeMode.type === "action") {
-        const argumentMode = activeMode.action.argumentMode;
-        return argumentMode ? localize(argumentMode.placeholder) : searchLabel(localize(activeMode.action.title));
-    }
-    if (activeMode.type === "scoped") {
-        return searchLabel(localize(activeMode.scope.label));
-    }
-    if (activeMode.type === "help") {
-        return localize(HELP_PLACEHOLDER);
-    }
-    return localize(ROOT_PLACEHOLDER);
-});
-
-/** Escape steps through clearing the text, then the badge, then closing */
-const escapeLabel = computed(() => {
-    if (text.value !== "") {
-        return localize("clear");
-    }
-    if (mode.value.type !== "root") {
-        return localize("back");
-    }
-    return localize("close");
-});
-
-/** What `⇧↵` would do with one item, unset when the item offers nothing */
-function secondaryLabelFor(item: PaletteItem | undefined) {
-    if (item?.argumentMode) {
-        return localize(item.argumentMode.label ?? "options");
-    }
-    return item?.secondaryAction ? localize(item.secondaryAction.label) : undefined;
-}
-
-/** What `⇧↵` would do with the selected item, unset when it offers nothing */
-const secondaryLabel = computed(() => secondaryLabelFor(selectedItem.value));
-
-const footerHints = computed<FooterHint[]>(() => {
-    const activeMode = mode.value;
-    const hints: FooterHint[] = [{ id: "navigate", keys: "↑↓", label: localize("navigate") }];
-
-    if (showCategoryRow.value) {
-        hints.push({
-            active: categoryRowSelected.value,
-            id: "category",
-            keys: "←→",
-            label: localize("category"),
-        });
-    }
-    if (activeMode.type === "action") {
-        hints.push({ id: "run", keys: "↵", label: localize("run") });
-    } else if (activeMode.type === "help") {
-        hints.push({ id: "apply", keys: "↵", label: localize("apply") });
-    } else {
-        // shift takes the enter before ctrl/cmd ever sees it, so it dims both
-        hints.push({
-            active: !modifierHeld.value && !shiftHeld.value,
-            id: "open",
-            keys: "↵",
-            label: localize("open"),
-        });
-        hints.push({
-            active: modifierHeld.value && !shiftHeld.value,
-            id: "new-tab",
-            keys: `${modifierLabel.value}↵`,
-            label: localize("new tab"),
-        });
-    }
-
-    if (secondaryLabel.value) {
-        hints.push({ active: shiftHeld.value, id: "secondary", keys: "⇧↵", label: secondaryLabel.value });
-    }
-    if (activeMode.type === "scoped") {
-        hints.push({ id: "remove-scope", keys: "⌫", label: localize("remove filter") });
-    } else if (activeMode.type === "action") {
-        hints.push({ id: "remove-action", keys: "⌫", label: localize("remove filter") });
-    }
-
-    hints.push({ id: "escape", keys: "esc", label: escapeLabel.value });
-    if (activeMode.type === "root") {
-        hints.push({ id: "help", keys: "?", label: localize("help") });
-    }
-    return hints;
+const { footerHints, placeholder } = usePaletteFooter({
+    categoryRowSelected,
+    mode,
+    modifierHeld,
+    modifierLabel,
+    selectedItem,
+    shiftHeld,
+    showCategoryRow,
+    text,
 });
 
 const scopeHint = computed(() => {
@@ -217,10 +132,6 @@ const errorHint = computed(() => {
     const subject = failedSubject.value;
     return subject ? `${localize("Couldn't load")} ${subject}. ${localize("Try again.")}` : undefined;
 });
-
-function searchLabel(subject: string) {
-    return `${localize("Search")} ${subject.toLowerCase()}…`;
-}
 
 /** What the current search is *of*, as the error row would name it */
 function searchSubject(activeMode: PaletteMode): string {
