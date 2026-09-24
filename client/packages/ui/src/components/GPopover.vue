@@ -17,17 +17,10 @@
  * - custom-class prop
  */
 
-import {
-    arrow,
-    autoUpdate,
-    computePosition,
-    type ComputePositionConfig,
-    flip,
-    offset,
-    type Placement,
-    shift,
-} from "@floating-ui/dom";
+import { arrow, type ComputePositionConfig, flip, offset, type Placement, shift } from "@floating-ui/dom";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+
+import { useFloatingPosition } from "../composables/floatingPosition";
 
 type TriggerType = "hover" | "click" | "click blur" | "hover focus" | "manual" | "manual hover" | "focus";
 
@@ -77,7 +70,6 @@ const emit = defineEmits<{
 const popoverEl = ref<HTMLDivElement>();
 const arrowEl = ref<HTMLDivElement>();
 const isVisible = ref(false);
-const actualPlacement = ref<Placement>("bottom");
 
 // Two-way binding: if show prop is provided, use it; otherwise manage internally
 const showState = computed({
@@ -137,15 +129,6 @@ function mapPlacement(p: string): Placement {
     return map[p] || (p as Placement);
 }
 
-// Bootstrap only defines .bs-popover-top/-right/-bottom/-left, and every arrow triangle rule
-// hangs off those four, so an aligned floating-ui placement has to collapse to its base side --
-// "bs-popover-bottom-start" matches no rule and leaves the arrow untriangled.
-const basePlacement = computed(() => actualPlacement.value.split("-")[0]);
-
-const popoverPosition = ref({ x: 0, y: 0 });
-const arrowPosition = ref<{ x?: number; y?: number }>({});
-let cleanupAutoUpdate: ReturnType<typeof autoUpdate> | null = null;
-
 function getConfig(): Partial<ComputePositionConfig> {
     const useAltBoundary = props.boundary === "window";
     const middleware = [
@@ -162,18 +145,25 @@ function getConfig(): Partial<ComputePositionConfig> {
     };
 }
 
-async function updatePosition() {
-    const target = resolveTarget();
-    if (!target || !popoverEl.value) {
-        return;
-    }
-    const result = await computePosition(target, popoverEl.value, getConfig());
-    popoverPosition.value = { x: result.x, y: result.y };
-    actualPlacement.value = result.placement;
-    if (result.middlewareData.arrow) {
-        arrowPosition.value = { x: result.middlewareData.arrow.x, y: result.middlewareData.arrow.y };
-    }
-}
+const {
+    x,
+    y,
+    placement: actualPlacement,
+    middlewareData,
+} = useFloatingPosition(resolveTarget, popoverEl, showState, getConfig);
+
+// Bootstrap only defines .bs-popover-top/-right/-bottom/-left, and every arrow triangle rule
+// hangs off those four, so an aligned floating-ui placement has to collapse to its base side --
+// "bs-popover-bottom-start" matches no rule and leaves the arrow untriangled.
+const basePlacement = computed(() => actualPlacement.value.split("-")[0]);
+
+const arrowStyle = computed(() => {
+    const arrowData = middlewareData.value.arrow;
+    return {
+        left: arrowData?.x != null ? `${arrowData.x}px` : "",
+        top: arrowData?.y != null ? `${arrowData.y}px` : "",
+    };
+});
 
 function showPopover() {
     showState.value = true;
@@ -187,20 +177,12 @@ function togglePopover() {
     showState.value = !showState.value;
 }
 
-// Setup auto-update when visible
 watch(
     () => showState.value,
     async (visible) => {
-        cleanupAutoUpdate?.();
-        cleanupAutoUpdate = null;
-
         if (visible) {
             relocate();
             await nextTick();
-            const target = resolveTarget();
-            if (target && popoverEl.value) {
-                cleanupAutoUpdate = autoUpdate(target, popoverEl.value, updatePosition);
-            }
             emit("shown");
         } else {
             emit("hidden");
@@ -373,7 +355,6 @@ watch(
 
 onBeforeUnmount(() => {
     teardownListeners();
-    cleanupAutoUpdate?.();
     // Vue only removes the placeholder, which no longer holds the relocated popover.
     popoverEl.value?.remove();
 });
@@ -393,14 +374,8 @@ defineExpose({
             class="popover b-popover"
             :class="[customClass, `bs-popover-${basePlacement}`]"
             role="tooltip"
-            :style="{ transform: `translate(${popoverPosition.x}px, ${popoverPosition.y}px)` }">
-            <div
-                ref="arrowEl"
-                class="arrow"
-                :style="{
-                    left: arrowPosition.x != null ? `${arrowPosition.x}px` : '',
-                    top: arrowPosition.y != null ? `${arrowPosition.y}px` : '',
-                }" />
+            :style="{ transform: `translate(${x}px, ${y}px)` }">
+            <div ref="arrowEl" class="arrow" :style="arrowStyle" />
             <div v-if="title || $slots.title" class="popover-header">
                 <slot name="title">{{ title }}</slot>
             </div>
