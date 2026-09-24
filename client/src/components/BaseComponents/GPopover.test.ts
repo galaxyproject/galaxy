@@ -665,6 +665,32 @@ describe("GPopover focus", () => {
         expect(isShown()).toBe(true);
     });
 
+    it("returns focus to the trigger when the parent hides it with focus inside", async () => {
+        const target = await mountWithTrigger({ triggers: "hover", show: false });
+        target.focus();
+        await nextTick();
+        await wrapper!.setProps({ show: true });
+        popoverEl().querySelector("a")!.focus();
+
+        await wrapper!.setProps({ show: false });
+
+        expect(document.activeElement).toBe(target);
+        expect(isShown()).toBe(false);
+    });
+
+    it("leaves focus alone when it already moved elsewhere", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.focus();
+        await nextTick();
+
+        const elsewhere = outsideButton();
+        elsewhere.focus();
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
+
+        expect(isShown()).toBe(false);
+        expect(document.activeElement).toBe(elsewhere);
+    });
+
     it("stays open when the pointer leaves while the trigger keeps focus", async () => {
         const target = await mountWithTrigger({ triggers: "hover" });
         target.focus();

@@ -315,11 +315,6 @@ function onDocumentKeydown(event: KeyboardEvent) {
     if (event.key !== "Escape" || event.defaultPrevented || !showState.value || !isTopEscapeLayer(escapeLayer)) {
         return;
     }
-    // Focus inside goes back to the trigger first: hidden, it would strand on a hidden element or reopen the popover.
-    const target = resolveTarget();
-    if (popoverEl.value?.contains(document.activeElement) && target instanceof HTMLElement) {
-        target.focus();
-    }
     hidePopover();
     // Keeps an enclosing modal dialog from closing on the same key press.
     event.preventDefault();
@@ -334,6 +329,18 @@ function toggleEscapeListener(listening: boolean) {
     }
 }
 
+let restoringFocus = false;
+
+// Focus left inside a popover that is being hidden goes back to the trigger rather than to the body.
+function restoreFocus() {
+    const target = resolveTarget();
+    if (popoverEl.value?.contains(document.activeElement) && target instanceof HTMLElement) {
+        restoringFocus = true;
+        target.focus({ preventScroll: true });
+        restoringFocus = false;
+    }
+}
+
 async function onVisibilityChange(visible: boolean) {
     toggleEscapeListener(visible);
     if (isDialog.value) {
@@ -344,6 +351,7 @@ async function onVisibilityChange(visible: boolean) {
         await nextTick();
         emit("shown");
     } else {
+        restoreFocus();
         // A popover hidden under the pointer or focus never sees the matching leave event.
         pointerInside = false;
         focusInside = false;
@@ -490,7 +498,7 @@ function setupListeners() {
             scheduleClose();
         };
         listen(target, "focusin", (event) => {
-            if (opensOnFocus || isKeyboardFocus(event.target)) {
+            if (!restoringFocus && (opensOnFocus || isKeyboardFocus(event.target))) {
                 focusInside = true;
                 showPopover();
             }
