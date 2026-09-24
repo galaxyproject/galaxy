@@ -1021,6 +1021,24 @@ describe("CommandPalette", () => {
         }
     });
 
+    it("keeps a scope token still being typed away from the backend under a category", async () => {
+        const search = vi.spyOn(toolsProvider, "search");
+        const scoped = countScopedSearches(toolsProvider);
+        try {
+            await type("zz:foo");
+            await pickCategory("tools");
+            expect(category("tools").attributes("aria-selected")).toBe("true");
+            expect(scoped.calls).toBe(0);
+            expect(search).toHaveBeenLastCalledWith("zz:foo", expect.anything(), { localOnly: true });
+
+            await type("fastqc");
+            expect(scoped.calls).toBe(1);
+        } finally {
+            search.mockRestore();
+            scoped.restore();
+        }
+    });
+
     it("offers a login when an anonymous visitor types a scope that needs one", async () => {
         browseAnonymously();
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);
