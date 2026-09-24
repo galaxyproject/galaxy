@@ -19,6 +19,12 @@ class Locators:
     register_link = ".register-link"
     forgot_password_link = ".forgot-password-link"
     reset_password_sent = ".reset-password-sent"
+    push_access = ".push-access"
+    push_access_owner = ".push-access-owner"
+    push_access_user = ".push-access-user"
+    push_access_username = ".push-access-username"
+    push_access_remove = ".push-access-remove"
+    push_access_add = ".push-access-add"
 
 
 class PlaywrightShedBrowser(ShedBrowser):
@@ -158,12 +164,23 @@ class PlaywrightShedBrowser(ShedBrowser):
         select_locator.select_option(label=categories_to_remove)
         self.submit_form_with_name("categories", "manage_categories_button")
 
+    def push_access_entry(self, username: str) -> Locator:
+        return self._page.locator(Locators.push_access_user).filter(
+            has=self._page.locator(Locators.push_access_username, has_text=username)
+        )
+
     def grant_users_access(self, usernames: list[str]):
-        multi_select = "form[name='user_access'] select[name='allow_push']"
-        select_locator = self._page.locator(multi_select)
-        select_locator.evaluate("node => node.selectedOptions = []")
-        select_locator.select_option(label=usernames)
-        self.submit_form_with_name("user_access", "user_access_button")
+        for username in usernames:
+            select = self._page.locator(Locators.push_access_add)
+            select.click()
+            select.locator("input").fill(username)
+            self._page.locator(".q-menu .q-item").filter(has_text=username).first.click()
+            expect(self.push_access_entry(username)).to_be_visible()
+
+    def revoke_user_access(self, username: str):
+        entry = self.push_access_entry(username)
+        entry.locator(Locators.push_access_remove).click()
+        expect(entry).to_have_count(0)
 
     def logout_if_logged_in(self, assert_logged_out=True):
         self._page.wait_for_selector(f"{Locators.toolbar_login}, {Locators.toolbar_logout}")
