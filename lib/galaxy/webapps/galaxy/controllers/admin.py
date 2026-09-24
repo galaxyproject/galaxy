@@ -9,16 +9,12 @@ from typing_extensions import TypedDict
 
 from galaxy import (
     model,
-    util,
     web,
 )
-from galaxy.exceptions import ActionInputError
-from galaxy.managers.quotas import QuotaManager
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
 )
-from galaxy.structured_app import StructuredApp
 from galaxy.util.search import (
     FilteredTerm,
     parse_filters_structured,
@@ -362,10 +358,6 @@ class AdminGalaxy(controller.BaseUIController):
     group_list_grid = GroupListGrid()
     quota_list_grid = QuotaListGrid()
 
-    def __init__(self, app: StructuredApp):
-        super().__init__(app)
-        self.quota_manager: QuotaManager = QuotaManager(app)
-
     @web.expose
     @web.json
     @web.require_admin
@@ -414,88 +406,6 @@ class AdminGalaxy(controller.BaseUIController):
     def quotas_list(self, trans: GalaxyWebTransaction, payload=None, **kwargs):
         return self.quota_list_grid(trans, **kwargs)
 
-    @web.legacy_expose_api
-    @web.require_admin
-    def rename_quota(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        id = kwd.get("id")
-        if not id:
-            return self.message_exception(trans, "No quota id received for renaming.")
-        quota = get_quota(trans, id)
-        if trans.request.method == "GET":
-            return {
-                "title": f"Change quota name and description for '{quota.name}'",
-                "inputs": [
-                    {"name": "name", "label": "Name", "value": quota.name},
-                    {"name": "description", "label": "Description", "value": quota.description},
-                ],
-            }
-        else:
-            try:
-                return {"message": self.quota_manager.rename_quota(quota, util.Params(payload))}
-            except ActionInputError as e:
-                return self.message_exception(trans, e.err_msg)
-
-    @web.legacy_expose_api
-    @web.require_admin
-    def edit_quota(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        id = kwd.get("id")
-        if not id:
-            return self.message_exception(trans, "No quota id received for renaming.")
-        quota = get_quota(trans, id)
-        if trans.request.method == "GET":
-            return {
-                "title": f"Edit quota size for '{quota.name}'",
-                "inputs": [
-                    {
-                        "name": "amount",
-                        "label": "Amount",
-                        "value": quota.display_amount,
-                        "help": 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"',
-                    },
-                    {
-                        "name": "operation",
-                        "label": "Assign, increase by amount, or decrease by amount?",
-                        "options": [("=", "="), ("+", "+"), ("-", "-")],
-                        "value": quota.operation,
-                    },
-                ],
-            }
-        else:
-            try:
-                return {"message": self.quota_manager.edit_quota(quota, util.Params(payload))}
-            except ActionInputError as e:
-                return self.message_exception(trans, e.err_msg)
-
-    @web.legacy_expose_api
-    @web.require_admin
-    def set_quota_default(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        id = kwd.get("id")
-        if not id:
-            return self.message_exception(trans, "No quota id received for renaming.")
-        quota = get_quota(trans, id)
-        if trans.request.method == "GET":
-            default_value = quota.default[0].type if quota.default else "no"
-            default_options = [("No", "no")]
-            for typ in trans.app.model.DefaultQuotaAssociation.types.__members__.values():
-                default_options.append((f"Yes, {typ}", typ))
-            return {
-                "title": f"Set quota default for '{quota.name}'",
-                "inputs": [
-                    {
-                        "name": "default",
-                        "label": "Is this quota a default for a class of users (if yes, what type)?",
-                        "options": default_options,
-                        "value": default_value,
-                        "help": "Warning: Any users or groups associated with this quota will be disassociated.",
-                    }
-                ],
-            }
-        else:
-            try:
-                return {"message": self.quota_manager.set_quota_default(quota, util.Params(payload))}
-            except ActionInputError as e:
-                return self.message_exception(trans, e.err_msg)
-
     @web.expose
     @web.require_admin
     def impersonate(self, trans: GalaxyWebTransaction, **kwd):
@@ -533,14 +443,3 @@ class AdminGalaxy(controller.BaseUIController):
     @web.require_admin
     def create_new_user(self, trans: GalaxyWebTransaction, **kwd):
         return trans.response.send_redirect(web.url_for(controller="user", action="create", cntrller="admin"))
-
-
-# ---- Utility methods -------------------------------------------------------
-
-
-def get_quota(trans: GalaxyWebTransaction, id):
-    """Get a Quota from the database by id."""
-    # Load user from database
-    id = trans.security.decode_id(id)
-    quota = trans.sa_session.query(trans.model.Quota).get(id)
-    return quota

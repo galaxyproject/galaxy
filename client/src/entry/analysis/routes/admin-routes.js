@@ -209,7 +209,7 @@ export default [
                 }),
             },
             {
-                path: "form/manage_users_and_groups_for_quota",
+                path: "form/edit_quota",
                 component: QuotaForm,
                 props: (route) => ({
                     quotaId: route.query.id,
@@ -226,30 +226,6 @@ export default [
             {
                 path: "form/create_quota",
                 component: QuotaForm,
-            },
-            {
-                path: "form/rename_quota",
-                component: FormGeneric,
-                props: (route) => ({
-                    url: `/admin/rename_quota?id=${route.query.id}`,
-                    redirect: "/admin/quotas",
-                }),
-            },
-            {
-                path: "form/edit_quota",
-                component: FormGeneric,
-                props: (route) => ({
-                    url: `/admin/edit_quota?id=${route.query.id}`,
-                    redirect: "/admin/quotas",
-                }),
-            },
-            {
-                path: "form/set_quota_default",
-                component: FormGeneric,
-                props: (route) => ({
-                    url: `/admin/set_quota_default?id=${route.query.id}`,
-                    redirect: "/admin/quotas",
-                }),
             },
             {
                 path: "form/create_form",

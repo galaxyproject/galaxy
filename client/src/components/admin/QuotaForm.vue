@@ -45,7 +45,13 @@ const { config } = useConfig();
 
 const errorMessage = ref("");
 const loading = ref(false);
+// A form that failed to load must not be saved: it would replace the quota's associations with nothing.
+const loadFailed = ref(false);
 const quotaName = ref("");
+const savedQuotaName = ref("");
+const savedAmount = ref("");
+const savedOperation = ref<QuotaOperation>("=");
+const savedDefaultType = ref<DefaultQuotaValue>("no");
 const description = ref("");
 const amount = ref("");
 const operation = ref<QuotaOperation>("=");
@@ -108,10 +114,15 @@ async function loadData() {
             });
             if (quotaError) {
                 errorMessage.value = errorMessageAsString(quotaError);
+                loadFailed.value = true;
                 loading.value = false;
                 return;
             }
-            quotaName.value = quota.name;
+            quotaName.value = savedQuotaName.value = quota.name;
+            description.value = quota.description;
+            amount.value = savedAmount.value = quota.display_amount;
+            operation.value = savedOperation.value = quota.operation;
+            defaultType.value = savedDefaultType.value = quota.default[0]?.type ?? "no";
             selectedUsers.value = quota.users.map((a) => ({ id: a.user.id, email: a.user.email }));
             userOptions.value = [...selectedUsers.value];
             selectedGroups.value = quota.groups.map((a) => ({ id: a.group.id, name: a.group.name }));
@@ -120,12 +131,14 @@ async function loadData() {
         const { data: groups, error: groupsError } = await GalaxyApi().GET("/api/groups");
         if (groupsError) {
             errorMessage.value = errorMessageAsString(groupsError);
+            loadFailed.value = true;
             loading.value = false;
             return;
         }
         groupOptions.value = groups.map((g) => ({ id: g.id, name: g.name }));
     } catch (e) {
         errorMessage.value = errorMessageAsString(e);
+        loadFailed.value = true;
     }
     loading.value = false;
 }
@@ -134,13 +147,26 @@ async function onSubmit() {
     const userIds = selectedUsers.value.map((u) => u.id);
     const groupIds = selectedGroups.value.map((g) => g.id);
 
+    if (!quotaName.value || (!isEditMode && !description.value) || !amount.value) {
+        errorMessage.value = isEditMode
+            ? "Please enter a name and amount."
+            : "Please enter a name, description and amount.";
+        return;
+    }
     if (props.quotaId) {
+        // The displayed amount is rounded, so only send it back when the admin changed it.
+        const amountChanged = amount.value !== savedAmount.value || operation.value !== savedOperation.value;
         const { error } = await GalaxyApi().PUT("/api/quotas/{id}", {
             params: { path: { id: props.quotaId } },
             body: {
-                operation: "=",
-                in_users: userIds,
-                in_groups: groupIds,
+                name: quotaName.value,
+                description: description.value,
+                // The operation is only applied together with an amount.
+                operation: operation.value,
+                ...(amountChanged ? { amount: amount.value } : {}),
+                ...(defaultType.value !== savedDefaultType.value ? { default: defaultType.value } : {}),
+                // Default quotas cannot have users or groups; making a quota a default drops them server side.
+                ...(defaultType.value === "no" ? { in_users: userIds, in_groups: groupIds } : {}),
             },
         });
         if (error) {
@@ -148,10 +174,6 @@ async function onSubmit() {
             return;
         }
     } else {
-        if (!quotaName.value || !description.value || !amount.value) {
-            errorMessage.value = "Please enter a name, description and amount.";
-            return;
-        }
         const { error } = await GalaxyApi().POST("/api/quotas", {
             body: {
                 name: quotaName.value,
@@ -180,13 +202,13 @@ loadData();
         <LoadingSpan v-if="loading" />
         <div v-else id="admin-quota-form">
             <GAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
-            <FormCard :title="isEditMode ? `Quota '${quotaName}'` : 'Create Quota'" icon="fa-database">
-                <template v-slot:body>
-                    <template v-if="!isEditMode">
+            <template v-if="!loadFailed">
+                <FormCard :title="isEditMode ? `Quota '${savedQuotaName}'` : 'Create Quota'" icon="fa-database">
+                    <template v-slot:body>
                         <FormElementLabel title="Name" :required="true" :condition="!!quotaName">
                             <GFormInput id="admin-quota-name" v-model="quotaName" />
                         </FormElementLabel>
-                        <FormElementLabel title="Description" :required="true" :condition="!!description">
+                        <FormElementLabel title="Description" :required="!isEditMode" :condition="!!description">
                             <GFormInput id="admin-quota-description" v-model="description" />
                         </FormElementLabel>
                         <FormElementLabel title="Amount" :required="true" :condition="!!amount" :help="AMOUNT_HELP">
@@ -201,58 +223,58 @@ loadData();
                             <FormSelection id="admin-quota-default" v-model="defaultType" :data="defaultOptions" />
                         </FormElementLabel>
                         <FormElementLabel
-                            v-if="quotaSourceOptions.length > 1"
+                            v-if="!isEditMode && quotaSourceOptions.length > 1"
                             title="Apply quota to labeled object stores.">
                             <FormSelection
                                 id="admin-quota-source-label"
                                 v-model="quotaSourceLabel"
                                 :data="quotaSourceOptions" />
                         </FormElementLabel>
-                    </template>
 
-                    <template v-if="defaultType === 'no'">
-                        <FormElementLabel id="admin-quota-groups" title="Groups">
-                            <Multiselect
-                                id="admin-quota-groups-select"
-                                v-model="selectedGroups"
-                                :options="groupOptions"
-                                :clear-on-select="true"
-                                :multiple="true"
-                                :max-height="300"
-                                label="name"
-                                track-by="id"
-                                placeholder="Select groups..." />
-                        </FormElementLabel>
+                        <template v-if="defaultType === 'no'">
+                            <FormElementLabel id="admin-quota-groups" title="Groups">
+                                <Multiselect
+                                    id="admin-quota-groups-select"
+                                    v-model="selectedGroups"
+                                    :options="groupOptions"
+                                    :clear-on-select="true"
+                                    :multiple="true"
+                                    :max-height="300"
+                                    label="name"
+                                    track-by="id"
+                                    placeholder="Select groups..." />
+                            </FormElementLabel>
 
-                        <FormElementLabel id="admin-quota-users" title="Users">
-                            <Multiselect
-                                id="admin-quota-users-select"
-                                v-model="selectedUsers"
-                                :options="userOptions"
-                                :clear-on-select="true"
-                                :multiple="true"
-                                :internal-search="false"
-                                :max-height="300"
-                                label="email"
-                                track-by="id"
-                                placeholder="Search users by email..."
-                                @search-change="onUserSearch">
-                                <template slot="noResult">
-                                    <div v-if="userSearch.length < 3">Enter at least 3 characters to search</div>
-                                    <div v-else>No users found</div>
-                                </template>
-                                <template slot="noOptions">
-                                    <div>Enter at least 3 characters to search</div>
-                                </template>
-                            </Multiselect>
-                        </FormElementLabel>
+                            <FormElementLabel id="admin-quota-users" title="Users">
+                                <Multiselect
+                                    id="admin-quota-users-select"
+                                    v-model="selectedUsers"
+                                    :options="userOptions"
+                                    :clear-on-select="true"
+                                    :multiple="true"
+                                    :internal-search="false"
+                                    :max-height="300"
+                                    label="email"
+                                    track-by="id"
+                                    placeholder="Search users by email..."
+                                    @search-change="onUserSearch">
+                                    <template slot="noResult">
+                                        <div v-if="userSearch.length < 3">Enter at least 3 characters to search</div>
+                                        <div v-else>No users found</div>
+                                    </template>
+                                    <template slot="noOptions">
+                                        <div>Enter at least 3 characters to search</div>
+                                    </template>
+                                </Multiselect>
+                            </FormElementLabel>
+                        </template>
                     </template>
-                </template>
-            </FormCard>
-            <GButton id="admin-quota-submit" class="my-2" color="blue" @click="onSubmit">
-                <FontAwesomeIcon :icon="faSave" class="mr-1" />
-                <span v-localize>{{ isEditMode ? "Save" : "Create" }}</span>
-            </GButton>
+                </FormCard>
+                <GButton id="admin-quota-submit" class="my-2" color="blue" @click="onSubmit">
+                    <FontAwesomeIcon :icon="faSave" class="mr-1" />
+                    <span v-localize>{{ isEditMode ? "Save" : "Create" }}</span>
+                </GButton>
+            </template>
         </div>
     </div>
 </template>
