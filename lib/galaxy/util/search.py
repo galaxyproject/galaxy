@@ -12,6 +12,9 @@ QUOTE_PATTERN = re.compile(r"\'(.*?)\'")
 # matching table) per raw term, so both floors are there to bound query cost.
 DEFAULT_MIN_RAW_TERM_LENGTH = 4
 DEFAULT_MAX_RAW_TERMS = 7
+# Keyed ('name:x') and quoted terms are kept regardless of length, but they
+# still each become a predicate, so bound them too against pathological input.
+DEFAULT_MAX_EXPLICIT_TERMS = 10
 
 
 def parse_filters(search_term: str, filters: dict[str, str] | None = None) -> ParseFilterResultT:
@@ -115,16 +118,19 @@ def filter_terms(
     parsed: "ParsedSearch",
     min_raw_term_length: int = DEFAULT_MIN_RAW_TERM_LENGTH,
     max_raw_terms: int | None = DEFAULT_MAX_RAW_TERMS,
+    max_explicit_terms: int | None = DEFAULT_MAX_EXPLICIT_TERMS,
 ) -> "ParsedSearch":
     """Return a new ParsedSearch with short / excess raw text terms dropped.
 
     Raw (unquoted, non-keyed) terms shorter than ``min_raw_term_length`` are
     dropped, and the surviving raw terms are capped at ``max_raw_terms``.
     Filtered terms (``key:value``) and quoted raw terms ('foo bar') are
-    always kept — those are explicit user intent.
+    kept regardless of length — those are explicit user intent — but
+    together they are capped at ``max_explicit_terms``.
     """
     out = ParsedSearch()
     raw_kept = 0
+    explicit_kept = 0
     for term in parsed.terms:
         if isinstance(term, RawTextTerm) and not term.quoted:
             if len(term.text) < min_raw_term_length:
@@ -133,7 +139,11 @@ def filter_terms(
                 continue
             raw_kept += 1
             out.add_unfiltered_text(term.text, term.quoted)
-        elif isinstance(term, RawTextTerm):
+            continue
+        if max_explicit_terms is not None and explicit_kept >= max_explicit_terms:
+            continue
+        explicit_kept += 1
+        if isinstance(term, RawTextTerm):
             out.add_unfiltered_text(term.text, term.quoted)
         else:
             out.add_keyed_term(term.filter, term.text, term.quoted)
@@ -141,6 +151,7 @@ def filter_terms(
 
 
 __all__ = (
+    "DEFAULT_MAX_EXPLICIT_TERMS",
     "DEFAULT_MAX_RAW_TERMS",
     "DEFAULT_MIN_RAW_TERM_LENGTH",
     "filter_terms",

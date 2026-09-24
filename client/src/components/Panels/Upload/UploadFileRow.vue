@@ -12,10 +12,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
 import type { CompositeFileUploadItem, CompositeSlotQueueItem, UploadItem } from "@/composables/upload/uploadItemTypes";
+import { isCancellableUpload } from "@/composables/upload/uploadItemTypes";
 import { useHistoryStore } from "@/stores/historyStore";
 import { bytesToString } from "@/utils/utils";
 
-import { getFileProgressUi, getUploadItemDisplayInfo } from "./uploadProgressUi";
+import { getFileProgressUi, getFileStatusMessage, getUploadItemDisplayInfo } from "./uploadProgressUi";
 
 import UploadItemCard from "./UploadItemCard.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
@@ -31,12 +32,14 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "cancel", id: string): void;
+    (e: "dismiss", id: string): void;
 }>();
 
 const historyStore = useHistoryStore();
 
 const ui = computed(() => getFileProgressUi(props.file));
 const displayInfo = computed(() => getUploadItemDisplayInfo(props.file));
+const statusMessage = computed(() => getFileStatusMessage(props.file));
 const uploadedAtIso = computed(() => new Date(props.file.createdAt).toISOString());
 
 const targetHistoryName = computed(() =>
@@ -51,11 +54,8 @@ const hasError = computed(() => props.file.status === "error");
 
 const sourceUrl = computed(() => displayInfo.value.sourceUrl);
 
-const isCancellable = computed(
-    () =>
-        !props.nested &&
-        (props.file.status === "queued" || props.file.status === "uploading" || props.file.status === "processing"),
-);
+const isCancellable = computed(() => !props.nested && isCancellableUpload(props.file));
+const canDismiss = computed(() => !props.nested && props.file.status === "error");
 
 const cardBadges = computed(() => {
     const badges = [] as any[];
@@ -69,6 +69,9 @@ const compositeSlots = computed<CompositeSlotQueueItem[]>(() =>
 
 /** True when at least one slot has no known size (plain URL slots). The total is therefore an estimate. */
 const hasSizeUncertainty = computed(() => compositeSlots.value.some((s) => s.fileSize === undefined));
+
+/** Size is unknown for URL uploads (size is 0) — hide it rather than showing "0 bytes". */
+const showSize = computed(() => props.file.size > 0);
 
 const sizeLabel = computed(() => {
     const label = bytesToString(props.file.size);
@@ -105,6 +108,11 @@ function onCancel(event: Event) {
     event.stopPropagation();
     emit("cancel", props.file.id);
 }
+
+function onDismiss(event: Event) {
+    event.stopPropagation();
+    emit("dismiss", props.file.id);
+}
 </script>
 
 <template>
@@ -129,7 +137,11 @@ function onCancel(event: Event) {
         </template>
 
         <template v-slot:indicators>
-            <span class="text-muted small mr-2" :class="{ 'font-italic': hasSizeUncertainty }" :title="sizeTooltip">
+            <span
+                v-if="showSize"
+                class="text-muted small mr-2"
+                :class="{ 'font-italic': hasSizeUncertainty }"
+                :title="sizeTooltip">
                 {{ sizeLabel }}
             </span>
             <span class="text-muted small mr-2">
@@ -147,6 +159,13 @@ function onCancel(event: Event) {
                 @click="onCancel">
                 <FontAwesomeIcon :icon="faTimesCircle" fixed-width />
             </button>
+            <button
+                v-if="canDismiss"
+                class="btn btn-link text-muted p-0 ml-1 cancel-btn"
+                title="Dismiss upload"
+                @click="onDismiss">
+                <FontAwesomeIcon :icon="faTimesCircle" fixed-width />
+            </button>
         </template>
 
         <template v-slot:description>
@@ -159,6 +178,9 @@ function onCancel(event: Event) {
                     :aria-valuenow="props.file.progress"
                     aria-valuemin="0"
                     aria-valuemax="100"></div>
+            </div>
+            <div v-if="statusMessage" class="status-message text-muted small mt-1">
+                {{ statusMessage }}
             </div>
             <div v-if="sourceUrl" class="source-url text-muted small mt-1">
                 <span class="source-url-text text-truncate" :title="sourceUrl">{{ sourceUrl }}</span>
@@ -194,6 +216,7 @@ function onCancel(event: Event) {
                         {{ slot.displayName || "Not provided" }}
                     </span>
                     <span
+                        v-if="slot.fileSize !== 0"
                         class="small flex-shrink-0 text-muted"
                         :class="{ 'font-italic': slot.fileSize === undefined }">
                         {{ slotSizeLabel(slot.fileSize) }}

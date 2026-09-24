@@ -79,9 +79,7 @@ function mountCounter(props: Partial<{ lastChecked: Date; isWatching: boolean }>
         },
         localVue,
     };
-    // ``shallowMount`` renders GButton as a stub, which is what the appearance
-    // assertions read their props off. A real ``mount`` is needed whenever a click has
-    // to travel through the template binding into GButton's own click handler.
+    // Stub for prop assertions; real mount so clicks reach GButton's handler.
     return deep
         ? mount(HistoryCounter as unknown as object, options)
         : shallowMount(HistoryCounter as unknown as object, options);

@@ -34,7 +34,7 @@ def pending(*dependencies: SchedulingDependency, untracked=(), more_work=False) 
 
 class RecordingScheduler:
     def __init__(self, *results: SchedulingDependencies):
-        self.results = list(results)
+        self.results = list(results) or [NOTHING_PENDING]
         self.scheduled = 0
 
     def schedule(self, workflow_invocation):
@@ -169,8 +169,49 @@ def test_reschedules_after_backfill_interval_without_changes():
     assert harness.attempt(scheduler) == 1
     assert harness.attempt(scheduler) == 1
 
-    tracking = harness.monitor.invocation_tracking[harness.invocation_id]
-    stale = tracking.observed_at - harness.monitor.timedelta - timedelta(seconds=1)
-    harness.monitor.invocation_tracking[harness.invocation_id] = tracking._replace(observed_at=stale)
+    tracking = harness.monitor.update_time_tracking_dict[harness.invocation_id]
+    stale = tracking.schedule_time - harness.monitor.timedelta - timedelta(seconds=1)
+    harness.monitor.update_time_tracking_dict[harness.invocation_id] = tracking._replace(schedule_time=stale)
     assert harness.attempt(scheduler) == 2
     assert harness.attempt(scheduler) == 2
+
+
+def _set_history_update_time(session, history_id, update_time):
+    session.execute(delete(model.HistoryAudit).where(model.HistoryAudit.history_id == history_id))
+    session.execute(insert(model.HistoryAudit).values(history_id=history_id, update_time=update_time))
+    session.commit()
+
+
+def test_reschedules_when_history_update_committed_after_attempt_started():
+    app = MockApp(
+        config=MockAppConfig(maximum_workflow_invocation_duration=0, history_local_serial_workflow_scheduling=False)
+    )
+    app.job_config = Bunch(self_handler_tags=[])
+    monitor = WorkflowRequestMonitor(
+        cast(MinimalManagerApp, app),
+        cast(WorkflowSchedulingManager, Bunch(default_handler_id="main", handler_assignment_methods=[])),
+    )
+    attempt_schedule = monitor._WorkflowRequestMonitor__attempt_schedule  # type: ignore[attr-defined]
+
+    session = app.model.context
+    history = model.History()
+    invocation = model.WorkflowInvocation()
+    invocation.history = history
+    invocation.workflow = model.Workflow()
+    invocation.state = model.WorkflowInvocation.states.READY
+    session.add(invocation)
+    session.commit()
+    history_id, invocation_id = history.id, invocation.id
+    _set_history_update_time(session, history_id, now() - timedelta(seconds=60))
+
+    scheduler = RecordingScheduler()
+    attempt_schedule(invocation_id, scheduler)
+    assert scheduler.scheduled == 1
+
+    attempt_schedule(invocation_id, scheduler)
+    assert scheduler.scheduled == 1
+
+    # A transaction that flushed before the last attempt started but committed after it.
+    _set_history_update_time(app.model.context, history_id, now() - timedelta(seconds=30))
+    attempt_schedule(invocation_id, scheduler)
+    assert scheduler.scheduled == 2

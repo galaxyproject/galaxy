@@ -6,9 +6,7 @@ import { Toast } from "@/composables/toast";
 import { pushIgnoringNavCancel } from "./windowAwareNavigation";
 
 vi.mock("@/app");
-vi.mock("@/composables/toast", () => ({
-    Toast: { error: vi.fn() },
-}));
+vi.mock("@/composables/toast");
 
 const mockGetGalaxyInstance = vi.mocked(getGalaxyInstance);
 const mockToastError = vi.mocked(Toast.error);

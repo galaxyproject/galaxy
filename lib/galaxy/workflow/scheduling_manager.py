@@ -317,14 +317,14 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         self.app.application_stack.register_postfork_function(self.request_monitor.start)
 
 
-class InvocationTracking(NamedTuple):
+class InvocationUpdateSnapshot(NamedTuple):
     """State of an invocation as observed by its last scheduling attempt."""
 
     # Observed before the attempt schedules anything, so that changes committed
     # while it runs are seen by the next attempt.
     history_update_time: datetime | None
     step_update_time: datetime | None
-    observed_at: datetime
+    schedule_time: datetime
     pending: SchedulingDependencies | None = None
 
 
@@ -336,7 +336,7 @@ class WorkflowRequestMonitor(Monitors):
             name="WorkflowRequestMonitor.monitor_thread", target=self.__monitor, config=app.config
         )
         self.invocation_grabber = None
-        self.invocation_tracking: dict[int, InvocationTracking] = {}
+        self.update_time_tracking_dict: dict[int, InvocationUpdateSnapshot] = {}
         backfill_seconds = (
             min(app.config.maximum_workflow_invocation_duration, DEFAULT_SCHEDULER_BACKFILL_SECONDS)
             if app.config.maximum_workflow_invocation_duration > 0
@@ -357,15 +357,15 @@ class WorkflowRequestMonitor(Monitors):
                 handler_tags=self_handler_tags,
             )
 
-    def observe_invocation(self, invocation: model.WorkflowInvocation) -> InvocationTracking:
-        return InvocationTracking(
+    def invocation_update_snapshot(self, invocation: model.WorkflowInvocation) -> InvocationUpdateSnapshot:
+        return InvocationUpdateSnapshot(
             history_update_time=invocation.history.update_time,
             step_update_time=invocation.get_last_workflow_invocation_step_update_time(),
-            observed_at=now(),
+            schedule_time=now(),
         )
 
-    def ready_to_schedule_more(self, invocation: model.WorkflowInvocation, observed: InvocationTracking) -> bool:
-        previous = self.invocation_tracking.get(invocation.id)
+    def ready_to_schedule_more(self, invocation: model.WorkflowInvocation, snapshot: InvocationUpdateSnapshot) -> bool:
+        previous = self.update_time_tracking_dict.get(invocation.id)
         # Nothing tracked (e.g. after a restart): schedule so dependencies get captured.
         if previous is None or previous.pending is None:
             return True
@@ -377,7 +377,7 @@ class WorkflowRequestMonitor(Monitors):
             return True
 
         # Fallback for a dependency that was missed or changed without leaving a trace.
-        since_last_schedule = observed.observed_at - previous.observed_at
+        since_last_schedule = snapshot.schedule_time - previous.schedule_time
         if since_last_schedule > self.timedelta:
             log.debug(
                 "Scheduling workflow invocation [%s] after %s seconds without scheduling.",
@@ -397,8 +397,8 @@ class WorkflowRequestMonitor(Monitors):
         # visible when it commits, so compare them against the values the last
         # attempt observed.
         return (
-            observed.history_update_time != previous.history_update_time
-            or observed.step_update_time != previous.step_update_time
+            snapshot.history_update_time != previous.history_update_time
+            or snapshot.step_update_time != previous.step_update_time
         )
 
     def _any_dependency_satisfied(
@@ -560,11 +560,11 @@ class WorkflowRequestMonitor(Monitors):
                     workflow_invocation.cancel_invocation_steps()
                     workflow_invocation.mark_cancelled()
                     session.commit()
-                    self.invocation_tracking.pop(invocation_id, None)
+                    self.update_time_tracking_dict.pop(invocation_id, None)
                     return False
 
                 if not workflow_invocation or not workflow_invocation.active:
-                    self.invocation_tracking.pop(invocation_id, None)
+                    self.update_time_tracking_dict.pop(invocation_id, None)
                     return False
 
                 # This ensures we're only ever working on the 'first' active
@@ -574,14 +574,16 @@ class WorkflowRequestMonitor(Monitors):
                     for i in workflow_invocation.history.workflow_invocations:
                         if i.active and i.id < workflow_invocation.id:
                             return False
-                observed = self.observe_invocation(workflow_invocation)
-                if self.ready_to_schedule_more(workflow_invocation, observed):
+                # Take the snapshot before scheduling so that anything committed while
+                # scheduling is picked up by the next attempt.
+                snapshot = self.invocation_update_snapshot(workflow_invocation)
+                if self.ready_to_schedule_more(workflow_invocation, snapshot):
                     pending = workflow_scheduler.schedule(workflow_invocation)
                     self._log_untracked_delays(invocation_id, pending)
-                    self.invocation_tracking[invocation_id] = observed._replace(pending=pending)
+                    self.update_time_tracking_dict[invocation_id] = snapshot._replace(pending=pending)
                     log.debug("Workflow invocation [%s] scheduled", invocation_id)
             except Exception:
-                self.invocation_tracking.pop(invocation_id, None)
+                self.update_time_tracking_dict.pop(invocation_id, None)
                 # TODO: eventually fail this - or fail it right away?
                 log.exception("Exception raised while attempting to schedule workflow request.")
                 return False
@@ -592,7 +594,7 @@ class WorkflowRequestMonitor(Monitors):
     def _log_untracked_delays(self, invocation_id: int, pending: SchedulingDependencies) -> None:
         if not pending.untracked:
             return
-        previous = self.invocation_tracking.get(invocation_id)
+        previous = self.update_time_tracking_dict.get(invocation_id)
         if previous and previous.pending and previous.pending.untracked == pending.untracked:
             return
         log.warning(

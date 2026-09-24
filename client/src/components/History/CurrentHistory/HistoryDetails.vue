@@ -36,6 +36,7 @@ const { config } = useConfig();
         :annotation="history.annotation || ''"
         :tags="history.tags"
         :writeable="writeable"
+        :renameable="writeable"
         :summarized="summarized"
         :update-time="history.update_time"
         @save="onSave">
