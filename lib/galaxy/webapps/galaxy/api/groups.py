@@ -7,7 +7,6 @@ from typing import Annotated
 
 from fastapi import Body
 
-from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.groups import GroupsManager
 from galaxy.schema.groups import (
     GroupCreatePayload,
@@ -21,6 +20,7 @@ from galaxy.webapps.galaxy.api import (
     Router,
 )
 from galaxy.webapps.galaxy.api.common import GroupIDPathParam
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class FastAPIGroups:
     )
     def index(
         self,
-        trans: ProvidesAppContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> GroupListResponse:
         return self.manager.index(trans)
 
@@ -52,7 +52,7 @@ class FastAPIGroups:
     def create(
         self,
         payload: Annotated[GroupCreatePayload, Body(...)],
-        trans: ProvidesAppContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> GroupListResponse:
         return self.manager.create(trans, payload)
 
@@ -65,7 +65,7 @@ class FastAPIGroups:
     def show(
         self,
         group_id: GroupIDPathParam,
-        trans: ProvidesAppContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> GroupResponse:
         return self.manager.show(trans, group_id)
 
@@ -79,18 +79,18 @@ class FastAPIGroups:
         self,
         group_id: GroupIDPathParam,
         payload: Annotated[GroupUpdatePayload, Body(...)],
-        trans: ProvidesAppContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ) -> GroupResponse:
         return self.manager.update(trans, group_id, payload)
 
     @router.delete("/api/groups/{group_id}", require_admin=True)
-    def delete(self, group_id: GroupIDPathParam, trans: ProvidesAppContext = DependsOnTrans):
+    def delete(self, group_id: GroupIDPathParam, trans: SessionRequestContext = DependsOnTrans):
         self.manager.delete(trans, group_id)
 
     @router.post("/api/groups/{group_id}/purge", require_admin=True)
-    def purge(self, group_id: GroupIDPathParam, trans: ProvidesAppContext = DependsOnTrans):
+    def purge(self, group_id: GroupIDPathParam, trans: SessionRequestContext = DependsOnTrans):
         self.manager.purge(trans, group_id)
 
     @router.post("/api/groups/{group_id}/undelete", require_admin=True)
-    def undelete(self, group_id: GroupIDPathParam, trans: ProvidesAppContext = DependsOnTrans):
+    def undelete(self, group_id: GroupIDPathParam, trans: SessionRequestContext = DependsOnTrans):
         self.manager.undelete(trans, group_id)

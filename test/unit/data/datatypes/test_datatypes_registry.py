@@ -1,5 +1,6 @@
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
+from galaxy.datatypes.text import Json
 
 
 def test_matches_any():
@@ -114,3 +115,14 @@ def test_sniff_compressed_dynamic_datatypes_default_off():
     assert "fastq" not in sniff.guess_ext(fname, sniff_order)
     fname = sniff.get_test_fname("1.fastqsanger.bz2")
     assert "fastq" not in sniff.guess_ext(fname, sniff_order)
+
+
+def test_rmsx_manifest_visualization_registration():
+    registry = example_datatype_registry_for_sample()
+    datatype = registry.get_datatype_by_extension("rmsx.json")
+    assert registry.datatypes_by_extension["rmsx.json"] is datatype
+    assert isinstance(datatype, Json)
+    assert datatype.is_subclass
+    assert registry.mimetypes_by_extension["rmsx.json"] == "application/json"
+    assert "rmsx.json" in registry.upload_file_formats
+    assert registry.get_all_visualization_mappings()["rmsx.json"]["visualization"] == "rmsxflipbook"

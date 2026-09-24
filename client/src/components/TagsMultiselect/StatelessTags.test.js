@@ -2,6 +2,8 @@ import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { Toast } from "@/composables/toast";
+
 import StatelessTags from "./StatelessTags.vue";
 
 const autocompleteTags = ["name:named_user_tag", "abc", "my_tag"];
@@ -17,9 +19,6 @@ const mountWithProps = (props) => {
 };
 
 const onNewTagSeenMock = vi.fn((tag) => tag);
-const warningMock = vi.fn((message, title) => {
-    return { message, title };
-});
 
 function normalize(tag) {
     return tag.replace(/^#/, "name:");
@@ -35,11 +34,9 @@ vi.mock("@/stores/userTagsStore", () => ({
     normalizeTag: vi.fn((tag) => normalize(tag)),
 }));
 
-vi.mock("@/composables/toast", () => ({
-    useToast: vi.fn(() => ({
-        warning: warningMock,
-    })),
-}));
+vi.mock("@/composables/toast");
+
+const toastWarning = vi.mocked(Toast.warning);
 
 const selectors = {
     multiselect: ".headless-multiselect",
@@ -51,7 +48,7 @@ describe("StatelessTags", () => {
     beforeEach(() => {
         suppressBootstrapVueWarnings();
         onNewTagSeenMock.mockClear();
-        warningMock.mockClear();
+        toastWarning.mockClear();
     });
 
     it("shows tags", () => {
@@ -137,8 +134,8 @@ describe("StatelessTags", () => {
         option.trigger("click");
         await wrapper.vm.$nextTick();
 
-        expect(warningMock.mock.calls.length).toBe(1);
-        expect(warningMock.mock.results[0].value.title).toBe("Invalid Tag");
+        expect(toastWarning).toHaveBeenCalledTimes(1);
+        expect(toastWarning).toHaveBeenCalledWith(expect.any(String), "Invalid Tag");
     });
 
     it("hides too many tags", async () => {
@@ -149,7 +146,7 @@ describe("StatelessTags", () => {
             maxVisibleTags: 4,
         });
 
-        const tags = wrapper.findAll(".tag");
+        const tags = wrapper.findAll(".tag").wrappers.filter((w) => !w.element.closest(".g-tooltip"));
         expect(tags.length).toBe(4);
 
         const showMoreLink = wrapper.find(".toggle-link");

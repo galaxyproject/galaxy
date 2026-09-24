@@ -1,21 +1,30 @@
 import datetime
 import json
-import shutil
 from collections.abc import Callable
 from concurrent.futures import TimeoutError
 from functools import lru_cache
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
+from urllib.parse import urlparse
 
+from celery import current_task
 from sqlalchemy import (
+    and_,
+    create_engine,
+    delete,
     exists,
+    false,
+    or_,
     select,
+    text,
+    update,
 )
 
 from galaxy import model
+from galaxy.agents import iwc
+from galaxy.agents.gtn import GTNSearchDB
 from galaxy.celery import (
     celery_app,
     galaxy_task,
@@ -24,8 +33,10 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.exceptions import ObjectNotFound
+from galaxy.job_execution.setup import JobWorkingDirectory
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.dataset_storage_operations import DatasetStorageOperationManager
 from galaxy.managers.datasets import (
     DatasetAssociationManager,
     DatasetManager,
@@ -36,10 +47,13 @@ from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.managers.notification import NotificationManager
+from galaxy.managers.queue_metrics import emit_queue_metrics
 from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.managers.workflow_completion import WorkflowCompletionManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model import (
+    DatasetStorageOperationRun,
+    DatasetStorageOperationSnapshot,
     Job,
     User,
 )
@@ -48,6 +62,7 @@ from galaxy.objectstore import BaseObjectStore
 from galaxy.objectstore.caching import check_caches
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.schema.notifications import NotificationCreateRequest
+from galaxy.schema.storage_operations import StorageOperationRunState
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     GenerateHistoryContentDownload,
@@ -58,6 +73,7 @@ from galaxy.schema.tasks import (
     MaterializeDatasetInstanceTaskRequest,
     PrepareDatasetCollectionDownload,
     PurgeDatasetsTaskRequest,
+    PurgeHistoryDatasetsTaskRequest,
     QueueJobs,
     SetupHistoryExportJob,
     TOOL_SOURCE_CLASS,
@@ -65,11 +81,18 @@ from galaxy.schema.tasks import (
     WriteHistoryTo,
     WriteInvocationTo,
 )
+from galaxy.security.vault import (
+    renew_vault_token_if_needed,
+    Vault,
+)
 from galaxy.short_term_storage import ShortTermStorageMonitor
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools import create_tool_from_representation
 from galaxy.tools.data_fetch import do_fetch
-from galaxy.util import galaxy_directory
+from galaxy.util import (
+    galaxy_directory,
+    now,
+)
 from galaxy.util.custom_logging import get_logger
 from galaxy.workflow.completion_hooks import WorkflowCompletionHookRegistry
 
@@ -81,16 +104,21 @@ def cached_create_tool_from_representation(
     app: MinimalManagerApp,
     raw_tool_source: str,
     tool_source_class: TOOL_SOURCE_CLASS,
-    tool_dir: str = "",
+    tool_dir: str | None = None,
+    tool_id: str | None = None,
 ):
     return create_tool_from_representation(
-        app=app, raw_tool_source=raw_tool_source, tool_dir=tool_dir, tool_source_class=tool_source_class
+        app=app,
+        raw_tool_source=raw_tool_source,
+        tool_dir=tool_dir,
+        tool_source_class=tool_source_class,
+        guid=tool_id,
     )
 
 
 @galaxy_task(action="recalculate a user's disk usage")
 def recalculate_user_disk_usage(
-    session: galaxy_scoped_session, object_store: BaseObjectStore, task_user_id: Optional[int] = None
+    session: galaxy_scoped_session, object_store: BaseObjectStore, task_user_id: int | None = None
 ):
     if task_user_id:
         user = session.get(User, task_user_id)
@@ -104,7 +132,7 @@ def recalculate_user_disk_usage(
 
 @galaxy_task(ignore_result=True, action="purge a history dataset")
 def purge_hda(
-    hda_manager: HDAManager, hda_id: int, task_user_id: Optional[int] = None, preserve_owner_update_time: bool = False
+    hda_manager: HDAManager, hda_id: int, task_user_id: int | None = None, preserve_owner_update_time: bool = False
 ):
     hda = hda_manager.by_id(hda_id)
     hda_manager._purge(hda, preserve_owner_update_time=preserve_owner_update_time)
@@ -112,9 +140,80 @@ def purge_hda(
 
 @galaxy_task(ignore_result=True, action="completely removes a set of datasets from the object_store")
 def purge_datasets(
-    dataset_manager: DatasetManager, request: PurgeDatasetsTaskRequest, task_user_id: Optional[int] = None
+    sa_session: galaxy_scoped_session,
+    dataset_manager: DatasetManager,
+    request: PurgeDatasetsTaskRequest,
+    task_user_id: int | None = None,
 ):
-    dataset_manager.purge_datasets(request)
+    user = None
+    if task_user_id:
+        user = sa_session.get(User, task_user_id)
+    dataset_manager.purge_datasets(request, user)
+
+
+@galaxy_task(action="purge all datasets in a history")
+def purge_history_datasets(
+    sa_session: galaxy_scoped_session,
+    dataset_manager: DatasetManager,
+    object_store: BaseObjectStore,
+    request: PurgeHistoryDatasetsTaskRequest,
+    task_user_id: int | None = None,
+):
+    """Batch purge all HDAs in a history in a single task.
+
+    Bulk-marks all unpurged HDAs as deleted/purged, recalculates user quota,
+    and removes underlying dataset files from the object store.
+    """
+    history = sa_session.get(model.History, request.history_id)
+    if not history:
+        log.error(f"Purge history datasets task failed, history {request.history_id} not found")
+        return
+    # Bulk mark all non-deleted HDCAs as deleted
+    sa_session.execute(
+        update(model.HistoryDatasetCollectionAssociation)
+        .where(
+            and_(
+                model.HistoryDatasetCollectionAssociation.history_id == request.history_id,
+                model.HistoryDatasetCollectionAssociation.deleted == false(),
+            )
+        )
+        .values(deleted=True)
+    )
+    # Collect dataset IDs before the bulk update
+    dataset_id_stmt = (
+        select(model.HistoryDatasetAssociation.dataset_id)
+        .where(
+            and_(
+                model.HistoryDatasetAssociation.history_id == request.history_id,
+                model.HistoryDatasetAssociation.purged == false(),
+            )
+        )
+        .distinct()
+    )
+    dataset_ids = list(sa_session.scalars(dataset_id_stmt))
+    if not dataset_ids:
+        sa_session.commit()
+        return
+    # Bulk mark all unpurged HDAs as deleted and purged
+    sa_session.execute(
+        update(model.HistoryDatasetAssociation)
+        .where(
+            and_(
+                model.HistoryDatasetAssociation.history_id == request.history_id,
+                model.HistoryDatasetAssociation.purged == false(),
+            )
+        )
+        .values(deleted=True, purged=True)
+    )
+    sa_session.commit()
+    # Recalculate user disk usage from scratch
+    if user := history.user:
+        user.calculate_and_set_disk_usage(object_store)
+        if not request.preserve_owner_update_time:
+            user.update_time = now()
+            sa_session.commit()
+    # Remove underlying dataset files from object store
+    dataset_manager.purge_datasets(PurgeDatasetsTaskRequest(dataset_ids=dataset_ids))
 
 
 @galaxy_task(ignore_result=True, action="materializing dataset instance")
@@ -122,7 +221,7 @@ def materialize(
     hda_manager: HDAManager,
     request: MaterializeDatasetInstanceTaskRequest,
     sa_session: galaxy_scoped_session,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     """Materialize datasets using HDAManager."""
     hda_manager.materialize(request, sa_session())
@@ -134,7 +233,7 @@ def set_job_metadata(
     extended_metadata_collection: bool,
     job_id: int,
     sa_session: galaxy_scoped_session,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ) -> None:
     return abort_when_job_stops(
         set_metadata_portable,
@@ -154,7 +253,7 @@ def change_datatype(
     dataset_id: int,
     datatype: str,
     model_class: str = "HistoryDatasetAssociation",
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     manager = _get_dataset_manager(hda_manager, ldda_manager, model_class)
     dataset_instance = manager.by_id(dataset_id)
@@ -175,7 +274,7 @@ def touch(
     sa_session: galaxy_scoped_session,
     item_id: int,
     model_class: str = "HistoryDatasetCollectionAssociation",
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     if model_class != "HistoryDatasetCollectionAssociation":
         raise NotImplementedError(f"touch method not implemented for '{model_class}'")
@@ -194,7 +293,7 @@ def set_metadata(
     model_class: str = "HistoryDatasetAssociation",
     overwrite: bool = True,
     ensure_can_set_metadata: bool = True,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     """
     ensure_can_set_metadata can be bypassed for new outputs.
@@ -219,6 +318,83 @@ def set_metadata(
     sa_session.commit()
 
 
+@galaxy_task(action="execute bulk storage move run")
+def bulk_move_storage(
+    sa_session: galaxy_scoped_session,
+    dataset_manager: DatasetManager,
+    notification_manager: NotificationManager,
+    app: MinimalManagerApp,
+    run_db_id: int,
+    task_user_id: int,
+    notify_on_completion: bool | None = None,
+):
+    run = sa_session.get(DatasetStorageOperationRun, run_db_id)
+    if run is None:
+        log.error(f"Bulk storage move run not found: {run_db_id}")
+        return
+
+    current_task_id = getattr(getattr(current_task, "request", None), "id", None)
+    if current_task_id is not None:
+        if run.task_id is None:
+            # Claim ownership for the first worker execution in case run.task_id was not yet persisted.
+            run.task_id = str(current_task_id)
+            sa_session.add(run)
+            sa_session.commit()
+        elif str(run.task_id) != str(current_task_id):
+            log.info(
+                "Skipping bulk storage run %s because task ownership moved from %s to %s",
+                run.id,
+                current_task_id,
+                run.task_id,
+            )
+            return
+
+    if run.state in (StorageOperationRunState.completed.value, StorageOperationRunState.failed.value):
+        log.info("Skipping bulk storage run %s because it is already terminal (%s)", run.id, run.state)
+        return
+
+    user = sa_session.get(User, task_user_id)
+    if user is None:
+        log.error("Bulk storage run %s user %s not found; marking run as failed", run.id, task_user_id)
+        run.state = StorageOperationRunState.failed.value
+        run.failed_count = run.total_count or 0
+        sa_session.add(run)
+        sa_session.commit()
+        return
+
+    snapshot = sa_session.get(DatasetStorageOperationSnapshot, run.snapshot_id)
+    storage_operation_manager = DatasetStorageOperationManager(app.object_store, app.config)
+    executor = storage_operation_manager.create_run_executor(
+        sa_session=sa_session,
+        dataset_manager=dataset_manager,
+        app=app,
+        run=run,
+        user=user,
+        current_task_id=current_task_id,
+    )
+    execution_result = executor.execute_run(snapshot)
+
+    if execution_result.state not in (StorageOperationRunState.completed, StorageOperationRunState.failed):
+        return
+
+    run_notify_on_completion = notify_on_completion
+    if run_notify_on_completion is None:
+        run_notify_on_completion = run.notify_on_completion
+
+    if not run_notify_on_completion:
+        return
+
+    try:
+        notification_manager.send_storage_operation_notification(
+            user_id=user.id,
+            run=run,
+            execution_result=execution_result,
+            encode_id=app.security.encode_id,
+        )
+    except Exception:
+        log.exception("Failed to send storage operation notification for run %s", run.id)
+
+
 def _get_dataset_manager(
     hda_manager: HDAManager, ldda_manager: LDDAManager, model_class: str = "HistoryDatasetAssociation"
 ) -> DatasetAssociationManager:
@@ -238,7 +414,7 @@ def setup_fetch_data(
     tool_source_class: TOOL_SOURCE_CLASS,
     app: MinimalManagerApp,
     sa_session: galaxy_scoped_session,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     tool = cached_create_tool_from_representation(
         app=app, raw_tool_source=raw_tool_source, tool_source_class=tool_source_class
@@ -279,7 +455,7 @@ def finish_job(
     tool_source_class: TOOL_SOURCE_CLASS,
     app: MinimalManagerApp,
     sa_session: galaxy_scoped_session,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     tool = cached_create_tool_from_representation(
         app=app, raw_tool_source=raw_tool_source, tool_source_class=tool_source_class
@@ -345,8 +521,8 @@ def fetch_data(
     job_id: int,
     app: MinimalManagerApp,
     sa_session: galaxy_scoped_session,
-    task_user_id: Optional[int] = None,
-) -> Optional[str]:
+    task_user_id: int | None = None,
+) -> str | None:
     if setup_return is None:
         return None
     job = sa_session.get(Job, job_id)
@@ -365,6 +541,7 @@ def queue_jobs(request: QueueJobs, app: MinimalManagerApp, job_submitter: JobSub
         raw_tool_source=raw_tool_source,
         tool_dir=request.tool_source.tool_dir,
         tool_source_class=tool_source_class,
+        tool_id=request.tool_source.tool_id,
     )
 
     job_submitter.queue_jobs(
@@ -377,19 +554,23 @@ def queue_jobs(request: QueueJobs, app: MinimalManagerApp, job_submitter: JobSub
 def export_history(
     model_store_manager: ModelStoreManager,
     request: SetupHistoryExportJob,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     model_store_manager.setup_history_export_job(request)
 
 
 @galaxy_task(action="preparing compressed file for collection download")
 def prepare_dataset_collection_download(
+    sa_session: galaxy_scoped_session,
     request: PrepareDatasetCollectionDownload,
     collection_manager: DatasetCollectionManager,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     """Create a short term storage file tracked and available for download of target collection."""
-    collection_manager.write_dataset_collection(request)
+    user = None
+    if task_user_id:
+        user = sa_session.get(User, task_user_id)
+    collection_manager.write_dataset_collection(request, user=user)
 
 
 @galaxy_task(action="preparing Galaxy Markdown PDF for download")
@@ -397,7 +578,7 @@ def prepare_pdf_download(
     request: GeneratePdfDownload,
     config: GalaxyAppConfiguration,
     short_term_storage_monitor: ShortTermStorageMonitor,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     """Create a short term storage file tracked and available for download of target PDF for Galaxy Markdown."""
     generate_branded_pdf(request, config, short_term_storage_monitor)
@@ -407,7 +588,7 @@ def prepare_pdf_download(
 def prepare_history_download(
     model_store_manager: ModelStoreManager,
     request: GenerateHistoryDownload,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     model_store_manager.prepare_history_download(request)
 
@@ -416,7 +597,7 @@ def prepare_history_download(
 def prepare_history_content_download(
     model_store_manager: ModelStoreManager,
     request: GenerateHistoryContentDownload,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     model_store_manager.prepare_history_content_download(request)
 
@@ -425,7 +606,7 @@ def prepare_history_content_download(
 def prepare_invocation_download(
     model_store_manager: ModelStoreManager,
     request: GenerateInvocationDownload,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     model_store_manager.prepare_invocation_download(request)
 
@@ -434,7 +615,7 @@ def prepare_invocation_download(
 def write_invocation_to(
     model_store_manager: ModelStoreManager,
     request: WriteInvocationTo,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     model_store_manager.write_invocation_to(request)
 
@@ -443,7 +624,7 @@ def write_invocation_to(
 def write_history_to(
     model_store_manager: ModelStoreManager,
     request: WriteHistoryTo,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     model_store_manager.write_history_to(request)
 
@@ -452,7 +633,7 @@ def write_history_to(
 def write_history_content_to(
     model_store_manager: ModelStoreManager,
     request: WriteHistoryContentTo,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     model_store_manager.write_history_content_to(request)
 
@@ -461,7 +642,7 @@ def write_history_content_to(
 def import_model_store(
     model_store_manager: ModelStoreManager,
     request: ImportModelStoreTaskRequest,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     model_store_manager.import_model_store(request)
 
@@ -470,7 +651,7 @@ def import_model_store(
 def compute_dataset_hash(
     dataset_manager: DatasetManager,
     request: ComputeDatasetHashTaskRequest,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     dataset_manager.compute_hash(request)
 
@@ -483,10 +664,10 @@ def import_data_bundle(
     tool_data_import_manager: ToolDataImportManager,
     config: GalaxyAppConfiguration,
     src: str,
-    uri: Optional[str] = None,
-    id: Optional[int] = None,
-    tool_data_file_path: Optional[str] = None,
-    task_user_id: Optional[int] = None,
+    uri: str | None = None,
+    id: int | None = None,
+    tool_data_file_path: str | None = None,
+    task_user_id: int | None = None,
 ):
     if src == "uri":
         assert uri
@@ -509,6 +690,38 @@ def prune_history_audit_table(sa_session: galaxy_scoped_session):
     model.HistoryAudit.prune(sa_session)
 
 
+@galaxy_task(action="cleaning up Kombu SQLAlchemy transport")
+def prune_kombu_sqla_transport(config: GalaxyAppConfiguration):
+    """Delete fully-consumed rows from the Kombu SQLAlchemy transport tables.
+
+    Kombu's SQLAlchemy transport marks consumed messages with ``visible=0`` but
+    never deletes them — without this task the control-queue tables grow
+    without bound on the default on-disk sqlite broker. On AMQP / Redis the
+    broker has native TTL, so this task is a no-op.
+    """
+    broker_url = config.amqp_internal_connection
+    if not broker_url:
+        log.debug("kombu cleanup: no broker URL configured, skipping")
+        return
+    scheme = urlparse(broker_url).scheme
+    if not scheme.startswith("sqlalchemy"):
+        log.debug("kombu cleanup: broker scheme %s is not sqlalchemy, skipping", scheme)
+        return
+
+    # Kombu's SQLA transport URL is ``sqlalchemy+<dialect>://...``. Strip the
+    # ``sqlalchemy+`` prefix to get an engine URL we can hand to SQLAlchemy.
+    sa_url = broker_url[len("sqlalchemy+") :] if broker_url.startswith("sqlalchemy+") else broker_url
+    engine = create_engine(sa_url)
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text("DELETE FROM kombu_message WHERE visible IS FALSE"))
+            log.info("kombu cleanup: deleted %s consumed messages", result.rowcount)
+    except Exception:
+        log.exception("kombu cleanup: failed to prune kombu_message")
+    finally:
+        engine.dispose()
+
+
 @galaxy_task(action="clean up short term storage")
 def cleanup_short_term_storage(storage_monitor: ShortTermStorageMonitor):
     """Cleanup short term storage."""
@@ -522,6 +735,23 @@ def cleanup_expired_notifications(notification_manager: NotificationManager):
     log.info(
         f"Successfully deleted {result.deleted_notifications_count} notifications and {result.deleted_associations_count} associations."
     )
+
+
+@galaxy_task(action="prune expired bulk storage operations")
+def prune_expired_bulk_storage_operations(
+    sa_session: galaxy_scoped_session,
+    object_store: BaseObjectStore,
+    config: GalaxyAppConfiguration,
+):
+    storage_operation_manager = DatasetStorageOperationManager(object_store, config)
+    deleted_run_count = storage_operation_manager.prune_completed_runs(sa_session)
+    deleted_snapshot_count = storage_operation_manager.prune_expired_snapshots(sa_session)
+    if deleted_run_count or deleted_snapshot_count:
+        log.info(
+            "Pruned %s completed storage operation runs and %s expired storage operation snapshots",
+            deleted_run_count,
+            deleted_snapshot_count,
+        )
 
 
 @galaxy_task(action="prune object store cache directories")
@@ -546,37 +776,121 @@ def dispatch_pending_notifications(notification_manager: NotificationManager):
         log.info(f"Successfully dispatched {count} notifications.")
 
 
+@galaxy_task(action="emit queue and worker-process observability metrics")
+def emit_queue_metrics_task(app: MinimalManagerApp):
+    """Sample control-queue depth and worker rows → statsd.
+
+    Resolves the narrow collaborators ``emit_queue_metrics`` needs from the app
+    container and passes them in — keeps the emitter module free of
+    ``StructuredApp`` service-locator lookups.
+
+    SSE connection counts are emitted by the web workers themselves (see
+    ``galaxy.managers.sse.SSEConnectionGaugeEmitter``); the Celery worker has no
+    live connections to sample.
+    """
+    emit_queue_metrics(
+        statsd_client=app.execution_timer_factory.galaxy_statsd_client,
+        connection=app.amqp_internal_connection_obj,
+        application_stack=app.application_stack,
+        model=app.model,
+    )
+
+
+def _cleanup_jwds(
+    sa_session: galaxy_scoped_session,
+    object_store: BaseObjectStore,
+    days: int,
+) -> int:
+    """Cleanup job working directories for failed jobs that are older than `days` days.
+
+    Returns the number of job working directories deleted.
+    """
+
+    cutoff = datetime.datetime.now() - datetime.timedelta(days=days)
+
+    def _delete_jwd(job: model.Job) -> bool:
+        try:
+            return JobWorkingDirectory(job, object_store).delete()
+        except ObjectNotFound:
+            return False
+        except OSError as e:
+            log.error(f"Error deleting job working directory for job {job.id}: {e.strerror}")
+            return False
+
+    deleted_count = 0
+    stmt = select(model.Job).where(
+        model.Job.state == "error",
+        model.Job.update_time < cutoff,
+    )
+    for job in sa_session.scalars(stmt).yield_per(100):
+        if _delete_jwd(job):
+            deleted_count += 1
+
+    log.info("Deleted %d job working directories older than %d days", deleted_count, days)
+    return deleted_count
+
+
 @galaxy_task(action="clean up job working directories")
 def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStore, config: GalaxyAppConfiguration):
     """Cleanup job working directories for failed jobs that are older than X days"""
-
-    def get_failed_jobs():
-        return sa_session.query(model.Job.id).filter(
-            model.Job.state == "error",
-            model.Job.update_time < datetime.datetime.now() - datetime.timedelta(days=days),
-            model.Job.object_store_id.isnot(None),
-        )
-
-    def delete_jwd(job):
-        try:
-            # Get job working directory from object store
-            path = object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
-            shutil.rmtree(path)
-        except ObjectNotFound:
-            # job working directory already deleted
-            pass
-        except OSError as e:
-            log.error(f"Error deleting job working directory: {path} : {e.strerror}")
-
-    failed_jobs = get_failed_jobs()
     days = config.failed_jobs_working_directory_cleanup_days
+    _cleanup_jwds(sa_session, object_store, days)
 
-    if not failed_jobs:
-        log.info("No failed jobs found within the last %s days", days)
 
-    for job in failed_jobs:
-        delete_jwd(job)
-        log.info("Deleted job working directory for job %s", job.id)
+@galaxy_task(action="renewing Hashicorp Vault token")
+def renew_vault_token(vault: Vault):
+    """Renew the Hashicorp Vault token if configured and renewable."""
+    renew_vault_token_if_needed(vault)
+
+
+@galaxy_task(action="refreshing IWC workflow manifest cache")
+def refresh_iwc_manifest(config: GalaxyAppConfiguration):
+    """Pre-warm the in-process IWC manifest cache.
+
+    The agent-ops layer caches the manifest at module scope with an hour
+    TTL; without this task the first user-driven IWC call after a worker
+    restart pays the full network fetch. Failures are logged and swallowed
+    so an iwc.galaxyproject.org outage doesn't kill the periodic queue --
+    on-demand callers still get the prior cached copy until the TTL lapses.
+    """
+    try:
+        manifest = iwc.refresh_manifest()
+    except Exception as e:  # noqa: BLE001 -- best-effort warm; resilience over precision
+        log.warning("refresh_iwc_manifest: fetch failed, keeping existing cache: %s", e)
+        return
+    log.info("refresh_iwc_manifest: cached %s top-level manifest entries", len(manifest))
+
+
+@galaxy_task(action="refreshing GTN training database")
+def refresh_gtn_database(config: GalaxyAppConfiguration):
+    """HEAD depot for the GTN search database and re-download only when newer.
+
+    Handlers open the database read-only per query, so an atomic rename here
+    is picked up by the next GalaxyAI request without a restart. The HEAD-first
+    pattern keeps the steady-state cost to a few hundred bytes per tick --
+    only when depot has actually been updated do we pull the full ~17MB.
+    Failures are logged and swallowed so a depot outage doesn't kill the
+    periodic queue.
+    """
+    db_path = config.gtn_database_path
+    if not db_path:
+        log.debug("refresh_gtn_database: gtn_database_path is unset, skipping")
+        return
+    try:
+        metadata = GTNSearchDB.refresh_database_if_stale(db_path, config.gtn_database_url)
+    except FileNotFoundError as e:
+        log.warning("refresh_gtn_database: download failed, keeping existing copy: %s", e)
+        return
+    if metadata is None:
+        log.debug("refresh_gtn_database: %s is current, no download needed", db_path)
+        return
+    log.info(
+        "refresh_gtn_database: refreshed %s (version=%s, tutorials=%s, faqs=%s)",
+        db_path,
+        metadata["version"],
+        metadata["tutorial_count"],
+        metadata["faq_count"],
+    )
 
 
 @galaxy_task(action="execute workflow completion hook")
@@ -608,3 +922,105 @@ def execute_workflow_completion_hook(
         log.info(f"Successfully executed hook '{hook_name}' for invocation {invocation_id}")
     else:
         log.error(f"Failed to execute hook '{hook_name}' for invocation {invocation_id}")
+
+
+@galaxy_task(action="clean up stale concurrency tracking rows")
+def cleanup_stale_concurrency_slots(
+    session: galaxy_scoped_session,
+    stale_threshold_minutes: int = 30,
+):
+    """
+    Periodic task that reclaims concurrency slots from tasks that are
+    no longer running (e.g., due to worker crashes). Queries all workers
+    for their active tasks and removes tracking rows for any task that
+    is no longer executing on any worker.
+    """
+    now = datetime.datetime.now()
+    threshold = now - datetime.timedelta(minutes=stale_threshold_minutes)
+
+    # Only consider rows older than the threshold — recent tasks are likely still running
+    stale_rows = (
+        session.execute(
+            select(model.CeleryUserActiveTask.task_id).where(model.CeleryUserActiveTask.started_at < threshold)
+        )
+        .scalars()
+        .all()
+    )
+
+    if not stale_rows:
+        return
+
+    # Ask all workers what they're currently running
+    try:
+        active_response = celery_app.control.inspect().active() or {}
+    except Exception:
+        log.warning("Failed to inspect active tasks on workers; skipping stale cleanup")
+        return
+
+    active_task_ids = {t["id"] for tasks in active_response.values() for t in tasks}
+
+    # Remove tracking rows for tasks that are NOT on any worker
+    stale_task_ids = [tid for tid in stale_rows if tid not in active_task_ids]
+    if stale_task_ids:
+        session.execute(
+            delete(model.CeleryUserActiveTask).where(model.CeleryUserActiveTask.task_id.in_(stale_task_ids))
+        )
+        session.commit()
+        log.info(f"Cleaned up {len(stale_task_ids)} stale concurrency tracking rows")
+
+
+@galaxy_task(action="recover stale storage operation runs")
+def recover_stale_bulk_storage_operation_runs(
+    session: galaxy_scoped_session,
+    stale_threshold_minutes: int = 30,
+):
+    threshold = datetime.datetime.now() - datetime.timedelta(minutes=stale_threshold_minutes)
+
+    stale_runs = (
+        session.execute(
+            select(DatasetStorageOperationRun).where(
+                or_(
+                    DatasetStorageOperationRun.state == StorageOperationRunState.pending.value,
+                    DatasetStorageOperationRun.state == StorageOperationRunState.running.value,
+                ),
+                DatasetStorageOperationRun.update_time < threshold,
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    if not stale_runs:
+        return
+
+    try:
+        active_response = celery_app.control.inspect().active() or {}
+    except Exception:
+        log.warning("Failed to inspect active tasks on workers; skipping stale storage operation recovery")
+        return
+
+    active_task_ids = {task["id"] for tasks in active_response.values() for task in tasks}
+    recovered_count = 0
+
+    for run in stale_runs:
+        run_task_id = str(run.task_id) if run.task_id is not None else None
+        if run_task_id is not None and run_task_id in active_task_ids:
+            continue
+
+        try:
+            task_result = bulk_move_storage.delay(
+                run_db_id=run.id,
+                task_user_id=run.user_id,
+                notify_on_completion=run.notify_on_completion,
+            )
+            run.state = StorageOperationRunState.pending.value
+            run.task_id = str(task_result.id)
+            session.add(run)
+            session.commit()
+            recovered_count += 1
+        except Exception:
+            session.rollback()
+            log.exception("Failed to redispatch stale storage operation run %s", run.id)
+
+    if recovered_count:
+        log.info("Redispatched %s stale storage operation runs", recovered_count)

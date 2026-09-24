@@ -7,7 +7,10 @@ from galaxy import (
     util,
 )
 from galaxy.managers import base as managers_base
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.model import tags
@@ -47,7 +50,9 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         self.hda_manager = hda_manager
         self.folder_manager = folder_manager
 
-    def get_object(self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
+    def get_object(
+        self, trans: ProvidesUserContext, id, class_name, check_ownership=False, check_accessible=False, deleted=None
+    ):
         """
         Convenience method to get a model object with the specified checks.
         """
@@ -87,7 +92,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
 
     def create(
         self,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         folder_id: LibraryFolderDatabaseIdField,
         payload: CreateLibraryFilePayload,
     ):

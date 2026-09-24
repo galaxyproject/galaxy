@@ -1,21 +1,30 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdownItem, BNavItemDropdown, VBTooltipPlugin } from "bootstrap-vue";
-import Vue, { type PropType, ref } from "vue";
+import { BDropdownItem, BNavItemDropdown } from "bootstrap-vue";
+import { type PropType, ref } from "vue";
 
 import type { IconLike } from "@/components/icons/galaxyIcons";
 
 import TextShort from "@/components/Common/TextShort.vue";
 
-Vue.use(VBTooltipPlugin);
-
 const dropdown = ref(null);
 
-interface MenuItem {
+interface BaseMenuItem {
     title: string;
     icon?: IconLike;
-    handler: () => void;
 }
+
+interface HandlerMenuItem extends BaseMenuItem {
+    handler: () => void;
+    href?: never;
+}
+
+interface AnchorMenuItem extends BaseMenuItem {
+    href: string;
+    handler?: never;
+}
+
+type MenuItem = HandlerMenuItem | AnchorMenuItem;
 
 /* props */
 defineProps({
@@ -42,7 +51,7 @@ defineProps({
 </script>
 
 <template>
-    <BNavItemDropdown :id="id" ref="dropdown" v-b-tooltip.noninteractive.hover.bottom :title="tooltip ?? ''" right>
+    <BNavItemDropdown :id="id" ref="dropdown" v-g-tooltip.hover.bottom :title="tooltip ?? ''" right>
         <template v-if="icon" v-slot:button-content>
             <span class="sr-only">{{ tooltip || id }}</span>
             <FontAwesomeIcon fixed-width :icon="icon" />
@@ -53,8 +62,9 @@ defineProps({
                 v-for="(item, idx) in menu"
                 :key="idx"
                 :data-description="`${id} ${item.title.toLowerCase()}`"
+                :href="item.href"
                 role="menuitem"
-                @click="item.handler">
+                @click="item.handler && item.handler()">
                 <FontAwesomeIcon v-if="item.icon" fixed-width :icon="item.icon" />
                 <span>{{ item.title }}</span>
             </BDropdownItem>

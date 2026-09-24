@@ -34,7 +34,7 @@ const count = computed(() => invocationStore.getInvocationCountByWorkflowId(prop
 
         <BBadge
             v-else-if="count > 0"
-            v-b-tooltip.hover.noninteractive
+            v-g-tooltip.hover
             pill
             :title="localize('View workflow invocations')"
             class="outline-badge cursor-pointer"

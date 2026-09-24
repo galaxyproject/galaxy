@@ -1,4 +1,4 @@
-﻿"""
+"""
 Unit tests for ``galaxy.web.framework.webapp``
 """
 
@@ -6,7 +6,6 @@ import logging
 import re
 from typing import (
     cast,
-    Optional,
 )
 
 import galaxy.config
@@ -37,7 +36,7 @@ class CORSParsingMockConfig(galaxy_mock.MockAppConfig):
 
 
 class TestGalaxyWebTransactionHeaders:
-    def _new_trans(self, allowed_origin_hostnames: Optional[str] = None) -> StubGalaxyWebTransaction:
+    def _new_trans(self, allowed_origin_hostnames: str | None = None) -> StubGalaxyWebTransaction:
         app = cast(BasicSharedApp, galaxy_mock.MockApp())
         app.config = CORSParsingMockConfig(allowed_origin_hostnames=allowed_origin_hostnames)
         webapp = cast(WebApplication, galaxy_mock.MockWebapp(app.security))

@@ -1,14 +1,7 @@
 import logging
-from typing import (
-    Optional,
-    Union,
-)
 
 from galaxy import exceptions
-from galaxy.files.models import (
-    AnyRemoteEntry,
-    FilesSourceRuntimeContext,
-)
+from galaxy.files.models import FilesSourceRuntimeContext
 from galaxy.files.sources._fsspec import (
     CacheOptionsDictType,
     FsspecBaseFileSourceConfiguration,
@@ -16,6 +9,10 @@ from galaxy.files.sources._fsspec import (
     FsspecFilesSource,
 )
 from galaxy.util.config_templates import TemplateExpansion
+from galaxy.util.s3_checksum import (
+    s3_checksum_config_kwargs,
+    S3ChecksumConfigKwargs,
+)
 
 try:
     from s3fs import S3FileSystem
@@ -31,19 +28,19 @@ log = logging.getLogger(__name__)
 
 
 class S3FSFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
-    anon: Union[bool, TemplateExpansion] = False
-    endpoint_url: Union[str, TemplateExpansion, None] = None
-    bucket: Union[str, TemplateExpansion, None] = None
-    secret: Union[str, TemplateExpansion, None] = None
-    key: Union[str, TemplateExpansion, None] = None
+    anon: bool | TemplateExpansion = False
+    endpoint_url: str | TemplateExpansion | None = None
+    bucket: str | TemplateExpansion | None = None
+    secret: str | TemplateExpansion | None = None
+    key: str | TemplateExpansion | None = None
 
 
 class S3FSFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     anon: bool = False
-    endpoint_url: Optional[str] = None
-    bucket: Optional[str] = None
-    secret: Optional[str] = None
-    key: Optional[str] = None
+    endpoint_url: str | None = None
+    bucket: str | None = None
+    secret: str | None = None
+    key: str | None = None
 
 
 class S3FsFilesSource(FsspecFilesSource[S3FSFileSourceTemplateConfiguration, S3FSFileSourceConfiguration]):
@@ -64,71 +61,39 @@ class S3FsFilesSource(FsspecFilesSource[S3FSFileSourceTemplateConfiguration, S3F
 
         config = context.config
         client_kwargs = {"endpoint_url": config.endpoint_url} if config.endpoint_url else None
+        config_kwargs = self._config_kwargs(config)
         fs = S3FileSystem(
             anon=config.anon,
             key=config.key,
             secret=config.secret,
             client_kwargs=client_kwargs,
+            config_kwargs=config_kwargs,
             **cache_options,
         )
         return fs
 
-    def _to_bucket_path(self, path: str, config: S3FSFileSourceConfiguration) -> str:
-        """Adapt the path to the S3 bucket format."""
+    @staticmethod
+    def _config_kwargs(config: S3FSFileSourceConfiguration) -> S3ChecksumConfigKwargs | None:
+        """botocore Config kwargs (forwarded to S3FileSystem) for checksum behavior."""
+        return s3_checksum_config_kwargs(config.endpoint_url) or None
+
+    def _to_filesystem_path(self, path: str, config: S3FSFileSourceConfiguration) -> str:
+        """Convert an entry path to the S3 filesystem path format."""
         if path.startswith("s3://"):
             return path.replace("s3://", "")
         bucket = config.bucket
-        if not bucket and not path.startswith("s3://"):
+        if not bucket:
             raise exceptions.MessageException("Bucket name is required for S3FsFilesSource.")
-        return self._bucket_path(bucket or "", path)
+        if not path.startswith("/"):
+            path = f"/{path}"
+        return f"{bucket}{path}"
 
-    def _adapt_entry_path(self, filesystem_path: str) -> str:
+    def _adapt_entry_path(self, filesystem_path: str, config: S3FSFileSourceConfiguration) -> str:
         """Remove the S3 bucket name from the filesystem path."""
-        if self.template_config.bucket:
-            bucket_prefix = f"{self.template_config.bucket}/"
+        if config.bucket:
+            bucket_prefix = f"{config.bucket}/"
             return filesystem_path.replace(bucket_prefix, "", 1)
         return filesystem_path
-
-    def _list(
-        self,
-        context: FilesSourceRuntimeContext[S3FSFileSourceConfiguration],
-        path="/",
-        recursive=False,
-        write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
-    ) -> tuple[list[AnyRemoteEntry], int]:
-        bucket_path = self._to_bucket_path(path, context.config)
-        return super()._list(
-            context=context,
-            path=bucket_path,
-            recursive=recursive,
-            limit=limit,
-            offset=offset,
-            query=query,
-            sort_by=sort_by,
-        )
-
-    def _realize_to(
-        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[S3FSFileSourceConfiguration]
-    ):
-        bucket_path = self._to_bucket_path(source_path, context.config)
-        super()._realize_to(source_path=bucket_path, native_path=native_path, context=context)
-
-    def _write_from(
-        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[S3FSFileSourceConfiguration]
-    ):
-        bucket_path = self._to_bucket_path(target_path, context.config)
-        super()._write_from(target_path=bucket_path, native_path=native_path, context=context)
-
-    def _bucket_path(self, bucket_name: str, path: str):
-        if path.startswith("s3://"):
-            return path.replace("s3://", "")
-        elif not path.startswith("/"):
-            path = f"/{path}"
-        return f"{bucket_name}{path}"
 
     def score_url_match(self, url: str):
         # We need to use template_config here because this is called before the template is expanded.

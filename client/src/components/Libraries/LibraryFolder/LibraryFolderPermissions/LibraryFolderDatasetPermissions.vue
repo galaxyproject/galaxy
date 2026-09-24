@@ -3,16 +3,15 @@
         <b-container fluid>
             <div v-if="dataset">
                 <LibraryBreadcrumb :current-id="dataset_id" :full_path="dataset.full_path" />
-                <b-button
+                <GButton
                     data-toggle="tooltip"
                     data-placement="top"
                     title="Go to Dataset Details"
-                    variant="secondary"
                     type="button"
                     :href="`${root}libraries/folders/${folder_id}/dataset/${dataset_id}`">
                     <FontAwesomeIcon :icon="faFile" />
                     &nbsp;Dataset Details
-                </b-button>
+                </GButton>
                 <PermissionsHeader :name="dataset.name" />
             </div>
 
@@ -59,16 +58,15 @@
                         Users without access permission <strong>cannot</strong> have other permissions on this dataset.
                         If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>."
                 @input="setUserPermissionsPreferences" />
-            <b-button
+            <GButton
                 data-toggle="tooltip"
                 data-placement="top"
                 title="Save modifications"
                 class="toolbtn_save_permissions"
-                variant="secondary"
                 @click="postPermissions">
                 <FontAwesomeIcon :icon="faSave" />
                 &nbsp;Save
-            </b-button>
+            </GButton>
         </b-container>
     </div>
 </template>
@@ -88,6 +86,7 @@ import { Services } from "@/components/Libraries/LibraryPermissions/services";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
 import PermissionsHeader from "@/components/Libraries/LibraryPermissions/PermissionsHeader.vue";
 import PermissionsInputField from "@/components/Libraries/LibraryPermissions/PermissionsInputField.vue";
@@ -99,6 +98,7 @@ export default {
     components: {
         PermissionsInputField,
         FontAwesomeIcon,
+        GButton,
         LibraryBreadcrumb,
         PermissionsHeader,
     },

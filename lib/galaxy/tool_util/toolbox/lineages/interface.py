@@ -1,8 +1,6 @@
 import threading
 from typing import (
     Any,
-    Dict,
-    List,
     TYPE_CHECKING,
 )
 
@@ -12,7 +10,7 @@ from galaxy.tool_util.version import parse_version
 from galaxy.util.tool_version import remove_version_from_guid
 
 if TYPE_CHECKING:
-    from galaxy.tools import Tool
+    from galaxy.tool_util.abstract_tool import AbstractTool
 
 
 class ToolLineageVersion:
@@ -33,7 +31,7 @@ class ToolLineageVersion:
         """
         return self.version is None
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         return dict(
             id=self.id,
             version=self.version,
@@ -45,7 +43,7 @@ class ToolLineage:
     determined solely by PEP 440 versioning scheme.
     """
 
-    lineages_by_id: Dict[str, "ToolLineage"] = {}
+    lineages_by_id: dict[str, "ToolLineage"] = {}
     lock = threading.Lock()
 
     def __init__(self, tool_id: str) -> None:
@@ -53,13 +51,13 @@ class ToolLineage:
         self.tool_versions = SortedSet(key=parse_version)
 
     @property
-    def tool_ids(self) -> List[str]:
+    def tool_ids(self) -> list[str]:
         versionless_tool_id = remove_version_from_guid(self.tool_id)
         tool_id = versionless_tool_id or self.tool_id
         return [f"{tool_id}/{version}" for version in self.tool_versions]
 
     @classmethod
-    def from_tool(cls, tool: "Tool") -> "ToolLineage":
+    def from_tool(cls, tool: "AbstractTool") -> "ToolLineage":
         tool_id = tool.id
         assert tool_id is not None
         lineages_by_id = cls.lineages_by_id
@@ -73,7 +71,17 @@ class ToolLineage:
     def register_version(self, tool_version: str) -> None:
         self.tool_versions.add(tool_version)
 
-    def get_versions(self) -> List[ToolLineageVersion]:
+    @classmethod
+    def reset(cls) -> None:
+        """Clear the global ``lineages_by_id`` cache.
+
+        ``lineages_by_id`` is a class attribute, so toolbox shutdown clears
+        it before another boot reconstructs lineages from current metadata.
+        """
+        with cls.lock:
+            cls.lineages_by_id.clear()
+
+    def get_versions(self) -> list[ToolLineageVersion]:
         """
         Return an ordered list of lineages (ToolLineageVersion) in this
         chain, from oldest to newest.
@@ -83,12 +91,12 @@ class ToolLineage:
             for tool_id, tool_version in zip(self.tool_ids, self.tool_versions)
         ]
 
-    def get_version_ids(self, reverse: bool = False) -> List[str]:
+    def get_version_ids(self, reverse: bool = False) -> list[str]:
         if reverse:
             return list(reversed(self.tool_ids))
         return self.tool_ids
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return dict(
             tool_id=self.tool_id,
             tool_versions=list(self.tool_versions),

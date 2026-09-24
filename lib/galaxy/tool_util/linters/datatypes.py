@@ -1,7 +1,6 @@
 import os.path
 from os import getenv
 from typing import (
-    Set,
     TYPE_CHECKING,
     Union,
 )
@@ -24,7 +23,7 @@ if TYPE_CHECKING:
 DATATYPES_CONF = getenv("DATATYPES_CONF", resource_path(__name__, "datatypes_conf.xml.sample"))
 
 
-def _parse_datatypes(datatype_conf_path: Union[str, "Traversable"]) -> Set[str]:
+def _parse_datatypes(datatype_conf_path: Union[str, "Traversable"]) -> set[str]:
     datatypes = set()
     tree = parse_xml(datatype_conf_path)
     root = tree.getroot()

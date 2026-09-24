@@ -24,7 +24,9 @@
                             v-if="conditionalMatch(input, caseId)"
                             v-bind="$props"
                             :inputs="caseDetails.inputs"
-                            :prefix="getPrefix(input.name)" />
+                            :prefix="getPrefix(input.name)"
+                            @load-more="$emit('load-more', $event)"
+                            @search-change="$emit('search-change', $event)" />
                     </div>
                 </div>
             </div>
@@ -36,7 +38,10 @@
                     :prefix="prefix"
                     @insert="() => repeatInsert(input)"
                     @delete="(id) => repeatDelete(input, id)"
-                    @swap="(a, b) => repeatSwap(input, a, b)" />
+                    @clone="(id) => repeatClone(input, id)"
+                    @swap="(a, b) => repeatSwap(input, a, b)"
+                    @load-more="$emit('load-more', $event)"
+                    @search-change="$emit('search-change', $event)" />
             </div>
             <div v-else-if="input.type == 'section'">
                 <FormCard
@@ -47,7 +52,12 @@
                         <div v-if="input.help" class="my-2" data-description="section help">
                             {{ localize(input.help) }}
                         </div>
-                        <FormNode v-bind="$props" :inputs="input.inputs" :prefix="getPrefix(input.name)" />
+                        <FormNode
+                            v-bind="$props"
+                            :inputs="input.inputs"
+                            :prefix="getPrefix(input.name)"
+                            @load-more="$emit('load-more', $event)"
+                            @search-change="$emit('search-change', $event)" />
                     </template>
                 </FormCard>
             </div>
@@ -70,7 +80,9 @@
                 :loading="loading"
                 :workflow-building-mode="workflowBuildingMode"
                 :workflow-run="workflowRun"
-                @change="onChange">
+                @change="onChange"
+                @load-more="$emit('load-more', $event)"
+                @search-change="$emit('search-change', $event)">
                 <template v-slot:workflow-run-form-title-badges>
                     <FormInputMismatchBadge v-if="valMismatches(input.name)" @stop-flagging="$emit('stop-flagging')" />
                 </template>
@@ -202,6 +214,14 @@ export default {
         },
         repeatDelete(input, cacheId) {
             input.cache.splice(cacheId, 1);
+            this.onChangeForm();
+        },
+        repeatClone(input, cacheId) {
+            const clonedInputs = structuredClone(input.cache[cacheId]);
+
+            set(input, "cache", input.cache ?? []);
+            input.cache.splice(cacheId + 1, 0, clonedInputs);
+
             this.onChangeForm();
         },
         repeatSwap(input, a, b) {

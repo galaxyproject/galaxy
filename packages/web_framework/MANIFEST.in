@@ -1,2 +1,0 @@
-include *.rst *.txt LICENSE */py.typed
-graft galaxy/web/proxy/js/

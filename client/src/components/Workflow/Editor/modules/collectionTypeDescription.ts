@@ -1,4 +1,21 @@
-/* classes for reasoning about collection map over state
+/* Classes for reasoning about collection map-over state and the
+   compatibility algebra.
+
+   Two operations on collection types:
+   - accepts(other): asymmetric. input_type.accepts(output_type) is true
+     iff an output of type other can be connected to an input slot of
+     type this. Used at workflow-editor edge validation.
+   - compatible(other): symmetric. True iff this and other match such
+     that they could drive a common map-over over sibling inputs of one
+     tool. Used for sibling map-over state checks (neither side is the
+     input slot), e.g. mappingConstraints in terminals.ts.
+
+   Mirrors the Python implementation in
+   lib/galaxy/model/dataset_collections/type_description.py — keep in sync.
+   See lib/galaxy/model/dataset_collections/types/collection_semantics.yml
+   "Type Compatibility Algebra" for the lattice diagram and worked examples.
+
+   Type variants:
    null: not a collection?
    NULL_COLLECTION_TYPE_DESCRIPTION: also not a collection. Is there any difference with null ?
    ANY_COLLECTION_TYPE_DESCRIPTION: collection, but will never be mapped over (input has no collection_type)
@@ -9,7 +26,8 @@ export interface CollectionTypeDescriptor {
     isCollection: boolean;
     collectionType: string | null;
     rank: number;
-    canMatch(other: CollectionTypeDescriptor): boolean;
+    accepts(other: CollectionTypeDescriptor): boolean;
+    compatible(other: CollectionTypeDescriptor): boolean;
     canMapOver(other: CollectionTypeDescriptor): boolean;
     append(other: CollectionTypeDescriptor): CollectionTypeDescriptor;
     equal(other: CollectionTypeDescriptor | null): boolean;
@@ -21,7 +39,10 @@ export const NULL_COLLECTION_TYPE_DESCRIPTION: CollectionTypeDescriptor = {
     isCollection: false,
     collectionType: null,
     rank: 0,
-    canMatch: function (_other) {
+    accepts: function (_other) {
+        return false;
+    },
+    compatible: function (_other) {
         return false;
     },
     canMapOver: function () {
@@ -45,7 +66,10 @@ export const ANY_COLLECTION_TYPE_DESCRIPTION: CollectionTypeDescriptor = {
     isCollection: true,
     collectionType: "any",
     rank: -1,
-    canMatch: function (other) {
+    accepts: function (other) {
+        return NULL_COLLECTION_TYPE_DESCRIPTION !== other;
+    },
+    compatible: function (other) {
         return NULL_COLLECTION_TYPE_DESCRIPTION !== other;
     },
     canMapOver: function () {
@@ -95,13 +119,29 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
         }
         return new CollectionTypeDescription(`${this.collectionType}:${other.collectionType}`);
     }
-    canMatch(other: CollectionTypeDescriptor) {
+    /**
+     * Asymmetric direct-edge check: does an input slot of type ``this``
+     * accept an output of type ``other``? Convention:
+     * ``input_type.accepts(output_type)``. Used at workflow-editor edge
+     * validation.
+     */
+    accepts(other: CollectionTypeDescriptor) {
         const otherCollectionType = other.collectionType;
         if (other === NULL_COLLECTION_TYPE_DESCRIPTION) {
             return false;
         }
         if (other === ANY_COLLECTION_TYPE_DESCRIPTION) {
             return true;
+        }
+        // sample_sheet asymmetry: a sample_sheet input needs column metadata
+        // that a plain-list output cannot provide. Check raw types before
+        // normalization (which otherwise equates the two).
+        if (
+            this.collectionType.startsWith("sample_sheet") &&
+            otherCollectionType &&
+            !otherCollectionType.startsWith("sample_sheet")
+        ) {
+            return false;
         }
         const normalizedThis = normalizeCollectionType(this.collectionType);
         const normalizedOther = otherCollectionType ? normalizeCollectionType(otherCollectionType) : null;
@@ -120,8 +160,23 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
         }
         return normalizedOther == normalizedThis;
     }
+    /**
+     * Symmetric sibling-matching check: do ``this`` and ``other`` match
+     * such that they could drive a common map-over over sibling inputs of
+     * a single tool? Used for sibling map-over state checks
+     * (terminals.ts mappingConstraints).
+     */
+    compatible(other: CollectionTypeDescriptor) {
+        return this.accepts(other) || other.accepts(this);
+    }
     canMapOver(other: CollectionTypeDescriptor) {
         if (!other.collectionType || other.collectionType === "any") {
+            return false;
+        }
+        // sample_sheet asymmetry: a sample_sheet input requires sample_sheet
+        // column metadata; a plain-list output cannot be mapped over it.
+        // ``this`` is the output, ``other`` is the input.
+        if (other.collectionType.startsWith("sample_sheet") && !this.collectionType.startsWith("sample_sheet")) {
             return false;
         }
         const normalizedThis = normalizeCollectionType(this.collectionType);

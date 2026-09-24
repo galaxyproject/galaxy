@@ -18,7 +18,7 @@
             {{ email }}
         </span>
 
-        <GLink v-if="url" v-b-tooltip.hover tooltip title="Organization URL" :href="url" target="_blank">
+        <GLink v-if="url" v-g-tooltip.hover tooltip title="Organization URL" :href="url" target="_blank">
             <link itemprop="url" :href="url" />
             <FontAwesomeIcon :icon="faExternalLinkAlt" />
         </GLink>

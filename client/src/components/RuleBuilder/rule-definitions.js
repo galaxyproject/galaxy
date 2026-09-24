@@ -1,5 +1,4 @@
 import pyre from "pyre-to-regexp";
-import _ from "underscore";
 
 import _l from "@/utils/localization";
 
@@ -717,7 +716,7 @@ const RULES = {
             const target = rule.target_column;
             const numeric = rule.numeric;
 
-            const sortable = _.zip(data, sources);
+            const sortable = data.map((item, i) => [item, sources[i]]);
 
             const sortFunc = (a, b) => {
                 let aVal = a[0][target];

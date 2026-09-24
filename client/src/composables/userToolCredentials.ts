@@ -153,7 +153,8 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     /** Whether user has provided all required service credentials. */
     const hasUserProvidedAllRequiredServiceCredentials = computed<boolean>(() => {
         if (!currentUserToolServices.value || currentUserToolServices.value.length === 0) {
-            return false;
+            // If there are no required credentials, this is fine
+            return !toolHasRequiredServiceCredentials.value;
         }
 
         for (const definition of sourceCredentialsDefinition.value.services.values()) {

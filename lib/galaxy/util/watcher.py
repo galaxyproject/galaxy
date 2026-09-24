@@ -144,8 +144,7 @@ class EventHandler(FileSystemEventHandler):
         self._handle(event)
 
     def _extension_check(self, key, path):
-        required_extensions = self.watcher.require_extensions.get(key)
-        if required_extensions:
+        if required_extensions := self.watcher.require_extensions.get(key):
             return any(filter(path.endswith, required_extensions))
         return not any(filter(path.endswith, self.watcher.ignore_extensions.get(key, [])))
 
@@ -169,8 +168,7 @@ class EventHandler(FileSystemEventHandler):
                     break
         if not callback or not ext_ok:
             return
-        cur_hash = md5_hash_file(path)
-        if cur_hash:
+        if cur_hash := md5_hash_file(path):
             if self.watcher.path_hash.get(path) == cur_hash:
                 return
             else:

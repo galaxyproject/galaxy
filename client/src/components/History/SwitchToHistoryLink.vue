@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { faArchive, faBurn } from "@fortawesome/free-solid-svg-icons";
+import { faArchive, faBurn, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -109,7 +110,14 @@ const linkClass = computed(() => {
 
 <template>
     <component :is="tag">
-        <LoadingSpan v-if="!history" />
+        <BBadge
+            v-if="historyStore.getHistoryLoadError(props.historyId)"
+            v-g-tooltip
+            :title="errorMessageAsString(historyStore.getHistoryLoadError(props.historyId))"
+            variant="danger">
+            Error loading history
+        </BBadge>
+        <LoadingSpan v-else-if="!history" />
         <component :is="tag" v-else :class="linkClass" data-description="switch to history link">
             <GLink
                 class="history-link-click"
@@ -123,6 +131,13 @@ const linkClass = computed(() => {
 
             <FontAwesomeIcon v-if="history.purged" :icon="faBurn" fixed-width />
             <FontAwesomeIcon v-else-if="history.archived" :icon="faArchive" fixed-width />
+
+            <FontAwesomeIcon
+                v-if="!userOwnsHistory(userStore.currentUser, history)"
+                v-g-tooltip.hover
+                title="You do not own this history"
+                :icon="faUsers"
+                fixed-width />
         </component>
     </component>
 </template>

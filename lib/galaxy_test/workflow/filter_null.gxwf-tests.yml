@@ -8,9 +8,7 @@
         - identifier: first
           class: File
           contents: "abc"
-    when:
-      value: true
-      type: raw
+    when: true
   outputs:
     out:
       class: Collection
@@ -26,9 +24,7 @@
         - identifier: first
           class: File
           contents: "abc"
-    when:
-      value: false
-      type: raw
+    when: false
   outputs:
     out:
       class: Collection

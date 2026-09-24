@@ -30,25 +30,26 @@ class TestFailJobWhenToolUnavailable(integration_util.IntegrationTestCase):
         self.workflow_populator.run_workflow(
             """
 class: GalaxyWorkflow
+inputs:
+  input1:
+    type: data
 steps:
   sleep:
-    run:
-      class: GalaxyTool
-      name: sleep hello
-      version: "0.1"
-      command: sleep 10s && echo 'hello world 2' > '$output1'
-      outputs:
-        output1:
-          type: data
-          format: txt
+    tool_id: cat_data_and_sleep
+    state:
+      sleep_time: 10
+      input1:
+        $link: input1
   cat:
     tool_id: cat1
     state:
       input1:
-        $link: sleep/output1
+        $link: sleep/out_file1
       queries:
         input2:
-          $link: sleep/output1
+          $link: sleep/out_file1
+test_data:
+  input1: "hello world"
 """,
             history_id=history_id,
             assert_ok=False,
@@ -60,7 +61,7 @@ steps:
         self.dataset_populator.wait_for_history(history_id, assert_ok=False)
         state_details = self.galaxy_interactor.get(f"histories/{history_id}").json()["state_details"]
         assert state_details["running"] == 0
-        assert state_details["ok"] == 1
+        assert state_details["ok"] == 2
         assert state_details["error"] == 1
         failed_hda = self.dataset_populator.get_history_dataset_details(
             history_id=history_id, assert_ok=False, details=True

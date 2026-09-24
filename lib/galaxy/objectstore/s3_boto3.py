@@ -2,15 +2,14 @@
 
 import logging
 import os
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
-    Dict,
+    Literal,
     TYPE_CHECKING,
 )
 
 from typing_extensions import (
-    Literal,
     NotRequired,
     TypedDict,
 )
@@ -23,13 +22,22 @@ try:
     import boto3
     from boto3.s3.transfer import TransferConfig
     from botocore.client import ClientError
+    from botocore.config import Config
 except ImportError:
     boto3 = None  # type: ignore[assignment,unused-ignore]
     TransferConfig = None  # type: ignore[assignment,unused-ignore,misc]
+    Config = None  # type: ignore[assignment,unused-ignore,misc]
 
 from galaxy.util import asbool
-from ._caching_base import CachingConcreteObjectStore
+from galaxy.util.s3_checksum import s3_checksum_config_kwargs
+from ._caching_base import (
+    CachingConcreteObjectStore,
+    RemoteDataStream,
+    STREAM_CHUNK_SIZE,
+)
 from .caching import (
+    CacheShardManager,
+    CacheTarget,
     enable_cache_monitor,
     parse_caching_config_dict_from_xml,
 )
@@ -124,6 +132,9 @@ def parse_config_xml(config_xml):
             "cache": cache_dict,
             "extra_dirs": extra_dirs,
             "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
+            "enable_direct_download": CachingConcreteObjectStore.parse_enable_direct_download_from_config_xml(
+                config_xml
+            ),
         }
         name = config_xml.attrib.get("name", None)
         if name is not None:
@@ -143,6 +154,7 @@ class S3ClientConstructorKwds(TypedDict):
     region_name: NotRequired[str]
     aws_access_key_id: NotRequired[str]
     aws_secret_access_key: NotRequired[str]
+    config: NotRequired["Config"]
 
 
 class S3ObjectStore(CachingConcreteObjectStore):
@@ -167,7 +179,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
         transfer_dict = config_dict.get("transfer") or {}
         typed_transfer_dict = {}
         for prefix in ["", "upload_", "download_"]:
-            options: Dict[str, Callable[[Any], Any]] = {
+            options: dict[str, Callable[[Any], Any]] = {
                 "multipart_threshold": int,
                 "max_concurrency": int,
                 "multipart_chunksize": int,
@@ -197,9 +209,8 @@ class S3ObjectStore(CachingConcreteObjectStore):
 
         self.region = connection_dict.get("region")
 
-        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
-        self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         self.cache_updated_data = cache_dict.get("cache_updated_data", True)
+        self._cache_shards = CacheShardManager.from_config(cache_dict, self.config)
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         self.extra_dirs.update(extra_dirs)
@@ -232,9 +243,9 @@ class S3ObjectStore(CachingConcreteObjectStore):
                 self.region = region
             self._init_client()
 
-    def _init_client(self):
-        # set _client based on current args.
-        # If access_key is empty use default credential chain
+    def _client_kwds(self) -> "S3ClientConstructorKwds":
+        # Build the keyword arguments for boto3.client based on current args.
+        # If access_key is empty use default credential chain.
         kwds: S3ClientConstructorKwds = {
             "service_name": "s3",
         }
@@ -245,7 +256,13 @@ class S3ObjectStore(CachingConcreteObjectStore):
         if self.access_key:
             kwds["aws_access_key_id"] = self.access_key
             kwds["aws_secret_access_key"] = self.secret_key
-        self._client = boto3.client(**kwds)
+        config_kwargs = s3_checksum_config_kwargs(self.endpoint_url)
+        if config_kwargs:
+            kwds["config"] = Config(**config_kwargs)
+        return kwds
+
+    def _init_client(self):
+        self._client = boto3.client(**self._client_kwds())
 
     @property
     def _bucket_exists(self) -> bool:
@@ -281,11 +298,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
                 "region": self.region,
             },
             "transfer": self.transfer_dict,
-            "cache": {
-                "size": self.cache_size,
-                "path": self.staging_path,
-                "cache_updated_data": self.cache_updated_data,
-            },
+            "cache": self._cache_config_to_dict(),
         }
 
     def to_dict(self):
@@ -313,18 +326,24 @@ class S3ObjectStore(CachingConcreteObjectStore):
                 return False
             raise
 
-    def _download(self, rel_path: str) -> bool:
-        local_destination = self._get_cache_path(rel_path)
+    def _download(self, rel_path: str, *, cache_path: str, cache_target: CacheTarget) -> bool:
+        local_destination = cache_path
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, local_destination)
-            if not self._caching_allowed(rel_path):
+            remote_size = self._get_remote_size(rel_path)
+            if not self._caching_allowed(rel_path, cache_target=cache_target, remote_size=remote_size):
                 return False
             config = self._transfer_config("download")
-            self._client.download_file(self.bucket, rel_path, local_destination, Config=config)
+            with self._atomic_download(local_destination, remote_size) as tmp:
+                self._client.download_file(self.bucket, rel_path, tmp, Config=config)
             return True
         except ClientError:
             log.exception("Failed to download file from S3")
         return False
+
+    def _stream_remote(self, rel_path: str) -> RemoteDataStream | None:
+        body = self._client.get_object(Bucket=self.bucket, Key=rel_path)["Body"]
+        return RemoteDataStream(body.iter_chunks(chunk_size=STREAM_CHUNK_SIZE), body.close)
 
     def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         try:
@@ -369,26 +388,35 @@ class S3ObjectStore(CachingConcreteObjectStore):
             for content in page.get("Contents", ()):
                 yield content["Key"]
 
+    def _keys_with_sizes(self, prefix: str):
+        s3_paginator = self._client.get_paginator("list_objects_v2")
+        prefix = prefix.lstrip("/")
+        for page in s3_paginator.paginate(Bucket=self.bucket, Prefix=prefix):
+            for content in page.get("Contents", ()):
+                yield content["Key"], content["Size"]
+
     def _download_directory_into_cache(self, rel_path, cache_path):
-        for key in self._keys(rel_path):
+        for key, size in self._keys_with_sizes(rel_path):
             local_file_path = os.path.join(cache_path, os.path.relpath(key, rel_path))
-
-            # Create directories if they don't exist
             os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+            with self._atomic_download(local_file_path, size) as tmp:
+                self._client.download_file(self.bucket, key, tmp)
 
-            # Download the file
-            self._client.download_file(self.bucket, key, local_file_path)
-
-    def _get_object_url(self, obj, **kwargs):
+    def _get_object_url(self, obj, content_disposition=None, content_type=None, **kwargs):
         try:
             if self._exists(obj, **kwargs):
                 rel_path = self._construct_path(obj, **kwargs)
+                params = {
+                    "Bucket": self.bucket,
+                    "Key": rel_path,
+                }
+                if content_disposition is not None:
+                    params["ResponseContentDisposition"] = content_disposition
+                if content_type is not None:
+                    params["ResponseContentType"] = content_type
                 url = self._client.generate_presigned_url(
                     ClientMethod="get_object",
-                    Params={
-                        "Bucket": self.bucket,
-                        "Key": rel_path,
-                    },
+                    Params=params,
                     ExpiresIn=3600,
                     HttpMethod="GET",
                 )

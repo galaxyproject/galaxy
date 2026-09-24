@@ -1,6 +1,5 @@
 from typing import (
     Literal,
-    Optional,
 )
 
 import yaml
@@ -23,17 +22,17 @@ RuleBuilderModes = Literal[
 
 class ColumnTarget(BaseModel):
     label: str
-    help: Optional[str]
-    modes: Optional[list[RuleBuilderModes]] = None
-    importType: Optional[RuleBuilderImportType] = None
-    multiple: Optional[bool] = False
-    columnHeader: Optional[str] = None
-    advanced: Optional[bool] = False
-    requiresFtp: Optional[bool] = False
-    example_column_names: Optional[list[str]] = None
+    help: str | None
+    modes: list[RuleBuilderModes] | None = None
+    importType: RuleBuilderImportType | None = None
+    multiple: bool | None = False
+    columnHeader: str | None = None
+    advanced: bool | None = False
+    requiresFtp: bool | None = False
+    example_column_names: list[str] | None = None
 
     @property
-    def example_column_names_as_str(self) -> Optional[str]:
+    def example_column_names_as_str(self) -> str | None:
         if self.example_column_names:
             return '"' + '", "'.join(self.example_column_names) + '"'
         return ""

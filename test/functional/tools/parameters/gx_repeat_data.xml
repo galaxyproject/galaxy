@@ -15,7 +15,7 @@ cat '$parameter[0].data_parameter' >> '$output'
             <repeat name="parameter">
                 <param name="data_parameter" value="1.bed" />
             </repeat>
-            <output name="out_file1" file="1.bed" />
+            <output name="output" file="1.bed" />
         </test>
     </tests>
 </tool>

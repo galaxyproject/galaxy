@@ -10,11 +10,13 @@ const props = withDefaults(
         emptyMessage?: string;
         itemKey: (item: any) => string | number;
         itemClass?: (item: any, index: number) => string | Record<string, boolean> | undefined;
+        itemDataDescription?: string;
     }>(),
     {
         loadingMessage: "Loading...",
         emptyMessage: "No items found.",
         itemClass: undefined,
+        itemDataDescription: "sidebar item",
     },
 );
 
@@ -48,7 +50,7 @@ function onItemKeydown(item: any, index: number, event: KeyboardEvent) {
                 :key="itemKey(item)"
                 class="sidebar-item d-flex align-items-start p-2 border-bottom"
                 :class="props.itemClass?.(item, index)"
-                data-description="sidebar item"
+                :data-description="props.itemDataDescription"
                 role="button"
                 tabindex="0"
                 @click="onItemClick(item, index, $event)"
@@ -65,7 +67,7 @@ function onItemKeydown(item: any, index: number, event: KeyboardEvent) {
     overflow-y: auto;
 }
 .sidebar-item:hover {
-    background: var(--gray-200);
+    background: var(--color-grey-200);
     cursor: pointer;
 }
 </style>

@@ -1,0 +1,88 @@
+name: Metadata runtime image
+on:
+  pull_request:
+    paths:
+      - 'packages/**'
+      - 'lib/galaxy/**'
+      - '.github/workflows/metadata_image.yaml'
+  push:
+    branches: [dev, 'release_*']
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      galaxy_version:
+        description: 'Published stable Galaxy package version to rebuild'
+        required: true
+        default: '26.1.1'
+        type: string
+permissions: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Select runtime and image tags
+        id: runtime
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_VERSION: ${{ inputs.galaxy_version }}
+        run: |
+          if [[ "$EVENT_NAME" == workflow_dispatch ]]; then
+            python3 -c 'import os, re; assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", os.environ["RELEASE_VERSION"]), "Expected a stable Galaxy version, e.g. 26.1.1"'
+            version="$RELEASE_VERSION"
+            source=release
+            revision=$(git rev-parse "v${version}^{commit}")
+          else
+            version=$(python3 -c 'import runpy; print(runpy.run_path("lib/galaxy/version/__init__.py")["VERSION"])')
+            source=source
+            revision=$(git rev-parse HEAD)
+          fi
+          {
+            echo "version=$version"
+            echo "source=$source"
+            echo "revision=$revision"
+            echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo "build_tag=${version}-r${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+          } >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v4.3.0
+      - name: Check the stable PyPI runtime on pull requests
+        if: github.event_name == 'pull_request'
+        uses: docker/build-push-action@v7.3.0
+        with:
+          context: .
+          file: packages/job_execution/Dockerfile
+          push: false
+          platforms: linux/amd64
+          # Defaults deliberately exercise the latest stable release build.
+      - name: Login to Quay
+        if: github.event_name != 'pull_request' && github.repository == 'galaxyproject/galaxy'
+        uses: docker/login-action@v4.6.0
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+      - name: Build and optionally publish metadata runtime
+        uses: docker/build-push-action@v7.3.0
+        with:
+          context: .
+          file: packages/job_execution/Dockerfile
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' && github.repository == 'galaxyproject/galaxy' }}
+          build-args: |
+            RUNTIME_SOURCE=${{ steps.runtime.outputs.source }}
+            GALAXY_VERSION=${{ steps.runtime.outputs.version }}
+            GIT_COMMIT=${{ steps.runtime.outputs.revision }}
+            BUILD_DATE=${{ steps.runtime.outputs.date }}
+          tags: |
+            quay.io/galaxyproject/galaxy-job-execution:${{ steps.runtime.outputs.version }}
+            quay.io/galaxyproject/galaxy-job-execution:${{ steps.runtime.outputs.build_tag }}
+          provenance: mode=max
+          sbom: true

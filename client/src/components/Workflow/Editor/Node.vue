@@ -20,51 +20,54 @@
             :class="headerClass"
             @pointerdown.exact="onPointerDown"
             @pointerup.exact="onPointerUp"
+            @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected"
             @keyup.enter="makeActive">
-            <b-button-group class="float-right">
+            <GButtonGroup class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
-                <BButton
+                <GButton
                     v-if="credentials.length > 0"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     class="node-credentials py-0 inline-icon-button"
-                    variant="primary"
-                    size="sm"
+                    transparent
+                    icon-only
+                    color="blue"
+                    size="small"
                     aria-label="tool has credentials"
                     title="Tool requires credentials">
                     <FontAwesomeIcon :icon="faKey" />
-                </BButton>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="!readonly"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     class="node-clone py-0"
-                    variant="primary"
-                    size="sm"
+                    color="blue"
+                    size="small"
                     aria-label="clone node"
                     title="Duplicate"
                     @click.prevent.stop="onClone">
                     <i class="fa fa-files-o" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="!readonly"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     class="node-destroy py-0"
-                    variant="primary"
-                    size="sm"
+                    color="blue"
+                    size="small"
                     aria-label="destroy node"
                     title="Remove"
                     @click.prevent.stop="remove">
                     <i class="fa fa-times" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="isEnabled && !readonly"
                     :id="popoverId"
                     class="node-recommendations py-0"
-                    variant="primary"
-                    size="sm"
+                    color="blue"
+                    size="small"
                     aria-label="tool recommendations">
                     <i class="fa fa-arrow-right" />
-                </b-button>
+                </GButton>
                 <b-popover
                     v-if="isEnabled && !readonly"
                     :target="popoverId"
@@ -79,13 +82,13 @@
                             @onCreate="onCreate" />
                     </div>
                 </b-popover>
-            </b-button-group>
+            </GButtonGroup>
             <i :class="iconClass" />
-            <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
+            <span v-if="step.when" v-g-tooltip.hover title="This step is conditionally executed.">
                 <FontAwesomeIcon :icon="faCodeBranch" />
             </span>
             <span
-                v-b-tooltip.hover
+                v-g-tooltip.hover
                 title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
                 >{{ step.id + 1 }}:
             </span>
@@ -104,6 +107,7 @@
             class="node-error m-0 rounded-0 rounded-bottom"
             @pointerdown.exact="onPointerDown"
             @pointerup.exact="onPointerUp"
+            @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected">
             {{ errors }}
         </b-alert>
@@ -114,6 +118,7 @@
             :class="{ 'cursor-pointer': isInvocation || isPopulatedInput }"
             @pointerdown.exact="onPointerDown"
             @pointerup.exact="onPointerUp"
+            @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected"
             @keyup.enter="makeActive">
             <NodeInput
@@ -185,6 +190,8 @@ import { isWorkflowInput } from "../constants";
 import { ToggleStepSelectedAction } from "./Actions/stepActions";
 import type { OutputTerminals } from "./modules/terminals";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
@@ -212,6 +219,7 @@ const props = defineProps({
     isInvocation: { type: Boolean, default: false },
     readonly: { type: Boolean, default: false },
     populatedInputs: { type: Boolean, default: false },
+    isOutOfFocus: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -275,6 +283,7 @@ const classes = computed(() => {
         "node-highlight": props.highlight || isActive.value,
         "is-active": isActive.value,
         "node-multi-selected": stateStore.getStepMultiSelected(props.id),
+        "node-not-in-focus": props.isOutOfFocus && !isActive.value,
     };
 });
 
@@ -350,10 +359,8 @@ function onDragConnector(dragPosition: TerminalPosition, terminal: OutputTermina
 
 const mouseMovementThreshold = 9;
 const singleClickTimeout = 800;
-const doubleClickTimeout = 500;
 
 let mouseDownTime = 0;
-let doubleClickTime = 0;
 
 let movementDistance = 0;
 let lastPosition: XYPosition | null = null;
@@ -379,15 +386,19 @@ function onPointerUp(e: PointerEvent) {
         makeActive();
     }
 
-    const timeBetweenClicks = mouseUpTime - doubleClickTime;
-
-    if (timeBetweenClicks < doubleClickTimeout) {
-        inspectorStore.setMaximized(props.step, true);
-    }
-
-    doubleClickTime = Date.now();
     lastPosition = null;
     movementDistance = 0;
+}
+
+function onDoubleClick(e: MouseEvent) {
+    const path = composedPartialPath(e);
+    const unclickable = path.every((target) => !isClickable(target as Element));
+
+    if (!unclickable) {
+        return;
+    }
+
+    inspectorStore.setMaximized(props.step, true);
 }
 
 function onMoveTo(position: XYPosition) {
@@ -446,6 +457,12 @@ function toggleSelected() {
     border: solid $brand-primary 1px;
 
     $multi-selected: lighten($brand-info, 20%);
+
+    transition: opacity 0.2s ease;
+
+    &.node-not-in-focus {
+        opacity: 0.7;
+    }
 
     &.node-multi-selected {
         box-shadow:

@@ -8,11 +8,11 @@ from argparse import (
 )
 from collections.abc import Callable
 from io import StringIO
+from pathlib import Path
 from textwrap import TextWrapper
 from typing import (
     Any,
     NamedTuple,
-    Optional,
 )
 
 import yaml
@@ -36,7 +36,6 @@ if __name__ == "__main__":
 
 from galaxy.config import (
     GALAXY_CONFIG_SCHEMA_PATH,
-    REPORTS_CONFIG_SCHEMA_PATH,
     TOOL_SHED_CONFIG_SCHEMA_PATH,
 )
 from galaxy.config.schema import AppSchema
@@ -53,7 +52,7 @@ from galaxy.util.yaml_util import (
 
 DESCRIPTION = "Convert configuration files."
 
-APP_DESCRIPTION = """Application to target for operation (i.e. galaxy, tool_shed, or reports))"""
+APP_DESCRIPTION = """Application to target for operation (i.e. galaxy or tool_shed))"""
 DRY_RUN_DESCRIPTION = """If this action modifies files, just print what would be the result and continue."""
 UNKNOWN_OPTION_MESSAGE = "Option [%s] not found in schema - either it is invalid or the Galaxy team hasn't documented it. If invalid, you should manually remove it. If the option is valid but undocumented, please file an issue with the Galaxy team."
 NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults throughout."
@@ -228,17 +227,10 @@ SHED_APP = App(
     "config/tool_shed.yml",
     TOOL_SHED_CONFIG_SCHEMA_PATH,
 )
-REPORTS_APP = App(
-    ["reports_wsgi.ini", "config/reports.ini"],
-    "9001",
-    ["galaxy.webapps.reports.buildapp:app_factory"],
-    "config/reports.yml",
-    REPORTS_CONFIG_SCHEMA_PATH,
-)
-APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
+APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP}
 
 
-def main(argv: Optional[list[str]] = None) -> None:
+def main(argv: list[str] | None = None) -> None:
     """Entry point for conversion process."""
     if argv is None:
         argv = sys.argv[1:]
@@ -268,7 +260,9 @@ def _to_rst(args: Namespace, app_desc: App) -> None:
         option = schema.get_app_option(key)
         option_value = OptionValue(key, default, option)
         _write_option_rst(args, rst, key, "~", option_value)
-    print(rst.getvalue())
+    # print() supplies the single trailing newline; the per-option blank lines would
+    # otherwise leave the file ending in blanks that end-of-file-fixer strips back out.
+    print(rst.getvalue().rstrip("\n"))
 
 
 def _write_option_rst(args: Namespace, rst: StringIO, key: str, heading_level: str, option_value: OptionValue) -> None:
@@ -438,7 +432,9 @@ def _build_sample_yaml(args: Namespace, app_desc: App) -> None:
     f = StringIO()
     if description := getattr(schema, "description", None):
         description = description.lstrip()
-        as_comment = "\n".join(f"# {line}" for line in description.split("\n")) + "\n"
+        # rstrip so blank description lines do not become "# " - trailing whitespace the
+        # trailing-whitespace hook would strip right back out.
+        as_comment = "\n".join(f"# {line}".rstrip() for line in description.split("\n")) + "\n"
         f.write(as_comment)
     if app_desc.app_name == "galaxy":
         if settings_to_sample is None:
@@ -450,7 +446,8 @@ def _build_sample_yaml(args: Namespace, app_desc: App) -> None:
 
 
 def _write_to_file(args: Namespace, f: StringIO, path: str) -> None:
-    contents = f.getvalue()
+    # Exactly one trailing newline, so regenerating does not fight end-of-file-fixer.
+    contents = f.getvalue().rstrip("\n") + "\n"
     if args.dry_run:
         contents_indented = "\n".join(f" |{line}" for line in contents.splitlines())
         print(f"Overwriting {path} with the following contents:\n{contents_indented}")
@@ -532,12 +529,117 @@ def _get_option_desc(option: dict[str, Any]) -> str:
     return desc
 
 
+_SCHEMA_TO_PYTHON_TYPE: dict[str, str] = {
+    "str": "str",
+    "bool": "bool",
+    "int": "int",
+    "float": "float",
+    "any": "Any",
+    "seq": "list[Any]",
+}
+
+_CONFIG_TYPE_CLASS_NAMES: dict[str, str] = {
+    "galaxy": "GalaxyAppConfigurationAttributes",
+    "tool_shed": "ToolShedAppConfigurationAttributes",
+}
+
+# Per-app overrides for attributes whose runtime Python type differs from what
+# the schema alone would generate.  Causes include: post-processing in
+# _process_config (listify, timedelta conversion), BaseAppConfiguration
+# guarantees that override a null schema default, or more specific element
+# types for seq attrs.
+_ATTR_TYPE_OVERRIDES: dict[str, dict[str, str]] = {
+    "galaxy": {
+        # Always resolved to a concrete str by BaseAppConfiguration._set_config_base
+        "config_dir": "str",
+        "data_dir": "str",
+        "managed_config_dir": "str",
+        # BaseAppConfiguration declares str; always non-null at runtime
+        "object_store_store_by": "str",
+        # Listified by _process_config or CommonConfigurationMixin
+        "allowed_origin_hostnames": "list[str]",
+        "mulled_channels": "list[str]",
+        "tool_filters": "list[str]",
+        "tool_label_filters": "list[str]",
+        "tool_section_filters": "list[str]",
+        "toolbox_filter_base_modules": "list[str]",
+        "user_library_import_symlink_allowlist": "list[str]",
+        "user_tool_filters": "list[str]",
+        "user_tool_label_filters": "list[str]",
+        "user_tool_section_filters": "list[str]",
+        # Can be conditionally set to None in _process_config despite non-null schema default
+        "interactivetools_map": "str | None",
+        "tool_dependency_dir": "str | None",
+        # Config file paths that are optional (not required to be set)
+        "file_source_templates_config_file": "str | None",
+        "object_store_templates_config_file": "str | None",
+        "amqp_internal_connection": "str | None",
+        # seq attrs with more specific element types
+        "file_source_templates": "list[dict[str, Any]] | None",
+        "object_store_templates": "list[dict[str, Any]] | None",
+        "subdomain_switcher": "list[dict[str, str]]",
+        # Stored as float despite int schema type
+        "object_store_cache_size": "float",
+        # Converted from int (days) to timedelta by _process_config
+        "password_expiration_period": "timedelta",
+    },
+    "tool_shed": {},
+}
+
+_CONFIG_DIR = Path(__file__).resolve().parent
+
+
+def _python_type_for_option(option: dict[str, Any]) -> str:
+    schema_type = option.get("type", "str")
+    default = option.get("default")
+    py_type = _SCHEMA_TO_PYTHON_TYPE.get(schema_type, "Any")
+    # Attributes with a null default remain None at runtime when not configured —
+    # _update_raw_config_from_kwargs skips type conversion when value is None.
+    if default is None and py_type in ("str", "int", "float"):
+        return f"{py_type} | None"
+    return py_type
+
+
+def _build_config_types(args: Namespace, app_desc: App) -> None:
+    schema = app_desc.schema
+    app_name = app_desc.app_name
+    class_name = _CONFIG_TYPE_CLASS_NAMES[app_name]
+    output_path = _CONFIG_DIR / f"_{app_name}_config_schema_attributes.py"
+
+    overrides = _ATTR_TYPE_OVERRIDES.get(app_name, {})
+    attr_types = {key: overrides.get(key, _python_type_for_option(option)) for key, option in schema.app_schema.items()}
+    needs_any = any("Any" in t for t in attr_types.values())
+    needs_timedelta = any("timedelta" in t for t in attr_types.values())
+    imports = ["from datetime import timedelta"] if needs_timedelta else []
+    if needs_any:
+        imports.append("from typing import Any")
+
+    lines = [
+        "# AUTOGENERATED by config_manage.py build_config_types — do not edit manually.",
+        "# Run `make config-rebuild` to regenerate from the config schema.",
+        *imports,
+        "",
+        "",
+        f"class {class_name}:",
+        f'    """Type annotations for schema-defined "{app_name}" config attributes."""',
+        "",
+    ]
+    for key, py_type in attr_types.items():
+        lines.append(f"    {key}: {py_type}")
+    lines.append("")
+
+    content = "\n".join(lines)
+    output_path.write_text(content)
+    print(f"Written: {output_path}")
+
+
 ACTIONS: dict[str, Callable] = {
     "convert": _run_conversion,
     "build_sample_yaml": _build_sample_yaml,
     "validate": _validate,
     "lint": _lint,
     "build_rst": _to_rst,
+    "build_config_types": _build_config_types,
 }
 
 

@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { faQuestion, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BAlert, BFormInput, BInputGroup, BInputGroupAppend, BTable } from "bootstrap-vue";
+import { BAlert, BCard, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import type { RowClickEvent, TableField } from "@/components/Common/GTable.types";
 import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
 import { Services } from "@/components/Workflow/services";
 import { useMarkdown } from "@/composables/markdown";
 import { withPrefix } from "@/utils/redirect";
 
-import type { TrsSelection } from "./types";
+import type { TrsSelection, TrsTool as TrsSearchData } from "./types";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GTable from "@/components/Common/GTable.vue";
+import HelpText from "@/components/Help/HelpText.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import TrsServerSelection from "@/components/Workflow/Import/TrsServerSelection.vue";
 import TrsTool from "@/components/Workflow/Import/TrsTool.vue";
@@ -22,16 +25,16 @@ const emit = defineEmits<{
     (e: "input-valid", valid: boolean): void;
 }>();
 
-type TrsSearchData = {
+type TrsSearchRow = {
     id: string;
     name: string;
     description: string;
-    [key: string]: unknown;
+    data: TrsSearchData;
 };
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
-const fields = [
+const fields: TableField[] = [
     { key: "name", label: "Name" },
     { key: "description", label: "Description" },
     { key: "organization", label: "Organization" },
@@ -62,10 +65,6 @@ watch(isValid, (newValue) => {
 
 const itemsComputed = computed(() => {
     return computeItems(results.value);
-});
-
-const searchHelp = computed(() => {
-    return "Search by workflow description. Tags (key:value) can be used to also search by metadata - for instance name:example. Available tags include organization and name.";
 });
 
 const services = new Services();
@@ -102,23 +101,9 @@ function onTrsSelectionError(message: string) {
     errorMessage.value = message;
 }
 
-function showRowDetails(row: any, _index: number, e: MouseEvent) {
-    if ((e.target as Node | undefined)?.nodeName !== "A") {
-        // Collapse all other rows
-        itemsComputed.value.forEach((item) => {
-            if (item !== row) {
-                item._showDetails = false;
-            }
-        });
-        // Toggle the clicked row
-        const wasExpanded = row._showDetails;
-        row._showDetails = !row._showDetails;
-
-        // If collapsing the row, reset selection state
-        if (wasExpanded) {
-            selectedTool.value = null;
-            selectedVersion.value = undefined;
-        }
+function showRowDetails({ event, toggleDetails }: RowClickEvent<TrsSearchRow>) {
+    if ((event.target as Node | undefined)?.nodeName !== "A") {
+        toggleDetails();
     }
 }
 
@@ -129,7 +114,6 @@ function computeItems(items: TrsSearchData[]) {
             name: item.name,
             description: item.description,
             data: item,
-            _showDetails: false,
         };
     });
 }
@@ -173,7 +157,7 @@ defineExpose({ triggerImport });
 </script>
 
 <template>
-    <div class="container workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
+    <div class="container workflow-import-trs-search">
         <BAlert :show="hasErrorMessage" variant="danger">
             {{ errorMessage }}
         </BAlert>
@@ -187,8 +171,8 @@ defineExpose({ triggerImport });
                 @onError="onTrsSelectionError" />
         </div>
 
-        <div>
-            <BInputGroup class="mb-3">
+        <div class="trs-search-field">
+            <BInputGroup>
                 <BFormInput
                     id="trs-search-query"
                     v-model="query"
@@ -198,15 +182,12 @@ defineExpose({ triggerImport });
                     @keyup.esc="query = ''" />
 
                 <BInputGroupAppend>
-                    <GButton tooltip size="small" data-description="show help toggle" :title="searchHelp">
-                        <FontAwesomeIcon :icon="faQuestion" />
-                    </GButton>
-
                     <GButton size="small" title="clear search" @click="query = ''">
                         <FontAwesomeIcon :icon="faTimes" />
                     </GButton>
                 </BInputGroupAppend>
             </BInputGroup>
+            <HelpText uri="galaxy.workflows.import.searchHelp" info-icon />
         </div>
 
         <div class="vertical-scroll">
@@ -217,64 +198,59 @@ defineExpose({ triggerImport });
             <BAlert v-else-if="results.length == 0" variant="info" show>
                 No search results found, refine your search.
             </BAlert>
-            <BTable
+            <GTable
                 v-else
                 :fields="fields"
                 :items="itemsComputed"
                 hover
                 caption-top
-                :busy="loading"
-                tbody-tr-class="clickable-row"
-                @row-clicked="showRowDetails">
-                <template v-slot:row-details="row">
+                clickable-rows
+                :loading="loading"
+                @row-click="showRowDetails">
+                <template v-slot:row-details="{ item }">
                     <BCard>
                         <BAlert v-if="importing" variant="info" show>
                             <LoadingSpan message="Importing workflow" />
                         </BAlert>
 
                         <TrsTool
-                            :trs-tool="row.item.data"
-                            @onImport="(versionId) => onVersionSelected(row.item.data, versionId)"
-                            @onSelect="(versionId) => onVersionSelected(row.item.data, versionId)" />
+                            :trs-tool="item.data"
+                            @onImport="onVersionSelected(item.data, $event)"
+                            @onSelect="onVersionSelected(item.data, $event)" />
                     </BCard>
                 </template>
 
                 <template v-slot:cell(description)="row">
                     <span class="trs-description" v-html="renderMarkdown(row.item.data.description)" />
                 </template>
-            </BTable>
+            </GTable>
         </div>
     </div>
 </template>
 
-<style>
-.trs-description {
-    position: relative;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-}
+<style scoped lang="scss">
 .vertical-scroll {
     max-height: 600px;
     overflow-y: auto;
-}
-.clickable-row:not(.b-table-details) {
-    cursor: pointer;
-}
-.clickable-row:not(:first-child) {
-    border-top: 1px double #ccc;
-}
-.clickable-row.b-table-has-details {
-    border: 2px solid var(--brand-primary, #007bff);
-    border-bottom: none;
-}
-.clickable-row.b-table-details {
-    border: 2px solid var(--brand-primary, #007bff);
-    border-top: none;
-}
-.clickable-row.b-table-details:hover {
-    background: unset;
+
+    .trs-description {
+        position: relative;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+    }
+
+    .trs-search-field {
+        display: flex;
+        gap: var(--spacing);
+        align-items: center;
+        margin-bottom: var(--spacing-4);
+
+        :deep(.popper-element) {
+            max-width: 30vw;
+        }
+    }
 }
 </style>

@@ -64,7 +64,7 @@ Additional configuration files and their purposes are:
   internally.
 - ``build_sites.yml``: Controls which display applications are available and their configuration paths
 - ``containers_conf.yml``: Configures the beta Galaxy containers interface, currently only used by Galaxy Interactive
-  Environments, and only neccesary for Docker Swarm support.
+  Environments, and only necessary for Docker Swarm support.
 - ``dependency_resolvers_conf.xml``: Describes how Galaxy tools (which are typically just descriptions of how to run a
   particular command line tool) should locate their dependencies (the command line tool) that are not part of the tool.
   See the `Dependency Resolvers documentation <dependency_resolvers>` for more.
@@ -105,6 +105,17 @@ Configuration Basics
 
 .. _Gravity: https://github.com/galaxyproject/gravity
 
+
+Per-process configuration
+-------------------------
+
+Options in the ``galaxy`` section can also be supplied through environment variables with the
+``GALAXY_CONFIG_`` prefix and the option name in uppercase. These values apply when the option
+is absent from the configuration file. Use the ``GALAXY_CONFIG_OVERRIDE_`` prefix to override
+a value set in the file.
+
+Set environment variables in the service's environment to customize individual processes while
+sharing a common ``galaxy.yml``.
 
 Configuration Options
 ----------------------------

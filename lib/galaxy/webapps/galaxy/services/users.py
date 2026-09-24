@@ -1,7 +1,5 @@
 from typing import (
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 import galaxy.managers.base as managers_base
@@ -9,6 +7,7 @@ from galaxy import (
     exceptions as glx_exceptions,
     util,
 )
+from galaxy.celery.helpers import async_task_summary
 from galaxy.managers import api_keys
 from galaxy.managers.context import (
     ProvidesHistoryContext,
@@ -34,10 +33,7 @@ from galaxy.schema.schema import (
     UserModel,
 )
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
-    ServiceBase,
-)
+from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.roles import role_to_model
 
 if TYPE_CHECKING:
@@ -89,7 +85,7 @@ class UsersService(ServiceBase):
             )
             return None
 
-    def get_api_key(self, trans: ProvidesUserContext, user_id: int) -> Optional[APIKeyModel]:
+    def get_api_key(self, trans: ProvidesUserContext, user_id: int) -> APIKeyModel | None:
         """Returns the current API key or None if the user doesn't have any valid API key."""
         user = self.get_user(trans, user_id)
         api_key = self.api_key_manager.get_api_key(user)
@@ -122,8 +118,8 @@ class UsersService(ServiceBase):
     def _anon_user_api_value(self, trans: ProvidesHistoryContext):
         """Return data for an anonymous user, truncated to only usage and quota_percent"""
         if not trans.user and not trans.history:
-            usage: Optional[float] = 0.0
-            percent: Optional[int] = 0
+            usage: float | None = 0.0
+            percent: int | None = 0
         else:
             usage = self.quota_agent.get_usage(trans, history=trans.history)
             percent = self.quota_agent.get_percent(trans=trans, usage=usage)
@@ -150,7 +146,7 @@ class UsersService(ServiceBase):
         trans: ProvidesUserContext,
         user_id: FlexibleUserIdType,
         deleted: bool,
-    ) -> Optional[User]:
+    ) -> User | None:
         try:
             # user is requesting data about themselves
             if user_id == "current":
@@ -183,7 +179,7 @@ class UsersService(ServiceBase):
         trans: ProvidesHistoryContext,
         user_id: FlexibleUserIdType,
         deleted: bool,
-    ) -> Union[DetailedUserModel, AnonUserModel]:
+    ) -> DetailedUserModel | AnonUserModel:
         user = self.get_user_full(trans=trans, deleted=deleted, user_id=user_id)
         if user is not None:
             return self.user_to_detailed_model(user)
@@ -201,9 +197,11 @@ class UsersService(ServiceBase):
         self,
         trans: ProvidesUserContext,
         deleted: bool,
-        f_email: Optional[str],
-        f_name: Optional[str],
-        f_any: Optional[str],
+        f_email: str | None,
+        f_name: str | None,
+        f_any: str | None,
+        limit: int | None = None,
+        offset: int | None = 0,
     ) -> list[MaybeLimitedUserModel]:
         # never give any info to non-authenticated users
         if not trans.user and not trans.user_is_bootstrap_admin:
@@ -234,6 +232,8 @@ class UsersService(ServiceBase):
             trans.user_is_admin,
             trans.app.config.expose_user_email,
             trans.app.config.expose_user_name,
+            limit=limit,
+            offset=offset or 0,
         )
         rval: list[MaybeLimitedUserModel] = []
         for user in users:
@@ -255,7 +255,7 @@ class UsersService(ServiceBase):
                 rval.append(UserModel(**user_dict))
         return rval
 
-    def get_user_roles(self, trans, user_id):
+    def get_user_roles(self, trans: ProvidesUserContext, user_id):
         user = self.get_user(trans, user_id)
         roles = [ura.role for ura in user.roles]
         return RoleListResponse(root=[role_to_model(r) for r in roles])

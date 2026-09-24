@@ -59,7 +59,10 @@ function toggleHighlights() {
                             result.genome_build
                         }}</BLink>
                     </span>
-                    <DatasetMiscInfo v-if="result.misc_info" :misc-info="result.misc_info" />
+                    <DatasetMiscInfo
+                        v-if="result.misc_info"
+                        :misc-info="result.misc_info"
+                        :history-id="result.history_id" />
                 </div>
                 <DatasetActions
                     :item="result"

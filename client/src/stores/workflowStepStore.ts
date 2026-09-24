@@ -113,7 +113,7 @@ export interface NewStep {
     tool_state: Record<string, unknown>;
     tool_version?: string;
     tooltip?: string | null;
-    type: "tool" | "data_input" | "data_collection_input" | "subworkflow" | "parameter_input" | "pause";
+    type: "tool" | "data_input" | "data_collection_input" | "subworkflow" | "parameter_input" | "pause" | "pick_value";
     uuid?: string;
     when?: string | null;
     workflow_id?: string;
@@ -363,22 +363,31 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         );
 
         const inputConnections = inputStep.input_connections[connection.input.name];
+        const newInputConnections = { ...inputStep.input_connections };
 
         if (getStepExtraInputs.value(inputStep.id).find((input) => connection.input.name === input.name)) {
-            inputStep.input_connections[connection.input.name] = undefined;
+            newInputConnections[connection.input.name] = undefined;
         } else {
             if (Array.isArray(inputConnections)) {
-                inputStep.input_connections[connection.input.name] = inputConnections.filter(
+                const filtered = inputConnections.filter(
                     (outputLink) =>
-                        !(outputLink.id === connection.output.stepId,
-                        outputLink.output_name === connection.output.name),
+                        !(
+                            outputLink.id === connection.output.stepId &&
+                            outputLink.output_name === connection.output.name
+                        ),
                 );
+
+                if (filtered.length === 0) {
+                    delete newInputConnections[connection.input.name];
+                } else {
+                    newInputConnections[connection.input.name] = filtered;
+                }
             } else {
-                del(inputStep.input_connections, connection.input.name);
+                delete newInputConnections[connection.input.name];
             }
         }
 
-        updateStep(inputStep);
+        updateStep({ ...inputStep, input_connections: newInputConnections });
     }
 
     const { deleteStepPosition, deleteStepTerminals } = useWorkflowStateStore(workflowId);

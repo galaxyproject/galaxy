@@ -1,10 +1,9 @@
 import os
+from collections.abc import Callable
 from datetime import datetime
 from functools import wraps
 from typing import (
-    Callable,
     TypeVar,
-    Union,
 )
 from unittest import SkipTest
 
@@ -41,19 +40,23 @@ def skip_if_site_down(url: str) -> Callable[[Callable[P, T]], Callable[P, T]]:
 
 
 skip_if_github_down = skip_if_site_down("https://github.com/")
+skip_if_dockstore_down = skip_if_site_down("https://dockstore.org/")
+skip_if_workflowhub_down = skip_if_site_down("https://workflowhub.eu/")
+skip_if_quay_down = skip_if_site_down("https://quay.io/")
+skip_if_galaxy_depot_down = skip_if_site_down("https://depot.galaxyproject.org/")
 
 
 def _identity(func: Callable[P, T]) -> Callable[P, T]:
     return func
 
 
-def skip_unless_executable(executable: str) -> Union[Callable[[Callable[P, T]], Callable[P, T]], pytest.MarkDecorator]:
+def skip_unless_executable(executable: str) -> Callable[[Callable[P, T]], Callable[P, T]] | pytest.MarkDecorator:
     if which(executable):
         return _identity
     return pytest.mark.skip(f"PATH doesn't contain executable {executable}")
 
 
-def skip_unless_environ(env_var: str) -> Union[Callable[[Callable[P, T]], Callable[P, T]], pytest.MarkDecorator]:
+def skip_unless_environ(env_var: str) -> Callable[[Callable[P, T]], Callable[P, T]] | pytest.MarkDecorator:
     if os.environ.get(env_var):
         return _identity
 

@@ -23,4 +23,18 @@ describe("VaultSecret", () => {
         // verify markdown converted
         expect(helpWrapper.html()).toEqual("<p>here is some good <em>help</em></p>");
     });
+
+    it("should render a textarea editor for multiline secrets", async () => {
+        const wrapper = shallowMount(VaultSecret as object, {
+            propsData: {
+                name: "secret name",
+                label: "Label Secret",
+                help: "pem help",
+                isSet: true,
+                multiline: true,
+            },
+            localVue,
+        });
+        expect(wrapper.html()).toContain("bformtextarea-stub");
+    });
 });

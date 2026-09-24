@@ -13,7 +13,6 @@ import json
 import os
 import random
 import re
-import shlex
 import shutil
 import smtplib
 import stat
@@ -26,6 +25,11 @@ import time
 import unicodedata
 import uuid
 import xml.dom.minidom
+from collections.abc import (
+    Iterable,
+    Iterator,
+    Mapping,
+)
 from datetime import (
     datetime,
     timezone,
@@ -38,14 +42,8 @@ from pathlib import Path
 from typing import (
     Any,
     cast,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
-    Optional,
+    Literal,
     overload,
-    Tuple,
     TYPE_CHECKING,
     TypeVar,
     Union,
@@ -62,12 +60,17 @@ from boltons.iterutils import (
     default_enter,
     remap,
 )
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped, unused-ignore]
 from typing_extensions import (
-    Literal,
     Self,
 )
+
+
+def now():
+    """
+    Return the current time in UTC without any timezone information.
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 
 try:
     import grp
@@ -90,20 +93,19 @@ try:
         def __iter__(self) -> Iterator[Self]:  # type: ignore[override]
             return cast(Iterator[Self], super().__iter__())
 
-        def find(self, path: str, namespaces: Optional[Mapping[str, str]] = None) -> Union[Self, None]:
-            ret = super().find(path, namespaces)
-            if ret is not None:
+        def find(self, path: str, namespaces: Mapping[str, str] | None = None) -> Self | None:
+            if (ret := super().find(path, namespaces)) is not None:
                 return cast(Self, ret)
             else:
                 return None
 
-        def findall(self, path: str, namespaces: Optional[Mapping[str, str]] = None) -> List[Self]:  # type: ignore[override]
-            return cast(List[Self], super().findall(path, namespaces))
+        def findall(self, path: str, namespaces: Mapping[str, str] | None = None) -> list[Self]:  # type: ignore[override]
+            return cast(list[Self], super().findall(path, namespaces))
 
-        def iterfind(self, path: str, namespaces: Optional[Mapping[str, str]] = None) -> Iterator[Self]:
+        def iterfind(self, path: str, namespaces: Mapping[str, str] | None = None) -> Iterator[Self]:
             return cast(Iterator[Self], super().iterfind(path, namespaces))
 
-    def SubElement(parent: Element, tag: str, attrib: Optional[Dict[str, str]] = None, **extra) -> Element:
+    def SubElement(parent: Element, tag: str, attrib: dict[str, str] | None = None, **extra) -> Element:
         return cast(Element, etree.SubElement(parent, tag, attrib, **extra))
 
     # lxml.etree.ElementTree is a function that returns a new instance of the
@@ -117,8 +119,23 @@ try:
         def getroot(self) -> Element:
             return cast(Element, super().getroot())
 
-    def XML(text: Union[str, bytes]) -> Element:
+    def XML(text: str | bytes) -> Element:
         return cast(Element, etree.XML(text))
+
+    class LocalOnlyResolver(etree.Resolver):
+        def __init__(self, base_dir: Path):
+            super().__init__()
+            self.base_dir = base_dir.resolve()
+
+        def resolve(self, system_url, public_id, context):
+            requested_path = Path(system_url).resolve()
+
+            try:
+                requested_path.relative_to(self.base_dir)
+            except ValueError:
+                raise OSError(f"Blocked external entity: {requested_path} is outside {self.base_dir}")
+
+            return self.resolve_filename(str(requested_path), context)
 
 except ImportError:
     LXML_AVAILABLE = False
@@ -143,14 +160,6 @@ from .path import (  # noqa: F401
     StrPath,
 )
 from .rst_to_html import rst_to_html  # noqa: F401
-
-try:
-    shlex_join = shlex.join  # type: ignore[attr-defined, unused-ignore]
-except AttributeError:
-    # Python < 3.8
-    def shlex_join(split_command):
-        return " ".join(map(shlex.quote, split_command))
-
 
 if TYPE_CHECKING:
     from galaxy.util.resources import Traversable
@@ -186,18 +195,6 @@ defaultdict = collections.defaultdict
 UNKNOWN = "unknown"
 
 DOI_MAX_LENGTH = 200  # This is a reasonable limit. The DOI spec does not set a limit.
-
-
-def str_removeprefix(s: str, prefix: str):
-    """
-    str.removeprefix() equivalent for Python < 3.9
-    """
-    if sys.version_info >= (3, 9):
-        return s.removeprefix(prefix)
-    elif s.startswith(prefix):
-        return s[len(prefix) :]
-    else:
-        return s
 
 
 @overload
@@ -323,8 +320,11 @@ def iter_start_of_line(fh, chunk_size=None):
         if not data:
             break
         if not data.endswith("\n"):
-            # Discard the rest of the line
-            fh.readline()
+            # Discard the rest of the line without reading it all into memory
+            while True:
+                line_rest = fh.readline(CHUNK_SIZE)
+                if not line_rest or line_rest.endswith("\n"):
+                    break
         yield data
 
 
@@ -340,7 +340,7 @@ def file_reader(fp, chunk_size=CHUNK_SIZE):
 ItemType = TypeVar("ItemType")
 
 
-def chunk_iterable(it: Iterable[ItemType], size: int = 1000) -> Iterator[Tuple[ItemType, ...]]:
+def chunk_iterable(it: Iterable[ItemType], size: int = 1000) -> Iterator[tuple[ItemType, ...]]:
     """
     Break an iterable into chunks of ``size`` elements.
 
@@ -371,20 +371,19 @@ def parse_xml(
     fname: Union[StrPath, "Traversable"],
     strip_whitespace: bool = True,
     remove_comments: bool = True,
-    schemafname: Union[StrPath, None] = None,
+    schemafname: StrPath | None = None,
 ) -> ElementTree:
     """Returns a parsed xml tree"""
     parser = None
     schema = None
-    if remove_comments and LXML_AVAILABLE:
-        # If using stdlib etree comments are always removed,
-        # but lxml doesn't do this by default
-        parser = etree.XMLParser(remove_comments=remove_comments)
-
-    if LXML_AVAILABLE and schemafname:
-        with open(str(schemafname), "rb") as schema_file:
-            schema_root = etree.XML(schema_file.read())
-            schema = etree.XMLSchema(schema_root)
+    if LXML_AVAILABLE:
+        parser = etree.XMLParser(resolve_entities=True, remove_comments=remove_comments)
+        base_dir = Path(str(fname)).resolve().parent
+        parser.resolvers.add(LocalOnlyResolver(base_dir))
+        if schemafname:
+            with open(str(schemafname), "rb") as schema_file:
+                schema_root = etree.XML(schema_file.read())
+                schema = etree.XMLSchema(schema_root)
 
     source = Path(fname) if isinstance(fname, (str, os.PathLike)) else fname
     try:
@@ -430,7 +429,7 @@ def parse_xml_string_to_etree(xml_string: str, strip_whitespace: bool = True) ->
     return ElementTree(parse_xml_string(xml_string=xml_string, strip_whitespace=strip_whitespace))
 
 
-def xml_to_string(elem: Optional[Element], pretty: bool = False) -> str:
+def xml_to_string(elem: Element | None, pretty: bool = False) -> str:
     """
     Returns a string from an xml tree.
     """
@@ -618,22 +617,22 @@ def pretty_print_time_interval(time=False, precise=False, utc=False):
     credit: http://stackoverflow.com/questions/1551382/user-friendly-time-format-in-python
     """
     if utc:
-        now = datetime.utcnow()
+        current_time = now()
     else:
-        now = datetime.now()
+        current_time = datetime.now()
     if isinstance(time, (int, float)):
-        diff = now - datetime.fromtimestamp(time)
+        diff = current_time - datetime.fromtimestamp(time)
     elif isinstance(time, datetime):
-        diff = now - time
+        diff = current_time - time
     elif isinstance(time, str):
         try:
             time = datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f")
         except ValueError:
             # MySQL may not support microseconds precision
             time = datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")
-        diff = now - time
+        diff = current_time - time
     else:
-        diff = now - now
+        diff = current_time - current_time
     second_diff = diff.seconds
     day_diff = diff.days
 
@@ -829,8 +828,8 @@ def mask_password_from_url(url):
     """
     Masks out passwords from connection urls like the database connection in galaxy.ini
 
-    >>> mask_password_from_url( 'sqlite+postgresql://user:password@localhost/' )
-    'sqlite+postgresql://user:********@localhost/'
+    >>> mask_password_from_url( 'postgresql+psycopg://user:password@localhost/' )
+    'postgresql+psycopg://user:********@localhost/'
     >>> mask_password_from_url( 'amqp://user:amqp@localhost' )
     'amqp://user:********@localhost'
     >>> mask_password_from_url( 'amqp://localhost')
@@ -873,7 +872,7 @@ def ready_name_for_url(raw_name: str) -> str:
     return slug_base
 
 
-def which(file: str) -> Optional[str]:
+def which(file: str) -> str | None:
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
         if os.path.exists(path + "/" + file):
@@ -1105,24 +1104,24 @@ def string_as_bool_or_none(string):
 
 
 @overload
-def listify(item: Union[None, Literal[False]], do_strip: bool = False) -> List: ...
+def listify(item: None | Literal[False], do_strip: bool = False) -> list: ...
 
 
 @overload
-def listify(item: str, do_strip: bool = False) -> List[str]: ...
+def listify(item: str, do_strip: bool = False) -> list[str]: ...
 
 
 @overload
-def listify(item: Union[List[ItemType], Tuple[ItemType, ...]], do_strip: bool = False) -> List[ItemType]: ...
+def listify(item: list[ItemType] | tuple[ItemType, ...], do_strip: bool = False) -> list[ItemType]: ...
 
 
 # Unfortunately we cannot use ItemType .. -> List[ItemType] in the next overload
 # because then that would also match Union types.
 @overload
-def listify(item: Any, do_strip: bool = False) -> List: ...
+def listify(item: Any, do_strip: bool = False) -> list: ...
 
 
-def listify(item: Any, do_strip: bool = False) -> List:
+def listify(item: Any, do_strip: bool = False) -> list:
     """
     Make a single item a single item list.
 
@@ -1189,7 +1188,7 @@ def unicodify(
     error: str = "replace",
     strip_null: bool = False,
     log_exception: bool = True,
-) -> Optional[str]:
+) -> str | None:
     """
     Returns a Unicode string or None.
 
@@ -1351,6 +1350,30 @@ def compare_urls(url1, url2, compare_scheme=True, compare_hostname=True, compare
     return True
 
 
+CONTROL_CHARACTERS = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def is_safe_local_redirect(path: Any) -> bool:
+    """Is ``path`` a relative URL that cannot leave this server?
+
+    Post-login redirect targets arrive from the query string, so they are attacker
+    supplied. Anything a browser could resolve to a different origin -- an absolute
+    URL, a protocol-relative ``//host``, or the backslash spelling browsers normalize
+    to it -- has to be refused.
+    """
+    if not isinstance(path, str) or not path:
+        return False
+    # A browser drops tabs and newlines before resolving a URL, so "/<TAB>/host" would
+    # reach the network as the protocol-relative "//host". Refuse control characters
+    # outright rather than accepting a value whose meaning changes later; surrounding
+    # whitespace gets trimmed the same way.
+    if path != path.strip() or CONTROL_CHARACTERS.search(path):
+        return False
+    if not path.startswith("/"):
+        return False
+    return path[1:2] not in ("/", "\\")
+
+
 def read_build_sites(filename, check_builds=True):
     """read db names to ucsc mappings from file, this file should probably be merged with the one above"""
     build_sites = []
@@ -1493,7 +1516,7 @@ def docstring_trim(docstring):
     return "\n".join(trimmed)
 
 
-def metric_prefix(number: Union[int, float], base: int) -> Tuple[float, str]:
+def metric_prefix(number: int | float, base: int) -> tuple[float, str]:
     """
     >>> metric_prefix(100, 1000)
     (100.0, '')
@@ -1505,6 +1528,8 @@ def metric_prefix(number: Union[int, float], base: int) -> Tuple[float, str]:
     (1.001, 'K')
     >>> metric_prefix(1000000, 1000)
     (1.0, 'M')
+    >>> metric_prefix(10**26, 1000)
+    (100.0, 'Y')
     >>> metric_prefix(1000**10, 1000)
     (1.0, 'Q')
     >>> metric_prefix(1000**11, 1000)
@@ -1517,12 +1542,11 @@ def metric_prefix(number: Union[int, float], base: int) -> Tuple[float, str]:
     else:
         sign = 1
 
-    for prefix in prefixes:
-        if number < base:
-            return sign * float(number), prefix
-        number /= base
+    for i, prefix in enumerate(prefixes):
+        if number < base ** (i + 1):
+            return sign * number / (base**i), prefix
     else:
-        return sign * float(number) * base, prefix
+        return sign * number / (base**i), prefix
 
 
 def shorten_with_metric_prefix(amount: int) -> str:
@@ -1551,31 +1575,42 @@ def shorten_with_metric_prefix(amount: int) -> str:
         return str(amount)
 
 
-def nice_size(size: Union[float, int, str, Decimal]) -> str:
+def nice_size(size: float | int | str | Decimal, binary: bool = False) -> str:
     """
     Returns a readably formatted string with the size
 
     >>> nice_size(100)
     '100 bytes'
     >>> nice_size(10000)
-    '9.8 KB'
+    '10.0 KB'
     >>> nice_size(1000000)
-    '976.6 KB'
+    '1.0 MB'
     >>> nice_size(100000000)
-    '95.4 MB'
+    '100.0 MB'
+    >>> nice_size(1024, binary=True)
+    '1.0 KiB'
+    >>> nice_size(1048576, binary=True)
+    '1.0 MiB'
     """
     try:
         size = float(size)
     except ValueError:
         return "??? bytes"
-    size, prefix = metric_prefix(size, 1024)
-    if prefix == "":
-        return f"{int(size)} bytes"
+    if binary:
+        size, prefix = metric_prefix(size, 1024)
+        if prefix == "":
+            return f"{int(size)} bytes"
+        else:
+            return f"{size:.1f} {prefix}iB"
     else:
-        return f"{size:.1f} {prefix}B"
+        size, prefix = metric_prefix(size, 1000)
+        if prefix == "":
+            return f"{int(size)} bytes"
+        else:
+            return f"{size:.1f} {prefix}B"
 
 
-def size_to_bytes(size):
+def size_to_bytes(size, binary: bool = False):
     """
     Returns a number of bytes (as integer) if given a reasonably formatted string with the size
 
@@ -1586,37 +1621,65 @@ def size_to_bytes(size):
     >>> size_to_bytes('10 bytes')
     10
     >>> size_to_bytes('4k')
-    4096
+    4000
     >>> size_to_bytes('2.2 TB')
-    2418925581107
+    2200000000000
     >>> size_to_bytes('.01 TB')
-    10995116277
+    10000000000
     >>> size_to_bytes('1.b')
     1
     >>> size_to_bytes('1.2E2k')
-    122880
+    120000
+    >>> size_to_bytes('4k', binary=True)
+    4096
+    >>> size_to_bytes('1 MB', binary=True)
+    1048576
+    >>> size_to_bytes('4 KiB')
+    4096
+    >>> size_to_bytes('1 MiB')
+    1048576
+    >>> size_to_bytes('1 kibibytes')
+    1024
     """
+    base = 1024 if binary else 1000
     # The following number regexp is based on https://stackoverflow.com/questions/385558/extract-float-double-value/385597#385597
-    size_re = re.compile(r"(?P<number>(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$")
+    # The multiple group matches SI units (B, kB, MB, GB, TB, PB, EB and long forms kilobytes etc.)
+    # and IEC units (KiB, MiB, GiB, TiB, PiB, EiB and long forms kibibytes etc.).
+    size_re = re.compile(
+        r"(?P<number>(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?)\s*"
+        r"(?P<multiple>"
+        r"k(?:ibibytes?|ilobytes?|ib|b)?"
+        r"|m(?:ebibytes?|egabytes?|ib|b)?"
+        r"|g(?:ibibytes?|igabytes?|ib|b)?"
+        r"|t(?:ebibytes?|erabytes?|ib|b)?"
+        r"|p(?:ebibytes?|etabytes?|ib|b)?"
+        r"|e(?:xbibytes?|xabytes?|ib|b)?"
+        r"|bytes?"
+        r"|b"
+        r")?$"
+    )
     size_match = size_re.match(size.lower())
     if size_match is None:
         raise ValueError(f"Could not parse string '{size}'")
     number = float(size_match.group("number"))
     multiple = size_match.group("multiple")
-    if multiple == "" or multiple.startswith("b"):
+    # IEC units (e.g. KiB, MiB, kibibytes) always use base 1024
+    if multiple and "ib" in multiple:
+        base = 1024
+    if not multiple or multiple.startswith("b"):
         return int(number)
     elif multiple.startswith("k"):
-        return int(number * 1024)
+        return int(number * base)
     elif multiple.startswith("m"):
-        return int(number * 1024**2)
+        return int(number * base**2)
     elif multiple.startswith("g"):
-        return int(number * 1024**3)
+        return int(number * base**3)
     elif multiple.startswith("t"):
-        return int(number * 1024**4)
+        return int(number * base**4)
     elif multiple.startswith("p"):
-        return int(number * 1024**5)
+        return int(number * base**5)
     elif multiple.startswith("e"):
-        return int(number * 1024**6)
+        return int(number * base**6)
     else:
         raise ValueError(f"Unknown multiplier '{multiple}' in '{size}'")
 
@@ -1888,10 +1951,8 @@ def build_url(base_url, port=80, scheme="http", pathspec=None, params=None, dose
 def url_get(base_url, auth=None, pathspec=None, params=None, max_retries=5, backoff_factor=1):
     """Make contact with the uri provided and return any contents."""
     full_url = build_url(base_url, pathspec=pathspec, params=params)
-    s = requests.Session()
-    retries = Retry(total=max_retries, backoff_factor=backoff_factor, status_forcelist=[429])
-    s.mount(base_url, HTTPAdapter(max_retries=retries))
-    response = s.get(full_url, auth=auth)
+    with requests.RetrySession(total=max_retries, backoff_factor=backoff_factor, status_forcelist=[429]) as s:
+        response = s.get(full_url, auth=auth)
     response.raise_for_status()
     return response.text
 
@@ -1932,37 +1993,65 @@ def download_to_file(url, dest_file_path, timeout=30, chunk_size=2**20):
                 f.write(chunk)
 
 
-def stream_to_open_named_file(
-    stream, fd, filename, source_encoding=None, source_error="strict", target_encoding=None, target_error="strict"
+def _stream_to_writer(
+    stream, write, source_encoding=None, source_error="strict", target_encoding=None, target_error="strict"
 ):
-    """Writes a stream to the provided file descriptor, returns the file name. Closes file descriptor"""
-    # signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
     CHUNK_SIZE = 1048576
     try:
         codecs.lookup(target_encoding)
     except Exception:
         target_encoding = DEFAULT_ENCODING  # utf-8
     use_source_encoding = source_encoding is not None
+    while True:
+        chunk = stream.read(CHUNK_SIZE)
+        if not chunk:
+            break
+        if use_source_encoding:
+            # If a source encoding is given we use it to convert to the target encoding
+            try:
+                if not isinstance(chunk, str):
+                    chunk = chunk.decode(source_encoding, source_error)
+                write(chunk.encode(target_encoding, target_error))
+            except UnicodeDecodeError:
+                use_source_encoding = False
+                write(chunk)
+        else:
+            # Compressed files must be encoded after they are uncompressed in the upload utility,
+            # while binary files should not be encoded at all.
+            if isinstance(chunk, str):
+                chunk = chunk.encode(target_encoding, target_error)
+            write(chunk)
+
+
+def stream_to_path(
+    stream, filename, source_encoding=None, source_error="strict", target_encoding=None, target_error="strict"
+):
+    """Write a stream to ``filename`` and return the filename."""
+    with open(filename, "wb") as output:
+        _stream_to_writer(stream, output.write, source_encoding, source_error, target_encoding, target_error)
+    return filename
+
+
+def stream_to_open_named_file(
+    stream, fd, filename, source_encoding=None, source_error="strict", target_encoding=None, target_error="strict"
+):
+    """Deprecated: use :func:`stream_to_path` instead.
+
+    Write a stream to an open file descriptor, close it, and return the filename.
+    """
+    # Known external callers retained for compatibility:
+    # - bgruening/galaxytools: tools/mave_tools/mavedb/data_source.py
+    # - galaxyecology/tools-ecology: tools/aquainfra_importer/data_source.py
+    # - galaxyecology/tools-ecology: tools/nfdi4earth_os4a_importer/data_source.py
     try:
-        while True:
-            chunk = stream.read(CHUNK_SIZE)
-            if not chunk:
-                break
-            if use_source_encoding:
-                # If a source encoding is given we use it to convert to the target encoding
-                try:
-                    if not isinstance(chunk, str):
-                        chunk = chunk.decode(source_encoding, source_error)
-                    os.write(fd, chunk.encode(target_encoding, target_error))
-                except UnicodeDecodeError:
-                    use_source_encoding = False
-                    os.write(fd, chunk)
-            else:
-                # Compressed files must be encoded after they are uncompressed in the upload utility,
-                # while binary files should not be encoded at all.
-                if isinstance(chunk, str):
-                    chunk = chunk.encode(target_encoding, target_error)
-                os.write(fd, chunk)
+        _stream_to_writer(
+            stream,
+            lambda chunk: os.write(fd, chunk),
+            source_encoding,
+            source_error,
+            target_encoding,
+            target_error,
+        )
     finally:
         os.close(fd)
     return filename
@@ -2039,19 +2128,17 @@ def lowercase_alphanum_to_hex(lowercase_alphanum: str) -> str:
     return np.base_repr(int(lowercase_alphanum, 36), 16).lower()
 
 
-def to_content_disposition(target: str) -> str:
+def to_content_disposition(target: str, disposition: Literal["attachment", "inline"] = "attachment") -> str:
+    target = target.strip()
     filename, ext = os.path.splitext(target)
     character_limit = 255 - len(ext)
     sanitized_filename = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in filename)[0:character_limit] + ext
     utf8_encoded_filename = quote(re.sub(r'[\/\\\?%*:|"<>]', "_", filename), safe="")[0:character_limit] + ext
-    return f"attachment; filename=\"{sanitized_filename}\"; filename*=UTF-8''{utf8_encoded_filename}"
+    return f"{disposition}; filename=\"{sanitized_filename}\"; filename*=UTF-8''{utf8_encoded_filename}"
 
 
 def validate_doi(doi: str) -> bool:
     if len(doi) > DOI_MAX_LENGTH:
         return False
-    prefix = "https://doi.org/|doi.org/|doi:"
-    doi_prefix = r"10\.\d+"
-    doi_suffix = r"\S+"
-    doi_re = re.compile(f"^{prefix}{doi_prefix}/{doi_suffix}$")
-    return bool(doi_re.match(doi))
+    doi_re = re.compile(r"10\.\d+/\S+$")
+    return bool(doi_re.search(doi))

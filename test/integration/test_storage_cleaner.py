@@ -1,6 +1,5 @@
 from typing import (
     NamedTuple,
-    Optional,
 )
 from uuid import uuid4
 
@@ -125,7 +124,7 @@ class TestStorageCleaner(integration_util.IntegrationTestCase):
         resource: str,
         test_items: list[StoredItemDataForTests],
         item_ids: list[str],
-        delete_resource_uri: Optional[str] = None,
+        delete_resource_uri: str | None = None,
     ):
         """Tests the storage cleaner API for a particular resource (histories or datasets)"""
         delete_resource_uri = delete_resource_uri if delete_resource_uri else resource

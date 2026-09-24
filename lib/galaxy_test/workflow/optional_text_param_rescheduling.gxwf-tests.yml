@@ -1,9 +1,7 @@
 - doc: |
     Test that scheduling succeeds even if step needs rescheduling
   job:
-    optional_text:
-      type: raw
-      value: null
+    optional_text: null
   outputs:
     out:
       class: File

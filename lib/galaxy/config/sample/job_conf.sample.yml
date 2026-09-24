@@ -13,10 +13,10 @@ runners:
     #
     # For setting up a DRMAA runner it may be advisable to test with the state set to "error" and use "ok"
     # only if all (including successfull jobs) fail with one of the two exceptions.
-    # 
+    #
     # In case these exceptions may occur transiently a number of retries can be configured.
-    # 
-    # Defaults are shown below. 
+    #
+    # Defaults are shown below.
     # Possible values for the states are "ok" and "error".
     invalidjobexception_state: ok
     invalidjobexception_retries: 0
@@ -30,6 +30,12 @@ runners:
     load: galaxy.jobs.runners.cli:ShellJobRunner
   condor:
     load: galaxy.jobs.runners.condor:CondorJobRunner
+  htcondor:
+    load: galaxy.jobs.runners.htcondor:HTCondorJobRunner
+    # Optional connection overrides for a remote schedd/collector.
+    #htcondor_collector: "collector.example.org:9618"
+    #htcondor_schedd: "schedd@collector.example.org"
+    #htcondor_config: /etc/condor/condor_config
   slurm:
     load: galaxy.jobs.runners.slurm:SlurmJobRunner
   dynamic:
@@ -140,21 +146,12 @@ runners:
     # terminated and the Job status will become `type: Failed` with `reason: DeadlineExceeded`.
     #k8s_walltime_limit: 172800
 
-    # Identifies the Galaxy instance where this runner belongs. Setting this variable means that the runner
-    # will trust k8s Jobs with the structure galaxy-my-instance-<number> to be its own. This variable needs
-    # to be DNS friendly, and up to 20 characters, as it will go in the k8s Jobs and Pods names. An instance
-    # in this context is understood as a running Galaxy setup that is bound to a particular database stored
-    # state. This is mostly relevant for long term running instances. When resetting a long term running
-    # instance to zero (database and files deleted), one would want to change this instance id to avoid
-    # clashing with previous jobs in the same k8s cluster where the older setup run.
+    # Optionally identifies the Galaxy instance in generated k8s Job and Pod names. The value is included in
+    # the prefix passed to Kubernetes through metadata.generateName; Kubernetes appends a unique suffix to
+    # every submitted Job. This variable needs to be DNS friendly and up to 20 characters. It is useful when
+    # multiple Galaxy instances submit jobs to the same Kubernetes cluster and their resources need to be
+    # distinguished.
     #k8s_galaxy_instance_id: my-instance
-
-    # If the above `k8s_galaxy_instance_id` is not set, when finding an existing k8s job with the same
-    # id as a new job being generated, the runner will attempt to delete that existing job first, to proceed
-    # then to create the new job (the old job is not trusted to have been instructed to do the same as the
-    # new one). This variables controls the timeout for waiting for that job deletion. If the timeout is
-    # exceeded and the existing job is not deleted, the new job won't be added to the Galaxy queue.
-    #k8s_timeout_seconds_job_deletion: 30
 
     # If mounting an NFS / GlusterFS or other shared file system which is administered to ONLY provide access
     # to a DEFINED user/group, these variables set the group id that Pods need to use to be able to read and
@@ -184,6 +181,13 @@ runners:
     # a requirement of the other.
     #k8s_supplemental_group_id: 0
     #k8s_fs_group_id: 0
+
+    # When k8s_fs_group_id is set, Kubernetes recursively changes the ownership and permissions of every
+    # file on each mounted volume when the pod starts, which can delay job start-up considerably on large
+    # volumes. Set the policy to OnRootMismatch to skip the recursive change when the root of the volume
+    # already has the expected group. Valid values are OnRootMismatch and Always (the Kubernetes default).
+    # This can also be overridden per destination.
+    #k8s_fs_group_change_policy: OnRootMismatch
 
     # Kubernetes resource Requests and Limits
     # Parameters above (requests_* and limits_*) set default minimal (requests) and
@@ -356,7 +360,7 @@ runners:
     # RabbitMQ URL from Galaxy server (include credentials).
     amqp_url: <amqp_url>
     # If Pulsar needs to talk to Galaxy at a particular host and port, set that here.
-    #galaxy_url: <galaxy_url>  
+    #galaxy_url: <galaxy_url>
 
   # Using Pulsar and co-execution to run jobs against Google Cloud Platform's Batch service.
   # - https://cloud.google.com/batch/docs/get-started
@@ -393,13 +397,12 @@ handling:
   # db-transaction-isolation) and the value is an integer > 0. Default is to grab as many jobs ready to run as possible.
   #max_grab: 8
 
-  # Handlers query for and dispatch jobs ready to run in a loop. If the number of jobs in the `new` state grows very
-  # large but they cannot be dispatched due to user concurrency limits, checking all of these jobs on every iteration
-  # can drastically slow down job throughput as each pending job is checked and then deferred due to limits. This option
-  # limits the number of jobs per user are returned by the query on each iteration. By default it is set to 100. Setting
-  # this lower can improve throughput for other users when one user submits thousands of independent jobs.
+  # Limits the number of pending jobs each handler checks per user on each pass. Defaults to 100. Lower values can
+  # improve responsiveness for other users when one user has a large backlog, but may increase the time before deferred
+  # jobs are checked again. Anonymous sessions each have their own limit. This setting does not apply to SQLite or
+  # in-memory job queues.
   #
-  # Be aware that anonymous users are treated as a single user by this algorithm.
+  # See https://docs.galaxyproject.org/en/latest/admin/jobs.html#ready-window-size for details.
   #ready_window_size: 100
 
   # An ID or tag of the handler(s) that should handle any jobs not assigned to a specific handler (which is probably
@@ -551,6 +554,15 @@ execution:
       # that docker image.
       #docker_container_id_override: busybox:1.36.1-glibc
 
+      # Run metadata collection in its own Galaxy runtime image. Use an image
+      # matching the server release, preferably pinned by digest. See the admin
+      # guide's "Containerized metadata collection" page for building and
+      # publishing images, optional datatype dependencies and Pulsar staging.
+      #metadata_config:
+      #  containerize: true
+      #  engine: docker
+      #  image: quay.io/galaxyproject/galaxy-job-execution:26.1.1
+
       # Likewise, if deployer wants to use docker for isolation and
       # does trust tool's specified container - but also wants tool's not
       # configured to run in a container the following option can provide
@@ -589,8 +601,8 @@ execution:
       # Container resolvers can be defined per execution environment using
       # either a yaml file
       #container_resolvers_config_file: null
-      
-      # Alternatively the yaml can be defined inline using 
+
+      # Alternatively the yaml can be defined inline using
       #container_resolvers:
 
     singularity_local:
@@ -599,14 +611,7 @@ execution:
       singularity_enabled: true
 
       # See the above documentation for docker_volumes, singularity_volumes works
-      # almost the same way. The only difference is that $default will expand with
-      # rw directories that in Docker would expand as ro if any of subdirectories are rw.
-
-      # As an example consider that Docker mounts the parent of the working directory
-      # (this is known as the job directory) as ro and the working directory itself as rw.
-      # This doesn't work in Singularity because if any parent directory is mounted as ro
-      # none of its children will be rw. So the job directory will be mounted rw for
-      # Singularity.
+      # the same way.
       #singularity_volumes: $defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro
 
       # You can configure singularity to run using sudo - this probably should not
@@ -736,6 +741,32 @@ execution:
         # files to source and exec statements will be handled on remote
         # clusters. These don't need to be available on the Galaxy server
         # itself.
+
+    # Under most runners, Galaxy will set the `$GALAXY_SLOTS` environment variable in the
+    # tool execution environment to the number of cores allocated to the job by the
+    # scheduler. Tools can use this to control how many threads or processes they start.
+    #
+    # Under some runners, most notably Slurm and SGE, Galaxy will set environment
+    # variables related to the amount of memory allocated to the job by the scheduler, if
+    # possible. These are `$GALAXY_MEMORY_MB`, `$GALAXY_MEMORY_GB`,
+    # `$GALAXY_MEMORY_MB_PER_SLOT`, and `$GALAXY_MEMORY_GB_PER_SLOT`. Derived GB
+    # variables are rounded down and are left unset when the corresponding allocation
+    # is less than 1 GB. You can override these on a per-environment basis as shown below.
+    #
+    # Additionally, you can specify two variables that will indicate a tool should use
+    # less memory than allocated. Typically some overhead is required or else the Linux
+    # OOM Killer will simply kill the job's processes if they exceed the amount of memory
+    # allocated by the scheduler.
+    job_vars_example:
+      runner: drmaa
+      env:
+        # Sets `$GALAXY_MEMORY_MB` to 2GB less than what has been allocated
+        - name: GALAXY_MEMORY_MB_OVERHEAD
+          value: "2048"
+        # Floor value for `$GALAXY_MEMORY_MB` if (allocated - overhead < floor).
+        # This defaults to 256 when an overhead is configured.
+        - name: GALAXY_MEMORY_MB_FLOOR
+          value: "1024"
 
     # Following three environments demonstrate setting up per-job temp directory handling.
     # In these cases TEMP, TMP, and TMPDIR will be set for each job dispatched to these
@@ -1044,6 +1075,41 @@ execution:
       # Galaxy's configured container resolution strategy and a default container can be
       # specified here with docker_default_container_id for instance.
       #universe: docker
+
+    htcondor:
+      runner: htcondor
+
+      # Identical to the condor runner configuration, but uses the htcondor2
+      # Python bindings. Requires the htcondor2 module to be installed in
+      # Galaxy's virtualenv.
+      # Optional per-destination HTCondor connection overrides (not passed to submit):
+      #htcondor_collector: "collector.example.org:9618"
+      #htcondor_schedd: "schedd@collector.example.org"
+      #htcondor_config: /etc/condor/condor_config
+
+      # Resource requests forwarded verbatim to the condor submit description:
+      #request_cpus: 4
+      #request_memory: 8192M
+      #request_gpus: 1
+
+      # Wall-clock time limit. Accepts seconds, HH:MM:SS, or D-HH:MM:SS.
+      # Injects periodic_hold = (JobDurationSeconds >= N) into the submit
+      # description. Galaxy reports the resulting hold as walltime_reached,
+      # enabling automatic resubmission to a longer-running destination.
+      #request_walltime: "24:00:00"
+
+      # Advanced: set periodic_hold directly as a raw HTCondor ClassAd
+      # expression for multi-condition policies. HTCondor evaluates it every
+      # PERIODIC_EXPR_INTERVAL (default 60 s); when true the job is held with
+      # HoldReasonCode=16 (walltime_reached). Takes precedence over
+      # request_walltime — the runner will not inject its own periodic_hold
+      # when this key is present.
+      # Example: hold if wall-clock exceeds 2 h OR resident memory > 16 GB:
+      #periodic_hold: "(JobDurationSeconds >= 7200 || ResidentSetSize > 16777216)"
+
+      # Maximum distinct JOB_HELD events before the job is permanently failed
+      # (default 3, set to 0 to disable hold escalation entirely).
+      #max_held_count: 3
 
     # Job Re-submission
     # Jobs can be re-submitted for various reasons (to the same destination or others,

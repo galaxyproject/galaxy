@@ -4,7 +4,10 @@ API operations on Role objects.
 
 import logging
 
-from fastapi import Body
+from fastapi import (
+    Body,
+    Query,
+)
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.schema import (
@@ -22,6 +25,24 @@ from galaxy.webapps.galaxy.services.roles import RolesService
 
 log = logging.getLogger(__name__)
 
+SearchRolesQueryParam: str | None = Query(
+    default=None,
+    title="Search filter",
+    description="Search by role name or user email (for private roles).",
+)
+LimitRolesQueryParam: int | None = Query(
+    default=None,
+    ge=1,
+    title="Limit",
+    description="The maximum number of roles to return.",
+)
+OffsetRolesQueryParam: int | None = Query(
+    default=0,
+    ge=0,
+    title="Offset",
+    description="Number of roles to skip.",
+)
+
 
 # Empty paths (e.g. /api/roles) only work if a prefix is defined right here.
 # https://github.com/tiangolo/fastapi/pull/415/files
@@ -33,8 +54,14 @@ class FastAPIRoles:
     service: RolesService = depends(RolesService)
 
     @router.get("/api/roles")
-    def index(self, trans: ProvidesUserContext = DependsOnTrans) -> RoleListResponse:
-        return self.service.get_index(trans=trans)
+    def index(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        search: str | None = SearchRolesQueryParam,
+        limit: int | None = LimitRolesQueryParam,
+        offset: int | None = OffsetRolesQueryParam,
+    ) -> RoleListResponse:
+        return self.service.get_index(trans=trans, search=search, limit=limit, offset=offset)
 
     @router.get("/api/roles/{id}")
     def show(self, id: RoleIDPathParam, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:

@@ -74,3 +74,35 @@
     input:
       forward: input_1.fastq.bz2
       reverse: input_2.fastq.bz2
+
+- doc: Simple _F/_R split.
+  inputs:
+  - input_F.fastq
+  - input_R.fastq
+  paired:
+    input:
+      forward: input_F.fastq
+      reverse: input_R.fastq
+
+- doc: Compressed _F/_R split (.gz).
+  inputs:
+  - ERR042228_F.fq.gz
+  - ERR042228_R.fq.gz
+  paired:
+    ERR042228:
+      forward: ERR042228_F.fq.gz
+      reverse: ERR042228_R.fq.gz
+
+- doc: Multiple _F/_R pairs with common prefixes.
+  inputs:
+  - ERR042228_F.fq.gz
+  - ERR042228_R.fq.gz
+  - ERR636028_F.fq.gz
+  - ERR636028_R.fq.gz
+  paired:
+    ERR042228:
+      forward: ERR042228_F.fq.gz
+      reverse: ERR042228_R.fq.gz
+    ERR636028:
+      forward: ERR636028_F.fq.gz
+      reverse: ERR636028_R.fq.gz

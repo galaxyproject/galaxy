@@ -6,9 +6,6 @@ import logging
 import os.path
 import re
 from json import loads
-from typing import (
-    Optional,
-)
 
 from sqlalchemy import select
 
@@ -23,7 +20,7 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 
-def read_dbnames(filename: Optional[str]) -> list[tuple[str, str]]:
+def read_dbnames(filename: str | None) -> list[tuple[str, str]]:
     """Read build names from file"""
     db_names: list[tuple[str, str]] = []
     try:

@@ -587,6 +587,23 @@ export interface paths {
         patch?: never
         trace?: never
     }
+    "/api/tools/{tool_id}/versions/{tool_version}/interop": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Return Galaxy's meta model description of the tool's metadata, inputs, and outputs. */
+        get: operations["tools__interop"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/api/tools/{tool_id}/versions/{tool_version}/parameter_landing_request_schema": {
         parameters: {
             query?: never
@@ -858,6 +875,194 @@ export interface paths {
         patch?: never
         trace?: never
     }
+    "/repository/get_changeset_revision_and_ctx_rev": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Get Changeset Revision And Ctx Rev */
+        get: operations["legacy_install__get_changeset_revision_and_ctx_rev"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/get_ctx_rev": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Get Ctx Rev */
+        get: operations["legacy_install__get_ctx_rev"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/get_repository_dependencies": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Get Repository Dependencies */
+        get: operations["legacy_install__get_repository_dependencies"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/get_repository_type": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Get Repository Type */
+        get: operations["legacy_install__get_repository_type"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/get_required_repo_info_dict": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Get Required Repo Info Dict Via Get */
+        get: operations["legacy_install__get_required_repo_info_dict_get"]
+        put?: never
+        /** Get Required Repo Info Dict */
+        post: operations["legacy_install__get_required_repo_info_dict"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/get_tool_dependencies": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Get Tool Dependencies */
+        get: operations["legacy_install__get_tool_dependencies"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/next_installable_changeset_revision": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Next Installable Changeset Revision */
+        get: operations["legacy_install__next_installable_changeset_revision"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/previous_changeset_revisions": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Previous Changeset Revisions */
+        get: operations["legacy_install__previous_changeset_revisions"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/static/images/{repository_id}/{image_file}": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Display Image In Repository */
+        get: operations["legacy_install__display_image"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/status_for_installed_repository": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Status For Installed Repository */
+        get: operations["legacy_install__status_for_installed_repository"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/updated_changeset_revisions": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Updated Changeset Revisions */
+        get: operations["legacy_install__updated_changeset_revisions"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
 }
 export type webhooks = Record<string, never>
 export interface components {
@@ -870,52 +1075,57 @@ export interface components {
         /** BaseUrlParameterModel */
         BaseUrlParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_baseurl
              * @constant
              */
             parameter_type: "gx_baseurl"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "baseurl"
+        }
+        /** Body_legacy_install__get_required_repo_info_dict */
+        Body_legacy_install__get_required_repo_info_dict: {
+            /** Encoded Str */
+            encoded_str?: string | null
         }
         /** Body_repositories__create_revision */
         Body_repositories__create_revision: {
@@ -927,58 +1137,58 @@ export interface components {
         /** BooleanParameterModel */
         BooleanParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
-            /** falsevalue */
+            /** Falsevalue */
             falsevalue?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_boolean
              * @constant
              */
             parameter_type: "gx_boolean"
-            /** truevalue */
+            /** Truevalue */
             truevalue?: string | null
             /**
-             * type
+             * Type
              * @constant
              */
             type: "boolean"
             /**
-             * value
+             * Value
              * @default false
              */
             value: boolean | null
@@ -1052,117 +1262,117 @@ export interface components {
         }
         /** Citation */
         Citation: {
-            /** content */
+            /** Content */
             content: string
-            /** type */
+            /** Type */
             type: string
         }
         /** ColorParameterModel */
         ColorParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_color
              * @constant
              */
             parameter_type: "gx_color"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "color"
-            /** value */
+            /** Value */
             value?: string | null
         }
         /** ConditionalParameterModel */
         ConditionalParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_conditional
              * @constant
              */
             parameter_type: "gx_conditional"
-            /** test_parameter */
+            /** Test Parameter */
             test_parameter:
                 | components["schemas"]["BooleanParameterModel"]
                 | components["schemas"]["SelectParameterModel"]
             /**
-             * type
+             * Type
              * @constant
              */
             type: "conditional"
-            /** whens */
+            /** Whens */
             whens: components["schemas"]["ConditionalWhen"][]
         }
         /** ConditionalWhen */
@@ -1201,6 +1411,16 @@ export interface components {
                 | components["schemas"]["RepeatParameterModel"]
                 | components["schemas"]["SectionParameterModel"]
             )[]
+        }
+        /** Container */
+        Container: {
+            /** Container Id */
+            container_id: string
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "docker" | "singularity"
         }
         /** CreateCategoryRequest */
         CreateCategoryRequest: {
@@ -1242,12 +1462,12 @@ export interface components {
         /** CwlBooleanParameterModel */
         CwlBooleanParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_boolean
              * @constant
              */
@@ -1256,43 +1476,43 @@ export interface components {
         /** CwlDirectoryParameterModel */
         CwlDirectoryParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_directory
              * @constant
              */
@@ -1301,43 +1521,43 @@ export interface components {
         /** CwlFileParameterModel */
         CwlFileParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_file
              * @constant
              */
@@ -1346,12 +1566,12 @@ export interface components {
         /** CwlFloatParameterModel */
         CwlFloatParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_float
              * @constant
              */
@@ -1360,12 +1580,12 @@ export interface components {
         /** CwlIntegerParameterModel */
         CwlIntegerParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_integer
              * @constant
              */
@@ -1374,12 +1594,12 @@ export interface components {
         /** CwlNullParameterModel */
         CwlNullParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_null
              * @constant
              */
@@ -1388,12 +1608,12 @@ export interface components {
         /** CwlStringParameterModel */
         CwlStringParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_string
              * @constant
              */
@@ -1402,17 +1622,17 @@ export interface components {
         /** CwlUnionParameterModel */
         CwlUnionParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_union
              * @constant
              */
             parameter_type: "cwl_union"
-            /** parameters */
+            /** Parameters */
             parameters: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -1427,62 +1647,62 @@ export interface components {
         /** DataCollectionParameterModel */
         DataCollectionParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
-            /** collection_type */
+            /** Collection Type */
             collection_type?: string | null
             /**
-             * extensions
+             * Extensions
              * @default [
              *       "data"
              *     ]
              */
             extensions: string[]
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_data_collection
              * @constant
              */
             parameter_type: "gx_data_collection"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "data_collection"
-            /** value */
+            /** Value */
             value: {
                 [key: string]: unknown
             } | null
@@ -1490,66 +1710,66 @@ export interface components {
         /** DataColumnParameterModel */
         DataColumnParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** multiple */
+            /** Multiple */
             multiple: boolean
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_data_column
              * @constant
              */
             parameter_type: "gx_data_column"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "data_column"
-            /** value */
+            /** Value */
             value?: number | number[] | null
         }
         /** DataParameterModel */
         DataParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * extensions
+             * Extensions
              * @description Limit inputs to datasets with these extensions. Use 'data' to allow all input datasets.
              * @default [
              *       "data"
@@ -1560,57 +1780,59 @@ export interface components {
              */
             extensions: string[]
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** max */
+            /** Max */
             max?: number | null
-            /** min */
+            /** Min */
             min?: number | null
             /**
-             * multiple
+             * Multiple
              * @description Allow multiple values to be selected.
              * @default false
              */
             multiple: boolean
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_data
              * @constant
              */
             parameter_type: "gx_data"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "data"
+            /** Url Default */
+            url_default?: string | null
         }
         /**
          * DescriptorType
@@ -1658,54 +1880,54 @@ export interface components {
         /** DirectoryUriParameterModel */
         DirectoryUriParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_directory_uri
              * @constant
              */
             parameter_type: "gx_directory_uri"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "directory"
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: (
@@ -1717,90 +1939,102 @@ export interface components {
         }
         /** DrillDownOptionsDict */
         DrillDownOptionsDict: {
-            /** name */
+            /** Name */
             name: string | null
-            /** options */
+            /** Options */
             options: components["schemas"]["DrillDownOptionsDict"][]
-            /** selected */
+            /** Selected */
             selected: boolean
-            /** value */
+            /** Value */
             value: string
         }
         /** DrillDownParameterModel */
         DrillDownParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * hierarchy
+             * Hierarchy
              * @enum {string}
              */
             hierarchy: "recurse" | "exact"
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** multiple */
+            /** Multiple */
             multiple: boolean
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
-            /** options */
+            /** Options */
             options?: components["schemas"]["DrillDownOptionsDict"][] | null
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_drill_down
              * @constant
              */
             parameter_type: "gx_drill_down"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "drill_down"
         }
-        /** EmptyFieldParameterValidatorModel */
+        /**
+         * EmptyFieldParameterValidatorModel
+         * @description Require a value that is neither an empty string nor null.
+         * @example {
+         *       "type": "empty_field"
+         *     }
+         */
         EmptyFieldParameterValidatorModel: {
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
             /**
              * Negate
+             * @description Require the value to be empty or null instead.
              * @default false
              */
             negate: boolean
             /**
              * Type
+             * @description Fails validation when the submitted value is an empty string or null.
              * @default empty_field
              * @constant
              */
@@ -1817,10 +2051,14 @@ export interface components {
             expression: string
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
             /**
              * Negate
@@ -1841,150 +2079,182 @@ export interface components {
         }
         /** FilePatternDatasetCollectionDescription */
         FilePatternDatasetCollectionDescription: {
-            /** assign_primary_output */
-            assign_primary_output: boolean
-            /** directory */
-            directory: string | null
             /**
-             * discover_via
+             * Assign Primary Output
+             * @description Whether the first matching file replaces the primary dataset output.
+             * @default false
+             */
+            assign_primary_output: boolean
+            /**
+             * Directory
+             * @description Directory to search, relative to the job working directory.
+             */
+            directory?: string | null
+            /**
+             * Discover Via
+             * @description Discover datasets by matching files produced by the command.
+             * @default pattern
              * @constant
              */
             discover_via: "pattern"
-            /** format */
-            format: string | null
-            /** match_relative_path */
+            /**
+             * Format
+             * @description Galaxy datatype extension assigned to each discovered dataset.
+             */
+            format?: string | null
+            /**
+             * Match Relative Path
+             * @description Whether `pattern` matches each file's relative path instead of only its filename.
+             * @default false
+             */
             match_relative_path: boolean
-            /** pattern */
+            /**
+             * Pattern
+             * @description Regular expression matched against produced filenames. Named groups such as `name`, `designation`, `ext`, and `dbkey` set discovered dataset metadata.
+             */
             pattern: string
-            /** recurse */
+            /**
+             * Recurse
+             * @description Whether to search recursively below `directory`.
+             * @default false
+             */
             recurse: boolean
             /**
-             * sort_comp
+             * Sort Comp
+             * @description Whether the sort key is compared as text or as a number.
+             * @default lexical
              * @enum {string}
              */
             sort_comp: "lexical" | "numeric"
             /**
-             * sort_key
+             * Sort Key
+             * @description Discovered metadata used to order matching files.
+             * @default filename
              * @enum {string}
              */
             sort_key: "filename" | "name" | "designation" | "dbkey"
             /**
-             * sort_reverse
+             * Sort Reverse
+             * @description Whether to reverse the discovered dataset order.
              * @default false
              */
             sort_reverse: boolean
-            /** visible */
+            /**
+             * Visible
+             * @description Whether discovered datasets are visible in the history.
+             * @default false
+             */
             visible: boolean
         }
         /** FloatParameterModel */
         FloatParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** max */
+            /** Max */
             max?: number | null
-            /** min */
+            /** Min */
             min?: number | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_float
              * @constant
              */
             parameter_type: "gx_float"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "float"
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: components["schemas"]["InRangeParameterValidatorModel"][]
-            /** value */
+            /** Value */
             value?: number | null
         }
         /** GenomeBuildParameterModel */
         GenomeBuildParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** multiple */
+            /** Multiple */
             multiple: boolean
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_genomebuild
              * @constant
              */
             parameter_type: "gx_genomebuild"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "genomebuild"
@@ -1992,61 +2262,61 @@ export interface components {
         /** GroupTagParameterModel */
         GroupTagParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** multiple */
+            /** Multiple */
             multiple: boolean
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_group_tag
              * @constant
              */
             parameter_type: "gx_group_tag"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "group_tag"
         }
         /** HelpContent */
         HelpContent: {
-            /** content */
+            /** Content */
             content: string
             /**
-             * format
+             * Format
              * @enum {string}
              */
             format: "restructuredtext" | "plain_text" | "markdown"
@@ -2054,54 +2324,54 @@ export interface components {
         /** HiddenParameterModel */
         HiddenParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_hidden
              * @constant
              */
             parameter_type: "gx_hidden"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "hidden"
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: (
@@ -2110,7 +2380,7 @@ export interface components {
                 | components["schemas"]["ExpressionParameterValidatorModel"]
                 | components["schemas"]["EmptyFieldParameterValidatorModel"]
             )[]
-            /** value */
+            /** Value */
             value: string | null
         }
         /** ImageData */
@@ -2154,36 +2424,58 @@ export interface components {
          * @enum {string}
          */
         ImageType: "Docker" | "Singularity" | "Conda"
-        /** InRangeParameterValidatorModel */
+        /**
+         * InRangeParameterValidatorModel
+         * @description Require a numeric value to fall within optional lower and upper bounds.
+         * @example {
+         *       "max": 1,
+         *       "min": 0,
+         *       "type": "in_range"
+         *     }
+         */
         InRangeParameterValidatorModel: {
             /**
              * Exclude Max
+             * @description Whether a value equal to `max` is rejected.
              * @default false
              */
             exclude_max: boolean
             /**
              * Exclude Min
+             * @description Whether a value equal to `min` is rejected.
              * @default false
              */
             exclude_min: boolean
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
-            /** Max */
+            /**
+             * Max
+             * @description Rejects larger values; omit to leave the range without an upper bound.
+             */
             max?: number | null
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
-            /** Min */
+            /**
+             * Min
+             * @description Rejects smaller values; omit to leave the range without a lower bound.
+             */
             min?: number | null
             /**
              * Negate
+             * @description Reject values inside the configured range instead of values outside it.
              * @default false
              */
             negate: boolean
             /**
              * Type
+             * @description Enforces the numeric boundaries configured by `min` and `max`.
              * @default in_range
              * @constant
              */
@@ -2197,61 +2489,61 @@ export interface components {
         /** IntegerParameterModel */
         IntegerParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** max */
+            /** Max */
             max?: number | null
-            /** min */
+            /** Min */
             min?: number | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_integer
              * @constant
              */
             parameter_type: "gx_integer"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "integer"
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: components["schemas"]["InRangeParameterValidatorModel"][]
-            /** value */
+            /** Value */
             value?: number | null
         }
         /** InvalidTool */
@@ -2260,6 +2552,16 @@ export interface components {
             error_message: string
             /** Tool Config */
             tool_config: string
+        }
+        /** JavascriptRequirement */
+        JavascriptRequirement: {
+            /** Expression Lib */
+            expression_lib: string[] | null
+            /**
+             * Type
+             * @constant
+             */
+            type: "javascript"
         }
         /** LabelValue */
         LabelValue: {
@@ -2270,26 +2572,46 @@ export interface components {
             /** Value */
             value: string
         }
-        /** LengthParameterValidatorModel */
+        /**
+         * LengthParameterValidatorModel
+         * @description Require the number of characters in a text value to fall within optional bounds.
+         * @example {
+         *       "max": 20,
+         *       "min": 1,
+         *       "type": "length"
+         *     }
+         */
         LengthParameterValidatorModel: {
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
-            /** Max */
+            /**
+             * Max
+             * @description Rejects text with more characters; omit to leave the length without an upper bound.
+             */
             max?: number | null
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
-            /** Min */
+            /**
+             * Min
+             * @description Rejects text with fewer characters; omit to leave the length without a lower bound.
+             */
             min?: number | null
             /**
              * Negate
+             * @description Reject values whose length is inside the configured range instead of outside it.
              * @default false
              */
             negate: boolean
             /**
              * Type
+             * @description Enforces character-count boundaries on a submitted text value.
              * @default length
              * @constant
              */
@@ -2302,22 +2624,34 @@ export interface components {
             /** Err Msg */
             err_msg: string
         }
-        /** NoOptionsParameterValidatorModel */
+        /**
+         * NoOptionsParameterValidatorModel
+         * @description Require a select parameter to have at least one available option.
+         * @example {
+         *       "type": "no_options"
+         *     }
+         */
         NoOptionsParameterValidatorModel: {
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
             /**
              * Negate
+             * @description Require the select parameter to have no available options instead.
              * @default false
              */
             negate: boolean
             /**
              * Type
+             * @description Fails validation when a select input has no choices available.
              * @default no_options
              * @constant
              */
@@ -2339,6 +2673,18 @@ export interface components {
              */
             url: string
         }
+        /** PackageRequirement */
+        PackageRequirement: {
+            /** Name */
+            name: string
+            /**
+             * Type
+             * @constant
+             */
+            type: "package"
+            /** Version */
+            version?: string | null
+        }
         /** PaginatedRepositoryIndexResults */
         PaginatedRepositoryIndexResults: {
             /** Hits */
@@ -2354,29 +2700,41 @@ export interface components {
         }
         /**
          * RegexParameterValidatorModel
-         * @description Check if a regular expression **matches** the value, i.e. appears
-         *     at the beginning of the value. To enforce a match of the complete value use
-         *     ``$`` at the end of the expression. The expression is given is the content
-         *     of the validator tag. Note that for ``selects`` each option is checked
-         *     separately.
+         * @description Require a regular expression to match from the start of the value.
+         *
+         *     End the expression with ``$`` to require a full-value match. Each option of
+         *     a select parameter is checked separately.
+         * @example {
+         *       "expression": "^[ACGT]+$",
+         *       "type": "regex"
+         *     }
          */
         RegexParameterValidatorModel: {
-            /** Expression */
+            /**
+             * Expression
+             * @description Regular expression matched from the start of the value. Add `$` at the end to require a complete-value match.
+             */
             expression: string
             /**
              * Implicit
+             * @description Set internally when Galaxy added the validator automatically; tool authors normally leave this false.
              * @default false
              */
             implicit: boolean
-            /** Message */
+            /**
+             * Message
+             * @description Error message shown when validation fails; `%s` is replaced with the rejected value.
+             */
             message?: string | null
             /**
              * Negate
+             * @description Reject matching values instead of values that do not match.
              * @default false
              */
             negate: boolean
             /**
              * Type
+             * @description Applies the regular expression in `expression` to each submitted text value.
              * @default regex
              * @constant
              */
@@ -2385,52 +2743,52 @@ export interface components {
         /** RepeatParameterModel */
         RepeatParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** max */
+            /** Max */
             max?: number | null
-            /** min */
+            /** Min */
             min?: number | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_repeat
              * @constant
              */
             parameter_type: "gx_repeat"
-            /** parameters */
+            /** Parameters */
             parameters: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -2461,7 +2819,7 @@ export interface components {
                 | components["schemas"]["SectionParameterModel"]
             )[]
             /**
-             * type
+             * Type
              * @constant
              */
             type: "repeat"
@@ -2514,6 +2872,8 @@ export interface components {
         RepositoryDependency: {
             /** Changeset Revision */
             changeset_revision: string
+            /** Create Time */
+            create_time: string
             /** Downloadable */
             downloadable: boolean
             /** Has Repository Dependencies */
@@ -2612,6 +2972,8 @@ export interface components {
         RepositoryRevisionMetadata: {
             /** Changeset Revision */
             changeset_revision: string
+            /** Create Time */
+            create_time: string
             /** Downloadable */
             downloadable: boolean
             /** Has Repository Dependencies */
@@ -2655,6 +3017,8 @@ export interface components {
         RepositoryRevisionMetadataPreview: {
             /** Changeset Revision */
             changeset_revision: string
+            /** Create Time */
+            create_time?: string | null
             /** Downloadable */
             downloadable: boolean
             /** Has Repository Dependencies */
@@ -2794,52 +3158,142 @@ export interface components {
             /** Stop Time */
             stop_time: string
         }
+        /**
+         * ResourceRequirement
+         * @description A tool's compute resource request.
+         *
+         *     Set the minimum resources needed to run the job and, when useful, an upper
+         *     limit. Galaxy exposes the allocated CPU count to the command as
+         *     ``$GALAXY_SLOTS``. Use numbers or numeric strings. Other strings are
+         *     reserved for expressions, which are not supported yet: a non-numeric value
+         *     fails the create-time lint check.
+         */
+        ResourceRequirement: {
+            /**
+             * Cores Max
+             * @description Maximum reserved number of CPU cores.
+             *     May be a fractional value to indicate to a scheduling algorithm that one core can be allocated to multiple jobs. For example, a value of 0.25 indicates that up to 4 jobs may run in parallel on 1 core. A value of 1.25 means that up to 3 jobs can run on a 4 core system (4/1.25 ≈ 3).
+             *     The reported number of CPU cores reserved for the process is a non-zero integer calculated by rounding up the cores request to the next whole number.
+             */
+            cores_max?: number | string | null
+            /**
+             * Cores Min
+             * @description Minimum reserved number of CPU cores.
+             *     May be a fractional value to indicate to a scheduling algorithm that one core can be allocated to multiple jobs. For example, a value of 0.25 indicates that up to 4 jobs may run in parallel on 1 core. A value of 1.25 means that up to 3 jobs can run on a 4 core system (4/1.25 ≈ 3).
+             *     The reported number of CPU cores reserved for the process is a non-zero integer calculated by rounding up the cores request to the next whole number.
+             * @default 1
+             */
+            cores_min: number | string | null
+            /**
+             * Cuda Compute Capability
+             * @description Minimum CUDA compute capability required, e.g. 7.5.
+             */
+            cuda_compute_capability?: number | string | null
+            /**
+             * Cuda Device Count Max
+             * @description Maximum number of GPUs to reserve.
+             */
+            cuda_device_count_max?: number | string | null
+            /**
+             * Cuda Device Count Min
+             * @description Minimum number of GPUs to reserve.
+             */
+            cuda_device_count_min?: number | string | null
+            /**
+             * Cuda Version Min
+             * @description Minimum CUDA runtime version required, e.g. 11.2.
+             */
+            cuda_version_min?: number | string | null
+            /**
+             * Gpu Memory Min
+             * @description Minimum GPU memory required, in mebibytes (2**20).
+             */
+            gpu_memory_min?: number | string | null
+            /**
+             * Ram Max
+             * @description Maximum reserved RAM in mebibytes (2**20).
+             *     May be a fractional value. If so, the actual RAM request is rounded up to the next whole number. The reported amount of RAM reserved for the process is a non-zero integer.
+             */
+            ram_max?: number | string | null
+            /**
+             * Ram Min
+             * @description Minimum reserved RAM in mebibytes (2**20).
+             *     May be a fractional value. If so, the actual RAM request is rounded up to the next whole number. The reported amount of RAM reserved for the process is a non-zero integer.
+             * @default 256
+             */
+            ram_min: number | string | null
+            /**
+             * Shm Size
+             * @description Size of /dev/shm to request, in bytes.
+             */
+            shm_size?: number | string | null
+            /**
+             * Timelimit
+             * @description Maximum time in seconds the tool is allowed to run. Job will be terminated if exceeded.
+             */
+            timelimit?: number | string | null
+            /**
+             * Tmpdir Max
+             * @description Maximum reserved temporary directory space, in mebibytes (2**20).
+             */
+            tmpdir_max?: number | string | null
+            /**
+             * Tmpdir Min
+             * @description Minimum reserved temporary directory space, in mebibytes (2**20).
+             */
+            tmpdir_min?: number | string | null
+            /**
+             * Type
+             * @constant
+             */
+            type: "resource"
+        }
         /** RulesParameterModel */
         RulesParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_rules
              * @constant
              */
             parameter_type: "gx_rules"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "rules"
@@ -2847,48 +3301,48 @@ export interface components {
         /** SectionParameterModel */
         SectionParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_section
              * @constant
              */
             parameter_type: "gx_section"
-            /** parameters */
+            /** Parameters */
             parameters: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -2919,7 +3373,7 @@ export interface components {
                 | components["schemas"]["SectionParameterModel"]
             )[]
             /**
-             * type
+             * Type
              * @constant
              */
             type: "section"
@@ -2927,61 +3381,61 @@ export interface components {
         /** SelectParameterModel */
         SelectParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * multiple
+             * Multiple
              * @default false
              */
             multiple: boolean
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
-            /** options */
+            /** Options */
             options?: components["schemas"]["LabelValue"][] | null
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_select
              * @constant
              */
             parameter_type: "gx_select"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "select"
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: components["schemas"]["NoOptionsParameterValidatorModel"][]
@@ -3067,21 +3521,32 @@ export interface components {
              */
             version: string
         }
+        /** SetEnvironmentRequirement */
+        SetEnvironmentRequirement: {
+            /** Environment */
+            environment: string
+            /**
+             * Type
+             * @constant
+             */
+            type: "set_environment"
+        }
         /** ShedParsedTool */
         ShedParsedTool: {
-            /** citations */
+            /** Citations */
             citations: components["schemas"]["Citation"][]
-            /** description */
+            /** Containers */
+            containers?: components["schemas"]["Container"][]
+            /** Description */
             description: string | null
-            /** edam_operations */
+            /** Edam Operations */
             edam_operations: string[]
-            /** edam_topics */
+            /** Edam Topics */
             edam_topics: string[]
-            /** help */
             help: components["schemas"]["HelpContent"] | null
-            /** id */
+            /** Id */
             id: string
-            /** inputs */
+            /** Inputs */
             inputs: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -3111,11 +3576,11 @@ export interface components {
                 | components["schemas"]["RepeatParameterModel"]
                 | components["schemas"]["SectionParameterModel"]
             )[]
-            /** license */
+            /** License */
             license: string | null
-            /** name */
+            /** Name */
             name: string
-            /** outputs */
+            /** Outputs */
             outputs: (
                 | components["schemas"]["ToolOutputDataset"]
                 | components["schemas"]["ToolOutputCollection"]
@@ -3124,76 +3589,114 @@ export interface components {
                 | components["schemas"]["ToolOutputFloat"]
                 | components["schemas"]["ToolOutputBoolean"]
             )[]
-            /** profile */
+            /** Profile */
             profile: string | null
-            /** repository_revision */
             repository_revision?: components["schemas"]["RepositoryRevisionMetadata"] | null
-            /** version */
+            /** Requirements */
+            requirements?: (
+                | components["schemas"]["PackageRequirement"]
+                | components["schemas"]["SetEnvironmentRequirement"]
+                | components["schemas"]["ResourceRequirement"]
+                | components["schemas"]["JavascriptRequirement"]
+            )[]
+            stdio?: components["schemas"]["Stdio"]
+            /** Version */
             version: string | null
-            /** xrefs */
+            /** Xrefs */
             xrefs: components["schemas"]["XrefDict"][]
+        }
+        /** Stdio */
+        Stdio: {
+            /** Exit Codes */
+            exit_codes?: components["schemas"]["StdioExitCode"][]
+            /** Regexes */
+            regexes?: components["schemas"]["StdioRegex"][]
+        }
+        /** StdioExitCode */
+        StdioExitCode: {
+            /** Desc */
+            desc?: string | null
+            /** Error Level */
+            error_level: number
+            /** Range End */
+            range_end: number | ("-inf" | "inf")
+            /** Range Start */
+            range_start: number | ("-inf" | "inf")
+        }
+        /** StdioRegex */
+        StdioRegex: {
+            /** Desc */
+            desc?: string | null
+            /** Error Level */
+            error_level: number
+            /** Match */
+            match: string
+            /** Stderr Match */
+            stderr_match: boolean
+            /** Stdout Match */
+            stdout_match: boolean
         }
         /** TextParameterModel */
         TextParameterModel: {
             /**
-             * area
+             * Area
              * @default false
              */
             area: boolean
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * default_options
+             * Default Options
              * @default []
              */
             default_options: components["schemas"]["LabelValue"][]
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_text
              * @constant
              */
             parameter_type: "gx_text"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "text"
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: (
@@ -3202,7 +3705,7 @@ export interface components {
                 | components["schemas"]["ExpressionParameterValidatorModel"]
                 | components["schemas"]["EmptyFieldParameterValidatorModel"]
             )[]
-            /** default_value */
+            /** Value */
             value?: string | null
         }
         /** Tool */
@@ -3285,20 +3788,20 @@ export interface components {
         /** ToolOutputBoolean */
         ToolOutputBoolean: {
             /**
-             * hidden
-             * @description If true, the output will not be shown in the history.
+             * Hidden
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
              */
-            hidden: unknown
+            hidden: boolean
             /**
-             * label
-             * @description Output label. Will be used as dataset name in history.
+             * Label
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
-             * name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * Name
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
-            name: unknown
+            name: string
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -3308,49 +3811,74 @@ export interface components {
         /** ToolOutputCollection */
         ToolOutputCollection: {
             /**
-             * hidden
-             * @description If true, the output will not be shown in the history.
+             * Collection Type
+             * @description Fixed structure Galaxy creates for this output, such as `list`, `paired`, or a nested type such as `list:paired`.
+             */
+            collection_type?: string | null
+            /** Collection Type From Rules */
+            collection_type_from_rules?: string | null
+            /**
+             * Collection Type Source
+             * @description Declared data-collection input whose runtime structure determines this output's collection type.
+             */
+            collection_type_source?: string | null
+            /**
+             * Discover Datasets
+             * @description Rules used to discover and populate collection elements from produced files.
+             */
+            discover_datasets?:
+                | (
+                      | components["schemas"]["FilePatternDatasetCollectionDescription"]
+                      | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
+                  )[]
+                | null
+            /**
+             * Format
+             * @description Default datatype extension assigned to collection elements.
+             */
+            format?: string | null
+            /**
+             * Format Source
+             * @description Input whose datatype supplies the default format for collection elements.
+             */
+            format_source?: string | null
+            /**
+             * Hidden
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
              */
             hidden: boolean
             /**
-             * label
-             * @description Output label. Will be used as dataset name in history.
+             * Label
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
-             * name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * Metadata Source
+             * @description Dataset input whose metadata supplies defaults for collection elements.
+             */
+            metadata_source?: string | null
+            /**
+             * Name
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string
-            /** structure */
-            structure: components["schemas"]["ToolOutputCollectionStructure"]
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * Structured Like
+             * @description Declared input whose element count, identifiers, and nesting this output mirrors. Use this when each produced element corresponds to an input element.
+             */
+            structured_like?: string | null
+            /**
+             * @description Creates one history dataset collection populated from files produced by the command. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "collection"
         }
-        /** ToolOutputCollectionStructure */
-        ToolOutputCollectionStructure: {
-            /** collection_type */
-            collection_type?: string | null
-            /** collection_type_from_rules */
-            collection_type_from_rules?: string | null
-            /** collection_type_source */
-            collection_type_source?: string | null
-            /** discover_datasets */
-            discover_datasets?:
-                | (
-                      | components["schemas"]["FilePatternDatasetCollectionDescription"]
-                      | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
-                  )[]
-                | null
-            /** structured_like */
-            structured_like?: string | null
-        }
         /** ToolOutputDataset */
         ToolOutputDataset: {
-            /** discover_datasets */
+            /**
+             * Discover Datasets
+             * @description Rules for discovering additional datasets produced by the command.
+             */
             discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
@@ -3358,47 +3886,48 @@ export interface components {
                   )[]
                 | null
             /**
-             * format
-             * @description The short name for the output datatype.
+             * Format
+             * @description Galaxy datatype extension assigned when the command always produces a fixed representation. Use `format_source` instead when the datatype depends on an input.
              */
             format: string
             /**
-             * format_source
-             * @description This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.
+             * Format Source
+             * @description Data or collection input whose datatype extension this output inherits. Use this when the command preserves the input representation, such as filtering reads without changing their format.
              */
             format_source?: string | null
             /**
              * from_work_dir
-             * @description Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.
+             * @description Relative path, inside the job working directory, that the command writes for this output. Galaxy claims that file after the command finishes.
              */
             from_work_dir?: string | null
             /**
-             * hidden
-             * @description If true, the output will not be shown in the history.
+             * Hidden
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
              */
             hidden: boolean
             /**
-             * label
-             * @description Output label. Will be used as dataset name in history.
+             * Label
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
-             * metadata_source
-             * @description This copies the metadata information from the tool’s input dataset to serve as default for information that cannot be detected from the output. One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets.
+             * Metadata Source
+             * @description Data input whose datatype-specific metadata this output copies as defaults. Use this when the command preserves metadata Galaxy cannot infer from the output, such as interval column assignments.
              */
             metadata_source?: string | null
             /**
-             * name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * Name
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
             name: string
             /**
-             * precreate_directory
+             * Precreate Directory
+             * @description Set true when `from_work_dir` names a produced directory for a composite datatype. Galaxy copies the directory contents into the output dataset's extra-files area.
              * @default false
              */
             precreate_directory: boolean | null
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Creates one history dataset from a file produced by the command. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             type: "data"
@@ -3406,20 +3935,20 @@ export interface components {
         /** ToolOutputFloat */
         ToolOutputFloat: {
             /**
-             * hidden
-             * @description If true, the output will not be shown in the history.
+             * Hidden
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
              */
-            hidden: unknown
+            hidden: boolean
             /**
-             * label
-             * @description Output label. Will be used as dataset name in history.
+             * Label
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
-             * name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * Name
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
-            name: unknown
+            name: string
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -3429,20 +3958,20 @@ export interface components {
         /** ToolOutputInteger */
         ToolOutputInteger: {
             /**
-             * hidden
-             * @description If true, the output will not be shown in the history.
+             * Hidden
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
              */
-            hidden: unknown
+            hidden: boolean
             /**
-             * label
-             * @description Output label. Will be used as dataset name in history.
+             * Label
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
-             * name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * Name
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
-            name: unknown
+            name: string
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -3452,20 +3981,20 @@ export interface components {
         /** ToolOutputText */
         ToolOutputText: {
             /**
-             * hidden
-             * @description If true, the output will not be shown in the history.
+             * Hidden
+             * @description Hide the output in the history. The dataset is still created and usable by other tools and workflows.
              */
-            hidden: unknown
+            hidden: boolean
             /**
-             * label
-             * @description Output label. Will be used as dataset name in history.
+             * Label
+             * @description Name shown for the produced dataset or collection in the history.
              */
             label?: string | null
             /**
-             * name
-             * @description Parameter name. Used when referencing parameter in workflows.
+             * Name
+             * @description Identifier used to connect this output in workflows and address it in tool tests.
              */
-            name: unknown
+            name: string
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -3474,22 +4003,45 @@ export interface components {
         }
         /** ToolProvidedMetadataDatasetCollection */
         ToolProvidedMetadataDatasetCollection: {
-            /** assign_primary_output */
-            assign_primary_output: boolean
-            /** directory */
-            directory: string | null
             /**
-             * discover_via
+             * Assign Primary Output
+             * @description Whether the first matching file replaces the primary dataset output.
+             * @default false
+             */
+            assign_primary_output: boolean
+            /**
+             * Directory
+             * @description Directory to search, relative to the job working directory.
+             */
+            directory?: string | null
+            /**
+             * Discover Via
+             * @description Read discovered dataset details from the tool-provided metadata file.
              * @constant
              */
             discover_via: "tool_provided_metadata"
-            /** format */
-            format: string | null
-            /** match_relative_path */
+            /**
+             * Format
+             * @description Galaxy datatype extension assigned to each discovered dataset.
+             */
+            format?: string | null
+            /**
+             * Match Relative Path
+             * @description Whether `pattern` matches each file's relative path instead of only its filename.
+             * @default false
+             */
             match_relative_path: boolean
-            /** recurse */
+            /**
+             * Recurse
+             * @description Whether to search recursively below `directory`.
+             * @default false
+             */
             recurse: boolean
-            /** visible */
+            /**
+             * Visible
+             * @description Whether discovered datasets are visible in the history.
+             * @default false
+             */
             visible: boolean
         }
         /** ToolVersion */
@@ -5315,6 +5867,49 @@ export interface operations {
             }
         }
     }
+    tools__interop: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
+                tool_id: string
+                /** @description The full version string defined on the Galaxy tool wrapper. */
+                tool_version: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["ShedParsedTool"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
     tools__parameter_landing_request_schema: {
         parameters: {
             query?: never
@@ -5993,6 +6588,527 @@ export interface operations {
                 }
                 content: {
                     "application/json": components["schemas"]["RepositoryMetadata"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__get_changeset_revision_and_ctx_rev: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+                /** @description Changeset of the target repository. */
+                changeset_revision: string
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__get_ctx_rev: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+                /** @description Changeset of the target repository. */
+                changeset_revision: string
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__get_repository_dependencies: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+                /** @description Changeset of the target repository. */
+                changeset_revision: string
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": string
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__get_repository_type: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__get_required_repo_info_dict_get: {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": {
+                        [key: string]: unknown
+                    }
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__get_required_repo_info_dict: {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_legacy_install__get_required_repo_info_dict"]
+            }
+        }
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": {
+                        [key: string]: unknown
+                    }
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__get_tool_dependencies: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+                /** @description Changeset of the target repository. */
+                changeset_revision: string
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__next_installable_changeset_revision: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+                /** @description Changeset of the target repository. */
+                changeset_revision: string
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__previous_changeset_revisions: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+                /** @description Changeset of the target repository. */
+                changeset_revision: string
+                /** @description If true, use repository tip as upper bound changeset revision. */
+                from_tip?: boolean
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__display_image: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                repository_id: string
+                image_file: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__status_for_installed_repository: {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            301: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content?: never
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__updated_changeset_revisions: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+                /** @description Changeset of the target repository. */
+                changeset_revision: string
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
                 }
             }
             /** @description Request Error */

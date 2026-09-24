@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from sqlalchemy import (
     false,
@@ -8,7 +7,10 @@ from sqlalchemy import (
 )
 
 from galaxy import util
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.groups import get_group_by_name
 from galaxy.managers.quotas import QuotaManager
 from galaxy.model import Quota
@@ -76,8 +78,14 @@ class QuotasService(ServiceBase):
     def update(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, params: UpdateQuotaParams) -> str:
         """Modifies a quota."""
         payload = params.model_dump()
-        self.validate_in_users_and_groups(trans, payload)
         quota = self.quota_manager.get_quota(trans, id, deleted=False)
+        manage_associations = params.in_users is not None or params.in_groups is not None
+        # An omitted list leaves the current associations of that kind unchanged.
+        if params.in_users is None:
+            payload["in_users"] = [trans.security.encode_id(a.user_id) for a in quota.users]
+        if params.in_groups is None:
+            payload["in_groups"] = [trans.security.encode_id(a.group_id) for a in quota.groups]
+        self.validate_in_users_and_groups(trans, payload)
 
         params = UpdateQuotaParams(**payload)
         # FIXME: Doing it this way makes the update non-atomic if a method fails after an earlier one has succeeded.
@@ -90,7 +98,7 @@ class QuotasService(ServiceBase):
             methods.append(self.quota_manager.unset_quota_default)
         elif params.default:
             methods.append(self.quota_manager.set_quota_default)
-        if params.in_users or params.in_groups:
+        if manage_associations:
             methods.append(self.quota_manager.manage_users_and_groups_for_quota)
 
         messages = []
@@ -101,7 +109,7 @@ class QuotasService(ServiceBase):
         return "; ".join(messages)
 
     def delete(
-        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, payload: Optional[DeleteQuotaPayload] = None
+        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, payload: DeleteQuotaPayload | None = None
     ) -> str:
         """Marks a quota as deleted."""
         quota = self.quota_manager.get_quota(
@@ -122,7 +130,7 @@ class QuotasService(ServiceBase):
         quota = self.quota_manager.get_quota(trans, id, deleted=True)
         return self.quota_manager.undelete_quota(quota)
 
-    def validate_in_users_and_groups(self, trans, payload):
+    def validate_in_users_and_groups(self, trans: ProvidesAppContext, payload):
         """
         For convenience, in_users and in_groups can be encoded IDs or emails/group names in the API.
         """

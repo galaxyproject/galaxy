@@ -1,48 +1,36 @@
-"""Test Galaxy AI agents API and functionality.
+"""Test Galaxy AI agents API.
 
-This module contains two test suites:
-1. Mocked tests - Deterministic tests with mocked LLM responses (always run)
-2. Live LLM tests - Integration tests requiring configured LLM (optional, marked with @pytest.mark.requires_llm)
+Requires a configured LLM — skipped unless GALAXY_TEST_ENABLE_LIVE_LLM=1.
+For deterministic tests without LLM, see test_static_agent_backend.py.
 
-## Running the tests:
-
-### API tests (Galaxy test instance auto-configured):
-    # Run mocked API tests (Galaxy test framework handles setup):
-    pytest test/integration/test_agents.py::TestAgentsApiMocked -v
-
-    # Run live LLM API tests:
-    GALAXY_TEST_ENABLE_LIVE_LLM=1 pytest test/integration/test_agents.py::TestAgentsApiLiveLLM -v
-
-### Configuration for live API tests (TestAgentsApiLiveLLM):
+## Running:
     export GALAXY_TEST_AI_API_KEY="your-api-key"
     export GALAXY_TEST_AI_MODEL="llama-4-scout"
     export GALAXY_TEST_AI_API_BASE_URL="http://localhost:4000/v1/"
     export GALAXY_TEST_ENABLE_LIVE_LLM=1
-
-### Configuration for live unit tests (TestAgentUnitLiveLLM):
-    export GALAXY_AI_API_KEY="your-api-key"
-    export GALAXY_AI_MODEL="llama-4-scout"
-    export GALAXY_AI_API_BASE_URL="http://localhost:4000/v1/"
-    export GALAXY_TEST_ENABLE_LIVE_LLM=1
+    pytest test/integration/test_agents.py -v
 """
 
+import asyncio
 import logging
 import os
-from unittest.mock import (
-    AsyncMock,
-    MagicMock,
-    patch,
-)
+from typing import cast
 
-from galaxy.agents import (
-    agent_registry,
-    GalaxyAgentDependencies,
+import pytest
+from fastmcp import (
+    Client,
+    FastMCP,
 )
-from galaxy.agents.error_analysis import ErrorAnalysisResult
-from galaxy.tool_util_models import UserToolSource
+from fastmcp.exceptions import ToolError
+
+from galaxy.agents.operations import AgentOperationsManager
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.util.unittest_utils import pytestmark_live_llm
+from galaxy.webapps.galaxy.api.mcp import get_mcp_app
+from galaxy.work.context import SessionRequestContext
 from galaxy_test.base.populators import (
     DatasetPopulator,
+    TOOL_WITH_SHELL_COMMAND,
     WorkflowPopulator,
 )
 from galaxy_test.driver.integration_util import IntegrationTestCase
@@ -51,8 +39,6 @@ log = logging.getLogger(__name__)
 
 
 class AgentIntegrationTestCase(IntegrationTestCase):
-    """Base class for agent integration tests."""
-
     dataset_populator: DatasetPopulator
     workflow_populator: WorkflowPopulator
 
@@ -72,193 +58,24 @@ class AgentIntegrationTestCase(IntegrationTestCase):
             config["ai_model"] = ai_model
 
 
-def _create_deps_with_mock_model(self, trans, user):
-    """Replacement for AgentService.create_dependencies that injects a mock model_factory."""
-    toolbox = trans.app.toolbox if hasattr(trans, "app") and hasattr(trans.app, "toolbox") else None
-    return GalaxyAgentDependencies(
-        trans=trans,
-        user=user,
-        config=self.config,
-        job_manager=self.job_manager,
-        toolbox=toolbox,
-        get_agent=agent_registry.get_agent,
-        model_factory=lambda: MagicMock(),
-    )
+class TestAgentsApi(AgentIntegrationTestCase):
+    """Test the Galaxy AI agents API endpoints.
 
-
-class TestAgentsApiMocked(AgentIntegrationTestCase):
-    """Test the Galaxy AI agents API with mocked LLM responses.
-
-    These tests use mocked LLM responses for deterministic testing.
-    They always run in CI and don't require any LLM configuration.
+    These tests verify API structure and static backend responses.
+    For tests of actual agent logic with mocked LLMs, see test/unit/app/test_agents.py.
     """
 
-    def setUp(self):
-        super().setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
-
     def test_list_agents(self):
-        """Test listing available agents (no LLM needed)."""
         response = self._get("ai/agents")
         self._assert_status_code_is_ok(response)
         data = response.json()
         assert "agents" in data
         agents = data["agents"]
         assert len(agents) > 0
-        # Check that core agents are registered
         agent_types = [a["agent_type"] for a in agents]
         assert "router" in agent_types
         assert "custom_tool" in agent_types
         assert "error_analysis" in agent_types
-
-    @patch("galaxy.managers.agents.AgentService.create_dependencies", _create_deps_with_mock_model)
-    @patch("galaxy.agents.router.Agent")
-    def test_query_agent_auto_routing_mocked(self, mock_router_agent_class):
-        """Test automatic agent routing with mocked LLM.
-
-        With the new router architecture, the router uses output functions
-        and returns the final response directly (either answering or handing
-        off to specialists internally).
-        """
-        # Set up mock router agent
-        mock_router_agent = AsyncMock()
-        mock_router_agent_class.return_value = mock_router_agent
-
-        # Mock router response - now returns string directly
-        async def mock_router_run(query, *args, **kwargs):
-            result = MagicMock()
-            if "BWA" in query or "tool" in query.lower():
-                # Simulate what custom_tool handoff would return
-                result.output = "I've created a BWA-MEM tool for paired-end reads. The tool definition includes inputs for reference and read files."
-            else:
-                # Direct response from router
-                result.output = "I'm Galaxy's AI assistant. How can I help you today?"
-            return result
-
-        mock_router_agent.run = mock_router_run
-
-        response = self._post(
-            "ai/agents/query",
-            data={
-                "query": "Create a BWA-MEM tool for paired-end reads",
-                "agent_type": "auto",
-            },
-            json=True,
-        )
-        self._assert_status_code_is_ok(response)
-        data = response.json()
-        # Router now returns content in the response object
-        assert "response" in data
-        assert "content" in data["response"]
-        assert "BWA" in data["response"]["content"] or len(data["response"]["content"]) > 0
-
-    @patch("galaxy.managers.agents.AgentService.create_dependencies", _create_deps_with_mock_model)
-    @patch("galaxy.agents.custom_tool.Agent")
-    def test_query_custom_tool_agent_mocked(self, mock_agent_class):
-        """Test the custom tool agent with mocked LLM."""
-        mock_agent = AsyncMock()
-        mock_agent_class.return_value = mock_agent
-
-        # Mock tool creation with UserToolSource
-        mock_tool = UserToolSource(
-            **{
-                "class": "GalaxyUserTool",
-                "id": "line-counter",
-                "name": "Line Counter",
-                "version": "1.0.0",
-                "description": "Counts lines in a file",
-                "container": "ubuntu:latest",
-                "shell_command": "wc -l < $(inputs.input_file.path) > output.txt",
-                "inputs": [],
-                "outputs": [],
-            }
-        )
-
-        async def mock_run(*args, **kwargs):
-            result = MagicMock()
-            result.output = mock_tool
-            return result
-
-        mock_agent.run = mock_run
-
-        response = self._post(
-            "ai/agents/query",
-            data={
-                "query": "Create a simple tool that counts lines in a file",
-                "agent_type": "custom_tool",
-            },
-            json=True,
-        )
-        self._assert_status_code_is_ok(response)
-        data = response.json()
-        # Response structure is {'response': {..., 'metadata': {...}}, 'routing_info': ..., ...}
-        assert "response" in data
-        assert "metadata" in data["response"]
-        assert data["response"]["metadata"]["tool_id"] == "line-counter"
-        assert "wc -l" in data["response"]["metadata"]["tool_yaml"]
-
-        # Verify suggestions are present and valid
-        suggestions = data["response"].get("suggestions", [])
-        assert len(suggestions) >= 1, "Custom tool should return at least one suggestion"
-        # Should have a SAVE_TOOL suggestion with required parameters
-        save_suggestions = [s for s in suggestions if s["action_type"] == "save_tool"]
-        assert len(save_suggestions) == 1, "Should have exactly one SAVE_TOOL suggestion"
-        assert save_suggestions[0]["parameters"].get("tool_yaml"), "SAVE_TOOL must have tool_yaml"
-        assert save_suggestions[0]["parameters"].get("tool_id"), "SAVE_TOOL must have tool_id"
-
-    @patch("galaxy.managers.agents.AgentService.create_dependencies", _create_deps_with_mock_model)
-    @patch("galaxy.agents.error_analysis.Agent")
-    def test_query_error_analysis_agent_mocked(self, mock_agent_class):
-        """Test the error analysis agent with mocked LLM."""
-        mock_agent = AsyncMock()
-        mock_agent_class.return_value = mock_agent
-
-        # Mock error analysis
-        async def mock_run(*args, **kwargs):
-            result = MagicMock()
-            mock_analysis = ErrorAnalysisResult(
-                error_category="tool_configuration",
-                error_severity="medium",
-                likely_cause="The command 'samtools' was not found in PATH",
-                solution_steps=[
-                    "Install samtools using conda",
-                    "Check tool dependencies",
-                    "Verify container configuration",
-                ],
-                confidence="high",
-            )
-            result.output = mock_analysis
-            return result
-
-        mock_agent.run = mock_run
-
-        # Don't pass a job_id - the agent handles missing job context gracefully
-        # and we're testing the mocked LLM response, not job lookup
-        response = self._post(
-            "ai/agents/query",
-            data={
-                "query": "Why did my job fail? stderr shows: command not found: samtools",
-                "agent_type": "error_analysis",
-            },
-            json=True,
-        )
-        self._assert_status_code_is_ok(response)
-        data = response.json()
-        # Response structure is {'response': {..., 'content': ...}, ...}
-        assert "response" in data
-        assert "content" in data["response"]
-        # Should mention the error type or solution
-        content = data["response"]["content"].lower()
-        assert "command" in content or "samtools" in content or "not found" in content
-
-        # Suggestions are optional - only returned for actionable items like CONTACT_SUPPORT
-        # In this mock, requires_admin=False, so no suggestions expected
-        suggestions = data["response"].get("suggestions", [])
-        for suggestion in suggestions:
-            assert "action_type" in suggestion
-            assert "description" in suggestion
-            assert "confidence" in suggestion
 
 
 # ============================================================================
@@ -275,7 +92,6 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
     """
 
     def test_query_agent_auto_routing_live(self):
-        """Test automatic agent routing with live LLM."""
         response = self._post(
             "ai/agents/query",
             data={
@@ -292,7 +108,6 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
         assert data.get("routing_info", {}).get("selected_agent") == "custom_tool"
 
     def test_query_custom_tool_agent_live(self):
-        """Test custom tool agent with live LLM."""
         response = self._post(
             "ai/agents/query",
             data={
@@ -314,7 +129,6 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
         assert "command" in tool_yaml or "shell_command" in tool_yaml
 
     def test_error_analysis_endpoint_live(self):
-        """Test the dedicated error-analysis endpoint."""
         response = self._post(
             "ai/agents/error-analysis",
             data={
@@ -332,7 +146,6 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
         assert any(word in content for word in ["memory", "kill", "resource", "oom"])
 
     def test_custom_tool_endpoint_live(self):
-        """Test the dedicated custom-tool endpoint."""
         response = self._post(
             "ai/agents/custom-tool",
             data={
@@ -349,7 +162,6 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
         assert "tool_yaml" in metadata or "tool_id" in metadata
 
     def test_chat_endpoint_live(self):
-        """Test the chat endpoint with auto routing."""
         response = self._post(
             "chat?query=What%20tools%20are%20available%20for%20RNA-seq%3F&agent_type=auto",
             data={},
@@ -362,9 +174,490 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
         assert len(data["response"]) > 0
 
     def test_chat_history_endpoint(self):
-        """Test the chat history endpoint."""
         response = self._get("chat/history?limit=5")
         self._assert_status_code_is_ok(response)
         data = response.json()
         # Should return a list (may be empty)
         assert isinstance(data, list)
+
+
+# ============================================================================
+# AgentOperationsManager ID Encoding Tests
+# ============================================================================
+
+
+class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
+    """Test AgentOperationsManager ID encoding.
+
+    These tests verify that the _encode_ids_in_response helper correctly
+    encodes Galaxy database IDs so agents can use them in subsequent API calls.
+    """
+
+    def _make_ops(self):
+        class MinimalTrans(ProvidesUserContext):
+            def __init__(self, app):
+                self._app = app
+
+            @property
+            def app(self):
+                return self._app
+
+            @property
+            def user(self):
+                return None
+
+            @property
+            def url_builder(self):
+                return None
+
+            @property
+            def security(self):
+                return self._app.security
+
+            @property
+            def user_is_admin(self):
+                return False
+
+        # the double only needs security.encode_id for _encode_ids_in_response
+        trans = cast(SessionRequestContext, MinimalTrans(self._app))
+        return AgentOperationsManager(app=self._app, trans=trans)
+
+    def test_encode_ids_helper_encodes_nested_ids(self):
+        ops = self._make_ops()
+
+        test_data = {
+            "id": 123,
+            "name": "test",
+            "nested": {"id": 456, "history_id": 789},
+            "list_items": [{"id": 111, "dataset_id": 222}, {"id": 333}],
+            "implicit_collection_jobs_id": 444,
+            "unmapped_job": {"implicit_collection_jobs_id": None},
+        }
+
+        result = ops._encode_ids_in_response(test_data)
+
+        assert isinstance(result["id"], str)
+        assert len(result["id"]) >= 16
+        assert result["name"] == "test"
+        assert isinstance(result["nested"]["id"], str)
+        assert isinstance(result["nested"]["history_id"], str)
+        assert isinstance(result["list_items"][0]["id"], str)
+        assert isinstance(result["list_items"][0]["dataset_id"], str)
+        assert isinstance(result["list_items"][1]["id"], str)
+        assert isinstance(result["implicit_collection_jobs_id"], str)
+        assert result["unmapped_job"]["implicit_collection_jobs_id"] is None
+
+    def test_encode_ids_preserves_non_id_fields(self):
+        ops = self._make_ops()
+
+        test_data = {
+            "id": 1,
+            "name": "My History",
+            "annotation": "Test annotation",
+            "count": 42,
+            "empty_list": [],
+            "tags": ["tag1", "tag2"],
+        }
+
+        result = ops._encode_ids_in_response(test_data)
+
+        assert isinstance(result["id"], str)
+        assert result["name"] == "My History"
+        assert result["annotation"] == "Test annotation"
+        assert result["count"] == 42
+        assert result["empty_list"] == []
+        assert result["tags"] == ["tag1", "tag2"]
+
+    def test_encode_ids_handles_already_encoded_ids(self):
+        ops = self._make_ops()
+
+        test_data = {
+            "id": "abc123def456",
+            "history_id": "already_encoded_id",
+        }
+
+        result = ops._encode_ids_in_response(test_data)
+
+        assert result["id"] == "abc123def456"
+        assert result["history_id"] == "already_encoded_id"
+
+
+# ============================================================================
+# MCP Server Smoke Tests
+# ============================================================================
+
+
+class TestMCPServerSmoke(IntegrationTestCase):
+    """Smoke tests for the MCP server.
+
+    Verifies the server initializes, advertises tools, handles auth,
+    and can execute basic tool calls. Not exhaustive API testing --
+    the MCP tools are thin wrappers around AgentOperationsManager.
+    """
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["enable_mcp_server"] = True
+        config["enable_beta_tool_formats"] = True
+
+    def _get_mcp_server(self):
+        http_app = get_mcp_app(self._app)
+        return http_app.state.mcp_server
+
+    def _get_api_key(self):
+        _, api_key = self._setup_user_get_key("mcp_test_user@test.com")
+        return api_key
+
+    def _setup_udt_user(self, email: str):
+        """Create a user, grant USER_TOOL_EXECUTE, return (user, api_key)."""
+        user, api_key = self._setup_user_get_key(email)
+        populator = DatasetPopulator(self.galaxy_interactor)
+        populator.create_role([user["id"]], role_type="user_tool_execute")
+        return user, api_key
+
+    def _run_async(self, coro):
+        loop = asyncio.new_event_loop()
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+
+    def test_mcp_server_initializes(self):
+        """MCP server creates a FastMCP instance when enabled."""
+        mcp_server = self._get_mcp_server()
+        assert isinstance(mcp_server, FastMCP)
+
+    def test_mcp_tools_registered(self):
+        """MCP server advertises all expected tools."""
+        mcp_server = self._get_mcp_server()
+
+        async def _list():
+            async with Client(mcp_server) as client:
+                return await client.list_tools()
+
+        tools = self._run_async(_list())
+        tool_names = {t.name for t in tools}
+
+        expected = {
+            "connect",
+            "search_tools",
+            "list_histories",
+            "run_tool",
+            "get_tool_details",
+            "get_history_contents",
+            "get_dataset_details",
+            "upload_file_from_url",
+            "invoke_workflow",
+            "get_job_status",
+            "list_user_tools",
+            "create_user_tool",
+            "delete_user_tool",
+            "run_user_tool",
+            "search_iwc_workflows",
+            "get_iwc_workflow_details",
+            "import_workflow_from_iwc",
+            "list_pages",
+            "get_page",
+            "create_page",
+            "update_page",
+            "list_page_revisions",
+            "get_page_revision",
+            "revert_page_revision",
+        }
+        assert expected.issubset(tool_names), f"Missing tools: {expected - tool_names}"
+
+    def test_mcp_connect_with_valid_key(self):
+        """connect() succeeds with a valid API key and returns user + server info."""
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+
+        async def _connect():
+            async with Client(mcp_server) as client:
+                return await client.call_tool("connect", {"api_key": api_key})
+
+        result = self._run_async(_connect())
+        assert not result.is_error
+        data = result.data
+        assert "user" in data
+        assert "server" in data
+
+    def test_mcp_connect_with_invalid_key(self):
+        """connect() rejects an invalid API key."""
+        mcp_server = self._get_mcp_server()
+
+        async def _connect():
+            async with Client(mcp_server) as client:
+                return await client.call_tool("connect", {"api_key": "bogus-key-12345"})
+
+        with pytest.raises(ToolError, match="(?i)(invalid|api key)"):
+            self._run_async(_connect())
+
+    def test_mcp_list_histories(self):
+        """list_histories() returns a valid response."""
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+
+        async def _list():
+            async with Client(mcp_server) as client:
+                return await client.call_tool("list_histories", {"api_key": api_key})
+
+        result = self._run_async(_list())
+        assert not result.is_error
+        data = result.data
+        assert "histories" in data
+
+    def test_mcp_search_tools(self):
+        """search_tools() executes and returns a well-formed response."""
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+
+        async def _search():
+            async with Client(mcp_server) as client:
+                return await client.call_tool("search_tools", {"api_key": api_key, "query": "sort"})
+
+        result = self._run_async(_search())
+        assert not result.is_error
+        data = result.data
+        assert "tools" in data
+        assert "query" in data
+        assert "count" in data
+        assert isinstance(data["tools"], list)
+
+    def test_mcp_list_user_tools_empty(self):
+        """list_user_tools() returns an empty list for a user with the role and no UDTs."""
+        mcp_server = self._get_mcp_server()
+        _, api_key = self._setup_udt_user("udt_list_user@test.com")
+
+        async def _list():
+            async with Client(mcp_server) as client:
+                return await client.call_tool("list_user_tools", {"api_key": api_key})
+
+        result = self._run_async(_list())
+        assert not result.is_error, result
+        data = result.data
+        assert data["tools"] == []
+        assert data["count"] == 0
+
+    def test_mcp_create_user_tool(self):
+        """create_user_tool() persists a UDT and returns its uuid."""
+        mcp_server = self._get_mcp_server()
+        _, api_key = self._setup_udt_user("udt_create_user@test.com")
+
+        async def _create():
+            async with Client(mcp_server) as client:
+                return await client.call_tool(
+                    "create_user_tool",
+                    {"api_key": api_key, "representation": TOOL_WITH_SHELL_COMMAND},
+                )
+
+        result = self._run_async(_create())
+        assert not result.is_error, result
+        data = result.data
+        assert "uuid" in data
+        assert data["representation"]["name"] == TOOL_WITH_SHELL_COMMAND["name"]
+
+    def test_mcp_delete_user_tool(self):
+        """delete_user_tool() deactivates a UDT so list_user_tools no longer returns it."""
+        mcp_server = self._get_mcp_server()
+        _, api_key = self._setup_udt_user("udt_delete_user@test.com")
+        populator = DatasetPopulator(self._get_interactor(api_key=api_key))
+        history_id = populator.new_history()
+
+        async def _flow():
+            async with Client(mcp_server) as client:
+                create = await client.call_tool(
+                    "create_user_tool",
+                    {"api_key": api_key, "representation": TOOL_WITH_SHELL_COMMAND},
+                )
+                uuid = create.data["uuid"]
+                await client.call_tool("delete_user_tool", {"api_key": api_key, "uuid": uuid})
+                listed = await client.call_tool("list_user_tools", {"api_key": api_key})
+                deleted_run = await client.call_tool(
+                    "run_user_tool",
+                    {
+                        "api_key": api_key,
+                        "history_id": history_id,
+                        "tool_uuid": uuid,
+                        "inputs": {},
+                    },
+                    raise_on_error=False,
+                )
+                return uuid, listed, deleted_run
+
+        uuid, listed, deleted_run = self._run_async(_flow())
+        uuids_after = {t["uuid"] for t in listed.data["tools"]}
+        assert uuid not in uuids_after
+        assert deleted_run.is_error
+        assert "deactivated" in deleted_run.content[0].text
+
+    def test_mcp_run_user_tool(self):
+        """run_user_tool() executes a UDT against an HDA input and produces an output."""
+        mcp_server = self._get_mcp_server()
+        _, api_key = self._setup_udt_user("udt_run_user@test.com")
+
+        populator = DatasetPopulator(self._get_interactor(api_key=api_key))
+        history_id = populator.new_history()
+        dataset = populator.new_dataset(history_id=history_id, content="abc")
+
+        async def _flow():
+            async with Client(mcp_server) as client:
+                create = await client.call_tool(
+                    "create_user_tool",
+                    {"api_key": api_key, "representation": TOOL_WITH_SHELL_COMMAND},
+                )
+                uuid = create.data["uuid"]
+                return await client.call_tool(
+                    "run_user_tool",
+                    {
+                        "api_key": api_key,
+                        "history_id": history_id,
+                        "tool_uuid": uuid,
+                        "inputs": {"input": {"src": "hda", "id": dataset["id"]}},
+                    },
+                )
+
+        result = self._run_async(_flow())
+        assert not result.is_error, result
+        data = result.data
+        assert data["jobs"][0]["tool_id"] == TOOL_WITH_SHELL_COMMAND["id"]
+        assert data["jobs"][0]["history_id"] == history_id
+        assert data["outputs"][0]["output_name"] == "output"
+        populator.wait_for_history(history_id, assert_ok=True)
+        output = populator.get_history_dataset_content(history_id)
+        assert output == "abc\n"
+
+    def test_mcp_import_workflow_from_iwc(self):
+        """import_workflow_from_iwc() imports a StoredWorkflow via the shared TRS pipeline."""
+        import json
+        from unittest.mock import patch
+
+        from fastmcp import Client
+
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+
+        # Minimal valid Galaxy workflow definition, served as a Dockstore TRS descriptor.
+        definition = {
+            "a_galaxy_workflow": "true",
+            "format-version": "0.1",
+            "name": "IWC smoke test workflow",
+            "steps": {
+                "0": {
+                    "id": 0,
+                    "type": "data_input",
+                    "label": "input",
+                    "inputs": [],
+                    "outputs": [],
+                    "tool_state": "{}",
+                    "input_connections": {},
+                    "annotation": "",
+                    "position": {"left": 0, "top": 0},
+                }
+            },
+            "tags": [],
+            "annotation": "",
+        }
+        trs_id = "#workflow/github.com/iwc-workflows/smoke/main"
+
+        async def _import():
+            async with Client(mcp_server) as client:
+                return await client.call_tool(
+                    "import_workflow_from_iwc",
+                    {"api_key": api_key, "trs_id": trs_id},
+                )
+
+        # The TRS proxy fetches the workflow descriptor over HTTP; mock that so we
+        # don't actually hit Dockstore from CI.
+        with patch("galaxy.workflow.trs_proxy.requests.get") as mock_get:
+            mock_get.return_value.ok = True
+            mock_get.return_value.json.return_value = {"content": json.dumps(definition)}
+            result = self._run_async(_import())
+
+        assert not result.is_error, result
+        data = result.data
+        assert "id" in data
+        assert data["trsID"] == trs_id
+
+    def test_mcp_page_lifecycle(self):
+        """create_page -> get_page -> update_page -> list_page_revisions round-trip."""
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+        populator = DatasetPopulator(self._get_interactor(api_key=api_key))
+        history_id = populator.new_history()
+
+        async def _flow():
+            async with Client(mcp_server) as client:
+                created = await client.call_tool(
+                    "create_page",
+                    {"api_key": api_key, "history_id": history_id, "title": "MCP Notebook", "content": "# Intro\n"},
+                )
+                page_id = created.data["id"]
+                got = await client.call_tool("get_page", {"api_key": api_key, "page_id": page_id})
+                await client.call_tool(
+                    "update_page",
+                    {"api_key": api_key, "page_id": page_id, "content": "# Intro\n\n## Methods\n"},
+                )
+                revisions = await client.call_tool("list_page_revisions", {"api_key": api_key, "page_id": page_id})
+                listed = await client.call_tool("list_pages", {"api_key": api_key, "history_id": history_id})
+                return created, got, revisions, listed
+
+        created, got, revisions, listed = self._run_async(_flow())
+        assert not created.is_error, created
+        assert created.data["history_id"] == history_id
+        # get_page returns the editable content and omits the rendered form by default
+        assert "content_editor" in got.data
+        assert "content" not in got.data
+        # update_page created a second revision tagged with edit_source="agent"
+        assert revisions.data["count"] == 2
+        assert revisions.data["revisions"][-1]["edit_source"] == "agent"
+        # the notebook shows up when listing pages for its history
+        assert created.data["id"] in {p["id"] for p in listed.data["pages"]}
+
+    def test_mcp_page_directive_and_revert(self):
+        """Dataset directives survive in encoded-id space; revert restores prior content."""
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+        populator = DatasetPopulator(self._get_interactor(api_key=api_key))
+        history_id = populator.new_history()
+        hda_id = populator.new_dataset(history_id)["id"]
+        directive = f"# Analysis\n\n```galaxy\nhistory_dataset_display(history_dataset_id={hda_id})\n```\n"
+
+        async def _flow():
+            async with Client(mcp_server) as client:
+                created = await client.call_tool(
+                    "create_page",
+                    {"api_key": api_key, "history_id": history_id, "title": "Directive NB", "content": directive},
+                )
+                page_id = created.data["id"]
+                editor = await client.call_tool("get_page", {"api_key": api_key, "page_id": page_id})
+                rendered = await client.call_tool(
+                    "get_page", {"api_key": api_key, "page_id": page_id, "include_rendered": True}
+                )
+                await client.call_tool(
+                    "update_page", {"api_key": api_key, "page_id": page_id, "content": "# Replaced\n"}
+                )
+                revisions = await client.call_tool("list_page_revisions", {"api_key": api_key, "page_id": page_id})
+                first_rev_id = revisions.data["revisions"][0]["id"]
+                old_rev = await client.call_tool(
+                    "get_page_revision",
+                    {"api_key": api_key, "page_id": page_id, "revision_id": first_rev_id},
+                )
+                reverted = await client.call_tool(
+                    "revert_page_revision",
+                    {"api_key": api_key, "page_id": page_id, "revision_id": first_rev_id},
+                )
+                return editor, rendered, old_rev, reverted
+
+        editor, rendered, old_rev, reverted = self._run_async(_flow())
+        # content_editor keeps the directive with the ENCODED dataset id (encoded-id space)
+        assert hda_id in editor.data["content_editor"]
+        assert "content" not in editor.data
+        # include_rendered exposes the expanded render form
+        assert "content" in rendered.data
+        # get_page_revision mirrors get_page: editable content_editor by default, rendered omitted
+        assert hda_id in old_rev.data["content_editor"]
+        assert "content" not in old_rev.data
+        # revert appends a new "restore" revision carrying the original directive content
+        assert reverted.data["edit_source"] == "restore"
+        assert hda_id in reverted.data["content_editor"]
+        assert "content" not in reverted.data

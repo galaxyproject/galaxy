@@ -17,7 +17,6 @@ from collections.abc import (
 from os.path import abspath
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
     Union,
 )
@@ -87,7 +86,7 @@ class MetadataCollection(Mapping):
     def __init__(
         self,
         parent: Union["DatasetInstance", "NoneDataset"],
-        session: Optional[Union["scoped_session", "SessionlessContext"]] = None,
+        session: Union["scoped_session", "SessionlessContext"] | None = None,
     ) -> None:
         self.parent = parent
         self._session = session
@@ -633,10 +632,16 @@ class FileParameter(MetadataParameter):
             if wrapped_value:
                 return wrapped_value
             else:
-                # If we've simultaneously copied the  dataset and we've changed the datatype on the
-                # copy we may not have committed the MetadataFile yet, so we need to commit the session.
-                # TODO: It would be great if we can avoid the commit in the future.
-                session.commit()
+                # If we've simultaneously copied the dataset and we've changed the datatype on the
+                # copy we may not have flushed the pending MetadataFile to the DB yet, so the
+                # select above may have missed it. Flush (NOT commit) so the pending INSERT is
+                # visible to the retry SELECT within this session without leaking every other
+                # pending change in the session to concurrent readers. Committing here caused
+                # https://github.com/galaxyproject/galaxy/issues/22194: a mid-loop wrap() inside
+                # JobWrapper.finish() flushed an intermedia expression.json's dataset's
+                # Dataset.state = OK to the DB before exec_after_process had replaced the file,
+                # exposing a globall inconsistent state to the workflow scheduler.
+                session.flush()
             return session.execute(select(galaxy.model.MetadataFile).filter_by(uuid=value)).scalar_one_or_none()
 
     def make_copy(self, value, target_context: MetadataCollection, source_context):
@@ -649,6 +654,8 @@ class FileParameter(MetadataParameter):
         if target_context.parent is None:
             return None
         target_dataset = target_context.parent.dataset
+        assert target_dataset is not None
+        assert target_dataset.object_store is not None
         if value and target_dataset.object_store.exists(target_dataset):
             # Only copy MetadataFile if the target dataset has been created in an object store.
             # All current datatypes re-generate MetadataFile objects when setting metadata,

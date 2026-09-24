@@ -99,16 +99,33 @@ export function galaxyDevServerPlugin() {
                 const originalWrite = res.write.bind(res);
                 const originalEnd = res.end.bind(res);
 
-                // Buffer to collect response body
+                // Buffer to collect response body. We only buffer when the
+                // upstream response is HTML; everything else (JSON, binary,
+                // and crucially `text/event-stream`) must pass straight
+                // through, because streaming responses never call
+                // `res.end()` and would otherwise stall indefinitely.
                 const chunks = [];
-                let isHtml = false;
+                // Tri-state: null = undecided (first write hasn't landed yet),
+                //             true = stream it through untransformed,
+                //             false = buffer for HTML rewrite on end().
+                let passthrough = null;
 
-                // Override write to collect chunks
+                function decidePassthrough() {
+                    if (passthrough !== null) {
+                        return;
+                    }
+                    const contentType = res.getHeader("content-type");
+                    passthrough = !contentType || !contentType.toString().includes("text/html");
+                }
+
                 res.write = function (chunk, encoding, callback) {
+                    decidePassthrough();
+                    if (passthrough) {
+                        return originalWrite(chunk, encoding, callback);
+                    }
                     if (chunk) {
                         chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, encoding));
                     }
-                    // Don't write yet - we'll write in end()
                     if (typeof encoding === "function") {
                         encoding(); // encoding is actually the callback
                     } else if (typeof callback === "function") {
@@ -119,41 +136,39 @@ export function galaxyDevServerPlugin() {
 
                 // Override end to transform and send response
                 res.end = function (chunk, encoding, callback) {
+                    decidePassthrough();
+                    if (passthrough) {
+                        return originalEnd(chunk, encoding, callback);
+                    }
+
                     if (chunk) {
                         chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, encoding));
                     }
 
-                    // Check content type
-                    const contentType = res.getHeader("content-type");
-                    isHtml = contentType && contentType.toString().includes("text/html");
-
                     // Combine all chunks
                     let body = Buffer.concat(chunks);
 
-                    // Transform HTML responses that contain Galaxy bundles
-                    if (isHtml) {
-                        // Decompress gzip responses (common from remote Galaxy servers)
-                        const contentEncoding = res.getHeader("content-encoding");
-                        if (contentEncoding === "gzip") {
-                            try {
-                                body = gunzipSync(body);
-                            } catch (e) {
-                                // If decompression fails, continue with original body
-                                console.warn("[galaxy-dev-server] Failed to decompress gzip response:", e.message);
-                            }
+                    // Decompress gzip responses (common from remote Galaxy servers)
+                    const contentEncoding = res.getHeader("content-encoding");
+                    if (contentEncoding === "gzip") {
+                        try {
+                            body = gunzipSync(body);
+                        } catch (e) {
+                            // If decompression fails, continue with original body
+                            console.warn("[galaxy-dev-server] Failed to decompress gzip response:", e.message);
                         }
+                    }
 
-                        let htmlString = body.toString("utf-8");
-                        if (htmlString.includes("bundled.js") || htmlString.includes("/static/dist/")) {
-                            htmlString = transformGalaxyHtml(htmlString);
-                            body = Buffer.from(htmlString, "utf-8");
+                    let htmlString = body.toString("utf-8");
+                    if (htmlString.includes("bundled.js") || htmlString.includes("/static/dist/")) {
+                        htmlString = transformGalaxyHtml(htmlString);
+                        body = Buffer.from(htmlString, "utf-8");
 
-                            // Update content-length header
-                            res.setHeader("content-length", body.length);
+                        // Update content-length header
+                        res.setHeader("content-length", body.length);
 
-                            // Remove content-encoding since we've decompressed it
-                            res.removeHeader("content-encoding");
-                        }
+                        // Remove content-encoding since we've decompressed it
+                        res.removeHeader("content-encoding");
                     }
 
                     // Send the response

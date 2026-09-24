@@ -1,22 +1,25 @@
 <script setup lang="ts">
-import { faCloudUploadAlt, faLaptop, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCloudUploadAlt, faLaptop, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, watch } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
+import { localUploadOptionVisibility } from "@/components/Panels/Upload/shared/uploadOptionVisibility";
+import { getUploadSettingsColumnWidth } from "@/components/Panels/Upload/shared/uploadTableOptionsWidth";
 import { useFileDrop } from "@/composables/fileDrop";
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
 import { useCollectionCreation } from "@/composables/upload/collectionCreation";
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
 import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
+import { useUploadOptionBindings } from "@/composables/upload/uploadOptionBindings";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
-import { useUploadQueue } from "@/composables/uploadQueue";
+import { buildPreparedUpload } from "@/utils/upload";
 import { mapToLocalFileUpload } from "@/utils/upload/itemMappers";
 import { bytesToString } from "@/utils/utils";
 
-import type { UploadMethodComponent, UploadMethodConfig } from "../types";
+import type { PreparedUpload, UploadMethodComponent, UploadMethodConfig } from "../types";
 import type { LocalFileItem } from "../types/uploadItem";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
@@ -32,10 +35,27 @@ import GTable from "@/components/Common/GTable.vue";
 
 interface Props {
     method: UploadMethodConfig;
+    /** History ID where uploaded datasets will be added. */
     targetHistoryId: string;
+    /** Allow creating dataset collections from selected files. */
+    allowCollections?: boolean;
+    /** Optional list of allowed formats to constrain selectable extensions. */
+    formats?: string[];
+    /** When false, restrict selection to a single file. */
+    multiple?: boolean;
+    /** When true, do not persist staging to the shared store (modal use). */
+    transient?: boolean;
+    /** Files to pre-stage when the component is opened in modal mode. */
+    initialFiles?: File[];
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    allowCollections: true,
+    formats: undefined,
+    multiple: true,
+    transient: false,
+    initialFiles: undefined,
+});
 
 const emit = defineEmits<{
     (e: "ready", ready: boolean): void;
@@ -43,20 +63,23 @@ const emit = defineEmits<{
 
 const { advancedMode } = useUploadAdvancedMode();
 
-const uploadQueue = useUploadQueue();
+const optionVisibility = computed(() => localUploadOptionVisibility(advancedMode.value));
 
-const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults();
+const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults(props.formats);
 
 const selectedFiles = ref<LocalFileItem[]>([]);
-const { clear: clearStaging } = useUploadStaging<LocalFileItem>(props.method.id, selectedFiles);
+const { clear: clearStaging } = useUploadStaging<LocalFileItem>(props.method.id, selectedFiles, {
+    disableStore: props.transient,
+});
 const uploadFile = ref<HTMLInputElement | null>(null);
 const dropZoneElement = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
 
-const { collectionState, handleCollectionStateChange, buildCollectionConfig, resetCollection } =
+const { buildCollectionConfig, collectionState, handleCollectionStateChange, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
 
 const hasFiles = computed(() => selectedFiles.value.length > 0);
+const canAddMoreFiles = computed(() => props.multiple !== false || selectedFiles.value.length === 0);
 const totalSize = computed(() => {
     const bytes = selectedFiles.value.reduce((sum, item) => sum + item.file.size, 0);
     return bytesToString(bytes);
@@ -65,12 +88,16 @@ const totalSize = computed(() => {
 const { isNameValid, restoreOriginalName } = useUploadItemValidation();
 
 const bulk = useBulkUploadOperations(selectedFiles, effectiveExtensions);
+const { headerOptionProps, headerOptionEvents, getRowOptionProps, getRowOptionEvents } = useUploadOptionBindings(
+    bulk,
+    optionVisibility,
+);
 
 const { isReadyToUpload } = useUploadReadyState(hasFiles, collectionState);
 
 const showDragOverlay = computed(() => hasFiles.value && isFileOverDropZone.value);
 
-const tableFields: TableField[] = [
+const tableFields = computed<TableField[]>(() => [
     {
         key: "name",
         label: "Name",
@@ -104,7 +131,7 @@ const tableFields: TableField[] = [
         key: "options",
         label: "Upload Settings",
         sortable: false,
-        width: "140px",
+        width: getUploadSettingsColumnWidth(optionVisibility.value),
         align: "center",
     },
     {
@@ -114,7 +141,7 @@ const tableFields: TableField[] = [
         width: "50px",
         align: "center",
     },
-];
+]);
 
 watch(isReadyToUpload, (ready) => emit("ready", ready), { immediate: true });
 
@@ -141,7 +168,14 @@ function addFiles(files: FileList | File[] | null) {
     const fileArray = Array.from(files);
     const defaults = createItemDefaults();
 
-    for (const file of fileArray) {
+    // Enforce single file limit if multiple is false
+    const filesToAdd = props.multiple === false ? fileArray.slice(0, 1) : fileArray;
+
+    for (const file of filesToAdd) {
+        // If multiple is false, replace existing files
+        if (props.multiple === false) {
+            selectedFiles.value = [];
+        }
         selectedFiles.value.push({
             file,
             name: file.name,
@@ -151,14 +185,39 @@ function addFiles(files: FileList | File[] | null) {
     }
 }
 
+watch(
+    () => props.initialFiles,
+    (files) => {
+        if (!files || files.length === 0) {
+            return;
+        }
+
+        const existingSignatures = new Set(
+            selectedFiles.value.map((item) => `${item.file.name}:${item.file.size}:${item.file.lastModified}`),
+        );
+        const filesToAdd = files.filter(
+            (file) => !existingSignatures.has(`${file.name}:${file.size}:${file.lastModified}`),
+        );
+        if (filesToAdd.length > 0) {
+            addFiles(filesToAdd);
+        }
+    },
+    { immediate: true },
+);
+
 function removeFile(index: number) {
     selectedFiles.value.splice(index, 1);
 }
 
 function addFileFromInput(eventTarget: EventTarget | null) {
-    const files = (eventTarget as HTMLInputElement)?.files;
+    const input = eventTarget as HTMLInputElement | null;
+    const files = input?.files;
     if (files) {
         addFiles(files);
+    }
+    // Reset the input so subsequent selections don't accumulate files
+    if (input) {
+        input.value = "";
     }
 }
 
@@ -166,22 +225,22 @@ function handleBrowse() {
     uploadFile.value?.click();
 }
 
-function clearAll() {
+function reset() {
     selectedFiles.value = [];
     resetCollection();
-}
-
-function startUpload() {
-    const uploads = selectedFiles.value.map((item) => mapToLocalFileUpload(item, props.targetHistoryId));
-    const collectionConfig = buildCollectionConfig(props.targetHistoryId);
-
-    uploadQueue.enqueue(uploads, collectionConfig);
-    selectedFiles.value = [];
     clearStaging();
-    resetCollection();
 }
 
-defineExpose<UploadMethodComponent>({ startUpload });
+function prepareUpload(): PreparedUpload | null {
+    if (selectedFiles.value.length === 0) {
+        return null;
+    }
+
+    const uploads = selectedFiles.value.map((item) => mapToLocalFileUpload(item, props.targetHistoryId));
+    return buildPreparedUpload(uploads, buildCollectionConfig(props.targetHistoryId));
+}
+
+defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 </script>
 
 <template>
@@ -214,8 +273,9 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                 <div class="file-table-container">
                     <GTable hover striped compact fixed :items="selectedFiles" :fields="tableFields" class="file-table">
-                        <template v-slot:cell(name)="{ item }">
+                        <template v-slot:cell(name)="{ item, index }">
                             <UploadTableNameCell
+                                :data-test-id="`upload-row-${index + 1}-name`"
                                 :value="item.name"
                                 :state="isNameValid(item.name)"
                                 tooltip="Dataset name in your history (required)"
@@ -237,8 +297,9 @@ defineExpose<UploadMethodComponent>({ startUpload });
                                 @input="bulk.setAllExtensions" />
                         </template>
 
-                        <template v-slot:cell(extension)="{ item }">
+                        <template v-slot:cell(extension)="{ item, index }">
                             <UploadTableExtensionCell
+                                :data-test-id="`upload-row-${index + 1}-extension`"
                                 :value="item.extension"
                                 :extensions="effectiveExtensions"
                                 :warning="bulk.getExtensionWarning(item.extension)"
@@ -255,8 +316,9 @@ defineExpose<UploadMethodComponent>({ startUpload });
                                 @input="bulk.setAllDbKeys" />
                         </template>
 
-                        <template v-slot:cell(dbKey)="{ item }">
+                        <template v-slot:cell(dbKey)="{ item, index }">
                             <UploadTableDbKeyCell
+                                :data-test-id="`upload-row-${index + 1}-dbkey`"
                                 :value="item.dbkey"
                                 :db-keys="listDbKeys"
                                 :disabled="!configurationsReady"
@@ -264,39 +326,31 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         </template>
 
                         <template v-slot:head(options)>
-                            <UploadTableOptionsHeader
-                                :all-space-to-tab="bulk.allSpaceToTab.value"
-                                :space-to-tab-indeterminate="bulk.spaceToTabIndeterminate.value"
-                                :show-posix="advancedMode"
-                                :all-to-posix-lines="bulk.allToPosixLines.value"
-                                :to-posix-lines-indeterminate="bulk.toPosixLinesIndeterminate.value"
-                                @toggle-space-to-tab="bulk.toggleAllSpaceToTab"
-                                @toggle-to-posix-lines="bulk.toggleAllToPosixLines" />
+                            <UploadTableOptionsHeader v-bind="headerOptionProps" v-on="headerOptionEvents" />
                         </template>
 
                         <template v-slot:cell(options)="{ item }">
-                            <UploadTableOptionsCell
-                                :space-to-tab="item.spaceToTab"
-                                :show-posix="advancedMode"
-                                :to-posix-lines="item.toPosixLines"
-                                @updateSpaceToTab="item.spaceToTab = $event"
-                                @updateToPosixLines="item.toPosixLines = $event" />
+                            <UploadTableOptionsCell v-bind="getRowOptionProps(item)" v-on="getRowOptionEvents(item)" />
                         </template>
 
                         <template v-slot:cell(actions)="{ index }">
-                            <button
-                                v-b-tooltip.hover.noninteractive
-                                class="btn btn-link text-danger remove-btn"
+                            <GButton
+                                v-g-tooltip.hover
+                                class="remove-btn"
+                                :data-test-id="`upload-row-${index + 1}-remove`"
+                                outline
+                                transparent
                                 title="Remove file from list"
                                 @click="removeFile(index)">
-                                <FontAwesomeIcon :icon="faTimes" />
-                            </button>
+                                <FontAwesomeIcon :icon="faTrash" />
+                            </GButton>
                         </template>
                     </GTable>
                 </div>
 
                 <!-- Collection Creation Section -->
                 <CollectionCreationConfig
+                    v-if="props.allowCollections !== false"
                     ref="collectionConfigComponent"
                     :files="selectedFiles"
                     @update:state="handleCollectionStateChange" />
@@ -306,7 +360,12 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         color="grey"
                         tooltip
                         tooltip-placement="top"
-                        title="Browse and add more files to the upload list"
+                        :disabled="!canAddMoreFiles"
+                        :title="
+                            canAddMoreFiles
+                                ? 'Browse and add more files to the upload list'
+                                : 'Only one file can be selected'
+                        "
                         @click="handleBrowse">
                         <FontAwesomeIcon :icon="faLaptop" class="mr-1" />
                         Add More Files
@@ -317,7 +376,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         tooltip
                         tooltip-placement="top"
                         title="Remove all files from the upload list"
-                        @click="clearAll">
+                        @click="reset">
                         Clear All
                     </GButton>
                 </div>
@@ -337,7 +396,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                 id="local-file-input"
                 ref="uploadFile"
                 type="file"
-                multiple
+                :multiple="props.multiple !== false"
                 class="d-none"
                 @change="addFileFromInput($event.target)" />
         </div>

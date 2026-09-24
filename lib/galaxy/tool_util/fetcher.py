@@ -1,7 +1,5 @@
 import os
 from typing import (
-    Dict,
-    Type,
     TYPE_CHECKING,
 )
 
@@ -16,7 +14,7 @@ class ToolLocationFetcher:
     def __init__(self):
         self.resolver_classes = self.__resolvers_dict()
 
-    def __resolvers_dict(self) -> Dict[str, Type["ToolLocationResolver"]]:
+    def __resolvers_dict(self) -> dict[str, type["ToolLocationResolver"]]:
         import galaxy.tool_util.locations
 
         return plugin_config.plugins_dict(galaxy.tool_util.locations, "scheme")

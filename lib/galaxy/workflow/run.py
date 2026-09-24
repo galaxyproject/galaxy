@@ -5,7 +5,6 @@ from typing import (
     Any,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from boltons.iterutils import get_path
@@ -47,15 +46,15 @@ from galaxy.workflow.run_request import (
 )
 
 if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesHistoryContext
     from galaxy.model import (
-        HistoryItem,
         Workflow,
         WorkflowOutput,
         WorkflowStep,
         WorkflowStepConnection,
     )
-    from galaxy.webapps.base.webapp import GalaxyWebTransaction
     from galaxy.work.context import WorkRequestContext
+    from galaxy.workflow.scheduling_manager import WorkflowSchedulingManager
 
 log = logging.getLogger(__name__)
 
@@ -76,7 +75,7 @@ def __invoke(
     trans: "WorkRequestContext",
     workflow: "Workflow",
     workflow_run_config: WorkflowRunConfig,
-    workflow_invocation: Optional[WorkflowInvocation] = None,
+    workflow_invocation: WorkflowInvocation | None = None,
     populate_state: bool = False,
 ) -> tuple[WorkflowOutputsType, WorkflowInvocation]:
     """Run the supplied workflow in the supplied target_history."""
@@ -126,10 +125,11 @@ def __invoke(
 
 
 def queue_invoke(
-    trans: "GalaxyWebTransaction",
+    trans: "ProvidesHistoryContext",
     workflow: "Workflow",
     workflow_run_config: WorkflowRunConfig,
-    request_params: Optional[dict[str, Any]] = None,
+    workflow_scheduling_manager: "WorkflowSchedulingManager",
+    request_params: dict[str, Any] | None = None,
     populate_state: bool = True,
     flush: bool = True,
 ) -> WorkflowInvocation:
@@ -146,7 +146,7 @@ def queue_invoke(
     initial_state = model.WorkflowInvocation.states.NEW
     if workflow_run_config.requires_materialization:
         initial_state = model.WorkflowInvocation.states.REQUIRES_MATERIALIZATION
-    return trans.app.workflow_scheduling_manager.queue(
+    return workflow_scheduling_manager.queue(
         workflow_invocation, request_params, flush=flush, initial_state=initial_state
     )
 
@@ -159,7 +159,7 @@ class WorkflowInvoker:
         trans: "WorkRequestContext",
         workflow: "Workflow",
         workflow_run_config: WorkflowRunConfig,
-        workflow_invocation: Optional[WorkflowInvocation] = None,
+        workflow_invocation: WorkflowInvocation | None = None,
         progress: Optional["WorkflowProgress"] = None,
     ) -> None:
         self.trans = trans
@@ -361,7 +361,7 @@ class WorkflowInvoker:
                     )
                 )
 
-    def _invoke_step(self, invocation_step: WorkflowInvocationStep) -> Optional[bool]:
+    def _invoke_step(self, invocation_step: WorkflowInvocationStep) -> bool | None:
         assert invocation_step.workflow_step.module
         incomplete_or_none = invocation_step.workflow_step.module.execute(
             self.trans,
@@ -376,7 +376,7 @@ STEP_OUTPUT_DELAYED = object()
 
 
 class ModuleInjector(Protocol):
-    trans: "WorkRequestContext"
+    trans: "ProvidesHistoryContext"
 
     def inject(self, step, step_args=None, steps=None, **kwargs):
         pass
@@ -398,7 +398,7 @@ class WorkflowProgress:
         jobs_per_scheduling_iteration: int = -1,
         copy_inputs_to_history: bool = False,
         use_cached_job: bool = False,
-        replacement_dict: Optional[dict[str, str]] = None,
+        replacement_dict: dict[str, str] | None = None,
         subworkflow_collection_info=None,
         when_values=None,
     ) -> None:
@@ -418,7 +418,7 @@ class WorkflowProgress:
         self.when_values = when_values
 
     @property
-    def maximum_jobs_to_schedule_or_none(self) -> Optional[int]:
+    def maximum_jobs_to_schedule_or_none(self) -> int | None:
         if self.jobs_per_scheduling_iteration > 0:
             return self.jobs_per_scheduling_iteration - self.jobs_scheduled_this_iteration
         else:
@@ -429,7 +429,7 @@ class WorkflowProgress:
 
     def remaining_steps(
         self,
-    ) -> list[tuple["WorkflowStep", Optional[WorkflowInvocationStep]]]:
+    ) -> list[tuple["WorkflowStep", WorkflowInvocationStep | None]]:
         # Previously computed and persisted step states.
         step_states = self.workflow_invocation.step_states_by_step_id()
         steps = self.workflow_invocation.workflow.steps
@@ -459,13 +459,10 @@ class WorkflowProgress:
                 remaining_steps.append((step, invocation_step))
         return remaining_steps
 
-    def replacement_for_input(self, trans, step: "WorkflowStep", input_dict: dict[str, Any]):
-        replacement: Union[
-            NoReplacement,
-            model.DatasetCollectionInstance,
-            list[model.DatasetCollectionInstance],
-            HistoryItem,
-        ] = NO_REPLACEMENT
+    def replacement_for_input(
+        self, trans: "ProvidesHistoryContext", step: "WorkflowStep", input_dict: modules.InputDescription
+    ) -> modules.StepInputReplacement:
+        replacement: modules.StepInputReplacement = NO_REPLACEMENT
         prefixed_name = input_dict["name"]
         multiple = input_dict["multiple"]
         is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]
@@ -496,6 +493,7 @@ class WorkflowProgress:
         elif (step_input := step.inputs_by_name.get(prefixed_name)) and step_input.default_value_set:
             replacement = step_input.default_value
             if is_data:
+                assert trans.history is not None
                 replacement = raw_to_galaxy(trans.app, trans.history, step_input.default_value)
         return replacement
 
@@ -603,7 +601,7 @@ class WorkflowProgress:
     def set_outputs_for_input(
         self,
         invocation_step: WorkflowInvocationStep,
-        outputs: Optional[dict[str, Any]] = None,
+        outputs: dict[str, Any] | None = None,
         already_persisted: bool = False,
     ) -> None:
         step = invocation_step.workflow_step
@@ -690,7 +688,7 @@ class WorkflowProgress:
             output = {"__class__": "NoReplacement"}
         self.workflow_invocation.add_output(workflow_output, step, output)
 
-    def mark_step_outputs_delayed(self, step: "WorkflowStep", why: Optional[str] = None) -> None:
+    def mark_step_outputs_delayed(self, step: "WorkflowStep", why: str | None = None) -> None:
         if why:
             message = f"Marking step {step.id} outputs of invocation {self.workflow_invocation.id} delayed ({why})"
             log.debug(message)
@@ -724,7 +722,13 @@ class WorkflowProgress:
         # Determine output value from inputs_by_step_id or default
         outputs = {}
         if step.id not in self.inputs_by_step_id:
-            outputs["output"] = step.get_input_default_value(NO_REPLACEMENT)
+            default_value = step.get_input_default_value(NO_REPLACEMENT)
+            # For parameter_input steps, unwrap {"src": "json", "value": X}
+            # dicts to just X — matching the unwrap logic in
+            # InputParameterModule.get_input_value().
+            if step.type == "parameter_input" and isinstance(default_value, dict):
+                default_value = default_value.get("value", default_value)
+            outputs["output"] = default_value
         else:
             outputs["output"] = self.inputs_by_step_id[step.id]
 
@@ -823,7 +827,9 @@ class WorkflowProgress:
         )
 
     def raw_to_galaxy(self, value: dict):
-        return raw_to_galaxy(self.module_injector.trans.app, self.module_injector.trans.history, value)
+        trans = self.module_injector.trans
+        assert trans.history is not None
+        return raw_to_galaxy(trans.app, trans.history, value)
 
     def _recover_mapping(self, step_invocation: WorkflowInvocationStep) -> None:
         assert step_invocation.workflow_step.module

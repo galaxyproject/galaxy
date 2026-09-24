@@ -1,10 +1,11 @@
 <script setup>
 import { faExclamationCircle, faHdd, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BModal, BPopover } from "bootstrap-vue";
+import { BAlert, BPopover } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
+import { useToolRouting } from "@/composables/route";
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
@@ -12,6 +13,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
+import GModal from "../BaseComponents/GModal.vue";
 import ToolCredentials from "./ToolCredentials.vue";
 import ToolHelpForum from "./ToolHelpForum.vue";
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore.vue";
@@ -87,6 +89,7 @@ const props = defineProps({
 const emit = defineEmits(["onChangeVersion", "updatePreferredObjectStoreId"]);
 
 const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDefinitionsStore();
+const { routeToTool } = useToolRouting();
 
 function onChangeVersion(v) {
     emit("onChangeVersion", v);
@@ -116,8 +119,22 @@ const { isOnlyPreference } = useStorageLocationConfiguration();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 const { isLoaded: isConfigLoaded, config } = storeToRefs(useConfigStore());
 const hasUser = computed(() => !isAnonymous.value);
-const versions = computed(() => props.options.versions);
-const showVersions = computed(() => props.options.versions?.length > 1);
+const versions = computed(() => props.options.versions ?? []);
+const hiddenVersions = computed(() => props.options.hidden_versions ?? []);
+const visibleVersions = computed(() => {
+    const filtered = versions.value.filter((v) => !hiddenVersions.value.includes(v));
+    if (props.version && !filtered.includes(props.version) && versions.value.includes(props.version)) {
+        filtered.push(props.version);
+    }
+    return filtered;
+});
+const showVersions = computed(() => visibleVersions.value.length > 1);
+const latestVersion = computed(() => versions.value[versions.value.length - 1]);
+const isNotLatestVersion = computed(() => Boolean(latestVersion.value && props.version !== latestVersion.value));
+
+function onNewerVersionClick() {
+    routeToTool(props.id);
+}
 
 const storageLocationModalTitle = computed(() => {
     if (isOnlyPreference.value) {
@@ -157,14 +174,16 @@ onBeforeMount(() => {
         :error-message="errorText || ''"
         :description="props.description"
         :name="props.title"
-        :version="props.version">
+        :version="props.version"
+        :is-not-latest-version="isNotLatestVersion"
+        @newer-version-click="onNewerVersionClick">
         <template v-slot:buttons>
             <GButtonGroup class="tool-card-buttons">
                 <ToolFavoriteButton v-if="hasUser" :id="props.id" />
                 <ToolVersionsButton
                     v-if="showVersions"
                     :version="props.version"
-                    :versions="versions"
+                    :versions="visibleVersions"
                     @onChangeVersion="onChangeVersion" />
                 <ToolOptionsButton
                     :id="props.id"
@@ -188,21 +207,16 @@ onBeforeMount(() => {
                 v-if="allowObjectStoreSelection"
                 :tool-preferred-object-store-id="toolPreferredObjectStoreId"
                 :user="currentUser" />
-            <BModal
+            <GModal
                 id="modal-select-preferred-object-store"
-                v-model="showPreferredObjectStoreModal"
+                :show.sync="showPreferredObjectStoreModal"
                 :title="storageLocationModalTitle"
-                scrollable
-                centered
-                modal-class="tool-preferred-object-store-modal"
-                title-tag="h3"
-                size="lg"
-                ok-only
-                ok-title="Close">
+                size="small">
                 <ToolSelectPreferredObjectStore
+                    v-if="showPreferredObjectStoreModal"
                     :tool-preferred-object-store-id="toolPreferredObjectStoreId"
                     @updated="onUpdatePreferredObjectStoreId" />
-            </BModal>
+            </GModal>
             <slot name="buttons" />
         </template>
 
@@ -216,7 +230,7 @@ onBeforeMount(() => {
                     :job-credentials-context="props.options.job_credentials_context" />
                 <BAlert
                     v-else-if="props.allowEditingCredentials"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     variant="info"
                     class="mt-2"
                     show

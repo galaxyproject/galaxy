@@ -31,7 +31,7 @@ const { loading, loadErrorMessage, selectableObjectStores } = storeToRefs(store)
 const selectableAndVisibleObjectStores = computed(() => {
     const allSelectableObjectStores = selectableObjectStores.value;
     if (allSelectableObjectStores != null) {
-        return allSelectableObjectStores.filter((item) => {
+        return allSelectableObjectStores.filter((item: UserConcreteObjectStoreModel) => {
             return "hidden" in item ? !item.hidden : true;
         });
     } else {

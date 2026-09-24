@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BButton } from "bootstrap-vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const emit = defineEmits(["onArchive"]);
 
@@ -23,8 +23,6 @@ function onArchiveHistory() {
             <i>active</i> histories.
         </p>
 
-        <BButton class="archive-history-btn mt-3" variant="primary" @click="onArchiveHistory">
-            Archive history
-        </BButton>
+        <GButton class="archive-history-btn mt-3" color="blue" @click="onArchiveHistory"> Archive history </GButton>
     </div>
 </template>

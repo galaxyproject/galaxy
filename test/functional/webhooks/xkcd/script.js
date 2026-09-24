@@ -1,56 +1,41 @@
-$(document).ready(function() {
+// Injected by the webhook framework (see appendScriptStyle in client/src/utils/utils.ts).
+// Runs in the global page scope wrapped in an IIFE, so it must be self-contained
+// vanilla JS -- Backbone, underscore and jQuery are no longer available globals.
+// The comic is fetched through the server-side helper (__init__.py) because the
+// xkcd JSON API sends no CORS headers and is only served over HTTPS.
+const root = typeof Galaxy !== "undefined" && Galaxy.root ? Galaxy.root : "/";
+const container = document.getElementById("xkcd");
 
-    var XkcdAppView = Backbone.View.extend({
-        el: '#xkcd',
+if (container) {
+    container.innerHTML =
+        '<div id="xkcd-header">' +
+        '<div id="xkcd-name">xkcd</div>' +
+        '<button id="xkcd-random" type="button">Random</button>' +
+        "</div>" +
+        '<div id="xkcd-img"></div>';
 
-        appTemplate: _.template(
-            '<div id="xkcd-header">' +
-                '<div id="xkcd-name">xkcd</div>' +
-                '<button id="xkcd-random">Random</button>' +
-            '</div>' +
-            '<div id="xkcd-img"></div>'
-        ),
+    const imgContainer = document.getElementById("xkcd-img");
 
-        imgTemplate: _.template('<img src="<%= img %>" alt="<%= alt %>" title="<%= title %>">'),
-
-        events: {
-            'click #xkcd-random': 'getRandomXkcd'
-        },
-
-        initialize: function() {
-            var me = this;
-
-            this.render();
-
-            // Get id of the last xkcd
-            $.getJSON('http://dynamic.xkcd.com/api-0/jsonp/comic?callback=?', function(data) {
-                me.latestXkcdId = data.num;
-                me.getRandomXkcd();
-            });
-        },
-
-        render: function() {
-            this.$el.html(this.appTemplate());
-            this.xkcdImg = this.$('#xkcd-img');
-            return this;
-        },
-
-        getRandomXkcd: function() {
-            var me = this,
-                randomId = Math.floor(Math.random() * this.latestXkcdId) + 1;
-
-            this.xkcdImg.html($('<div/>', {id: 'xkcd-loader'}));
-            $.getJSON('http://dynamic.xkcd.com/api-0/jsonp/comic/' + randomId + '?callback=?', function(data) {
-                me.xkcd = {img: data.img, alt: data.alt, title: data.title};
-                me.renderImg();
-            });
-        },
-
-        renderImg: function() {
-            this.xkcdImg.html(this.imgTemplate({img: this.xkcd.img, alt: this.xkcd.alt, title: this.xkcd.title}));
+    async function loadRandomComic() {
+        imgContainer.innerHTML = '<div id="xkcd-loader"></div>';
+        const url = `${root}api/webhooks/xkcd/data`;
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data.success) {
+                const img = document.createElement("img");
+                img.src = data.comic.img;
+                img.alt = data.comic.alt;
+                img.title = data.comic.title;
+                imgContainer.replaceChildren(img);
+            } else {
+                console.error(`[xkcd webhook] "${url}":\n${data.error}`);
+            }
+        } catch (e) {
+            console.error(`[xkcd webhook] request to "${url}" failed`, e);
         }
-    });
+    }
 
-    var XkcdApp = new XkcdAppView;
-
-});
+    document.getElementById("xkcd-random").addEventListener("click", loadRandomComic);
+    loadRandomComic();
+}

@@ -23,7 +23,7 @@
 
         <GLink
             v-if="orcidLink"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             tooltip
             title="View orcid.org profile"
             :href="orcidLink"
@@ -31,7 +31,7 @@
             <link itemprop="identifier" :href="orcidLink" />
             <FontAwesomeIcon :icon="faOrcid" />
         </GLink>
-        <GLink v-if="url" v-b-tooltip.hover tooltip title="URL" :href="url" target="_blank">
+        <GLink v-if="url" v-g-tooltip.hover tooltip title="URL" :href="url" target="_blank">
             <link itemprop="url" :href="url" />
             <FontAwesomeIcon :icon="faExternalLinkAlt" />
         </GLink>

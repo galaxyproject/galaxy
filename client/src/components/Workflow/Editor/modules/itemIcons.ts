@@ -1,6 +1,7 @@
 import {
     faArrowRightFromBracket,
     faArrowRightToBracket,
+    faCodeBranch,
     faComment,
     faFile,
     faFolderOpen,
@@ -22,6 +23,7 @@ export const iconForType = {
         parameter_input: faPen,
         subworkflow: faSitemap,
         pause: faPause,
+        pick_value: faCodeBranch,
     },
     input: faArrowRightToBracket,
     output: faArrowRightFromBracket,

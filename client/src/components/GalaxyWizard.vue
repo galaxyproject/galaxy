@@ -8,6 +8,7 @@ import { GalaxyApi } from "@/api";
 import { useMarkdown } from "@/composables/markdown";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "./BaseComponents/GAlert.vue";
 import GButton from "./BaseComponents/GButton.vue";
 import LoadingSpan from "./LoadingSpan.vue";
 
@@ -28,6 +29,7 @@ const errorMessage = ref("");
 const busy = ref(false);
 const feedback = ref<null | "up" | "down">(null);
 const hasError = ref(false);
+const truncationNotice = ref("");
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
 
 /** On submit, query the server and put response in display box **/
@@ -36,6 +38,7 @@ async function submitQuery() {
     hasError.value = false;
     errorMessage.value = "";
     queryResponse.value = "";
+    truncationNotice.value = "";
 
     if (query.value === "") {
         errorMessage.value = "There is no context to provide a response.";
@@ -69,6 +72,16 @@ async function submitQuery() {
             hasError.value = true;
             errorMessage.value = metadataError;
         }
+
+        if (data.metadata?.query_truncated) {
+            // original_query_length is untyped over the wire, so narrow before formatting.
+            const length = data.metadata.original_query_length;
+            const amount =
+                typeof length === "number"
+                    ? `This tool recorded at least ${length.toLocaleString()} characters of error output, which is too much to analyze in full.`
+                    : "This tool recorded too much error output to analyze in full.";
+            truncationNotice.value = `${amount} Only the beginning and the end were sent for analysis, so the diagnosis may have missed something in between.`;
+        }
     }
 
     busy.value = false;
@@ -91,20 +104,38 @@ async function sendFeedback(value: "up" | "down") {
 </script>
 
 <template>
-    <div>
-        <GButton v-if="!queryResponse" class="w-100" variant="info" :disabled="busy" @click="submitQuery">
+    <div data-description="galaxy wizard">
+        <GButton
+            v-if="!queryResponse"
+            class="w-100"
+            variant="info"
+            :disabled="busy"
+            data-description="galaxy wizard analyze button"
+            @click="submitQuery">
             <span v-if="!busy"> Let our Help Wizard Figure it out! </span>
             <LoadingSpan v-else message="Thinking" />
         </GButton>
         <div :class="props.view == 'wizard' && 'mt-4'">
-            <div v-if="busy">
+            <div v-if="busy" data-description="galaxy wizard loading">
                 <BSkeleton animation="wave" width="85%" />
                 <BSkeleton animation="wave" width="55%" />
                 <BSkeleton animation="wave" width="70%" />
             </div>
             <div v-else>
+                <GAlert
+                    v-if="truncationNotice && !hasError"
+                    class="p-2"
+                    variant="warning"
+                    data-description="galaxy wizard truncation notice"
+                    show>
+                    {{ truncationNotice }}
+                </GAlert>
+
                 <!-- eslint-disable-next-line vue/no-v-html -->
-                <div class="chatResponse" v-html="renderMarkdown(queryResponse)" />
+                <div
+                    class="chatResponse"
+                    data-description="galaxy wizard response"
+                    v-html="renderMarkdown(queryResponse)" />
 
                 <template v-if="errorMessage">
                     <hr class="error-divider" />
@@ -112,13 +143,17 @@ async function sendFeedback(value: "up" | "down") {
                 </template>
             </div>
 
-            <div v-if="queryResponse && !hasError" class="feedback-buttons mt-2">
+            <div
+                v-if="queryResponse && !hasError"
+                class="feedback-buttons mt-2"
+                data-description="galaxy wizard feedback">
                 <hr class="w-100" />
                 <h4>Was this answer helpful?</h4>
                 <GButton
                     color="green"
                     :disabled="feedback !== null"
                     :class="{ submitted: feedback === 'up' }"
+                    data-description="galaxy wizard feedback up"
                     @click="sendFeedback('up')">
                     <FontAwesomeIcon :icon="faThumbsUp" fixed-width />
                 </GButton>
@@ -126,11 +161,12 @@ async function sendFeedback(value: "up" | "down") {
                     color="red"
                     :disabled="feedback !== null"
                     :class="{ submitted: feedback === 'down' }"
+                    data-description="galaxy wizard feedback down"
                     @click="sendFeedback('down')">
                     <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
                 </GButton>
                 <i v-if="!feedback">This feedback helps us improve our responses.</i>
-                <i v-else>Thank you for your feedback!</i>
+                <i v-else data-description="galaxy wizard feedback ack">Thank you for your feedback!</i>
             </div>
         </div>
     </div>

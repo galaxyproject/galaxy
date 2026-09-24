@@ -1,12 +1,7 @@
 import functools
 import json
 import os
-from typing import (
-    Callable,
-    Dict,
-    List,
-    Optional,
-)
+from collections.abc import Callable
 
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
@@ -16,7 +11,7 @@ from .interface import BiotoolsEntry
 
 
 class BiotoolsMetadataSource:
-    def get_biotools_metadata(self, biotools_reference: str) -> Optional[BiotoolsEntry]:
+    def get_biotools_metadata(self, biotools_reference: str) -> BiotoolsEntry | None:
         """Return a BiotoolsEntry if available."""
 
 
@@ -26,7 +21,7 @@ class GitContentBiotoolsMetadataSource(BiotoolsMetadataSource):
     def __init__(self, content_directory):
         self._content_directory = content_directory
 
-    def get_biotools_metadata(self, biotools_reference: str) -> Optional[BiotoolsEntry]:
+    def get_biotools_metadata(self, biotools_reference: str) -> BiotoolsEntry | None:
         """Return a BiotoolsEntry if available."""
         path = os.path.join(self._content_directory, "data", biotools_reference, f"{biotools_reference}.biotools.json")
         if not os.path.exists(path):
@@ -37,9 +32,9 @@ class GitContentBiotoolsMetadataSource(BiotoolsMetadataSource):
 
 
 class InMemoryCache:
-    backend: Dict[str, Optional[str]] = {}
+    backend: dict[str, str | None] = {}
 
-    def get(self, key: str, createfunc: Callable[[], Optional[str]]):
+    def get(self, key: str, createfunc: Callable[[], str | None]):
         backend = self.backend
         if key not in backend:
             backend[key] = createfunc()
@@ -53,7 +48,7 @@ class ApiBiotoolsMetadataSource(BiotoolsMetadataSource):
     def __init__(self, cache=None):
         self._cache = cache or InMemoryCache()
 
-    def _raw_get_metadata(self, biotools_reference) -> Optional[str]:
+    def _raw_get_metadata(self, biotools_reference) -> str | None:
         api_url = f"https://bio.tools/api/tool/{biotools_reference}?format=json"
         try:
             req = requests.get(api_url, timeout=DEFAULT_SOCKET_TIMEOUT)
@@ -63,7 +58,7 @@ class ApiBiotoolsMetadataSource(BiotoolsMetadataSource):
         except Exception:
             return None
 
-    def get_biotools_metadata(self, biotools_reference: str) -> Optional[BiotoolsEntry]:
+    def get_biotools_metadata(self, biotools_reference: str) -> BiotoolsEntry | None:
         createfunc = functools.partial(self._raw_get_metadata, biotools_reference)
         content = self._cache.get(key=biotools_reference, createfunc=createfunc)
         if content is not None:
@@ -73,8 +68,8 @@ class ApiBiotoolsMetadataSource(BiotoolsMetadataSource):
 
 
 class CascadingBiotoolsMetadataSource(BiotoolsMetadataSource):
-    def __init__(self, use_api=False, cache=None, content_directory: Optional[str] = None):
-        sources: List[BiotoolsMetadataSource] = []
+    def __init__(self, use_api=False, cache=None, content_directory: str | None = None):
+        sources: list[BiotoolsMetadataSource] = []
         if content_directory:
             git_content_source = GitContentBiotoolsMetadataSource(content_directory)
             sources.append(git_content_source)
@@ -83,7 +78,7 @@ class CascadingBiotoolsMetadataSource(BiotoolsMetadataSource):
             sources.append(api_metadata_source)
         self._sources = sources
 
-    def get_biotools_metadata(self, biotools_reference: str) -> Optional[BiotoolsEntry]:
+    def get_biotools_metadata(self, biotools_reference: str) -> BiotoolsEntry | None:
         for source in self._sources:
             entry = source.get_biotools_metadata(biotools_reference)
             if entry is not None:
@@ -93,7 +88,7 @@ class CascadingBiotoolsMetadataSource(BiotoolsMetadataSource):
 
 class BiotoolsMetadataSourceConfig:
     use_api: bool = False
-    content_directory: Optional[str] = None
+    content_directory: str | None = None
     cache = None
 
 

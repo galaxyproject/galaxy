@@ -26,21 +26,83 @@
 Synopsis
 ========
 
-Converts a sample sheet collection back to its corresponding list collection type.
+Strips sample sheet metadata and produces a regular list collection.
+
+========================
+What is a sample sheet?
+========================
+
+A sample sheet is a special type of Galaxy collection that pairs each dataset with structured metadata — such as replicate number, treatment condition, or tissue type. It works like a regular list collection but with an attached spreadsheet of per-sample information.
 
 ===========
 Description
 ===========
 
-This tool takes a sample sheet collection and produces a regular list collection, removing all sample sheet metadata (column definitions and row values).
+This tool removes the metadata layer from a sample sheet and converts it to the corresponding regular list collection type. The datasets themselves are unchanged — only the column definitions and row values are discarded.
 
 The conversion follows this mapping:
 
-- ``sample_sheet`` becomes ``list``
-- ``sample_sheet:paired`` becomes ``list:paired``
-- ``sample_sheet:paired_or_unpaired`` becomes ``list:paired_or_unpaired``
+- ``sample_sheet`` → ``list``
+- ``sample_sheet:paired`` → ``list:paired``
+- ``sample_sheet:paired_or_unpaired`` → ``list:paired_or_unpaired``
 
-Use this tool when you need to pass a sample sheet to a tool that expects a regular list collection, or when you want to discard the sample sheet metadata.
+Use this when you need to pass a sample sheet to a tool that only accepts regular list collections.
+
+========
+Examples
+========
+
+**Flat sample sheet**
+
+Suppose you have an RNA-seq experiment uploaded as a sample sheet collection with metadata about each sample::
+
+ Sample Sheet: "RNA-seq experiment"
+   Column definitions: replicate (int), treatment (string)
+
+   sample1.fastq  |  replicate=1, treatment="control"
+   sample2.fastq  |  replicate=2, treatment="treated"
+
+Running **Convert sample sheet** strips the metadata and produces a plain list::
+
+ List: "RNA-seq experiment (converted)"
+
+   sample1.fastq
+   sample2.fastq
+
+Same datasets, same identifiers, but now it is a regular list that any tool can consume.
+
+-------
+
+**Paired sample sheet**
+
+If your sample sheet contains paired-end reads (``sample_sheet:paired``), the tool converts it to ``list:paired``::
+
+ Sample Sheet (paired): "WGS samples"
+   Column definitions: replicate (int)
+
+   sample1  ->  [forward, reverse]  |  replicate=42
+   sample2  ->  [forward, reverse]  |  replicate=43
+
+After conversion::
+
+ List (paired): "WGS samples (converted)"
+
+   sample1  ->  [forward, reverse]
+   sample2  ->  [forward, reverse]
+
+The paired structure is preserved; only the metadata is removed.
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/convert_sample_sheet.svg
+  :alt: Convert sample sheet to list collection
+  :width: 500
+
+-------
+
+.. class:: warningmark
+
+If you need to preserve the metadata, use the **Sample sheet to tabular** tool first to export it as a tab-separated table before converting.
 
 ----
 

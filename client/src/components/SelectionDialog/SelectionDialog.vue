@@ -1,29 +1,32 @@
 <script setup lang="ts">
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faCaretLeft, faCheck, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BLink, BModal, BPagination, BSpinner, BTable } from "bootstrap-vue";
+import { BAlert, BLink, BPagination } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { type ItemsProvider, SELECTION_STATES, type SelectionState } from "@/components/SelectionDialog/selectionTypes";
+import type { RowClickEvent, RowSelectEvent, TableField } from "@/components/Common/GTable.types";
+import { type ItemsProvider, SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
 import type Filtering from "@/utils/filtering";
 
-import type { FieldEntry, SelectionItem } from "./selectionTypes";
+import type { SelectionItem } from "./selectionTypes";
 
+import GButton from "../BaseComponents/GButton.vue";
+import GModal from "../BaseComponents/GModal.vue";
+import Heading from "../Common/Heading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
-import Heading from "@/components/Common/Heading.vue";
+import GTable from "@/components/Common/GTable.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
-const LABEL_FIELD: FieldEntry = { key: "label", sortable: true };
-const SELECT_ICON_FIELD: FieldEntry = { key: "__select_icon__", label: "", sortable: false };
+const LABEL_FIELD: TableField = { key: "label", label: "Name", sortable: true };
 
 interface Props {
     disableOk?: boolean;
     errorMessage?: string;
     fileMode?: boolean;
-    fields?: FieldEntry[];
+    fields?: TableField[];
     isBusy?: boolean;
     isEncoded?: boolean;
     items?: SelectionItem[];
@@ -33,12 +36,10 @@ interface Props {
     leafIcon?: string;
     folderIcon?: IconDefinition;
     modalShow?: boolean;
-    modalStatic?: boolean;
     multiple?: boolean;
     optionsShow?: boolean;
     undoShow?: boolean;
-    selectAllVariant?: SelectionState;
-    showSelectIcon?: boolean;
+    selectable?: boolean;
     title?: string;
     searchTitle?: string;
     okButtonText?: string;
@@ -60,12 +61,10 @@ const props = withDefaults(defineProps<Props>(), {
     leafIcon: "fa fa-file-o",
     folderIcon: () => faFolder,
     modalShow: true,
-    modalStatic: false,
     multiple: false,
     optionsShow: false,
     undoShow: false,
-    selectAllVariant: SELECTION_STATES.UNSELECTED,
-    showSelectIcon: false,
+    selectable: false,
     title: "",
     searchTitle: undefined,
     okButtonText: "Select",
@@ -78,7 +77,7 @@ const emit = defineEmits<{
     (e: "onClick", record: SelectionItem): void;
     (e: "onOk"): void;
     (e: "onOpen", record: SelectionItem): void;
-    (e: "onSelectAll"): void;
+    (e: "onSelectAll", selected: boolean): void;
     (e: "onUndo"): void;
 }>();
 
@@ -86,41 +85,102 @@ const filter = ref("");
 const currentPage = ref(1);
 const perPage = ref(25);
 const showAdvancedSearch = ref(false);
+const selectedItems = ref<number[]>([]);
+const indeterminateItems = ref<number[]>([]);
+
+const providerRequestId = ref(0);
+const providerItems = ref<SelectionItem[]>([]);
+const sortBy = ref<string | undefined>(undefined);
+const sortDesc = ref<boolean | undefined>(undefined);
+
+const usingProvider = computed(() => Boolean(props.itemsProvider));
 
 const okButtonText = computed(() => {
     return props.okButtonText ? props.okButtonText : props.fileMode ? "Select" : "Select this folder";
 });
 
-const fieldDetails = computed(() => {
-    const fields = props.fields.slice().map((x) => {
-        x.sortable = x.sortable === undefined ? true : x.sortable;
-        return x;
-    });
+const fieldDetails = computed<TableField[]>(() => {
+    const fields: TableField[] = props.fields.slice().map((field) => ({
+        ...field,
+        sortable: field.sortable ?? true,
+    }));
     if (fields.length === 0) {
         fields.unshift(LABEL_FIELD);
-    }
-    if (props.showSelectIcon) {
-        fields.unshift(SELECT_ICON_FIELD);
     }
     return fields;
 });
 
-function selectionIcon(variant: string) {
-    switch (variant) {
-        case SELECTION_STATES.SELECTED:
-            return faCheckSquare;
-        case SELECTION_STATES.MIXED:
-            return faMinusSquare;
-        default:
-            return faSquare;
+/**
+ * Derive the GTable checkbox state from each item's selectionState: fully
+ * selected rows are checked, MIXED rows (e.g. partially-selected folders)
+ * render as indeterminate. Runs whenever the items change.
+ */
+function syncSelectedItems() {
+    const selected: number[] = [];
+    const indeterminate: number[] = [];
+
+    tableItems.value.forEach((item, index) => {
+        if (item.selectionState === SELECTION_STATES.SELECTED) {
+            selected.push(index);
+        } else if (item.selectionState === SELECTION_STATES.MIXED) {
+            indeterminate.push(index);
+        }
+    });
+
+    selectedItems.value = selected;
+    indeterminateItems.value = indeterminate;
+}
+
+const tableItems = computed(() => {
+    return usingProvider.value ? providerItems.value : props.items;
+});
+
+async function loadProviderItems() {
+    if (!props.itemsProvider || !props.optionsShow) {
+        return;
+    }
+
+    const requestId = ++providerRequestId.value;
+    const result = await props.itemsProvider({
+        apiUrl: props.providerUrl,
+        currentPage: currentPage.value,
+        perPage: perPage.value,
+        filter: filter.value || undefined,
+        sortBy: sortBy.value,
+        sortDesc: sortDesc.value,
+    });
+
+    if (requestId === providerRequestId.value) {
+        providerItems.value = result ?? [];
     }
 }
 
-/** Resets pagination when a filter/search word is entered **/
-function filtered(items: SelectionItem[]) {
-    if (props.itemsProvider === undefined) {
-        resetPagination();
+function onSortChanged(newSortBy: string, newSortDesc: boolean) {
+    sortBy.value = newSortBy || undefined;
+    sortDesc.value = newSortDesc;
+}
+
+function onRowClick(event: RowClickEvent<SelectionItem>) {
+    // For a selectable table GTable also emits "row-select" on a row click
+    // (handled by onRowSelect), so emitting here too would toggle selection
+    // twice. Only emit for non-selectable dialogs.
+    if (!props.selectable) {
+        emit("onClick", event.item);
     }
+}
+
+// Selection for a selectable table: a row click and a checkbox toggle both
+// arrive here as a single "row-select", so the checkbox behaves like the row.
+function onRowSelect(event: RowSelectEvent<SelectionItem>) {
+    emit("onClick", event.item);
+}
+
+function onOpen(item: SelectionItem) {
+    emit("onOpen", item);
+}
+
+function onSelectAll(selected: boolean) {
+    emit("onSelectAll", selected);
 }
 
 /** Format time stamp */
@@ -158,6 +218,49 @@ if (props.watchOnPageChanges) {
     );
 }
 
+const dialog = ref<InstanceType<typeof GModal> | null>(null);
+
+watch(
+    [
+        () => props.itemsProvider,
+        currentPage,
+        perPage,
+        filter,
+        sortBy,
+        sortDesc,
+        () => props.providerUrl,
+        () => props.optionsShow,
+    ],
+    () => {
+        if (props.itemsProvider && props.optionsShow) {
+            void loadProviderItems();
+        }
+    },
+    { immediate: true },
+);
+
+watch(filter, () => {
+    resetPagination();
+});
+
+watch(
+    () => dialog.value,
+    (newValue) => {
+        if (newValue) {
+            dialog.value?.showModal();
+        }
+    },
+    { immediate: true },
+);
+
+watch(
+    tableItems,
+    () => {
+        syncSelectedItems();
+    },
+    { immediate: true, deep: true },
+);
+
 defineExpose({
     resetFilter,
     resetPagination,
@@ -166,17 +269,17 @@ defineExpose({
 </script>
 
 <template>
-    <BModal
-        v-if="modalShow"
-        modal-class="selection-dialog-modal"
-        header-class="flex-column"
-        visible
-        :static="modalStatic"
-        :title="title"
-        @hide="emit('onCancel')">
-        <template v-slot:modal-header>
-            <slot name="header">
-                <Heading v-if="props.title" h2> {{ props.title }} </Heading>
+    <GModal
+        ref="dialog"
+        class="selection-dialog-modal"
+        size="medium"
+        :show="props.modalShow"
+        fixed-height
+        footer
+        @close="emit('onCancel')">
+        <template v-slot:header>
+            <div class="d-flex flex-column">
+                <Heading v-if="props.title" size="sm"> {{ props.title }} </Heading>
 
                 <FilterMenu
                     v-if="props.filterClass"
@@ -189,37 +292,36 @@ defineExpose({
                     :show-advanced.sync="showAdvancedSearch" />
 
                 <DataDialogSearch v-else v-model="filter" :title="props.searchTitle || props.title" />
-            </slot>
+            </div>
         </template>
         <slot name="helper" />
         <BAlert v-if="errorMessage" variant="danger" show>
             {{ errorMessage }}
         </BAlert>
         <div v-else>
-            <div v-if="optionsShow">
-                <BTable
-                    small
-                    hover
+            <div v-if="optionsShow" data-description="selection dialog options">
+                <GTable
                     class="selection-dialog-table"
+                    clickable-rows
+                    compact
+                    hover
                     primary-key="id"
-                    :busy="isBusy"
-                    :current-page="currentPage"
-                    :items="itemsProvider ?? items"
+                    :current-page="usingProvider ? undefined : currentPage"
                     :fields="fieldDetails"
                     :filter="filter"
-                    :per-page="perPage"
-                    @filtered="filtered"
-                    @row-clicked="emit('onClick', $event)">
-                    <template v-slot:head(__select_icon__)="">
-                        <FontAwesomeIcon
-                            class="select-checkbox cursor-pointer"
-                            title="Check to select all datasets"
-                            :icon="selectionIcon(selectAllVariant)"
-                            @click="$emit('onSelectAll')" />
-                    </template>
-                    <template v-slot:cell(__select_icon__)="data">
-                        <FontAwesomeIcon :icon="selectionIcon(data.item._rowVariant)" />
-                    </template>
+                    :items="tableItems"
+                    :loading="isBusy"
+                    :local-filtering="!usingProvider"
+                    :local-sorting="!usingProvider"
+                    :indeterminate-items="indeterminateItems"
+                    :per-page="usingProvider ? undefined : perPage"
+                    :selectable="props.selectable"
+                    :selected-items="selectedItems"
+                    :show-select-all="props.selectable"
+                    @row-click="onRowClick"
+                    @row-select="onRowSelect"
+                    @select-all="onSelectAll"
+                    @sort-changed="onSortChanged">
                     <template v-slot:cell(label)="data">
                         <div style="cursor: pointer">
                             <pre
@@ -230,36 +332,44 @@ defineExpose({
                                     <i :class="leafIcon" />
                                     <span :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
                                 </div>
-                                <div v-else @click.stop="emit('onOpen', data.item)">
+                                <div
+                                    v-else
+                                    role="button"
+                                    tabindex="0"
+                                    @click.stop="onOpen(data.item)"
+                                    @keydown.enter.stop="onOpen(data.item)"
+                                    @keydown.space.stop.prevent="onOpen(data.item)">
                                     <FontAwesomeIcon :icon="props.folderIcon" />
                                     <BLink :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</BLink>
                                 </div>
                             </span>
                         </div>
                     </template>
+
                     <template v-slot:cell(details)="data">
                         <span :title="`details-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
                     </template>
+
                     <template v-slot:cell(tags)="data">
                         <StatelessTags v-if="data.value?.length > 0" :value="data.value" :disabled="true" />
                         <span v-else>-</span>
                     </template>
+
                     <template v-slot:cell(time)="data">
                         {{ formatTime(data.value) }}
                     </template>
+
                     <template v-slot:cell(update_time)="data">
                         {{ formatTime(data.value) }}
                     </template>
-                </BTable>
-                <div v-if="isBusy" class="text-center">
-                    <BSpinner small type="grow" />
-                    <BSpinner small type="grow" />
-                    <BSpinner small type="grow" />
+                </GTable>
+
+                <div v-if="isBusy" class="text-center" data-description="selection dialog busy spinners">
+                    <LoadingSpan />
                 </div>
                 <div v-else-if="totalItems === 0">
                     <div v-if="filter">
-                        No search results found for: <b>{{ filter }}</b
-                        >.
+                        No search results found for: <b> {{ filter }} </b>.
                     </div>
                     <div v-else>No entries.</div>
                 </div>
@@ -269,13 +379,17 @@ defineExpose({
                 <span>Please wait...</span>
             </div>
         </div>
-        <template v-slot:modal-footer>
+        <template v-slot:footer>
             <div class="d-flex justify-content-between w-100">
                 <div>
-                    <BButton v-if="undoShow" data-description="selection dialog undo" size="sm" @click="emit('onUndo')">
+                    <GButton
+                        v-if="undoShow"
+                        data-description="selection dialog undo"
+                        size="small"
+                        @click="emit('onUndo')">
                         <FontAwesomeIcon :icon="faCaretLeft" />
                         Back
-                    </BButton>
+                    </GButton>
                     <slot v-if="!errorMessage" name="buttons" />
                 </div>
                 <BPagination
@@ -286,34 +400,22 @@ defineExpose({
                     :per-page="perPage"
                     :total-rows="totalItems" />
                 <div>
-                    <BButton
-                        data-description="selection dialog cancel"
-                        size="sm"
-                        variant="secondary"
-                        @click="emit('onCancel')">
+                    <GButton data-description="selection dialog cancel" size="small" @click="emit('onCancel')">
                         <FontAwesomeIcon :icon="faTimes" />
                         Cancel
-                    </BButton>
-                    <BButton
+                    </GButton>
+                    <GButton
                         v-if="multiple || !fileMode"
                         data-description="selection dialog ok"
-                        size="sm"
-                        variant="primary"
+                        size="small"
+                        color="blue"
                         :disabled="disableOk"
                         @click="emit('onOk')">
                         <FontAwesomeIcon :icon="faCheck" />
                         {{ okButtonText }}
-                    </BButton>
+                    </GButton>
                 </div>
             </div>
         </template>
-    </BModal>
+    </GModal>
 </template>
-
-<style>
-.selection-dialog-modal .modal-body {
-    max-height: 50vh;
-    height: 50vh;
-    overflow-y: auto;
-}
-</style>

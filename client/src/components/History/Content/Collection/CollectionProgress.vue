@@ -16,22 +16,22 @@ defineProps<Props>();
         <BProgress v-if="!summary.isTerminal" :max="summary.jobCount">
             <BProgressBar
                 v-if="summary.errorCount"
-                v-b-tooltip.hover="summary.errorCountText"
+                v-g-tooltip.hover="summary.errorCountText"
                 :value="summary.errorCount"
                 variant="danger" />
             <BProgressBar
                 v-if="summary.okCount"
-                v-b-tooltip.hover="summary.okCountText"
+                v-g-tooltip.hover="summary.okCountText"
                 :value="summary.okCount"
                 variant="success" />
             <BProgressBar
                 v-if="summary.runningCount"
-                v-b-tooltip.hover="summary.runningCountText"
+                v-g-tooltip.hover="summary.runningCountText"
                 :value="summary.runningCount"
                 variant="warning" />
             <BProgressBar
                 v-if="summary.waitingCount"
-                v-b-tooltip.hover="summary.waitingCountText"
+                v-g-tooltip.hover="summary.waitingCountText"
                 :value="summary.waitingCount"
                 variant="secondary" />
         </BProgress>

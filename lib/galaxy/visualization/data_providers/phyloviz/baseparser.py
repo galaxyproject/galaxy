@@ -3,6 +3,8 @@ from typing import (
     Any,
 )
 
+from galaxy.exceptions import MalformedContents
+
 
 class Node:
     """Node class of PhyloTree, which represents a CLAUDE in a phylogenetic tree"""
@@ -96,7 +98,7 @@ class PhyloTree:
                 # transfer temporary stored attr to root
                 jsonTree[key] = value
         else:
-            raise Exception("Root is not assigned!")
+            raise MalformedContents("Phylogeny file has no root node assigned")
         return jsonTree
 
 

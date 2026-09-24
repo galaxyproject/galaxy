@@ -1,3 +1,17 @@
+~~~~~~~~~~~~~~~
+``server_name``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Change this default when running independent Gunicorn instances on
+    the same hostname, assigning each instance a distinct base server
+    name to avoid sharing control queues. See the deployment guidance
+    at:
+    https://docs.galaxyproject.org/en/master/admin/scaling.html#unique-server-names-for-independent-gunicorn-instances
+:Default: ``main``
+:Type: str
+
+
 ~~~~~~~~~~~~~~
 ``config_dir``
 ~~~~~~~~~~~~~~
@@ -281,6 +295,23 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``kombu_sqla_transport_cleanup_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time (in seconds) between attempts to delete fully-consumed rows
+    from the Kombu SQLAlchemy transport tables (``kombu_message``).
+    Only relevant when ``amqp_internal_connection`` uses a
+    ``sqlalchemy+*`` scheme (the default with an on-disk
+    control.sqlite); the SQLAlchemy transport has no built-in TTL, so
+    without this task the tables grow unbounded. The task no-ops on
+    non-SQLAlchemy brokers (RabbitMQ/Redis honor per-message
+    expiration natively). Set to 0 to disable the cleanup task.
+:Default: ``900``
+:Type: int
+
+
 ~~~~~~~~~~~~~
 ``file_path``
 ~~~~~~~~~~~~~
@@ -401,6 +432,77 @@
     as an attribute in the <toolbox> tag.
 :Default: ``tools``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``use_cached_toolbox``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When true, use the CachedToolBox which loads tools on demand from
+    the tool source store. Otherwise (the default), the traditional
+    eager ToolBox is used and any per-conf ``store="..."`` attributes
+    on tool_conf files are ignored. Opt-in is explicit: a populated
+    tool source store does not flip a default deployment to
+    cached-toolbox mode.
+:Default: ``None``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``cached_toolbox_cache_size``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Maximum number of fully constructed Tool objects the CachedToolBox
+    keeps in its in-memory LRU cache. Larger values reduce repeat
+    parsing cost for popular tools at the expense of memory.
+:Default: ``500``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_source_database_connection``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    SQLAlchemy connection string for the tool source store, a
+    rebuildable cache of pre-parsed tool sources kept outside Galaxy's
+    main database. Multi-host deployments should point every Galaxy
+    process at the same URI, such as a SQLite file on a shared
+    filesystem.
+    Sample default ``sqlite:///<data_dir>/tool_sources.sqlite``.
+    Populate the store with: python
+    scripts/tool_source/populate_store.py
+    For details see
+    https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``tool_source_stores``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Optional named tool source stores referenced from individual
+    tool_conf files via a top-level ``store="<name>"`` attribute (XML)
+    or ``store: <name>`` key (YAML). When any tool_conf opts in, the
+    process composes its named store with the default
+    (``tool_source_database_connection``) store at runtime, with reads
+    tried in declared order and writes always landing on the default.
+    Each entry takes either a normal SQLAlchemy ``url`` or an
+    ``external_store_directory`` containing versioned publisher
+    bundles. Galaxy never consults manifests for a normal URL. For an
+    external directory it reads the sidecars and automatically selects
+    the newest cohort compatible with its store/source/index formats
+    and index schema. External stores are always read-only.
+    For SQLite connection-level read-only, use a SQLite URI with
+    ``mode=ro&uri=true``.
+    For details see
+    https://docs.galaxyproject.org/en/master/admin/tool_source_storage.html
+:Default: ``None``
+:Type: map
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -680,7 +782,7 @@
 :Description:
     Location of files available for a short time as downloads (short
     term storage). This directory is exclusively used for serving
-    dynamically generated downloadable content. Galaxy may uses the
+    dynamically generated downloadable content. Galaxy may use the
     new_file_path parameter as a general temporary directory and that
     directory should be monitored by a tool such as tmpwatch in
     production environments. short_term_storage_dir on the other hand
@@ -723,6 +825,56 @@
 :Description:
     How many seconds between instances of short term storage being
     cleaned up in default Celery task configuration.
+:Default: ``3600``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``bulk_storage_operation_dataset_minimum_days_to_expiration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Minimum remaining lifetime, in days, required before a dataset can
+    be moved into an object store with automatic expiration. This
+    prevents moving data into a target store where it would be close
+    to expiring immediately. Defaults to 7 days.
+:Default: ``7``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``bulk_storage_operation_completed_run_retention_days``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    How long completed bulk dataset storage operation runs are kept in
+    the database before Galaxy prunes their run records. Snapshot
+    cleanup is handled separately. Defaults to 30 days.
+:Default: ``30``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``prune_expired_bulk_storage_operations_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    How many seconds between attempts to prune expired bulk dataset
+    storage operation snapshots and old completed run records. Set to
+    0 to disable the periodic pruning task. Defaults to every 24
+    hours.
+:Default: ``86400``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``recover_stale_bulk_storage_operation_runs_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    How many seconds between attempts to recover bulk dataset storage
+    operation runs that were left pending or running after a worker
+    stopped updating them. Defaults to every hour.
 :Default: ``3600``
 :Type: int
 
@@ -941,7 +1093,7 @@
 
 :Description:
     XML config file that contains data table entries for the
-    ToolDataTableManager.  This file is manually # maintained by the
+    ToolDataTableManager.  This file is manually maintained by the
     Galaxy administrator (.sample used if default does not exist).
     The value of this option will be resolved with respect to
     <config_dir>.
@@ -1221,7 +1373,7 @@
     destination level for heterogeneous clusters. conda job resolution
     requires bash or zsh so if this is switched to /bin/sh for
     instance - conda resolution should be disabled. Containerized jobs
-    always use /bin/sh - so more maximum portability tool authors
+    always use /bin/sh - so for maximum portability tool authors
     should assume generated commands run in sh.
 :Default: ``/bin/bash``
 :Type: str
@@ -1235,6 +1387,24 @@
     Directory in which the toolbox search index is stored. The value
     of this option will be resolved with respect to <data_dir>.
 :Default: ``tool_search_index``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_tag_mappings_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Optional YAML file mapping tool ids to curated tag names. Tags
+    drive the `tag:` autocompletion, the favorite-tags grouping in the
+    My Tools panel, and the `tool_tags` Whoosh search field. If unset,
+    Galaxy ships a small example covering the tools used by its own
+    integration tests; admins who want production-grade tag coverage
+    can generate a snapshot for their instance with
+    `scripts/extract_tool_sections_from_api.py`. The file must be a
+    YAML document with a top-level `tool_tags:` mapping from tool id
+    to a list of tag names.
+:Default: ``None``
 :Type: str
 
 
@@ -1256,7 +1426,7 @@
 
 :Description:
     Set this to true to attempt to resolve bio.tools metadata for
-    tools for tool not resovled via biotools_content_directory.
+    tools for tool not resolved via biotools_content_directory.
 :Default: ``false``
 :Type: bool
 
@@ -1993,6 +2163,20 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``matomo_disable_cookies``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Run Matomo in "cookieless" mode. When set to true (the default),
+    Galaxy instructs the Matomo tracker to disable all tracking
+    cookies by calling _paq.push(['disableCookies']) before tracking
+    the page view. Set to false to allow Matomo to use cookies. See
+    https://matomo.org/faq/general/faq_157/ for details.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~
 ``display_servers``
 ~~~~~~~~~~~~~~~~~~~
@@ -2407,6 +2591,22 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~
+``subdomain_switcher``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sites to display in the masthead's "Switch sites" menu. Each entry
+    requires a non-empty label and an absolute HTTP or HTTPS URL.
+    Entries are displayed in the configured order, excluding the site
+    matching the current URL origin.
+    Example value: ``[{label: Base site, url:
+    https://usegalaxy.example.org}, {label: Single Cell Omics, url:
+    https://singlecell.usegalaxy.example.org}]``
+:Default: ``[]``
+:Type: seq
+
+
 ~~~~~~~~~~~~~~~~
 ``helpsite_url``
 ~~~~~~~~~~~~~~~~
@@ -2465,7 +2665,7 @@
 :Description:
     The BibTeX citation for Galaxy, to be displayed in the History
     Tool Reference List
-:Default: ``@article{Galaxy2024, title="The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2024", doi="10.1093/nar/gkae410", url="https://doi.org/10.1093/nar/gkae410"}``
+:Default: ``@article{Galaxy2026, title="Galaxy for accessible, reproducible, and collaborative data analyses: 2026 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2026", doi="10.1093/nar/gkag469", url="https://doi.org/10.1093/nar/gkag469"}``
 :Type: str
 
 
@@ -3300,6 +3500,19 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``sentry_client_traces_sample_rate``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sample rate for client-side (browser) performance tracing, between
+    0 and 1. Controls what fraction of page loads and navigations
+    generate performance traces sent to Sentry. Independent of
+    sentry_traces_sample_rate, which controls server-side tracing.
+:Default: ``0.0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~~~~~
 ``sentry_ca_certs``
 ~~~~~~~~~~~~~~~~~~~
@@ -3310,6 +3523,20 @@
     a self-signed certificate.
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_statsd_middleware``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default is true if statsd_host is set. Enable the statsd
+    middleware. If false and statsd_host is also set, only timing of
+    certain performance-critical backend tasks (e.g. the job handler
+    monitor loop time) data will be sent to statsd, but not web
+    request timing.
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~
@@ -3377,6 +3604,37 @@
 :Description:
     Mock out statsd client calls - only used by testing infrastructure
     really. Do not set this in production environments.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``queue_metrics_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    How often (in seconds) background observability gauges are
+    sampled: control-queue depth and WorkerProcess counts from the
+    Celery beat task, and (when enable_sse_connection_metrics is set)
+    active SSE-connection counts from each web worker. This is the
+    shared cadence for all of them. Only active when statsd_host is
+    set. Set to 0 to disable all background gauges.
+:Default: ``15``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_sse_connection_metrics``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Emit the galaxy.sse.connections.active gauge from each web worker,
+    reporting how many Server-Sent Events connections that worker
+    currently holds (tagged by kind and server_name). Sampled on the
+    queue_metrics_interval cadence. Off by default so that enabling
+    statsd does not by itself start measuring SSE connections;
+    requires statsd_host to be set and queue_metrics_interval greater
+    than 0.
 :Default: ``false``
 :Type: bool
 
@@ -4159,6 +4417,55 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``expression_evaluation_isolation_command``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Optionally wrap workflow ``when`` JavaScript workers in an
+    OS-level jail. JavaScript always runs in a separate Python worker
+    using QuickJS, with no host bindings, a 200 MiB QuickJS allocator
+    limit, a 1 MiB stack limit, and a parent-enforced wall-clock
+    timeout (the expression timeout plus 10 seconds). Requests and
+    responses are limited to 16 MiB each. These limits do not cap
+    total Python RSS or aggregate memory across concurrent workers;
+    parent-side JSON decoding also adds overhead. Simple parameter
+    references resolve in Python without starting a worker. When empty
+    (the default), the worker runs without an OS-level jail.
+    Full JavaScript evaluation requires Python 3.10+ and the
+    quickjs-ng package. Without QuickJS, expressions requiring
+    JavaScript fail with an error; literals and simple parameter
+    references continue to work without it.
+    Set this to ``bubblewrap`` to use a built-in bubblewrap jail. It
+    clears the environment, unshares the PID/IPC/UTS namespaces, and
+    read-only-binds only what the worker needs to run: the Python
+    runtime, the worker script, and the system library/binary
+    directories (``/usr``, ``/lib``, ``/lib64``, ...). Galaxy's
+    config, database and the rest of the filesystem are NOT mounted,
+    so a compromised worker cannot read secrets from disk; it gets
+    ``/proc``, a minimal ``/dev`` and a private in-memory ``/tmp``
+    only. This is applied only on Linux and only when ``bwrap``
+    (bubblewrap) is found on PATH; on any other platform, or if bwrap
+    is missing, an ordinary worker subprocess is used instead.
+    bubblewrap requires unprivileged user namespaces. On distributions
+    that restrict them (Ubuntu >= 24.04,
+    ``kernel.apparmor_restrict_unprivileged_userns=1``), install the
+    bubblewrap AppArmor profile (shipped with the package) or relax
+    the restriction, otherwise bwrap fails with "setting up uid map:
+    Permission denied" and evaluation would error.
+    The network namespace is not unshared, because ``--unshare-net``
+    requires bubblewrap to configure a loopback interface, which fails
+    on many container and CI hosts. Control egress at the network
+    layer, or add ``--unshare-net`` via a custom command on hosts that
+    support it.
+    Advanced: set this to a full command prefix to use a custom jail
+    (e.g. a specific bwrap invocation, nsjail, or firejail). The value
+    is tokenized and used verbatim on all platforms, with the
+    configured Python interpreter and worker script appended.
+:Default: ``""``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~
 ``enable_oidc``
 ~~~~~~~~~~~~~~~
@@ -4904,11 +5211,19 @@
 
 :Description:
     If your network filesystem's caching prevents the Galaxy server
-    from seeing the job's stdout and stderr files when it completes,
-    you can retry reading these files.  The job runner will retry the
-    number of times specified below, waiting 1 second between tries.
-    For NFS, you may want to try the -noac mount option (Linux) or
-    -actimeo=0 (Solaris).
+    from seeing a job's output when it completes, you can retry
+    reading it.  This covers both the job's stdout and stderr files
+    and its output datasets, waiting 1 second between tries.  0 means
+    no retries: stdout and stderr are still read once, but the
+    cache-busting stat of each output dataset is skipped entirely, so
+    raise this if you see datasets marked ok with empty or truncated
+    content. This is most likely on a deployment where a job's output
+    is written by a host other than the one running Galaxy, since
+    nothing guarantees Galaxy's client has a coherent view of the file
+    the moment the job reports done.  For NFS, you may also want to
+    try the -noac mount option (Linux) or -actimeo=0 (Solaris), or a
+    low -actimeo to shrink the staleness window without disabling
+    caching.
 :Default: ``0``
 :Type: int
 
@@ -5326,7 +5641,7 @@
     Define toolbox filters
     (https://galaxyproject.org/user-defined-toolbox-filters/) that
     users may use to restrict the tools to display.
-:Default: ``examples:restrict_upload_to_admins, examples:restrict_encode``
+:Default: ``None``
 :Type: str
 
 
@@ -5338,7 +5653,7 @@
     Define toolbox filters
     (https://galaxyproject.org/user-defined-toolbox-filters/) that
     users may use to restrict the tool sections to display.
-:Default: ``examples:restrict_text``
+:Default: ``None``
 :Type: str
 
 
@@ -5350,7 +5665,7 @@
     Define toolbox filters
     (https://galaxyproject.org/user-defined-toolbox-filters/) that
     users may use to restrict the tool labels to display.
-:Default: ``examples:restrict_upload_to_admins, examples:restrict_encode``
+:Default: ``None``
 :Type: str
 
 
@@ -5378,12 +5693,11 @@
     others to also reload, lock jobs, etc. For connection examples,
     see
     https://docs.celeryq.dev/projects/kombu/en/stable/userguide/connections.html
-    Without specifying anything here, galaxy will first attempt to use
-    your specified database_connection above.  If that's not specified
-    either, Galaxy will automatically create and use a separate sqlite
-    database located in your <galaxy>/database folder (indicated in
-    the commented out line below).
-:Default: ``sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE``
+    When this option is not specified, Galaxy uses the configured
+    database_connection with the SQLAlchemy transport. If
+    database_connection is not explicitly configured, Galaxy creates a
+    separate SQLite database at <data_dir>/control.sqlite.
+:Default: ``None``
 :Type: str
 
 
@@ -5401,6 +5715,20 @@
     results. For details, see
     https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks
 :Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_requests``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Submit tool jobs through the asynchronous tool requests API
+    (`/api/jobs`) when available. The client falls back to the legacy
+    `/api/tools` endpoint when this is disabled, when Celery is not
+    enabled, or when the tool does not provide a typed parameter
+    schema.
+:Default: ``true``
 :Type: bool
 
 
@@ -5436,6 +5764,21 @@
     be executed per user per second.
 :Default: ``0.0``
 :Type: float
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``celery_user_concurrency_limit``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Maximum number of Celery tasks that can execute concurrently for a
+    single user. If set to 0 (default), no concurrency limit is
+    enforced. When a user exceeds this limit, new tasks are deferred
+    and retried until a slot becomes available. A periodic cleanup
+    task reclaims slots from crashed workers by inspecting active
+    tasks on all workers.
+:Default: ``0``
+:Type: int
 
 
 ~~~~~~~~~~~~~~
@@ -5516,13 +5859,125 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Configuration for AI inference services used by agents. Supports
-    per-agent model, temperature, and token settings. Agents inherit
-    from 'default' configuration, which itself falls back to global
-    ai_model/ai_api_key settings. Example: inference_services: {
-    default: { model: gpt-4o-mini, temperature: 0.7 } }
+    Configuration for AI inference services used by agents and
+    visualization plugins. Supports per-agent or per-plugin model,
+    temperature, max_tokens, retries, api_key, api_base_url, and
+    enabled settings. Valid keys include agent types (e.g. router,
+    error_analysis) and plugin names (e.g. jupyterlite). Agents and
+    plugins inherit from 'default' configuration, which itself falls
+    back to global ai_model/ai_api_key settings. All agents are
+    enabled by default. Example: inference_services: { default: {
+    model: gpt-4o-mini, temperature: 0.7 }, custom_tool: { enabled:
+    false }, jupyterlite: { model: gpt-4o } } Set static_responses to
+    a YAML file path to replace all LLM calls with deterministic
+    responses for testing: inference_services: { static_responses:
+    test/integration/static_agents.yml } Per-agent or default-block
+    ``structured_output_override: true|false`` beats the model
+    capability table -- see ``agent_model_capabilities_file`` for the
+    table's location and contents. Per-agent or default-block
+    ``retries`` sets the pydantic-ai retry budget (tool calls and
+    output validation); it defaults to 3. Raise it if a model
+    intermittently fails to produce conforming output ("Exceeded
+    maximum output retries"). custom_tool's producer keeps a budget of
+    0 because it runs its own reflection loop; a shared ``default``
+    block does not change that -- set ``custom_tool.retries``
+    explicitly to override it. custom_tool also accepts
+    ``quality_critic_enabled`` (default false) to turn on the LLM
+    clarity/idiomaticity critic, and
+    ``container_recommendation_enabled`` (default false) to resolve
+    the produced tool's container to a verified quay.io biocontainer.
+    Container recommendation runs a dedicated container critic that
+    infers the tool's conda packages from its command and config
+    files, independently of ``quality_critic_enabled``; it adds an
+    extra model call plus an outbound network call to quay.io during
+    the agent turn. Example: inference_services: { custom_tool: {
+    quality_critic_enabled: true, container_recommendation_enabled:
+    true } }
 :Default: ``None``
 :Type: any
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``agent_model_capabilities_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    YAML file with capability hints for agent inference models. Maps
+    fnmatch-style globs against model names to features such as
+    structured-output (tool-calling / JSON-mode) support. Galaxy ships
+    a sample populated with common model families; admins can drop a
+    file named ``agent_model_capabilities.yml`` in ``config_dir`` to
+    override the shipped table for private models.
+    ``inference_services`` ``structured_output_override`` overrides
+    this table for a specific agent or default block.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``agent_model_capabilities.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``gtn_database_path``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to the SQLite FTS5 database used by the GTN training agent.
+    Resolves against ``data_dir`` so admins can place it in a
+    mutable-data directory. The file is downloaded automatically on
+    first use from ``gtn_database_url`` if it does not exist.
+    The value of this option will be resolved with respect to
+    <data_dir>.
+:Default: ``gtn/gtn_search.db``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``gtn_database_url``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL used to download the GTN search database when the local file
+    at ``gtn_database_path`` is missing.
+:Default: ``https://depot.galaxyproject.org/chatgxy/gtn_search.db``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``gtn_database_refresh_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time (in seconds) between celery-beat triggered freshness checks
+    of the GTN search database from ``gtn_database_url``. The task
+    HEADs depot and only re-downloads when its ``Last-Modified`` is
+    newer than the local file -- steady-state cost is a few hundred
+    bytes per tick. When a download does happen it atomically replaces
+    ``gtn_database_path``; live handlers pick up the new copy on their
+    next query since GTNSearchDB opens a read-only connection per
+    call. Only registered when ``inference_services`` is configured
+    (i.e. GalaxyAI is in use). Set to 0 to disable automatic refresh
+    -- admins can still refresh on demand via ``python -m
+    galaxy.agents.gtn --refresh``. Requires celery.
+:Default: ``86400``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``iwc_manifest_refresh_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time (in seconds) between celery-beat triggered refreshes of the
+    in-process IWC workflow manifest cache used by the agent-ops
+    layer. Default matches the cache's in-process TTL so the cache
+    stays continuously warm rather than expiring between user-driven
+    hits. Failures are logged and the prior cached copy is retained.
+    Only registered when ``inference_services`` is configured (i.e.
+    GalaxyAI is in use). Set to 0 to disable automatic refresh --
+    agent-ops callers will then fall back to lazy on-demand fetching
+    with the same hour TTL. Requires celery.
+:Default: ``3600``
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5638,6 +6093,21 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``vault_token_renewal_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time (in seconds) between Hashicorp Vault token renewal attempts.
+    Set to 0 to disable automatic token renewal (the default). When
+    enabled, a Celery Beat periodic task will call Vault's renew-self
+    endpoint at this interval. Recommended value: half the token TTL
+    (e.g. 1800 for a 1-hour TTL token). Requires Celery Beat to be
+    running.
+:Default: ``0``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``url_headers_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5739,6 +6209,41 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~
+``enable_sse_updates``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables real-time updates via Server-Sent Events (SSE), replacing
+    the history (3 s), entry-point (10 s) and notification (30 s)
+    polling loops with push events delivered over a single
+    ``/api/events/stream`` connection per browser tab. A background
+    monitor watches for history changes (via PostgreSQL LISTEN/NOTIFY,
+    or audit-table polling as a fallback for SQLite); entry-point
+    changes are dispatched directly from the code paths that mutate
+    them; in-app notifications and broadcasts are pushed when
+    ``enable_notification_system`` is also true. When disabled,
+    polling remains the source of updates for all three. See the admin
+    guide "Server-Sent Events for real-time updates" for the full
+    architecture, monitoring guidance and proxy configuration.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``history_audit_monitor_poll_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The interval in seconds between history audit table polls when
+    using the polling fallback (SQLite or when PostgreSQL
+    LISTEN/NOTIFY is unavailable). Only used when enable_sse_updates
+    is true. Lower values mean faster updates but more database
+    queries. Recommended range: 1-5 seconds.
+:Default: ``2``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_notification_system``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5750,12 +6255,46 @@
     finished, etc.
     The system allows notification scheduling and expiration, and
     users can opt-out of specific notification categories or channels.
+    Delivery is push-based via Server-Sent Events when
+    ``enable_sse_updates`` is also true, and falls back to 30-second
+    polling against ``/api/notifications/status`` otherwise.
     Admins can schedule and broadcast notifications that will be
     visible to all users, including special server-wide announcements
     such as scheduled maintenance, high load warnings, and event
     announcements, to name a few examples.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``enable_mcp_server``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable the Model Context Protocol (MCP) server integration.
+    MCP allows AI assistants (like Claude, ChatGPT, etc.) to interact
+    with Galaxy programmatically through a standardized protocol. When
+    enabled, Galaxy exposes an MCP endpoint that provides tools for
+    searching, executing tools, managing histories, and more.
+    The MCP server requires API key authentication and uses the
+    existing Galaxy REST API internally. This feature is experimental
+    and disabled by default.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~
+``mcp_server_path``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL path where the MCP server endpoint will be mounted (default:
+    /api/mcp).
+    This setting only takes effect when 'enable_mcp_server' is true.
+    The MCP endpoint will be accessible at this path relative to the
+    Galaxy base URL.
+:Default: ``/api/mcp``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5820,8 +6359,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Default value for use_temp_files for webdav plugins that don't
-    explicitly declare this.
+    Deprecated. This option is ignored by the fsspec-based WebDAV file
+    source.
 :Default: ``true``
 :Type: bool
 
@@ -5936,6 +6475,3 @@
     for user defined tools.
 :Default: ``false``
 :Type: bool
-
-
-

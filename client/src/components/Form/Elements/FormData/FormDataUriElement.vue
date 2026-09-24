@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { BCollapse, BLink } from "bootstrap-vue";
+import { BLink } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { type DataUriCollectionElement, isDataUriCollectionElementCollection } from "./types";
+
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 
 const props = defineProps<{
     value: DataUriCollectionElement;
@@ -23,9 +25,9 @@ const expanded = ref(false);
             <i v-if="props.value.collection_type">({{ props.value.collection_type }})</i>
             <span class="float-right"> {{ expanded ? "Hide" : "Show" }} elements </span>
         </div>
-        <BCollapse :visible="expanded" class="pl-2">
+        <GCollapse :visible="expanded" class="pl-2">
             <FormDataUriElement v-for="(element, index) in props.value.elements" :key="index" :value="element" />
-        </BCollapse>
+        </GCollapse>
     </div>
     <div v-else data-description="uri element file">
         <div class="form-example-data-element rounded d-flex justify-content-between align-items-center w-100">

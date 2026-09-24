@@ -7,7 +7,6 @@ from typing import (
     Any,
     cast,
     ClassVar,
-    Optional,
     TypeVar,
 )
 
@@ -38,7 +37,7 @@ PACKAGE_MESSAGE = "FilesSource plugin is missing required Python fsspec plugin p
 # Maximum number of items to return in a single listing.
 # This is a safeguard to prevent excessive memory usage and performance issues
 # since is a huge number of items is not practical for browsing in most use cases.
-MAX_ITEMS_LIMIT = 1000
+MAX_ITEMS_LIMIT = 500
 
 
 class FsspecCommonCacheOptions(StrictModel):
@@ -55,12 +54,12 @@ class FsspecCommonCacheOptions(StrictModel):
     ] = True
 
     listings_expiry_time: Annotated[
-        Optional[int],
+        int | None,
         Field(description="Time in seconds that a listing is considered valid. If None, listings do not expire."),
     ] = None
 
     max_paths: Annotated[
-        Optional[int],
+        int | None,
         Field(
             description="The number of most recent listings that are considered valid; 'recent' refers to when the entry was set.",
         ),
@@ -89,7 +88,7 @@ FsspecResolvedConfigurationType = TypeVar("FsspecResolvedConfigurationType", bou
 
 
 class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolvedConfigurationType]):
-    required_module: ClassVar[Optional[type[AbstractFileSystem]]]
+    required_module: ClassVar[type[AbstractFileSystem] | None]
     required_package: ClassVar[str]
     supports_pagination = True
     supports_search = True
@@ -128,10 +127,10 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         path="/",
         recursive=False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         """Return the list of 'Directory's and 'File's under the given path.
 
@@ -142,15 +141,15 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         try:
             cache_options = self._get_cache_options(context.config)
             fs = self._open_fs(context, cache_options)
-            path = self._to_filesystem_path(path)
+            path = self._to_filesystem_path(path, context.config)
 
             if recursive:
-                return self._list_recursive(fs, path)
+                return self._list_recursive(fs, path, context.config)
 
             if query:
-                entries_list = self._list_with_query(fs, path, query)
+                entries_list = self._list_with_query(fs, path, query, context.config)
             else:
-                entries_list = self._list_directory(fs, path)
+                entries_list = self._list_directory(fs, path, context.config)
 
             total_count = len(entries_list)
 
@@ -158,6 +157,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
             # This is not ideal but necessary due to how fsspec handles listings.
             # At least we reduce the traffic to the client produced by a large listing ¯\_(ツ)_/¯
             paginated_entries = self._apply_pagination(entries_list, limit, offset)
+            self._enrich_entries(fs, paginated_entries, context.config)
 
             return paginated_entries, total_count
 
@@ -184,7 +184,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         """Download a file from the fsspec filesystem to a local path."""
         cache_options = self._get_cache_options(context.config)
         fs = self._open_fs(context, cache_options)
-        source_path = self._to_filesystem_path(source_path)
+        source_path = self._to_filesystem_path(source_path, context.config)
         fs.get_file(source_path, native_path)
 
     def _write_from(
@@ -196,10 +196,10 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         """Upload a file from a local path to the fsspec filesystem."""
         cache_options = self._get_cache_options(context.config)
         fs = self._open_fs(context, cache_options)
-        target_path = self._to_filesystem_path(target_path)
+        target_path = self._to_filesystem_path(target_path, context.config)
         fs.put_file(native_path, target_path)
 
-    def _adapt_entry_path(self, filesystem_path: str) -> str:
+    def _adapt_entry_path(self, filesystem_path: str, config: FsspecResolvedConfigurationType) -> str:
         """Adapt the filesystem path to the desired entry path.
 
         Subclasses can override this to transform paths (e.g., filesystem to virtual paths).
@@ -207,7 +207,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         """
         return filesystem_path
 
-    def _to_filesystem_path(self, path: str) -> str:
+    def _to_filesystem_path(self, path: str, config: FsspecResolvedConfigurationType) -> str:
         """Convert an entry path to the filesystem path format.
 
         Subclasses can override this to transform paths (e.g., virtual to filesystem paths).
@@ -215,7 +215,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         """
         return path
 
-    def _extract_timestamp(self, info: dict) -> Optional[str]:
+    def _extract_timestamp(self, info: dict) -> str | None:
         """Extract the timestamp from fsspec file info to use it in the RemoteFile entry.
 
         Subclasses can override this to customize timestamp extraction.
@@ -223,13 +223,13 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         """
         return info.get("mtime") or info.get("modified") or info.get("LastModified")
 
-    def _get_formatted_timestamp(self, info: dict) -> Optional[str]:
+    def _get_formatted_timestamp(self, info: dict) -> str | None:
         """Get a formatted timestamp for the RemoteFile entry."""
         mtime = self._extract_timestamp(info)
         formatted_timestamp = self.to_dict_time(mtime)
         return formatted_timestamp
 
-    def _get_file_hashes(self, info: dict) -> Optional[list[RemoteFileHash]]:
+    def _get_file_hashes(self, info: dict) -> list[RemoteFileHash] | None:
         """Get optional file hashes provided by the remote filesystem for the RemoteFile entry.
 
         Subclasses can override this to extract hashes from the file info.
@@ -237,10 +237,10 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         """
         return None
 
-    def _info_to_entry(self, info: dict) -> AnyRemoteEntry:
+    def _info_to_entry(self, info: dict, config: FsspecResolvedConfigurationType) -> AnyRemoteEntry:
         """Convert fsspec file info to Galaxy's remote entry format."""
         filesystem_path = info["name"]
-        entry_path = self._adapt_entry_path(filesystem_path)
+        entry_path = self._adapt_entry_path(filesystem_path, config)
         name = os.path.basename(entry_path)
         uri = self.uri_from_path(entry_path)
 
@@ -252,7 +252,9 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
             hashes = self._get_file_hashes(info)
             return RemoteFile(name=name, size=size, ctime=ctime, uri=uri, path=entry_path, hashes=hashes)
 
-    def _list_recursive(self, fs: AbstractFileSystem, path: str) -> tuple[list[AnyRemoteEntry], int]:
+    def _list_recursive(
+        self, fs: AbstractFileSystem, path: str, config: FsspecResolvedConfigurationType
+    ) -> tuple[list[AnyRemoteEntry], int]:
         """Handle recursive directory listing with item limit."""
         # TODO: this is potentially inefficient for large directories.
         # We should consider dropping this option.
@@ -264,7 +266,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
             # so we can safely cast the result.
             dirs = cast(dict[str, dict], dirs)
             files = cast(dict[str, dict], files)
-            to_entry = functools.partial(self._info_to_entry)
+            to_entry = functools.partial(self._info_to_entry, config=config)
             res.extend(map(to_entry, dirs.values()))
             res.extend(map(to_entry, files.values()))
             count += len(dirs) + len(files)
@@ -281,7 +283,9 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
             MAX_ITEMS_LIMIT,
         )
 
-    def _list_with_query(self, fs: AbstractFileSystem, path: str, query: str) -> list[AnyRemoteEntry]:
+    def _list_with_query(
+        self, fs: AbstractFileSystem, path: str, query: str, config: FsspecResolvedConfigurationType
+    ) -> list[AnyRemoteEntry]:
         """Handle directory listing with query filtering using glob patterns."""
         entries_list = []
         glob_pattern = self._build_glob_pattern(path, query)
@@ -290,10 +294,12 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         matched_paths = cast(dict[str, dict], fs.glob(glob_pattern, detail=True))
         for entry_path, info in matched_paths.items():
             if entry_path:  # Only process entries with valid paths
-                entries_list.append(self._info_to_entry(info))
+                entries_list.append(self._info_to_entry(info, config))
         return entries_list
 
-    def _list_directory(self, fs: AbstractFileSystem, path: str) -> list[AnyRemoteEntry]:
+    def _list_directory(
+        self, fs: AbstractFileSystem, path: str, config: FsspecResolvedConfigurationType
+    ) -> list[AnyRemoteEntry]:
         """Handle standard directory listing without query filtering."""
         entries_list = []
         entries: list[dict] = fs.ls(path, detail=True)
@@ -304,18 +310,36 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
             # Skip entries that match the directory being listed (some fsspec implementations
             # include the directory itself in the listing results)
             if entry_path and entry_path.rstrip("/") != normalized_path:
-                entries_list.append(self._info_to_entry(entry))
+                entries_list.append(self._info_to_entry(entry, config))
         return entries_list
 
+    def _enrich_entries(
+        self,
+        fs: AbstractFileSystem,
+        entries: list[AnyRemoteEntry],
+        config: FsspecResolvedConfigurationType,
+    ) -> None:
+        """Enrich the (already paginated) entries with exact metadata.
+
+        Some fsspec filesystems omit expensive-to-compute metadata (e.g. size) when
+        listing. Subclasses can override this to fetch exact metadata for the visible
+        page of entries only, keeping the cost proportional to the page size.
+        """
+
     def _apply_pagination(
-        self, entries_list: list[AnyRemoteEntry], limit: Optional[int], offset: Optional[int]
+        self, entries_list: list[AnyRemoteEntry], limit: int | None, offset: int | None
     ) -> list[AnyRemoteEntry]:
-        """Apply pagination to the entries list."""
-        if offset is not None and limit is not None:
-            return entries_list[offset : offset + limit]
-        elif limit is not None:
-            return entries_list[:limit]
-        return entries_list
+        """Apply pagination to the entries list.
+
+        ``limit`` and ``offset`` are independent query parameters, so an offset arrives without a
+        limit whenever a caller asks for everything from a position. Returning the list untouched
+        in that case dropped the offset and served the first page for every request, while the
+        total reported alongside it said otherwise.
+        """
+        start = offset or 0
+        if limit is not None:
+            return entries_list[start : start + limit]
+        return entries_list[start:]
 
     def _get_cache_options(self, config: FsspecResolvedConfigurationType) -> dict[str, Any]:
         return config.model_dump(

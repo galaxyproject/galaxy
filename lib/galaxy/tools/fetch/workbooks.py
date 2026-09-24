@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from typing import (
     Literal,
-    Optional,
-    Union,
 )
 
 from openpyxl import Workbook
@@ -108,7 +106,7 @@ WorkbookContentField: Base64StringT = Field(
 
 class ParseFetchWorkbook(BaseModel):
     content: Base64StringT = WorkbookContentField
-    fill_identifiers: Optional[FillIdentifiers] = None
+    fill_identifiers: FillIdentifiers | None = None
 
 
 def header_column_to_parsed_column(header_column: HeaderColumn) -> "ParsedColumn":
@@ -149,7 +147,7 @@ def generate(request: GenerateFetchWorkbookRequest) -> Workbook:
     return workbook
 
 
-ParsedRow = dict[str, Optional[str]]
+ParsedRow = dict[str, str | None]
 ParsedRows = list[ParsedRow]
 
 
@@ -169,13 +167,14 @@ class InferredCollectionTypeLogEntry(ParseLogEntry):
     from_columns: list[ParsedColumn]
 
 
-AnyLogMessage = Union[
-    SplitUpPairedDataLogEntry,
-    InferredCollectionTypeLogEntry,
-    InferredColumnMapping,
-    ContentTypeMessage,
-    CsvDialectInferenceMessage,
-]
+AnyLogMessage = (
+    SplitUpPairedDataLogEntry
+    | InferredCollectionTypeLogEntry
+    | InferredColumnMapping
+    | ContentTypeMessage
+    | CsvDialectInferenceMessage
+)
+
 
 FetchParseLog = list[AnyLogMessage]
 
@@ -196,7 +195,7 @@ class ParsedFetchWorkbookForCollections(BaseParsedFetchWorkbook):
     collection_type: FetchWorkbookCollectionType
 
 
-ParsedFetchWorkbook = Union[ParsedFetchWorkbookForDatasets, ParsedFetchWorkbookForCollections]
+ParsedFetchWorkbook = ParsedFetchWorkbookForDatasets | ParsedFetchWorkbookForCollections
 
 
 def parse(payload: ParseFetchWorkbook) -> ParsedFetchWorkbook:
@@ -308,7 +307,7 @@ def _load_row_data(
 
 def _split_paired_data_if_needed(
     rows: ParsedRows, column_headers: list[HeaderColumn]
-) -> tuple[ParsedRows, list[HeaderColumn], Optional[SplitUpPairedDataLogEntry]]:
+) -> tuple[ParsedRows, list[HeaderColumn], SplitUpPairedDataLogEntry | None]:
     split_rows: ParsedRows = []
     uri_like_columns = _uri_like_columns(column_headers)
     if len(_uri_like_columns(column_headers)) != 2:
@@ -383,7 +382,7 @@ def _split_paired_data_if_needed(
 
 
 def _fill_in_identifier_column_if_needed(
-    rows: ParsedRows, columns: list[HeaderColumn], config: Optional[FillIdentifiers]
+    rows: ParsedRows, columns: list[HeaderColumn], config: FillIdentifiers | None
 ) -> ParsedRows:
     list_identifiers_columns = [c for c in columns if c.type == "list_identifiers"]
     uri_columns = _uri_like_columns(columns)
@@ -396,7 +395,7 @@ def _fill_in_identifier_column_if_needed(
 
     uri_column = uri_columns[0]
     inner_list_identifier_column = list_identifiers_columns[-1]
-    uris_to_identifiers: list[tuple[str, Optional[str]]] = []
+    uris_to_identifiers: list[tuple[str, str | None]] = []
     for row in rows:
         uri = row.get(uri_column.name)
         if not uri:

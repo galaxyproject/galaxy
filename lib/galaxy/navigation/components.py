@@ -4,8 +4,6 @@ import string
 from enum import Enum
 from typing import (
     NamedTuple,
-    Optional,
-    Union,
 )
 
 from galaxy.util.bunch import Bunch
@@ -58,7 +56,7 @@ class Target(metaclass=abc.ABCMeta):
 class SelectorTemplate(Target):
     def __init__(
         self,
-        selector: Union[str, list[str]],
+        selector: str | list[str],
         selector_type: str,
         children=None,
         kwds=None,
@@ -181,7 +179,7 @@ class SelectorTemplate(Target):
         assert re.compile(r"\.\w+").match(selector)
         return selector[1:]
 
-    def resolve_component_locator(self, path: Optional[str] = None) -> LocatorT:
+    def resolve_component_locator(self, path: str | None = None) -> LocatorT:
         if path:
             return self[path].component_locator
         else:
@@ -222,7 +220,7 @@ class Text(Target):
         return LocatorT(ComponentBy.TEXT, self.text)
 
 
-HasText = Union[Label, Text]
+HasText = Label | Text
 
 CALL_ARGUMENTS_RE = re.compile(r"(?P<SUBCOMPONENT>[^.(]*)(\((?P<ARGS>[^)]+)\))?(?:\.(?P<REST>.*))?")
 
@@ -246,11 +244,11 @@ class Component:
         else:
             raise Exception(f"No _ selector for [{self}]")
 
-    def resolve_component_locator(self, path: Optional[str] = None) -> LocatorT:
+    def resolve_component_locator(self, path: str | None = None) -> LocatorT:
         if not path:
             return self._selectors["_"].resolve_component_locator()
 
-        def arguments() -> tuple[str, Optional[dict[str, str]], Optional[str]]:
+        def arguments() -> tuple[str, dict[str, str] | None, str | None]:
             assert path
             if match := CALL_ARGUMENTS_RE.match(path):
                 component_name = match.group("SUBCOMPONENT")

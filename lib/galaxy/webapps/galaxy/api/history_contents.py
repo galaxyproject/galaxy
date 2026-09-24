@@ -6,8 +6,6 @@ import logging
 from typing import (
     Annotated,
     Literal,
-    Optional,
-    Union,
 )
 
 from fastapi import (
@@ -57,14 +55,25 @@ from galaxy.schema.schema import (
     UpdateHistoryContentsPayload,
     WriteStoreToPayload,
 )
+from galaxy.schema.storage_operations import (
+    StorageOperationExecuteRequest,
+    StorageOperationExecuteResponse,
+    StorageOperationPreviewRequest,
+    StorageOperationPreviewResponse,
+    StorageOperationRunItemStatus,
+    StorageOperationRunResponse,
+)
 from galaxy.schema.tasks import (
     CopyDatasetsPayload,
     CopyDatasetsResponse,
 )
+from galaxy.webapps.base.api import GalaxyStreamingResponse
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
+    IndexQueryTag,
     Router,
+    search_query_param,
 )
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
@@ -91,7 +100,7 @@ log = logging.getLogger(__name__)
 router = Router(tags=["histories"])
 
 
-def ContentTypeQueryParam(default: Optional[HistoryContentType]):
+def ContentTypeQueryParam(default: HistoryContentType | None):
     return Query(
         default=default,
         title="Content Type",
@@ -133,6 +142,33 @@ PurgeQueryParam = Query(
     deprecated=True,
 )
 
+StorageRunOffsetQueryParam = Query(
+    default=0,
+    ge=0,
+    title="Offset",
+    description="The offset for paginated per-item run details.",
+)
+
+StorageRunLimitQueryParam = Query(
+    default=50,
+    ge=1,
+    le=200,
+    title="Limit",
+    description="The maximum number of per-item run details to return.",
+)
+
+StorageRunItemsSearchTags = [
+    IndexQueryTag("state", "Item state."),
+    IndexQueryTag("reason_code", "Item reason code.", alias="reason"),
+    IndexQueryTag("dataset_id", "Encoded dataset id.", alias="dataset"),
+]
+
+StorageRunSearchQueryParam: str | None = search_query_param(
+    model_name="Storage operation run item",
+    tags=StorageRunItemsSearchTags,
+    free_text_fields=["state", "reason_code", "dataset_id"],
+)
+
 RecursiveQueryParam = Query(
     default=False,
     title="Recursive",
@@ -159,7 +195,7 @@ CONTENT_DELETE_RESPONSES = {
 
 
 def get_index_query_params(
-    v: Optional[str] = Query(  # Should this be deprecated at some point and directly use the latest version by default?
+    v: str | None = Query(  # Should this be deprecated at some point and directly use the latest version by default?
         default=None,
         title="Version",
         description=(
@@ -168,7 +204,7 @@ def get_index_query_params(
         ),
         examples=["dev"],
     ),
-    dataset_details: Optional[str] = Query(
+    dataset_details: str | None = Query(
         default=None,
         alias="details",
         title="Dataset Details",
@@ -188,8 +224,8 @@ def get_index_query_params(
 
 
 def parse_index_query_params(
-    v: Optional[str] = None,
-    dataset_details: Optional[str] = None,
+    v: str | None = None,
+    dataset_details: str | None = None,
     **_,  # Additional params are ignored
 ) -> HistoryContentsIndexParams:
     """Parses query parameters for the history contents `index` operation
@@ -268,12 +304,12 @@ DryRunQueryParam = Query(
 
 
 def get_legacy_index_query_params(
-    ids: Optional[str] = LegacyIdsQueryParam,
-    types: Optional[list[str]] = LegacyTypesQueryParam,
-    details: Optional[str] = LegacyDetailsQueryParam,
-    deleted: Optional[bool] = LegacyDeletedQueryParam,
-    visible: Optional[bool] = LegacyVisibleQueryParam,
-    shareable: Optional[bool] = LegacyShareableQueryParam,
+    ids: str | None = LegacyIdsQueryParam,
+    types: list[str] | None = LegacyTypesQueryParam,
+    details: str | None = LegacyDetailsQueryParam,
+    deleted: bool | None = LegacyDeletedQueryParam,
+    visible: bool | None = LegacyVisibleQueryParam,
+    shareable: bool | None = LegacyShareableQueryParam,
 ) -> LegacyHistoryContentsIndexParams:
     """This function is meant to be used as a dependency to render the OpenAPI documentation
     correctly"""
@@ -288,12 +324,12 @@ def get_legacy_index_query_params(
 
 
 def parse_legacy_index_query_params(
-    ids: Optional[str] = None,
-    types: Optional[Union[list[str], str]] = None,
-    details: Optional[str] = None,
-    deleted: Optional[bool] = None,
-    visible: Optional[bool] = None,
-    shareable: Optional[bool] = None,
+    ids: str | None = None,
+    types: list[str] | str | None = None,
+    details: str | None = None,
+    deleted: bool | None = None,
+    visible: bool | None = None,
+    shareable: bool | None = None,
     **_,  # Additional params are ignored
 ) -> LegacyHistoryContentsIndexParams:
     """Parses (legacy) query parameters for the history contents `index` operation
@@ -324,7 +360,7 @@ def parse_legacy_index_query_params(
         raise validation_error_to_message_exception(e)
 
 
-def parse_content_types(types: Union[list[str], str]) -> list[HistoryContentType]:
+def parse_content_types(types: list[str] | str) -> list[HistoryContentType]:
     if isinstance(types, list) and len(types) == 1:  # Support ?types=dataset,dataset_collection
         content_types = util.listify(types[0])
     else:  # Support ?types=dataset&types=dataset_collection
@@ -332,18 +368,18 @@ def parse_content_types(types: Union[list[str], str]) -> list[HistoryContentType
     return [HistoryContentType[content_type] for content_type in content_types]
 
 
-def parse_dataset_details(details: Optional[str]):
+def parse_dataset_details(details: str | None):
     """Parses the different values that the `dataset_details` parameter
     can have from a string."""
     if details is not None and details != "all":
-        dataset_details: Union[None, set[str], str] = set(util.listify(details))
+        dataset_details: None | set[str] | str = set(util.listify(details))
     else:  # either None or 'all'
         dataset_details = details
     return dataset_details
 
 
 def get_index_jobs_summary_params(
-    ids: Optional[str] = Query(
+    ids: str | None = Query(
         default=None,
         title="IDs",
         description=(
@@ -351,7 +387,7 @@ def get_index_jobs_summary_params(
             "is specified types must also be specified and have same length."
         ),
     ),
-    types: Optional[str] = Query(
+    types: str | None = Query(
         default=None,
         title="Types",
         description=(
@@ -369,8 +405,8 @@ def get_index_jobs_summary_params(
 
 
 def parse_index_jobs_summary_params(
-    ids: Optional[str] = None,
-    types: Optional[str] = None,
+    ids: str | None = None,
+    types: str | None = None,
     **_,  # Additional params are ignored
 ) -> HistoryContentsIndexJobsSummaryParams:
     """Parses query parameters for the history contents `index_jobs_summary` operation
@@ -425,7 +461,7 @@ class FastAPIHistoryContents:
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         accept: HistoryIndexAcceptContentTypes = "application/json",
-    ) -> Union[HistoryContentsResult, HistoryContentsWithStatsResult]:
+    ) -> HistoryContentsResult | HistoryContentsWithStatsResult:
         """
         Return a list of either `HDA`/`HDCA` data for the history with the given ``ID``.
 
@@ -459,12 +495,12 @@ class FastAPIHistoryContents:
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         index_params: HistoryContentsIndexParams = Depends(get_index_query_params),
-        type: Optional[str] = Query(default=None, include_in_schema=False, deprecated=True),
+        type: str | None = Query(default=None, include_in_schema=False, deprecated=True),
         legacy_params: LegacyHistoryContentsIndexParams = Depends(get_legacy_index_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         accept: HistoryIndexAcceptContentTypes = "application/json",
-    ) -> Union[HistoryContentsResult, HistoryContentsWithStatsResult]:
+    ) -> HistoryContentsResult | HistoryContentsWithStatsResult:
         """
         Return a list of `HDA`/`HDCA` data for the history with the given ``ID``.
 
@@ -519,7 +555,7 @@ class FastAPIHistoryContents:
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         type: HistoryContentType = ContentTypePathParam,
-        fuzzy_count: Optional[int] = FuzzyCountQueryParam,
+        fuzzy_count: int | None = FuzzyCountQueryParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryContentItem:
         """
@@ -549,7 +585,7 @@ class FastAPIHistoryContents:
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         type: HistoryContentType = ContentTypeQueryParam(default=HistoryContentType.dataset),
-        fuzzy_count: Optional[int] = FuzzyCountQueryParam,
+        fuzzy_count: int | None = FuzzyCountQueryParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryContentItem:
         """
@@ -649,7 +685,7 @@ class FastAPIHistoryContents:
         self,
         hdca_id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: Optional[DecodedDatabaseIdField] = Path(
+        history_id: DecodedDatabaseIdField | None = Path(
             description="The encoded database identifier of the History.",
         ),
     ):
@@ -715,7 +751,7 @@ class FastAPIHistoryContents:
         type: HistoryContentType = ContentTypePathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: CreateHistoryContentPayload = Body(...),
-    ) -> Union[AnyHistoryContentItem, list[AnyHistoryContentItem]]:
+    ) -> AnyHistoryContentItem | list[AnyHistoryContentItem]:
         """Create a new `HDA` or `HDCA` in the given History."""
         return self._create(trans, history_id, type, serialization_params, payload)
 
@@ -730,10 +766,10 @@ class FastAPIHistoryContents:
         self,
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        type: Optional[HistoryContentType] = ContentTypeQueryParam(default=None),
+        type: HistoryContentType | None = ContentTypeQueryParam(default=None),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: CreateHistoryContentPayload = Body(...),
-    ) -> Union[AnyHistoryContentItem, list[AnyHistoryContentItem]]:
+    ) -> AnyHistoryContentItem | list[AnyHistoryContentItem]:
         """Create a new `HDA` or `HDCA` in the given History."""
         return self._create(trans, history_id, type, serialization_params, payload)
 
@@ -741,10 +777,10 @@ class FastAPIHistoryContents:
         self,
         trans: ProvidesHistoryContext,
         history_id: DecodedDatabaseIdField,
-        type: Optional[HistoryContentType],
+        type: HistoryContentType | None,
         serialization_params: SerializationParams,
         payload: CreateHistoryContentPayload,
-    ) -> Union[AnyHistoryContentItem, list[AnyHistoryContentItem]]:
+    ) -> AnyHistoryContentItem | list[AnyHistoryContentItem]:
         """Create a new `HDA` or `HDCA` in the given History."""
         payload.type = type or payload.type
         return self.service.create(trans, history_id, payload, serialization_params)
@@ -800,6 +836,68 @@ class FastAPIHistoryContents:
         The items to be processed can be explicitly set or determined by a dynamic query.
         """
         return self.service.bulk_operation(trans, history_id, filter_query_params, payload)
+
+    @router.post(
+        "/api/histories/{history_id}/contents/bulk/storage/preview",
+        summary="Previews a storage bulk operation for selected history contents.",
+    )
+    def bulk_storage_operation_preview(
+        self,
+        history_id: HistoryIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        filter_query_params: ValueFilterQueryParams = Depends(get_value_filter_query_params),
+        payload: StorageOperationPreviewRequest = Body(...),
+    ) -> StorageOperationPreviewResponse:
+        return self.service.bulk_storage_operation_preview(trans, history_id, filter_query_params, payload)
+
+    @router.post(
+        "/api/histories/{history_id}/contents/bulk/storage/execute",
+        summary="Executes a previously previewed storage bulk operation snapshot.",
+    )
+    def bulk_storage_operation_execute(
+        self,
+        history_id: HistoryIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: StorageOperationExecuteRequest = Body(...),
+    ) -> StorageOperationExecuteResponse:
+        return self.service.bulk_storage_operation_execute(trans, history_id, payload)
+
+    @router.get(
+        "/api/histories/{history_id}/contents/bulk/storage/runs/{run_id}",
+        summary="Returns run status summary for a storage bulk operation.",
+    )
+    def bulk_storage_operation_run(
+        self,
+        history_id: HistoryIDPathParam,
+        run_id: DecodedDatabaseIdField,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> StorageOperationRunResponse:
+        return self.service.bulk_storage_operation_run(trans, history_id, run_id)
+
+    @router.get(
+        "/api/histories/{history_id}/contents/bulk/storage/runs/{run_id}/items",
+        summary="Returns paginated per-item details for a storage bulk operation run.",
+    )
+    def bulk_storage_operation_run_items(
+        self,
+        history_id: HistoryIDPathParam,
+        run_id: DecodedDatabaseIdField,
+        response: Response,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        offset: int = StorageRunOffsetQueryParam,
+        limit: int = StorageRunLimitQueryParam,
+        search: str | None = StorageRunSearchQueryParam,
+    ) -> list[StorageOperationRunItemStatus]:
+        run_items, total_matches = self.service.bulk_storage_operation_run_items(
+            trans,
+            history_id,
+            run_id,
+            offset=offset,
+            limit=limit,
+            search=search,
+        )
+        response.headers["total_matches"] = str(total_matches)
+        return run_items
 
     @router.put(
         "/api/histories/{history_id}/contents/{id}/validate",
@@ -912,9 +1010,9 @@ class FastAPIHistoryContents:
         id: HistoryItemIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         type: HistoryContentType = ContentTypePathParam,
-        purge: Optional[bool] = PurgeQueryParam,
-        recursive: Optional[bool] = RecursiveQueryParam,
-        stop_job: Optional[bool] = StopJobQueryParam,
+        purge: bool | None = PurgeQueryParam,
+        recursive: bool | None = RecursiveQueryParam,
+        stop_job: bool | None = StopJobQueryParam,
         payload: DeleteHistoryContentPayload = Body(None),
     ):
         """
@@ -946,9 +1044,9 @@ class FastAPIHistoryContents:
         id: HistoryItemIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         type: HistoryContentType = ContentTypeQueryParam(default=HistoryContentType.dataset),
-        purge: Optional[bool] = PurgeQueryParam,
-        recursive: Optional[bool] = RecursiveQueryParam,
-        stop_job: Optional[bool] = StopJobQueryParam,
+        purge: bool | None = PurgeQueryParam,
+        recursive: bool | None = RecursiveQueryParam,
+        stop_job: bool | None = StopJobQueryParam,
         payload: DeleteHistoryContentPayload = Body(None),
     ):
         """
@@ -978,9 +1076,9 @@ class FastAPIHistoryContents:
         response: Response,
         dataset_id: HistoryItemIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        purge: Optional[bool] = PurgeQueryParam,
-        recursive: Optional[bool] = RecursiveQueryParam,
-        stop_job: Optional[bool] = StopJobQueryParam,
+        purge: bool | None = PurgeQueryParam,
+        recursive: bool | None = RecursiveQueryParam,
+        stop_job: bool | None = StopJobQueryParam,
         payload: DeleteHistoryContentPayload = Body(None),
     ):
         """
@@ -1005,9 +1103,9 @@ class FastAPIHistoryContents:
         trans: ProvidesHistoryContext,
         id: DecodedDatabaseIdField,
         type: HistoryContentType,
-        purge: Optional[bool],
-        recursive: Optional[bool],
-        stop_job: Optional[bool],
+        purge: bool | None,
+        recursive: bool | None,
+        stop_job: bool | None,
         payload: DeleteHistoryContentPayload,
     ):
         # TODO: should we just use the default payload and deprecate the query params?
@@ -1040,14 +1138,14 @@ class FastAPIHistoryContents:
             description="Output format of the archive.",
             deprecated=True,  # Looks like is not really used?
         ),
-        dry_run: Optional[bool] = DryRunQueryParam,
+        dry_run: bool | None = DryRunQueryParam,
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
     ):
         """Build and return a compressed archive of the selected history contents."""
         archive = self.service.archive(trans, history_id, filter_query_params, filename, dry_run)
         if isinstance(archive, HistoryContentsArchiveDryRunResult):
             return archive
-        return StreamingResponse(archive.response(), headers=archive.get_headers())
+        return GalaxyStreamingResponse(archive.response(), headers=archive.get_headers())
 
     @router.get(
         "/api/histories/{history_id}/contents/archive",
@@ -1059,15 +1157,15 @@ class FastAPIHistoryContents:
         self,
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        filename: Optional[str] = ArchiveFilenameQueryParam,
-        dry_run: Optional[bool] = DryRunQueryParam,
+        filename: str | None = ArchiveFilenameQueryParam,
+        dry_run: bool | None = DryRunQueryParam,
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
     ):
         """Build and return a compressed archive of the selected history contents."""
         archive = self.service.archive(trans, history_id, filter_query_params, filename, dry_run)
         if isinstance(archive, HistoryContentsArchiveDryRunResult):
             return archive
-        return StreamingResponse(archive.response(), headers=archive.get_headers())
+        return GalaxyStreamingResponse(archive.response(), headers=archive.get_headers())
 
     @router.post(
         "/api/histories/{history_id}/contents_from_store",
@@ -1124,6 +1222,6 @@ class FastAPIHistoryContents:
         rval = self.service.materialize(trans, materialize_request)
         return rval
 
-    def _download_collection(self, trans, id):
+    def _download_collection(self, trans: ProvidesHistoryContext, id):
         archive = self.service.get_dataset_collection_archive_for_download(trans, id)
-        return StreamingResponse(archive.response(), headers=archive.get_headers())
+        return GalaxyStreamingResponse(archive.response(), headers=archive.get_headers())

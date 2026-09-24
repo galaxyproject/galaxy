@@ -6,6 +6,7 @@ from typing import (
 )
 
 from pydantic import BaseModel
+from pydantic.annotated_handlers import GetCoreSchemaHandler
 from typing_extensions import override
 
 from galaxy.schema.fields import (
@@ -15,7 +16,7 @@ from galaxy.schema.fields import (
 
 DatabaseIdT = TypeVar("DatabaseIdT")
 
-ref_to_name = {}
+ref_to_name: dict[str, str] = {}
 
 
 class GenericModel(BaseModel):
@@ -26,7 +27,7 @@ class GenericModel(BaseModel):
         return f"{class_name}{suffix}"
 
     @classmethod
-    def __get_pydantic_core_schema__(cls, source, handler):
+    def __get_pydantic_core_schema__(cls, source: type[BaseModel], handler: GetCoreSchemaHandler):
         result = handler(source)
         ref_to_name[result["ref"]] = cls.__name__
         return result

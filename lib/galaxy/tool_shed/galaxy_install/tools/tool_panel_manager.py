@@ -1,5 +1,7 @@
+import copy
 import errno
 import logging
+import os
 from typing import (
     Any,
 )
@@ -9,9 +11,10 @@ from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.util.basic_util import strip_path
 from galaxy.tool_shed.util.repository_util import get_repository_owner
 from galaxy.tool_shed.util.shed_util_common import get_tool_panel_config_tool_path_install_dir
+from galaxy.tool_util.toolbox.base import resolve_tool_path
+from galaxy.tools.source_store.populator import populate_for_paths
 from galaxy.util import (
     Element,
-    parse_xml_string,
     SubElement,
     xml_to_string,
 )
@@ -22,17 +25,65 @@ from galaxy.util.tool_shed.xml_util import parse_xml
 log = logging.getLogger(__name__)
 
 
+def toolbox_with_new_tool_path(config_filename: str, tool_path: str) -> Element:
+    """Return a toolbox root that preserves attributes and overrides its path."""
+    root_attributes: dict[str, str] = {}
+    if os.path.exists(config_filename):
+        existing_tree, _error_message = parse_xml(config_filename)
+        if existing_tree is not None:
+            for key, value in existing_tree.getroot().attrib.items():
+                if isinstance(key, str) and isinstance(value, str):
+                    root_attributes[key] = value
+    root_attributes["tool_path"] = tool_path
+    return Element("toolbox", root_attributes)
+
+
+def _collect_new_tool_paths(elem_list, tool_path: str, shed_tool_conf: str) -> dict[str, str | None]:
+    """Walk ``elem_list`` and map each new ``<tool>``'s absolute path to its guid.
+
+    ``elem_list`` is the freshly-generated panel additions for a shed install
+    — either top-level ``<tool>`` elements or ``<section>`` elements with
+    nested ``<tool>`` children. Paths must match what
+    ``galaxy.tools.source_store.discover.discover_tools`` yields for the
+    rewritten conf byte-for-byte (the partial populate filters on the string),
+    so route through the same ``resolve_tool_path`` discover uses.
+    """
+    resolved_base = resolve_tool_path(tool_path, shed_tool_conf)
+    path_guids: dict[str, str | None] = {}
+
+    def _add(tool_elem) -> None:
+        relative = tool_elem.get("file")
+        if relative:
+            path = os.path.normpath(os.path.join(resolved_base, relative))
+            path_guids[path] = tool_elem.get("guid")
+
+    for elem in elem_list:
+        if elem.tag == "tool":
+            _add(elem)
+        elif elem.tag == "section":
+            for child in elem:
+                if child.tag == "tool":
+                    _add(child)
+    return path_guids
+
+
 class ToolPanelManager:
     app: InstallationTarget
 
     def __init__(self, app: InstallationTarget):
         self.app = app
 
-    def add_to_shed_tool_config(self, shed_tool_conf_dict: dict[str, Any], elem_list: list) -> None:
+    def add_to_shed_tool_config(
+        self, shed_tool_conf_dict: dict[str, Any], elem_list: list, wait_for_reload: bool = True
+    ) -> None:
         """
         "A tool shed repository is being installed so change the shed_tool_conf file.  Parse the
         config file to generate the entire list of config_elems instead of using the in-memory list
         since it will be a subset of the entire list if one or more repositories have been deactivated.
+
+        The rewrite triggers a toolbox reload through the conf watcher; ``wait_for_reload``
+        blocks until that reload has happened. Callers with work that must land before the
+        rebuild reads the conf pass ``False`` and wait themselves.
         """
         if not elem_list:
             # We may have an empty elem_list in case a data manager is being installed.
@@ -81,7 +132,8 @@ class ToolPanelManager:
                     config_elems.append(elem_entry)
             # Persist the altered shed_tool_config file.
             self.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path)
-            self.app.wait_for_toolbox_reload(old_toolbox)
+            if wait_for_reload:
+                self.app.wait_for_toolbox_reload(old_toolbox)
         else:
             log.error(error_message)
 
@@ -115,22 +167,85 @@ class ToolPanelManager:
         )
         if new_install:
             tool_path = shed_tool_conf_dict["tool_path"]
-            # Add the new elements to the shed_tool_conf file on disk.
-            config_elems = shed_tool_conf_dict["config_elems"]
-            for config_elem in elem_list:
-                # Add the new elements to the in-memory list of config_elems.
-                config_elems.append(config_elem)
-                # Load the tools into the in-memory tool panel.
-                self.app.toolbox.load_item(
-                    config_elem,
-                    tool_path=tool_path,
-                    load_panel_dict=True,
-                    guid=config_elem.get("guid"),
+            use_cached_toolbox = self.app.config.use_cached_toolbox
+            if use_cached_toolbox:
+                # The populator writes ``StoredToolSource`` + ``ToolIndexEntry``
+                # for every new tool file, then broadcasts
+                # ``reload_tool_source_cache`` so peer Galaxy processes
+                # refresh. ``create_tool`` raises on index miss, so this MUST
+                # run before ``load_item`` reaches the seam — and the
+                # populator's conf walk needs the updated shed_tool_conf on
+                # disk, so persist it first.
+                config_elems = shed_tool_conf_dict["config_elems"]
+                for config_elem in elem_list:
+                    config_elems.append(config_elem)
+                shed_tool_conf_dict["config_elems"] = config_elems
+                self.app.toolbox.update_shed_config(shed_tool_conf_dict)
+                # Snapshot before ``add_to_shed_tool_config``: when the target
+                # <section> already exists in the on-disk conf, that method
+                # merges the incoming children into it via lxml ``append``,
+                # which REPARENTS them — emptying the section elements in
+                # ``elem_list``. Both the populate below and ``load_item``
+                # need the original children (the eager branch is immune
+                # because it loads before persisting).
+                load_elem_list = [copy.deepcopy(elem) for elem in elem_list]
+                new_path_guids = _collect_new_tool_paths(
+                    load_elem_list, tool_path, shed_tool_conf_dict["config_filename"]
                 )
-            # Replace the old list of in-memory config_elems with the new list for this shed_tool_conf_dict.
-            shed_tool_conf_dict["config_elems"] = config_elems
-            self.app.toolbox.update_shed_config(shed_tool_conf_dict)
-            self.add_to_shed_tool_config(shed_tool_conf_dict, elem_list)
+                old_toolbox = self.app.toolbox
+                # The conf watcher reacts to the rewrite with a toolbox rebuild
+                # that repopulates the index from the conf, and a full populate
+                # records a placement it has never seen at the tail of its
+                # section. The partial populate below records the same
+                # placement at the head — the position a shed install gets —
+                # and only the first writer decides. Hold the toolbox lock
+                # across both steps so the rebuild (which takes the same lock)
+                # can only run once the head placement is in the index.
+                with self.app._toolbox_lock:
+                    self.add_to_shed_tool_config(shed_tool_conf_dict, elem_list, wait_for_reload=False)
+                    if new_path_guids:
+                        populate_for_paths(
+                            self.app.config,
+                            paths=list(new_path_guids),
+                            path_guids=new_path_guids,
+                            app=self.app,
+                        )
+                if elem_list:
+                    self.app.wait_for_toolbox_reload(old_toolbox)
+                if new_path_guids:
+                    # Refresh THIS process synchronously; the control-task
+                    # broadcast above only reaches peers asynchronously, but
+                    # the install response should reflect the new tools
+                    # immediately.
+                    self.app.toolbox.invalidate_index_cache()
+                # Wire the new tools into the in-memory panel; ``create_tool``
+                # finds them in the index and hands back ``CachedTool`` stubs.
+                for config_elem in load_elem_list:
+                    self.app.toolbox.load_item(
+                        config_elem,
+                        tool_path=tool_path,
+                        load_panel_dict=True,
+                        guid=config_elem.get("guid"),
+                    )
+                self.app.reindex_tool_search()
+            else:
+                # Eager path: append + load each elem, then persist the
+                # updated shed_tool_conf.
+                config_elems = shed_tool_conf_dict["config_elems"]
+                for config_elem in elem_list:
+                    # Add the new elements to the in-memory list of config_elems.
+                    config_elems.append(config_elem)
+                    # Load the tools into the in-memory tool panel.
+                    self.app.toolbox.load_item(
+                        config_elem,
+                        tool_path=tool_path,
+                        load_panel_dict=True,
+                        guid=config_elem.get("guid"),
+                    )
+                # Replace the old list of in-memory config_elems with the new list for this shed_tool_conf_dict.
+                shed_tool_conf_dict["config_elems"] = config_elems
+                self.app.toolbox.update_shed_config(shed_tool_conf_dict)
+                self.add_to_shed_tool_config(shed_tool_conf_dict, elem_list)
 
     def config_elems_to_xml_file(self, config_elems, config_filename, tool_path) -> None:
         """
@@ -138,7 +253,7 @@ class ToolPanelManager:
         value of config_filename.
         """
         try:
-            root = parse_xml_string(f'<?xml version="1.0"?>\n<toolbox tool_path="{tool_path}"></toolbox>')
+            root = toolbox_with_new_tool_path(config_filename, tool_path)
             for elem in config_elems:
                 root.append(elem)
             with RenamedTemporaryFile(config_filename, mode="w") as fh:
@@ -198,30 +313,6 @@ class ToolPanelManager:
                     tool_panel_dict[guid].append(tool_section_dict)
                 else:
                     tool_panel_dict[guid] = [tool_section_dict]
-        return tool_panel_dict
-
-    def generate_tool_panel_dict_for_tool_config(
-        self, guid, tool_config, tool_sections=None
-    ) -> dict[str, list[dict[str, Any]]]:
-        """
-        Create a dictionary of the following type for a single tool config file name.
-        The intent is to call this method for every tool config in a repository and
-        append each of these as entries to a tool panel dictionary for the repository.
-        This enables each tool to be loaded into a different section in the tool panel.
-
-        .. code-block::
-
-            {<Tool guid> :
-                [{ tool_config : <tool_config_file>,
-                    id: <ToolSection id>,
-                    version : <ToolSection version>,
-                    name : <TooSection name>}]}
-
-        """
-        tool_panel_dict: dict[str, list[dict[str, Any]]] = {}
-        file_name = strip_path(tool_config)
-        tool_section_dicts = self.generate_tool_section_dicts(tool_config=file_name, tool_sections=tool_sections)
-        tool_panel_dict[guid] = tool_section_dicts
         return tool_panel_dict
 
     def generate_tool_panel_dict_from_shed_tool_conf_entries(self, repository) -> dict[str, list[dict[str, Any]]]:
@@ -315,10 +406,20 @@ class ToolPanelManager:
                     if tool_section is None:
                         tool_section = self.generate_tool_section_element_from_dict(tool_section_dict)
                 # Find the tuple containing the current guid from the list of repository_tools_tups.
+                matched_tup = None
                 for repository_tool_tup in repository_tools_tups:
-                    tool_file_path, tup_guid, tool = repository_tool_tup
-                    if tup_guid == guid:
+                    if repository_tool_tup[1] == guid:
+                        matched_tup = repository_tool_tup
                         break
+                if matched_tup is None:
+                    log.warning(
+                        "Skipping tool panel entry for guid '%s': no matching tool in repository '%s' (revision %s)",
+                        guid,
+                        repository_name,
+                        changeset_revision,
+                    )
+                    continue
+                tool_file_path, _, tool = matched_tup
                 tool_elem = self.generate_tool_elem(
                     tool_shed,
                     repository_name,
@@ -337,29 +438,6 @@ class ToolPanelManager:
                 else:
                     elem_list.append(tool_elem)
         return elem_list
-
-    def generate_tool_section_dicts(self, tool_config=None, tool_sections=None) -> list[dict[str, Any]]:
-        tool_section_dicts: list[dict[str, Any]] = []
-        if tool_config is None:
-            tool_config = ""
-        if tool_sections:
-            for tool_section in tool_sections:
-                # The value of tool_section will be None if the tool is displayed outside
-                # of any sections in the tool panel.
-                if tool_section:
-                    section_id = tool_section.id or ""
-                    section_version = tool_section.version or ""
-                    section_name = tool_section.name or ""
-                else:
-                    section_id = ""
-                    section_version = ""
-                    section_name = ""
-                tool_section_dicts.append(
-                    dict(tool_config=tool_config, id=section_id, version=section_version, name=section_name)
-                )
-        else:
-            tool_section_dicts.append(dict(tool_config=tool_config, id="", version="", name=""))
-        return tool_section_dicts
 
     def generate_tool_section_element_from_dict(self, tool_section_dict: dict[str, str]) -> Element:
         # The value of tool_section_dict looks like the following.
@@ -513,15 +591,24 @@ class ToolPanelManager:
         # Create a list of guids for all tools that will be removed from the in-memory tool panel
         # and config file on disk.
         guids_to_remove = list(tool_panel_dict.keys())
-        toolbox = self.app.toolbox
-        # Remove the tools from the toolbox's tools_by_id dictionary.
-        for guid_to_remove in guids_to_remove:
-            # remove_from_tool_panel to false, will handling that logic below.
-            toolbox.remove_tool_by_id(guid_to_remove, remove_from_panel=False)
         shed_tool_conf_dict = self.get_shed_tool_conf_dict(shed_tool_conf)
-        if uninstall:
-            # Remove from the shed_tool_conf file on disk.
-            self.remove_from_shed_tool_config(shed_tool_conf_dict, repository.metadata_)
+        # The conf rewrite must precede the toolbox/index removal, and neither
+        # may interleave with a toolbox rebuild: a rebuild reading the conf
+        # after the index prune but before the rewrite sees a conf-listed tool
+        # file with no index entry — the state the cached toolbox's ad-hoc
+        # self-heal repairs by re-indexing the tool, resurrecting it in the
+        # persisted index after uninstall. The reverse intermediate (conf
+        # rewritten, index not yet pruned) is safe: remove_tool_by_id
+        # re-prunes whatever toolbox is current.
+        with self.app._toolbox_lock:
+            if uninstall:
+                # Remove from the shed_tool_conf file on disk.
+                self.remove_from_shed_tool_config(shed_tool_conf_dict, repository.metadata_)
+            toolbox = self.app.toolbox
+            # Remove the tools from the toolbox's tools_by_id dictionary.
+            for guid_to_remove in guids_to_remove:
+                # remove_from_tool_panel to false, will handling that logic below.
+                toolbox.remove_tool_by_id(guid_to_remove, remove_from_panel=False)
 
     def update_tool_panel_dict(self, tool_panel_dict, tool_panel_section_mapping, repository_tools_tups):
         for tool_guid in tool_panel_dict:

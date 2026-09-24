@@ -3,15 +3,20 @@
 import copy
 import logging
 import os
+from collections.abc import Container
 from typing import (
-    Container,
-    Optional,
     TYPE_CHECKING,
 )
 
 from galaxy.util.commands import shell
 from . import ContainerResolver
-from .mulled import CliContainerResolver
+from .mulled import (
+    CacheDirectory,
+    CachedMulledImageSingleTarget,
+    CliContainerResolver,
+    get_cache_directory_cacher,
+    identifier_to_cached_target,
+)
 from ..container_classes import SingularityContainer
 from ..requirements import ContainerDescription
 
@@ -33,7 +38,7 @@ class ExplicitContainerResolver(ContainerResolver):
 
     def resolve(
         self, enabled_container_types: Container[str], tool_info: "ToolInfo", **kwds
-    ) -> Optional[ContainerDescription]:
+    ) -> ContainerDescription | None:
         """Find a container explicitly mentioned in tool description.
 
         This ignores the tool requirements and assumes the tool author crafted
@@ -53,7 +58,7 @@ class ExplicitSingularityContainerResolver(ExplicitContainerResolver):
 
     def resolve(
         self, enabled_container_types: Container[str], tool_info: "ToolInfo", **kwds
-    ) -> Optional[ContainerDescription]:
+    ) -> ContainerDescription | None:
         """Find a container explicitly mentioned in tool description.
 
         This ignores the tool requirements and assumes the tool author crafted
@@ -85,11 +90,15 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
             assert self.app_info.container_image_cache_path
             cache_directory_path = os.path.join(self.app_info.container_image_cache_path, "singularity", "explicit")
         self.cache_directory_path = cache_directory_path
+        self.namespace = kwargs.get("namespace")
+        cache_directory_cacher_type = kwargs.get("cache_directory_cacher_type")
+        cacher_class = get_cache_directory_cacher(cache_directory_cacher_type)
+        self.cache_directory: CacheDirectory = cacher_class(self.cache_directory_path)
         os.makedirs(self.cache_directory_path, exist_ok=True)
 
     def resolve(
         self, enabled_container_types: Container[str], tool_info: "ToolInfo", install: bool = False, **kwds
-    ) -> Optional[ContainerDescription]:
+    ) -> ContainerDescription | None:
         """Find a container explicitly mentioned in tool description.
 
         This ignores the tool requirements and assumes the tool author crafted
@@ -103,11 +112,37 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
                 container_description.identifier = f"docker://{container_description.identifier}"
             if not self._container_type_enabled(container_description, enabled_container_types):
                 return None
-            if not self.cli_available:
-                return container_description
             image_id = container_description.identifier
-            cache_path = os.path.normpath(os.path.join(self.cache_directory_path, image_id))
+            if self.namespace:
+                prefix = f"docker://quay.io/{self.namespace}/"
+                if image_id.startswith(prefix):
+                    image_id = image_id[len(prefix) :]
+                parsed = identifier_to_cached_target(image_id, "v2")
+                if parsed and isinstance(parsed, CachedMulledImageSingleTarget):
+                    cached_images = self.cache_directory.list_cached_mulled_images_from_path()
+                    for cached in cached_images:
+                        if (
+                            isinstance(cached, CachedMulledImageSingleTarget)
+                            and cached.package_name == parsed.package_name
+                            and cached.version == parsed.version
+                        ):
+                            container_description.identifier = os.path.join(
+                                self.cache_directory_path, cached.image_identifier
+                            )
+                            return container_description
+                    if not install:
+                        return None
+                else:
+                    if not install and not os.path.exists(os.path.join(self.cache_directory_path, image_id)):
+                        return None
+                cache_path = os.path.join(self.cache_directory_path, image_id)
+            else:
+                if not self.cli_available:
+                    return container_description
+                cache_path = os.path.normpath(os.path.join(self.cache_directory_path, image_id))
             if install and not os.path.exists(cache_path):
+                if not self.cli_available:
+                    return None
                 destination_info = {}
                 destination_for_container_type = kwds.get("destination_for_container_type")
                 if destination_for_container_type:
@@ -122,6 +157,7 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
                 )
                 command = container.build_singularity_pull_command(cache_path=cache_path)
                 shell(command)
+                self.cache_directory.invalidate_cache()
             # Point to container in the cache in stead.
             container_description.identifier = cache_path
             return container_description
@@ -129,7 +165,12 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
             return None
 
     def __str__(self):
-        return f"CachedExplicitSingularityContainerResolver[cache_directory={self.cache_directory_path}]"
+        return (
+            f"CachedExplicitSingularityContainerResolver["
+            f"cache_directory={self.cache_directory_path},"
+            f"namespace={self.namespace},"
+            f"cache_directory_cacher_type={self.cache_directory.cacher_type}]"
+        )
 
 
 class BaseAdminConfiguredContainerResolver(ContainerResolver):
@@ -169,7 +210,7 @@ class FallbackContainerResolver(BaseAdminConfiguredContainerResolver):
 
     def resolve(
         self, enabled_container_types: Container[str], tool_info: "ToolInfo", **kwds
-    ) -> Optional[ContainerDescription]:
+    ) -> ContainerDescription | None:
         container_description = self._container_description(self.identifier, self.container_type)
         if self._match(enabled_container_types, tool_info, container_description):
             return container_description
@@ -230,7 +271,7 @@ class MappingContainerResolver(BaseAdminConfiguredContainerResolver):
 
     def resolve(
         self, enabled_container_types: Container[str], tool_info: "ToolInfo", **kwds
-    ) -> Optional[ContainerDescription]:
+    ) -> ContainerDescription | None:
         tool_id = tool_info.tool_id
         # If resolving against dependencies and not a specific tool, skip over this resolver
         if not tool_id:

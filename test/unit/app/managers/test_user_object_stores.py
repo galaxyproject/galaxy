@@ -1,7 +1,3 @@
-from typing import (
-    Optional,
-)
-
 from yaml import safe_load
 
 from galaxy.exceptions import (
@@ -31,8 +27,8 @@ SIMPLE_FILE_SOURCE_DESCRIPTION = "a description of my object store"
 
 
 class Config:
-    object_store_templates: Optional[list[RawTemplateConfig]] = None
-    object_store_templates_config_file: Optional[str] = None
+    object_store_templates: list[RawTemplateConfig] | None = None
+    object_store_templates_config_file: str | None = None
 
     def __init__(self, templates: list[RawTemplateConfig]):
         self.object_store_templates = templates
@@ -150,6 +146,26 @@ class TestUserObjectStoreTestCase(BaseTestCase):
         assert user_object_store_showed.variables
         assert user_object_store_showed.variables["var1"] == "newval"
 
+    def test_hide_without_variables_update_on_required_variable_template(self, tmp_path):
+        self._init_managers(tmp_path, config_dict=simple_variable_template(tmp_path))
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="simple_variable",
+            template_version=0,
+            variables={"var1": "requiredval"},
+            secrets={},
+        )
+        user_object_store = self._create_instance(create_payload)
+
+        hide = UpdateInstancePayload(hidden=True)
+        self._modify(user_object_store, hide)
+
+        user_object_store_showed = self.manager.show(self.trans, user_object_store.uuid)
+        assert user_object_store_showed.hidden
+        assert user_object_store_showed.variables
+        assert user_object_store_showed.variables["var1"] == "requiredval"
+
     def test_update_errors_on_extra_variables(self, tmp_path):
         self._init_managers(tmp_path, config_dict=simple_variable_template(tmp_path))
         create_payload = CreateInstancePayload(
@@ -223,6 +239,20 @@ class TestUserObjectStoreTestCase(BaseTestCase):
         self.manager.purge_instance(self.trans, user_object_store.uuid)
         self._assert_secret_absent(user_object_store, "sec1")
 
+    def test_create_multiline_secret(self, tmp_path):
+        self._init_managers(tmp_path, simple_vault_template(tmp_path))
+        multiline_secret = "line1\nline2\nline3"
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="simple_vault",
+            template_version=0,
+            variables={},
+            secrets={"sec1": multiline_secret},
+        )
+        user_object_store = self._create_instance(create_payload)
+        self._assert_secret_is(user_object_store, "sec1", multiline_secret)
+
     def test_update_secret(self, tmp_path):
         self._init_managers(tmp_path, simple_vault_template(tmp_path))
         user_object_store = self._create_instance(SIMPLE_VAULT_CREATE_PAYLOAD)
@@ -230,6 +260,14 @@ class TestUserObjectStoreTestCase(BaseTestCase):
         update = UpdateInstanceSecretPayload(secret_name="sec1", secret_value="newvalue")
         self._modify(user_object_store, update)
         self._assert_secret_is(user_object_store, "sec1", "newvalue")
+
+    def test_update_secret_preserves_multiline_value(self, tmp_path):
+        self._init_managers(tmp_path, simple_vault_template(tmp_path))
+        user_object_store = self._create_instance(SIMPLE_VAULT_CREATE_PAYLOAD)
+        multiline_secret = "line1\nline2\nline3"
+        update = UpdateInstanceSecretPayload(secret_name="sec1", secret_value=multiline_secret)
+        self._modify(user_object_store, update)
+        self._assert_secret_is(user_object_store, "sec1", multiline_secret)
 
     def test_cannot_update_invalid_secret(self, tmp_path):
         self._init_managers(tmp_path, simple_vault_template(tmp_path))

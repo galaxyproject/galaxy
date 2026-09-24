@@ -6,10 +6,12 @@
 import { computed } from "vue";
 
 import type { BaseUploadItem } from "@/components/Panels/Upload/types/uploadItem";
+import { uploadOptionDefaults } from "@/composables/upload/uploadOptionModel";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 
-export function useUploadDefaults() {
-    const { configOptions, effectiveExtensions, listDbKeys, ready } = useUploadConfigurations(undefined);
+export function useUploadDefaults(formats?: string[]) {
+    const { configOptions, effectiveExtensions, compositeExtensions, listDbKeys, ready } =
+        useUploadConfigurations(formats);
 
     const defaultExtension = computed(() => configOptions.value?.defaultExtension || "auto");
     const defaultDbKey = computed(() => configOptions.value?.defaultDbKey || "?");
@@ -21,14 +23,16 @@ export function useUploadDefaults() {
         return {
             extension: defaultExtension.value,
             dbkey: defaultDbKey.value,
-            spaceToTab: false,
-            toPosixLines: false,
+            spaceToTab: uploadOptionDefaults.spaceToTab,
+            toPosixLines: uploadOptionDefaults.toPosixLines,
+            autoDecompress: uploadOptionDefaults.autoDecompress,
         };
     }
 
     return {
         configOptions,
         effectiveExtensions,
+        compositeExtensions,
         listDbKeys,
         configurationsReady: ready,
         defaultExtension,

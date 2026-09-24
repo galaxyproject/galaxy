@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faQuestion } from "@fortawesome/free-solid-svg-icons";
+import { faExclamation, faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { Placement } from "@popperjs/core";
 import { computed } from "vue";
@@ -27,7 +27,7 @@ export interface Props {
     activityBarId: string;
     title?: string;
     icon?: IconDefinition;
-    indicator?: number | IconDefinition;
+    indicator?: number | boolean;
     indicatorVariant?: ActivityVariant;
     isActive?: boolean;
     tooltip?: string;
@@ -79,10 +79,10 @@ const meta = computed(() => store.metaForId(props.id));
 </script>
 
 <template>
-    <Popper :placement="tooltipPlacement">
+    <Popper :placement="tooltipPlacement" class="activity-item-popper">
         <template v-slot:reference>
             <b-nav-item
-                class="activity-item my-1 p-2"
+                class="activity-item"
                 :class="{ 'nav-item-active': isActive }"
                 :link-attrs="{ id: `activity-${id}` }"
                 :link-classes="`variant-${props.variant}`"
@@ -109,11 +109,11 @@ const meta = computed(() => store.metaForId(props.id));
                         {{ Math.min(indicator, 99) }}
                     </span>
                     <span
-                        v-else-if="typeof indicator !== 'number'"
+                        v-else-if="indicator === true"
                         class="nav-indicator"
                         :class="`${indicatorVariant}-indicator`"
                         data-description="activity indicator">
-                        <FontAwesomeIcon :icon="indicator" />
+                        <FontAwesomeIcon :icon="faExclamation" />
                     </span>
                     <FontAwesomeIcon :icon="icon" />
                 </div>
@@ -137,10 +137,22 @@ const meta = computed(() => store.metaForId(props.id));
 <style scoped lang="scss">
 @import "@/style/scss/theme/blue.scss";
 
+.activity-item-popper {
+    // Vertically centers the popper in the activity bar
+    :deep(.popper-reference-container) {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
 .activity-item {
     position: relative;
     display: flex;
     flex-direction: column;
+    width: 5rem;
+    padding: 0.5rem;
+    margin: 0.125rem 0;
 
     &:deep(.variant-danger) {
         color: $brand-danger;
@@ -200,7 +212,6 @@ const meta = computed(() => store.metaForId(props.id));
     position: relative;
     display: flex;
     justify-content: center;
-    width: 4rem;
     margin-top: 0.5rem;
     font-size: 0.7rem;
 }

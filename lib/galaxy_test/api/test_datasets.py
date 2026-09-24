@@ -1,8 +1,9 @@
 import textwrap
-import urllib
 import zipfile
 from io import BytesIO
 from urllib.parse import quote
+
+import requests
 
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
@@ -10,8 +11,10 @@ from galaxy.model.unittest_utils.store_fixtures import (
     TEST_SOURCE_URI,
 )
 from galaxy.tool_util.verify.test_data import TestDataResolver
-from galaxy.util.unittest_utils import skip_if_github_down
-from galaxy_test.base.api_asserts import assert_has_keys
+from galaxy_test.base.api_asserts import (
+    assert_error_message_contains,
+    assert_has_keys,
+)
 from galaxy_test.base.decorators import (
     requires_admin,
     requires_new_history,
@@ -341,6 +344,109 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
 
+    def test_download_always_redirects(self, history_id):
+        content = "download-me\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=content, wait=True)
+        # Authenticate via the x-api-key header (as bioblend does); it carries across the redirect.
+        download_url = self._api_url(f"datasets/{hda['id']}/download", {"to_ext": "txt"})
+        headers = {"x-api-key": self.galaxy_interactor.api_key}
+        # The /download route always returns a 302 so every client follows redirects uniformly; for a
+        # disk object store (no presigned URL) it points back at the streaming /display route.
+        no_follow = requests.get(download_url, headers=headers, allow_redirects=False)
+        assert no_follow.status_code == 302
+        location = no_follow.headers["location"]
+        assert "display" in location
+        # The to_ext query param is carried through to the streaming route by the redirect.
+        assert "to_ext=txt" in location
+        # The client resends the x-api-key header on this same-origin redirect, so /display
+        # authenticates and serves the data. A 200 here (with only the header, no cookie) is the
+        # proof that auth survived the redirect -- /display would return 401 otherwise.
+        followed = requests.get(download_url, headers=headers)
+        assert followed.status_code == 200
+        assert "download-me" in followed.text
+
+    def test_binary_download_filename(self, history_id):
+        content = self.test_data_resolver.get_filecontent("1.bam")
+        hda = self.dataset_populator.new_dataset_from_test_data(
+            history_id, self.test_data_resolver, "1.bam", "bam", name="Annotated alignment"
+        )
+        expected_filename = (
+            f'filename="Galaxy{hda["hid"]}-[Annotated_alignment].bam"; '
+            f"filename*=UTF-8''Galaxy{hda['hid']}-%5BAnnotated%20alignment%5D.bam"
+        )
+
+        for download_url in (hda["download_url"], f"datasets/{hda['id']}/download"):
+            for params in ({}, {"to_ext": "data"}, {"to_ext": "bam"}):
+                response = self._get(download_url, params)
+                self._assert_status_code_is(response, 200)
+                assert response.headers["Content-Disposition"] == f"attachment; {expected_filename}"
+                assert response.headers["content-type"] == "application/octet-stream"
+                assert response.content == content
+
+                head_response = self._head(download_url, params)
+                self._assert_status_code_is(head_response, 200)
+                assert head_response.headers["Content-Disposition"] == response.headers["Content-Disposition"]
+
+        response = self.dataset_populator.get_history_dataset_content_raw(history_id, dataset=hda)
+        self._assert_status_code_is(response, 200)
+        assert response.headers["Content-Disposition"] == f"inline; {expected_filename}"
+        assert response.content == content
+
+        for display_url in (f"datasets/{hda['id']}/display", f"{self.url}datasets/{hda['id']}/display"):
+            response = self._get(display_url)
+            self._assert_status_code_is(response, 200)
+            assert response.headers["Content-Disposition"] == f"inline; {expected_filename}"
+            assert response.content == content
+
+    def test_display_images_inline(self, history_id):
+        for extension, content_type in (("png", "image/png"), ("pdf", "application/pdf")):
+            filename = f"454Score.{extension}"
+            content = self.test_data_resolver.get_filecontent(filename)
+            hda = self.dataset_populator.new_dataset_from_test_data(
+                history_id, self.test_data_resolver, filename, extension
+            )
+            download_response = self._get(hda["download_url"])
+            self._assert_status_code_is(download_response, 200)
+            expected_filename = download_response.headers["Content-Disposition"].removeprefix("attachment; ")
+            for preview in (False, True):
+                response = self.dataset_populator.get_history_dataset_content_raw(
+                    history_id, dataset=hda, preview=preview
+                )
+                self._assert_status_code_is(response, 200)
+                assert response.headers["Content-Disposition"] == f"inline; {expected_filename}"
+                assert response.headers["content-type"] == content_type
+                assert response.content == content
+
+    def test_display_preview_binary_as_text_uses_text_plain(self, history_id):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/22395
+        # When previewing an unknown / binary dataset as text the response must use
+        # a text/plain content-type so the iframe preserves whitespace/newlines and
+        # does not interpret stray characters as HTML.
+        contents = "header line\nrow with < and > and &\nfinal line\n"
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, file_type="data", wait=True)
+        display_response = self._get(f"histories/{history_id}/contents/{hda1['id']}/display", {"preview": "True"})
+        self._assert_status_code_is(display_response, 200)
+        content_type = display_response.headers.get("content-type", "")
+        assert content_type.startswith("text/plain"), content_type
+        assert display_response.headers["Content-Disposition"].startswith("inline; ")
+        assert display_response.text == contents
+
+    def test_display_preview_large_fasta_uses_text_plain(self, history_id):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/22719
+        # A fasta larger than the 100 KB preview limit must still be served as
+        # text/plain so the browser preserves newlines; otherwise the header line
+        # runs into the sequence and the content is rendered as HTML.
+        header = ">seq0 large fasta regression test\n"
+        contents = header + "".join(f"{'ACGT' * 20}\n" for _ in range(2000))
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, file_type="fasta", wait=True)
+        display_response = self._get(f"histories/{history_id}/contents/{hda1['id']}/display", {"preview": "True"})
+        self._assert_status_code_is(display_response, 200)
+        content_type = display_response.headers.get("content-type", "")
+        assert content_type.startswith("text/plain"), content_type
+        assert display_response.headers.get("x-content-truncated") == "100000"
+        assert display_response.text.startswith(header)
+        assert len(display_response.text) <= 100000
+
     def test_display_extra_paths(self, history_id: str):
         test_data_resolver = TestDataResolver()
         with open(test_data_resolver.get_filename("1.fasta")) as fh:
@@ -458,6 +564,48 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_has_key(display, "data")
         assert "\nA" in display["data"][0]
 
+    def test_raw_data_tabular_missing_columns_returns_400(self, history_id):
+        # Regression for https://github.com/galaxyproject/galaxy/issues/22393 — a tabular
+        # dataset queried via data_type=raw_data without a `columns` parameter used to raise
+        # a bare TypeError that bubbled up as a 500; it should be a 400 MessageException.
+        contents = "1\t2\t3\nA\tB\tC\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        response = self._get(f"datasets/{hda['id']}", {"data_type": "raw_data"})
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "columns")
+
+    def test_raw_data_tabular_invalid_column_index_returns_400(self, history_id):
+        contents = "1\t2\t3\nA\tB\tC\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        response = self._get(
+            f"datasets/{hda['id']}",
+            {"data_type": "raw_data", "columns": "[99]"},
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "column index")
+
+    def test_raw_data_tabular_invalid_columns_json_returns_400(self, history_id):
+        contents = "1\t2\t3\nA\tB\tC\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        response = self._get(
+            f"datasets/{hda['id']}",
+            {"data_type": "raw_data", "columns": "not-json"},
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "JSON")
+
+    def test_raw_data_no_converter_returns_400(self, history_id):
+        # Requesting a provider whose name requires a converter that is not available should
+        # return a 400 MessageException, not a bare NoConverterException bubbling up as a 500.
+        contents = "1\t2\t3\nA\tB\tC\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        response = self._get(
+            f"datasets/{hda['id']}",
+            {"data_type": "raw_data", "provider": "column_with_stats"},
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Conversion")
+
     def test_bam_chunking_through_display_endpoint(self, history_id):
         # This endpoint does not use data providers and instead overrides display_data
         # in the bam datatype. This is the endpoint is very close to the legacy non-API
@@ -567,7 +715,7 @@ class TestDatasetsApi(ApiTestCase):
 
     def test_anon_tag_permissions(self):
         with self._different_user(anon=True):
-            history_id = self._get(urllib.parse.urljoin(self.url, "history/current_history_json")).json()["id"]
+            history_id = self._get_current_history_id()
             hda_id = self.dataset_populator.new_dataset(history_id, content="abc", wait=True)["id"]
             payload = {
                 "item_id": hda_id,
@@ -633,6 +781,32 @@ class TestDatasetsApi(ApiTestCase):
             f"histories/{history_id}/contents/{hda_id}", data={"datatype": "invalid"}, json=True
         )
         self._assert_status_code_is(invalidly_updated_hda_response, 400)
+
+    def test_update_metadata(self, history_id):
+        hda_id = self.dataset_populator.new_dataset(history_id, wait=True)["id"]
+        original_hda = self._get(f"histories/{history_id}/contents/{hda_id}").json()
+        assert original_hda["metadata_dbkey"] == "?"
+
+        updated_response = self._put(
+            f"histories/{history_id}/contents/{hda_id}", data={"metadata": {"dbkey": "hg38"}}, json=True
+        )
+        self._assert_status_code_is(updated_response, 200)
+        updated_hda = updated_response.json()
+        assert updated_hda["metadata_dbkey"] == "hg38"
+
+        # readonly metadata keys should be silently ignored
+        readonly_response = self._put(
+            f"histories/{history_id}/contents/{hda_id}", data={"metadata": {"data_lines": 999}}, json=True
+        )
+        self._assert_status_code_is(readonly_response, 200)
+        assert readonly_response.json().get("metadata_data_lines") != 999
+
+        # unknown metadata keys should be silently ignored
+        unknown_response = self._put(
+            f"histories/{history_id}/contents/{hda_id}", data={"metadata": {"nonexistent_key": "value"}}, json=True
+        )
+        self._assert_status_code_is(unknown_response, 200)
+        assert "metadata_nonexistent_key" not in unknown_response.json()
 
     @skip_without_tool("cat_data_and_sleep")
     def test_delete_cancels_job(self, history_id):
@@ -879,11 +1053,14 @@ class TestDatasetsApi(ApiTestCase):
         assert len(sources) == 1
         assert sources[0]["source_uri"] == TEST_SOURCE_URI
 
-    @skip_if_github_down
-    def test_display_application_link(self, history_id):
+    def test_display_application_link(self, history_id, test_http_server):
+        url = test_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+            file_path="test-data/1.bam",
+        )
         item = {
             "src": "url",
-            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+            "url": url,
             "ext": "bam",
         }
         output = self.dataset_populator.fetch_hda(history_id, item)
@@ -895,7 +1072,7 @@ class TestDatasetsApi(ApiTestCase):
         self.dataset_populator.wait_for_history_jobs(history_id)
 
         # once we purge the history, it becomes immutable
-        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        self.dataset_populator.purge_history(history_id)
 
         # now we can't update the datatype
         response = self._put(f"histories/{history_id}/contents/{hda_id}", data={"datatype": "tabular"}, json=True)
@@ -908,6 +1085,38 @@ class TestDatasetsApi(ApiTestCase):
         response = self._get(f"histories/{history_id}/contents/{hda['id']}/display?to_ext=json")
         self._assert_status_code_is(response, 200)
         assert quote(name, safe="") in response.headers["Content-Disposition"]
+
+    @skip_without_tool("markdown_report_from_script")
+    def test_report_for_tool_markdown_dataset(self, history_id):
+        run_response = self.dataset_populator.run_tool(
+            "markdown_report_from_script", inputs={"title": "foobar"}, history_id=history_id
+        )
+        self.dataset_populator.wait_for_job(run_response["jobs"][0]["id"], assert_ok=True)
+        report_dataset = next(o for o in run_response["outputs"] if o["output_name"] == "output_report")
+        response = self._get(f"datasets/{report_dataset['id']}/report")
+        self._assert_status_code_is(response, 200)
+        report = response.json()
+        assert report["generate_version"]
+        assert report["generate_time"]
+        content = report["content"]
+        assert "# Dynamically Generated Report" in content
+        # the endpoint returns the embed-expanded markdown, so inline directives are resolved
+        assert "${galaxy generate_galaxy_version()}" not in content
+        assert f"Generated by Galaxy {report['generate_version']}." in content
+
+    def test_report_for_tool_markdown_dataset_with_unknown_output_label(self, history_id):
+        content = "# Report\n\n```galaxy\nhistory_dataset_peek(output=no_such_output)\n```\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=content, file_type="tool_markdown", wait=True)
+        response = self._get(f"datasets/{hda['id']}/report")
+        self._assert_status_code_is(response, 400)
+        assert "no_such_output" in response.json()["err_msg"]
+
+    def test_report_for_tool_markdown_dataset_with_unknown_input_label(self, history_id):
+        content = "# Report\n\n```galaxy\nhistory_dataset_peek(input=no_such_input)\n```\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=content, file_type="tool_markdown", wait=True)
+        response = self._get(f"datasets/{hda['id']}/report")
+        self._assert_status_code_is(response, 400)
+        assert "no_such_input" in response.json()["err_msg"]
 
     def test_copy_dataset_from_history_with_copied_from_fields(self, history_id):
         original_hda = self.dataset_populator.new_dataset(history_id, content="original data", wait=True)

@@ -1,9 +1,9 @@
 <template>
     <div>
-        <label ref="helpTarget" v-b-tooltip.hover for="regular_expression">{{ label }}</label>
+        <label ref="helpTarget" v-g-tooltip.hover for="regular_expression">{{ label }}</label>
         <HelpPopover :target="$refs.helpTarget" term="programming.python.regex" />
         <input
-            v-b-tooltip.hover.left
+            v-g-tooltip.hover.left
             :title="title"
             name="regular_expression"
             class="rule-regular-expression"

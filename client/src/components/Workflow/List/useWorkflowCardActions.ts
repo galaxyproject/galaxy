@@ -122,8 +122,9 @@ export function useWorkflowCardActions(
     async function deleteWorkflow() {
         const confirmed = await confirm("Are you sure you want to delete this workflow?", {
             title: "Delete workflow",
-            okTitle: "Delete",
-            okVariant: "danger",
+            okText: "Delete",
+            okIcon: faTrash,
+            okColor: "red",
         });
 
         if (confirmed) {
@@ -134,7 +135,11 @@ export function useWorkflowCardActions(
     }
 
     async function onRestore() {
-        const confirmed = await confirm("Are you sure you want to restore this workflow?", "Restore workflow");
+        const confirmed = await confirm("Are you sure you want to restore this workflow?", {
+            title: "Restore workflow",
+            okText: "Restore",
+            okIcon: faTrashRestore,
+        });
 
         if (confirmed) {
             await undeleteWorkflow(workflow.value.id);
@@ -150,7 +155,11 @@ export function useWorkflowCardActions(
     }
 
     async function copyWorkflow() {
-        const confirmed = await confirm("Are you sure you want to make a copy of this workflow?", "Copy workflow");
+        const confirmed = await confirm("Are you sure you want to make a copy of this workflow?", {
+            title: "Copy workflow",
+            okText: "Copy",
+            okIcon: faCopy,
+        });
 
         if (confirmed) {
             await copyWorkflowService(workflow.value.id, workflow.value.owner);

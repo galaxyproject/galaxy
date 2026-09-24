@@ -7,13 +7,25 @@ import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
-import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { useServerMock } from "@/api/client/__mocks__";
+import { testDatatypesMapper, typesAndMappingResponse } from "@/components/Datatypes/test_fixtures";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useEventStore } from "@/stores/eventStore";
 
 import MountTarget from "./FormData.vue";
 
 vi.mock("@/composables/filter");
+
+const { server, http } = useServerMock();
+
+// FormData resolves its datatypes mapper on mount; stub the request so the tests
+// never hit a real fetch that gets aborted at teardown and surfaces as an
+// unhandled error that fails the run.
+server.use(
+    http.get("/api/datatypes/types_and_mapping", ({ response }) => {
+        return response(200).json(typesAndMappingResponse);
+    }),
+);
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
@@ -78,9 +90,9 @@ describe("FormData", () => {
             product: false,
             values: [{ id: "hda4", src: "hda", map_over_type: null }],
         };
-        const options = wrapper.find(".btn-group").findAll("button");
+        const options = wrapper.find(".g-button-group").findAll("button");
         expect(options.length).toBe(4);
-        expect(options.at(0).classes()).toContain("active");
+        expect(options.at(0).classes()).toContain("g-pressed");
         expect(options.at(0).attributes("title")).toBe("Single dataset");
         expect(wrapper.emitted()!.input![0]![0]).toEqual(value_0);
         expect(wrapper.find(SELECTED_VALUE).text()).toContain("dceName4 (as dataset)");
@@ -110,6 +122,22 @@ describe("FormData", () => {
         expect(wrapper.findAll(SELECT_OPTIONS).length).toBe(7);
     });
 
+    it("styles the no-options alert to match the control height in both run and tool forms", async () => {
+        const wrapper = createTarget({
+            type: "data",
+            value: null,
+            options: {},
+            workflowRun: true,
+        });
+        const alert = wrapper.find(".form-data-no-options-alert");
+        expect(alert.exists()).toBe(true);
+        expect(alert.text()).toBe("No datasets available");
+
+        // The alert keeps the aligned styling outside of workflow runs too.
+        await wrapper.setProps({ workflowRun: false });
+        expect(wrapper.find(".form-data-no-options-alert").exists()).toBe(true);
+    });
+
     it("multiple datasets", async () => {
         const wrapper = createTarget({
             value: {
@@ -122,9 +150,9 @@ describe("FormData", () => {
             optional: true,
             options: defaultOptions,
         });
-        const options = wrapper.find(".btn-group").findAll("button");
+        const options = wrapper.find(".g-button-group").findAll("button");
         expect(options.length).toBe(3);
-        expect(options.at(0).classes()).toContain("active");
+        expect(options.at(0).classes()).toContain("g-pressed");
         expect(options.at(0).attributes("title")).toBe("Multiple datasets");
         expect(wrapper.emitted()!.input![0]![0]).toEqual({
             batch: false,
@@ -493,9 +521,9 @@ describe("FormData", () => {
             options: defaultOptions,
         });
         await wrapper.vm.$nextTick();
-        const options = wrapper.find(".btn-group").findAll("button");
+        const options = wrapper.find(".g-button-group").findAll("button");
         expect(options.length).toBe(3);
-        expect(options.at(1).classes()).toContain("active");
+        expect(options.at(1).classes()).toContain("g-pressed");
         expect(options.at(1).attributes("title")).toBe("Dataset collection");
         for (const i of [0, 1]) {
             expect(wrapper.emitted()!.input![i]![0]).toEqual({
@@ -509,8 +537,25 @@ describe("FormData", () => {
         expect(selectedValues.length).toBe(1);
         expect(selectedValues.at(0).text()).toBe("5: hdcaName5");
         await wrapper.find("[title='Multiple datasets']").trigger("click");
-        expect(options.at(0).classes()).toContain("active");
+        expect(options.at(0).classes()).toContain("g-pressed");
         expect(wrapper.emitted()!.input![2]![0]).toEqual(null);
+    });
+
+    it("renders pinned entries alongside paged options", async () => {
+        // Pinned entries are forced-include items the server returned because
+        // they're selected but landed outside the current page window. The
+        // dropdown must show them so the user can see what's pre-selected.
+        const wrapper = createTarget({
+            value: { values: [{ id: "hdaPinned", src: "hda" }] },
+            options: { hda: defaultOptions.hda },
+            pinned: {
+                hda: [{ id: "hdaPinned", hid: 999, name: "OldDataset", src: "hda", keep: true, tags: [] }],
+            },
+        });
+        await wrapper.vm.$nextTick();
+        const selectedValues = wrapper.findAll(SELECTED_VALUE);
+        expect(selectedValues.length).toBe(1);
+        expect(selectedValues.at(0).text()).toContain("999: OldDataset");
     });
 
     it("tagging filter", async () => {

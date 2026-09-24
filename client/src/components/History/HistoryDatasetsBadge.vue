@@ -83,7 +83,7 @@ onMounted(async () => {
 
 <template>
     <BBadge
-        v-b-tooltip.hover.top.noninteractive
+        v-g-tooltip.hover.top
         class="history-datasets d-flex flex-gapx-1 flex-gapy-1 align-items-center outline-badge cursor-pointer font-size-small"
         pill
         :title="`View history storage overview`"

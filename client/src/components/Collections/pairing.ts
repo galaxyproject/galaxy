@@ -3,6 +3,7 @@ import type { GenericPair } from "@/components/Collections/common/buildCollectio
 export const COMMON_FILTERS = {
     illumina: ["_1", "_2"] as [string, string],
     Rs: ["_R1", "_R2"] as [string, string],
+    Fs: ["_F", "_R"] as [string, string],
     dot12s: [".1.fastq", ".2.fastq"] as [string, string],
 };
 export type CommonFiltersType = keyof typeof COMMON_FILTERS;
@@ -16,6 +17,7 @@ export function guessInitialFilterType(elements: HasName[]): CommonFiltersType |
     let illumina = 0;
     let dot12s = 0;
     let Rs = 0;
+    let Fs = 0;
 
     //should we limit the forEach? What if there are 1000s of elements?
     elements.forEach((element) => {
@@ -23,19 +25,23 @@ export function guessInitialFilterType(elements: HasName[]): CommonFiltersType |
             dot12s++;
         } else if (element.name?.includes("_R1") || element.name?.includes("_R2")) {
             Rs++;
+        } else if (element.name?.includes("_F") || element.name?.includes("_R")) {
+            Fs++;
         } else if (element.name?.includes("_1") || element.name?.includes("_2")) {
             illumina++;
         }
     });
     // if we cannot filter don't set an initial filter and hide all the data
-    if (illumina === 0 && dot12s === 0 && Rs === 0) {
+    if (illumina === 0 && dot12s === 0 && Rs === 0 && Fs === 0) {
         return null;
-    } else if (illumina > dot12s && illumina > Rs) {
+    } else if (illumina > dot12s && illumina > Rs && illumina > Fs) {
         return "illumina";
-    } else if (dot12s > illumina && dot12s > Rs) {
+    } else if (dot12s > illumina && dot12s > Rs && dot12s > Fs) {
         return "dot12s";
-    } else if (Rs > illumina && Rs > dot12s) {
+    } else if (Rs > illumina && Rs > dot12s && Rs > Fs) {
         return "Rs";
+    } else if (Fs > illumina && Fs > dot12s && Fs > Rs) {
+        return "Fs";
     } else {
         return "illumina";
     }

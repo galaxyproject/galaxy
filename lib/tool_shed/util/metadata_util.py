@@ -1,7 +1,6 @@
 import logging
 from operator import itemgetter
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -11,7 +10,6 @@ from galaxy.tool_shed.util.hg_util import (
     INITIAL_CHANGELOG_HASH,
     reversed_lower_upper_bounded_changelog,
 )
-from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
 from tool_shed.util.hg_util import changeset2rev
 from tool_shed.webapp.model import (
     Repository,
@@ -161,12 +159,11 @@ def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, 
         metadata_revisions = repository.downloadable_revisions
     else:
         metadata_revisions = repository.metadata_revisions
-    repo_path = repository.repo_path(app)
     changeset_tups = []
     for repository_metadata in metadata_revisions:
         if repository_metadata.numeric_revision == -1 or repository_metadata.numeric_revision is None:
             try:
-                rev = changeset2rev(repo_path, repository_metadata.changeset_revision)
+                rev = changeset2rev(repository.hg_repo, repository_metadata.changeset_revision)
                 repository_metadata.numeric_revision = rev
                 sa_session.add(repository_metadata)
                 session = sa_session()
@@ -229,46 +226,9 @@ def get_previous_metadata_changeset_revision(app, repository, before_changeset_r
             previous_changeset_revision = changeset_revision
 
 
-def get_repository_dependency_tups_from_repository_metadata(
-    app: "ToolShedApp", repository_metadata, deprecated_only=False
-):
-    """
-    Return a list of of tuples defining repository objects required by the received repository.  The returned
-    list defines the entire repository dependency tree.  This method is called only from the Tool Shed.
-    """
-    dependency_tups = []
-    if repository_metadata is not None:
-        metadata = repository_metadata.metadata
-        if metadata:
-            repository_dependencies_dict = metadata.get("repository_dependencies", None)
-            if repository_dependencies_dict is not None:
-                repository_dependency_tups = repository_dependencies_dict.get("repository_dependencies", None)
-                if repository_dependency_tups is not None:
-                    # The value of repository_dependency_tups is a list of repository dependency tuples like this:
-                    # ['http://localhost:9009', 'package_samtools_0_1_18', 'devteam', 'ef37fc635cb9', 'False', 'False']
-                    for repository_dependency_tup in repository_dependency_tups:
-                        toolshed, name, owner, changeset_revision, pir, oicct = parse_repository_dependency_tuple(
-                            repository_dependency_tup
-                        )
-                        repository = get_repository_by_name_and_owner(app.model.context, name, owner)
-                        if repository:
-                            if deprecated_only:
-                                if repository.deprecated:
-                                    dependency_tups.append(repository_dependency_tup)
-                            else:
-                                dependency_tups.append(repository_dependency_tup)
-                        else:
-                            log.debug(
-                                "Cannot locate repository %s owned by %s for inclusion in repository dependency tups.",
-                                name,
-                                owner,
-                            )
-    return dependency_tups
-
-
 def get_repository_metadata_by_changeset_revision(
     app: "ToolShedApp", id: str, changeset_revision: str
-) -> Optional[RepositoryMetadata]:
+) -> RepositoryMetadata | None:
     """Get metadata for a specified repository change set from the database."""
     decoded_id = app.security.decode_id(id)
     return repository_metadata_by_changeset_revision(app.model, decoded_id, changeset_revision)
@@ -276,7 +236,7 @@ def get_repository_metadata_by_changeset_revision(
 
 def repository_metadata_by_changeset_revision(
     model_mapping: "ToolShedModelMapping", id: int, changeset_revision: str
-) -> Optional[RepositoryMetadata]:
+) -> RepositoryMetadata | None:
     # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.
     # Duplicate records were somehow created in the past.  The cause of this issue has been resolved, but we'll
     # leave this method as is for a while longer to ensure all duplicate records are removed.
@@ -293,12 +253,6 @@ def repository_metadata_by_changeset_revision(
     elif all_metadata_records:
         return all_metadata_records[0]
     return None
-
-
-def get_repository_metadata_by_id(app: "ToolShedApp", id):
-    """Get repository metadata from the database"""
-    sa_session = app.model.session
-    return sa_session.get(RepositoryMetadata, app.security.decode_id(id))
 
 
 def get_repository_metadata_by_repository_id_changeset_revision(app, id, changeset_revision, metadata_only=False):
@@ -352,14 +306,6 @@ def is_downloadable(metadata_dict):
     if "workflows" in metadata_dict:
         # We have exported workflows.
         return True
-    return False
-
-
-def is_malicious(app, id, changeset_revision, **kwd):
-    """Check the malicious flag in repository metadata for a specified change set revision."""
-    repository_metadata = get_repository_metadata_by_changeset_revision(app, id, changeset_revision)
-    if repository_metadata:
-        return repository_metadata.malicious
     return False
 
 

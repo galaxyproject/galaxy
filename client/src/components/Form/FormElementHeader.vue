@@ -42,7 +42,7 @@ const badgeData = computed(() => {
         <slot name="badges" />
         <BBadge
             v-if="badgeData.message && props.type !== 'boolean'"
-            v-b-tooltip.hover.noninteractive
+            v-g-tooltip.hover
             class="flex-gapx-1 form-element-header-badge"
             :class="populatedClass"
             :title="badgeData.message">

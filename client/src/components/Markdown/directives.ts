@@ -1,15 +1,30 @@
 import RAW_DIRECTIVE_DATA from "./directives.yml";
 
-type DirectiveMode = "page" | "report";
+export type DirectiveMode = "page" | "report";
 
 type DirectiveMetadataValueByMode = {
     [key: string]: string;
 };
 
+interface DirectiveParameter {
+    type: string;
+    context?: string;
+    description?: string;
+    default?: string | boolean;
+    values?: string[];
+}
+
 interface DirectiveMetadata {
     side_panel_name: string | DirectiveMetadataValueByMode;
     side_panel_description?: string | DirectiveMetadataValueByMode;
     help?: string | DirectiveMetadataValueByMode;
+    category?: string;
+    renders?: string;
+    embeddable?: boolean;
+    requires?: string;
+    parameter_set?: string;
+    parameters?: { [key: string]: DirectiveParameter };
+    dynamic_parameters?: boolean;
 }
 
 type DirectivesMetadata = {
@@ -33,7 +48,7 @@ export function directiveEntry(
     }
     let name = directiveMetadataData.side_panel_name;
     if (name && !(typeof name == "string")) {
-        const modeName = name[mode];
+        const modeName = name[mode] ?? name["page"];
         if (modeName == undefined) {
             throw Error(`Client logic error, cannot find directive metadata for ${directiveId}`);
         }
@@ -41,11 +56,11 @@ export function directiveEntry(
     }
     let description = directiveMetadataData.side_panel_description;
     if (description && !(typeof description == "string")) {
-        description = description[mode];
+        description = description[mode] ?? description["page"];
     }
     let help = directiveMetadataData.help;
     if (help && !(typeof help == "string")) {
-        help = help[mode];
+        help = help[mode] ?? help["page"];
     }
     if (help) {
         help = help.replace(/%MODE%/g, mode);

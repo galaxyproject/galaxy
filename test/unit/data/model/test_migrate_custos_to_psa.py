@@ -40,7 +40,7 @@ from galaxy.model.migrations.data_fixes.custos_to_psa import (
 _Base: Any = declarative_base()
 
 
-class CustosAuthnzTokenTest(_Base):
+class CustosAuthnzTokenTest(_Base):  # type: ignore[misc]  # _Base is explicitly typed Any
     """Test model for custos_authnz_token table."""
 
     __tablename__ = "custos_authnz_token"
@@ -56,7 +56,7 @@ class CustosAuthnzTokenTest(_Base):
     refresh_expiration_time = Column(DateTime)
 
 
-class UserAuthnzTokenTest(_Base):
+class UserAuthnzTokenTest(_Base):  # type: ignore[misc]  # _Base is explicitly typed Any
     """Test model for oidc_user_authnz_tokens table."""
 
     __tablename__ = "oidc_user_authnz_tokens"

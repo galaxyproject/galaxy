@@ -1,0 +1,216 @@
+# Curated tool → tag mapping (Galaxy "My Tools" panel and tool search).
+#
+# Each key is a tool id (taken from the tool's XML `<tool id="…">` attribute,
+# preserving its original case) or any prefix of a toolshed-style id formed
+# by stripping trailing path segments. The value is a list of curated tag
+# names. Tags surface in the tool panel's "tag:" autocompletion, in the
+# favorite tags section of the My Tools view, and in the Whoosh `tool_tags`
+# search field.
+#
+# This bundled mapping covers every tool shipped in `tool_conf.xml.sample`,
+# tagged with the section name it lives under in the default tool panel.
+# Production sites can extend or replace it via the `tool_tag_mappings_file`
+# config option (galaxy.yml). A snapshot for any Galaxy server can be
+# regenerated with `scripts/extract_tool_sections_from_api.py`.
+#
+# Lookup is case-insensitive — `Tool.all_ids` is lowercased at load time so
+# admins don't need to worry about case in their override files.
+tool_tags:
+  ChangeCase:
+  - "Text Manipulation"
+  "Convert characters1":
+  - "Text Manipulation"
+  Count1:
+  - Statistics
+  Cut1:
+  - "Text Manipulation"
+  Extract_features1:
+  - "Filter and Sort"
+  Filter1:
+  - "Filter and Sort"
+  GeneBed_Maf_Fasta2:
+  - "Fetch Alignments/Sequences"
+  Grep1:
+  - "Filter and Sort"
+  Grouping1:
+  - "Join, Subtract and Group"
+  Interval2Maf_pairwise1:
+  - "Fetch Alignments/Sequences"
+  Interval_Maf_Merged_Fasta2:
+  - "Fetch Alignments/Sequences"
+  MAF_Limit_To_Species1:
+  - "Fetch Alignments/Sequences"
+  MAF_Reverse_Complement_1:
+  - "Fetch Alignments/Sequences"
+  MAF_Thread_For_Species1:
+  - "Fetch Alignments/Sequences"
+  MAF_To_BED1:
+  - "Convert Formats"
+  MAF_To_Fasta1:
+  - "Convert Formats"
+  MAF_To_Interval1:
+  - "Convert Formats"
+  MAF_filter:
+  - "Fetch Alignments/Sequences"
+  MAF_split_blocks_by_species1:
+  - "Fetch Alignments/Sequences"
+  Paste1:
+  - "Text Manipulation"
+  "Remove beginning1":
+  - "Text Manipulation"
+  Sff_extractor:
+  - "Convert Formats"
+  "Show beginning1":
+  - "Text Manipulation"
+  "Show tail1":
+  - "Text Manipulation"
+  Summary_Statistics1:
+  - Statistics
+  __APPLY_RULES__:
+  - "Collection Operations"
+  __BUILD_LIST__:
+  - "Collection Operations"
+  __CONVERT_SAMPLE_SHEET__:
+  - "Collection Operations"
+  __CROSS_PRODUCT_FLAT__:
+  - "Collection Operations"
+  __CROSS_PRODUCT_NESTED__:
+  - "Collection Operations"
+  __DUPLICATE_FILE_TO_COLLECTION__:
+  - "Collection Operations"
+  __EXTRACT_DATASET__:
+  - "Collection Operations"
+  __FILTER_EMPTY_DATASETS__:
+  - "Collection Operations"
+  __FILTER_FAILED_DATASETS__:
+  - "Collection Operations"
+  __FILTER_FROM_FILE__:
+  - "Collection Operations"
+  __FILTER_NULL__:
+  - "Collection Operations"
+  __FLATTEN__:
+  - "Collection Operations"
+  __HARMONIZELISTS__:
+  - "Collection Operations"
+  __KEEP_SUCCESS_DATASETS__:
+  - "Collection Operations"
+  __MERGE_COLLECTION__:
+  - "Collection Operations"
+  __NEST__:
+  - "Collection Operations"
+  __RELABEL_FROM_FILE__:
+  - "Collection Operations"
+  __SAMPLE_SHEET_TO_TABULAR__:
+  - "Collection Operations"
+  __SORTLIST__:
+  - "Collection Operations"
+  __SPLIT_PAIRED_AND_UNPAIRED__:
+  - "Collection Operations"
+  __TAG_FROM_FILE__:
+  - "Collection Operations"
+  __UNZIP_COLLECTION__:
+  - "Collection Operations"
+  __ZIP_COLLECTION__:
+  - "Collection Operations"
+  addValue:
+  - "Text Manipulation"
+  aggregate_scores_in_intervals2:
+  - "Operate on Genomic Intervals"
+  bed2gff1:
+  - "Convert Formats"
+  bed_to_bigBed:
+  - "Convert Formats"
+  cat1:
+  - "Text Manipulation"
+  comp1:
+  - "Join, Subtract and Group"
+  createInterval:
+  - "Text Manipulation"
+  diced_database:
+  - "Get Data"
+  ebi_sra_main:
+  - "Get Data"
+  eupathdb:
+  - "Get Data"
+  export_remote:
+  - "Send Data"
+  flymine:
+  - "Get Data"
+  gene2exon1:
+  - "Operate on Genomic Intervals"
+  gff2bed1:
+  - "Convert Formats"
+  gff_filter_by_attribute:
+  - "Filter and Sort"
+  gff_filter_by_feature_count:
+  - "Filter and Sort"
+  gtf_filter_by_attribute_values_list:
+  - "Filter and Sort"
+  hbvar:
+  - "Get Data"
+  hgv_david:
+  - "Phenotype Association"
+  hgv_ldtools:
+  - "Phenotype Association"
+  hgv_linkToGProfile:
+  - "Phenotype Association"
+  intermine:
+  - "Get Data"
+  join1:
+  - "Join, Subtract and Group"
+  liftOver1:
+  - Lift-Over
+  maf_by_block_number1:
+  - "Fetch Alignments/Sequences"
+  maf_limit_size1:
+  - "Fetch Alignments/Sequences"
+  maf_stats1:
+  - "Fetch Alignments/Sequences"
+  master2pgSnp:
+  - "Phenotype Association"
+  mergeCols1:
+  - "Text Manipulation"
+  modENCODEfly:
+  - "Get Data"
+  modENCODEworm:
+  - "Get Data"
+  modmine:
+  - "Get Data"
+  mousemine:
+  - "Get Data"
+  ncbi_datasets_source:
+  - "Get Data"
+  param_value_from_file:
+  - "Expression Tools"
+  random_lines1:
+  - "Text Manipulation"
+  ratmine:
+  - "Get Data"
+  secure_hash_message_digest:
+  - "Text Manipulation"
+  sort1:
+  - "Filter and Sort"
+  sra_source:
+  - "Get Data"
+  trimmer:
+  - "Text Manipulation"
+  ucsc_table_direct1:
+  - "Get Data"
+  ucsc_table_direct_archaea1:
+  - "Get Data"
+  upload1:
+  - "Get Data"
+  vcf_to_maf_customtrack1:
+  - "Graph/Display Data"
+  wc_gnu:
+  - "Text Manipulation"
+  wig_to_bigWig:
+  - "Convert Formats"
+  wiggle2simple1:
+  - "Operate on Genomic Intervals"
+  wormbase:
+  - "Get Data"
+  yeastmine:
+  - "Get Data"
+  zebrafishmine:
+  - "Get Data"

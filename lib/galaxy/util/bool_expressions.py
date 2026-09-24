@@ -4,11 +4,9 @@ Based on the example: https://github.com/pyparsing/pyparsing/blob/master/example
 """
 
 import logging
-from typing import (
+from collections.abc import (
     Callable,
     Iterable,
-    Optional,
-    Set,
 )
 
 from pyparsing import (
@@ -124,7 +122,7 @@ class BooleanExpressionEvaluator:
     You can pass in different TokenEvaluator implementations to customize how the tokens (or variables) are
     converted to a boolean value when evaluating the expression."""
 
-    def __init__(self, evaluator: TokenEvaluator, token_format: Optional[str] = None) -> None:
+    def __init__(self, evaluator: TokenEvaluator, token_format: str | None = None) -> None:
         """Initializes the expression evaluator.
 
         :param evaluator: The custom TokenEvaluator used to transform any token into a boolean.
@@ -172,7 +170,7 @@ class TokenContainedEvaluator(TokenEvaluator):
     """Implements the TokenEvaluator interface to determine if a token is contained
     in a particular list of tokens."""
 
-    def __init__(self, tokens: Set[str]) -> None:
+    def __init__(self, tokens: set[str]) -> None:
         """Initializes the token evaluator with the set of tokens that will evaluate to `True`.
 
         :param tokens: The list of tokens that should be evaluated to True.

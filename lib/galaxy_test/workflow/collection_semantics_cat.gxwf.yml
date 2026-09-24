@@ -1,0 +1,11 @@
+class: GalaxyWorkflow
+inputs:
+  input1: data
+outputs:
+  wf_output:
+    outputSource: cat_step/out_file1
+steps:
+  cat_step:
+    tool_id: cat
+    in:
+      input1: input1

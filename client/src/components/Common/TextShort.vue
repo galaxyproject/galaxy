@@ -21,7 +21,14 @@ const trimmedText = computed(() => {
 </script>
 
 <template>
-    <span class="text-break text-center">
+    <span class="text-short-component">
         {{ trimmedText }}
     </span>
 </template>
+
+<style scoped>
+.text-short-component {
+    text-align: center;
+    word-wrap: break-word;
+}
+</style>

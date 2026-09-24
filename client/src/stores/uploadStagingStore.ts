@@ -3,6 +3,7 @@ import { ref } from "vue";
 
 import type { UploadMethod } from "@/components/Panels/Upload/types";
 import type {
+    CompositeFileItem,
     LibraryDatasetItem,
     LocalFileItem,
     PasteContentItem,
@@ -15,7 +16,13 @@ import type {
  * These match the component-level item types before mapping
  * to upload queue items.
  */
-export type StagedUploadItem = LocalFileItem | PasteContentItem | PasteUrlItem | RemoteFileItem | LibraryDatasetItem;
+export type StagedUploadItem =
+    | LocalFileItem
+    | PasteContentItem
+    | PasteUrlItem
+    | RemoteFileItem
+    | LibraryDatasetItem
+    | CompositeFileItem;
 
 export type StagedUploadItemsByMode = Partial<Record<UploadMethod, StagedUploadItem[]>>;
 

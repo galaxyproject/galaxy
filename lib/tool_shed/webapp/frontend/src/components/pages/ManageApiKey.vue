@@ -10,7 +10,7 @@ const planemoConfig = computed(
     () =>
         `sheds:
   toolshed:
-    key: ${apiKey.value}`
+    key: ${apiKey.value}`,
 )
 
 async function copyKey() {

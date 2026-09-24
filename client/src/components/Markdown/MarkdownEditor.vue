@@ -1,5 +1,6 @@
 <template>
     <div id="columns">
+        <LoadingOverlay v-if="props.loading" />
         <div id="center" class="d-flex flex-column h-100 w-100">
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
@@ -10,16 +11,16 @@
                         <b-form-radio-group
                             v-if="!hasLabels"
                             v-model="editor"
-                            v-b-tooltip.hover.bottom
+                            v-g-tooltip.hover.bottom
                             button-variant="outline-primary"
                             buttons
                             size="sm"
                             title="Editor"
                             :options="editorOptions" />
                         <slot name="buttons" />
-                        <b-button v-b-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
+                        <GButton v-g-tooltip.hover.bottom title="Help" transparent icon-only @click="onHelp">
                             <FontAwesomeIcon :icon="faQuestion" />
-                        </b-button>
+                        </GButton>
                     </div>
                 </div>
             </div>
@@ -30,17 +31,18 @@
                     :markdown-text="markdownText"
                     :steps="steps"
                     :mode="mode"
+                    :hide-toolbox="hideToolbox"
                     @update="$emit('update', $event)" />
                 <CellEditor v-else :markdown-text="markdownText" :labels="labels" @update="$emit('update', $event)" />
             </div>
         </div>
-        <b-modal v-model="showHelpModal" hide-footer>
-            <template v-slot:modal-title>
-                <h2 v-if="mode === 'page'" class="mb-0">Markdown Help for Pages</h2>
-                <h2 v-else class="mb-0">Markdown Help for Invocation Reports</h2>
-            </template>
+        <GModal
+            :show.sync="showHelpModal"
+            size="medium"
+            fixed-height
+            :title="mode === 'page' ? 'Markdown Help for Pages' : 'Markdown Help for Invocation Reports'">
             <MarkdownHelp :mode="mode" />
-        </b-modal>
+        </GModal>
     </div>
 </template>
 
@@ -49,18 +51,24 @@ import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
+import type { DirectiveMode } from "./directives";
 import type { WorkflowLabel } from "./Editor/types";
 
+import GButton from "../BaseComponents/GButton.vue";
+import GModal from "../BaseComponents/GModal.vue";
 import CellEditor from "./Editor/CellEditor.vue";
 import TextEditor from "./Editor/TextEditor.vue";
+import LoadingOverlay from "@/components/Common/LoadingOverlay.vue";
 import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
 
 const props = defineProps<{
     markdownText: string;
-    mode: "report" | "page";
+    mode: DirectiveMode;
     labels?: Array<WorkflowLabel>;
+    loading?: boolean;
     steps?: Record<string, any>;
     title: string;
+    hideToolbox?: boolean;
 }>();
 
 const showHelpModal = ref<boolean>(false);

@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 from uuid import uuid4
 
 from sqlalchemy import text
@@ -221,7 +220,7 @@ class TestHistoryArchivingWithExportRecord(PosixFileSourceSetup, IntegrationTest
     def _export_history_to_permanent_storage(
         self,
         history_id: str,
-        target_uri: Optional[str] = None,
+        target_uri: str | None = None,
         model_store_format: ModelStoreFormat = ModelStoreFormat.ROCRATE_ZIP,
     ):
         target_uri = (

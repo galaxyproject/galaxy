@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BModal } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -10,7 +9,12 @@ import { useUserStore } from "@/stores/userStore";
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GModal from "../BaseComponents/GModal.vue";
 import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
+
+const emit = defineEmits<{
+    (e: "reset"): void;
+}>();
 
 const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
@@ -35,6 +39,7 @@ const preferredOrEmptyString = computed(() => {
 
 function resetModal() {
     error.value = null;
+    emit("reset");
 }
 
 async function handleSubmit(preferred: string | null) {
@@ -52,19 +57,7 @@ async function handleSubmit(preferred: string | null) {
 </script>
 
 <template>
-    <BModal
-        id="modal-select-preferred-object-store"
-        scrollable
-        centered
-        :title="title"
-        title-tag="h3"
-        static
-        visible
-        size="lg"
-        dialog-class="modal-select-preferred-object-store"
-        ok-only
-        ok-title="Close"
-        @hidden="resetModal">
+    <GModal id="modal-select-preferred-object-store" :title="title" show size="medium" @close="resetModal">
         <SelectObjectStore
             :parent-error="error"
             :selected-object-store-id="selectedObjectStoreId"
@@ -72,14 +65,5 @@ async function handleSubmit(preferred: string | null) {
             default-option-title="Galaxy Defaults"
             default-option-description="Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator."
             @onSubmit="handleSubmit" />
-    </BModal>
+    </GModal>
 </template>
-
-<style>
-@import "user-styles.scss";
-
-.modal-select-preferred-object-store {
-    width: inherit;
-    max-width: 800px;
-}
-</style>

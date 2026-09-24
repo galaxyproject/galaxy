@@ -55,7 +55,10 @@ defineExpose({
 </script>
 
 <template>
-    <div class="quota-usage-bar mx-auto" :class="{ 'w-75': !embedded, 'my-5': !embedded, 'my-1': embedded }">
+    <div
+        class="quota-usage-bar mx-auto"
+        :quota-source-label="quotaUsage.rawSourceLabel"
+        :class="{ 'w-75': !embedded, 'my-5': !embedded, 'my-1': embedded }">
         <component :is="sourceTag" v-if="!isDefaultQuota && !embedded" class="quota-storage-source">
             <span class="storage-source-label">
                 <b>{{ quotaUsage.sourceLabel }}</b>

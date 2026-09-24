@@ -11,13 +11,19 @@ on:
       - 'lib/galaxy_test/selenium/**'
       - 'packages/**'
 env:
-  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
-  TOOL_SHED_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/toolshed?client_encoding=utf8'
+  GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  TOOL_SHED_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/toolshed?client_encoding=utf8'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+permissions: {}
 jobs:
   test:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     name: Test
     runs-on: ubuntu-latest
     strategy:
@@ -27,7 +33,7 @@ jobs:
         test-install-client: ['galaxy_api', 'standalone']
     services:
       postgres:
-        image: postgres:17
+        image: postgres:18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -35,29 +41,28 @@ jobs:
         ports:
           - 5432:5432
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
         with:
           path: 'galaxy root'
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.1.0
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-      - name: Get full Python version
-        id: full-python-version
-        shell: bash
-        run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
-      - name: Cache galaxy venv
-        uses: actions/cache@v5
-        with:
-          path: 'galaxy root/.venv'
-          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-toolshed
+      - name: Install Python
+        run: uv python install
       - name: Install dependencies
         run: ./scripts/common_startup.sh --dev-wheels --skip-client-build
         working-directory: 'galaxy root'
+      - name: Read Node.js version
+        id: node-version
+        run: echo "version=$(cat 'galaxy root/lib/tool_shed/webapp/frontend/.node_version')" >> $GITHUB_OUTPUT
+      - name: Setup node
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           package_json_file: 'galaxy root/lib/tool_shed/webapp/frontend/package.json'
       - name: Build Frontend

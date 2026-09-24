@@ -40,8 +40,7 @@
             @row-select="onRowSelect">
             <template v-slot:empty>
                 <div v-if="isBusy" class="text-center my-2">
-                    <BSpinner class="align-middle" />
-                    <strong>Loading...</strong>
+                    <LoadingSpan classes="align-middle" />
                 </div>
                 <div v-else class="empty-folder-message">
                     This folder is either empty or you do not have proper access permissions to see the contents. If you
@@ -187,28 +186,28 @@
                     </button>
                 </div>
                 <div v-else>
-                    <BButton
+                    <GButton
                         v-if="row.item.can_manage && !row.item.deleted && row.item.type === 'folder'"
                         data-toggle="tooltip"
                         data-placement="top"
-                        size="sm"
+                        size="small"
                         class="lib-btn permission_folder_btn edit_folder_btn"
                         :title="'Edit ' + row.item.name"
                         @click.stop="toggleEditMode(row.item)">
                         <FontAwesomeIcon :icon="faPencilAlt" />
                         Edit
-                    </BButton>
+                    </GButton>
 
-                    <BButton
+                    <GButton
                         v-if="currentUser?.is_admin"
-                        size="sm"
+                        size="small"
                         class="lib-btn permission_lib_btn"
                         :title="`Permissions of ${row.item.name}`"
-                        :to="{ path: `${navigateToPermission(row.item)}` }"
+                        :to="`${navigateToPermission(row.item)}`"
                         @click.stop>
                         <FontAwesomeIcon :icon="faUsers" />
                         Manage
-                    </BButton>
+                    </GButton>
 
                     <button
                         v-if="row.item.deleted"
@@ -228,9 +227,7 @@
             <BRow align-v="center" class="justify-content-md-center">
                 <BCol md="auto">
                     <div v-if="isBusy">
-                        <BSpinner small type="grow" />
-                        <BSpinner small type="grow" />
-                        <BSpinner small type="grow" />
+                        <LoadingSpan />
                     </div>
                     <BPagination
                         v-else
@@ -276,7 +273,7 @@ import {
     faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCol, BContainer, BFormInput, BLink, BPagination, BRow, BSpinner } from "bootstrap-vue";
+import { BCol, BContainer, BFormInput, BLink, BPagination, BRow } from "bootstrap-vue";
 import purify from "dompurify";
 import linkifyHtml from "linkify-html";
 import { mapState } from "pinia";
@@ -292,7 +289,9 @@ import { Services } from "./services";
 import { fields } from "./table-fields";
 
 import FolderTopBar from "./TopToolbar/FolderTopBar.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GTable from "@/components/Common/GTable.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 function initialFolderState() {
@@ -308,17 +307,17 @@ function initialFolderState() {
 }
 export default {
     components: {
-        BButton,
         BCol,
         BContainer,
         BFormInput,
         BLink,
         BPagination,
         BRow,
-        BSpinner,
         FolderTopBar,
         FontAwesomeIcon,
+        GButton,
         GTable,
+        LoadingSpan,
         UtcDate,
     },
     beforeRouteUpdate(to, from, next) {
@@ -336,6 +335,9 @@ export default {
             required: false,
         },
     },
+    setup() {
+        return { purify };
+    },
     data() {
         return {
             ...initialFolderState(),
@@ -352,8 +354,6 @@ export default {
                 faTimes,
                 faUnlock,
                 faUsers,
-                // Utilities
-                purify,
                 // Data
                 currentPage: 1,
                 sortBy: "name",
@@ -405,7 +405,6 @@ export default {
         this.getFolder(this.folder_id, this.page);
     },
     methods: {
-        purify,
         getFolder(folder_id, page) {
             this.currentFolderId = folder_id;
             this.currentPage = page;
@@ -651,12 +650,9 @@ export default {
                     (response) => {
                         element.deleted = response.deleted;
                         this.refreshTable();
-                        Toast.success("Dataset undeleted. Click here to see it.", "", {
-                            onclick: function () {
-                                window.location = `${getAppRoot()}libraries/folders/${parent_folder}/dataset/${
-                                    element.id
-                                }`;
-                            },
+                        Toast.addToast("Dataset undeleted. Click here to see it.", {
+                            variant: "success",
+                            to: `/libraries/folders/${parent_folder}/dataset/${element.id}`,
                         });
                     },
                     onError,

@@ -8,7 +8,6 @@ import abc
 from typing import (
     Any,
     Generic,
-    Optional,
     TypeVar,
 )
 
@@ -34,14 +33,14 @@ class AccessibleManagerMixin(Generic[U]):
     def by_id(self, id: int) -> U: ...
 
     # don't want to override by_id since consumers will also want to fetch w/o any security checks
-    def is_accessible(self, item: U, user: Optional[model.User], **kwargs: Any) -> bool:
+    def is_accessible(self, item: U, user: model.User | None, **kwargs: Any) -> bool:
         """
         Return True if the item accessible to user.
         """
         # override in subclasses
         raise exceptions.NotImplemented("Abstract interface Method")
 
-    def get_accessible(self, id: int, user: Optional[model.User], **kwargs: Any) -> U:
+    def get_accessible(self, id: int, user: model.User | None, **kwargs: Any) -> U:
         """
         Return the item with the given id if it's accessible to user,
         otherwise raise an error.
@@ -51,7 +50,7 @@ class AccessibleManagerMixin(Generic[U]):
         item = self.by_id(id)
         return self.error_unless_accessible(item, user, **kwargs)
 
-    def error_unless_accessible(self, item: U, user: Optional[model.User], **kwargs: Any) -> U:
+    def error_unless_accessible(self, item: U, user: model.User | None, **kwargs: Any) -> U:
         """
         Raise an error if the item is NOT accessible to user, otherwise return the item.
 
@@ -78,14 +77,14 @@ class OwnableManagerMixin(Generic[U]):
     @abc.abstractmethod
     def by_id(self, id: int) -> U: ...
 
-    def is_owner(self, item: U, user: Optional[model.User], **kwargs: Any) -> bool:
+    def is_owner(self, item: U, user: model.User | None, **kwargs: Any) -> bool:
         """
         Return True if user owns the item.
         """
         # override in subclasses
         raise exceptions.NotImplemented("Abstract interface Method")
 
-    def get_owned(self, id: int, user: Optional[model.User], **kwargs: Any) -> U:
+    def get_owned(self, id: int, user: model.User | None, **kwargs: Any) -> U:
         """
         Return the item with the given id if owned by the user,
         otherwise raise an error.
@@ -95,7 +94,7 @@ class OwnableManagerMixin(Generic[U]):
         item = self.by_id(id)
         return self.error_unless_owner(item, user, **kwargs)
 
-    def error_unless_owner(self, item: U, user: Optional[model.User], **kwargs: Any) -> U:
+    def error_unless_owner(self, item: U, user: model.User | None, **kwargs: Any) -> U:
         """
         Raise an error if the item is NOT owned by user, otherwise return the item.
 
@@ -105,7 +104,7 @@ class OwnableManagerMixin(Generic[U]):
             return item
         raise exceptions.ItemOwnershipException(f"{self.model_class.__name__} is not owned by user")
 
-    def get_mutable(self, id: int, user: Optional[model.User], **kwargs: Any) -> U:
+    def get_mutable(self, id: int, user: model.User | None, **kwargs: Any) -> U:
         """
         Return the item with the given id if the user can mutate it,
         otherwise raise an error. The user must be the owner of the item.

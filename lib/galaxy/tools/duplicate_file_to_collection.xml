@@ -2,8 +2,11 @@
       name="Duplicate file to collection"
       version="1.0.0"
       tool_type="duplicate_file_to_collection">
-    <description></description>
+    <description>by duplicating a dataset N times</description>
     <type class="DuplicateFileToCollectionTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <!-- <edam_operations>
@@ -41,16 +44,57 @@
 Synopsis
 ========
 
-Creates a collection of arbitrary size by duplicating an input dataset N times, where N is a user-specified integer.
+Creates a list collection by duplicating a single dataset N times.
 
 ===========
 Description
 ===========
 
-This tool allows creation of a dataset collection of arbitrary size. It takes an input dataset and an integer parameter, which specifies the number of times to duplicate the dataset in the output collection. In addition, the user can specify the base name for the element identifier to use in the output. For example, if `Number` is specified as 3 and `Element identifier` as 'Element', the output collection will contain three identical datasets, with the identifiers `Element 1`, `Element 2` and `Element 3`.
+This tool takes one input dataset and produces a list collection containing N identical copies of it. You specify the number of copies and a base name for the element identifiers. The copies are numbered automatically — for example, with a count of 3 and base name ``sample``, the output collection will contain ``sample 1``, ``sample 2``, and ``sample 3``.
+
+This is useful when a workflow or tool expects a list collection as input but you only have a single dataset. Instead of uploading the same file multiple times, you can duplicate it into a collection in one step.
+
+========
+Examples
+========
+
+**Basic duplication**
+
+Given a single reference genome file and the settings:
+
+- *Size of output collection*: ``3``
+- *Element identifier*: ``ref``
+
+The output is a list collection containing three identical copies::
+
+ List: "reference.fa (duplicated)"
+
+   ref 1  →  reference.fa
+   ref 2  →  reference.fa
+   ref 3  →  reference.fa
+
+-------
+
+**Workflow use case**
+
+If you have a list of samples and a tool that compares each sample against a reference, you can duplicate the reference to match the number of samples. Galaxy will then pair them element-wise:
+
+- Sample list: ``[sample1.fq, sample2.fq, sample3.fq]``
+- Duplicated reference: ``[ref 1, ref 2, ref 3]`` (all pointing to the same file)
+
+This avoids having to manually create a matched collection.
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/duplicate_file_to_collection.svg
+  :alt: Duplicate file to collection
+  :width: 500
+
+-------
 
 .. class:: infomark
 
-This tool will create new history datasets but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
+
     ]]></help>
 </tool>

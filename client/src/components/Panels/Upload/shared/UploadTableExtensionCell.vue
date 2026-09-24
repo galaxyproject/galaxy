@@ -37,7 +37,7 @@ function onItemSelection(value: ExtensionDetails) {
 <template>
     <div class="d-flex align-items-center w-100">
         <SingleItemSelector
-            v-b-tooltip.hover.noninteractive
+            v-g-tooltip.hover
             class="flex-grow-1"
             collection-name="Data Types"
             :title="tooltip"
@@ -48,7 +48,7 @@ function onItemSelection(value: ExtensionDetails) {
         </SingleItemSelector>
         <FontAwesomeIcon
             v-if="warning"
-            v-b-tooltip.hover.noninteractive
+            v-g-tooltip.hover
             class="text-warning ml-1 flex-shrink-0"
             :icon="faExclamationTriangle"
             :title="warning" />

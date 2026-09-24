@@ -2,8 +2,11 @@
       name="Filter failed datasets"
       version="1.1.0"
       tool_type="filter_failed_datasets_collection">
-    <description></description>
+    <description>from a collection</description>
     <type class="FilterFailedDatasetsTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <edam_operations>
@@ -44,23 +47,62 @@
 Synopsis
 ========
 
-Removes datasets in error (red) from a collection.
+Removes datasets in the error (red) state from a collection.
 
 ===========
 Description
 ===========
 
-This tool takes a dataset collection and filters out (removes) datasets in the failed (red) state. This is useful for continuing a multi-sample analysis when one or more of the samples fails at some point.
+This tool takes a dataset collection and filters out elements whose datasets are in the failed (red) state. A dataset enters this state when the tool that created it encountered an error during execution.
+
+This is useful when running a multi-sample analysis and one or more samples fail at some step. Rather than restarting the entire analysis, you can remove the failed elements and continue with the samples that succeeded.
+
+Optionally, you can provide a **replacement dataset**. When specified, failed elements are replaced with that dataset instead of being removed. This preserves the collection size, which is important when element-wise pairing with another collection is needed.
+
+========
+Examples
+========
+
+**Remove failed elements**
+
+Given a list collection where one sample's alignment failed::
+
+ List: "Aligned reads"
+
+   sample1  →  aligned.bam  (ok)
+   sample2  →  aligned.bam  (error)
+   sample3  →  aligned.bam  (ok)
+
+The output keeps only successful elements::
+
+ List: "Aligned reads (filtered failed datasets)"
+
+   sample1  →  aligned.bam
+   sample3  →  aligned.bam
+
+-------
+
+**Replace instead of remove**
+
+If a replacement dataset is provided, failed elements are swapped rather than dropped, preserving the collection structure::
+
+ List: "Aligned reads (filtered failed datasets)"
+
+   sample1  →  aligned.bam
+   sample2  →  replacement.bam
+   sample3  →  aligned.bam
+
+-------
 
 .. image:: ${static_path}/images/tools/collection_ops/filter_error.svg
+  :alt: Filter failed datasets from collection
   :width: 500
-  :alt: Filter failed datasets
 
------
+-------
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
       ]]></help>
 </tool>

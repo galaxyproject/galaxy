@@ -6,7 +6,7 @@ import zipfile
 from io import BytesIO
 from typing import (
     Any,
-    Optional,
+    Literal,
 )
 from uuid import uuid4
 
@@ -20,10 +20,10 @@ from requests import (
 
 from galaxy.tool_util.verify.interactor import ValidToolTestDict
 from galaxy.util import galaxy_root_path
-from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.api_asserts import (
     assert_error_code_is,
+    assert_error_message_contains,
     assert_file_looks_like_xlsx,
     assert_has_keys,
     assert_status_code_is,
@@ -44,17 +44,17 @@ MINIMAL_TOOL = {
     "name": "Minimal Tool",
     "class": "GalaxyTool",
     "version": "1.0.0",
-    "command": "echo 'Hello World' > $output1",
+    "shell_command": "echo 'Hello World' > 'output.txt'",
     "inputs": [],
-    "outputs": {"output1": {"format": "txt", "type": "data"}},
+    "outputs": {"output1": {"format": "txt", "type": "data", "from_work_dir": "output.txt"}},
 }
 MINIMAL_TOOL_NO_ID = {
     "name": "Minimal Tool",
     "class": "GalaxyTool",
     "version": "1.0.0",
-    "command": "echo 'Hello World 2' > $output1",
+    "shell_command": "echo 'Hello World 2' > 'output.txt'",
     "inputs": [],
-    "outputs": {"output1": {"format": "txt", "type": "data"}},
+    "outputs": {"output1": {"format": "txt", "type": "data", "from_work_dir": "output.txt"}},
 }
 
 
@@ -131,6 +131,13 @@ class TestToolsApi(ApiTestCase, TestsTools):
         tool_ids = self.__tool_ids()
         assert "upload1" in tool_ids
 
+    def test_direct_data_fetch_tool_execution_is_blocked(self, history_id):
+        response = self.dataset_populator.run_tool_raw("__DATA_FETCH__", {}, history_id)
+        assert_status_code_is(response, 400)
+        assert response.json()["err_msg"] == (
+            "Cannot execute tool [__DATA_FETCH__] directly, must use alternative endpoint."
+        )
+
     @skip_without_tool("cat1")
     def test_search_cat(self):
         url = self._api_url("tools")
@@ -151,6 +158,43 @@ class TestToolsApi(ApiTestCase, TestsTools):
         payload = dict(q="Select lines that match an expression")
         get_response = get(url, payload).json()
         assert "Grep1" in get_response
+
+    @skip_without_tool("__FILTER_EMPTY_DATASETS__")
+    @skip_without_tool("liftOver1")
+    @skip_without_tool("upload1")
+    @skip_without_tool("export_remote")
+    def test_search_curated_tool_tags(self):
+        # The bundled mapping (lib/galaxy/tool_util/ontologies/tool_tag_mappings.yml)
+        # tags every tool from `tool_conf.xml.sample` with the section name it
+        # lives under. Verify the sidecar API and the Whoosh-backed search
+        # both respect the mapping.
+
+        # /api/tags/tool_tags exposes the raw mapping consumed by the My Tools panel.
+        tag_map = self._get("tags/tool_tags").json()
+        assert tag_map.get("__UNZIP_COLLECTION__") == ["Collection Operations"]
+        assert tag_map.get("liftOver1") == ["Lift-Over"]
+        assert tag_map.get("upload1") == ["Get Data"]
+        assert tag_map.get("export_remote") == ["Send Data"]
+
+        # Multi-word phrase, lowercase as the client emits it.
+        response = self._get("tools", data=dict(q='tool_tags:"send data"')).json()
+        assert set(response) == {"export_remote"}
+
+        # Same query, title-case — schema-aware parser lowercases at query time.
+        response = self._get("tools", data=dict(q='tool_tags:"Send Data"')).json()
+        assert set(response) == {"export_remote"}
+
+        # A tag that fans out: every Collection Operations tool should be hit.
+        response = self._get("tools", data=dict(q='tool_tags:"collection operations"')).json()
+        for expected in ("__UNZIP_COLLECTION__", "__ZIP_COLLECTION__", "__APPLY_RULES__"):
+            assert expected in response, expected
+
+        # Boolean OR across two tags should union the matches.
+        response = self._get(
+            "tools",
+            data=dict(q='tool_tags:"send data" OR tool_tags:"lift-over"'),
+        ).json()
+        assert set(response) == {"export_remote", "liftOver1"}
 
     def test_no_panel_index(self):
         index = self._get("tools", data=dict(in_panel=False))
@@ -287,6 +331,373 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert "hg18_value" in option_values
             assert "mm10_value" in option_values
 
+    @skip_without_tool("dbkey_filter_multi_input")
+    def test_build_request_dbkey_filter_hdca_multi_input(self):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/22399:
+        # an HDCA passed to a multiple="true" data input must not break a downstream
+        # data_meta filter. Previously this raised
+        # AttributeError: 'MetaData' object has no attribute 'element_is_set'
+        # because _get_ref_data returned the raw list containing the HDCA instead
+        # of unwrapping it to its HDAs.
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = self.dataset_populator.new_dataset(history_id, content="a\nb\nc", dbkey="hg19", wait=True)
+            hda2 = self.dataset_populator.new_dataset(history_id, content="d\ne\nf", dbkey="hg19", wait=True)
+            element_identifiers = [
+                {"name": "sample1", "src": "hda", "id": hda1["id"]},
+                {"name": "sample2", "src": "hda", "id": hda2["id"]},
+            ]
+            hdca = self.dataset_collection_populator.create_list_in_history(
+                history_id,
+                element_identifiers=element_identifiers,
+                direct_upload=False,
+                wait=True,
+            ).json()
+            inputs = {"inputs": [{"src": "hdca", "id": hdca["id"]}]}
+            build = self.dataset_populator.build_tool_state("dbkey_filter_multi_input", history_id, inputs=inputs)
+            option_values = self._get_build_option_values(build, "index")
+            assert "hg19_value" in option_values
+            assert "hg18_value" not in option_values
+
+    @skip_without_tool("dbkey_filter_collection_input")
+    def test_run_dbkey_filter_nested_collection_dce(self):
+        with self.dataset_populator.test_history() as history_id:
+            list_list = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json()
+            # Set dbkey on the datasets in the inner list
+            for outer_element in list_list["elements"]:
+                for inner_element in outer_element["object"]["elements"]:
+                    hda_id = inner_element["object"]["id"]
+                    self.dataset_populator._put(
+                        f"histories/{history_id}/contents/{hda_id}", {"genome_build": "hg19"}, json=True
+                    )
+            # Get DCE ID of the inner list element - this is a DatasetCollectionElement
+            # wrapping a child collection (not an HDA)
+            dce_id = list_list["elements"][0]["id"]
+            inputs = {
+                "inputs": {"src": "dce", "id": dce_id},
+                "index": "hg19_value",
+            }
+            self._run("dbkey_filter_collection_input", history_id, inputs, assert_ok=True)
+
+    @skip_without_tool("cat1")
+    def test_build_data_options_default_page(self):
+        """Default response caps `data` parameter options at 50 per src and
+        emits ``options_meta`` so the client can detect more pages exist."""
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+            response = self.dataset_populator._post(f"tools/cat1/build?history_id={history_id}")
+            response.raise_for_status()
+            build = response.json()
+            input_param = next(i for i in build["inputs"] if i["name"] == "input1")
+            assert len(input_param["options"]["hda"]) == 50
+            meta = input_param["options_meta"]["hda"]
+            assert meta["offset"] == 0
+            assert meta["limit"] == 50
+            assert meta["total_estimate"] == 60
+            assert meta["has_more"] is True
+            assert input_param["pinned"] == {"dce": [], "ldda": [], "hda": [], "hdca": []}
+
+    @skip_without_tool("cat1")
+    def test_build_data_options_pagination_offset(self):
+        """``options_pagination`` returns the requested slice."""
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+            payload = {
+                "history_id": history_id,
+                "options_pagination": {"input1": {"hda": {"offset": 50, "limit": 50}}},
+            }
+            response = self.dataset_populator._post("tools/cat1/build", data=payload, json=True)
+            response.raise_for_status()
+            build = response.json()
+            input_param = next(i for i in build["inputs"] if i["name"] == "input1")
+            assert len(input_param["options"]["hda"]) == 10
+            meta = input_param["options_meta"]["hda"]
+            assert meta["offset"] == 50
+            assert meta["has_more"] is False
+
+    @skip_without_tool("cat1")
+    def test_build_data_options_limit_clamped(self):
+        """Server clamps requested ``limit`` to 500."""
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 5)
+            payload = {
+                "history_id": history_id,
+                "options_pagination": {"input1": {"hda": {"limit": 10000}}},
+            }
+            response = self.dataset_populator._post("tools/cat1/build", data=payload, json=True)
+            response.raise_for_status()
+            build = response.json()
+            input_param = next(i for i in build["inputs"] if i["name"] == "input1")
+            meta = input_param["options_meta"]["hda"]
+            assert meta["limit"] == 500
+
+    @skip_without_tool("cat1")
+    def test_build_data_options_pinned_outside_page(self):
+        """Selected HDA outside the page window appears in ``pinned``."""
+        with self.dataset_populator.test_history() as history_id:
+            # Upload first HDA on its own so it gets the lowest hid (and lands
+            # outside the default page window once we add the bulk uploads).
+            first_hda = self.dataset_populator.fetch_hda(history_id, {"src": "pasted", "paste_content": "first"})
+            self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+            payload = {
+                "history_id": history_id,
+                "inputs": {"input1": {"src": "hda", "id": first_hda["id"]}},
+            }
+            response = self.dataset_populator._post("tools/cat1/build", data=payload, json=True)
+            response.raise_for_status()
+            build = response.json()
+            input_param = next(i for i in build["inputs"] if i["name"] == "input1")
+            assert input_param["options_meta"]["hda"]["has_more"] is True
+            page_ids = {entry["id"] for entry in input_param["options"]["hda"]}
+            assert first_hda["id"] not in page_ids
+            pinned_ids = {entry["id"] for entry in input_param["pinned"]["hda"]}
+            assert first_hda["id"] in pinned_ids
+
+    @skip_without_tool("cat1")
+    def test_build_data_options_search_by_name(self):
+        """``options_pagination[...].search`` filters HDAs by name (ilike)
+        before pagination, so users can find datasets outside the default page
+        window by typing into the dropdown."""
+        sentinel = "unique-zebra-xyz"
+        with self.dataset_populator.test_history() as history_id:
+            # 60 distinct "Sample N" HDAs plus one sentinel name that shares
+            # no substring with the others. Searching for the sentinel proves
+            # ilike is actually filtering (rather than passing everything
+            # through).
+            self.dataset_populator.fetch_hdas(
+                history_id,
+                [{"src": "pasted", "paste_content": "x", "name": f"Sample {i}"} for i in range(60)],
+            )
+            self.dataset_populator.fetch_hdas(
+                history_id,
+                [{"src": "pasted", "paste_content": "x", "name": sentinel}],
+            )
+
+            # Sentinel: exactly one match, with the expected name.
+            response = self.dataset_populator._post(
+                "tools/cat1/build",
+                data={
+                    "history_id": history_id,
+                    "options_pagination": {"input1": {"hda": {"search": "zebra"}}},
+                },
+                json=True,
+            )
+            response.raise_for_status()
+            build = response.json()
+            input_param = next(i for i in build["inputs"] if i["name"] == "input1")
+            returned = input_param["options"]["hda"]
+            assert len(returned) == 1, returned
+            assert returned[0]["name"] == sentinel
+            assert input_param["options_meta"]["hda"]["total_estimate"] == 1
+
+            # Broad term ("Sample") matches all 60 Sample HDAs — exceeds the
+            # default 50-page so we get a partial page with has_more=True.
+            response = self.dataset_populator._post(
+                "tools/cat1/build",
+                data={
+                    "history_id": history_id,
+                    "options_pagination": {"input1": {"hda": {"search": "Sample"}}},
+                },
+                json=True,
+            )
+            response.raise_for_status()
+            build = response.json()
+            input_param = next(i for i in build["inputs"] if i["name"] == "input1")
+            assert len(input_param["options"]["hda"]) == 50
+            assert input_param["options_meta"]["hda"]["has_more"] is True
+            assert all("Sample" in entry["name"] for entry in input_param["options"]["hda"])
+
+    @skip_without_tool("cat1")
+    def test_build_data_options_search_by_hid(self):
+        """A numeric ``search`` value also matches the HDA's hid, so typing
+        ``1`` surfaces hid=1 even when it's outside the default page window."""
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+            payload = {
+                "history_id": history_id,
+                "options_pagination": {"input1": {"hda": {"search": "1"}}},
+            }
+            response = self.dataset_populator._post("tools/cat1/build", data=payload, json=True)
+            response.raise_for_status()
+            build = response.json()
+            input_param = next(i for i in build["inputs"] if i["name"] == "input1")
+            returned_hids = {entry["hid"] for entry in input_param["options"]["hda"]}
+            # hid=1 is the oldest dataset; with 60 items the default page would
+            # not include it. Search by "1" must surface it.
+            assert 1 in returned_hids, returned_hids
+
+    def _create_hdca(
+        self,
+        history_id: str,
+        kind: Literal["pair", "list_of_pairs", "list", "list_of_list"],
+        hidden: bool = False,
+    ) -> dict[str, Any]:
+        """Create an HDCA of ``kind`` and return its dict (with ``id``/``hid``).
+
+        ``kind`` ∈ ``"pair"`` (paired), ``"list_of_pairs"`` (list:paired),
+        ``"list"`` (plain list of two items), ``"list_of_list"`` (list:list).
+        With ``hidden=True``, hides the HDCA after creation."""
+        p = self.dataset_collection_populator
+        if kind == "pair":
+            hdca = p.create_pair_in_history(history_id, wait=True).json()["outputs"][0]
+        elif kind == "list_of_pairs":
+            hdca = p.create_list_of_pairs_in_history(history_id, wait=True).json()["outputs"][0]
+        elif kind == "list":
+            hdca = p.create_list_in_history(history_id, contents=["a", "b"], wait=True).json()["outputs"][0]
+        elif kind == "list_of_list":
+            # ``create_list_of_list_in_history`` returns the final nested-create
+            # response whose body IS the HDCA, not the populator ``outputs[0]``
+            # envelope used by the other helpers.
+            hdca = p.create_list_of_list_in_history(history_id, wait=True).json()
+        else:
+            raise ValueError(f"unknown HDCA kind: {kind!r}")
+        if hidden:
+            self.dataset_populator.hide_dataset_collection(hdca["id"])
+        return hdca
+
+    def _build_tool_param(
+        self,
+        tool_id: str,
+        history_id: str,
+        *,
+        options_pagination: dict[str, Any] | None = None,
+        param_name: str = "f1",
+    ) -> dict[str, Any]:
+        """POST ``tools/{tool_id}/build`` and return the named input dict."""
+        payload: dict[str, Any] = {"history_id": history_id}
+        if options_pagination is not None:
+            payload["options_pagination"] = options_pagination
+        response = self.dataset_populator._post(f"tools/{tool_id}/build", data=payload, json=True)
+        response.raise_for_status()
+        return next(i for i in response.json()["inputs"] if i["name"] == param_name)
+
+    @skip_without_tool("collection_paired_test")
+    def test_build_collection_options_interleaves_direct_and_multirun_by_hid(self):
+        """Direct matches (``paired`` collections) and multirun matches
+        (``list:paired`` collections that can be mapped over to feed a paired
+        param) must be returned merged in HID-desc order — the legacy
+        pre-pagination behavior was to ``sorted([direct + multirun], reverse=True)``.
+        Multirun entries must carry a ``map_over_type`` while direct entries
+        must not."""
+        with self.dataset_populator.test_history() as history_id:
+            # Alternate paired (direct) and list:paired (multirun) so the
+            # expected HID order interleaves both kinds. Build order = HID
+            # ascending; the dropdown returns HID descending.
+            kinds = []
+            for _ in range(4):
+                kinds.append(("direct", self._create_hdca(history_id, "pair")["id"]))
+                kinds.append(("multirun", self._create_hdca(history_id, "list_of_pairs")["id"]))
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            f1 = self._build_tool_param(
+                "collection_paired_test", history_id, options_pagination={"f1": {"hdca": {"limit": 100}}}
+            )
+            returned = f1["options"]["hdca"]
+            assert len(returned) == len(kinds), returned
+
+            # Returned HIDs are strictly descending.
+            hids = [entry["hid"] for entry in returned]
+            assert hids == sorted(hids, reverse=True), hids
+
+            # Direct/multirun interleave exactly matches the construction order.
+            for (expected_kind, expected_id), entry in zip(reversed(kinds), returned):
+                assert entry["id"] == expected_id, (entry, expected_id)
+                if expected_kind == "direct":
+                    assert "map_over_type" not in entry, entry
+                else:
+                    assert entry.get("map_over_type") == "paired", entry
+
+    @skip_without_tool("collection_paired_test")
+    def test_build_collection_options_pagination_preserves_interleaved_order(self):
+        """Pagination must return contiguous slices of the same merged
+        HID-desc ordering: page 0 + page 1 reconstruct the unpaginated list
+        without losing or reshuffling either kind across the page boundary."""
+        with self.dataset_populator.test_history() as history_id:
+            for _ in range(3):
+                self._create_hdca(history_id, "pair")
+                self._create_hdca(history_id, "list_of_pairs")
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            full = self._build_tool_param(
+                "collection_paired_test", history_id, options_pagination={"f1": {"hdca": {"limit": 100}}}
+            )["options"]["hdca"]
+            assert len(full) == 6, full
+
+            page0 = self._build_tool_param(
+                "collection_paired_test", history_id, options_pagination={"f1": {"hdca": {"offset": 0, "limit": 3}}}
+            )
+            page1 = self._build_tool_param(
+                "collection_paired_test", history_id, options_pagination={"f1": {"hdca": {"offset": 3, "limit": 3}}}
+            )
+
+            assert page0["options_meta"]["hdca"]["has_more"] is True
+            assert page0["options_meta"]["hdca"]["total_estimate"] == 6
+            assert page1["options_meta"]["hdca"]["has_more"] is False
+
+            paginated_ids = [e["id"] for e in page0["options"]["hdca"] + page1["options"]["hdca"]]
+            full_ids = [e["id"] for e in full]
+            assert paginated_ids == full_ids, (paginated_ids, full_ids)
+
+    @skip_without_tool("collection_paired_test")
+    def test_build_collection_options_hidden_direct_match_included(self):
+        """A hidden ``paired`` collection still appears under direct match
+        — preserves legacy ``active_dataset_collections`` semantics (which
+        included hidden) for the direct-match path."""
+        with self.dataset_populator.test_history() as history_id:
+            hidden_pair = self._create_hdca(history_id, "pair", hidden=True)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            f1 = self._build_tool_param("collection_paired_test", history_id)
+            assert hidden_pair["id"] in {e["id"] for e in f1["options"]["hdca"]}
+
+    @skip_without_tool("collection_paired_test")
+    def test_build_collection_options_hidden_multirun_excluded(self):
+        """A hidden ``list:paired`` collection must NOT appear as a multirun
+        match — preserves legacy ``active_visible_dataset_collections``
+        semantics (visible-only) for the subcollection-mapping path."""
+        with self.dataset_populator.test_history() as history_id:
+            hidden_lop = self._create_hdca(history_id, "list_of_pairs", hidden=True)
+            visible_pair = self._create_hdca(history_id, "pair")
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            f1 = self._build_tool_param("collection_paired_test", history_id)
+            returned_ids = {e["id"] for e in f1["options"]["hdca"]}
+            assert hidden_lop["id"] not in returned_ids, returned_ids
+            assert visible_pair["id"] in returned_ids, returned_ids
+
+    @skip_without_tool("collection_list_or_nested_list_input")
+    def test_build_collection_options_multi_typed_emits_direct_and_multirun(self):
+        """Pinned against release_26.0 (pre-pagination): a parameter that
+        accepts multiple collection types (``list,list:list``) given a single
+        ``list:list`` HDCA must emit **two** dropdown entries with the same
+        HID — one direct (no ``map_over_type``) and one multirun
+        (``map_over_type="list"``) — because ``direct_match`` and
+        ``can_map_over`` are not mutually exclusive across the CTD list.
+        """
+        with self.dataset_populator.test_history() as history_id:
+            ll = self._create_hdca(history_id, "list_of_list")
+            f1 = self._build_tool_param("collection_list_or_nested_list_input", history_id)
+            matching = [e for e in f1["options"]["hdca"] if e["id"] == ll["id"]]
+            assert len(matching) == 2, matching
+            assert all(e["hid"] == ll["hid"] for e in matching), matching
+            direct = [e for e in matching if "map_over_type" not in e]
+            multirun = [e for e in matching if "map_over_type" in e]
+            assert len(direct) == 1 and len(multirun) == 1, matching
+            assert multirun[0]["map_over_type"] == "list", multirun[0]
+
+    @skip_without_tool("collection_paired_test")
+    def test_build_collection_options_unmappable_excluded(self):
+        """A plain ``list`` collection neither directly matches a ``paired``
+        param nor can be mapped over to one, so it must not appear."""
+        with self.dataset_populator.test_history() as history_id:
+            plain_list = self._create_hdca(history_id, "list")
+            pair = self._create_hdca(history_id, "pair")
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            f1 = self._build_tool_param("collection_paired_test", history_id)
+            returned_ids = {e["id"] for e in f1["options"]["hdca"]}
+            assert plain_list["id"] not in returned_ids, returned_ids
+            assert pair["id"] in returned_ids, returned_ids
+
     @skip_without_tool("cheetah_problem_unbound_var_input")
     def test_legacy_biotools_xref_injection(self):
         url = self._api_url("tools/cheetah_problem_unbound_var_input")
@@ -364,14 +775,58 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert "--ex1" in option_values
         assert "ex2" in option_values
 
+    @skip_without_tool("gx_int")
+    def test_tool_interop(self):
+        """GET /api/tools/{tool_id}/interop returns ParsedTool JSON."""
+        response = self._get("tools/gx_int/interop")
+        self._assert_status_code_is(response, 200)
+        interop = response.json()
+        assert interop["id"] == "gx_int"
+        assert "inputs" in interop
+        assert "outputs" in interop
+        assert len(interop["inputs"]) > 0
+
+    @skip_without_tool("gx_int")
+    def test_tool_interop_versioned(self):
+        """GET /api/tools/{tool_id}/versions/{version}/interop returns same result."""
+        # Get version from the unversioned endpoint first
+        response = self._get("tools/gx_int/interop")
+        self._assert_status_code_is(response, 200)
+        interop = response.json()
+        version = interop["version"]
+
+        versioned_response = self._get(f"tools/gx_int/versions/{version}/interop")
+        self._assert_status_code_is(versioned_response, 200)
+        versioned_interop = versioned_response.json()
+        assert versioned_interop["id"] == interop["id"]
+        assert versioned_interop["version"] == version
+        assert len(versioned_interop["inputs"]) == len(interop["inputs"])
+
+    @skip_without_tool("gx_int")
+    def test_versioned_schema_endpoints(self):
+        """Versioned /versions/{v}/parameter_*_schema endpoints mirror unversioned ones."""
+        response = self._get("tools/gx_int/interop")
+        version = response.json()["version"]
+
+        for schema_type in ["request", "landing_request", "test_case_xml"]:
+            unversioned = self._get(f"tools/gx_int/parameter_{schema_type}_schema")
+            self._assert_status_code_is(unversioned, 200)
+
+            versioned = self._get(f"tools/gx_int/versions/{version}/parameter_{schema_type}_schema")
+            self._assert_status_code_is(versioned, 200)
+            assert unversioned.json() == versioned.json()
+
     @skip_without_tool("test_data_source")
-    @skip_if_github_down
-    def test_data_source_ok_request(self):
+    def test_data_source_ok_request(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
+            url = test_http_server.get_url(
+                remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                file_path="test-data/1.bed",
+            )
             payload = self.dataset_populator.run_tool_payload(
                 tool_id="test_data_source",
                 inputs={
-                    "URL": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                    "URL": url,
                     "URL_method": "get",
                     "data_type": "bed",
                 },
@@ -391,12 +846,16 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert output_details["file_ext"] == "bed"
 
     @skip_without_tool("test_data_source")
-    def test_data_source_sniff_fastqsanger(self):
+    def test_data_source_sniff_fastqsanger(self, test_http_server):
         with self.dataset_populator.test_history() as history_id:
+            url = test_http_server.get_url(
+                remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fastqsanger.gz",
+                file_path="test-data/1.fastqsanger.gz",
+            )
             payload = self.dataset_populator.run_tool_payload(
                 tool_id="test_data_source",
                 inputs={
-                    "URL": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fastqsanger.gz",
+                    "URL": url,
                     "URL_method": "get",
                 },
                 history_id=history_id,
@@ -801,6 +1260,24 @@ class TestToolsApi(ApiTestCase, TestsTools):
             )
             assert zipped_hdca["collection_type"] == "list:paired"
 
+    @skip_without_tool("__MERGE_COLLECTION__")
+    def test_merge_collection_rejects_structurally_invalid_inputs(self):
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            list_paired_id = self.dataset_collection_populator.create_list_of_pairs_in_history(
+                history_id, wait=True
+            ).json()["outputs"][0]["id"]
+            plain_list_id = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["a", "b"], wait=True
+            ).json()["outputs"][0]["id"]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            inputs = {
+                "inputs_0|input": {"src": "hdca", "id": list_paired_id},
+                "inputs_1|input": {"src": "hdca", "id": plain_list_id},
+            }
+            response = self._run("__MERGE_COLLECTION__", history_id, inputs, assert_ok=False)
+            assert_status_code_is(response, 400)
+            assert_error_message_contains(response, "must be a sub-collection")
+
     @skip_without_tool("__EXTRACT_DATASET__")
     @skip_without_tool("cat_data_and_sleep")
     def test_database_operation_tool_with_pending_inputs(self):
@@ -1124,10 +1601,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             }
             response = self._run("galaxy_json_sleep", history_id, inputs, assert_ok=True)
             output = response["outputs"][0]
-            response = self._put(
-                f"histories/{history_id}/contents/datasets/{output['id']}", data={"visible": False}, json=True
-            )
-            response.raise_for_status()
+            self.dataset_populator.hide_dataset(output["id"])
             output_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, wait=False)
             assert not output_details["visible"]
             output_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, wait=True)
@@ -1691,6 +2165,28 @@ class TestToolsApi(ApiTestCase, TestsTools):
         # Return last version
         assert tool_info["version"] == "0.2"
 
+    @skip_without_tool("multiple_versions_hidden")
+    def test_show_lists_hidden_versions_separately(self):
+        tool_info = self._show_valid_tool("multiple_versions_hidden", tool_version="0.1")
+        assert tool_info["version"] == "0.1"
+        assert tool_info["versions"] == ["0.1", "0.2"]
+        assert tool_info["hidden_versions"] == ["0.1"]
+
+    @skip_without_tool("multiple_versions_hidden")
+    def test_run_hidden_version(self):
+        with self.dataset_populator.test_history_for(self.test_run_hidden_version) as history_id:
+            outputs = self._run(
+                tool_id="multiple_versions_hidden",
+                history_id=history_id,
+                tool_version="0.1",
+                assert_ok=True,
+                wait_for_job=True,
+            )
+            assert len(outputs["outputs"]) == 1
+            output = outputs["outputs"][0]
+            output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+            assert output_content.strip() == "Hidden Version 0.1"
+
     @skip_without_tool("cat1")
     def test_run_cat1_single_meta_wrapper(self):
         with self.dataset_populator.test_history_for(self.test_run_cat1_single_meta_wrapper) as history_id:
@@ -1799,6 +2295,15 @@ class TestToolsApi(ApiTestCase, TestsTools):
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         response = self._run("validation_empty_dataset", history_id, inputs)
         self._assert_status_code_is(response, 400)
+        error = response.json()
+        assert error["err_msg"] == (
+            "Parameter 'input1': The selected dataset is empty, this tool expects non-empty files."
+        )
+        assert error["param_errors"]["input1"] == {
+            "message": "Parameter 'input1': The selected dataset is empty, this tool expects non-empty files.",
+            "message_suffix": "The selected dataset is empty, this tool expects non-empty files.",
+            "parameter_name": "input1",
+        }
 
     @skip_without_tool("validation_repeat")
     def test_validation_in_repeat(self, history_id):
@@ -2033,7 +2538,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
     #     assert output_content == "abc\n"
 
     def test_dynamic_tool_shell_command(self):
-        tool_response = self.dataset_populator.create_tool(TOOL_WITH_SHELL_COMMAND)
+        shell_command_tool = dict(TOOL_WITH_SHELL_COMMAND, **{"class": "GalaxyTool"})
+        tool_response = self.dataset_populator.create_tool(shell_command_tool)
         self._assert_has_keys(tool_response, "uuid")
 
         # Run tool.
@@ -2418,6 +2924,21 @@ class TestToolsApi(ApiTestCase, TestsTools):
         hdca = self._get(f"histories/{history_id}/contents/dataset_collections/{implicit_collections[0]['id']}").json()
         assert hdca["elements"][0]["object"]["elements"][0]["object"]["elements"][0]["element_identifier"] == "forward"
 
+    @skip_without_tool("discover_long_name")
+    def test_long_output_name_fails_gracefully(self, history_id):
+        # Short name succeeds
+        response = self._run("discover_long_name", history_id, {"output_name": "normal_name"})
+        self._assert_status_code_is(response, 200)
+        self.dataset_populator.wait_for_job(response.json()["jobs"][0]["id"], assert_ok=True)
+        # Long name fails with clear error
+        response = self._run("discover_long_name", history_id, {"output_name": "a" * 240})
+        self._assert_status_code_is(response, 200)
+        job_id = response.json()["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=False)
+        job_details = self.dataset_populator.get_job_details(job_id, full=True).json()
+        assert job_details["state"] == "error"
+        assert "255 character" in job_details["job_messages"][0]["desc"]
+
     def _bed_list(self, history_id):
         bed1_contents = open(self.get_filename("1.bed")).read()
         bed2_contents = open(self.get_filename("2.bed")).read()
@@ -2488,6 +3009,39 @@ class TestToolsApi(ApiTestCase, TestsTools):
         collection = execute.assert_has_n_jobs(2).assert_creates_implicit_collection(0)
         collection.assert_has_dataset_element("forward").with_contents_stripped("forward")
         collection.assert_has_dataset_element("reverse").with_contents_stripped("reverse")
+
+    @skip_without_tool("identifier_in_conditional")
+    def test_hdca_accepted_via_batch_for_single_data_param_in_conditional(self, history_id):
+        # Regression test: tool form building (/api/tools/{id}/build) must
+        # accept a batch-wrapped HDCA for a non-multiple ``data`` parameter.
+        # The reject-HDCA check added for
+        # https://github.com/galaxyproject/galaxy/issues/22401 only applies at
+        # execution time; at build time the batch wrapper has not yet been
+        # expanded and reaches ``DataToolParameter.from_json`` intact.
+        hdca_id = self._build_pair(history_id, ["123", "456"])
+        inputs = {
+            "outer_cond|multi_input": False,
+            "outer_cond|input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
+        }
+        # ``build_tool_state`` calls ``raise_for_status`` internally, so any
+        # non-2xx response (e.g. the 400 this test guards against) fails loudly.
+        self.dataset_populator.build_tool_state("identifier_in_conditional", history_id, inputs)
+
+    @skip_without_tool("identifier_in_conditional")
+    def test_hdca_rejected_for_single_data_param_in_conditional(self, history_id):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/22401 .
+        # Submitting a paired collection (no batch wrapper) to a non-multiple
+        # ``data`` parameter is invalid and must produce a 400 client error,
+        # not a 500 from a TypeError raised inside ``wrap_values``. Map-over is
+        # still supported via ``{"batch": True, "values": [...]}``, exercised
+        # by ``test_identifier_map_over_input_in_conditional``.
+        hdca_id = self._build_pair(history_id, ["123", "456"])
+        inputs = {
+            "outer_cond|multi_input": False,
+            "outer_cond|input1": {"src": "hdca", "id": hdca_id},
+        }
+        response = self._run("identifier_in_conditional", history_id, inputs)
+        self._assert_status_code_is(response, 400)
 
     @skip_without_tool("identifier_multiple_in_conditional")
     def test_identifier_multiple_reduce_in_conditional(self, history_id):
@@ -2672,6 +3226,60 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
         assert len(response_object["jobs"]) == 2
         assert len(response_object["implicit_collections"]) == 1
+
+    def test_can_map_over_dce_from_larger_list_paired(self):
+        """Regression: mapping a DCE should use the child collection structure,
+        not the parent list structure. Previously raised KeyError when the parent
+        list had more elements than the child pair collection."""
+        with self.dataset_populator.test_history() as history_id:
+            pair_ids = []
+            for _ in range(3):
+                pair_id = self.dataset_collection_populator.create_pair_in_history(
+                    history_id, contents=["0", "0"], wait=True
+                ).json()["outputs"][0]["id"]
+                pair_ids.append(pair_id)
+            ok_hdca = self.dataset_collection_populator.create_list_from_pairs(history_id, pair_ids)
+            dce_id = ok_hdca.json()["elements"][0]["id"]
+
+            inputs = {
+                "input1": {
+                    "batch": True,
+                    "values": [{"src": "dce", "id": dce_id, "map_over_type": None}],
+                },
+            }
+            response = self._run_cat1(history_id, inputs=inputs)
+            self._assert_status_code_is(response, 200)
+
+            response_object = response.json()
+            assert len(response_object["jobs"]) == 2
+            assert len(response_object["implicit_collections"]) == 1
+
+    @skip_without_tool("collection_paired_test")
+    def test_request_paired_collection_input_with_dce(self):
+        """Regression for https://github.com/galaxyproject/galaxy/issues/22923
+
+        A job that maps over a ``list:paired`` records its paired-collection
+        input as a ``DatasetCollectionElement`` (``src: dce``). Rerunning such a
+        job resubmits that ``dce`` reference through the structured tool-request
+        path, which must validate against the request model.
+        """
+        with self.dataset_populator.test_history() as history_id:
+            pair_ids = []
+            for _ in range(2):
+                pair_id = self.dataset_collection_populator.create_pair_in_history(
+                    history_id, contents=["forward", "reverse"], wait=True
+                ).json()["outputs"][0]["id"]
+                pair_ids.append(pair_id)
+            list_hdca = self.dataset_collection_populator.create_list_from_pairs(history_id, pair_ids)
+            # The element of a list:paired is itself a paired collection, referenced via a dce.
+            dce_id = list_hdca.json()["elements"][0]["id"]
+
+            inputs = {"f1": {"src": "dce", "id": dce_id}}
+            response = self.dataset_populator.tool_request_raw("collection_paired_test", inputs, history_id)
+            self._assert_status_code_is(response, 200)
+            tool_request_id = response.json()["tool_request_id"]
+            assert self.dataset_populator.wait_on_tool_request(tool_request_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
     @skip_without_tool("identifier_source")
     def test_default_identifier_source_map_over(self):
@@ -3484,10 +4092,56 @@ class TestToolsApi(ApiTestCase, TestsTools):
         # assert "User does not have permission to use a dataset" in err_message, err_message
 
     @contextlib.contextmanager
-    def _different_user_and_history(self, user_email: Optional[str] = None):
+    def _different_user_and_history(self, user_email: str | None = None):
         with self._different_user(email=user_email):
             with self.dataset_populator.test_history() as other_history_id:
                 yield other_history_id
+
+
+class TestDataManagerToolsApi(ApiTestCase, TestsTools):
+    """API tests that need the test case to act as an admin (e.g. data managers)."""
+
+    require_admin_user = True
+    dataset_populator: DatasetPopulator
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+
+    def test_build_does_not_leak_hda_from_user_bundle(self):
+        # Regression for https://github.com/galaxyproject/galaxy/issues/22674
+        # When the user already has a ``data_manager_json`` bundle in their
+        # history for a tool data table, ``DynamicOptions.get_user_options``
+        # builds a synthetic option row from it. A 2025-02-18 refactor
+        # (172ef05f269) prepended the bundle's HDA to that row, shifting every
+        # declared column index by one and leaking the raw HDA into the
+        # option's ``value`` field. ``/api/tools/{id}/build`` then 500s with
+        #   TypeError: Object of type HistoryDatasetAssociation is not JSON serializable
+        # Reproduce by producing a real bundle (data_manager_mode=bundle), then
+        # loading the same tool's form.
+        history_id = self.dataset_populator.new_history()
+        payload = self.dataset_populator.run_tool_payload(
+            tool_id="data_manager_select",
+            inputs={"index": "hg19_value"},
+            data_manager_mode="bundle",
+            history_id=history_id,
+        )
+        create_response = self.dataset_populator._post("tools", data=payload)
+        create_response.raise_for_status()
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        dataset = self.dataset_populator.get_history_dataset_details(history_id)
+        assert dataset["extension"] == "data_manager_json"
+
+        build = self.dataset_populator.build_tool_state("data_manager_select", history_id, inputs={})
+        index_input = next(i for i in build["inputs"] if i["name"] == "index")
+        option_names = [option[0] for option in index_input["options"]]
+        # On-disk fasta_indexes.loc entries...
+        assert "hg19_name" in option_names
+        # ...plus the synthetic option contributed by the user's bundle. Before
+        # the fix the bundle's HDA was wired into ``value`` instead of
+        # ``dataset`` and JSON encoding crashed before this assertion ran.
+        assert "regression_name" in option_names
 
 
 def dataset_to_param(dataset):

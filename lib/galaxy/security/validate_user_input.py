@@ -8,7 +8,9 @@ user inputs - so these methods do not need to be escaped.
 import logging
 import re
 from typing import (
-    Optional,
+    Any,
+    Protocol,
+    TYPE_CHECKING,
 )
 
 import dns.resolver
@@ -20,6 +22,26 @@ from sqlalchemy import (
 from typing_extensions import LiteralString
 
 from galaxy.objectstore import ObjectStore
+
+if TYPE_CHECKING:
+    from galaxy.model import User
+
+
+class UserValidationContext(Protocol):
+    """What the user input validators need from a transaction.
+
+    Galaxy and the tool shed keep separate context hierarchies with their own
+    app, config and User classes. Both offer a session and an app, so the
+    validators ask for that much rather than naming either hierarchy and
+    forcing one side to depend on the other.
+    """
+
+    @property
+    def app(self) -> Any: ...
+
+    @property
+    def sa_session(self) -> Any: ...
+
 
 log = logging.getLogger(__name__)
 
@@ -78,7 +100,9 @@ def validate_publicname_str(publicname):
     return ""
 
 
-def validate_email(trans, email, user=None, check_dup=True, allow_empty=False, validate_domain=False):
+def validate_email(
+    trans: UserValidationContext, email, user=None, check_dup=True, allow_empty=False, validate_domain=False
+):
     """
     Validates the email format.
     Checks whether the domain is blocklisted in the disposable domains configuration.
@@ -137,7 +161,7 @@ def extract_domain(email, base_only=False):
     return domain
 
 
-def validate_publicname(trans, publicname, user=None):
+def validate_publicname(trans: UserValidationContext, publicname, user=None):
     """
     Check that publicname respects the minimum and maximum string length, the
     allowed characters, and that the username is not taken already.
@@ -168,19 +192,19 @@ def transform_publicname(publicname):
     return publicname
 
 
-def validate_password(trans, password, confirm):
+def validate_password(trans: UserValidationContext, password, confirm):
     if password != confirm:
         return "Passwords do not match."
     return validate_password_str(password)
 
 
 def validate_preferred_object_store_id(
-    trans, object_store: ObjectStore, preferred_object_store_id: Optional[str]
+    user: "User | None", object_store: ObjectStore, preferred_object_store_id: str | None
 ) -> str:
-    return object_store.validate_selected_object_store_id(trans.user, preferred_object_store_id) or ""
+    return object_store.validate_selected_object_store_id(user, preferred_object_store_id) or ""
 
 
-def is_email_banned(email: str, filepath: Optional[str], canonical_email_rules: Optional[dict]) -> bool:
+def is_email_banned(email: str, filepath: str | None, canonical_email_rules: dict | None) -> bool:
     if not filepath:
         return False
     normalizer = EmailAddressNormalizer(canonical_email_rules)
@@ -205,7 +229,7 @@ class EmailAddressNormalizer:
     SUB_ADDRESSING_DELIM_DEFAULT = "+"
     ALL = "all"
 
-    def __init__(self, canonical_email_rules: Optional[dict]) -> None:
+    def __init__(self, canonical_email_rules: dict | None) -> None:
         self.config = canonical_email_rules
 
     def normalize(self, email: str) -> str:

@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BAlert, BModal } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import {
     faBell,
     faBroadcastTower,
@@ -23,13 +24,17 @@ import { hasSingleOidcProfile, type OIDCConfig } from "@/components/User/Externa
 import { getUserPreferencesModel } from "@/components/User/UserPreferencesModel";
 import { useConfig } from "@/composables/config";
 import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useToast } from "@/composables/toast";
 import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 import localize from "@/utils/localization";
 import { userLogoutAll } from "@/utils/logout";
 import QueryStringParsing from "@/utils/query-string-parsing";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
+import GLink from "../BaseComponents/GLink.vue";
+import GModal from "../BaseComponents/GModal.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import Heading from "@/components/Common/Heading.vue";
 import UserBeaconSettings from "@/components/User/UserBeaconSettings.vue";
@@ -47,6 +52,8 @@ const { config, isConfigLoaded } = useConfig(true);
 
 const objectStoreTemplatesStore = useObjectStoreTemplatesStore();
 const fileSourceTemplatesStore = useFileSourceTemplatesStore();
+
+const Toast = useToast();
 
 const messageVariant = ref(null);
 const message = ref(null);
@@ -87,9 +94,6 @@ const hasThemes = computed(() => {
         return false;
     }
 });
-const userPermissionsUrl = computed(() => {
-    return withPrefix("/user/permissions");
-});
 
 async function makeDataPrivate() {
     const confirmed = await confirm(
@@ -104,30 +108,26 @@ async function makeDataPrivate() {
         ),
         {
             title: "Do you want to make all data private?",
-            okTitle: "Yes, make all data private",
-            cancelTitle: "No, do not make data private",
-            cancelVariant: "outline-primary",
-            centered: true,
+            okText: "Yes, make all data private",
+            cancelText: "No, do not make data private",
         },
     );
     if (confirmed) {
-        axios.post(withPrefix(`/history/make_private?all_histories=true`)).then(() => {
+        try {
+            await axios.post(withPrefix(`/history/make_private?all_histories=true`));
             showDataPrivateModal.value = true;
-        });
+        } catch (error) {
+            Toast.error(errorMessageAsString(error), "Error making data private");
+        }
     }
 }
 
 async function signOut() {
     const confirmed = await confirm(localize("Do you want to continue and sign out of all active sessions?"), {
         title: "Sign out of all sessions",
-        okTitle: "Yes, sign out",
-        okVariant: "danger",
-        cancelTitle: "Cancel",
-        cancelVariant: "outline-primary",
-        // data-description cannot be set for this so falling back to
-        // setting a class for DOM inspection.
-        modalClass: "sign-out-modal",
-        centered: true,
+        okText: "Yes, sign out",
+        okColor: "red",
+        okIcon: faSignOut,
     });
 
     if (confirmed) {
@@ -321,18 +321,18 @@ onMounted(async () => {
                     @click="signOut" />
             </div>
 
-            <BModal
-                v-model="showDataPrivateModal"
-                title="Datasets are now private"
-                title-class="font-weight-bold"
-                ok-only>
-                <span v-localize>
-                    All of your histories and datasets have been made private. If you'd like to make all *future*
+            <GModal :show.sync="showDataPrivateModal" title="Datasets are now private" size="small">
+                <BAlert variant="info" show>
+                    All of your histories and datasets have been made private. If you'd like to make all
+                    <strong>future</strong>
                     histories private please use the
-                </span>
-                <a :href="userPermissionsUrl">User Permissions</a>
-                <span v-localize>interface</span>.
-            </BModal>
+                    <GLink to="/user/permissions">
+                        <FontAwesomeIcon :icon="faUsers" />
+                        Set Permissions for New Histories
+                    </GLink>
+                    interface.
+                </BAlert>
+            </GModal>
 
             <UserPickTheme v-if="hasThemes && showThemPickerModal" @reset="toggleThemeModal" />
 

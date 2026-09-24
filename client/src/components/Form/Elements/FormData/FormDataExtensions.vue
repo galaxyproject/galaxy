@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCollapse, BPopover, BTooltip } from "bootstrap-vue";
+import { BPopover } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { orList } from "@/utils/strings";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 
 const props = defineProps<{
     extensions: string[];
@@ -37,6 +38,7 @@ const localFormatsVisible = computed({
     <div v-else>
         <GButton
             :id="props.formatsButtonId"
+            v-g-tooltip.hover.bottom="!formatsVisible ? orList([...props.extensions]) : ''"
             size="small"
             color="blue"
             transparent
@@ -46,8 +48,8 @@ const localFormatsVisible = computed({
             <FontAwesomeIcon v-if="formatsVisible" :icon="faCaretUp" />
             <FontAwesomeIcon v-else :icon="faCaretDown" />
         </GButton>
-        <component
-            :is="props.popover ? BPopover : BCollapse"
+        <BPopover
+            v-if="props.popover"
             v-model="localFormatsVisible"
             :target="props.formatsButtonId"
             :show.sync="localFormatsVisible"
@@ -55,16 +57,11 @@ const localFormatsVisible = computed({
             <ul class="pl-3 m-0">
                 <li v-for="extension in props.extensions" :key="extension">{{ extension }}</li>
             </ul>
-        </component>
-        <BTooltip
-            v-if="!formatsVisible"
-            :target="props.formatsButtonId"
-            noninteractive
-            placement="bottom"
-            triggers="hover">
-            <div class="form-data-props.extensions-tooltip">
-                <span>{{ orList([...props.extensions]) }}</span>
-            </div>
-        </BTooltip>
+        </BPopover>
+        <GCollapse v-else :visible="localFormatsVisible">
+            <ul class="pl-3 m-0">
+                <li v-for="extension in props.extensions" :key="extension">{{ extension }}</li>
+            </ul>
+        </GCollapse>
     </div>
 </template>

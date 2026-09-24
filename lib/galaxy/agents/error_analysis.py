@@ -1,16 +1,16 @@
 """
-Error analysis agent for enhanced tool error diagnosis.
+Error analysis agent for tool error diagnosis.
 """
 
 import logging
 import re
+from functools import partial
 from pathlib import Path
 from typing import (
     Any,
-    Literal,
-    Optional,
 )
 
+import anyio
 from pydantic import BaseModel
 from pydantic_ai import Agent
 
@@ -19,23 +19,23 @@ from .base import (
     ActionSuggestion,
     ActionType,
     AgentResponse,
+    AgentRunState,
     AgentType,
     BaseGalaxyAgent,
+    ConfidenceLiteral,
     extract_result_content,
     extract_structured_output,
     GalaxyAgentDependencies,
+    JOB_LOG_EXCERPT_CHARS,
     normalize_llm_text,
+    truncate_middle,
 )
 
 log = logging.getLogger(__name__)
 
-# Type alias for confidence levels - using Literal inlines the enum values
-# in the JSON schema, avoiding $defs references that vLLM can't handle
-ConfidenceLiteral = Literal["low", "medium", "high"]
-
 
 class ErrorAnalysisResult(BaseModel):
-    """Structured result from error analysis - simplified for local LLMs."""
+    """Structured result from error analysis."""
 
     error_category: str  # e.g., "tool_configuration", "input_data", "parameters"
     error_severity: str  # "low", "medium", "high", "critical"
@@ -47,54 +47,52 @@ class ErrorAnalysisResult(BaseModel):
 
 
 class ErrorAnalysisAgent(BaseGalaxyAgent):
-    """
-    Enhanced error analysis agent for diagnosing tool failures and providing solutions.
-
-    This agent specializes in analyzing Galaxy tool errors, job failures, and providing
-    step-by-step solutions with high accuracy and detailed guidance.
-    """
+    """Agent for diagnosing tool failures and providing solutions."""
 
     agent_type = AgentType.ERROR_ANALYSIS
+    capability_blurb = "Troubleshoot a failed job when you share its error message or job details."
+
+    # The query here is a job's stderr, not something a human typed. Tool banners
+    # routinely print "Operating System:", "Filesystem:", "Subsystem:" and friends,
+    # every one of which trips the role-marker blacklist and hands the user "please
+    # rephrase" for a log they never wrote.
+    #
+    # Only the role markers are exempted -- the instruction-phrase patterns still run,
+    # since no tool prints "ignore previous instructions". Within a run this agent
+    # registers no tools and nothing reads its output back as another agent's input.
+    SCAN_QUERY_FOR_ROLE_MARKERS = False
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
-        """Create the error analysis agent with conditional structured output."""
         if self._supports_structured_output():
             agent = Agent(
                 self._get_model(),
                 deps_type=GalaxyAgentDependencies,
                 output_type=ErrorAnalysisResult,
                 system_prompt=self.get_system_prompt(),
+                retries=self._get_retries(),
             )
         else:
-            # DeepSeek and other models without structured output
             agent = Agent(
                 self._get_model(),
                 deps_type=GalaxyAgentDependencies,
                 system_prompt=self._get_simple_system_prompt(),
+                retries=self._get_retries(),
             )
 
         return agent
 
     def get_system_prompt(self) -> str:
-        """Get the system prompt for error analysis."""
         prompt_path = Path(__file__).parent / "prompts" / "error_analysis.md"
         return prompt_path.read_text()
 
     async def get_job_details(self, job_id: int) -> dict[str, Any]:
-        """
-        Get comprehensive job information for error analysis.
-
-        Args:
-            job_id: Galaxy job ID
-
-        Returns:
-            Dictionary with job details
-        """
         try:
             if not self.deps.job_manager:
                 return {"error": "Job manager not available"}
 
-            job = self.deps.job_manager.get_accessible_job(self.deps.trans, job_id)
+            job = await anyio.to_thread.run_sync(
+                partial(self.deps.job_manager.get_accessible_job, self.deps.trans, job_id)
+            )
             if not job:
                 return {"error": f"Job {job_id} not found or not accessible"}
 
@@ -104,8 +102,8 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 "tool_version": job.tool_version,
                 "state": job.state,
                 "exit_code": job.exit_code,
-                "stderr": job.stderr[:2000] if job.stderr else "",  # Limit output size
-                "stdout": job.stdout[:1000] if job.stdout else "",
+                "stderr": truncate_middle(job.stderr, JOB_LOG_EXCERPT_CHARS) if job.stderr else "",
+                "stdout": truncate_middle(job.stdout, JOB_LOG_EXCERPT_CHARS) if job.stdout else "",
                 "command_line": job.command_line,
                 "parameters": job.get_param_values(self.deps.trans.app) if hasattr(job, "get_param_values") else {},
                 "create_time": job.create_time.isoformat() if job.create_time else None,
@@ -117,165 +115,95 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             log.warning(f"Error getting job details for {job_id}: {e}")
             return {"error": f"Failed to retrieve job details: {str(e)}"}
 
-    async def get_tool_info(self, tool_id: str) -> dict[str, Any]:
-        """Get tool metadata and documentation."""
-        if not self.deps.toolbox:
-            return {"error": "Toolbox not available"}
+    async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
+        # Trim an oversized error dump rather than refusing it: the wizard posts a job's
+        # raw stderr as the query and tools can emit tens of kilobytes, so a length
+        # rejection hands the user a validation error where they asked for a diagnosis.
+        max_length = self._resolve_max_query_length()
+        original_length = len(query) if isinstance(query, str) and len(query) > max_length else None
+        if original_length is not None:
+            log.info("ErrorAnalysis: trimming %d-char error output to fit %d chars", original_length, max_length)
+            query = truncate_middle(query, max_length)
+
+        validation_error = self._validate_query(query)
+        if validation_error:
+            return self._validation_error_response(validation_error)
 
         try:
-            tool = self.deps.toolbox.get_tool(tool_id)
-            if not tool:
-                return {"error": "Tool not found"}
+            response = await self._analyze(query, context)
+        except (OSError, ValueError) as e:
+            log.warning(f"Error analysis failed: {e}")
+            response = self._get_fallback_response(query, str(e))
 
-            return {
-                "tool_id": tool.id,
-                "name": tool.name,
-                "version": tool.version,
-                "description": tool.description or "",
-                "requirements": [str(r) for r in tool.requirements] if hasattr(tool, "requirements") else [],
-                "help_text": str(tool.raw_help)[:500] if hasattr(tool, "raw_help") and tool.raw_help else "",
-            }
-        except (AttributeError, KeyError, TypeError) as e:
-            log.warning(f"Error getting tool info for {tool_id}: {e}")
-            return {"error": f"Failed to retrieve tool info: {str(e)}"}
+        if original_length is not None:
+            response.metadata["query_truncated"] = True
+            response.metadata["original_query_length"] = original_length
 
-    async def search_error_patterns(self, error_text: str) -> list[dict[str, Any]]:
-        """
-        Search for similar error patterns using keyword-based heuristics.
+        return response
 
-        Args:
-            error_text: Error message to search for
+    async def _analyze(self, query: str, context: dict[str, Any] | None) -> AgentResponse:
+        log.info(f"ErrorAnalysis: Received query (length={len(query)})")
+        log.info(f"ErrorAnalysis: Query preview: {query[:800]}...")
 
-        Returns:
-            List of matching error patterns with solutions
-        """
-        try:
-            patterns = []
-            error_lower = error_text.lower()
+        enhanced_query = query
+        run_state = context.get("run_state") if context else None
+        if isinstance(run_state, AgentRunState):
+            prior = run_state.get_prior(AgentType.HISTORY)
+            if prior is not None:
+                log.info("ErrorAnalysis: Found prior history analysis in run_state")
+                enhanced_query += f"\n\nContext from history analysis:\n{prior.content}"
 
-            if "memory" in error_lower or "out of memory" in error_lower:
-                patterns.append(
-                    {
-                        "pattern": "Memory exhaustion",
-                        "frequency": "common",
-                        "solutions": [
-                            "Reduce input data size",
-                            "Request more memory in job configuration",
-                            "Use tools designed for large datasets",
-                        ],
-                    }
-                )
+        if context and context.get("job_id"):
+            job_details = await self.get_job_details(context["job_id"])
+            if "error" not in job_details:
+                enhanced_query += f"\n\nJob Details:\n{self._format_job_context(job_details)}"
 
-            if "permission denied" in error_lower:
-                patterns.append(
-                    {
-                        "pattern": "Permission error",
-                        "frequency": "common",
-                        "solutions": [
-                            "Check file permissions",
-                            "Ensure proper data library access",
-                            "Contact administrator if system files are involved",
-                        ],
-                    }
-                )
+        result = await self._run_with_retry(enhanced_query)
 
-            if "command not found" in error_lower:
-                patterns.append(
-                    {
-                        "pattern": "Missing tool or dependency",
-                        "frequency": "common",
-                        "solutions": [
-                            "Tool may not be installed correctly",
-                            "Check tool dependencies",
-                            "Contact administrator about tool installation",
-                        ],
-                    }
-                )
+        if self._supports_structured_output():
+            analysis_result = extract_structured_output(result, ErrorAnalysisResult, log)
 
-            return patterns
-
-        except (AttributeError, KeyError, TypeError) as e:
-            log.warning(f"Error searching patterns: {e}")
-            return []
-
-    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
-        """
-        Process an error analysis request.
-
-        Args:
-            query: User's error description or question
-            context: Additional context like job_id
-
-        Returns:
-            Structured error analysis response
-        """
-        try:
-            # Enhance query with context if available
-            enhanced_query = query
-            if context and context.get("job_id"):
-                job_details = await self.get_job_details(context["job_id"])
-                if "error" not in job_details:
-                    enhanced_query += f"\n\nJob Details:\n{self._format_job_context(job_details)}"
-
-            # Run the analysis with retry logic
-            result = await self._run_with_retry(enhanced_query)
-
-            # Handle different response formats based on model capabilities
-            if self._supports_structured_output():
-                # Try to extract structured output
-                analysis_result = extract_structured_output(result, ErrorAnalysisResult, log)
-
-                if analysis_result is None:
-                    # Model returned text instead of structured output
-                    content = extract_result_content(result)
-                    return self._build_response(
-                        content=content,
-                        confidence=ConfidenceLevel.MEDIUM,
-                        method="text_fallback",
-                        result=result,
-                        query=query,
-                    )
-
-                content = self._format_analysis_response(analysis_result)
-                suggestions = self._create_suggestions(analysis_result)
-
+            if analysis_result is None:
+                content = extract_result_content(result)
                 return self._build_response(
                     content=content,
-                    confidence=ConfidenceLevel(analysis_result.confidence),
-                    method="structured",
+                    confidence=ConfidenceLevel.MEDIUM,
+                    method="text_fallback",
                     result=result,
                     query=query,
-                    suggestions=suggestions,
-                    agent_data={
-                        "error_category": analysis_result.error_category,
-                        "requires_admin": analysis_result.requires_admin,
-                        "has_alternatives": bool(analysis_result.alternative_approaches),
-                    },
-                )
-            else:
-                # Handle simple text output from DeepSeek
-                response_text = extract_result_content(result)
-                parsed_result = self._parse_simple_response(response_text)
-
-                return self._build_response(
-                    content=parsed_result.get("content", response_text),
-                    confidence=parsed_result.get("confidence", ConfidenceLevel.MEDIUM),
-                    method="simple_text",
-                    result=result,
-                    query=query,
-                    suggestions=parsed_result.get("suggestions", []),
-                    agent_data={"error_category": parsed_result.get("error_category", "unknown")},
                 )
 
-        except OSError as e:
-            log.warning(f"Error analysis network error: {e}")
-            return self._get_fallback_response(query, str(e))
-        except ValueError as e:
-            log.warning(f"Error analysis value error: {e}")
-            return self._get_fallback_response(query, str(e))
+            content = self._format_analysis_response(analysis_result)
+            suggestions = self._create_suggestions(analysis_result)
+
+            return self._build_response(
+                content=content,
+                confidence=ConfidenceLevel(analysis_result.confidence),
+                method="structured",
+                result=result,
+                query=query,
+                suggestions=suggestions,
+                agent_data={
+                    "error_category": analysis_result.error_category,
+                    "requires_admin": analysis_result.requires_admin,
+                    "has_alternatives": bool(analysis_result.alternative_approaches),
+                },
+            )
+        else:
+            response_text = extract_result_content(result)
+            parsed_result = self._parse_simple_response(response_text)
+
+            return self._build_response(
+                content=parsed_result.get("content", response_text),
+                confidence=parsed_result.get("confidence", ConfidenceLevel.MEDIUM),
+                method="simple_text",
+                result=result,
+                query=query,
+                suggestions=parsed_result.get("suggestions", []),
+                agent_data={"error_category": parsed_result.get("error_category", "unknown")},
+            )
 
     def _format_job_context(self, job_details: dict[str, Any]) -> str:
-        """Format job details for context."""
         parts = []
 
         if job_details.get("tool_id"):
@@ -285,45 +213,37 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         if job_details.get("exit_code") is not None:
             parts.append(f"Exit Code: {job_details['exit_code']}")
         if job_details.get("stderr"):
-            parts.append(f"Error Output: {job_details['stderr'][:500]}...")
+            # Already excerpted by get_job_details -- re-slicing here would drop the
+            # tail it deliberately kept, and made that budget dead code.
+            parts.append(f"Error Output: {job_details['stderr']}")
 
         return "\n".join(parts)
 
     def _format_analysis_response(self, analysis: ErrorAnalysisResult) -> str:
-        """Format the analysis result into user-friendly content."""
         parts = []
 
-        # Error classification
         parts.append(f"**Error Type**: {analysis.error_category.replace('_', ' ').title()}")
         parts.append(f"**Severity**: {analysis.error_severity.title()}")
 
-        # Likely cause
         parts.append(f"\n**Likely Cause**: {analysis.likely_cause}")
 
-        # Solution steps
         if analysis.solution_steps:
             parts.append("\n**Recommended Solution**:")
             for i, step in enumerate(analysis.solution_steps, 1):
                 parts.append(f"{i}. {step}")
 
-        # Alternative approaches
         if analysis.alternative_approaches:
             parts.append("\n**Alternative Approaches**:")
             for approach in analysis.alternative_approaches:
                 parts.append(f"• {approach}")
 
-        # Admin notice
         if analysis.requires_admin:
             parts.append("\n⚠️ **Note**: This issue may require administrator assistance.")
 
         return "\n".join(parts)
 
     def _create_suggestions(self, analysis: ErrorAnalysisResult) -> list[ActionSuggestion]:
-        """Create action suggestions from analysis result.
-
-        Only creates suggestions for concrete, executable Galaxy actions.
-        General guidance (solution steps, alternatives) is in the response content.
-        """
+        """Create suggestions for concrete, executable Galaxy actions."""
         suggestions = []
 
         if analysis.requires_admin:
@@ -339,31 +259,34 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         return suggestions
 
     def _get_simple_system_prompt(self) -> str:
-        """Simple system prompt for models without structured output."""
         return """
         You are a Galaxy platform error analysis expert. Analyze the error and provide a helpful response.
 
-        CRITICAL: Never invent URLs, documentation links, or external references. Only state facts you are certain about.
+        IMPORTANT: If the query includes "Previous analysis from history:" that context ALREADY CONTAINS the error details. Use that information directly to provide a SPECIFIC solution. Do NOT ask for more details or give generic advice.
+
+        Example: If previous analysis says "AssertionError because the input file only contained 2 lines and user requested 3", respond with:
+        CAUSE: The tool was asked to select more lines (3) than exist in the input file (2)
+        SOLUTION: Reduce the "number of lines" parameter to 2 or fewer, or use a larger input file
+        CONFIDENCE: high
+
+        CRITICAL: Never invent URLs or external references. Only state facts you are certain about.
 
         Respond in this exact format:
-        ERROR_TYPE: [category like tool_failure, permission_denied, resource_exhausted, etc.]
+        ERROR_TYPE: [category like tool_failure, parameter_error, resource_exhausted, etc.]
         CAUSE: [brief explanation of what went wrong]
         SOLUTION: [step-by-step fix]
         CONFIDENCE: [high/medium/low]
-
-        Example:
-        ERROR_TYPE: command_not_found
-        CAUSE: Required tool or dependency is not installed
-        SOLUTION: 1. Check tool installation 2. Verify PATH settings 3. Contact admin if needed
-        CONFIDENCE: high
         """
 
+    def _strip_metadata_markers(self, text: str) -> str:
+        cleaned = text
+        for marker in ["ERROR_TYPE:", "CAUSE:", "SOLUTION:", "CONFIDENCE:"]:
+            cleaned = re.sub(rf"{re.escape(marker)}[^\n]*\n?", "", cleaned, flags=re.IGNORECASE)
+        return cleaned.strip()
+
     def _parse_simple_response(self, response_text: str) -> dict[str, Any]:
-        """Parse simple text response into structured format."""
-        # Normalize text for consistent parsing
         normalized_text = normalize_llm_text(response_text)
 
-        # Extract structured information from text
         error_type = re.search(r"ERROR_TYPE:\s*([^\n]+)", normalized_text, re.IGNORECASE)
         cause = re.search(r"CAUSE:\s*([^\n]+)", normalized_text, re.IGNORECASE)
         solution = re.search(
@@ -373,7 +296,6 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         )
         confidence = re.search(r"CONFIDENCE:\s*(\w+)", normalized_text, re.IGNORECASE)
 
-        # Build content
         content_parts = []
         if cause and cause.group(1).strip():
             content_parts.append(f"**Likely cause:** {cause.group(1).strip()}")
@@ -382,7 +304,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             content_parts.append(f"**Solution:**\n{solution.group(1).strip()}")
 
         if not content_parts:
-            content_parts = [normalized_text]  # Fallback to full response
+            content_parts = [self._strip_metadata_markers(response_text)]
 
         conf_str = confidence.group(1).lower() if confidence else "medium"
         confidence_level = ConfidenceLevel(conf_str)
@@ -395,5 +317,4 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         }
 
     def _get_fallback_content(self) -> str:
-        """Get fallback content for error analysis failures."""
         return "Unable to complete error analysis at this time."

@@ -109,7 +109,6 @@
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BForm, BFormCheckbox, BFormSelect, BRow } from "bootstrap-vue";
-import _ from "underscore";
 
 import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
@@ -124,7 +123,10 @@ import ToolDisplay from "@/components/admin/Dependencies/ToolDisplay.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTable from "@/components/Common/GTable.vue";
 
-const RESOLVER_TYPE_OPTIONS = _.keys(DESCRIPTION).map((resolverType) => ({ value: resolverType, text: resolverType }));
+const RESOLVER_TYPE_OPTIONS = Object.keys(DESCRIPTION).map((resolverType) => ({
+    value: resolverType,
+    text: resolverType,
+}));
 RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {

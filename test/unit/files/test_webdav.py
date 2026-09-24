@@ -4,7 +4,6 @@ import os
 
 import pytest
 
-from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.files.sources import BaseFilesSource
 from galaxy.files.sources.webdav import WebDavFilesSource
 from ._util import (
@@ -18,9 +17,10 @@ from ._util import (
 )
 from .test_posix import _download_and_check_file
 
+pytest.importorskip("webdav4.fsspec")
+
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "webdav_file_sources_conf.yml")
-FILE_SOURCES_CONF_NO_USE_TEMP_FILES = os.path.join(SCRIPT_DIRECTORY, "webdav_file_sources_without_use_temp_conf.yml")
 USER_FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "webdav_user_file_sources_conf.yml")
 
 skip_if_no_webdav = pytest.mark.skipif(not os.environ.get("GALAXY_TEST_WEBDAV"), reason="GALAXY_TEST_WEBDAV not set")
@@ -67,40 +67,23 @@ def test_sniff_to_tmp():
 
 @skip_if_no_webdav
 def test_serialization():
-    configs = [FILE_SOURCES_CONF_NO_USE_TEMP_FILES, FILE_SOURCES_CONF]
-    for config in configs:
-        # serialize the configured file sources and rematerialize them,
-        # ensure they still function. This is needed for uploading files.
-        file_sources = serialize_and_recover(configured_file_sources(config))
+    file_sources_o = configured_file_sources(FILE_SOURCES_CONF)
+    original = file_source_as_webdav(file_sources_o._file_sources[0])
+    assert original._get_runtime_context().config.base_url == "http://127.0.0.1:7083"
 
-        res = list_root(file_sources, "gxfiles://test1", recursive=True)
-        assert find_file_a(res)
+    # serialize the configured file sources and rematerialize them,
+    # ensure they still function. This is needed for uploading files.
+    file_sources = serialize_and_recover(file_sources_o)
+    recovered = file_source_as_webdav(file_sources._file_sources[0])
+    assert recovered._get_runtime_context().config.base_url == "http://127.0.0.1:7083"
 
-        res = list_root(file_sources, "gxfiles://test1", recursive=False)
-        assert find_file_a(res)
+    res = list_root(file_sources, "gxfiles://test1", recursive=True)
+    assert find_file_a(res)
 
-        _download_and_check_file(file_sources)
+    res = list_root(file_sources, "gxfiles://test1", recursive=False)
+    assert find_file_a(res)
 
-
-@skip_if_no_webdav
-def test_config_options():
-    file_sources = configured_file_sources(FILE_SOURCES_CONF)
-    fs = file_source_as_webdav(file_sources._file_sources[0])
-    assert fs.template_config.use_temp_files
-    assert fs._get_runtime_context().config.use_temp_files == fs.template_config.use_temp_files
-
-    file_sources = configured_file_sources(FILE_SOURCES_CONF_NO_USE_TEMP_FILES)
-    fs = file_source_as_webdav(file_sources._file_sources[0])
-    assert not fs.template_config.use_temp_files
-    assert fs._get_runtime_context().config.use_temp_files == fs.template_config.use_temp_files
-
-    disable_default_use_temp = FileSourcePluginsConfig(
-        webdav_use_temp_files=False,
-    )
-    file_sources = configured_file_sources(FILE_SOURCES_CONF, disable_default_use_temp)
-    fs = file_source_as_webdav(file_sources._file_sources[0])
-    assert not fs.template_config.use_temp_files
-    assert fs._get_runtime_context().config.use_temp_files == fs.template_config.use_temp_files
+    _download_and_check_file(file_sources)
 
 
 def file_source_as_webdav(file_source: BaseFilesSource) -> WebDavFilesSource:
@@ -114,9 +97,32 @@ def test_serialization_user():
     file_sources_o = configured_file_sources(USER_FILE_SOURCES_CONF)
     user_context = user_context_fixture()
 
+    original = file_source_as_webdav(file_sources_o._file_sources[0])
+    assert original._get_runtime_context(user_context=user_context).config.base_url == "http://127.0.0.1:7083"
+
     res = list_root(file_sources_o, "gxfiles://test1", recursive=True, user_context=user_context)
     assert find_file_a(res)
 
     file_sources = serialize_and_recover(file_sources_o, user_context=user_context)
+    recovered = file_source_as_webdav(file_sources._file_sources[0])
+    assert recovered._get_runtime_context().config.base_url == "http://127.0.0.1:7083"
+
     res = list_root(file_sources, "gxfiles://test1", recursive=True, user_context=None)
     assert find_file_a(res)
+
+
+@skip_if_no_webdav
+def test_url_preserved_in_serialization():
+    # Regression test: 'url' is in COMMON_FILE_SOURCE_PROP_NAMES and was excluded from
+    # _serialize_config, causing WebDAVFS to be initialized with url=None, which led to
+    # AttributeError: 'NoneType' object has no attribute 'rstrip' when fetching files.
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
+    fs = file_source_as_webdav(file_sources._file_sources[0])
+
+    serialized = fs.to_dict(for_serialization=True)
+    assert "url" in serialized, "WebDAV url must be preserved in serialized form for job runner reconstruction"
+    assert serialized["url"] == "http://127.0.0.1:7083"
+
+    recovered = serialize_and_recover(file_sources)
+    recovered_fs = file_source_as_webdav(recovered._file_sources[0])
+    assert recovered_fs._get_runtime_context().config.url == "http://127.0.0.1:7083"

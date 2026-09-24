@@ -1,8 +1,18 @@
-import { type components, GalaxyApi, type HistoryItemSummary, type HistorySummary } from "@/api";
+import type { components, HistoryItemSummary } from "@/api";
+import { GalaxyApi } from "@/api";
 import { createHistoryDatasetCollectionInstanceSimple } from "@/api/datasetCollections";
+import type {
+    HistoryReference,
+    StorageOperationExecutePolicy,
+    StorageOperationExecuteResponse,
+    StorageOperationPreviewResponse,
+    StorageOperationRunResponse,
+} from "@/api/histories";
+import { getStorageOperationRunStatus } from "@/api/histories";
 import { rethrowSimple } from "@/utils/simple-error";
 
 type BulkOperation = components["schemas"]["HistoryContentItemOperation"];
+type HistoryContentItem = components["schemas"]["HistoryContentItem"];
 type QueryFilters = Record<string, unknown>;
 
 export function filtersToQueryValues(filters: QueryFilters) {
@@ -57,10 +67,10 @@ export async function updateContentFields(content: HistoryItemSummary, newFields
  * the filters will determine which items are processed.
  */
 export async function bulkUpdate(
-    history: HistorySummary,
+    history: HistoryReference,
     operation: BulkOperation,
     filters: QueryFilters,
-    items = [],
+    items: HistoryContentItem[] = [],
     params = null,
 ) {
     const { data, error } = await GalaxyApi().PUT("/api/histories/{history_id}/contents/bulk", {
@@ -81,7 +91,7 @@ export async function bulkUpdate(
     return data;
 }
 
-export async function createDatasetCollection(history: HistorySummary, inputs = {}) {
+export async function createDatasetCollection(history: HistoryReference, inputs = {}) {
     const defaults = {
         collection_type: "list",
         copy_elements: true,
@@ -93,4 +103,58 @@ export async function createDatasetCollection(history: HistorySummary, inputs = 
     };
     const payload = Object.assign({}, defaults, inputs);
     return createHistoryDatasetCollectionInstanceSimple(payload);
+}
+
+export async function bulkStoragePreview(
+    history: HistoryReference,
+    targetObjectStoreId: string,
+    filters: QueryFilters,
+    items: HistoryContentItem[] = [],
+): Promise<StorageOperationPreviewResponse> {
+    const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents/bulk/storage/preview", {
+        params: {
+            path: { history_id: history.id },
+            query: filtersToQueryValues(filters),
+        },
+        body: {
+            mode: "move",
+            target_object_store_id: targetObjectStoreId,
+            items,
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+export async function bulkStorageExecute(
+    history: HistoryReference,
+    snapshotId: string,
+    executionPolicy: StorageOperationExecutePolicy = { skip_ineligible: true },
+    notifyOnCompletion = true,
+): Promise<StorageOperationExecuteResponse> {
+    const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents/bulk/storage/execute", {
+        params: {
+            path: { history_id: history.id },
+        },
+        body: {
+            snapshot_id: snapshotId,
+            execution_policy: executionPolicy,
+            notify_on_completion: notifyOnCompletion,
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
+
+export async function bulkStorageRunStatus(
+    history: HistoryReference,
+    runId: string,
+): Promise<StorageOperationRunResponse> {
+    return getStorageOperationRunStatus(history, runId);
 }

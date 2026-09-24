@@ -5,6 +5,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 export type LibrarySummary = components["schemas"]["LibrarySummary"];
 export type LibraryFolderDetails = components["schemas"]["LibraryFolderDetails"];
 export type LibraryFolderContentsIndexResult = components["schemas"]["LibraryFolderContentsIndexResult"];
+export type LibraryFolderMetadata = components["schemas"]["LibraryFolderMetadata"];
 export type FileLibraryFolderItem = components["schemas"]["FileLibraryFolderItem"];
 export type FolderLibraryFolderItem = components["schemas"]["FolderLibraryFolderItem"];
 export type AnyLibraryFolderItem = FileLibraryFolderItem | FolderLibraryFolderItem;
@@ -89,7 +90,9 @@ export async function getFolderContents(
         rethrowSimple(error);
     }
 
-    return data;
+    // Cast needed -- openapi-typescript-helpers Readable<T> widens tuples
+    // https://github.com/openapi-ts/openapi-typescript/issues/2632
+    return data as LibraryFolderContentsIndexResult;
 }
 
 export function isLibraryFolder(item: AnyLibraryFolderItem | Record<string, unknown>): item is FolderLibraryFolderItem {

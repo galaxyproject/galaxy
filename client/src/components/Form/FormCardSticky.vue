@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { faWrench, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
+import { BBadge } from "bootstrap-vue";
 
 import { absPath } from "@/utils/redirect";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -17,15 +18,21 @@ withDefaults(
         logo?: string;
         name?: string;
         version?: string;
+        isNotLatestVersion?: boolean;
     }>(),
     {
+        isNotLatestVersion: false,
         isLoading: false,
     },
 );
+
+const emit = defineEmits<{
+    (e: "newer-version-click"): void;
+}>();
 </script>
 
 <template>
-    <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
+    <GAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
     <LoadingSpan v-else-if="isLoading" />
     <div v-else>
         <div class="position-relative pb-4">
@@ -41,10 +48,25 @@ withDefaults(
                             v-if="version"
                             class="text-muted"
                             data-description="galaxy tool version"
-                            :data-version="version"
-                            >(Galaxy Version {{ version }})</span
-                        >
+                            :data-version="version">
+                            (Galaxy Version {{ version }})
+                        </span>
+
+                        <BBadge
+                            v-if="isNotLatestVersion"
+                            v-g-tooltip.hover.focus
+                            tag="button"
+                            type="button"
+                            class="border-0 cursor-pointer"
+                            pill
+                            variant="warning"
+                            title="Switch to the latest available tool version"
+                            data-description="newer tool version"
+                            @click="emit('newer-version-click')">
+                            Newer version available
+                        </BBadge>
                     </div>
+
                     <div class="d-flex flex-nowrap align-items-start flex-gapx-1">
                         <slot name="buttons" />
                     </div>

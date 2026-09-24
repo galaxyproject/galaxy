@@ -23,7 +23,6 @@
  *   @close="onModalClose" />
  */
 
-import { BModal } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount } from "vue";
 
@@ -32,6 +31,7 @@ import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
+import GModal from "@/components/BaseComponents/GModal.vue";
 import ServiceCredentials from "@/components/User/Credentials/ServiceCredentials.vue";
 
 interface Props {
@@ -147,21 +147,15 @@ onBeforeMount(() => {
 </script>
 
 <template>
-    <BModal
-        visible
-        scrollable
-        no-close-on-backdrop
-        no-close-on-esc
-        button-size="md"
-        size="lg"
-        modal-class="manage-tool-credentials-modal"
-        body-class="manage-tool-credentials-body"
+    <GModal
+        confirm
+        show
+        size="medium"
+        fixed-height
         :title="`Manage & Select Credentials Groups for: ${toolName} (${props.toolVersion})`"
-        :ok-title="okTitle"
-        cancel-title="Close"
-        cancel-variant="outline-danger"
+        :ok-text="okTitle"
         @ok="onSelectCredentials"
-        @hide="emit('close')">
+        @close="emit('close')">
         <p>
             You can manage your credentials here. Any changes to credential groups will persist, but changes to the
             current group selection for services will only be saved when you click "{{ okTitle }}".
@@ -178,11 +172,5 @@ onBeforeMount(() => {
                 :service-definition="sd"
                 @update-current-group="(groupId) => onCurrentGroupChange(sd, groupId)" />
         </div>
-    </BModal>
+    </GModal>
 </template>
-
-<style>
-.manage-tool-credentials-body {
-    height: 80vh;
-}
-</style>

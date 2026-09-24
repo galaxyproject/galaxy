@@ -1,10 +1,7 @@
-import * as Backbone from "backbone";
-
-export class TracksterUI extends Backbone.Model {
+export class TracksterUI {
     constructor(options) {
-        super(options);
+        this.baseURL = null;
     }
-
     initialize(baseURL) {
         this.baseURL = baseURL;
     }

@@ -15,10 +15,10 @@ from galaxy.tool_util.verify.interactor import (
     verify_collection,
 )
 from galaxy.tool_util_models import (
+    JobTestDict,
     OutputChecks,
     OutputsDict,
     TestDicts,
-    TestJobDict,
 )
 from galaxy.util import asbool
 from galaxy_test.api._framework import ApiTestCase
@@ -57,9 +57,10 @@ class TestWorkflow(ApiTestCase):
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+        self.dataset_populator.create_role([self.dataset_populator.user_id()], role_type="user_tool_execute")
 
     @pytest.mark.workflow
-    def test_workflow(self, workflow_path: Path, test_job: TestJobDict):
+    def test_workflow(self, workflow_path: Path, test_job: JobTestDict):
         with workflow_path.open() as f:
             yaml_content = ordered_load(f)
         with self.dataset_populator.test_history() as history_id:
@@ -70,6 +71,7 @@ class TestWorkflow(ApiTestCase):
                     test_data=test_job["job"],
                     history_id=history_id,
                     job_dir=str(workflow_path.parent),
+                    test_data_format="cwl_style",
                 )
                 if TEST_WORKFLOW_AFTER_RERUN:
                     run_summary = self.workflow_populator.rerun(run_summary)
@@ -88,7 +90,9 @@ class TestWorkflow(ApiTestCase):
 
     def _verify_output(self, run_summary: RunJobsSummary, output_name, test_properties: OutputChecks):
         is_collection_test = isinstance(test_properties, dict) and (
-            "elements" in test_properties or test_properties.get("class") == "Collection"
+            "elements" in test_properties
+            or "element_tests" in test_properties
+            or test_properties.get("class") == "Collection"
         )
         item_label = f"Output named {output_name}"
 

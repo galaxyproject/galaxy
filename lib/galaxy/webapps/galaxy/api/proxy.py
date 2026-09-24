@@ -1,29 +1,32 @@
 """
-API Controller to handle remote zip operations.
+API Controller to proxy remote files.
 """
 
 import logging
+import time
+from functools import partial
 from urllib.parse import (
     urljoin,
     urlparse,
 )
 
+import anyio
 import httpx
 from fastapi import (
     Query,
     Request,
 )
-from starlette.responses import (
-    Response,
-    StreamingResponse,
-)
+from starlette.responses import Response
 
 from galaxy.exceptions import (
+    GatewayTimeoutException,
     RequestParameterInvalidException,
+    UpstreamProxyError,
     UserRequiredException,
 )
 from galaxy.files.uris import validate_uri_access
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.webapps.base.api import GalaxyStreamingResponse
 from . import (
     DependsOnTrans,
     Router,
@@ -40,6 +43,8 @@ URLQueryParam: str = Query(
 
 ALLOWED_SCHEMES = ("https", "http")
 MAX_REDIRECTS = 5
+MAX_STREAM_BYTES = 1 * 1024 * 1024  # 1 MB
+MAX_STREAM_SECONDS = 10
 
 
 def is_valid_url(url: str) -> bool:
@@ -61,7 +66,6 @@ def is_valid_url(url: str) -> bool:
 
 @router.cbv
 class FastAPIProxy:
-
     @router.get("/api/proxy")
     @router.head("/api/proxy")
     async def proxy(self, request: Request, url: str = URLQueryParam, trans: ProvidesUserContext = DependsOnTrans):
@@ -71,7 +75,7 @@ class FastAPIProxy:
         if trans.anonymous:
             raise UserRequiredException("Anonymous users are not allowed to access this endpoint")
 
-        self._validate_url_and_access(url, trans)
+        await anyio.to_thread.run_sync(partial(self._validate_url_and_access, url, trans))
 
         headers: dict[str, str] = {}
         if "range" in request.headers:
@@ -81,7 +85,9 @@ class FastAPIProxy:
         # This is to prevent the server from hanging indefinitely
         timeout = httpx.Timeout(10.0, connect=60.0)
 
-        client = httpx.AsyncClient(timeout=timeout)
+        client = await anyio.to_thread.run_sync(partial(httpx.AsyncClient, timeout=timeout))
+        response = None
+        streaming = False
         try:
             response = await self._handle_redirects_validation(request, url, trans, headers, client)
 
@@ -91,15 +97,34 @@ class FastAPIProxy:
 
                 async def stream_with_cleanup():
                     """Stream response chunks and ensure cleanup on completion or error."""
+                    total_bytes = 0
+                    start_time = time.monotonic()
                     try:
                         async for chunk in response.aiter_bytes():
+                            total_bytes += len(chunk)
+                            if total_bytes > MAX_STREAM_BYTES:
+                                log.warning(
+                                    "Proxy stream to %s exceeded max size of %d bytes",
+                                    url,
+                                    MAX_STREAM_BYTES,
+                                )
+                                break
+                            elapsed = time.monotonic() - start_time
+                            if elapsed > MAX_STREAM_SECONDS:
+                                log.warning(
+                                    "Proxy stream to %s exceeded max time of %d seconds",
+                                    url,
+                                    MAX_STREAM_SECONDS,
+                                )
+                                break
                             yield chunk
                     finally:
                         await response.aclose()
                         await client.aclose()
 
+                streaming = True
                 # StreamingResponse will handle chunked transfer encoding automatically
-                return StreamingResponse(
+                return GalaxyStreamingResponse(
                     stream_with_cleanup(),
                     status_code=response.status_code,
                     headers=filtered_headers,
@@ -114,11 +139,13 @@ class FastAPIProxy:
         except httpx.InvalidURL as e:
             # Catch any URL validation errors that slip through our pre-validation
             raise RequestParameterInvalidException(f"Invalid URL format: {e}")
+        except httpx.TimeoutException as e:
+            raise GatewayTimeoutException(f"Timeout proxying request to {url}: {type(e).__name__}")
         except httpx.RequestError as e:
-            raise Exception(f"Request error: {e}")
+            raise UpstreamProxyError(f"Error proxying request to {url}: {type(e).__name__}: {e}")
         finally:
-            # Only cleanup for non-GET requests (GET cleanup happens in the stream generator)
-            if request.method != "GET":
+            # Only cleanup if we're NOT handing off to the stream generator
+            if not streaming:
                 if response is not None:
                     await response.aclose()
                 await client.aclose()
@@ -137,9 +164,12 @@ class FastAPIProxy:
         redirect_count = 0
 
         while redirect_count <= MAX_REDIRECTS:
-            response = await client.request(
-                method=request.method, url=current_url, headers=headers, follow_redirects=False
+            req = client.build_request(
+                method=request.method,
+                url=current_url,
+                headers=headers,
             )
+            response = await client.send(req, follow_redirects=False, stream=True)
 
             if self._is_redirect_response(response):
                 redirect_count += 1
@@ -151,7 +181,7 @@ class FastAPIProxy:
                 # Handle relative URLs by resolving them against the current URL
                 redirect_url = urljoin(current_url, redirect_location)
 
-                self._validate_url_and_access(redirect_url, trans)
+                await anyio.to_thread.run_sync(partial(self._validate_url_and_access, redirect_url, trans))
 
                 # Close current response and follow the validated redirect
                 await response.aclose()
@@ -193,7 +223,8 @@ class FastAPIProxy:
         Removes:
         - Hop-by-hop headers (transfer-encoding, connection, keep-alive)
         - content-encoding: httpx auto-decompresses, so content is no longer encoded
-        - content-length: only if response was compressed (size changes after decompression)
+        - content-length: always removed because the actual streamed bytes may differ
+          from the upstream value (auto-decompression, stream size/time limits)
 
         Args:
             headers: The response headers from the upstream server
@@ -201,13 +232,19 @@ class FastAPIProxy:
         Returns:
             Filtered dictionary of headers safe to forward to the client
         """
-        had_content_encoding = "content-encoding" in headers
-
-        # Always exclude these hop-by-hop and encoding headers
-        excluded_headers = ["transfer-encoding", "connection", "keep-alive", "content-encoding"]
-
-        if had_content_encoding:
-            # If content was compressed, the content-length is now incorrect after decompression
-            excluded_headers.append("content-length")
+        # Always exclude these hop-by-hop and encoding headers.
+        # content-length is always excluded because:
+        # 1. httpx auto-decompresses, so compressed content-length is wrong after decompression
+        # 2. The stream may be truncated by MAX_STREAM_BYTES or MAX_STREAM_SECONDS limits
+        # StreamingResponse will use chunked transfer encoding instead.
+        # accept-ranges is excluded because range requests are not meaningful without content-length.
+        excluded_headers = [
+            "transfer-encoding",
+            "connection",
+            "keep-alive",
+            "content-encoding",
+            "content-length",
+            "accept-ranges",
+        ]
 
         return {key: value for key, value in headers.items() if key.lower() not in excluded_headers}

@@ -27,6 +27,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     (e: "update:directory", value: string): void;
     (e: "update:fileName", value: string): void;
+    (e: "navigated"): void;
 }>();
 
 const { hasWritable: hasWritableFileSources } = useFileSources(props.filterOptions);
@@ -49,7 +50,8 @@ const fileNameDescription = localize("Give the exported file a name.");
                     :require-writable="true"
                     :filter-options="props.filterOptions"
                     data-test-id="export-destination-input"
-                    @input="emit('update:directory', $event)" />
+                    @input="emit('update:directory', $event)"
+                    @navigated="emit('navigated')" />
             </BFormGroup>
 
             <BFormGroup

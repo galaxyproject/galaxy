@@ -6,9 +6,8 @@ import json
 import logging
 from typing import (
     Annotated,
-    Optional,
-    Union,
 )
+from uuid import UUID
 
 from fastapi import Query
 
@@ -20,6 +19,8 @@ from galaxy.schema.schema import (
     ExportObjectResultMetadata,
     ExportTaskListResponse,
     ObjectExportTaskResponse,
+    ShortTermStoreExportPayload,
+    WriteStoreToPayload,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -45,7 +46,7 @@ class FastAPIExports:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         limit: Annotated[
-            Optional[int],
+            int | None,
             Query(
                 title="Limit",
                 description="Maximum number of exports to return.",
@@ -92,7 +93,7 @@ class FastAPIExports:
 
         return ExportTaskListResponse(root=results)
 
-    def _parse_export_metadata(self, metadata: Union[dict, str]) -> Optional[ExportObjectMetadata]:
+    def _parse_export_metadata(self, metadata: dict | str) -> ExportObjectMetadata | None:
         """Parse export metadata dict without double-encoding ID fields.
 
         We use model_construct() to skip Pydantic validation because the ID fields
@@ -103,17 +104,31 @@ class FastAPIExports:
             metadata = json.loads(metadata)
         assert isinstance(metadata, dict)
         request_data_raw = metadata.get("request_data", {})
-        result_data_raw = metadata.get("result_data")
+
+        payload_raw = request_data_raw.get("payload") or {}
+        # Pick the right payload flavour by presence of target_uri
+        # (WriteStoreToPayload has it, ShortTermStoreExportPayload does not).
+        if "target_uri" in payload_raw:
+            payload: WriteStoreToPayload | ShortTermStoreExportPayload = WriteStoreToPayload.model_construct(
+                **payload_raw
+            )
+        else:
+            # UUID field bypasses validation under model_construct, so coerce the
+            # stored string to UUID so Pydantic's serializer emits it cleanly.
+            request_id = payload_raw.get("short_term_storage_request_id")
+            if isinstance(request_id, str):
+                payload_raw["short_term_storage_request_id"] = UUID(request_id)
+            payload = ShortTermStoreExportPayload.model_construct(**payload_raw)
 
         request_data = ExportObjectRequestMetadata.model_construct(
             object_id=request_data_raw.get("object_id"),
             object_type=request_data_raw.get("object_type"),
             user_id=request_data_raw.get("user_id"),
-            payload=request_data_raw.get("payload"),
+            payload=payload,
         )
 
         result_data = None
-        if result_data_raw:
+        if result_data_raw := metadata.get("result_data"):
             result_data = ExportObjectResultMetadata.model_construct(
                 success=result_data_raw.get("success"),
                 uri=result_data_raw.get("uri"),

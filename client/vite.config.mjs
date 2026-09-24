@@ -6,7 +6,6 @@ import ViteYaml from "@modyfi/vite-plugin-yaml";
 import inject from "@rollup/plugin-inject";
 import vue from "@vitejs/plugin-vue2";
 import { defineConfig } from "vite";
-import tsconfigPaths from "vite-tsconfig-paths";
 
 import { buildMetadataPlugin } from "./vite-plugin-build-metadata.js";
 import { galaxyDevServerPlugin } from "./vite-plugin-galaxy-dev-server.js";
@@ -47,10 +46,25 @@ function d3v3CompatPlugin() {
     };
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
     // Use relative base so CSS asset references work with any proxy prefix.
     // The HTML script tags use url_for() which handles the prefix correctly.
     base: "./",
+    resolve: {
+        tsconfigPaths: true,
+        alias: {
+            // galaxy-ui is internal-only (no library build) and always
+            // resolved from source -- the main client consumes the .vue
+            // files directly through @vitejs/plugin-vue2.
+            "@galaxyproject/galaxy-ui": resolve(__dirname, "packages/ui/src/index.ts"),
+            // galaxy-api-client has a real tsup dist/ build and production
+            // uses that via package.json exports. During `vite serve` we
+            // resolve to source so edits trigger HMR without a rebuild.
+            ...(command === "serve"
+                ? { "@galaxyproject/galaxy-api-client": resolve(__dirname, "packages/api-client/src/index.ts") }
+                : {}),
+        },
+    },
     define: {
         // Make jQuery available globally for plugins and legacy code
         global: "globalThis",
@@ -72,24 +86,25 @@ export default defineConfig({
                 },
             },
         }),
-        tsconfigPaths(), // TypeScript path resolution
         ViteYaml(), // YAML file support
         galaxyLegacyPlugin(), // Handle legacy module resolution
         buildMetadataPlugin(), // Generate build metadata (replaces DumpMetaPlugin)
         d3v3CompatPlugin(), // Fix D3 v3 ES module compatibility
-        // Inject imports for underscore and Buffer
+        // Inject imports for Buffer
         // jQuery is set up as window.$ and window.jQuery by libs.bundled.js
         // Note: We don't inject jQuery here to avoid circular dependencies with code splitting
         inject({
             include: ["**/*.js", "**/*.ts", "**/*.vue"],
             exclude: ["**/node_modules/**"],
-            _: "underscore",
             Buffer: ["buffer", "Buffer"],
         }),
         galaxyDevServerPlugin(), // Transform proxied Galaxy HTML for HMR support
     ],
-    // resolve aliases are handled by galaxyLegacyPlugin
+    // Note: resolve.extensions are set by galaxyLegacyPlugin
     css: {
+        lightningcss: {
+            errorRecovery: true,
+        },
         preprocessorOptions: {
             scss: {
                 quietDeps: true,
@@ -107,7 +122,7 @@ export default defineConfig({
         cssCodeSplit: false,
         // Generate sourcemaps when GXY_BUILD_SOURCEMAPS is set
         sourcemap: !!process.env.GXY_BUILD_SOURCEMAPS,
-        rollupOptions: {
+        rolldownOptions: {
             input: {
                 // Entry points that will be referenced in templates
                 // libs must be loaded first - it exposes globals (jQuery, bundleEntries, config)
@@ -143,11 +158,46 @@ export default defineConfig({
         port: process.env.VITE_PORT || 5173,
         host: "0.0.0.0",
         proxy: {
-            // Proxy everything except Vite's own routes to Galaxy backend
-            "^/(?!(@|src/|node_modules/|__vite))": {
+            // Proxy everything except Vite's own routes to Galaxy backend.
+            // `packages/` is served by Vite as well: the workspace packages are
+            // aliased to their sources (see `resolve.alias`), so proxying them
+            // to Galaxy would leave `@galaxyproject/galaxy-ui` unresolved and
+            // the client would never boot on the dev server.
+            "^/(?!(@|src/|packages/|node_modules/|__vite))": {
                 target: process.env.GALAXY_URL || "http://127.0.0.1:8080",
-                changeOrigin: !!process.env.CHANGE_ORIGIN,
-                secure: process.env.CHANGE_ORIGIN ? false : true,
+                changeOrigin: true,
+                secure: false,
+                cookieDomainRewrite: "",
+                configure: (proxy) => {
+                    proxy.on("proxyRes", (proxyRes, req) => {
+                        // Strip Secure flag and fix SameSite from upstream HTTPS cookies so
+                        // they are accepted by the browser on http://localhost.
+                        const cookies = proxyRes.headers["set-cookie"];
+                        if (cookies) {
+                            proxyRes.headers["set-cookie"] = cookies.map((cookie) =>
+                                cookie.replace(/;\s*Secure/gi, "").replace(/;\s*SameSite=None/gi, "; SameSite=Lax"),
+                            );
+                        }
+                        // Rewrite Location header to use the dev server origin instead of
+                        // the Galaxy backend. With changeOrigin=true, Galaxy sees the backend
+                        // Host and generates absolute URLs (e.g. in TUS upload responses).
+                        // Without this rewrite, the browser tries to access the backend directly
+                        // which causes CORS failures.
+                        const location = proxyRes.headers["location"];
+                        if (location) {
+                            const targetUrl = new URL(process.env.GALAXY_URL || "http://127.0.0.1:8080");
+                            const locationUrl = new URL(location, targetUrl);
+                            const fallbackDevHost = req.headers.host || `localhost:${process.env.VITE_PORT || 5173}`;
+                            const devOrigin = req.headers.origin || `http://${fallbackDevHost}`;
+
+                            // Only rewrite locations generated for the Galaxy backend.
+                            if (locationUrl.origin === targetUrl.origin) {
+                                proxyRes.headers["location"] =
+                                    `${devOrigin}${locationUrl.pathname}${locationUrl.search}${locationUrl.hash}`;
+                            }
+                        }
+                    });
+                },
             },
         },
         cors: true,
@@ -160,26 +210,23 @@ export default defineConfig({
         format: "es",
     },
     optimizeDeps: {
-        // Use esbuild plugin to fix D3 v3's IIFE `this` binding during pre-bundling
-        esbuildOptions: {
+        // Use Rolldown plugin to fix D3 v3's IIFE `this` binding during pre-bundling
+        rolldownOptions: {
             plugins: [
                 {
-                    name: "d3v3-compat-esbuild",
-                    setup(build) {
-                        build.onLoad({ filter: /node_modules\/d3v3\/d3\.js$/ }, async (args) => {
-                            const fs = await import("node:fs");
-                            let contents = fs.readFileSync(args.path, "utf8");
-                            // D3 v3 is: !function() { ... }();
-                            // Change to: !function() { ... }.call(window);
+                    name: "d3v3-compat-rolldown",
+                    load(id) {
+                        if (id.includes("node_modules/d3v3/d3.js") || id.includes("node_modules\\d3v3\\d3.js")) {
+                            let contents = readFileSync(id, "utf8");
                             contents = contents.replace(
                                 /\}(\s*)\(\s*\)\s*;?\s*$/,
                                 "}.call(typeof window !== 'undefined' ? window : globalThis);",
                             );
-                            return { contents, loader: "js" };
-                        });
+                            return contents;
+                        }
                     },
                 },
             ],
         },
     },
-});
+}));

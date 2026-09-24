@@ -1,6 +1,7 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { JobBaseModel } from "@/api/jobs";
 import { statePlaceholders } from "@/composables/useInvocationGraph";
@@ -16,7 +17,7 @@ const SELECTORS = {
     JOB_STATE_BUTTON_NAV: "nav",
     JOB_STATE_BUTTON: ".g-button",
     JOBS_TABLE: ".job-step-jobs",
-    JOB_ROW: ".job-step-jobs > tbody > tr",
+    JOB_ROW: ".job-step-jobs .g-table tbody > tr:not(.g-table-details-row):not(.g-table-empty-row)",
     STUBBED_JOB_DETAILS: "anonymous-stub",
 };
 
@@ -27,6 +28,7 @@ describe("Job Step", () => {
                 jobs: TEST_JOBS_JSON,
                 invocationId: TEST_INVOCATION_ID,
             },
+            pinia: createTestingPinia({ createSpy: vi.fn }),
         });
         await flushPromises();
 
@@ -75,6 +77,7 @@ describe("Job Step", () => {
                 jobs: TEST_JOBS_JSON,
                 invocationId: TEST_INVOCATION_ID,
             },
+            pinia: createTestingPinia({ createSpy: vi.fn }),
         });
         await flushPromises();
 
@@ -124,6 +127,7 @@ describe("Job Step", () => {
                 jobs: [singleJob],
                 invocationId: TEST_INVOCATION_ID,
             },
+            pinia: createTestingPinia({ createSpy: vi.fn }),
         });
         await flushPromises();
 

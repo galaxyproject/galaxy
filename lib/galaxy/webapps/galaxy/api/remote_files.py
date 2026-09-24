@@ -5,7 +5,6 @@ API operations on remote files.
 import logging
 from typing import (
     Annotated,
-    Optional,
 )
 
 from fastapi import (
@@ -41,7 +40,7 @@ TargetQueryParam: str = Query(
     description=("The source to load datasets from. Possible values: ftpdir, userdir, importdir"),
 )
 
-FormatQueryParam: Optional[RemoteFilesFormat] = Query(
+FormatQueryParam: RemoteFilesFormat | None = Query(
     title="Response format",
     description=(
         "The requested format of returned data. Either `flat` to simply list all the files"
@@ -50,14 +49,14 @@ FormatQueryParam: Optional[RemoteFilesFormat] = Query(
     ),
 )
 
-RecursiveQueryParam: Optional[bool] = Query(
+RecursiveQueryParam: bool | None = Query(
     title="Recursive",
     description=(
         "Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`."
     ),
 )
 
-DisableModeQueryParam: Optional[RemoteFilesDisableMode] = Query(
+DisableModeQueryParam: RemoteFilesDisableMode | None = Query(
     title="Disable mode",
     description=(
         "(This only applies when `format` is `jstree`)"
@@ -66,7 +65,7 @@ DisableModeQueryParam: Optional[RemoteFilesDisableMode] = Query(
     ),
 )
 
-WriteIntentQueryParam: Optional[bool] = Query(
+WriteIntentQueryParam: bool | None = Query(
     title="Write Intent",
     description=(
         "Whether the query is made with the intention of writing to the source."
@@ -74,7 +73,7 @@ WriteIntentQueryParam: Optional[bool] = Query(
     ),
 )
 
-BrowsableQueryParam: Optional[bool] = Query(
+BrowsableQueryParam: bool | None = Query(
     title="Browsable filesources only",
     description=(
         "Whether to return browsable filesources only. The default is `True`, which will omit filesources"
@@ -132,17 +131,17 @@ class FastAPIRemoteFiles:
         response: Response,
         user_ctx: ProvidesUserContext = DependsOnTrans,
         target: Annotated[str, TargetQueryParam] = RemoteFilesTarget.ftpdir,
-        format: Annotated[Optional[RemoteFilesFormat], FormatQueryParam] = RemoteFilesFormat.uri,
-        recursive: Annotated[Optional[bool], RecursiveQueryParam] = None,
-        disable: Annotated[Optional[RemoteFilesDisableMode], DisableModeQueryParam] = None,
+        format: Annotated[RemoteFilesFormat | None, FormatQueryParam] = RemoteFilesFormat.uri,
+        recursive: Annotated[bool | None, RecursiveQueryParam] = None,
+        disable: Annotated[RemoteFilesDisableMode | None, DisableModeQueryParam] = None,
         writeable: Annotated[
-            Optional[bool], Query(description="Deprecated, please use `write_intent` instead.", deprecated=True)
+            bool | None, Query(description="Deprecated, please use `write_intent` instead.", deprecated=True)
         ] = None,
-        write_intent: Annotated[Optional[bool], WriteIntentQueryParam] = None,
-        limit: Annotated[Optional[int], LimitQueryParam] = None,
-        offset: Annotated[Optional[int], OffsetQueryParam] = None,
-        query: Annotated[Optional[str], SearchQueryParam] = None,
-        sort_by: Annotated[Optional[str], SortByQueryParam] = None,
+        write_intent: Annotated[bool | None, WriteIntentQueryParam] = None,
+        limit: Annotated[int | None, LimitQueryParam] = None,
+        offset: Annotated[int | None, OffsetQueryParam] = None,
+        query: Annotated[str | None, SearchQueryParam] = None,
+        sort_by: Annotated[str | None, SortByQueryParam] = None,
     ) -> AnyRemoteFilesListResponse:
         """Lists all remote files available to the user from different sources.
 
@@ -162,9 +161,9 @@ class FastAPIRemoteFiles:
     def plugins(
         self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
-        browsable_only: Annotated[Optional[bool], BrowsableQueryParam] = True,
-        include_kind: Annotated[Optional[list[PluginKind]], IncludeKindQueryParam] = None,
-        exclude_kind: Annotated[Optional[list[PluginKind]], ExcludeKindQueryParam] = None,
+        browsable_only: Annotated[bool | None, BrowsableQueryParam] = True,
+        include_kind: Annotated[list[PluginKind] | None, IncludeKindQueryParam] = None,
+        exclude_kind: Annotated[list[PluginKind] | None, ExcludeKindQueryParam] = None,
     ) -> FilesSourcePluginList:
         """Display plugin information for each of the gxfiles:// URI targets available."""
         return self.manager.get_files_source_plugins(

@@ -4,15 +4,10 @@ from abc import (
 )
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Type,
-    Union,
+    Literal,
 )
 
 from pydantic import BaseModel
-from typing_extensions import Literal
 
 from galaxy.tool_util_models.parameters import (
     create_job_internal_model,
@@ -36,19 +31,19 @@ from .model_validation import (
     validate_against_model,
 )
 
-HasToolParameters = Union[List[ToolParameterT], ToolParameterBundle]
+HasToolParameters = list[ToolParameterT] | ToolParameterBundle
 
 
 class ToolState(ABC):
-    input_state: Dict[str, Any]
+    input_state: dict[str, Any]
 
-    def __init__(self, input_state: Dict[str, Any]):
+    def __init__(self, input_state: dict[str, Any]):
         self.input_state = input_state
 
-    def _validate(self, pydantic_model: Type[BaseModel]) -> None:
+    def _validate(self, pydantic_model: type[BaseModel]) -> None:
         validate_against_model(pydantic_model, self.input_state)
 
-    def validate(self, parameters: HasToolParameters, name: Optional[str] = None) -> None:
+    def validate(self, parameters: HasToolParameters, name: str | None = None) -> None:
         base_model = self.parameter_model_for(parameters, name=name)
         if base_model is None:
             raise NotImplementedError(
@@ -62,7 +57,7 @@ class ToolState(ABC):
         """Get state representation of the inputs."""
 
     @classmethod
-    def parameter_model_for(cls, parameters: HasToolParameters, name: Optional[str] = None) -> Type[BaseModel]:
+    def parameter_model_for(cls, parameters: HasToolParameters, name: str | None = None) -> type[BaseModel]:
         bundle: ToolParameterBundle
         if isinstance(parameters, list):
             bundle = ToolParameterBundleModel(parameters=parameters)
@@ -72,7 +67,7 @@ class ToolState(ABC):
 
     @classmethod
     @abstractmethod
-    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: str | None = None) -> type[BaseModel]:
         """Return a model type for this tool state kind."""
 
 
@@ -80,7 +75,7 @@ class RelaxedRequestToolState(ToolState):
     state_representation: Literal["relaxed_request"] = "relaxed_request"
 
     @classmethod
-    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: str | None = None) -> type[BaseModel]:
         return create_relaxed_request_model(parameters, name)
 
 
@@ -88,7 +83,7 @@ class RequestToolState(ToolState):
     state_representation: Literal["request"] = "request"
 
     @classmethod
-    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: str | None = None) -> type[BaseModel]:
         return create_request_model(parameters, name)
 
 
@@ -96,7 +91,7 @@ class RequestInternalToolState(ToolState):
     state_representation: Literal["request_internal"] = "request_internal"
 
     @classmethod
-    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: str | None = None) -> type[BaseModel]:
         return create_request_internal_model(parameters, name)
 
 
@@ -104,7 +99,7 @@ class LandingRequestToolState(ToolState):
     state_representation: Literal["landing_request"] = "landing_request"
 
     @classmethod
-    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: str | None = None) -> type[BaseModel]:
         return create_landing_request_model(parameters, name)
 
 
@@ -112,7 +107,7 @@ class LandingRequestInternalToolState(ToolState):
     state_representation: Literal["landing_request_internal"] = "landing_request_internal"
 
     @classmethod
-    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: str | None = None) -> type[BaseModel]:
         return create_landing_request_internal_model(parameters, name)
 
 
@@ -120,7 +115,7 @@ class RequestInternalDereferencedToolState(ToolState):
     state_representation: Literal["request_internal_dereferenced"] = "request_internal_dereferenced"
 
     @classmethod
-    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: str | None = None) -> type[BaseModel]:
         return create_request_internal_dereferenced_model(parameters, name)
 
 
@@ -128,7 +123,7 @@ class JobInternalToolState(ToolState):
     state_representation: Literal["job_internal"] = "job_internal"
 
     @classmethod
-    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: str | None = None) -> type[BaseModel]:
         return create_job_internal_model(parameters, name)
 
 
@@ -136,7 +131,7 @@ class JobRuntimeToolState(ToolState):
     state_representation: Literal["job_runtime"] = "job_runtime"
 
     @classmethod
-    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: str | None = None) -> type[BaseModel]:
         return create_job_runtime_model(parameters, name)
 
 
@@ -144,7 +139,7 @@ class TestCaseToolState(ToolState):
     state_representation: Literal["test_case_xml"] = "test_case_xml"
 
     @classmethod
-    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: str | None = None) -> type[BaseModel]:
         return create_test_case_model(parameters, name)
 
 
@@ -152,7 +147,7 @@ class TestCaseJsonToolState(ToolState):
     state_representation: Literal["test_case_json"] = "test_case_json"
 
     @classmethod
-    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: str | None = None) -> type[BaseModel]:
         return create_test_case_json_model(parameters, name)
 
 
@@ -160,7 +155,7 @@ class WorkflowStepToolState(ToolState):
     state_representation: Literal["workflow_step"] = "workflow_step"
 
     @classmethod
-    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: str | None = None) -> type[BaseModel]:
         return create_workflow_step_model(parameters, name)
 
 
@@ -168,5 +163,5 @@ class WorkflowStepLinkedToolState(ToolState):
     state_representation: Literal["workflow_step_linked"] = "workflow_step_linked"
 
     @classmethod
-    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: str | None = None) -> type[BaseModel]:
         return create_workflow_step_linked_model(parameters, name)

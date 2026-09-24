@@ -41,6 +41,7 @@ export interface UploadRowModel {
     targetHistoryId?: string;
     toPosixLines: boolean;
     id?: string;
+    autoDecompress: boolean;
 }
 
 export const defaultModel: UploadRowModel = {
@@ -62,4 +63,5 @@ export const defaultModel: UploadRowModel = {
     spaceToTab: false,
     status: "init",
     toPosixLines: true,
+    autoDecompress: true,
 };

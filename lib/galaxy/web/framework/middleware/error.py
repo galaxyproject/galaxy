@@ -267,7 +267,7 @@ class CatchingIter:
             if not self.start_checker.response_started:
                 self.start_checker("500 Internal Server Error", [("content-type", "text/html")], exc_info)
 
-            return response
+            return response.encode("utf-8", errors="ignore")
 
     def close(self):
         # This should at least print something to stderr if the

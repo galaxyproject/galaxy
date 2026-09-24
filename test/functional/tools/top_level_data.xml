@@ -25,8 +25,11 @@ echo '${library.f2}' >> '$out2' ## cannot use just f2 here
     </outputs>
     <tests>
         <test>
-            <param name="f1" value="simple_line.txt" />
-            <param name="f2" value="This is a line of text." />
+            <conditional name="library">
+                <param name="type" value="no"/>
+                <param name="f1" value="simple_line.txt" />
+                <param name="f2" value="This is a line of text." />
+            </conditional>
             <output name="out1" file="simple_line.txt" />
             <output name="out2" file="simple_line.txt" />
         </test>

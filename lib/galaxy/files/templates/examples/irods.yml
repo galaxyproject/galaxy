@@ -1,0 +1,52 @@
+- id: irods
+  version: 0
+  name: iRODS
+  description: |
+    Use this template to connect an iRODS collection as a Galaxy file source for
+    importing and exporting datasets.
+
+    You need valid iRODS credentials and the target root collection path.
+  variables:
+    host:
+      label: iRODS host
+      type: string
+      help: Hostname of the iRODS server.
+    port:
+      label: iRODS port
+      type: integer
+      help: Port of the iRODS server.
+      default: 1247
+    zone:
+      label: iRODS zone
+      type: string
+      help: Zone used for authentication (for example teamZone).
+    username:
+      label: iRODS user
+      type: string
+      help: Username used to authenticate against iRODS.
+    subpath:
+      label: Subfolder path
+      type: string
+      optional: true
+      help: Optional subfolder under your personal directory (for example projectName).
+    writable:
+      label: Writable?
+      type: boolean
+      optional: true
+      help: Allow writing datasets back to iRODS.
+      default: false
+  secrets:
+    password:
+      label: Password
+      help: Password used to authenticate against iRODS.
+  configuration:
+    type: irods
+    host: "{{ variables.host }}"
+    port: "{{ variables.port }}"
+    username: "{{ variables.username }}"
+    password: "{{ secrets.password }}"
+    zone: "{{ variables.zone }}"
+    root: "/{{ variables.zone }}/home/{{ variables.username }}{% if variables.get('subpath') %}/{{ variables.get('subpath') | ensure_path_component }}{% endif %}"
+    timeout: 30
+    refresh_time: 300
+    writable: "{{ variables.writable }}"

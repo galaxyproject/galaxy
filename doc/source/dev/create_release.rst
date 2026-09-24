@@ -18,7 +18,7 @@ The command is shipped with the `galaxy-release-util <https://pypi.org/project/g
 
 `galaxy-release-util create-release` will:
 
- - update lib/galaxy/version.py
+ - update lib/galaxy/version/__init__.py
  - create HISTORY.rst entries for all packages
  - build all packages
  - stage and commit all changes
@@ -28,7 +28,7 @@ The command is shipped with the `galaxy-release-util <https://pypi.org/project/g
 
 The script has 2 important arguments:
 
-    - `--new-version` is the new version as it will appear for PyPI packages and in lib/galaxy/version.py
+    - `--new-version` is the new version as it will appear for PyPI packages and in lib/galaxy/version/__init__.py
     - `--last-commit` indicates the first commit from which changes are to be included in the changelog.
 
 Before starting make sure local branches (all release branches and dev) are up to date and clean, and all release branches have been merged forward,

@@ -144,6 +144,29 @@ gx_boolean:
     - parameter: "true"
     - parameter: {__class__: 'ConnectedValue3'}
 
+gx_numeric_zero_user:
+  request_valid:
+    - {}
+    - integer: 0
+      float: 0.0
+      optional_integer: 0
+      optional_float: 0.0
+    - optional_integer: null
+      optional_float: null
+  request_invalid:
+    - integer: null
+    - float: null
+    - integer: false
+    - float: false
+    - optional_integer: false
+    - optional_float: false
+  test_case_json_valid:
+    - {}
+    - integer: 0
+      float: 0.0
+      optional_integer: 0
+      optional_float: 0.0
+
 gx_boolean_user:
   request_valid:
     - parameter: True
@@ -344,6 +367,9 @@ gx_text_expression_validation:
   - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
   - parameter: ''
+  _json_schema_skip:
+    request_invalid: "expression validator uses AfterValidator"
+    workflow_step_linked_invalid: "expression validator uses AfterValidator"
 
 gx_text_empty_validation:
   request_valid:
@@ -365,6 +391,11 @@ gx_text_empty_validation:
   - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
   - parameter: ''
+  _json_schema_skip:
+    request_invalid: "empty_field validator uses AfterValidator"
+    job_internal_invalid: "empty_field validator uses AfterValidator"
+    job_runtime_invalid: "empty_field validator uses AfterValidator"
+    workflow_step_linked_invalid: "empty_field validator uses AfterValidator"
 
 gx_text:
   request_valid: &gx_text_request_valid
@@ -721,7 +752,7 @@ gx_select_multiple:
   request_valid:
   - parameter: ["--ex1"]
   - parameter: ["ex2"]
-  # ugh... but these aren't optional...
+  # multiple selects are optional by default
   - parameter: null
   - {}
   request_invalid:
@@ -746,7 +777,8 @@ gx_select_multiple:
   - parameter: ["--ex1"]
   - parameter: ["ex2"]
   - {}  # could come in linked...
-  # ... hmmm? this should maybe be invalid right?
+  # unrelated to optional-by-default: py_type_workflow_step is unconditionally optional,
+  # so this stays valid even for a required select. Still unclear it should be.
   - parameter: null
   job_internal_valid:
   - parameter: ["--ex1"]
@@ -772,12 +804,15 @@ gx_select_multiple:
   - parameter: "--ex1,ex2"
   - parameter: "--ex1"
   - parameter: ["--ex1"]
+  # optional-by-default reaches the test case states too
+  - parameter: null
   test_case_xml_invalid:
   - parameter: {}
   test_case_json_valid:
   # JSON test cases accept lists directly (no string splitting)
   - parameter: ["--ex1"]
   - parameter: ["--ex1", "ex2"]
+  - parameter: null
   test_case_json_invalid:
   - parameter: "--ex1"
   - parameter: {}
@@ -787,13 +822,11 @@ gx_select_multiple:
   - parameter: [{__class__: 'ConnectedValue'}]
   - {}
   - parameter: null
+  - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
   - parameter: ["Ex1"]
   - parameter: {}
   - parameter: 5
-  # might be wrong? I guess we would expect the semantic of this to do like a map-over
-  # but as far as I am aware that is not implemented https://github.com/galaxyproject/galaxy/issues/18541
-  - parameter: {__class__: 'ConnectedValue'}
 
 gx_select_multiple_optional:
   request_valid:
@@ -813,6 +846,27 @@ gx_select_no_options_validation:
   - {}
   job_runtime_valid:
   - parameter: "--ex1"
+  job_runtime_invalid:
+  - {}
+
+gx_select_multiple_no_options_validation:
+  request_valid:
+  - parameter: ["--ex1"]
+  # optional-by-default reaches the no_options validator - this is invalid for the
+  # single-select sibling gx_select_no_options_validation
+  - parameter: null
+  - {}
+  request_invalid:
+  - parameter: ["Ex1"]
+  - parameter: 5
+  job_internal_valid:
+  - parameter: ["--ex1"]
+  - parameter: null
+  job_internal_invalid:
+  - {}
+  job_runtime_valid:
+  - parameter: ["--ex1"]
+  - parameter: null
   job_runtime_invalid:
   - {}
 
@@ -877,19 +931,20 @@ gx_genomebuild_optional:
 
 gx_genomebuild_multiple:
   request_valid:
-  - parameter: ["hg18", hg19"]
-  # I don't love this but this is how the legacy API works and the tool parameters
-  # wrappers work this way also. Not sure how I would change this.
+  - parameter: ["hg18", "hg19"]
+  # multiple genomebuilds are optional by default, matching multiple selects -
+  # GenomeBuildParameter subclasses SelectToolParameter and inherits parse_optional(self.multiple)
   - parameter: null
+  - {}
   request_invalid:
   - parameter: 6
   job_internal_valid:
-  - parameter: ["hg18", hg19"]
+  - parameter: ["hg18", "hg19"]
   - parameter: null
   job_internal_invalid:
   - {}
   job_runtime_valid:
-  - parameter: ["hg18", hg19"]
+  - parameter: ["hg18", "hg19"]
   - parameter: null
   job_runtime_invalid:
   - {}
@@ -928,6 +983,10 @@ gx_directory_uri:
   - parameter: "justsomestring"
   - parameter: true
   - parameter: null
+  _json_schema_skip:
+    request_invalid: "regex validator uses AfterValidator"
+    job_internal_invalid: "regex validator uses AfterValidator"
+    job_runtime_invalid: "regex validator uses AfterValidator"
 
 gx_directory_uri_validation:
   request_valid:
@@ -944,6 +1003,9 @@ gx_directory_uri_validation:
   - parameter: "gxfiles://tooshort/index.json"
   - parameter: "gxfiles://mycoolsource/api/wrongex.js"
   - parameter: "gxfiles://mycoolsource/badexp.json"
+  _json_schema_skip:
+    request_invalid: "regex/length/expression validators use AfterValidator"
+    workflow_step_linked_invalid: "regex/length/expression validators use AfterValidator"
 
 gx_hidden:
   request_valid:
@@ -1051,6 +1113,9 @@ gx_hidden_validation:
   - parameter: "http://mycoolservice.com/index.json"
   - parameter: "http://mycoolservice.com/api/wrongex.js"
   - parameter: "http://mycoolservice.com/badexp.json"
+  _json_schema_skip:
+    request_invalid: "regex/length/expression validators use AfterValidator"
+    workflow_step_linked_invalid: "regex/length/expression validators use AfterValidator"
 
 gx_float:
   request_valid:
@@ -1099,6 +1164,8 @@ gx_float:
   test_case_xml_valid:
     - parameter: 5
     - parameter: 5.0
+    - parameter: "__Infinity__"
+    - parameter: "__-Infinity__"
     - {}
   test_case_xml_invalid:
     - parameter: null
@@ -1119,6 +1186,8 @@ gx_float:
     - parameter: null
     - parameter: 'foobar'
     - parameter: {__class__: 'ConnectedValue2'}
+  _json_schema_valid_skip:
+    test_case_xml_valid: "Galaxy infinity sentinels (__Infinity__, __-Infinity__) are strings not expressible as JSON Schema numbers"
 
 
 gx_float_optional:
@@ -1170,6 +1239,8 @@ gx_float_optional:
   test_case_xml_valid:
     - parameter: 5
     - parameter: 5.0
+    - parameter: "__Infinity__"
+    - parameter: "__-Infinity__"
     - {}
     - parameter: null
   test_case_xml_invalid:
@@ -1190,6 +1261,8 @@ gx_float_optional:
   workflow_step_linked_invalid:
     - parameter: 'foobar'
     - parameter: {__class__: 'ConnectedValue2'}
+  _json_schema_valid_skip:
+    test_case_xml_valid: "Galaxy infinity sentinels (__Infinity__, __-Infinity__) are strings not expressible as JSON Schema numbers"
 
 gx_float_validation_range:
   request_valid:
@@ -1215,10 +1288,12 @@ gx_color:
   request_valid:
    - parameter: '#aabbcc'
    - parameter: '#000000'
+   - parameter: '#abcd'
+   - parameter: 'red'
   request_invalid:
    - parameter: null
    - parameter: {}
-   - parameter: '#abcd'
+   - parameter: 'foobar'
   workflow_step_valid:
    - parameter: '#aabbcc'
    - parameter: '#000000'
@@ -1247,11 +1322,11 @@ gx_data:
    - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd}]}
    - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd, map_over_type: paired}]}
    - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd, map_over_type: null}]}
+   - parameter: {src: dce, id: abcdabcd}
   request_invalid:
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    # map_over_type only valid on hdca/dce, not hda/ldda
    - parameter: {__class__: "Batch", values: [{src: hda, id: abcdabcd, map_over_type: paired}]}
-   - parameter: {src: dce, id: abcdabcd}
    - parameter: {src: hda, id: 7}
    - parameter: {src: hdca, id: abcdabcd}
    - parameter: null
@@ -1287,6 +1362,7 @@ gx_data:
    - parameter: {__class__: "Batch", values: [{src: dce, id: 5, map_over_type: paired}]}
    - parameter: {src: hda, id: 5}
    - parameter: {src: hda, id: 0}
+   - parameter: {src: dce, id: 5}
   request_internal_dereferenced_invalid:
    # the difference between request internal and request internal dereferenced is that these have been converted
    # to datasets.
@@ -1368,11 +1444,11 @@ gx_data:
 
 
 gx_data_optional:
-  request_valid:
+  request_valid: &data_optional_request_valid
    - parameter: {src: hda, id: abcdabcd}
    - parameter: null
    - {}
-  request_invalid:
+  request_invalid: &data_optional_request_invalid
    - parameter: {src: hda, id: 5}
    - parameter: {src: hdca, id: abcdabcd}
    - parameter: {src: fooda, id: abcdabcd}
@@ -1381,11 +1457,11 @@ gx_data_optional:
    - parameter: true
    - parameter: 5
    - parameter: "5"
-  request_internal_valid:
+  request_internal_valid: &data_optional_request_internal_valid
    - parameter: {src: hda, id: 5}
    - parameter: null
    - {}
-  request_internal_invalid:
+  request_internal_invalid: &data_optional_request_internal_invalid
    - parameter: {src: hda, id: abcdabcd}
    - parameter: {src: hdca, id: abcdabcd}
    - parameter: {src: fooda, id: abcdabcd}
@@ -1394,39 +1470,55 @@ gx_data_optional:
    - parameter: true
    - parameter: 5
    - parameter: "5"
-  job_internal_valid:
+  job_internal_valid: &data_optional_job_internal_valid
    - parameter: null
    - parameter: {src: hda, id: 5}
-  job_internal_invalid:
+  job_internal_invalid: &data_optional_job_internal_invalid
    - {}
-  job_runtime_valid:
+  job_runtime_valid: &data_optional_job_runtime_valid
    - parameter: {class: File, basename: "f.txt", location: "step_input://0",
       path: "/tmp/f.txt", nameroot: "f", nameext: ".txt", format: "txt", size: 100}
    - parameter: null
-  job_runtime_invalid:
+  job_runtime_invalid: &data_optional_job_runtime_invalid
    - parameter: {src: hda, id: 7}
    - parameter: {class: File}
    - {}
-  workflow_step_valid:
+  workflow_step_valid: &data_optional_workflow_step_valid
    - {}
-  workflow_step_invalid:
+  workflow_step_invalid: &data_optional_workflow_step_invalid
    - {src: hda, id: abcdabcd}
    - {src: hda, id: 7}
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    - parameter: {__class__: 'ConnectedValue'}
-  workflow_step_linked_valid:
+  workflow_step_linked_valid: &data_optional_workflow_step_linked_valid
    - {}
    - parameter: {__class__: 'ConnectedValue'}
-  workflow_step_linked_invalid:
+  workflow_step_linked_invalid: &data_optional_workflow_step_linked_invalid
    - {src: hda, id: abcdabcd}
    - {src: hda, id: 7}
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    - parameter: {__class__: 'ConnectedValueX'}
-  test_case_xml_valid:
+  test_case_xml_valid: &data_optional_test_case_xml_valid
   - {}
   - parameter: {class: "File", path: "1.bed"}
-  test_case_xml_invalid:
+  test_case_xml_invalid: &data_optional_test_case_xml_invalid
   - parameter: {class: "NotAFile", path: "1.bed"}
+
+gx_hidden_data:
+  request_valid: *data_optional_request_valid
+  request_invalid: *data_optional_request_invalid
+  request_internal_valid: *data_optional_request_internal_valid
+  request_internal_invalid: *data_optional_request_internal_invalid
+  job_internal_valid: *data_optional_job_internal_valid
+  job_internal_invalid: *data_optional_job_internal_invalid
+  job_runtime_valid: *data_optional_job_runtime_valid
+  job_runtime_invalid: *data_optional_job_runtime_invalid
+  workflow_step_valid: *data_optional_workflow_step_valid
+  workflow_step_invalid: *data_optional_workflow_step_invalid
+  workflow_step_linked_valid: *data_optional_workflow_step_linked_valid
+  workflow_step_linked_invalid: *data_optional_workflow_step_linked_invalid
+  test_case_xml_valid: *data_optional_test_case_xml_valid
+  test_case_xml_invalid: *data_optional_test_case_xml_invalid
 
 gx_data_multiple:
   request_valid:
@@ -1554,9 +1646,16 @@ gx_data_multiple_optional:
 gx_data_collection:
   request_valid:
    - parameter: {src: hdca, id: abcdabcd}
+   # dce subcollection reference - e.g. rerunning a job that mapped over a list:paired
+   - parameter: {src: dce, id: abcdabcd}
+   # batching (multirun) over dce subcollections
+   - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd}]}
+   - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd, map_over_type: paired}]}
    - parameter: {class: "Collection", collection_type: "list", elements: []}
   request_invalid:
    - parameter: {src: hdca, id: 7}
+   # external request ids must be encoded strings, not decoded ints - for hdca and dce alike
+   - parameter: {src: dce, id: 7}
    - parameter: null
    - parameter: {src: fooda, id: abcdabcd}
    - parameter: {id: abcdabcd}
@@ -1568,9 +1667,12 @@ gx_data_collection:
    - parameter: {class: "CollectionX", collection_type: "list", elements: []}
   request_internal_valid:
    - parameter: {src: hdca, id: 5}
+   - parameter: {src: dce, id: 5}
+   - parameter: {__class__: "Batch", values: [{src: dce, id: 5}]}
    - parameter: {class: "Collection", collection_type: "list", elements: []}
   request_internal_invalid:
    - parameter: {src: hdca, id: abcdabcd}
+   - parameter: {src: dce, id: abcdabcd}
    - parameter: null
    - parameter: {src: fooda, id: abcdabcd}
    - parameter: {id: abcdabcd}
@@ -1582,6 +1684,7 @@ gx_data_collection:
    - parameter: {class: "CollectionX", collection_type: "list", elements: []}
   request_internal_dereferenced_valid:
    - parameter: {src: hdca, id: 5}
+   - parameter: {src: dce, id: 5}
   request_internal_dereferenced_invalid:
    - parameter: {src: hdca, id: abcdabcd}
    # At thsi point the collection should have been dereferenced into datasets,
@@ -1722,6 +1825,7 @@ gx_data_collection:
 gx_data_collection_optional:
   request_valid:
    - parameter: {src: hdca, id: abcdabcd}
+   - parameter: {src: dce, id: abcdabcd}
    - parameter: null
    - {}
   request_invalid:
@@ -1734,6 +1838,7 @@ gx_data_collection_optional:
    - parameter: {}
   request_internal_valid:
    - parameter: {src: hdca, id: 5}
+   - parameter: {src: dce, id: 5}
    - parameter: null
    - {}
   request_internal_invalid:
@@ -2244,6 +2349,29 @@ gx_drill_down_exact:
   - parameter: c
   - {}
 
+gx_drill_down_exact_optional:
+  request_valid:
+  - parameter: aa
+  - parameter: a
+  # explicitly optional - unlike gx_drill_down_exact these are accepted
+  - {}
+  - parameter: null
+  request_invalid:
+  - parameter: c
+  - parameter: {}
+  job_internal_valid:
+  - parameter: aa
+  - parameter: null
+  job_internal_invalid:
+  - parameter: c
+  - {}
+  job_runtime_valid:
+  - parameter: aa
+  - parameter: null
+  job_runtime_invalid:
+  - parameter: c
+  - {}
+
 gx_drill_down_exact_with_selection:
   request_valid:
   - parameter: aa
@@ -2307,6 +2435,11 @@ gx_data_column:
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: 3 }
   test_case_json_invalid:
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: "3" }
+  workflow_step_linked_valid:
+  - { ref_parameter: {__class__: ConnectedValue}, parameter: 0 }
+  - { ref_parameter: {__class__: ConnectedValue}, parameter: {__class__: ConnectedValue} }
+  workflow_step_linked_invalid:
+  - { ref_parameter: {__class__: ConnectedValue}, parameter: "0" }
 
 gx_data_column_optional:
   request_valid:
@@ -2353,6 +2486,11 @@ gx_data_column_multiple:
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: [1, 2, 3] }
   test_case_json_invalid:
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: "1,2,3" }
+  workflow_step_linked_valid:
+  - { ref_parameter: {__class__: ConnectedValue}, parameter: [0, 1] }
+  - { ref_parameter: {__class__: ConnectedValue}, parameter: {__class__: ConnectedValue} }
+  workflow_step_linked_invalid:
+  - { ref_parameter: {__class__: ConnectedValue}, parameter: "0,1" }
 
 gx_data_column_multiple_accept_default:
   request_valid:
@@ -4225,3 +4363,252 @@ cwl_directory:
    - parameter: true
    - parameter: 5
    - parameter: "5"
+
+gx_section_underscore_name:
+  request_valid:
+  - { __section_opts__: { param: "hello" } }
+  - {}
+  request_invalid:
+  - { __section_opts__: { param: "hello", not_a_param: "x" } }
+  workflow_step_valid:
+  - { __section_opts__: { param: "hello" } }
+  - {}
+  workflow_step_linked_valid:
+  - { __section_opts__: { param: "hello" } }
+  - { __section_opts__: { param: {__class__: ConnectedValue} } }
+  - {}
+
+gx_conditional_underscore_name:
+  request_valid:
+  - { __cond_opts__: { __selector__: "a", param_a: "test" } }
+  - { __cond_opts__: { __selector__: "b", param_b: "test" } }
+  - {}
+  request_invalid:
+  - { __cond_opts__: { __selector__: "not_a_or_b" } }
+  workflow_step_valid:
+  - { __cond_opts__: { __selector__: "a", param_a: "test" } }
+  - {}
+  workflow_step_linked_valid:
+  - { __cond_opts__: { __selector__: "a", param_a: "test" } }
+  - { __cond_opts__: { __selector__: "a", param_a: {__class__: ConnectedValue} } }
+  - {}
+
+gx_rules:
+  request_valid: &gx_rules_request_valid
+    - parameter:
+        rules:
+          - type: add_column_regex
+            target_column: 0
+            expression: '(o)+'
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+    - parameter:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+          - type: add_filter_regex
+            target_column: 0
+            invert: false
+            expression: '^sample'
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+          - type: paired_identifier
+            columns: [2]
+    - parameter:
+        rules:
+          - type: sort
+            target_column: 0
+            numeric: false
+        mapping: []
+    - parameter:
+        rules:
+          - type: add_filter_compare
+            target_column: 0
+            value: 13.5
+            compare_type: less_than
+        mapping: []
+    - parameter:
+        rules:
+          - type: add_column_substr
+            target_column: 0
+            length: 3
+            substr_type: keep_prefix
+        mapping:
+          - type: paired_or_unpaired_identifier
+            columns: [0]
+    - parameter:
+        rules:
+          - type: add_column_value
+            value: "moo"
+          - type: remove_columns
+            target_columns: [0, 1]
+          - type: swap_columns
+            target_column_0: 0
+            target_column_1: 1
+          - type: split_columns
+            target_columns_0: [0]
+            target_columns_1: [1]
+          - type: add_column_rownum
+            start: 1
+          - type: add_column_basename
+            target_column: 0
+          - type: add_column_concatenate
+            target_column_0: 0
+            target_column_1: 1
+          - type: add_column_group_tag_value
+            value: where
+            default_value: barn
+          - type: add_filter_count
+            count: 1
+            invert: false
+            which: first
+          - type: add_filter_empty
+            target_column: 0
+            invert: false
+          - type: add_filter_matches
+            target_column: 0
+            invert: false
+            value: "cow"
+          - type: add_column_from_sample_sheet_index
+            value: 0
+        mapping: []
+    - parameter:
+        rules:
+          - type: add_column_regex
+            target_column: 0
+            expression: '(f)(o)'
+            group_count: 2
+            replacement: null
+            allow_unmatched: true
+        mapping: []
+  request_invalid: &gx_rules_request_invalid
+    # missing entirely
+    - {}
+    # null not allowed
+    - parameter: null
+    # not a dict
+    - parameter: "rules"
+    - parameter: 5
+    # missing required fields
+    - parameter: {rules: []}
+    - parameter: {mapping: []}
+    # invalid rule type
+    - parameter:
+        rules:
+          - type: bogus_rule_type
+        mapping: []
+    # rule missing required keys
+    - parameter:
+        rules:
+          - type: add_column_regex
+            target_column: 0
+        mapping: []
+    # invalid regex expression
+    - parameter:
+        rules:
+          - type: add_column_regex
+            target_column: 0
+            expression: '(unclosed'
+        mapping: []
+    # invalid mapping type
+    - parameter:
+        rules:
+          - type: sort
+            target_column: 0
+            numeric: false
+        mapping:
+          - type: bogus_mapping
+            columns: [0]
+    # invalid substr_type enum
+    - parameter:
+        rules:
+          - type: add_column_substr
+            target_column: 0
+            length: 3
+            substr_type: invalid_type
+        mapping: []
+    # invalid compare_type enum
+    - parameter:
+        rules:
+          - type: add_filter_compare
+            target_column: 0
+            value: 13
+            compare_type: invalid_compare
+        mapping: []
+    # invalid which enum
+    - parameter:
+        rules:
+          - type: add_filter_count
+            count: 1
+            invert: false
+            which: middle
+        mapping: []
+    # string where int expected
+    - parameter:
+        rules:
+          - type: sort
+            target_column: "zero"
+            numeric: false
+        mapping: []
+    # ConnectedValue not allowed in request
+    - parameter: {__class__: 'ConnectedValue'}
+  request_internal_valid:
+    *gx_rules_request_valid
+  request_internal_invalid:
+    *gx_rules_request_invalid
+  request_internal_dereferenced_valid:
+    *gx_rules_request_valid
+  request_internal_dereferenced_invalid:
+    *gx_rules_request_invalid
+  job_internal_valid:
+    - parameter:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+  job_internal_invalid:
+    - {}
+    - parameter: null
+  workflow_step_valid:
+    - parameter:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+    # rules not required in workflow_step (connected params absent)
+    - {}
+  workflow_step_invalid:
+    - parameter: "not_a_rules_dict"
+    - parameter: 5
+    - parameterx:
+        rules: []
+        mapping: []
+  workflow_step_linked_valid:
+    - parameter:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+        mapping:
+          - type: list_identifiers
+            columns: [1]
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+    - parameter: null
+    - parameter: "not_a_rules_dict"
+    - parameter: {__class__: 'ConnectedValue2'}
+  _json_schema_skip:
+    # index 8 is the unclosed-regex case: add_column_regex expression validity is an
+    # AfterValidator (regex compilation) not representable in JSON Schema. Every other
+    # invalid entry in these combos is rejected by the generated schema, so skip only [8].
+    request_invalid:
+      8: "add_column_regex expression validator uses AfterValidator"
+    request_internal_invalid:
+      8: "add_column_regex expression validator uses AfterValidator"
+    request_internal_dereferenced_invalid:
+      8: "add_column_regex expression validator uses AfterValidator"

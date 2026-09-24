@@ -3,15 +3,15 @@
         <div v-if="hasCitations" class="mt-2 mb-4">
             <Heading h2 separator bold size="sm">
                 <span v-localize>References</span>
-                <b-button
-                    v-b-tooltip.hover
+                <GButton
+                    v-g-tooltip.hover
                     title="Copy all references as BibTeX"
-                    style="cursor: pointer"
-                    variant="link"
-                    size="sm"
+                    transparent
+                    size="small"
+                    icon-only
                     @click="copyBibtex">
                     <FontAwesomeIcon :icon="faCopy" />
-                </b-button>
+                </GButton>
             </Heading>
             <CitationItem
                 v-for="(citation, index) in citations"
@@ -38,11 +38,11 @@
                 <template v-if="xref.type == 'bio.tools'">
                     bio.tools: {{ xref.value }} (<a :href="`https://bio.tools/${xref.value}`" target="_blank"
                         >bio.tools
-                        <FontAwesomeIcon v-b-tooltip.hover title="Visit bio.tools page" :icon="faExternalLinkAlt" /> </a
+                        <FontAwesomeIcon v-g-tooltip.hover title="Visit bio.tools page" :icon="faExternalLinkAlt" /> </a
                     >) (<a :href="`https://openebench.bsc.es/tool/${xref.value}`" target="_blank"
                         >OpenEBench
                         <FontAwesomeIcon
-                            v-b-tooltip.hover
+                            v-g-tooltip.hover
                             title="Visit OpenEBench page"
                             :icon="faExternalLinkAlt" /> </a
                     >)
@@ -70,6 +70,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getCitations } from "@/components/Citation/services";
 import { copy } from "@/utils/clipboard";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import CitationItem from "@/components/Citation/CitationItem.vue";
 import Heading from "@/components/Common/Heading.vue";
 import License from "@/components/License/License.vue";
@@ -82,6 +83,7 @@ export default {
         License,
         Creators,
         FontAwesomeIcon,
+        GButton,
     },
     props: {
         id: {

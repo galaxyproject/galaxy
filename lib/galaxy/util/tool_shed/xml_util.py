@@ -1,10 +1,6 @@
 import logging
 import os
 import tempfile
-from typing import (
-    Optional,
-    Tuple,
-)
 
 from galaxy.util import (
     Element,
@@ -26,7 +22,7 @@ def create_and_write_tmp_file(elem: Element) -> str:
     return tmp_filename
 
 
-def parse_xml(file_name: StrPath, check_exists=True) -> Tuple[Optional[ElementTree], str]:
+def parse_xml(file_name: StrPath, check_exists=True) -> tuple[ElementTree | None, str]:
     """Returns a parsed xml tree with comments intact."""
     error_message = ""
     if check_exists and not os.path.exists(file_name):

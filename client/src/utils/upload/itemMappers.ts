@@ -4,6 +4,7 @@
  */
 
 import type {
+    CompositeFileItem,
     LibraryDatasetItem,
     LocalFileItem,
     PasteContentItem,
@@ -11,6 +12,8 @@ import type {
     RemoteFileItem,
 } from "@/components/Panels/Upload/types/uploadItem";
 import type {
+    CompositeFileUploadItem,
+    CompositeSlotQueueItem,
     LibraryDatasetUploadItem,
     LocalFileUploadItem,
     PastedContentUploadItem,
@@ -31,6 +34,7 @@ export function mapToLocalFileUpload(item: LocalFileItem, targetHistoryId: strin
         extension: item.extension,
         spaceToTab: item.spaceToTab,
         toPosixLines: item.toPosixLines,
+        autoDecompress: item.autoDecompress,
         deferred: false,
         fileData: item.file,
     };
@@ -49,6 +53,7 @@ export function mapToPasteContentUpload(item: PasteContentItem, targetHistoryId:
         extension: item.extension,
         spaceToTab: item.spaceToTab,
         toPosixLines: item.toPosixLines,
+        autoDecompress: item.autoDecompress,
         deferred: false,
         content: item.content,
     };
@@ -67,8 +72,9 @@ export function mapToPasteUrlUpload(item: PasteUrlItem, targetHistoryId: string)
         extension: item.extension,
         spaceToTab: item.spaceToTab,
         toPosixLines: item.toPosixLines,
+        autoDecompress: item.autoDecompress,
         deferred: item.deferred,
-        url: item.url,
+        url: item.url.trim(),
     };
 }
 
@@ -85,6 +91,7 @@ export function mapToRemoteFileUpload(item: RemoteFileItem, targetHistoryId: str
         extension: item.extension,
         spaceToTab: item.spaceToTab,
         toPosixLines: item.toPosixLines,
+        autoDecompress: item.autoDecompress,
         deferred: item.deferred,
         url: item.url,
         hashes: item.hashes,
@@ -104,10 +111,78 @@ export function mapToLibraryDatasetUpload(item: LibraryDatasetItem, targetHistor
         extension: item.extension,
         spaceToTab: false, // Not applicable to library imports
         toPosixLines: false, // Not applicable to library imports
+        autoDecompress: false, // Not applicable to library imports
         libraryId: item.libraryId,
         folderId: item.folderId,
         lddaId: item.lddaId,
         url: item.url,
         deferred: false,
+    };
+}
+
+/**
+ * Maps a CompositeFileItem to a CompositeFileUploadItem for the upload queue.
+ * Each slot is converted to a serializable CompositeSlotQueueItem; File objects
+ * survive in memory but are lost on page refresh (same as local-file uploads).
+ */
+export function mapToCompositeFileUpload(item: CompositeFileItem, targetHistoryId: string): CompositeFileUploadItem {
+    const slots: CompositeSlotQueueItem[] = item.slots.map((slot) => {
+        if (slot.mode === "local") {
+            return {
+                slotName: slot.slotName,
+                src: "files" as const,
+                file: slot.file,
+                optional: slot.optional,
+                description: slot.description || undefined,
+                displayName: slot.file?.name ?? "Unnamed file",
+                fileSize: slot.fileSize,
+            };
+        } else if (slot.mode === "url") {
+            return {
+                slotName: slot.slotName,
+                src: "url" as const,
+                url: slot.url,
+                optional: slot.optional,
+                description: slot.description || undefined,
+                displayName: slot.url,
+            };
+        } else if (slot.mode === "remote") {
+            return {
+                slotName: slot.slotName,
+                src: "url" as const,
+                url: slot.remoteUri,
+                optional: slot.optional,
+                description: slot.description || undefined,
+                displayName: slot.remoteName,
+                fileSize: slot.fileSize,
+            };
+        } else {
+            return {
+                slotName: slot.slotName,
+                src: "paste" as const,
+                content: slot.content,
+                optional: slot.optional,
+                description: slot.description || undefined,
+                displayName: "Pasted content",
+                fileSize: new Blob([slot.content]).size,
+            };
+        }
+    });
+
+    const totalSize = slots.reduce((sum, s) => sum + (s.fileSize ?? 0), 0);
+    const displayName = item.name.trim() || `Unnamed ${item.extension} composite`;
+
+    return {
+        uploadMode: "composite-file" as const,
+        name: displayName,
+        size: totalSize,
+        targetHistoryId,
+        dbkey: item.dbkey,
+        extension: item.extension,
+        spaceToTab: false,
+        toPosixLines: false,
+        autoDecompress: false,
+        deferred: false,
+        slots,
     };
 }

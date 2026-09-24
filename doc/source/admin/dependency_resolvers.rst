@@ -294,7 +294,7 @@ mapping_files
 
 skip_availability_check
     Set to ``true`` to skip filtering module dependencies using ``module avail`` and attempt to load each
-    module listed in the depedencies (default: ``false``).
+    module listed in the dependencies (default: ``false``).
     This setting should be used when during dependency resolution modules are not listed in ``module avail``,
     but can be expected to be present when using ``module load`` in the job script,  such as child modules
     in hierarchical module systems. Note: the order in which dependencies are listed could be important.
@@ -342,7 +342,7 @@ default_indicator
 
 skip_availability_check
     Set to ``true`` to skip filtering module dependencies using ``module avail`` and attempt to load each
-    module listed in the depedencies (default: ``false``).
+    module listed in the dependencies (default: ``false``).
     This setting should be used when during dependency resolution modules are not listed in ``module avail``,
     but can be expected to be present when using ``module load`` in the job script,  such as child modules
     in hierarchical module systems. Note: the order in which dependencies are listed could be important.
@@ -376,6 +376,6 @@ It is highly experimental, undocumented, and unmaintained, and likely to be drop
 Brewed Tool Shed Package Resolver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``brewed_tool_shed`` dependency resolver was an attmept to resolve tool shed packages that had been auto converted
+The ``brewed_tool_shed`` dependency resolver was an attempt to resolve tool shed packages that had been auto converted
 to the tool shed. It is highly experimental, undocumented, unmaintained, and will almost certainly be removed from the
 code base.

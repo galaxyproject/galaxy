@@ -1,8 +1,6 @@
 import urllib.parse
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 
 from galaxy_test.api._framework import ApiTestCase
@@ -336,8 +334,8 @@ class TestHistoryContentsApi(ApiTestCase):
         history_id: str,
         content_id: str,
         item_type: str,
-        expected_view: Optional[str] = None,
-        expected_keys: Optional[list[str]] = None,
+        expected_view: str | None = None,
+        expected_keys: list[str] | None = None,
     ):
         view = f"&view={expected_view}" if expected_view else ""
         keys = f"&keys={','.join(expected_keys)}" if expected_keys else ""
@@ -480,7 +478,7 @@ class TestHistoryContentsApi(ApiTestCase):
         hda = self.dataset_populator.get_history_dataset_details(history_id=history_id, content_id=dataset["id"])
         assert hda["name"] != dataset["name"]
         with self._different_user():
-            exception: Union[Exception, None] = None
+            exception: Exception | None = None
             try:
                 self.dataset_populator.rename_dataset(dataset["id"])
             except AssertionError as e:
@@ -498,7 +496,7 @@ class TestHistoryContentsApi(ApiTestCase):
         )
         assert hdca["name"] != dataset_collection["name"]
         with self._different_user():
-            exception: Union[Exception, None] = None
+            exception: Exception | None = None
             try:
                 self.dataset_populator.rename_collection(dataset_collection_id)
             except AssertionError as e:
@@ -595,7 +593,7 @@ class TestHistoryContentsApi(ApiTestCase):
 
     def test_delete_anon(self):
         with self._different_user(anon=True):
-            history_id = self._get(urllib.parse.urljoin(self.url, "history/current_history_json")).json()["id"]
+            history_id = self._get_current_history_id()
             hda1 = self.dataset_populator.new_dataset(history_id)
             self.dataset_populator.wait_for_history(history_id)
             assert str(self.__show(history_id, hda1).json()["deleted"]).lower() == "false"
@@ -1041,6 +1039,130 @@ class TestHistoryContentsApi(ApiTestCase):
         collection = contents_response.json()[0]
         assert sorted(collection["elements_datatypes"]) == sorted(expected_datatypes)
 
+    def test_index_filter_by_extension(self, history_id):
+        self.dataset_populator.new_dataset(history_id, file_type="bed", wait=True)
+        self.dataset_populator.new_dataset(history_id, file_type="bed", wait=True)
+        self.dataset_populator.new_dataset(history_id, file_type="tabular", wait=True)
+        self.dataset_populator.new_dataset(history_id, file_type="txt", wait=True)
+
+        # extension-eq (single value): only matching HDAs
+        response = self._get(f"histories/{history_id}/contents?v=dev&q=extension-eq&qv=bed").json()
+        bed_ids = {item["id"] for item in response}
+        assert len(bed_ids) == 2
+
+        # extension-in (multiple values, comma-separated)
+        response = self._get(f"histories/{history_id}/contents?v=dev&q=extension-in&qv=bed,tabular").json()
+        ids = {item["id"] for item in response}
+        assert len(ids) == 3
+
+    def test_index_filter_collections_by_extension(self, history_id):
+        all_bed = [
+            {"name": "a", "src": "pasted", "paste_content": "chr1\t1\t10", "ext": "bed"},
+            {"name": "b", "src": "pasted", "paste_content": "chr1\t1\t10", "ext": "bed"},
+        ]
+        self._upload_collection_list_with_elements(history_id, "all_bed", all_bed)
+        mixed = [
+            {"name": "a", "src": "pasted", "paste_content": "chr1\t1\t10", "ext": "bed"},
+            {"name": "b", "src": "pasted", "paste_content": "abc", "ext": "txt"},
+        ]
+        self._upload_collection_list_with_elements(history_id, "mixed", mixed)
+        all_txt = [
+            {"name": "a", "src": "pasted", "paste_content": "abc", "ext": "txt"},
+            {"name": "b", "src": "pasted", "paste_content": "abc", "ext": "txt"},
+        ]
+        self._upload_collection_list_with_elements(history_id, "all_txt", all_txt)
+
+        # extension-eq matches only the all-bed collection (mixed has a non-bed leaf)
+        response = self._get(
+            f"histories/{history_id}/contents?v=dev"
+            "&q=history_content_type-eq&qv=dataset_collection"
+            "&q=extension-eq&qv=bed"
+        ).json()
+        names = {c["name"] for c in response}
+        assert names == {"all_bed"}, names
+
+        # extension-in with bed + txt accepts both the bed and txt collections AND the mixed
+        # collection (all of its leaves are within the acceptable set).
+        response = self._get(
+            f"histories/{history_id}/contents?v=dev"
+            "&q=history_content_type-eq&qv=dataset_collection"
+            "&q=extension-in&qv=bed,txt"
+        ).json()
+        names = {c["name"] for c in response}
+        assert names == {"all_bed", "mixed", "all_txt"}, names
+
+    def test_index_filter_by_name_unique_sentinel(self, history_id):
+        """Real-DB integration coverage for ``History.paginated_active_visible_datasets``
+        name-search path — a unique sentinel name must return exactly one HDA
+        (no substring leakage).
+        """
+        for i in range(20):
+            self.dataset_populator.new_dataset(history_id, name=f"Sample {i}", wait=True)
+        sentinel = "unique-zebra-xyz"
+        self.dataset_populator.new_dataset(history_id, name=sentinel, wait=True)
+
+        response = self._get(f"histories/{history_id}/contents?v=dev&q=name-contains&qv=zebra").json()
+        assert len(response) == 1, response
+        assert response[0]["name"] == sentinel
+
+    def test_index_filter_by_hid_exact(self, history_id):
+        """``q=hid-eq`` returns the HDA with the requested hid — covers the
+        numeric branch of ``paginated_active_visible_datasets.search``.
+        """
+        for i in range(5):
+            self.dataset_populator.new_dataset(history_id, name=f"D{i}", wait=True)
+
+        response = self._get(f"histories/{history_id}/contents?v=dev&q=hid-eq&qv=3").json()
+        assert len(response) == 1, response
+        assert response[0]["hid"] == 3
+
+    def test_index_filter_collections_by_extension_nested(self, history_id):
+        """Depth-arbitrary regression test for the ``extension`` HDCA filter
+        (recursive CTE in ``History._hdca_leaf_hda_descendants_cte``). A
+        ``list:paired`` collection nests one level deeper than a flat list —
+        verify the recursive walk still catches non-matching leaves.
+        """
+        all_bed_response = self.dataset_collection_populator.upload_collection(
+            history_id,
+            "list:paired",
+            elements=[
+                {
+                    "name": "p0",
+                    "elements": [
+                        {"src": "pasted", "paste_content": "chr1\t1\t10", "name": "forward", "ext": "bed"},
+                        {"src": "pasted", "paste_content": "chr1\t1\t10", "name": "reverse", "ext": "bed"},
+                    ],
+                },
+            ],
+            name="lp_all_bed",
+            wait=True,
+        )
+        self._assert_status_code_is_ok(all_bed_response)
+        mixed_response = self.dataset_collection_populator.upload_collection(
+            history_id,
+            "list:paired",
+            elements=[
+                {
+                    "name": "p0",
+                    "elements": [
+                        {"src": "pasted", "paste_content": "chr1\t1\t10", "name": "forward", "ext": "bed"},
+                        {"src": "pasted", "paste_content": "abc", "name": "reverse", "ext": "txt"},
+                    ],
+                },
+            ],
+            name="lp_mixed",
+            wait=True,
+        )
+        self._assert_status_code_is_ok(mixed_response)
+
+        response = self._get(
+            f"histories/{history_id}/contents?v=dev"
+            "&q=history_content_type-eq&qv=dataset_collection"
+            "&q=extension-eq&qv=bed"
+        ).json()
+        names = {c["name"] for c in response}
+        assert names == {"lp_all_bed"}, names
+
     @skip_without_tool("cat1")
     def test_cannot_run_tools_on_immutable_histories(self, history_id):
         create_response = self.dataset_collection_populator.create_pair_in_history(
@@ -1052,7 +1174,7 @@ class TestHistoryContentsApi(ApiTestCase):
         }
 
         # once we purge the history, it becomes immutable
-        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        self.dataset_populator.purge_history(history_id)
 
         with self.assertRaisesRegex(AssertionError, "History is immutable"):
             self.dataset_populator.run_tool("cat1", inputs=inputs, history_id=history_id)
@@ -1061,7 +1183,7 @@ class TestHistoryContentsApi(ApiTestCase):
         hdca = self._create_pair_collection(history_id)
 
         # once we purge the history, it becomes immutable
-        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        self.dataset_populator.purge_history(history_id)
 
         body = dict(name="newnameforpair")
         update_response = self._put(
@@ -1074,7 +1196,7 @@ class TestHistoryContentsApi(ApiTestCase):
         hda1 = self._wait_for_new_hda(history_id)
 
         # once we purge the history, it becomes immutable
-        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        self.dataset_populator.purge_history(history_id)
 
         update_response = self._update(history_id, hda1["id"], dict(name="Updated Name"))
         self._assert_status_code_is(update_response, 403)
@@ -1689,15 +1811,15 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
     def _get_hidden_items_from_history_contents(self, history_contents) -> list[Any]:
         return [content for content in history_contents if not content["visible"]]
 
-    def _get_collection_with_id_from_history_contents(self, history_contents, collection_id: str) -> Optional[Any]:
+    def _get_collection_with_id_from_history_contents(self, history_contents, collection_id: str) -> Any | None:
         return self._get_item_with_id_from_history_contents(history_contents, "dataset_collection", collection_id)
 
-    def _get_dataset_with_id_from_history_contents(self, history_contents, dataset_id: str) -> Optional[Any]:
+    def _get_dataset_with_id_from_history_contents(self, history_contents, dataset_id: str) -> Any | None:
         return self._get_item_with_id_from_history_contents(history_contents, "dataset", dataset_id)
 
     def _get_item_with_id_from_history_contents(
         self, history_contents, history_content_type: str, dataset_id: str
-    ) -> Optional[Any]:
+    ) -> Any | None:
         for item in history_contents:
             if item["history_content_type"] == history_content_type and item["id"] == dataset_id:
                 return item

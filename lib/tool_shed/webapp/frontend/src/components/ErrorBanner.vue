@@ -24,7 +24,7 @@ watch(
     () => props.error,
     () => {
         show.value = true
-    }
+    },
 )
 const effectiveShow = computed(() => props.error && show.value)
 </script>

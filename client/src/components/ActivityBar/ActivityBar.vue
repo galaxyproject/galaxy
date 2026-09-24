@@ -3,27 +3,32 @@ import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faBell, faEllipsisH, faUserCog } from "@fortawesome/free-solid-svg-icons";
 import { watchImmediate } from "@vueuse/core";
 import { storeToRefs } from "pinia";
-import { computed, type Ref, ref } from "vue";
-import { useRoute } from "vue-router/composables";
+import { computed, type Ref, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router/composables";
 import draggable from "vuedraggable";
 
 import { useConfig } from "@/composables/config";
+import { useActiveContext } from "@/composables/useActiveContext";
 import { convertDropData } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 import type { Activity } from "@/stores/activityStoreTypes";
+import { useChatStore } from "@/stores/chatStore";
 import { useEventStore } from "@/stores/eventStore";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
-import ChatHistoryPanel from "../ChatGXY/ChatHistoryPanel.vue";
+import ChatHistoryPanel from "../GalaxyAI/ChatHistoryPanel.vue";
 import InvocationsPanel from "../Panels/InvocationsPanel.vue";
+import ActivityBarHeader from "./ActivityBarHeader.vue";
+import ActivityBarSeparator from "./ActivityBarSeparator.vue";
 import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
 import AdminPanel from "@/components/admin/AdminPanel.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import HistoryGraphPanel from "@/components/Panels/HistoryGraphPanel.vue";
 import InteractiveToolsPanel from "@/components/Panels/InteractiveToolsPanel.vue";
 import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
@@ -39,6 +44,7 @@ const props = withDefaults(
         activityBarId?: string;
         specialActivities?: Activity[];
         exitActivity?: Activity;
+        runActivity?: Activity;
         showAdmin?: boolean;
         optionsTitle?: string;
         optionsTooltip?: string;
@@ -47,12 +53,15 @@ const props = withDefaults(
         optionsSearchPlaceholder?: string;
         initialActivity?: string;
         hidePanel?: boolean;
+        headerIcon?: IconDefinition;
+        headerTitle?: string;
     }>(),
     {
         defaultActivities: undefined,
         activityBarId: "default",
         specialActivities: () => [],
         exitActivity: undefined,
+        runActivity: undefined,
         showAdmin: true,
         optionsTitle: "More",
         optionsHeading: "Additional Activities",
@@ -61,6 +70,8 @@ const props = withDefaults(
         optionsTooltip: "View additional activities",
         initialActivity: undefined,
         hidePanel: false,
+        headerIcon: undefined,
+        headerTitle: undefined,
     },
 );
 
@@ -70,7 +81,18 @@ const DRAG_DELAY = 50;
 const { config, isConfigLoaded } = useConfig();
 
 const route = useRoute();
+const router = useRouter();
 const userStore = useUserStore();
+const chatStore = useChatStore();
+const { activeContext } = useActiveContext();
+
+// Notebook context must never use center mode — the chat panel floats alongside
+// the page editor, so force right-panel whenever we enter a notebook context.
+watch(activeContext, (ctx) => {
+    if (ctx?.contextType === "notebook" && chatStore.isCenterMode) {
+        chatStore.setLocation("right");
+    }
+});
 
 const eventStore = useEventStore();
 const activityStore = useActivityStore(props.activityBarId);
@@ -93,6 +115,13 @@ watchImmediate(
     },
 );
 
+watchImmediate(
+    () => props.specialActivities,
+    (specials) => {
+        activityStore.setSpecialPanelActivityIds(specials.filter((a) => a.panel).map((a) => a.id));
+    },
+);
+
 const { isAdmin, isAnonymous } = storeToRefs(userStore);
 
 const emit = defineEmits<{
@@ -112,7 +141,7 @@ const activities = computed({
             if (activity.id === "interactivetools" && !config.value?.interactivetools_enable) {
                 return false;
             }
-            if (activity.id === "chatgxy" && !config.value?.llm_api_configured) {
+            if (activity.id === "galaxyai" && !config.value?.llm_api_configured) {
                 return false;
             }
             return true;
@@ -124,7 +153,7 @@ const activities = computed({
             (activity) =>
                 (activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value) ||
                 (activity.id === "interactivetools" && !config.value?.interactivetools_enable) ||
-                (activity.id === "chatgxy" && !config.value?.llm_api_configured),
+                (activity.id === "galaxyai" && !config.value?.llm_api_configured),
         );
         storeActivities.value = [...newActivities, ...filteredOut];
     },
@@ -158,6 +187,9 @@ function isActiveSideBar(menuKey: string) {
  * Checks if an activity that has a panel should have the `is-active` prop
  */
 function panelActivityIsActive(activity: Activity) {
+    if (activity.id === "galaxyai" && !chatStore.isCenterMode && chatStore.chatVisible) {
+        return true;
+    }
     return isActiveSideBar(activity.id) || isActiveRoute(activity.to);
 }
 
@@ -217,6 +249,34 @@ function toggleSidebar(toggle: string = "", to: string | null = null) {
     activityStore.toggleSideBar(toggle);
 }
 
+function onChatGxyClick() {
+    // On notebook routes, always use the right panel — never navigate to center.
+    if (activeContext.value?.contextType === "notebook") {
+        if (chatStore.isCenterMode) {
+            chatStore.setLocation("right");
+        }
+        chatStore.toggleChat();
+        if (isActiveSideBar("galaxyai")) {
+            toggleSidebar("galaxyai");
+        }
+        return;
+    }
+
+    if (chatStore.isCenterMode) {
+        toggleSidebar("galaxyai");
+        if (!route.path.startsWith("/galaxyai")) {
+            router.push("/galaxyai");
+        }
+    } else {
+        chatStore.toggleChat();
+
+        // if we click the activity, in not center mode, and the sidebar is open, we close it as well
+        if (isActiveSideBar("galaxyai")) {
+            toggleSidebar("galaxyai");
+        }
+    }
+}
+
 function onActivityClicked(activity: Activity) {
     if (activity.click) {
         emit("activityClicked", activity.id);
@@ -245,6 +305,11 @@ defineExpose({
             @dragover.prevent="onDragOver"
             @dragenter.prevent="onDragEnter"
             @dragleave.prevent="onDragLeave">
+            <ActivityBarHeader
+                :icon="props.headerIcon"
+                :title="props.headerTitle"
+                :is-side-bar-open="isSideBarOpen"
+                @close-sidebar="activityStore.closeSideBar" />
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
                     v-model="activities"
@@ -282,11 +347,23 @@ defineExpose({
                                 :to="activity.to"
                                 @click="toggleSidebar(activity.id, activity.to)" />
                             <ActivityItem
+                                v-else-if="activity.id === 'galaxyai'"
+                                :id="`${activity.id}`"
+                                :key="activity.id"
+                                :activity-bar-id="props.activityBarId"
+                                :icon="activity.icon"
+                                :is-active="panelActivityIsActive(activity)"
+                                :title="activity.title"
+                                :tooltip="activity.tooltip"
+                                @click="onChatGxyClick" />
+                            <ActivityItem
                                 v-else-if="activity.panel"
                                 :id="`${activity.id}`"
                                 :key="activity.id"
                                 :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
+                                :indicator="activity.indicator"
+                                :indicator-variant="activity.indicatorVariant"
                                 :is-active="panelActivityIsActive(activity)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
@@ -311,7 +388,8 @@ defineExpose({
                     </div>
                 </draggable>
             </b-nav>
-            <b-nav v-if="!isAnonymous" vertical class="activity-footer flex-nowrap p-1">
+            <ActivityBarSeparator />
+            <b-nav v-if="!isAnonymous" vertical class="flex-nowrap p-1">
                 <template v-for="activity in props.specialActivities">
                     <ActivityItem
                         v-if="activity.panel"
@@ -369,6 +447,17 @@ defineExpose({
                     variant="danger"
                     @click="toggleSidebar('admin')" />
                 <ActivityItem
+                    v-if="props.runActivity"
+                    :id="`${props.runActivity.id}`"
+                    :activity-bar-id="props.activityBarId"
+                    :icon="props.runActivity.icon"
+                    :indicator="props.runActivity.indicator"
+                    :indicator-variant="props.runActivity.indicatorVariant"
+                    :title="props.runActivity.title"
+                    :tooltip="props.runActivity.tooltip"
+                    :variant="props.runActivity.variant"
+                    @click="onActivityClicked(props.runActivity)" />
+                <ActivityItem
                     v-if="props.exitActivity"
                     :id="`${props.exitActivity.id}`"
                     :activity-bar-id="props.activityBarId"
@@ -387,11 +476,12 @@ defineExpose({
             :collapsible="false"
             :reactive-width.sync="sidePanelWidth">
             <ToolPanel v-if="isActiveSideBar('tools')" />
-            <UploadPanel v-else-if="isActiveSideBar('beta-upload')" />
+            <UploadPanel v-else-if="isActiveSideBar('upload')" />
             <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
-            <ChatHistoryPanel v-else-if="isActiveSideBar('chatgxy')" />
+            <HistoryGraphPanel v-else-if="isActiveSideBar('historygraph')" />
+            <ChatHistoryPanel v-else-if="isActiveSideBar('galaxyai')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
             <UserToolPanel v-if="isActiveSideBar('user-defined-tools')" in-panel />
             <InteractiveToolsPanel v-else-if="isActiveSideBar('interactivetools')" />
@@ -432,11 +522,6 @@ defineExpose({
 
 .activity-drag-class {
     display: none;
-}
-
-.activity-footer {
-    border-top: $border-default;
-    border-top-style: dotted;
 }
 
 .activity-popper-disabled {

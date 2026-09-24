@@ -54,7 +54,7 @@ export function runningCount(jobSummary: InvocationJobsSummary): number {
     return countStates(jobSummary, ["running"]);
 }
 
-export function numTerminal(jobSummary: InvocationJobsSummary): number {
+export function numTerminal(jobSummary: InvocationJobsSummary | StepJobSummary): number {
     return countStates(jobSummary, TERMINAL_STATES);
 }
 
@@ -62,11 +62,11 @@ export function errorCount(jobSummary: InvocationJobsSummary | StepJobSummary): 
     return countStates(jobSummary, ERROR_STATES);
 }
 
-function isNew(jobSummary: InvocationJobsSummary) {
+function isNew(jobSummary: InvocationJobsSummary | StepJobSummary) {
     return jobSummary.populated_state && jobSummary.populated_state == "new";
 }
 
-function anyWithStates(jobSummary: InvocationJobsSummary, queryStates: string[]) {
+function anyWithStates(jobSummary: InvocationJobsSummary | StepJobSummary, queryStates: string[]) {
     const states = jobSummary.states;
     for (const index in queryStates) {
         const state: string = queryStates[index] as string;
@@ -77,11 +77,40 @@ function anyWithStates(jobSummary: InvocationJobsSummary, queryStates: string[])
     return false;
 }
 
-export function isTerminal(jobSummary: InvocationJobsSummary) {
+export function isTerminal(jobSummary: InvocationJobsSummary | StepJobSummary) {
     if (isNew(jobSummary)) {
         return false;
     } else {
         const anyNonTerminal = anyWithStates(jobSummary, NON_TERMINAL_STATES);
         return !anyNonTerminal;
+    }
+}
+
+export function getStepTitle(
+    stepIndex: number,
+    stepType: string,
+    stepLabel?: string,
+    toolName = "Unknown tool",
+    subworkflowName = "Subworkflow",
+): string {
+    const oneBasedStepIndex = stepIndex + 1;
+    if (stepLabel) {
+        return `Step ${oneBasedStepIndex}: ${stepLabel}`;
+    }
+    const workflowStepType = stepType;
+    switch (workflowStepType) {
+        case "tool":
+            return `Step ${oneBasedStepIndex}: ${toolName}`;
+        case "subworkflow": {
+            return `Step ${oneBasedStepIndex}: ${subworkflowName}`;
+        }
+        case "parameter_input":
+            return `Step ${oneBasedStepIndex}: Parameter input`;
+        case "data_input":
+            return `Step ${oneBasedStepIndex}: Data input`;
+        case "data_collection_input":
+            return `Step ${oneBasedStepIndex}: Data collection input`;
+        default:
+            return `Step ${oneBasedStepIndex}: Unknown step type '${workflowStepType}'`;
     }
 }

@@ -70,9 +70,9 @@ WORKFLOW_SCHEDULER_HANDLER_PATTERN = re.compile(r"work\d")
 
 PAUSE_WORKFLOW = """
 class: GalaxyWorkflow
+inputs:
+  test_input: data
 steps:
-- label: test_input
-  type: input
 - label: the_pause
   type: pause
   connect:

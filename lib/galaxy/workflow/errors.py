@@ -3,6 +3,10 @@ Functionality for sending error reports for workflow runs.
 """
 
 import string
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 import markupsafe
 
@@ -12,6 +16,9 @@ from galaxy import (
 )
 from galaxy.security.validate_user_input import validate_email_str
 from galaxy.util import unicodify
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesUserContext
 
 error_report_template = """
 GALAXY WORKFLOW RUN ERROR REPORT
@@ -93,7 +100,7 @@ class WorkflowErrorReporter:
         self.app = app
         self.report = None
 
-    def _can_access_invocation(self, trans, user):
+    def _can_access_invocation(self, trans: Optional["ProvidesUserContext"], user):
         if not user:
             return False
         if not trans:
@@ -171,7 +178,7 @@ class WorkflowErrorReporter:
 
 
 class WorkflowEmailErrorReporter(WorkflowErrorReporter):
-    def _send_report(self, user, email=None, message=None, trans=None, **kwd):
+    def _send_report(self, user, email=None, message=None, trans: Optional["ProvidesUserContext"] = None, **kwd):
         smtp_server = self.app.config.smtp_server
         assert smtp_server, ValueError("Mail is not configured for this Galaxy instance")
         to = self.app.config.error_email_to

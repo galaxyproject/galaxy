@@ -1,8 +1,6 @@
 from base64 import b64decode
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 from urllib.parse import unquote
 
@@ -19,7 +17,7 @@ from galaxy.util import (
 )
 from galaxy.web.framework.base import Request as GxRequest
 
-Request = Union[GxRequest, StartletteRequest]
+Request = GxRequest | StartletteRequest
 
 
 class APIKeyResponse(BaseModel):
@@ -46,7 +44,7 @@ class AuthenticationService:
         else:
             raise exceptions.AuthenticationFailed("Invalid password.")
 
-    def _decode_baseauth(self, encoded_str: Optional[Any]) -> tuple[str, str]:
+    def _decode_baseauth(self, encoded_str: Any | None) -> tuple[str, str]:
         """
         Decode an encrypted HTTP basic authentication string. Returns a tuple of
         the form (email, password), and raises a HTTPBadRequest exception if

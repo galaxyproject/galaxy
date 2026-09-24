@@ -2,11 +2,12 @@
 
 import logging
 import time
+from functools import partial
 from typing import (
     Any,
-    Optional,
 )
 
+import anyio
 from fastapi import Body
 
 from galaxy.exceptions import ConfigurationError
@@ -29,15 +30,7 @@ from galaxy.webapps.galaxy.api import (
     DependsOnUser,
     Router,
 )
-
-# Import agent system
-try:
-    from galaxy.agents import agent_registry
-
-    HAS_AGENTS = True
-except ImportError:
-    HAS_AGENTS = False
-    agent_registry = None  # type: ignore[assignment,unused-ignore]
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -62,26 +55,32 @@ class AgentAPI:
         user: User = DependsOnUser,
     ) -> AgentListResponse:
         """List available AI agents."""
-        if not HAS_AGENTS:
-            raise ConfigurationError("Agent system is not available")
-
         config = trans.app.config
+        inference_config = getattr(config, "inference_services", {}) or {}
 
         agents = []
-        for agent_type in agent_registry.list_agents():
-            agent_info = agent_registry.get_agent_info(agent_type)
+        for agent_type in self.agent_service.list_agents():
+            agent_info = self.agent_service.get_agent_info(agent_type)
+            agent_config = inference_config.get(agent_type, {})
 
-            # Check if agent is enabled in config
-            agent_config = getattr(config, "agents", {}).get(agent_type, {})
-            enabled = agent_config.get("enabled", True)
+            # Resolve model: agent-specific -> default -> global
+            model = None
+            if isinstance(agent_config, dict):
+                model = agent_config.get("model")
+            if model is None:
+                default_config = inference_config.get("default", {})
+                if isinstance(default_config, dict):
+                    model = default_config.get("model")
+            if model is None:
+                model = getattr(config, "ai_model", None)
 
             agents.append(
                 AvailableAgent(
                     agent_type=agent_type,
                     name=agent_info["class_name"].replace("Agent", "").replace("_", " ").title(),
                     description=agent_info.get("description", "No description available"),
-                    enabled=enabled,
-                    model=agent_config.get("model"),
+                    enabled=True,
+                    model=model,
                     specialties=self._get_agent_specialties(agent_type),
                 )
             )
@@ -92,7 +91,7 @@ class AgentAPI:
     async def query_agent(
         self,
         request: AgentQueryRequest,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentQueryResponse:
         """Query an AI agent. Use agent_type='auto' for automatic routing.
@@ -101,9 +100,6 @@ class AgentAPI:
         removed in a future release.
         """
         log.warning("DEPRECATED: /api/ai/agents/query is deprecated. Use /api/chat instead.")
-
-        if not HAS_AGENTS:
-            raise ConfigurationError("Agent system is not available")
 
         start_time = time.time()
 
@@ -131,12 +127,10 @@ class AgentAPI:
     async def analyze_error(
         self,
         query: str = Body(..., description="Description of the error or problem"),
-        job_id: Optional[DecodedDatabaseIdField] = Body(None, description="Job ID for context"),
-        error_details: Optional[dict[str, Any]] = Body(None, description="Additional error details"),
-        save_exchange: Optional[bool] = Body(
-            None, description="Save exchange for feedback tracking. Defaults to false."
-        ),
-        trans: ProvidesUserContext = DependsOnTrans,
+        job_id: DecodedDatabaseIdField | None = Body(None, description="Job ID for context"),
+        error_details: dict[str, Any] | None = Body(None, description="Additional error details"),
+        save_exchange: bool | None = Body(None, description="Save exchange for feedback tracking. Defaults to false."),
+        trans: SessionRequestContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentResponse:
         """Analyze job errors and provide debugging assistance.
@@ -160,16 +154,20 @@ class AgentAPI:
             # Save chat exchange for feedback tracking if requested or if job_id provided
             if bool(save_exchange) or job_id:
                 if job_id:
-                    job = self.job_manager.get_accessible_job(trans, job_id)
+                    job = await anyio.to_thread.run_sync(partial(self.job_manager.get_accessible_job, trans, job_id))
                     if job:
-                        existing = self.chat_manager.get(trans, job.id)
+                        existing = await anyio.to_thread.run_sync(partial(self.chat_manager.get, trans, job.id))
                         if not existing:
-                            exchange = self.chat_manager.create(trans, job.id, response.content)
+                            exchange = await anyio.to_thread.run_sync(
+                                partial(self.chat_manager.create, trans, job.id, response.content)
+                            )
                             response.metadata["exchange_id"] = exchange.id
                 elif trans.user:
                     # Create general chat exchange for non-job error analysis
                     result = {"response": response.content, "agent_response": response.model_dump()}
-                    exchange = self.chat_manager.create_general_chat(trans, query, result, "error_analysis")
+                    exchange = await anyio.to_thread.run_sync(
+                        partial(self.chat_manager.create_general_chat, trans, query, result, "error_analysis")
+                    )
                     response.metadata["exchange_id"] = exchange.id
 
             return response
@@ -182,11 +180,9 @@ class AgentAPI:
     async def create_custom_tool(
         self,
         query: str = Body(..., description="Description of the tool to create"),
-        context: Optional[dict[str, Any]] = Body(None, description="Additional context for tool creation"),
-        save_exchange: Optional[bool] = Body(
-            None, description="Save exchange for feedback tracking. Defaults to false."
-        ),
-        trans: ProvidesUserContext = DependsOnTrans,
+        context: dict[str, Any] | None = Body(None, description="Additional context for tool creation"),
+        save_exchange: bool | None = Body(None, description="Save exchange for feedback tracking. Defaults to false."),
+        trans: SessionRequestContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentResponse:
         """Create a custom Galaxy tool.
@@ -206,7 +202,9 @@ class AgentAPI:
             # Save chat exchange for feedback tracking if requested
             if bool(save_exchange) and trans.user:
                 result = {"response": response.content, "agent_response": response.model_dump()}
-                exchange = self.chat_manager.create_general_chat(trans, query, result, "custom_tool")
+                exchange = await anyio.to_thread.run_sync(
+                    partial(self.chat_manager.create_general_chat, trans, query, result, "custom_tool")
+                )
                 response.metadata["exchange_id"] = exchange.id
 
             return response
@@ -214,6 +212,57 @@ class AgentAPI:
         except Exception as e:
             log.exception(f"Error in custom tool creation: {e}")
             raise ConfigurationError(f"Custom tool creation failed: {str(e)}")
+
+    @router.post("/api/ai/agents/history-summary", unstable=True)
+    async def history_summary(
+        self,
+        history_id: str = Body(..., embed=True, description="Encoded id of the history to summarize."),
+        trans: SessionRequestContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> AgentResponse:
+        """Produce a comprehensive markdown report for a history's analysis.
+
+        The history agent fetches the full lineage via ``get_history_graph``
+        and synthesizes a multi-section report (Summary, Data Inputs,
+        Analysis Pipeline, Tools and Parameters, Outputs, Notes). Suitable
+        for inclusion in a history notebook or methods section.
+        """
+        query = (
+            f"Generate a comprehensive analysis report for Galaxy history {history_id}.\n\n"
+            f"Call get_history_graph(history_id='{history_id}') with no seed for the "
+            "full history overview. If the response's truncated.item_count_capped is "
+            "true, note that in the Notes section.\n\n"
+            "Produce a markdown report with these sections (use ## headings):\n\n"
+            "## Summary\n"
+            "Two or three sentences: what kind of analysis, key inputs/outputs, key tools.\n\n"
+            "## Data Inputs\n"
+            "List input files and collections with their formats.\n\n"
+            "## Analysis Pipeline\n"
+            "Narrative description of the processing steps in past tense, scientific style.\n\n"
+            "## Tools and Parameters\n"
+            "For each tool: name, version when known, what it does in this workflow, "
+            "and any key parameters or settings.\n\n"
+            "## Outputs\n"
+            "Final output files and collections with formats.\n\n"
+            "## Notes\n"
+            "Observations: caveats, truncation, anything notable. Omit if nothing to add.\n\n"
+            "Style rules:\n"
+            "- Past tense, third person, scientific.\n"
+            "- Include tool versions only when available; omit placeholder text otherwise.\n"
+            "- Exclude internal Galaxy tools (__DATA_FETCH__, __SET_METADATA__, etc.).\n"
+            "- Do not hallucinate tool names, parameters, or versions."
+        )
+        try:
+            return await self.agent_service.execute_agent(
+                agent_type="history",
+                query=query,
+                trans=trans,
+                user=user,
+                context={"history_id": history_id},
+            )
+        except Exception as e:
+            log.exception(f"Error in history summary: {e}")
+            raise ConfigurationError(f"History summary failed: {str(e)}")
 
     def _get_agent_specialties(self, agent_type: str) -> list:
         """Get specialties for an agent type."""
@@ -230,6 +279,7 @@ class AgentAPI:
                 "Tool wrapper development",
                 "Parameter configuration",
             ],
-            "gtn_training": ["Tutorials", "Learning materials", "Training resources"],
+            "history": ["History summaries", "Analysis interpretation", "Next-step guidance"],
+            "tool_recommendation": ["Tool discovery", "Available tools", "Workflow suggestions"],
         }
         return specialties_map.get(agent_type, [])

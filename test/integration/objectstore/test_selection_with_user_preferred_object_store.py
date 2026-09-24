@@ -4,7 +4,6 @@ import os
 import string
 from typing import (
     Any,
-    Optional,
 )
 
 from sqlalchemy import select
@@ -139,6 +138,32 @@ WORKFLOW_WITH_COLLECTIONS_1_TEST_DATA = """
 text_input1: |
   samp1\t10.0
   samp2\t20.0
+"""
+
+WORKFLOW_WITH_MAPPED_COLLECTION_OUTPUT = """
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: list
+outputs:
+  wf_output_1:
+    outputSource: cat_mapped/out_file1
+steps:
+  cat_mapped:
+    tool_id: cat
+    in:
+      input1: input_collection
+"""
+
+WORKFLOW_MAPPED_COLLECTION_TEST_DATA = """
+input_collection:
+  collection_type: list
+  elements:
+    - identifier: el1
+      content: "data 1"
+    - identifier: el2
+      content: "data 2"
 """
 
 
@@ -366,7 +391,68 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
             assert_storage_name_is(output_info, "Static Storage")
             assert_storage_name_is(intermediate_dict, "Dynamic EBS")
 
-    def _run_workflow_with_collections_1(self, history_id: str, extra_invocation_kwds: Optional[dict[str, Any]] = None):
+    def test_workflow_mapped_collection_objectstore_selection(self):
+        # Regression for https://github.com/galaxyproject/galaxy/issues/21846
+        with self.dataset_populator.test_history() as history_id:
+            element_storages = self._run_workflow_with_mapped_collection(
+                history_id,
+                WORKFLOW_WITH_MAPPED_COLLECTION_OUTPUT,
+                WORKFLOW_MAPPED_COLLECTION_TEST_DATA,
+            )
+            for storage in element_storages:
+                assert_storage_name_is(storage, "Default Store")
+
+        with self.dataset_populator.test_history() as history_id:
+            element_storages = self._run_workflow_with_mapped_collection(
+                history_id,
+                WORKFLOW_WITH_MAPPED_COLLECTION_OUTPUT,
+                WORKFLOW_MAPPED_COLLECTION_TEST_DATA,
+                extra_invocation_kwds={"preferred_object_store_id": "static"},
+            )
+            for storage in element_storages:
+                assert_storage_name_is(storage, "Static Storage")
+
+    def test_workflow_mapped_collection_objectstore_selection_split(self):
+        # Regression for https://github.com/galaxyproject/galaxy/issues/21846
+        with self.dataset_populator.test_history() as history_id:
+            element_storages = self._run_workflow_with_mapped_collection(
+                history_id,
+                WORKFLOW_WITH_MAPPED_COLLECTION_OUTPUT,
+                WORKFLOW_MAPPED_COLLECTION_TEST_DATA,
+                extra_invocation_kwds={
+                    "preferred_outputs_object_store_id": "static",
+                    "preferred_intermediate_object_store_id": "dynamic_ebs",
+                },
+            )
+            for storage in element_storages:
+                assert_storage_name_is(storage, "Static Storage")
+
+    def _run_workflow_with_mapped_collection(
+        self,
+        history_id: str,
+        workflow: str,
+        test_data: str,
+        extra_invocation_kwds: dict[str, Any] | None = None,
+    ):
+        self.workflow_populator.run_workflow(
+            workflow,
+            test_data=test_data,
+            history_id=history_id,
+            extra_invocation_kwds=extra_invocation_kwds,
+        )
+        # Find the implicit collection in the history and inspect element storage
+        history_contents = self.dataset_populator.get_history_contents(history_id, data={"v": "dev"})
+        hdca = None
+        for entry in history_contents:
+            if entry.get("history_content_type") == "dataset_collection" and entry.get("visible", True):
+                hdca = entry
+        assert hdca is not None, "No collection found in history"
+        hdca_details = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca["id"])
+        elements = hdca_details["elements"]
+        assert len(elements) > 0, "Collection has no elements"
+        return [self._storage_info(element["object"]) for element in elements]
+
+    def _run_workflow_with_collections_1(self, history_id: str, extra_invocation_kwds: dict[str, Any] | None = None):
         wf_run = self.workflow_populator.run_workflow(
             WORKFLOW_WITH_COLLECTIONS_1,
             test_data=WORKFLOW_WITH_COLLECTIONS_1_TEST_DATA,
@@ -385,7 +471,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         output_info = self._storage_info(objects[0])
         return intermediate_info, output_info
 
-    def _run_workflow_with_collections_2(self, history_id: str, extra_invocation_kwds: Optional[dict[str, Any]] = None):
+    def _run_workflow_with_collections_2(self, history_id: str, extra_invocation_kwds: dict[str, Any] | None = None):
         wf_run = self.workflow_populator.run_workflow(
             WORKFLOW_WITH_COLLECTIONS_2,
             test_data=WORKFLOW_WITH_COLLECTIONS_1_TEST_DATA,
@@ -405,7 +491,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         return intermediate_info, output_info
 
     def _run_simple_nested_workflow_get_output_storage_info_dicts(
-        self, history_id: str, extra_invocation_kwds: Optional[dict[str, Any]] = None
+        self, history_id: str, extra_invocation_kwds: dict[str, Any] | None = None
     ):
         wf_run = self.workflow_populator.run_workflow(
             WORKFLOW_NESTED_SIMPLE,
@@ -425,7 +511,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         return output_info, intermediate_info
 
     def _run_nested_workflow_with_effective_output_get_output_storage_info_dicts(
-        self, history_id: str, extra_invocation_kwds: Optional[dict[str, Any]] = None, twice_nested=False
+        self, history_id: str, extra_invocation_kwds: dict[str, Any] | None = None, twice_nested=False
     ):
         workflow_data = WORKFLOW_NESTED_OUTPUT if not twice_nested else WORKFLOW_NESTED_TWICE_OUTPUT
         wf_run = self.workflow_populator.run_workflow(
@@ -445,7 +531,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         return output_info, intermediate_info
 
     def _run_workflow_get_output_storage_info_dicts(
-        self, history_id: str, extra_invocation_kwds: Optional[dict[str, Any]] = None
+        self, history_id: str, extra_invocation_kwds: dict[str, Any] | None = None
     ):
         wf_run = self.workflow_populator.run_workflow(
             TEST_WORKFLOW,
@@ -475,7 +561,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
     def _storage_info(self, hda):
         return self.dataset_populator.dataset_storage_info(hda["id"])
 
-    def _set_user_preferred_object_store_id(self, store_id: Optional[str]) -> None:
+    def _set_user_preferred_object_store_id(self, store_id: str | None) -> None:
         self.dataset_populator.set_user_preferred_object_store_id(store_id)
 
     def _reset_user_preferred_object_store_id(self):

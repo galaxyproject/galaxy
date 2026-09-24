@@ -2,13 +2,13 @@
 
 import json
 import os
+import shutil
 import threading
 from typing import (
     Any,
     cast,
     NamedTuple,
     Optional,
-    Union,
 )
 
 from galaxy.files import (
@@ -28,7 +28,11 @@ from galaxy.model import (
     JobExportHistoryArchive,
     MetadataFile,
 )
-from galaxy.util import safe_makedirs
+from galaxy.objectstore import ObjectStore
+from galaxy.util import (
+    directory_hash_id,
+    safe_makedirs,
+)
 from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.path import StrPath
 
@@ -49,8 +53,8 @@ class JobOutput(NamedTuple):
 class JobOutputs(threading.local):
     def __init__(self) -> None:
         super().__init__()
-        self.output_hdas_and_paths: Optional[OutputHdasAndType] = None
-        self.output_paths: Optional[OutputPaths] = None
+        self.output_hdas_and_paths: OutputHdasAndType | None = None
+        self.output_paths: OutputPaths | None = None
 
     @property
     def populated(self) -> bool:
@@ -105,13 +109,13 @@ class JobIO(UsesDictVisibleKeys):
         len_file_path: str,
         builds_file_path: str,
         check_job_script_integrity: bool,
-        check_job_script_integrity_count: Optional[int],
-        check_job_script_integrity_sleep: Optional[float],
+        check_job_script_integrity_count: int | None,
+        check_job_script_integrity_sleep: float | None,
         file_sources_dict: dict[str, Any],
-        user_context: Union[FileSourcesUserContext, dict[str, Any]],
-        tool_source: Optional[str] = None,
+        user_context: FileSourcesUserContext | dict[str, Any],
+        tool_source: str | None = None,
         tool_source_class: Optional["str"] = "XmlToolSource",
-        tool_dir: Optional[StrPath] = None,
+        tool_dir: StrPath | None = None,
         is_task: bool = False,
     ):
         user_context_instance: FileSourcesUserContext
@@ -144,7 +148,7 @@ class JobIO(UsesDictVisibleKeys):
         self.tool_source = tool_source
         self.tool_source_class = tool_source_class
         self.job_outputs = JobOutputs()
-        self._dataset_path_rewriter: Optional[DatasetPathRewriter] = None
+        self._dataset_path_rewriter: DatasetPathRewriter | None = None
 
     @property
     def job(self) -> Job:
@@ -157,7 +161,7 @@ class JobIO(UsesDictVisibleKeys):
             # Drop in 24.0
             io_dict.pop("model_class", None)
         job_id = io_dict.pop("job_id")
-        job = sa_session.query(Job).get(job_id)
+        job = sa_session.get(Job, job_id)
         return cls(sa_session=sa_session, job=job, **io_dict)
 
     @classmethod
@@ -217,7 +221,7 @@ class JobIO(UsesDictVisibleKeys):
         return filenames
 
     def get_input_datasets(
-        self, materialized_objects: Optional[dict[str, DeferrableObjectsT]] = None
+        self, materialized_objects: dict[str, DeferrableObjectsT] | None = None
     ) -> list[DatasetInstance]:
         job = self.job
         datasets: list[DatasetInstance] = []
@@ -236,7 +240,7 @@ class JobIO(UsesDictVisibleKeys):
             filenames.extend(self.get_input_dataset_fnames(ds))
         return filenames
 
-    def get_input_paths(self, materialized_objects: Optional[dict[str, DeferrableObjectsT]]) -> list[DatasetPath]:
+    def get_input_paths(self, materialized_objects: dict[str, DeferrableObjectsT] | None) -> list[DatasetPath]:
         paths = []
         for ds in self.get_input_datasets(materialized_objects):
             paths.append(self.get_input_path(ds))
@@ -245,6 +249,7 @@ class JobIO(UsesDictVisibleKeys):
     def get_input_path(self, dataset: DatasetInstance) -> DatasetPath:
         real_path = dataset.get_file_name()
         false_path = self.dataset_path_rewriter.rewrite_dataset_path(dataset, "input")
+        assert dataset.dataset is not None
         return DatasetPath(
             dataset.dataset.id,
             real_path=real_path,
@@ -290,6 +295,7 @@ class JobIO(UsesDictVisibleKeys):
                 with open(da_false_path, "ab"):
                     pass
             real_path = da.dataset.get_file_name(sync_cache=False)
+            assert da.dataset.dataset is not None
             false_extra_files_path = os.path.join(
                 os.path.dirname(da_false_path or real_path), da.dataset.dataset.extra_files_path_name
             )
@@ -311,7 +317,7 @@ class JobIO(UsesDictVisibleKeys):
 
         self.job_outputs.set_job_outputs(job_outputs)
 
-    def get_output_file_id(self, file: str) -> Optional[int]:
+    def get_output_file_id(self, file: str) -> int | None:
         for dp in self.output_paths:
             if self.outputs_to_working_directory and os.path.basename(dp.false_path) == file:
                 return dp.dataset_id
@@ -327,7 +333,163 @@ def ensure_configs_directory(work_dir: str) -> str:
     return configs_dir
 
 
-def create_working_directory_for_job(object_store, job) -> str:
-    object_store.create(job, base_dir="job_work", dir_only=True, obj_dir=True)
-    working_directory = object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
-    return working_directory
+# Sentinel object-store keys for the job working directory. Centralized so that
+# every JWD operation goes through the same code path instead of open-coding
+# ``if job.working_directory:`` forks at each call site.
+_JOB_WORK_BASE_DIR = "job_work"
+_CLEARED_CONTENTS_EXTRA_DIR = "_cleared_contents"
+
+
+class JobWorkingDirectory:
+    """Unified handle for a job's working directory.
+
+    Hides the two backing strategies — a custom path on ``job.working_directory``
+    (from the ``job_working_directory`` destination param) and the legacy
+    object-store-derived path — behind a single object.
+    """
+
+    __slots__ = ("_job", "_object_store")
+
+    def __init__(self, job: Job, object_store: ObjectStore) -> None:
+        self._job = job
+        self._object_store = object_store
+
+    @property
+    def _custom_path(self) -> str | None:
+        """Read ``job.working_directory`` fresh on each access (not cached)."""
+        return self._job.working_directory
+
+    def _per_job_subpath(self) -> str:
+        """Return the per-job relative subpath ``<directory_hash_id(job.id)>/<job.id>/``."""
+        obj_id = self._job.id
+        return os.path.join(*directory_hash_id(obj_id), str(obj_id))
+
+    def _per_job_path(self, custom_path: str) -> str:
+        """Return ``<custom_base>/<directory_hash_id(job.id)>/<job.id>/``."""
+        return os.path.join(custom_path, self._per_job_subpath())
+
+    def resolve(self) -> str:
+        """Return the working directory path, creating nothing on disk."""
+        if custom_path := self._custom_path:
+            return self._per_job_path(custom_path)
+        return self._object_store.get_filename(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+        )
+
+    def exists(self) -> bool:
+        """Check whether the working directory exists on disk."""
+        if custom_path := self._custom_path:
+            return os.path.exists(self._per_job_path(custom_path))
+        return self._object_store.exists(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+        )
+
+    def create(self) -> str:
+        """Create the working directory and return its path.
+
+        Idempotent: if the per-job directory already exists (e.g. wrapper
+        reconstruction for a resubmitted job), it is returned without error.
+        """
+        if custom_path := self._custom_path:
+            validate_working_directory_path(custom_path)
+            path = self._per_job_path(custom_path)
+            os.makedirs(path, exist_ok=True)
+            return path
+        self._object_store.create(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+        )
+        return self._object_store.get_filename(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+        )
+
+    def delete(self) -> bool:
+        """Recursively delete the working directory.
+
+        Returns ``True`` if something was deleted, ``False`` if the directory
+        did not exist or the object store reported a non-deletion.
+
+        For custom paths, only the per-job subdirectory is removed; the
+        admin-supplied base is preserved for other jobs.
+        """
+        if custom_path := self._custom_path:
+            validate_working_directory_path(custom_path)
+            resolved = self._per_job_path(custom_path)
+            if os.path.exists(resolved):
+                shutil.rmtree(resolved)
+                return True
+            return False
+        return self._object_store.delete(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            entire_dir=True,
+            dir_only=True,
+            obj_dir=True,
+        )
+
+    def cleared_contents_base(self) -> str:
+        """Return the directory under which cleared JWDs are archived.
+
+        Creates the archive directory if it does not exist. The archive is a
+        sibling tree of the JWD (keyed by ``<hash>/<job.id>``) so resubmits
+        don't collide on the archive name.
+        """
+        if custom_path := self._custom_path:
+            validate_working_directory_path(custom_path)
+            path = os.path.join(
+                custom_path,
+                _CLEARED_CONTENTS_EXTRA_DIR,
+                self._per_job_subpath(),
+            )
+            os.makedirs(path, exist_ok=True)
+            return path
+        self._object_store.create(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+            extra_dir=_CLEARED_CONTENTS_EXTRA_DIR,
+            extra_dir_at_root=True,
+        )
+        return self._object_store.get_filename(
+            self._job,
+            base_dir=_JOB_WORK_BASE_DIR,
+            dir_only=True,
+            obj_dir=True,
+            extra_dir=_CLEARED_CONTENTS_EXTRA_DIR,
+            extra_dir_at_root=True,
+        )
+
+
+def validate_working_directory_path(path: str) -> None:
+    """Validate a custom ``job.working_directory`` path before disk operations.
+
+    This is the single canonical validator for ``job.working_directory``. It is
+    called both at set-time (before persisting the column) and at use-time
+    (before each disk operation on a custom path), so callers can rely on the
+    column value being validated without assuming set-time validation is the
+    only guard.
+
+    ``job.working_directory`` is a ``String(1024)`` populated from destination
+    params (admin/TPV-controlled) and is treated as a **parent/base** path:
+    Galaxy appends ``<directory_hash_id(job.id)>/<job.id>/`` for per-job
+    isolation. Refuse to operate on anything that is not an absolute,
+    non-root, non-empty path.
+    """
+    if not path:
+        raise ValueError("Refusing to operate on empty job working_directory")
+    if not os.path.isabs(path):
+        raise ValueError(f"Refusing to operate on relative job working_directory: {path!r}")
+    if os.path.normpath(path) == os.path.normpath(os.sep):
+        raise ValueError("Refusing to operate on filesystem root as job working_directory")

@@ -2,12 +2,11 @@ class: GalaxyUserTool
 id: gx_boolean_user
 version: "1.0.0"
 name: gx_boolean_user
+container: busybox
 shell_command: echo '$(inputs.parameter)' >> output.txt
 inputs:
   - name: parameter
     type: boolean
-    truevalue: mytrue
-    falsevalue: myfalse
 outputs:
   - name: output
     type: data

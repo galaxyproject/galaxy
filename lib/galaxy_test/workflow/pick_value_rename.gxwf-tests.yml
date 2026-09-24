@@ -1,0 +1,13 @@
+- doc: |
+    Test that RenameDatasetAction on pick_value renames the output.
+  job:
+    input_data:
+      class: File
+      path: 1.bed
+      filetype: bed
+    when: true
+  outputs:
+    picked:
+      class: File
+      metadata:
+        name: "picked_result"

@@ -155,7 +155,7 @@ onMounted(async () => {
                         may not always be accurate.
                     </span>
                 </p>
-                <BCard v-if="'tool_stderr' in jobDetails" class="mb-2">
+                <BCard v-if="'tool_stderr' in jobDetails" class="mb-2" data-description="galaxy wizard card">
                     <GalaxyWizard
                         view="error"
                         :query="jobDetails.tool_stderr ?? ''"

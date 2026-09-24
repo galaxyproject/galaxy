@@ -1,0 +1,28 @@
+<tool id="gx_hidden_data" name="gx_hidden_data" version="1.0.0">
+    <command><![CDATA[
+#if $parameter
+cat '$parameter' >> '$output'
+#else
+echo 'NO_DATA' >> '$output'
+#end if
+    ]]></command>
+    <inputs>
+        <param name="parameter" type="hidden_data" ext="data" optional="true" />
+    </inputs>
+    <outputs>
+        <data name="output" format="data" />
+    </outputs>
+    <tests>
+        <test>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="NO_DATA" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="parameter" value="1.bed" />
+            <output name="output" file="1.bed" />
+        </test>
+    </tests>
+</tool>

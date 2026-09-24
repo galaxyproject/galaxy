@@ -9,8 +9,6 @@ import re
 from typing import (
     Annotated,
     Any,
-    Optional,
-    Union,
 )
 
 from fastapi import (
@@ -29,9 +27,11 @@ from galaxy import (
 from galaxy.exceptions import ObjectInvalid
 from galaxy.managers import users
 from galaxy.managers.context import (
+    ProvidesAppContext,
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.favorites import FavoritesManager
 from galaxy.model import (
     Dataset,
     FormDefinition,
@@ -56,6 +56,7 @@ from galaxy.schema.schema import (
     FavoriteObject,
     FavoriteObjectsSummary,
     FavoriteObjectType,
+    FavoriteOrderPayload,
     FlexibleUserIdType,
     MaybeLimitedUserModel,
     RemoteUserCreationPayload,
@@ -83,6 +84,7 @@ from galaxy.webapps.base.controller import (
     UsesFormDefinitionsMixin,
     UsesTagsMixin,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
     depends,
@@ -121,6 +123,7 @@ ObjectIDPathParam: str = Path(
     title="Object ID",
     description="The ID of an object the user wants to remove from favorites",
 )
+FavoriteOrderBody: FavoriteOrderPayload = Body(...)
 CustomBuildKeyPathParam: str = Path(
     default=...,
     title="Custom build key",
@@ -147,13 +150,25 @@ CustomBuildCreationBody = Body(
     default=..., title="Add custom build", description="The values to add a new custom build."
 )
 UserCreationBody = Body(default=..., title="Create User", description="The values to add create a user.")
-AnyUserModel = Union[DetailedUserModel, AnonUserModel]
+AnyUserModel = DetailedUserModel | AnonUserModel
+
+# Disable changing these when enable_account_interface is false.
+ACCOUNT_IDENTITY_FIELDS = frozenset({"active", "username"})
+
+
+def ensure_account_modification_allowed(trans: ProvidesUserContext, message: str) -> None:
+    """Reject non-admin account changes when ``enable_account_interface`` is disabled."""
+    # Enforced in the controller rather than UserManager because OIDC profile sync writes these
+    # same fields through the manager precisely when the option is off.
+    if not trans.app.config.enable_account_interface and not trans.user_is_admin:
+        raise exceptions.ConfigDoesNotAllowException(message)
 
 
 @router.cbv
 class FastAPIUsers:
     service: UsersService = depends(UsersService)
     user_serializer: users.UserSerializer = depends(users.UserSerializer)
+    favorites_manager: FavoritesManager = depends(FavoritesManager)
 
     @router.put(
         "/api/users/current/recalculate_disk_usage",
@@ -203,9 +218,9 @@ class FastAPIUsers:
     def index_deleted(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        f_email: Optional[str] = FilterEmailQueryParam,
-        f_name: Optional[str] = FilterNameQueryParam,
-        f_any: Optional[str] = FilterAnyQueryParam,
+        f_email: str | None = FilterEmailQueryParam,
+        f_name: str | None = FilterNameQueryParam,
+        f_any: str | None = FilterAnyQueryParam,
     ) -> list[MaybeLimitedUserModel]:
         return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
 
@@ -333,8 +348,8 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
         label: str = QuotaSourceLabelPathParam,
-    ) -> Optional[UserQuotaUsage]:
-        effective_label: Optional[str] = label
+    ) -> UserQuotaUsage | None:
+        effective_label: str | None = label
         if label == "__null__":
             effective_label = None
         if user := self.service.get_user_full(trans, user_id, False):
@@ -394,16 +409,22 @@ class FastAPIUsers:
         object_id: str = ObjectIDPathParam,
     ) -> FavoriteObjectsSummary:
         user = self.service.get_user(trans, user_id)
-        favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
-        if object_type.value == "tools":
-            favorite_tools = favorites.get("tools", [])
-            if object_id in favorite_tools:
-                del favorite_tools[favorite_tools.index(object_id)]
-                favorites["tools"] = favorite_tools
-                user.preferences["favorites"] = json.dumps(favorites)
-                trans.sa_session.commit()
-            else:
-                raise exceptions.ObjectNotFound("Given object is not in the list of favorites")
+        favorites = self.favorites_manager.remove(trans, user, object_type, object_id)
+        return FavoriteObjectsSummary.model_validate(favorites)
+
+    @router.put(
+        "/api/users/{user_id}/favorites/order",
+        name="set_favorite_order",
+        summary="Persist the order of the user's favorites",
+    )
+    def set_favorite_order(
+        self,
+        user_id: UserIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: FavoriteOrderPayload = FavoriteOrderBody,
+    ) -> FavoriteObjectsSummary:
+        user = self.service.get_user(trans, user_id)
+        favorites = self.favorites_manager.set_order(trans, user, payload)
         return FavoriteObjectsSummary.model_validate(favorites)
 
     @router.put(
@@ -419,20 +440,7 @@ class FastAPIUsers:
         payload: FavoriteObject = FavoriteObjectBody,
     ) -> FavoriteObjectsSummary:
         user = self.service.get_user(trans, user_id)
-        favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
-        if object_type.value == "tools":
-            tool_id = payload.object_id
-            tool = trans.app.toolbox.get_tool(tool_id)
-            if not tool:
-                raise exceptions.ObjectNotFound(f"Could not find tool with id '{tool_id}'.")
-            if not tool.allow_user_access(user):
-                raise exceptions.AuthenticationFailed(f"Access denied for tool with id '{tool_id}'.")
-            favorite_tools = favorites.get("tools", [])
-            if tool_id not in favorite_tools:
-                favorite_tools.append(tool_id)
-                favorites["tools"] = favorite_tools
-                user.preferences["favorites"] = json.dumps(favorites)
-                trans.sa_session.commit()
+        favorites = self.favorites_manager.add(trans, user, object_type, payload.object_id)
         return FavoriteObjectsSummary.model_validate(favorites)
 
     @router.put(
@@ -596,7 +604,7 @@ class FastAPIUsers:
     def create(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: Union[UserCreationPayload, RemoteUserCreationPayload] = UserCreationBody,
+        payload: UserCreationPayload | RemoteUserCreationPayload = UserCreationBody,
     ) -> CreatedUserModel:
         if isinstance(payload, UserCreationPayload):
             email = payload.email
@@ -637,11 +645,15 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = UsersDeletedQueryParam,
-        f_email: Optional[str] = FilterEmailQueryParam,
-        f_name: Optional[str] = FilterNameQueryParam,
-        f_any: Optional[str] = FilterAnyQueryParam,
+        f_email: str | None = FilterEmailQueryParam,
+        f_name: str | None = FilterNameQueryParam,
+        f_any: str | None = FilterAnyQueryParam,
+        limit: int | None = Query(default=None, ge=1, title="Limit", description="Maximum number of users to return."),
+        offset: int | None = Query(default=0, ge=0, title="Offset", description="Number of users to skip."),
     ) -> list[MaybeLimitedUserModel]:
-        return self.service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
+        return self.service.get_index(
+            trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any, limit=limit, offset=offset
+        )
 
     @router.get(
         "/api/users/{user_id}",
@@ -652,7 +664,7 @@ class FastAPIUsers:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-        deleted: Optional[bool] = UserDeletedQueryParam,
+        deleted: bool | None = UserDeletedQueryParam,
     ) -> AnyUserModel:
         user_deleted = deleted or False
         return self.service.show_user(trans=trans, user_id=user_id, deleted=user_deleted)
@@ -665,12 +677,14 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
         payload: UserUpdatePayload = UserUpdateBody,
-        deleted: Optional[bool] = UserDeletedQueryParam,
+        deleted: bool | None = UserDeletedQueryParam,
     ) -> DetailedUserModel:
         deleted = deleted or False
         current_user = trans.user
         user_to_update = self.service.get_non_anonymous_user_full(trans, user_id, deleted=deleted)
         data = payload.model_dump(exclude_unset=True)
+        if not ACCOUNT_IDENTITY_FIELDS.isdisjoint(data):
+            ensure_account_modification_allowed(trans, "Account modification is not allowed in this Galaxy instance")
         self.service.user_deserializer.deserialize(user_to_update, data, user=current_user, trans=trans)
         return self.service.user_to_detailed_model(user_to_update)
 
@@ -690,7 +704,7 @@ class FastAPIUsers:
                 description="Whether to definitely remove this user. Only deleted users can be purged.",
             ),
         ] = False,
-        payload: Optional[UserDeletionPayload] = None,
+        payload: UserDeletionPayload | None = None,
     ) -> DetailedUserModel:
         user_to_update = self.service.user_manager.by_id(user_id)
         assert user_to_update is not None
@@ -703,6 +717,7 @@ class FastAPIUsers:
                 self.service.user_manager.delete(user_to_update)
         else:
             if trans.user == user_to_update:
+                ensure_account_modification_allowed(trans, "Account deletion is not allowed in this Galaxy instance")
                 self.service.user_manager.delete(user_to_update)
             else:
                 raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
@@ -743,20 +758,20 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
     service: UsersService = depends(UsersService)
     user_manager: users.UserManager = depends(users.UserManager)
 
-    def _get_user_full(self, trans, user_id, **kwd):
+    def _get_user_full(self, trans: ProvidesUserContext, user_id, **kwd):
         """Return referenced user or None if anonymous user is referenced."""
         deleted = kwd.get("deleted", "False")
         deleted = util.string_as_bool(deleted)
         return self.service.get_user_full(trans, user_id, deleted)
 
-    def _get_extra_user_preferences(self, trans):
+    def _get_extra_user_preferences(self, trans: ProvidesAppContext):
         """
         Reads the file user_preferences_extra_conf.yml to display
         admin defined user informations
         """
         return trans.app.config.user_preferences_extra["preferences"]
 
-    def _build_extra_user_pref_inputs(self, trans, preferences, user):
+    def _build_extra_user_pref_inputs(self, trans: ProvidesAppContext, preferences, user):
         """
         Build extra user preferences inputs list.
         Add values to the fields if present
@@ -801,7 +816,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return extra_pref_inputs
 
     @expose_api
-    def get_information(self, trans, id, **kwd):
+    def get_information(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/users/{id}/information/inputs
         Return user details such as username, email, addresses etc.
@@ -855,7 +870,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             )
             if info_form_models:
                 info_form_id = trans.security.encode_id(user.values.form_definition.id) if user.values else None
-                info_field = {
+                info_field: dict[str, Any] = {
                     "type": "conditional",
                     "name": "info",
                     "cases": [],
@@ -881,7 +896,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 address_inputs = [{"type": "hidden", "name": "id", "hidden": True}]
                 for field in AddressField.fields():
                     address_inputs.append({"type": "text", "name": field[0], "label": field[1], "help": field[2]})
-                address_repeat = {
+                address_repeat: dict[str, Any] = {
                     "title": "Address",
                     "name": "address",
                     "type": "repeat",
@@ -930,7 +945,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return user_info
 
     @expose_api
-    def set_information(self, trans, id, payload=None, **kwd):
+    def set_information(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         PUT /api/users/{id}/information/inputs
         Save a user's email, username, addresses etc.
@@ -943,11 +958,16 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         """
         payload = payload or {}
         user = self._get_user(trans, id)
+        ensure_account_modification_allowed(trans, "Account modification is not allowed in this Galaxy instance")
         # Update email
         if "email" in payload:
             email = payload.get("email")
             self.user_manager.update_email(
-                trans, user, email, commit=False, send_activation_email=True  # commit at the end of the handler
+                trans,
+                user,
+                email,
+                commit=False,
+                send_activation_email=True,  # commit at the end of the handler
             )
         # Update public name
         if "username" in payload:
@@ -1001,7 +1021,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             user.preferences["extra_user_preferences"] = json.dumps(extra_user_pref_data)
 
         # Update user addresses
-        address_dicts = {}
+        address_dicts: dict[int, dict[str, Any]] = {}
         address_count = 0
         for item in payload:
             match = re.match(r"^address_(?P<index>\d+)\|(?P<attribute>\S+)", item)
@@ -1038,7 +1058,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return {"message": "User information has been saved."}
 
     @expose_api
-    def get_password(self, trans, id, payload=None, **kwd):
+    def get_password(self, trans: ProvidesAppContext, id, payload=None, **kwd):
         """
         Return available password inputs.
         """
@@ -1052,18 +1072,19 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         }
 
     @expose_api
-    def set_password(self, trans, id, payload=None, **kwd):
+    def set_password(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         Allows to the logged-in user to change own password.
         """
         payload = payload or {}
+        ensure_account_modification_allowed(trans, "Password changes are not allowed in this Galaxy instance")
         user, message = self.user_manager.change_password(trans, id=id, **payload)
         if user is None:
             raise exceptions.AuthenticationRequired(message)
         return {"message": "Password has been changed."}
 
     @expose_api
-    def get_permissions(self, trans, id, payload=None, **kwd):
+    def get_permissions(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         Get the user's default permissions for the new histories
         """
@@ -1071,9 +1092,11 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         user = self._get_user(trans, id)
 
         def get_role_tuples():
-            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+            roles = user.all_roles()
+            role_ids = {r.id for r in roles}
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session, role_ids=role_ids)
             role_tuples = set()
-            for role in user.all_roles():
+            for role in roles:
                 displayed_name = private_role_emails.get(role.id, role.name)
                 role_tuples.add((displayed_name, role.id))
             return list(role_tuples)
@@ -1096,7 +1119,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return {"inputs": inputs}
 
     @expose_api
-    def set_permissions(self, trans, id, payload=None, **kwd):
+    def set_permissions(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         Set the user's default permissions for the new histories
         """
@@ -1104,13 +1127,15 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         user = self._get_user(trans, id)
         permissions = {}
         for index, action in Dataset.permitted_actions.items():
-            action_id = trans.app.security_agent.get_action(action.action).action
+            security_action = trans.app.security_agent.get_action(action.action)
+            assert security_action is not None
+            action_id = security_action.action
             permissions[action_id] = [trans.sa_session.get(Role, x) for x in (payload.get(index) or [])]
         trans.app.security_agent.user_set_default_permissions(user, permissions)
         return {"message": "Permissions have been saved."}
 
     @expose_api
-    def get_toolbox_filters(self, trans, id, payload=None, **kwd):
+    def get_toolbox_filters(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         API call for fetching toolbox filters data. Toolbox filters are specified in galaxy.ini.
         The user can activate them and the choice is stored in user_preferences.
@@ -1129,14 +1154,14 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 "label": "In this section you may enable or disable Toolbox filters. Please contact your admin to configure filters as necessary.",
             }
         ]
-        errors = {}
+        errors: dict[str, str] = {}
         factory = FilterFactory(trans.app.toolbox)
         for filter_type in filter_types:
             self._add_filter_inputs(factory, filter_types, inputs, errors, filter_type, saved_values)
         return {"inputs": inputs, "errors": errors}
 
     @expose_api
-    def set_toolbox_filters(self, trans, id, payload=None, **kwd):
+    def set_toolbox_filters(self, trans: ProvidesUserContext, id, payload=None, **kwd):
         """
         API call to update toolbox filters data.
         """
@@ -1169,6 +1194,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             function = factory.build_filter_function(filter_name)
             if function is None:
                 errors[f"{filter_type}|{filter_name}"] = "Filter function not found."
+                continue
 
             short_description, description = None, None
             doc_string = docstring_trim(function.__doc__)
@@ -1200,14 +1226,14 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 }
             )
 
-    def _get_filter_types(self, trans):
+    def _get_filter_types(self, trans: ProvidesAppContext):
         return {
             "toolbox_tool_filters": {"title": "Tools", "config": trans.app.config.user_tool_filters},
             "toolbox_section_filters": {"title": "Sections", "config": trans.app.config.user_tool_section_filters},
             "toolbox_label_filters": {"title": "Labels", "config": trans.app.config.user_tool_label_filters},
         }
 
-    def _get_user(self, trans, id):
+    def _get_user(self, trans: ProvidesUserContext, id):
         user = self.get_user(trans, id)
         if not user:
             raise exceptions.RequestParameterInvalidException("Invalid user id specified.")

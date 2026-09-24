@@ -1,9 +1,17 @@
+import re
 import time
 from typing import ClassVar
 from unittest import SkipTest
+from urllib.parse import urljoin
 from uuid import uuid4
 
-from requests import put
+import pytest
+from requests import (
+    get,
+    post,
+    put,
+    Session,
+)
 
 from galaxy.model.unittest_utils.store_fixtures import (
     history_model_store_dict,
@@ -13,11 +21,13 @@ from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.api_asserts import assert_has_keys
 from galaxy_test.base.decorators import (
     requires_admin,
+    requires_new_library,
     requires_new_user,
 )
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    LibraryPopulator,
     skip_without_tool,
 )
 from ._framework import ApiTestCase
@@ -68,7 +78,6 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         create_response = self._post("histories", data=post_data, json=True).json()
         self._assert_has_keys(create_response, "name", "id")
         assert create_response["name"] == name
-        return create_response
 
     def test_show_history(self):
         history_id = self._create_history("TestHistoryForShow")["id"]
@@ -130,6 +139,13 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         history_id = self._create_history("TestHistoryRecent")["id"]
         show_response = self._get("histories/most_recently_used").json()
         assert show_response["id"] == history_id
+
+    def test_show_most_recently_used_without_session(self):
+        # A request with neither an API key nor a galaxysession cookie has no user and no current
+        # history, so there is no most recently used history to serialize.
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/23439.
+        response = get(urljoin(self.url, "api/histories/most_recently_used"))
+        self._assert_status_code_is(response, 404)
 
     def test_index_order(self):
         slightly_older_history_id = self._create_history("TestHistorySlightlyOlder")["id"]
@@ -267,6 +283,21 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             query = f"?q=name-contains&qv={name_contains}"
             index_response = self._get(f"histories{query}").json()
             assert len(index_response) == 3
+
+    def test_index_sort_by_name_is_case_insensitive(self):
+        # Codepoint ordering would sort every capitalised name ahead of every lowercase one.
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            unique_id = uuid4().hex
+            for name in [f"Zeta_{unique_id}", f"alpha_{unique_id}", f"Beta_{unique_id}"]:
+                self._create_history(name)
+
+            data = dict(search=unique_id, show_published=False, sort_by="name", sort_desc=False)
+            names = [history["name"] for history in self._get("histories", data=data).json()]
+            assert names == [f"alpha_{unique_id}", f"Beta_{unique_id}", f"Zeta_{unique_id}"]
+
+            data["sort_desc"] = True
+            names = [history["name"] for history in self._get("histories", data=data).json()]
+            assert names == [f"Zeta_{unique_id}", f"Beta_{unique_id}", f"alpha_{unique_id}"]
 
     def test_index_advanced_filter(self):
         # Create the histories with a different user to ensure the test
@@ -564,6 +595,58 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         )
         assert copied_collection["tags"] == ["hdca_tag"], f"Expected ['hdca_tag'] but got {copied_collection['tags']}"
 
+    def test_copy_datasets_to_history_does_not_duplicate_tags(self):
+        source_history_id = self.dataset_populator.new_history()
+        target_history_id = self.dataset_populator.new_history()
+
+        # Create a tagged HDA
+        new_hda = self.dataset_populator.new_dataset(source_history_id, content="tagged dataset")
+        hda_id = new_hda["id"]
+        self.dataset_populator.tag_dataset(source_history_id, hda_id, tags=["hda_tag"])
+
+        # Create a tagged HDCA
+        fetch_response = self.dataset_collection_populator.create_list_in_history(
+            source_history_id, contents=["Hello", "World"], direct_upload=True
+        )
+        collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response.json())
+        hdca_id = collection["id"]
+        self._put(
+            f"histories/{source_history_id}/contents/dataset_collections/{hdca_id}",
+            data={"tags": ["hdca_tag"]},
+            json=True,
+        ).raise_for_status()
+
+        # Copy both to target history via copy_contents endpoint
+        payload = {
+            "source_content": [
+                {"id": hda_id, "type": "dataset"},
+                {"id": hdca_id, "type": "dataset_collection"},
+            ],
+            "target_history_ids": [target_history_id],
+        }
+        self._post(
+            f"histories/{source_history_id}/copy_contents",
+            data=payload,
+            json=True,
+        ).raise_for_status()
+
+        # Verify copied HDA tags are not duplicated
+        target_contents = self._get(f"histories/{target_history_id}/contents").json()
+        copied_hdas = [c for c in target_contents if c["history_content_type"] == "dataset" and c["visible"]]
+        assert len(copied_hdas) == 1
+        copied_hda_details = self.dataset_populator.get_history_dataset_details(
+            history_id=target_history_id, dataset_id=copied_hdas[0]["id"]
+        )
+        assert copied_hda_details["tags"] == ["hda_tag"], f"Expected ['hda_tag'] but got {copied_hda_details['tags']}"
+
+        # Verify copied HDCA tags are not duplicated
+        copied_hdcas = [c for c in target_contents if c["history_content_type"] == "dataset_collection"]
+        assert len(copied_hdcas) == 1
+        copied_collection = self.dataset_populator.get_history_collection_details(
+            history_id=target_history_id, history_content_type="dataset_collection"
+        )
+        assert copied_collection["tags"] == ["hdca_tag"], f"Expected ['hdca_tag'] but got {copied_collection['tags']}"
+
     # TODO: (CE) test_create_from_copy
     def test_import_from_model_store_dict(self):
         response = self.dataset_populator.create_from_store(store_dict=history_model_store_dict())
@@ -586,6 +669,19 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             }
             self.dataset_populator.import_history(import_data)
 
+    def test_anonymous_without_session_cannot_copy_published(self):
+        history_id = self.dataset_populator.new_history(name=f"for_copying_without_session_{uuid4()}")
+        self.dataset_populator.make_public(history_id)
+
+        # A request with neither an API key nor a galaxysession cookie has no session to own the copy,
+        # so copying a published history is rejected rather than doing the copy and orphaning it.
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/23148.
+        copy_response = post(
+            urljoin(self.url, "api/histories"),
+            json={"history_id": history_id, "name": f"copied_without_session_{uuid4()}"},
+        )
+        self._assert_status_code_is(copy_response, 403)
+
     def test_publish_non_alphanumeric(self):
         history_name = "تاریخچه"
         history_id = self.dataset_populator.new_history(name=history_name)
@@ -601,7 +697,7 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         assert show_response["name"] == "Immutable Name"
 
         # once we purge the history, it becomes immutable
-        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        self.dataset_populator.purge_history(history_id)
 
         # we cannot update the name anymore
         response = self._update(history_id, {"name": "New Name"})
@@ -617,7 +713,7 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         self.dataset_populator.new_dataset(history_id, content="TestContents")
 
         # once we purge the history, it becomes immutable
-        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        self.dataset_populator.purge_history(history_id)
 
         # we cannot add another dataset
         with self.assertRaisesRegex(AssertionError, "History is immutable"):
@@ -631,7 +727,7 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         self._update(history_id, {"tags": ["FirstTag"]})
 
         # once we purge the history, it becomes immutable
-        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        self.dataset_populator.purge_history(history_id)
 
         # we cannot add another tag
         response = self._update(history_id, {"tags": ["SecondTag"]})
@@ -955,6 +1051,7 @@ class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.library_populator = LibraryPopulator(self.galaxy_interactor)
 
     @requires_new_user
     def test_sharing_with_private_datasets(self):
@@ -1077,6 +1174,73 @@ class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
             hda = show_response.json()
             assert hda["id"] == hda_id
 
+    @requires_new_library
+    @requires_new_user
+    def test_make_private_imported_history(self):
+        source_history_id = self.dataset_populator.new_history()
+        source_hdas = [
+            self.dataset_populator.new_dataset(source_history_id, content=content, wait=True)
+            for content in ("source dataset one", "source dataset two")
+        ]
+        library_dataset = self.library_populator.new_library_dataset("source library dataset")
+        library_copy_response = self._post(
+            f"histories/{source_history_id}/contents",
+            data={"content": library_dataset["id"], "source": "library", "type": "dataset"},
+            json=True,
+        )
+        library_copy_response.raise_for_status()
+        source_library_hda = library_copy_response.json()
+        self.dataset_populator.make_dataset_public_raw(source_history_id, source_library_hda["id"]).raise_for_status()
+        self.dataset_populator.make_public(source_history_id)
+
+        with self._different_user():
+            importer_email = self._get("users/current").json()["email"]
+            copied_history_response = self.dataset_populator.copy_history(source_history_id)
+            copied_history_response.raise_for_status()
+            copied_history_id = copied_history_response.json()["id"]
+            imported_hdas = self.dataset_populator.get_history_contents(copied_history_id)
+            importer_hda = self.dataset_populator.new_dataset(copied_history_id, content="importer dataset", wait=True)
+
+            make_private_response = self._make_history_private_as_browser(importer_email, copied_history_id)
+            # the two imported datasets belong to the source user, the library dataset is not counted
+            assert make_private_response["skipped_datasets"] == len(source_hdas)
+
+            for imported_hda, source_hda in zip(imported_hdas, source_hdas):
+                imported_details = self._get(f"datasets/{imported_hda['id']}")
+                self._assert_status_code_is(imported_details, 200)
+                assert imported_details.json()["dataset_id"] == source_hda["dataset_id"]
+            self._assert_status_code_is(self._get(f"datasets/{importer_hda['id']}"), 200)
+
+            with self._different_user("unrelated-user@test.galaxyproject.org"):
+                for hda in imported_hdas:
+                    self._assert_status_code_is(self._get(f"datasets/{hda['id']}"), 200)
+                self._assert_status_code_is(self._get(f"datasets/{importer_hda['id']}"), 403)
+
+        source_history = self._show(source_history_id)
+        assert source_history["published"] is True
+        with self._different_user("unrelated-user@test.galaxyproject.org"):
+            for hda in [*source_hdas, source_library_hda]:
+                self._assert_status_code_is(self._get(f"datasets/{hda['id']}"), 200)
+
+    def _make_history_private_as_browser(self, email: str, history_id: str) -> dict:
+        # history/make_private is a legacy controller route outside /api, so it
+        # only accepts a browser session, not an API key.
+        with Session() as session:
+            login_page = session.get(urljoin(self.url, "login/start"))
+            self._assert_status_code_is(login_page, 200)
+            csrf_token_match = re.search(r'session_csrf_token = "(.*)"', login_page.text)
+            assert csrf_token_match
+            login_response = session.post(
+                urljoin(self.url, "user/login"),
+                data={"login": email, "password": "testpass", "session_csrf_token": csrf_token_match.group(1)},
+            )
+            self._assert_status_code_is(login_response, 200)
+            make_private_response = session.post(
+                urljoin(self.url, "history/make_private"), data={"history_id": history_id}
+            )
+            self._assert_status_code_is(make_private_response, 200)
+            return make_private_response.json()
+
     def _share_history_with_payload(self, history_id, payload):
         sharing_response = self._put(f"histories/{history_id}/share_with_users", data=payload, json=True)
         self._assert_status_code_is(sharing_response, 200)
@@ -1196,3 +1360,97 @@ class TestArchivingHistoriesWithoutExportRecord(ApiTestCase, BaseHistories):
         histories = self.dataset_populator.get_histories()
         for history in histories:
             assert history["id"] != history_id
+
+
+class TestHistoryGraphApi(ApiTestCase, BaseHistories):
+    """API-level tests for ``GET /api/histories/{id}/graph``.
+
+    These cover the surface the endpoint owns: status codes, query
+    parameter validation, auth boundaries, and response shape. Builder
+    logic is exercised separately in ``test_HistoryGraphBuilder``.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    # ── response shape ──
+
+    def test_empty_history_returns_empty_graph(self):
+        history_id = self.dataset_populator.new_history()
+        body = self.dataset_populator.get_history_graph(history_id)
+        self._assert_has_keys(body, "nodes", "edges", "truncated")
+        assert body["nodes"] == []
+        assert body["edges"] == []
+        assert body["truncated"]["item_count_capped"] is False
+        assert body["truncated"]["scope_type"] == "recent"
+
+    def test_standalone_datasets_appear_as_dataset_nodes(self):
+        history_id = self.dataset_populator.new_history()
+        self.dataset_populator.new_dataset(history_id, content="a", wait=True)
+        self.dataset_populator.new_dataset(history_id, content="b", wait=True)
+        body = self.dataset_populator.get_history_graph(history_id)
+        assert len(body["nodes"]) == 2
+        assert body["edges"] == []
+        assert all(n["src"] == "hda" for n in body["nodes"])
+
+    def test_limit_caps_items_and_sets_truncation_flag(self):
+        history_id = self.dataset_populator.new_history()
+        for i in range(5):
+            self.dataset_populator.new_dataset(history_id, content=f"row {i}", wait=True)
+        body = self.dataset_populator.get_history_graph(history_id, limit=3)
+        assert len(body["nodes"]) == 3
+        assert body["truncated"]["item_count_capped"] is True
+
+    def test_seed_scope_returns_seed_centered_window(self):
+        history_id = self.dataset_populator.new_history()
+        dataset = self.dataset_populator.new_dataset(history_id, content="seed", wait=True)
+        body = self.dataset_populator.get_history_graph(
+            history_id, seed_scope_src="hda", seed_scope_id=dataset["id"], limit=5
+        )
+        assert body["truncated"]["scope_type"] == "seed_centered"
+        assert ("hda", dataset["id"]) in {(n["src"], n["id"]) for n in body["nodes"]}
+
+    # ── query-parameter validation (API-layer regex and bounds) ──
+
+    @pytest.mark.parametrize(
+        "param,value",
+        [
+            ("seed_src", "bogus"),  # not a valid NodeSrc
+            ("seed_scope_src", "tool_request"),  # not allowed as a scope center
+            ("limit", 5000),  # above max
+            ("depth", 21),  # above max
+        ],
+    )
+    def test_invalid_query_params_return_400(self, param, value):
+        history_id = self.dataset_populator.new_history()
+        response = self.dataset_populator.get_history_graph_raw(history_id, **{param: value})
+        self._assert_status_code_is(response, 400)
+
+    def test_seed_src_without_seed_id_is_rejected(self):
+        history_id = self.dataset_populator.new_history()
+        response = self.dataset_populator.get_history_graph_raw(history_id, seed_src="hda")
+        self._assert_status_code_is(response, 400)
+
+    # ── manager-level validation (after API regex passes) ──
+
+    def test_seed_scope_not_in_target_history_is_rejected(self):
+        source_history = self.dataset_populator.new_history()
+        dataset = self.dataset_populator.new_dataset(source_history, content="a", wait=True)
+        target_history = self.dataset_populator.new_history()
+        response = self.dataset_populator.get_history_graph_raw(
+            target_history, seed_scope_src="hda", seed_scope_id=dataset["id"]
+        )
+        self._assert_status_code_is(response, 404)
+
+    # ── auth ──
+
+    def test_other_users_history_is_forbidden(self):
+        with self._different_user():
+            other_history_id = self.dataset_populator.new_history()
+        response = self.dataset_populator.get_history_graph_raw(other_history_id)
+        self._assert_status_code_is(response, 403)
+
+    def test_nonexistent_history_is_rejected(self):
+        response = self.dataset_populator.get_history_graph_raw("0000000000000000")
+        self._assert_status_code_is(response, 400)

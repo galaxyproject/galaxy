@@ -1,16 +1,19 @@
+import re
 from enum import Enum
 from typing import (
-    List,
-    Optional,
+    Annotated,
+    Literal,
     Union,
 )
 
 from pydantic import (
+    ConfigDict,
     Field,
+    model_validator,
+    with_config,
 )
+from pydantic_core import PydanticCustomError
 from typing_extensions import (
-    Annotated,
-    Literal,
     NotRequired,
     TypedDict,
 )
@@ -19,6 +22,8 @@ from ._base import ToolSourceBaseModel
 
 
 class Container(ToolSourceBaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     type: Literal["docker", "singularity"]
     container_id: str
 
@@ -28,6 +33,8 @@ class Requirement(ToolSourceBaseModel):
 
 
 class ContainerRequirement(ToolSourceBaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     type: Literal["container"]
     container: Container
 
@@ -35,7 +42,7 @@ class ContainerRequirement(ToolSourceBaseModel):
 class PackageRequirement(Requirement):
     type: Literal["package"]
     name: str
-    version: Optional[str]
+    version: str | None = None
 
 
 class SetEnvironmentRequirement(Requirement):
@@ -53,39 +60,82 @@ ram_max_description = "Maximum reserved RAM in mebibytes (2**20)."
 ram_description = """May be a fractional value. If so, the actual RAM request is rounded up to the next whole number. The reported amount of RAM reserved for the process is a non-zero integer."""
 
 
+ResourceRequirementValue = int | float | str | None
+
+
 class ResourceRequirement(ToolSourceBaseModel):
+    """A tool's compute resource request.
+
+    Set the minimum resources needed to run the job and, when useful, an upper
+    limit. Galaxy exposes the allocated CPU count to the command as
+    ``$GALAXY_SLOTS``. Use numbers or numeric strings. Other strings are
+    reserved for expressions, which are not supported yet: a non-numeric value
+    fails the create-time lint check.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     type: Literal["resource"]
     cores_min: Annotated[
-        Union[int, float, None], Field(description=f"{cores_min_description}\n{cores_description}")
+        ResourceRequirementValue, Field(description=f"{cores_min_description}\n{cores_description}")
     ] = 1
     cores_max: Annotated[
-        Union[int, float, None], Field(description=f"{cores_max_description}\n{cores_description}")
+        ResourceRequirementValue, Field(description=f"{cores_max_description}\n{cores_description}")
     ] = None
-    ram_min: Annotated[Union[int, float, None], Field(description=f"{ram_min_description}\n{ram_description}")] = 256
-    ram_max: Annotated[Union[int, float, None], Field(description=f"{ram_max_description}\n{ram_description}")] = None
-    tmpdir_min: Optional[Union[int, float]] = None
-    tmpdir_max: Optional[Union[int, float]] = None
-    cuda_version_min: Optional[Union[int, float]] = None
-    cuda_compute_capability: Optional[Union[int, float]] = None
-    gpu_memory_min: Optional[Union[int, float]] = None
-    cuda_device_count_min: Optional[Union[int, float]] = None
-    cuda_device_count_max: Optional[Union[int, float]] = None
-    shm_size: Optional[Union[int, float]] = None
+    ram_min: Annotated[ResourceRequirementValue, Field(description=f"{ram_min_description}\n{ram_description}")] = 256
+    ram_max: Annotated[ResourceRequirementValue, Field(description=f"{ram_max_description}\n{ram_description}")] = None
+    tmpdir_min: Annotated[
+        ResourceRequirementValue,
+        Field(description="Minimum reserved temporary directory space, in mebibytes (2**20)."),
+    ] = None
+    tmpdir_max: Annotated[
+        ResourceRequirementValue,
+        Field(description="Maximum reserved temporary directory space, in mebibytes (2**20)."),
+    ] = None
+    cuda_version_min: Annotated[
+        ResourceRequirementValue,
+        Field(description="Minimum CUDA runtime version required, e.g. 11.2."),
+    ] = None
+    cuda_compute_capability: Annotated[
+        ResourceRequirementValue,
+        Field(description="Minimum CUDA compute capability required, e.g. 7.5."),
+    ] = None
+    gpu_memory_min: Annotated[
+        ResourceRequirementValue,
+        Field(description="Minimum GPU memory required, in mebibytes (2**20)."),
+    ] = None
+    cuda_device_count_min: Annotated[
+        ResourceRequirementValue,
+        Field(description="Minimum number of GPUs to reserve."),
+    ] = None
+    cuda_device_count_max: Annotated[
+        ResourceRequirementValue,
+        Field(description="Maximum number of GPUs to reserve."),
+    ] = None
+    shm_size: Annotated[
+        ResourceRequirementValue,
+        Field(description="Size of /dev/shm to request, in bytes."),
+    ] = None
     timelimit: Annotated[
-        Union[int, float, None],
+        ResourceRequirementValue,
         Field(description="Maximum time in seconds the tool is allowed to run. Job will be terminated if exceeded."),
     ] = None
 
 
 class JavascriptRequirement(ToolSourceBaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     type: Literal["javascript"]
-    expression_lib: Optional[
-        List[
+    expression_lib: None | (
+        list[
             Annotated[
                 str,
                 Field(
                     title="expression_lib",
-                    description="Provide Javascript/ECMAScript 5.1 code here that will be available for expressions inside the `shell_command` field.",
+                    description=(
+                        "Provide Javascript/ECMAScript 5.1 code here that will be available for expressions "
+                        "inside `shell_command` and `configfiles[*].content`."
+                    ),
                     examples=[r"""function pickValue() {
     if (inputs.conditional_parameter.test_parameter == "a") {
         return inputs.conditional_parameter.integer_parameter
@@ -96,9 +146,10 @@ class JavascriptRequirement(ToolSourceBaseModel):
                 ),
             ]
         ]
-    ]
+    )
 
 
+@with_config(ConfigDict(field_title_generator=lambda field_name, field_info: field_name.lower()))
 class XrefDict(TypedDict):
     value: str
     type: str
@@ -106,20 +157,20 @@ class XrefDict(TypedDict):
 
 class TemplateConfigFile(ToolSourceBaseModel):
     content: str
-    name: Optional[str] = None
-    filename: Optional[str] = None
+    name: str | None = None
+    filename: str | None = None
 
 
 class InputConfigFileContent(ToolSourceBaseModel):
     format: Literal["json"] = "json"
-    handle_files: Optional[Literal["paths", "staging_path_and_source_path"]] = None
+    handle_files: Literal["paths", "staging_path_and_source_path"] | None = None
     type: Literal["inputs"] = "inputs"
 
 
 class InputConfigFile(ToolSourceBaseModel):
-    name: Optional[str] = None
+    name: str | None = None
     content: InputConfigFileContent
-    filename: Optional[str] = None
+    filename: str | None = None
 
 
 class FileSourceConfigFileContent(ToolSourceBaseModel):
@@ -127,8 +178,8 @@ class FileSourceConfigFileContent(ToolSourceBaseModel):
 
 
 class FileSourceConfigFile(ToolSourceBaseModel):
-    name: Optional[str]
-    filename: Optional[str] = None
+    name: str | None
+    filename: str | None = None
     content: FileSourceConfigFileContent
 
 
@@ -137,17 +188,97 @@ class XmlTemplateConfigFile(TemplateConfigFile):
 
 
 class YamlTemplateConfigFile(TemplateConfigFile):
+    model_config = ConfigDict(extra="forbid")
+
     eval_engine: Literal["ecmascript"] = "ecmascript"
 
 
+# DOI: '10.<registrant>/<suffix>' per Crossref's published shape.
+DOI_RE = re.compile(r"^10\.\d{4,9}/.+$")
+# Legacy W3C/RFC form prefixes a bare DOI with 'doi:' (optionally with whitespace
+# after the colon). Tools written before 26.1 routinely used this form, so we
+# normalize it away to the bare DOI rather than rejecting it.
+DOI_PREFIX_RE = re.compile(r"^doi:\s*", re.IGNORECASE)
+# BibTeX entries open with '@<type>{' -- e.g. '@article{', '@inproceedings{'.
+BIBTEX_RE = re.compile(r"^@[a-zA-Z]+\s*\{", re.MULTILINE)
+
+
 class Citation(ToolSourceBaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     type: str
     content: str
 
+    @model_validator(mode="after")
+    def _check_citation_shape(self) -> "Citation":
+        content = (self.content or "").strip()
+        if not content:
+            raise PydanticCustomError(
+                "dynamic_tool.citation_empty",
+                "citation content must not be empty",
+            )
+        # Normalize the legacy 'doi:' prefix to a bare DOI so older tools load and
+        # so downstream DOI resolution (https://doi.org/<doi>) gets a clean value.
+        normalized = DOI_PREFIX_RE.sub("", content, count=1)
+        if normalized != content:
+            content = normalized
+            self.content = normalized
+        citation_type = (self.type or "").strip().lower()
+        if citation_type == "doi":
+            if not DOI_RE.match(content):
+                raise PydanticCustomError(
+                    "dynamic_tool.citation_doi_invalid",
+                    "declared as DOI but '{content}' does not match DOI shape (^10\\.\\d{{4,9}}/.+$)",
+                    {"content": content},
+                )
+            return self
+        if citation_type == "bibtex":
+            if not BIBTEX_RE.search(content):
+                raise PydanticCustomError(
+                    "dynamic_tool.citation_bibtex_invalid",
+                    "declared as bibtex but content does not start with '@<type>{{'",
+                )
+            return self
+        # Type wasn't explicitly doi/bibtex -- accept if the content shape is
+        # one of the two known forms. Lets a slightly mis-typed entry through
+        # instead of fighting models that emit type='reference' or similar.
+        if DOI_RE.match(content) or BIBTEX_RE.search(content):
+            return self
+        raise PydanticCustomError(
+            "dynamic_tool.citation_unrecognized",
+            "citation (type={ctype}) is neither a recognizable DOI nor a BibTeX entry",
+            {"ctype": repr(self.type)},
+        )
+
 
 class HelpContent(ToolSourceBaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     format: Literal["restructuredtext", "plain_text", "markdown"]
     content: str
+
+
+StdioExitCodeRangeValue = int | float | Literal["-inf", "inf"]
+
+
+class StdioExitCode(ToolSourceBaseModel):
+    range_start: StdioExitCodeRangeValue
+    range_end: StdioExitCodeRangeValue
+    error_level: int | float
+    desc: str | None = None
+
+
+class StdioRegex(ToolSourceBaseModel):
+    match: str
+    stdout_match: bool
+    stderr_match: bool
+    error_level: int | float
+    desc: str | None = None
+
+
+class Stdio(ToolSourceBaseModel):
+    exit_codes: list[StdioExitCode] = Field(default_factory=list)
+    regexes: list[StdioRegex] = Field(default_factory=list)
 
 
 class OutputCompareType(str, Enum):
@@ -160,36 +291,36 @@ class OutputCompareType(str, Enum):
 
 
 class DrillDownOptionsDict(TypedDict):
-    name: Optional[str]
+    name: str | None
     value: str
-    options: List["DrillDownOptionsDict"]
+    options: list["DrillDownOptionsDict"]
     selected: bool
 
 
 # For fields... just implementing a subset of CWL for Galaxy flavors of these objects
 # so far.
 CwlType = Literal["File", "null", "boolean", "int", "float", "string"]
-FieldType = Union[CwlType, List[CwlType]]
+FieldType = CwlType | list[CwlType]
 
 
-# type ignore because mypy can't handle closed TypedDicts yet
-class FieldDict(TypedDict, closed=True):  # type: ignore[call-arg]
+@with_config(ConfigDict(extra="forbid"))
+class FieldDict(TypedDict, closed=True):
     name: str
     type: FieldType
-    format: NotRequired[Optional[str]]
+    format: NotRequired[str | None]
 
 
 JsonTestDatasetDefDict = TypedDict(
     "JsonTestDatasetDefDict",
     {
         "class": Literal["File"],
-        "path": NotRequired[Optional[str]],
-        "location": NotRequired[Optional[str]],
-        "name": NotRequired[Optional[str]],
-        "dbkey": NotRequired[Optional[str]],
-        "filetype": NotRequired[Optional[str]],
-        "composite_data": NotRequired[Optional[List[str]]],
-        "tags": NotRequired[Optional[List[str]]],
+        "path": NotRequired[str | None],
+        "location": NotRequired[str | None],
+        "name": NotRequired[str | None],
+        "dbkey": NotRequired[str | None],
+        "filetype": NotRequired[str | None],
+        "composite_data": NotRequired[list[str] | None],
+        "tags": NotRequired[list[str] | None],
     },
 )
 
@@ -202,13 +333,13 @@ JsonTestCollectionDefDatasetElementDict = TypedDict(
     {
         "identifier": str,
         "class": Literal["File"],
-        "path": NotRequired[Optional[str]],
-        "location": NotRequired[Optional[str]],
-        "name": NotRequired[Optional[str]],
-        "dbkey": NotRequired[Optional[str]],
-        "filetype": NotRequired[Optional[str]],
-        "composite_data": NotRequired[Optional[List[str]]],
-        "tags": NotRequired[Optional[List[str]]],
+        "path": NotRequired[str | None],
+        "location": NotRequired[str | None],
+        "name": NotRequired[str | None],
+        "dbkey": NotRequired[str | None],
+        "filetype": NotRequired[str | None],
+        "composite_data": NotRequired[list[str] | None],
+        "tags": NotRequired[list[str] | None],
     },
 )
 
@@ -216,8 +347,8 @@ BaseJsonTestCollectionDefCollectionElementDict = TypedDict(
     "BaseJsonTestCollectionDefCollectionElementDict",
     {
         "class": Literal["Collection"],
-        "collection_type": Optional[str],
-        "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
+        "collection_type": str | None,
+        "elements": NotRequired[list[JsonTestCollectionDefElementDict] | None],
     },
 )
 
@@ -226,8 +357,8 @@ JsonTestCollectionDefCollectionElementDict = TypedDict(
     {
         "identifier": str,
         "class": Literal["Collection"],
-        "collection_type": Optional[str],
-        "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
+        "collection_type": str | None,
+        "elements": NotRequired[list[JsonTestCollectionDefElementDict] | None],
     },
 )
 
@@ -235,9 +366,9 @@ JsonTestCollectionDefDict = TypedDict(
     "JsonTestCollectionDefDict",
     {
         "class": Literal["Collection"],
-        "collection_type": Optional[str],
-        "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
-        "name": NotRequired[Optional[str]],
-        "fields": NotRequired[Optional[List[FieldDict]]],
+        "collection_type": str | None,
+        "elements": NotRequired[list[JsonTestCollectionDefElementDict] | None],
+        "name": NotRequired[str | None],
+        "fields": NotRequired[list[FieldDict] | None],
     },
 )

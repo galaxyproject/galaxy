@@ -59,6 +59,7 @@ def create_model_collection(collection_type, elements_data):
             hda = HistoryDatasetAssociation(create_dataset=True, flush=False, name=content)
             hda.id = i + 100  # Fake ID for testing
             # Also satisfy accessing hda.dataset.created_from_basename or hda.name in generic adapt if needed
+            assert hda.dataset is not None
             hda.dataset.id = i + 1000
 
             dce = DatasetCollectionElement(collection=collection, element_identifier=name, element_index=i, element=hda)

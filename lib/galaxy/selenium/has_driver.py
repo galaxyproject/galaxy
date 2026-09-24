@@ -6,14 +6,13 @@ attribute.
 
 import abc
 import threading
+from collections.abc import Sequence
 from contextlib import contextmanager
 from typing import (
     Any,
     cast,
     Generic,
     Literal,
-    Optional,
-    Union,
 )
 
 from axe_selenium_python import Axe
@@ -41,15 +40,21 @@ from .axe_results import (
 from .has_driver_protocol import (
     Cookie,
     HasElementLocator,
+    HOVER_AWAY_OFFSET,
     TimeoutCallback,
     WaitTypeT,
 )
+from .keys import (
+    Key,
+    validate_key_press,
+)
+from .selenium_keys import KEY_TO_SELENIUM
 from .wait_methods_mixin import WaitMethodsMixin
 from .web_element_protocol import WebElementProtocol
 
 UNSPECIFIED_TIMEOUT = object()
 
-HasFindElement = Union[WebDriver, WebElement]
+HasFindElement = WebDriver | WebElement
 DEFAULT_AXE_SCRIPT_URL = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.7.1/axe.min.js"
 AXE_SCRIPT_HASH: dict[str, str] = {}
 AXE_SCRIPT_HASH_LOCK = threading.Lock()
@@ -124,7 +129,6 @@ class TimeoutMessageMixin:
 
 class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
     by: type[By] = By
-    keys: type[Keys] = Keys
     driver: WebDriver
     axe_script_url: str = DEFAULT_AXE_SCRIPT_URL
     axe_skip: bool = False
@@ -172,6 +176,10 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
             url: The URL to navigate to
         """
         self.driver.get(url)
+
+    def refresh(self) -> None:
+        """Reload the current page."""
+        self.driver.refresh()
 
     def re_get_with_query_params(self, params_str: str):
         driver = self.driver
@@ -245,7 +253,7 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
     def element_absent(self, selector_template: Target) -> bool:
         return len(self.find_elements(selector_template)) == 0
 
-    def switch_to_frame(self, frame_reference: Union[str, int, WebElement] = "frame"):
+    def switch_to_frame(self, frame_reference: str | int | WebElement = "frame"):
         """
         Switch to an iframe or frame.
 
@@ -325,7 +333,7 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         element = self.driver.find_element(*selector_template.element_locator)
         element.click()
 
-    def _wait_on_selenium_condition(self, condition, on_str: Optional[str] = None, **kwds):
+    def _wait_on_selenium_condition(self, condition, on_str: str | None = None, **kwds):
         if on_str is None:
             on_str = str(condition)
         wait = self.wait(**kwds)
@@ -366,14 +374,47 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         self.action_chains().move_to_element(element).perform()
 
-    def send_enter(self, element: Optional[WebElement] = None):
-        self._send_key(Keys.ENTER, element)
+    def active_element(self) -> WebElement:
+        return self.driver.switch_to.active_element
 
-    def send_escape(self, element: Optional[WebElement] = None):
-        self._send_key(Keys.ESCAPE, element)
+    def press(
+        self,
+        *keys: Key | str,
+        modifiers: Sequence[Key] = (),
+        element: WebElement | None = None,
+    ) -> None:
+        validate_key_press(keys, modifiers)
+        if not keys:
+            return
+        selenium_keys = [KEY_TO_SELENIUM[key] if isinstance(key, Key) else key for key in keys]
+        chain = self.action_chains()
+        if element is not None:
+            # Focus once so Tab and other focus-changing keys can advance naturally.
+            self.execute_script("arguments[0].focus();", element)
+        for modifier in modifiers:
+            chain = chain.key_down(KEY_TO_SELENIUM[modifier])
+        for selenium_key in selenium_keys:
+            chain = chain.send_keys(selenium_key)
+        for modifier in reversed(modifiers):
+            chain = chain.key_up(KEY_TO_SELENIUM[modifier])
+        chain.perform()
 
-    def send_backspace(self, element: Optional[WebElement] = None):
-        self._send_key(Keys.BACKSPACE, element)
+    def hover_away(self) -> None:
+        """
+        Move the mouse off whatever element it is currently over.
+
+        Used to dismiss hover-triggered UI such as tooltips.
+        """
+        self.action_chains().move_by_offset(HOVER_AWAY_OFFSET, HOVER_AWAY_OFFSET).perform()
+
+    def send_enter(self, element: WebElement | None = None):
+        self.press(Key.ENTER, element=element)
+
+    def send_escape(self, element: WebElement | None = None):
+        self.press(Key.ESCAPE, element=element)
+
+    def send_backspace(self, element: WebElement | None = None):
+        self.press(Key.BACKSPACE, element=element)
 
     def aggressive_clear(self, element: WebElement) -> None:
         # for when a simple .clear() doesn't work
@@ -381,19 +422,13 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         for _ in range(25):
             element.send_keys(Keys.BACKSPACE)
 
-    def _send_key(self, key: str, element: Optional[WebElement] = None):
-        if element is None:
-            self.action_chains().send_keys(key)
-        else:
-            element.send_keys(key)
-
     @property
     @abc.abstractmethod
     def timeout_handler(self) -> TimeoutCallback:
         """Get timeout handler for application specific wait types."""
         ...
 
-    def wait(self, timeout=UNSPECIFIED_TIMEOUT, wait_type: Optional[WaitTypeT] = None, **kwds):
+    def wait(self, timeout=UNSPECIFIED_TIMEOUT, wait_type: WaitTypeT | None = None, **kwds):
         if timeout is UNSPECIFIED_TIMEOUT:
             timeout = self.timeout_handler(wait_type)
         return WebDriverWait(self.driver, timeout)
@@ -474,7 +509,7 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         return self.driver.execute_script(script, *args)
 
-    def set_local_storage(self, key: str, value: Union[str, float]) -> None:
+    def set_local_storage(self, key: str, value: str | float) -> None:
         """
         Set a value in the browser's localStorage.
 
@@ -500,19 +535,31 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         Args:
             element: The element to scroll into view
         """
-        self.execute_script("arguments[0].scrollIntoView(true);", element)
+        self.execute_script('arguments[0].scrollIntoView({block: "center", inline: "nearest"});', element)
 
     def set_element_value(self, element: WebElement, value: str) -> None:
         """
         Set an element's value property directly using JavaScript.
 
-        This is useful for contenteditable elements or when .clear() doesn't work.
+        This is useful for contenteditable elements, Vue/JS framework inputs
+        that need event dispatch, or when .clear() doesn't work.
+
+        The value is passed via ``arguments[1]`` (not interpolated into the JS
+        string) so that values containing quotes or other special characters
+        are handled correctly. Both ``input`` and ``change`` events are
+        dispatched so that reactive frameworks (e.g. Vue) detect the change.
 
         Args:
             element: The element to modify
             value: The value to set
         """
-        self.execute_script(f"arguments[0].value = '{value}';", element)
+        self.execute_script(
+            "arguments[0].value = arguments[1];"
+            "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));"
+            "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));",
+            element,
+            value,
+        )
 
     def execute_script_click(self, element: WebElement) -> None:
         """
@@ -525,21 +572,19 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         self.execute_script("arguments[0].click();", element)
 
-    def find_element_by_link_text(self, text: str, element: Optional[WebElement] = None) -> WebElementProtocol:
+    def find_element_by_link_text(self, text: str, element: WebElement | None = None) -> WebElementProtocol:
         return _webelement_to_protocol(self._locator_aware(element).find_element(By.LINK_TEXT, text))
 
-    def find_element_by_xpath(self, xpath: str, element: Optional[WebElement] = None) -> WebElementProtocol:
+    def find_element_by_xpath(self, xpath: str, element: WebElement | None = None) -> WebElementProtocol:
         return _webelement_to_protocol(self._locator_aware(element).find_element(By.XPATH, xpath))
 
-    def find_element_by_id(self, id: str, element: Optional[WebElement] = None) -> WebElementProtocol:
+    def find_element_by_id(self, id: str, element: WebElement | None = None) -> WebElementProtocol:
         return _webelement_to_protocol(self._locator_aware(element).find_element(By.ID, id))
 
-    def find_element_by_selector(self, selector: str, element: Optional[WebElement] = None) -> WebElementProtocol:
+    def find_element_by_selector(self, selector: str, element: WebElement | None = None) -> WebElementProtocol:
         return _webelement_to_protocol(self._locator_aware(element).find_element(By.CSS_SELECTOR, selector))
 
-    def find_elements_by_selector(
-        self, selector: str, element: Optional[WebElement] = None
-    ) -> list[WebElementProtocol]:
+    def find_elements_by_selector(self, selector: str, element: WebElement | None = None) -> list[WebElementProtocol]:
         """
         Find multiple elements by CSS selector.
 
@@ -587,7 +632,24 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         select = Select(select_element)
         select.select_by_value(value)
 
-    def axe_eval(self, context: Optional[str] = None, write_to: Optional[str] = None) -> AxeResults:
+    def select_by_visible_text(self, selector_template: HasElementLocator, text: str) -> None:
+        """
+        Select an option from a <select> element by the text shown to the user.
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple for the select element
+            text: The visible text of the option to select
+        """
+        if isinstance(selector_template, Target):
+            locator = selector_template.element_locator
+        else:
+            locator = selector_template
+        self._wait_on_condition_visible(locator, f"select element {locator} to become visible")
+        select_element = _protocol_to_webelement(self.find_element(selector_template))
+        select = Select(select_element)
+        select.select_by_visible_text(text)
+
+    def axe_eval(self, context: str | None = None, write_to: str | None = None) -> AxeResults:
         if self.axe_skip:
             return NullAxeResults()
 
@@ -630,7 +692,7 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         self.driver.quit()
 
-    def _locator_aware(self, element: Optional[WebElement] = None) -> HasFindElement:
+    def _locator_aware(self, element: WebElement | None = None) -> HasFindElement:
         if element is None:
             return self.driver
         else:

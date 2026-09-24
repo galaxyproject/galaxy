@@ -15,6 +15,7 @@ import type {
     TableAction,
     TableEmptyState,
     TableField,
+    TableItemClassMeta,
 } from "./GTable.types";
 
 import GOverlay from "@/components/BaseComponents/GOverlay.vue";
@@ -187,6 +188,14 @@ interface Props {
     perPage?: number;
 
     /**
+     * Item field to expose as each row's `data-pk` attribute, enabling row
+     * selection by key (e.g. in selenium selectors). When unset, no `data-pk`
+     * is rendered.
+     * @default ""
+     */
+    primaryKey?: string;
+
+    /**
      * Whether to show striped rows
      * @default true
      */
@@ -199,10 +208,23 @@ interface Props {
     selectable?: boolean;
 
     /**
+     * Title for the selection checkboxes (for accessibility and tooltips)
+     * @default "Select for bulk actions"
+     */
+    selectCheckboxTitle?: string;
+
+    /**
      * Array of selected item indices
      * @default []
      */
     selectedItems?: number[];
+
+    /**
+     * Array of item indices whose selection is partial/mixed. Their row checkbox
+     * renders as indeterminate (e.g. a folder with only some children selected).
+     * @default []
+     */
+    indeterminateItems?: number[];
 
     /**
      * Whether to show the empty state message when no items are available
@@ -282,8 +304,11 @@ const props = withDefaults(defineProps<Props>(), {
     noSelectOnClick: false,
     overlayLoading: false,
     perPage: undefined,
+    primaryKey: "",
     selectable: false,
+    selectCheckboxTitle: "Select for bulk actions",
     selectedItems: () => [],
+    indeterminateItems: () => [],
     showEmpty: false,
     showSelectAll: false,
     sortBy: "",
@@ -315,7 +340,7 @@ const emit = defineEmits<{
      * Emitted when select all checkbox is toggled
      * @event select-all
      */
-    (e: "select-all"): void;
+    (e: "select-all", selected: boolean): void;
 
     /**
      * Emitted when a row is selected/deselected
@@ -520,7 +545,7 @@ function onRowClick(item: T, index: number, event: MouseEvent | KeyboardEvent) {
 }
 
 function onSelectAll(selected: boolean) {
-    emit("select-all");
+    emit("select-all", selected);
 }
 
 /**
@@ -585,15 +610,17 @@ function getAlignmentClass(align?: FieldAlignment) {
 }
 
 /**
- * Get cell variant class for Bootstrap color variants (e.g., "success", "danger", "info")
- * Supports the _cellVariants convention from b-table for backward compatibility
+ * Get row class from item metadata
  */
-function getCellVariantClass(item: T, field: TableField) {
-    const cellVariants = item._cellVariants as Record<string, string> | undefined;
-    if (!cellVariants || !cellVariants[field.key]) {
-        return undefined;
-    }
-    return `table-${cellVariants[field.key]}`;
+function getRowClass(item: T) {
+    return (item as TableItemClassMeta).class;
+}
+
+/**
+ * Get cell class from item metadata
+ */
+function getItemCellClass(item: T, fieldKey: string) {
+    return (item as TableItemClassMeta).cellClass?.[fieldKey];
 }
 
 /**
@@ -601,6 +628,10 @@ function getCellVariantClass(item: T, field: TableField) {
  */
 function isRowSelected(index: number) {
     return props.selectedItems.includes(index);
+}
+
+function isRowIndeterminate(index: number) {
+    return props.indeterminateItems.includes(index);
 }
 
 /**
@@ -652,7 +683,11 @@ defineExpose({
 </script>
 
 <template>
-    <div :id="`g-table-container-${props.id}`" class="g-table-container" :class="containerClass">
+    <div
+        :id="`g-table-container-${props.id}`"
+        class="g-table-container"
+        :class="containerClass"
+        :aria-busy="props.loading ? 'true' : 'false'">
         <!-- Table wrapper -->
         <GOverlay :show="overlayLoading" class="position-relative w-100">
             <div
@@ -684,7 +719,7 @@ defineExpose({
                                     <BFormCheckbox
                                         v-if="showSelectAll"
                                         :id="`g-table-select-all-${props.id}`"
-                                        v-b-tooltip.hover.noninteractive
+                                        v-g-tooltip.hover
                                         :disabled="selectAllDisabled"
                                         :checked="allSelected"
                                         :indeterminate="indeterminateSelected"
@@ -744,18 +779,24 @@ defineExpose({
                                 <tr
                                     :id="getRowId(props.id, getGlobalIndex(paginatedIndex))"
                                     :key="`tr` + getGlobalIndex(paginatedIndex)"
-                                    :class="{
-                                        'g-table-row-clickable': clickableRows || (selectable && !noSelectOnClick),
-                                        'g-table-row-selected': isRowSelected(getGlobalIndex(paginatedIndex)),
-                                    }"
+                                    :aria-rowindex="getGlobalIndex(paginatedIndex) + 1"
+                                    :data-pk="props.primaryKey ? item[props.primaryKey] : undefined"
+                                    :class="[
+                                        {
+                                            'g-table-row-clickable': clickableRows || (selectable && !noSelectOnClick),
+                                            'g-table-row-selected': isRowSelected(getGlobalIndex(paginatedIndex)),
+                                        },
+                                        getRowClass(item),
+                                    ]"
                                     @click="onRowClick(item, getGlobalIndex(paginatedIndex), $event)">
                                     <!-- Selection checkbox column -->
                                     <td v-if="selectable" class="g-table-select-column">
                                         <BFormCheckbox
                                             :id="`${getRowId(props.id, getGlobalIndex(paginatedIndex))}-select`"
-                                            v-b-tooltip.hover.noninteractive
+                                            v-g-tooltip.hover
                                             :checked="isRowSelected(getGlobalIndex(paginatedIndex))"
-                                            title="Select for bulk actions"
+                                            :indeterminate="isRowIndeterminate(getGlobalIndex(paginatedIndex))"
+                                            :title="props.selectCheckboxTitle"
                                             @click.stop
                                             @change="onRowSelect(item, getGlobalIndex(paginatedIndex))" />
                                     </td>
@@ -770,7 +811,7 @@ defineExpose({
                                             field.cellClass,
                                             field.class,
                                             getAlignmentClass(field.align),
-                                            getCellVariantClass(item, field),
+                                            getItemCellClass(item, field.key),
                                             { 'hide-on-small': field.hideOnSmall },
                                         ]">
                                         <template
@@ -779,7 +820,7 @@ defineExpose({
                                             ">
                                             <FontAwesomeIcon
                                                 v-if="getStatusIcon(item, getGlobalIndex(paginatedIndex))"
-                                                v-b-tooltip.hover.noninteractive
+                                                v-g-tooltip.hover
                                                 v-bind="getIconProps(item, getGlobalIndex(paginatedIndex))"
                                                 fixed-width />
                                         </template>
@@ -798,7 +839,7 @@ defineExpose({
                                     <td v-if="props.actions" class="g-table-actions-column">
                                         <slot name="actions" :item="item" :index="getGlobalIndex(paginatedIndex)">
                                             <BDropdown
-                                                v-b-tooltip.hover.noninteractive
+                                                v-g-tooltip.hover
                                                 no-caret
                                                 right
                                                 title="More actions"
@@ -1030,6 +1071,15 @@ defineExpose({
 
             .custom-checkbox {
                 cursor: pointer;
+
+                // The visible checkbox is the (empty) label's ::before box, while
+                // the real input is visually hidden; both default to the arrow
+                // cursor, making the checkbox look unclickable. Force a pointer
+                // across the whole control.
+                :deep(.custom-control-input:not(:disabled)),
+                :deep(.custom-control-input:not(:disabled) ~ .custom-control-label) {
+                    cursor: pointer;
+                }
             }
         }
 

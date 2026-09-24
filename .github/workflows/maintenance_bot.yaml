@@ -1,7 +1,8 @@
 name: Maintenance Bot
-on:
+on:  # zizmor: ignore[dangerous-triggers]
   pull_request_target:
     types: [opened, reopened, edited, ready_for_review, unlabeled]
+permissions: {}
 jobs:
   labeler:
     name: Assign labels and milestone
@@ -12,11 +13,11 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     env:
-      MILESTONE_NUMBER: 33
+      MILESTONE_NUMBER: 34
     steps:
       - name: Get latest pull request labels
         id: get_pr_labels
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const response = await github.rest.issues.listLabelsOnIssue({
@@ -28,7 +29,7 @@ jobs:
             return response.data;
       - name: Add area labels
         if: ${{ ! contains(join(fromJSON(steps.get_pr_labels.outputs.result).*.name, ', '), 'area/') }}
-        uses: actions/labeler@v6
+        uses: actions/labeler@v7.0.0
       - name: Assign milestone
         if: |
           ! github.event.pull_request.milestone &&
@@ -36,7 +37,7 @@ jobs:
           ! contains(github.event.pull_request.labels.*.name, 'status/WIP') &&
           ! contains(github.event.pull_request.title, 'WIP') &&
           ! github.event.pull_request.draft
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.update({

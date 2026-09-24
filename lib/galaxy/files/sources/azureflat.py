@@ -1,8 +1,4 @@
 import logging
-from typing import (
-    Optional,
-    Union,
-)
 
 from galaxy.files.models import (
     AnyRemoteEntry,
@@ -30,14 +26,14 @@ log = logging.getLogger(__name__)
 
 
 class AzureFlatFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
-    account_name: Union[str, TemplateExpansion]
-    container_name: Union[str, TemplateExpansion, None] = None
-    account_key: Union[str, TemplateExpansion]
+    account_name: str | TemplateExpansion
+    container_name: str | TemplateExpansion | None = None
+    account_key: str | TemplateExpansion
 
 
 class AzureFlatFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     account_name: str
-    container_name: Optional[str] = None
+    container_name: str | None = None
     account_key: str
 
 
@@ -60,29 +56,24 @@ class AzureFlatFilesSource(
             fs = AzureBlobFileSystem(account_name=config.account_name, credential=config.account_key, **cache_options)
             return fs
 
-    def _to_container_path(self, path: str, config: AzureFlatFileSourceConfiguration) -> str:
-        result = ""
+    def _to_filesystem_path(self, path: str, config: AzureFlatFileSourceConfiguration) -> str:
+        """Convert an entry path to the Azure filesystem path format."""
         if path.startswith("az://"):
-            result = path.replace("az://", "", 1)
-        else:
-            container = config.container_name
-            if not container:
-                result = path.strip("/")
-            else:
-                result = self._container_path(container, path)
-        return result
+            return path.replace("az://", "", 1)
+        container = config.container_name
+        if not container:
+            return path.strip("/")
+        if not path.startswith("/"):
+            path = f"/{path}"
+        return f"{container}{path}"
 
-    def _adapt_entry_path(self, filesystem_path: str) -> str:
-        result = filesystem_path
-        if container_name := self.template_config.container_name:
+    def _adapt_entry_path(self, filesystem_path: str, config: AzureFlatFileSourceConfiguration) -> str:
+        """Remove the Azure container name from the filesystem path."""
+        if container_name := config.container_name:
             prefix = f"{container_name}/"
             if filesystem_path.startswith(prefix):
-                result = filesystem_path.replace(prefix, "", 1)
-            else:
-                result = filesystem_path
-        else:
-            result = filesystem_path
-        return result
+                return filesystem_path.replace(prefix, "", 1)
+        return filesystem_path
 
     def _list(
         self,
@@ -90,10 +81,10 @@ class AzureFlatFilesSource(
         path: str = "/",
         recursive: bool = False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         if context.config.container_name is None and path == "/":
             fs = self._open_fs(context, {})
@@ -110,40 +101,15 @@ class AzureFlatFilesSource(
                     )
                 )
             return entries, len(entries)
-        container_path = self._to_container_path(path, context.config)
-        entries, count = super()._list(
+        return super()._list(
             context=context,
-            path=container_path,
+            path=path,
             recursive=recursive,
             limit=limit,
             offset=offset,
             query=query,
             sort_by=sort_by,
         )
-        return entries, count
-
-    def _realize_to(
-        self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[AzureFlatFileSourceConfiguration]
-    ):
-        container_path = self._to_container_path(source_path, context.config)
-        super()._realize_to(source_path=container_path, native_path=native_path, context=context)
-
-    def _write_from(
-        self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[AzureFlatFileSourceConfiguration]
-    ):
-        container_path = self._to_container_path(target_path, context.config)
-        super()._write_from(target_path=container_path, native_path=native_path, context=context)
-
-    def _container_path(self, container_name: str, path: str) -> str:
-        adjusted_path = path
-        if path.startswith("az://"):
-            adjusted_path = path.replace("az://", "", 1)
-        else:
-            if not path.startswith("/"):
-                adjusted_path = f"/{path}"
-            else:
-                adjusted_path = path
-        return f"{container_name}{adjusted_path}"
 
     def score_url_match(self, url: str):
         result = 0

@@ -14,7 +14,13 @@
             :searchable="true"
             :title="title"
             :track-by="trackBy"
-            @select="onSelectItem" />
+            @select="onSelectItem">
+            <template v-slot:option="{ option }">
+                <span data-test-id="single-item-selector-option" :data-id="option[trackBy]" :data-label="option[label]">
+                    {{ option[label] }}
+                </span>
+            </template>
+        </Multiselect>
     </div>
 </template>
 
@@ -93,5 +99,16 @@ function onSelectItem(item: Item | null) {
 
 .single-item-selector :deep(.multiselect__tags) {
     background-color: $white;
+}
+
+:deep(.single-item-selector.multiselect--disabled .multiselect__tags),
+:deep(.single-item-selector.multiselect--disabled .multiselect__single),
+:deep(.single-item-selector.multiselect--disabled .multiselect__select) {
+    background: transparent !important;
+}
+
+:deep(.single-item-selector.multiselect--disabled .multiselect__select) {
+    border-bottom-right-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
 }
 </style>

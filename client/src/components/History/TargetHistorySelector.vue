@@ -56,11 +56,14 @@ function handleHistorySelected(history: { id: string }) {
 
 <template>
     <div>
-        <div class="d-flex align-items-center">
-            <TargetHistoryLink :target-history-id="targetHistoryId" :target-history-caption="historyCaption" />
+        <div class="target-history-selector-row d-flex align-items-center">
+            <TargetHistoryLink
+                class="target-history-selector-link"
+                :target-history-id="targetHistoryId"
+                :target-history-caption="historyCaption" />
             <a
                 v-if="canChangeHistory"
-                v-b-tooltip.hover.noninteractive
+                v-g-tooltip.hover
                 href="#"
                 class="change-history-link ml-2"
                 :title="changeLinkTooltip"

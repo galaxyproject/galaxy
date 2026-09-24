@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { watchEffect } from "vue";
+import { computed } from "vue";
 
 import { type Tool, useToolStore } from "@/stores/toolStore";
 
@@ -42,18 +42,14 @@ async function loadTools(offset: number, limit: number): Promise<{ items: Tool[]
     return { items, total: props.tools.length };
 }
 
-// Watch for changes in tools array to preload initial help data
-watchEffect(() => {
-    if (props.tools.length > 0) {
-        const initialItems = props.tools.slice(0, FETCH_LIMIT + PREFETCH_AHEAD);
-        Promise.all(initialItems.map((tool) => toolStore.fetchHelpForId(tool.id)));
-    }
-});
+// Remount ScrollList when its result set changes so it reloads help data.
+const toolsKey = computed(() => JSON.stringify(props.tools.map((tool) => tool.id)));
 </script>
 
 <template>
     <ScrollList
         ref="root"
+        :key="toolsKey"
         :loader="loadTools"
         :limit="FETCH_LIMIT"
         :item-key="(tool) => tool.id"
@@ -76,15 +72,16 @@ watchEffect(() => {
                 :id="item.id"
                 :key="item.id"
                 :name="item.name"
-                :section="item.panel_section_name || undefined"
                 :edam-operations="item.edam_operations"
                 :edam-topics="item.edam_topics"
+                :tool-tags="item.tool_tags || []"
                 :description="item.description"
                 :fetching="!helpDataCached[item.id]"
                 :form-style="item.form_style"
                 :summary="helpDataCached[item.id]?.summary"
                 :help="helpDataCached[item.id]?.help"
-                :local="item.target === 'galaxy_main'"
+                :help-format="helpDataCached[item.id]?.helpFormat"
+                :local="item.model_class !== 'DataSourceTool'"
                 :link="item.link"
                 :owner="props.hasOwnerFilter && item.tool_shed_repository ? item.tool_shed_repository.owner : undefined"
                 :workflow-compatible="item.is_workflow_compatible"

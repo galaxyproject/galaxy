@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { AxiosError } from "axios";
-import { BModal } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { BAlert } from "bootstrap-vue";
+import { computed, onMounted, ref } from "vue";
 
 import type { components } from "@/api/schema";
+
+import GModal from "@/components/BaseComponents/GModal.vue";
 
 type HistoryContentBulkOperationResult = components["schemas"]["HistoryContentBulkOperationResult"];
 
@@ -26,7 +28,8 @@ const props = defineProps<Props>();
 
 const emit = defineEmits(["hide"]);
 
-const show = ref(() => props.operationError != null);
+const show = ref(false);
+onMounted(() => (show.value = true));
 
 const isPartialSuccess = computed(() => {
     return props.operationError?.result?.success_count > 0;
@@ -52,9 +55,6 @@ const reasons = computed(() => {
 const title = computed(() => {
     return isPartialSuccess.value ? "Some items could not be processed" : "Something went wrong...";
 });
-const titleVariant = computed(() => {
-    return isPartialSuccess.value ? "warning" : "danger";
-});
 const errorMessage = computed(() => {
     return props.operationError?.errorMessage?.message;
 });
@@ -65,20 +65,12 @@ function onHide() {
 </script>
 
 <template>
-    <BModal
-        v-model="show"
-        :title="title"
-        :header-text-variant="titleVariant"
-        title-tag="h2"
-        scrollable
-        ok-only
-        @hide="onHide">
-        <p v-if="isPartialSuccess" v-localize>
-            -<strong>{{ success_count }}</strong
-            >- items were processed successfully, unfortunately, -<strong>{{ error_count }}</strong
-            >- items failed because of the following reasons:
-        </p>
-        <p v-else v-localize>The operation failed for the following reasons:</p>
+    <GModal :show="show" :title="title" @close="onHide">
+        <BAlert v-if="isPartialSuccess" show variant="warning">
+            <strong>{{ success_count }}</strong> items were processed successfully, unfortunately,
+            <strong>{{ error_count }}</strong> items failed because of the following reasons:
+        </BAlert>
+        <BAlert v-else show variant="danger">The operation failed for the following reasons:</BAlert>
 
         <div>
             <ul v-if="errorMessage">
@@ -91,5 +83,5 @@ function onHide() {
                 </li>
             </ul>
         </div>
-    </BModal>
+    </GModal>
 </template>

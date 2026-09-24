@@ -1,3 +1,4 @@
+import { faBurn } from "@fortawesome/free-solid-svg-icons";
 import { onMounted, ref } from "vue";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -51,10 +52,9 @@ export function useDatasetsToDisplay() {
             localize("Are you sure you want to permanently delete this dataset? This action cannot be undone."),
             {
                 title: localize("Permanently delete dataset?"),
-                okVariant: "danger",
-                okTitle: localize("Permanently delete"),
-                cancelTitle: localize("Cancel"),
-                dialogClass: "confirm-delete-dataset-dialog",
+                okText: localize("Permanently delete"),
+                okColor: "red",
+                okIcon: faBurn,
             },
         );
         if (!confirmed) {

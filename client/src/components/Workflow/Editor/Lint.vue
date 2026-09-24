@@ -2,12 +2,10 @@
 import { storeToRefs } from "pinia";
 import { computed, toRefs } from "vue";
 
-import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { type ConfirmDialogOptions, useConfirmDialog } from "@/composables/confirmDialog";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Steps } from "@/stores/workflowStepStore";
 
-import type { Rectangle } from "./modules/geometry";
 import {
     bestPracticeWarningAnnotation,
     bestPracticeWarningAnnotationLength,
@@ -31,7 +29,6 @@ import LintSection from "@/components/Workflow/Editor/LintSection.vue";
 const props = defineProps<{
     lintData: LintData;
     steps: Steps; // Adjust the type as needed
-    datatypesMapper: DatatypesMapperModel;
     hasChanges: boolean;
     onSave?: () => Promise<boolean>;
 }>();
@@ -84,8 +81,7 @@ const emit = defineEmits<{
               ]
             | ReturnType<typeof fixAllIssues>,
     ): void;
-    (e: "onScrollTo", stepId: Number): void;
-    (e: "onHighlightRegion", bounds: Rectangle): void;
+    (e: "onScrollTo", stepId: number): void;
 }>();
 
 function onAttributes(highlight: string) {
@@ -106,8 +102,8 @@ async function saveChanges(canProceed = true) {
           "and there will be an attempt to automatically fix the issues. Do you want to save your changes and apply fixes now?"
         : confirmationMessageHead + "to enable automatic fixing of this issue. Do you want to save your changes now?";
     const confirmationOptions: ConfirmDialogOptions = canProceed
-        ? { title: "Unsaved Changes", okTitle: "Save Changes and Fix Issues" }
-        : { title: "Save Workflow and Check Issues Again", okTitle: "Save Changes" };
+        ? { title: "Unsaved Changes", okText: "Save Changes and Fix Issues" }
+        : { title: "Save Workflow and Check Issues Again", okText: "Save Changes" };
 
     const proceed = await confirm(confirmationMessage, confirmationOptions);
     if (proceed && props.onSave) {
@@ -176,7 +172,7 @@ function onHighlight(item: LintState) {
         "name" in item ? item.name : undefined,
     );
     if (bounds) {
-        emit("onHighlightRegion", bounds);
+        stateStore.pendingHighlight = { bounds, moveTo: false };
     }
 }
 

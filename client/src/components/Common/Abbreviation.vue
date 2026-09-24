@@ -7,7 +7,7 @@ const props = defineProps<Props>();
 </script>
 
 <template>
-    <abbr v-b-tooltip.hover :title="props.explanation">
+    <abbr v-g-tooltip.hover :title="props.explanation">
         <slot></slot>
     </abbr>
 </template>

@@ -54,8 +54,6 @@ describe("Tool Version Utilities", () => {
             xrefs: [],
             config_file: "",
             link: "",
-            min_width: 0,
-            target: "",
             panel_section_id: "",
             panel_section_name: null,
             form_style: "regular",

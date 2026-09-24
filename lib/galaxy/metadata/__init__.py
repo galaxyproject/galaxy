@@ -7,7 +7,6 @@ import shutil
 from logging import getLogger
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -66,6 +65,9 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
         datasets_dict,
         out_collections,
         sa_session: "scoped_session",
+        uses_tool_provided_metadata: bool,
+        allows_unnamed_outputs: bool,
+        allows_external_output_paths: bool,
         exec_dir=None,
         tmp_dir=None,
         dataset_files_path=None,
@@ -77,14 +79,14 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
         job_metadata=None,
         provided_metadata_style=None,
         compute_tmp_dir=None,
-        compute_version_path: Optional[str] = None,
+        compute_version_path: str | None = None,
         include_command=True,
         max_metadata_value_size=0,
         max_discovered_files=None,
         validate_outputs: bool = False,
         object_store_conf=None,
         tool=None,
-        job: Optional[galaxy.model.Job] = None,
+        job: galaxy.model.Job | None = None,
         link_data_only: bool = False,
         kwds=None,
     ):
@@ -145,6 +147,9 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         datasets_dict,
         out_collections,
         sa_session: "scoped_session",
+        uses_tool_provided_metadata: bool,
+        allows_unnamed_outputs: bool,
+        allows_external_output_paths: bool,
         exec_dir=None,
         tmp_dir=None,
         dataset_files_path=None,
@@ -156,14 +161,14 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         job_metadata=None,
         provided_metadata_style=None,
         compute_tmp_dir=None,
-        compute_version_path: Optional[str] = None,
+        compute_version_path: str | None = None,
         include_command=True,
         max_metadata_value_size=0,
         max_discovered_files=None,
         validate_outputs: bool = False,
         object_store_conf=None,
         tool=None,
-        job: Optional[galaxy.model.Job] = None,
+        job: galaxy.model.Job | None = None,
         link_data_only: bool = False,
         kwds=None,
     ):
@@ -198,7 +203,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             )
 
             outputs[name] = {
-                "filename_override": _get_filename_override(output_fnames, dataset.get_file_name()),
+                "filename_override": _get_filename_override(output_fnames, dataset.get_file_name(sync_cache=False)),
                 "validate": validate_outputs,
                 "object_store_store_by": dataset.dataset.store_by,
                 "id": dataset.id,
@@ -214,6 +219,9 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         metadata_params = {
             "job_metadata": job_relative_path(job_metadata),
             "provided_metadata_style": provided_metadata_style,
+            "uses_tool_provided_metadata": uses_tool_provided_metadata,
+            "allows_unnamed_outputs": allows_unnamed_outputs,
+            "allows_external_output_paths": allows_external_output_paths,
             "datatypes_config": datatypes_config,
             "max_metadata_value_size": max_metadata_value_size,
             "max_discovered_files": max_discovered_files,

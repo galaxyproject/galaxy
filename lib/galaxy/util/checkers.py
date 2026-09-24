@@ -10,9 +10,7 @@ from io import (
     StringIO,
 )
 from typing import (
-    Dict,
     IO,
-    Tuple,
 )
 
 from typing_extensions import Protocol
@@ -32,7 +30,7 @@ HTML_REGEXPS = (
 
 
 class CompressionChecker(Protocol):
-    def __call__(self, file_path: str, check_content: bool = True) -> Tuple[bool, bool]: ...
+    def __call__(self, file_path: str, check_content: bool = True) -> tuple[bool, bool]: ...
 
 
 def check_html(name, file_path: bool = True) -> bool:
@@ -86,7 +84,7 @@ def check_binary(name, file_path: bool = True) -> bool:
         temp.close()
 
 
-def check_gzip(file_path: str, check_content: bool = True) -> Tuple[bool, bool]:
+def check_gzip(file_path: str, check_content: bool = True) -> tuple[bool, bool]:
     # This method returns a tuple of booleans representing ( is_gzipped, is_valid )
     # Make sure we have a gzipped file
     try:
@@ -118,7 +116,7 @@ def check_gzip(file_path: str, check_content: bool = True) -> Tuple[bool, bool]:
     return (True, True)
 
 
-def check_xz(file_path: str, check_content: bool = True) -> Tuple[bool, bool]:
+def check_xz(file_path: str, check_content: bool = True) -> tuple[bool, bool]:
     try:
         with open(file_path, "rb") as temp:
             magic_check = temp.read(6)
@@ -138,7 +136,7 @@ def check_xz(file_path: str, check_content: bool = True) -> Tuple[bool, bool]:
     return (True, True)
 
 
-def check_bz2(file_path: str, check_content: bool = True) -> Tuple[bool, bool]:
+def check_bz2(file_path: str, check_content: bool = True) -> tuple[bool, bool]:
     try:
         with open(file_path, "rb") as temp:
             magic_check = temp.read(3)
@@ -158,7 +156,7 @@ def check_bz2(file_path: str, check_content: bool = True) -> Tuple[bool, bool]:
     return (True, True)
 
 
-def check_zip(file_path: str, check_content: bool = True, files=1) -> Tuple[bool, bool]:
+def check_zip(file_path: str, check_content: bool = True, files=1) -> tuple[bool, bool]:
     if not zipfile.is_zipfile(file_path):
         return (False, False)
 
@@ -218,7 +216,7 @@ def check_image(file_path: str) -> bool:
     return bool(image_type(file_path))
 
 
-COMPRESSION_CHECK_FUNCTIONS: Dict[str, CompressionChecker] = {
+COMPRESSION_CHECK_FUNCTIONS: dict[str, CompressionChecker] = {
     "gzip": check_gzip,
     "bz2": check_bz2,
     "xz": check_xz,

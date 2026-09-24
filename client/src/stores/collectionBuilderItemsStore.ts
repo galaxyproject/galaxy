@@ -9,12 +9,14 @@ import type { ShowElementExtensionFunction } from "@/components/Collections/comm
  */
 export const useCollectionBuilderItemSelection = defineStore("collectionBuilderItemSelection", () => {
     const selectedItems = ref<HistoryItemSummary[]>([]);
+    const historyId = ref<string | null>(null);
 
-    function setSelectedItems(newSelectedItems: HistoryItemSummary[]) {
+    function setSelectedItems(selectionHistoryId: string, newSelectedItems: HistoryItemSummary[]) {
+        historyId.value = selectionHistoryId;
         selectedItems.value = newSelectedItems;
     }
 
-    return { selectedItems, setSelectedItems };
+    return { selectedItems, historyId, setSelectedItems };
 });
 
 export const usePairingDatasetTargetsStore = defineStore("pairingDatasetTargets", {

@@ -1,6 +1,5 @@
 import logging
 import re
-from typing import Union
 
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
@@ -20,8 +19,8 @@ log = logging.getLogger(__name__)
 class DRSFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     # `url_regex` is not templated because it needs to be set at initialization with no RuntimeContext available.
     url_regex: str = r"^drs://"
-    force_http: Union[bool, TemplateExpansion] = False
-    http_headers: Union[dict[str, str], TemplateExpansion] = {}
+    force_http: bool | TemplateExpansion = False
+    http_headers: dict[str, str] | TemplateExpansion = {}
 
 
 class DRSFileSourceConfiguration(BaseFileSourceConfiguration):
@@ -58,13 +57,15 @@ class DRSFilesSource(BaseFilesSource[DRSFileSourceTemplateConfiguration, DRSFile
     ):
         user_context = context.user_data.context if context.user_data.context else None
         config = context.config
+        headers = dict(config.http_headers)
         fetch_drs_to_file(
             source_path,
             native_path,
             user_context=user_context,
             fetch_url_allowlist=self._allowlist,
-            headers=config.http_headers,
+            headers=headers or None,
             force_http=config.force_http,
+            metadata_out=context.metadata_out,
         )
 
     def _write_from(

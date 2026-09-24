@@ -5,6 +5,7 @@ import { BNav, BNavItem } from "bootstrap-vue";
 
 import pagesGridConfig from "@/components/Grid/configs/pages";
 import pagesPublishedGridConfig from "@/components/Grid/configs/pagesPublished";
+import { GRID_LABELS } from "@/components/Page/constants";
 import { useUserStore } from "@/stores/userStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -27,11 +28,11 @@ const props = withDefaults(defineProps<Props>(), {
 <template>
     <div class="d-flex flex-column">
         <div class="d-flex">
-            <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Pages</Heading>
+            <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">{{ GRID_LABELS.heading }}</Heading>
             <div v-if="!userStore.isAnonymous">
                 <GButton id="page-create" size="small" outline color="blue" to="/pages/create">
                     <FontAwesomeIcon :icon="faPlus" />
-                    <span v-localize>Create Page</span>
+                    <span>{{ GRID_LABELS.createButton }}</span>
                 </GButton>
             </div>
         </div>
@@ -41,10 +42,12 @@ const props = withDefaults(defineProps<Props>(), {
                 :active="activeList === 'my'"
                 :disabled="userStore.isAnonymous"
                 to="/pages/list">
-                My Pages
-                <LoginRequired v-if="userStore.isAnonymous" target="pages-my-tab" title="Manage your Pages" />
+                {{ GRID_LABELS.myTab }}
+                <LoginRequired v-if="userStore.isAnonymous" target="pages-my-tab" :title="GRID_LABELS.loginRequired" />
             </BNavItem>
-            <BNavItem :active="activeList === 'published'" to="/pages/list_published"> Public Pages </BNavItem>
+            <BNavItem :active="activeList === 'published'" to="/pages/list_published">
+                {{ GRID_LABELS.publicTab }}
+            </BNavItem>
         </BNav>
         <GridList v-if="activeList === 'my'" :grid-config="pagesGridConfig" embedded />
         <GridList v-else :grid-config="pagesPublishedGridConfig" :username-search="props.username" embedded />

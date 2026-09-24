@@ -4,8 +4,6 @@ from typing import (
     Annotated,
     Any,
     Literal,
-    Optional,
-    Union,
 )
 
 from pydantic import (
@@ -67,11 +65,11 @@ class LibraryContentsCreatePayload(Model):
         [],
         description="create the given list of tags on datasets",
     )
-    from_hda_id: Optional[DecodedDatabaseIdField] = Field(
+    from_hda_id: DecodedDatabaseIdField | None = Field(
         None,
         description="(only if create_type is 'file') the encoded id of an accessible HDA to copy into the library",
     )
-    from_hdca_id: Optional[DecodedDatabaseIdField] = Field(
+    from_hdca_id: DecodedDatabaseIdField | None = Field(
         None,
         description="(only if create_type is 'file') the encoded id of an accessible HDCA to copy into the library",
     )
@@ -79,7 +77,7 @@ class LibraryContentsCreatePayload(Model):
         "",
         description="the new message attribute of the LDDA created",
     )
-    extended_metadata: Optional[dict[str, Any]] = Field(
+    extended_metadata: dict[str, Any] | None = Field(
         None,
         description="sub-dictionary containing any extended metadata to associate with the item",
     )
@@ -93,7 +91,7 @@ class LibraryContentsCreatePayload(Model):
 
 
 class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
-    dbkey: Union[str, list] = Field(
+    dbkey: str | list = Field(
         "?",
         title="database key",
     )
@@ -101,7 +99,7 @@ class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
         "",
         title="user selected roles",
     )
-    file_type: Optional[str] = Field(
+    file_type: str | None = Field(
         None,
         title="file type",
     )
@@ -123,11 +121,11 @@ class LibraryContentsFileCreatePayload(LibraryContentsCreatePayload):
         description="(only when upload_option is 'upload_directory' or 'upload_paths')."
         "Setting to 'link_to_files' symlinks instead of copying the files",
     )
-    uuid: Optional[str] = Field(
+    uuid: str | None = Field(
         None,
         title="UUID of the dataset to upload",
     )
-    upload_files: Optional[list[dict[str, Any]]] = Field(
+    upload_files: list[dict[str, Any]] | None = Field(
         None,
         title="list of the uploaded files",
     )
@@ -156,7 +154,7 @@ class LibraryContentsCollectionCreatePayload(LibraryContentsCreatePayload):
         ...,
         title="list of dictionaries containing the element identifiers for the collection",
     )
-    name: Optional[str] = Field(
+    name: str | None = Field(
         None,
         title="the name of the collection",
     )
@@ -171,7 +169,7 @@ class LibraryContentsCollectionCreatePayload(LibraryContentsCreatePayload):
 
 
 class LibraryContentsUpdatePayload(Model):
-    converted_dataset_id: Optional[DecodedDatabaseIdField] = Field(
+    converted_dataset_id: DecodedDatabaseIdField | None = Field(
         None,
         title="the decoded id of the dataset",
     )
@@ -199,12 +197,12 @@ class LibraryContentsIndexDatasetResponse(LibraryContentsIndexResponse):
 
 
 class LibraryContentsIndexListResponse(RootModel):
-    root: list[Union[LibraryContentsIndexFolderResponse, LibraryContentsIndexDatasetResponse]]
+    root: list[LibraryContentsIndexFolderResponse | LibraryContentsIndexDatasetResponse]
 
 
 class LibraryContentsShowResponse(Model):
     name: str
-    genome_build: Optional[str]
+    genome_build: str | None
     update_time: str
     parent_library_id: EncodedDatabaseIdField
 
@@ -212,7 +210,7 @@ class LibraryContentsShowResponse(Model):
 class LibraryContentsShowFolderResponse(LibraryContentsShowResponse):
     model_class: Annotated[Literal["LibraryFolder"], ModelClassField(Literal["LibraryFolder"])]
     id: EncodedLibraryFolderDatabaseIdField
-    parent_id: Optional[EncodedLibraryFolderDatabaseIdField]
+    parent_id: EncodedLibraryFolderDatabaseIdField | None
     description: str
     item_count: int
     deleted: bool
@@ -226,16 +224,16 @@ class LibraryContentsShowDatasetResponse(LibraryContentsShowResponse):
     folder_id: EncodedLibraryFolderDatabaseIdField
     state: str
     file_name: str
-    created_from_basename: Optional[str]
-    uploaded_by: Optional[str]
-    message: Optional[str]
+    created_from_basename: str | None
+    uploaded_by: str | None
+    message: str | None
     date_uploaded: str
     file_size: int
     file_ext: str
     data_type: str
-    misc_info: Optional[str]
-    misc_blurb: Optional[str]
-    peek: Optional[str]
+    misc_info: str | None
+    misc_blurb: str | None
+    peek: str | None
     uuid: str
     tags: TagCollection
 
@@ -284,9 +282,9 @@ class LibraryContentsCreateDatasetResponse(Model):
     file_ext: str
     data_type: str
     genome_build: str
-    misc_info: Optional[str]
-    misc_blurb: Optional[str]
-    created_from_basename: Optional[str]
+    misc_info: str | None
+    misc_blurb: str | None
+    created_from_basename: str | None
     uuid: str
     parent_library_id: str
 
@@ -307,18 +305,15 @@ class LibraryContentsPurgedResponse(LibraryContentsDeleteResponse):
     purged: bool
 
 
-AnyLibraryContentsShowResponse = Union[
-    LibraryContentsShowFolderResponse,
-    LibraryContentsShowDatasetResponse,
-]
+AnyLibraryContentsShowResponse = LibraryContentsShowFolderResponse | LibraryContentsShowDatasetResponse
 
-AnyLibraryContentsCreatePayload = Union[
-    LibraryContentsFolderCreatePayload, LibraryContentsFileCreatePayload, LibraryContentsCollectionCreatePayload
-]
+AnyLibraryContentsCreatePayload = (
+    LibraryContentsFolderCreatePayload | LibraryContentsFileCreatePayload | LibraryContentsCollectionCreatePayload
+)
 
-AnyLibraryContentsCreateResponse = Union[
-    LibraryContentsCreateFolderListResponse,
-    LibraryContentsCreateFileListResponse,
-    LibraryContentsCreateDatasetCollectionResponse,
-    LibraryContentsCreateDatasetResponse,
-]
+AnyLibraryContentsCreateResponse = (
+    LibraryContentsCreateFolderListResponse
+    | LibraryContentsCreateFileListResponse
+    | LibraryContentsCreateDatasetCollectionResponse
+    | LibraryContentsCreateDatasetResponse
+)

@@ -1,6 +1,8 @@
-import { type Ref, ref } from "vue";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { onUnmounted, type Ref, ref } from "vue";
 
-import type { BootstrapSize, BootstrapVariant } from "@/components/Common";
+import type { ComponentColor, ComponentSize } from "@/components/BaseComponents/componentVariants";
+import type ConfirmDialogComponent from "@/components/ConfirmDialog.vue";
 
 /**
  * Bootstrap Vue modal message box options interface.
@@ -8,152 +10,40 @@ import type { BootstrapSize, BootstrapVariant } from "@/components/Common";
  */
 export interface ConfirmDialogOptions {
     /**
-     * Unique identifier for the modal
-     */
-    id?: string;
-    /**
      * Modal title
      * @default "Please Confirm"
      */
     title?: string;
     /**
-     * CSS classes for title
-     * @default "h-md"
-     */
-    titleClass?: string;
-    /**
-     * Modal size: 'sm', 'lg', 'xl'
+     * Modal size: 'small', 'medium, 'large'
      * @default undefined (medium)
      */
-    size?: BootstrapSize;
+    size?: ComponentSize;
     /**
-     * Center modal vertically
-     * @default true
+     * What color scheme to use for the OK button
+     * @default undefined (grey)
      */
-    centered?: boolean;
+    okColor?: ComponentColor;
     /**
-     * Make modal body scrollable
-     * @default false
+     * An optional FontAwesome icon to display in the OK button
+     * @default undefined (no icon)
      */
-    scrollable?: boolean;
+    okIcon?: IconDefinition;
     /**
      * Text for OK button
      * @default "OK"
      */
-    okTitle?: string;
-    /**
-     * Bootstrap variant for OK button
-     * @default "primary"
-     */
-    okVariant?: BootstrapVariant;
+    okText?: string;
     /**
      * Text for cancel button
      * @default "Cancel"
      */
-    cancelTitle?: string;
+    cancelText?: string;
     /**
-     * Bootstrap variant for cancel button
-     * @default "outline-primary"
+     * An AbortSignal that cancels the dialog when aborted.
+     * Injected automatically by `useConfirmDialog` on caller unmount.
      */
-    cancelVariant?: BootstrapVariant;
-    /**
-     * Footer button size: 'sm', 'lg'
-     * @default undefined (normal)
-     */
-    buttonSize?: BootstrapSize;
-    /**
-     * Hide header close button
-     * @default false
-     */
-    hideHeaderClose?: boolean;
-    /**
-     * CSS classes for header
-     */
-    headerClass?: string;
-    /**
-     * Background variant for header
-     */
-    headerBgVariant?: BootstrapVariant;
-    /**
-     * Text variant for header
-     */
-    headerTextVariant?: BootstrapVariant;
-    /**
-     * CSS classes for modal body
-     */
-    bodyClass?: string;
-    /**
-     * Background variant for body
-     */
-    bodyBgVariant?: BootstrapVariant;
-    /**
-     * Text variant for body
-     */
-    bodyTextVariant?: BootstrapVariant;
-    /**
-     * CSS classes for footer
-     */
-    footerClass?: string;
-    /**
-     * Background variant for footer
-     */
-    footerBgVariant?: BootstrapVariant;
-    /**
-     * Text variant for footer
-     */
-    footerTextVariant?: BootstrapVariant;
-    /**
-     * Prevent closing on backdrop click
-     * @default false
-     */
-    noCloseOnBackdrop?: boolean;
-    /**
-     * Prevent closing on ESC key
-     * @default false
-     */
-    noCloseOnEsc?: boolean;
-    /**
-     * Auto-focus button: 'ok', 'cancel', 'close'
-     * @default undefined
-     */
-    autoFocusButton?: "ok" | "cancel" | "close";
-    /**
-     * Element to return focus to
-     * @default undefined
-     */
-    returnFocus?: string | HTMLElement;
-    /**
-     * CSS classes for modal container
-     * @default undefined
-     */
-    modalClass?: string;
-    /**
-     * CSS classes for modal dialog wrapper
-     * @default undefined
-     */
-    dialogClass?: string;
-    /**
-     * CSS classes for modal content
-     * @default undefined
-     */
-    contentClass?: string;
-    /**
-     * Disable fade animation
-     * @default false
-     */
-    noFade?: boolean;
-    /**
-     * Hide modal backdrop
-     * @default false
-     */
-    hideBackdrop?: boolean;
-}
-
-/**
- * Interface for the confirm dialog component reference.
- */
-interface ConfirmDialogComponent {
-    confirm(message: string, options?: ConfirmDialogOptions): Promise<boolean>;
+    signal?: AbortSignal;
 }
 
 /**
@@ -162,33 +52,22 @@ interface ConfirmDialogComponent {
  */
 export const DEFAULT_CONFIRM_OPTIONS: Partial<ConfirmDialogOptions> = {
     title: "Please Confirm",
-    titleClass: "h-md",
-    centered: true,
-    okTitle: "OK",
-    cancelTitle: "Cancel",
-    okVariant: "primary",
-    cancelVariant: "outline-primary",
-    buttonSize: undefined, // Uses Bootstrap default size
-    hideHeaderClose: false,
-    noCloseOnBackdrop: false,
-    noCloseOnEsc: false,
-    noFade: false,
-    hideBackdrop: false,
-    scrollable: false,
+    okText: "OK",
+    cancelText: "Cancel",
+    okColor: "blue",
 } as const;
 
 /**
  * Reference to the confirm dialog component instance
  */
-let confirmDialogRef: Ref<ConfirmDialogComponent | null> = ref(null);
+const confirmDialogRef: Ref<InstanceType<typeof ConfirmDialogComponent> | null> = ref(null);
 
 /**
  * Sets the confirm dialog component reference.
  * @param newRef - The new component reference
  */
-export const setConfirmDialogComponentRef = (newRef: ConfirmDialogComponent | null): void => {
-    // eslint-disable-next-line vue/no-ref-as-operand
-    confirmDialogRef = ref(newRef);
+export const setConfirmDialogComponentRef = (newRef: InstanceType<typeof ConfirmDialogComponent> | null): void => {
+    confirmDialogRef.value = newRef;
 };
 
 /**
@@ -215,10 +94,10 @@ export const ConfirmDialog = {
      * Shows a confirmation dialog to the user.
      * @param message - The confirmation message to display
      * @param options - Dialog options object or title string (for backward compatibility)
-     * @returns Promise resolving to `true` if confirmed, `false` if cancelled/closed
+     * @returns Promise resolving to `true` if confirmed, `false` if cancelled, or `null` if dismissed without a response
      * @throws {Error} When confirm dialog component reference is not set
      */
-    async confirm(message: string, options: ConfirmDialogOptions | string = {}): Promise<boolean> {
+    async confirm(message: string, options: ConfirmDialogOptions | string = {}): Promise<boolean | null> {
         if (!confirmDialogRef.value) {
             throw new Error(
                 "Confirm dialog component reference not set. " +
@@ -236,8 +115,7 @@ export const ConfirmDialog = {
             return await confirmDialogRef.value.confirm(message, normalizedOptions);
         } catch (error) {
             console.error("Confirm dialog error:", error);
-            // Gracefully handle component errors by returning false (cancelled)
-            return false;
+            return null;
         }
     },
 };
@@ -249,5 +127,13 @@ export const ConfirmDialog = {
  * @returns Object containing confirm dialog methods
  */
 export function useConfirmDialog() {
-    return { ...ConfirmDialog };
+    const controller = new AbortController();
+    onUnmounted(() => controller.abort());
+
+    return {
+        confirm: (message: string, options: ConfirmDialogOptions | string = {}) => {
+            const normalizedOptions = typeof options === "string" ? { title: options } : options;
+            return ConfirmDialog.confirm(message, { ...normalizedOptions, signal: controller.signal });
+        },
+    };
 }

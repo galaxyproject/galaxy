@@ -1,7 +1,15 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import DDL
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Engine
 
 # function name prefix
 fn_prefix = "fn_audit_history_by"
+
+# channel used by pg_notify so HistoryAuditMonitor can LISTEN for updates
+NOTIFY_CHANNEL = "galaxy_history_update"
 
 # map between source table and associated incoming id field
 trigger_config = {
@@ -11,13 +19,75 @@ trigger_config = {
 }
 
 
-def install(engine):
+def use_statement_trigger(version: int) -> bool:
+    """Return True when the postgres version supports the STATEMENT variant.
+
+    Fresh installs and the pg_notify migration share this predicate to ensure
+    the trigger function body (STATEMENT references new_table, ROW references NEW)
+    matches the trigger definition installed at that version.
+    """
+    return version > 10
+
+
+def build_trigger_fn(function_name: str, id_field: str, *, use_statement: bool, with_notify: bool = True) -> str:
+    """Build the plpgsql CREATE OR REPLACE FUNCTION body for an audit trigger.
+
+    Shared between runtime install (update_audit_table.install) and alembic
+    migrations so the two cannot drift.
+    """
+    if use_statement:
+        notify_block = (
+            f"""
+                    FOR _history_id IN SELECT DISTINCT {id_field} FROM new_table WHERE {id_field} IS NOT NULL
+                    LOOP
+                        PERFORM pg_notify('{NOTIFY_CHANNEL}', _history_id::text);
+                    END LOOP;
+            """
+            if with_notify
+            else ""
+        )
+        declare_block = "DECLARE _history_id integer;" if with_notify else ""
+        return f"""
+            CREATE OR REPLACE FUNCTION {function_name}()
+                RETURNS TRIGGER
+                LANGUAGE 'plpgsql'
+            AS $BODY$
+                {declare_block}
+                BEGIN
+                    INSERT INTO history_audit (history_id, update_time)
+                    SELECT DISTINCT {id_field}, clock_timestamp() AT TIME ZONE 'UTC'
+                    FROM new_table
+                    WHERE {id_field} IS NOT NULL
+                    ON CONFLICT DO NOTHING;
+                    {notify_block}
+                    RETURN NULL;
+                END;
+            $BODY$
+        """
+    notify_stmt = f"PERFORM pg_notify('{NOTIFY_CHANNEL}', NEW.{id_field}::text);" if with_notify else ""
+    return f"""
+        CREATE OR REPLACE FUNCTION {function_name}()
+            RETURNS TRIGGER
+            LANGUAGE 'plpgsql'
+        AS $BODY$
+            BEGIN
+                INSERT INTO history_audit (history_id, update_time)
+                VALUES (NEW.{id_field}, clock_timestamp() AT TIME ZONE 'UTC')
+                ON CONFLICT DO NOTHING;
+                {notify_stmt}
+                RETURN NULL;
+            END;
+        $BODY$
+    """
+
+
+def install(engine: "Engine") -> None:
     """Install history audit table triggers"""
     sql = _postgres_install(engine) if "postgres" in engine.name else _sqlite_install()
     execute_statements(engine, sql)
 
 
-def remove(engine):
+def remove(engine: "Engine") -> None:
     """Uninstall history audit table triggers"""
     sql = _postgres_remove() if "postgres" in engine.name else _sqlite_remove()
     execute_statements(engine, sql)
@@ -26,7 +96,7 @@ def remove(engine):
 # Postgres trigger installation
 
 
-def _postgres_remove():
+def _postgres_remove() -> list[str]:
     """postgres trigger removal sql"""
 
     sql = []
@@ -36,101 +106,58 @@ def _postgres_remove():
     return sql
 
 
-def _postgres_install(engine):
-    """postgres trigger installation sql"""
+def _postgres_install(engine: "Engine") -> list[str]:
+    """PostgreSQL trigger installation SQL"""
 
     sql = []
 
-    # postgres trigger function template
-    # need to make separate functions purely because the incoming history_id field name will be
-    # different for different source tables. There may be a fancier way to dynamically choose
-    # between incoming fields, but having 2 triggers fns seems straightforward
-
-    def statement_trigger_fn(id_field):
+    def trigger_def(source_table: str, id_field: str, operation: str, version: int, when: str = "AFTER") -> str:
         fn = f"{fn_prefix}_{id_field}"
-
-        return f"""
-            CREATE OR REPLACE FUNCTION {fn}()
-                RETURNS TRIGGER
-                LANGUAGE 'plpgsql'
-            AS $BODY$
-                BEGIN
-                    INSERT INTO history_audit (history_id, update_time)
-                    SELECT DISTINCT {id_field}, clock_timestamp() AT TIME ZONE 'UTC'
-                    FROM new_table
-                    WHERE {id_field} IS NOT NULL
-                    ON CONFLICT DO NOTHING;
-                    RETURN NULL;
-                END;
-            $BODY$
-        """
-
-    def row_trigger_fn(id_field):
-        fn = f"{fn_prefix}_{id_field}"
-
-        return f"""
-            CREATE OR REPLACE FUNCTION {fn}()
-                RETURNS TRIGGER
-                LANGUAGE 'plpgsql'
-            AS $BODY$
-                BEGIN
-                    INSERT INTO history_audit (history_id, update_time)
-                    VALUES (NEW.{id_field}, clock_timestamp() AT TIME ZONE 'UTC')
-                    ON CONFLICT DO NOTHING;
-                    RETURN NULL;
-                END;
-            $BODY$
-        """
-
-    def statement_trigger_def(source_table, id_field, operation, when="AFTER", function_keyword="FUNCTION"):
-        fn = f"{fn_prefix}_{id_field}"
-
-        # Postgres supports many triggers per operation/table so the label can
+        # PostgreSQL supports many triggers per operation/table so the label can
         # be indicative of what's happening
         label = f"history_audit_by_{id_field}"
         trigger_name = get_trigger_name(label, operation, when, statement=True)
-
-        return f"""
-            CREATE TRIGGER {trigger_name}
-            {when} {operation} ON {source_table}
-            REFERENCING NEW TABLE AS new_table
-            FOR EACH STATEMENT EXECUTE {function_keyword} {fn}();
-        """
-
-    def row_trigger_def(source_table, id_field, operation, when="AFTER", function_keyword="FUNCTION"):
-        fn = f"{fn_prefix}_{id_field}"
-
-        label = f"history_audit_by_{id_field}"
-        trigger_name = get_trigger_name(label, operation, when, statement=True)
-
-        return f"""
-            CREATE TRIGGER {trigger_name}
-            {when} {operation} ON {source_table}
-            FOR EACH ROW
-            WHEN (NEW.{id_field} IS NOT NULL)
-            EXECUTE {function_keyword} {fn}();
-        """
+        # In the syntax of CREATE TRIGGER, the keywords FUNCTION and PROCEDURE are equivalent,
+        # but the referenced function must in any case be a function, not a procedure.
+        # The use of the keyword PROCEDURE here is historical and deprecated (https://www.postgresql.org/docs/11/sql-createtrigger.html).
+        function_keyword = "FUNCTION" if version >= 11 else "PROCEDURE"
+        create_or_replace = "CREATE OR REPLACE" if version >= 14 else "CREATE"
+        if use_statement_trigger(version) and when == "AFTER":
+            return f"""
+                {create_or_replace} TRIGGER {trigger_name}
+                AFTER {operation}
+                ON {source_table}
+                REFERENCING NEW TABLE AS new_table
+                FOR EACH STATEMENT
+                EXECUTE {function_keyword} {fn}();
+            """
+        else:
+            return f"""
+                {create_or_replace} TRIGGER {trigger_name}
+                {when} {operation}
+                ON {source_table}
+                FOR EACH ROW
+                WHEN (NEW.{id_field} IS NOT NULL)
+                EXECUTE {function_keyword} {fn}();
+            """
 
     # pick row or statement triggers depending on postgres version
+    assert engine.dialect.server_version_info is not None
     version = engine.dialect.server_version_info[0]
-    trigger_fn = statement_trigger_fn if version > 10 else row_trigger_fn
-    trigger_def = statement_trigger_def if version > 10 else row_trigger_def
-    # In the syntax of CREATE TRIGGER, the keywords FUNCTION and PROCEDURE are equivalent,
-    # but the referenced function must in any case be a function, not a procedure.
-    # The use of the keyword PROCEDURE here is historical and deprecated (https://www.postgresql.org/docs/11/sql-createtrigger.html).
-    function_keyword = "FUNCTION" if version > 10 else "PROCEDURE"
+    statement = use_statement_trigger(version)
 
     for id_field in ["history_id", "id"]:
-        sql.append(trigger_fn(id_field))
+        fn_name = f"{fn_prefix}_{id_field}"
+        sql.append(build_trigger_fn(fn_name, id_field, use_statement=statement, with_notify=True))
 
     for source_table, id_field in trigger_config.items():
         for operation in ["UPDATE", "INSERT"]:
-            sql.append(trigger_def(source_table, id_field, operation, function_keyword=function_keyword))
+            sql.append(trigger_def(source_table, id_field, operation, version))
 
     return sql
 
 
-def _sqlite_remove():
+def _sqlite_remove() -> list[str]:
     sql = []
 
     for source_table in trigger_config:
@@ -141,11 +168,11 @@ def _sqlite_remove():
     return sql
 
 
-def _sqlite_install():
+def _sqlite_install() -> list[str]:
     # delete old stuff first
     sql = _sqlite_remove()
 
-    def trigger_def(source_table, id_field, operation, when="AFTER"):
+    def trigger_def(source_table: str, id_field: str, operation: str, when: str = "AFTER") -> str:
         # only one trigger per operation/table in simple databases, so
         # trigger name is less descriptive
         trigger_name = get_trigger_name(source_table, operation, when)
@@ -169,16 +196,16 @@ def _sqlite_install():
     return sql
 
 
-def get_trigger_name(label, operation, when, statement=False):
+def get_trigger_name(label: str, operation: str, when: str, statement: bool = False) -> str:
     op_initial = operation.lower()[0]
     when_initial = when.lower()[0]
     rs = "s" if statement else "r"
     return f"trigger_{label}_{when_initial}{op_initial}{rs}"
 
 
-def execute_statements(engine, raw_sql):
+def execute_statements(engine: "Engine", raw_sql: str | list[str]) -> None:
     statements = raw_sql if isinstance(raw_sql, list) else [raw_sql]
     with engine.begin() as connection:
         for sql in statements:
-            cmd = DDL(sql)
+            cmd = DDL(sql)  # type: ignore[no-untyped-call]  # DDL.__init__() is untyped in SQLAlchemy
             connection.execute(cmd)

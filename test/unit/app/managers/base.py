@@ -42,7 +42,7 @@ class BaseTestCase(TestCase):
         self.mock_trans.init_user_in_database()
 
     def set_up_managers(self):
-        self.user_manager = self.app[UserManager]
+        self.user_manager: UserManager = self.app[UserManager]
 
     def set_up_trans(self):
         self.admin_user = self.user_manager.create(email=admin_email, username="admin", password=default_password)

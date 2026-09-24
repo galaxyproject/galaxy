@@ -7,7 +7,9 @@ keep things like testing other tool APIs in ./test_tools.py (index, search, tool
 files, etc..).
 """
 
+import copy
 from dataclasses import dataclass
+from typing import Any
 
 import pytest
 
@@ -73,19 +75,21 @@ def test_galaxy_expression_metadata(target_history: TargetHistory, required_tool
 
 
 @requires_tool_id("multi_select")
-def test_multi_select_as_list(required_tool: RequiredTool):
-    execution = required_tool.execute().with_inputs({"select_ex": ["--ex1", "ex2"]})
+def test_multi_select_as_list(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    inputs = tool_input_format.when.any({"select_ex": ["--ex1", "ex2"]})
+    execution = required_tool.execute().with_inputs(inputs)
     execution.assert_has_single_job.with_output("output").with_contents("--ex1,ex2")
 
 
 @requires_tool_id("multi_select")
-def test_multi_select_optional(required_tool: RequiredTool):
-    execution = required_tool.execute().with_inputs(
+def test_multi_select_optional(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    inputs = tool_input_format.when.any(
         {
             "select_ex": ["--ex1"],
             "select_optional": None,
         }
     )
+    execution = required_tool.execute().with_inputs(inputs)
     job = execution.assert_has_single_job
     job.assert_has_output("output").with_contents("--ex1")
     job.assert_has_output("output2").with_contents_stripped("None")
@@ -262,6 +266,27 @@ def test_map_over_empty_collection(target_history: TargetHistory, required_tool:
     name = execute.assert_creates_implicit_collection(0).details["name"]
     assert "Concatenate datasets" in name
     assert "on collection 1" in name
+
+
+@requires_tool_id("collection_paired_structured_like_with_data_input")
+def test_map_over_empty_with_structured_like_non_mapped_collection_input(
+    target_history: TargetHistory, required_tool: RequiredTool
+):
+    # Regression guard: an output declared ``structured_like=<non-mapped
+    # collection input>`` must precreate an implicit output even when the
+    # mapped-over input is empty (zero jobs). Before the fix,
+    # example_params fell back to param_template where the non-mapped
+    # collection's batch wrapper was never substituted, and precreate
+    # crashed with "Referenced input parameter is not a collection."
+    empty_hdca = target_history.with_list([])
+    shape_hdca = target_history.with_pair(["a", "b"])
+    inputs = {
+        "input1": {"batch": True, "values": [empty_hdca.src_dict]},
+        "shape": shape_hdca.src_dict,
+    }
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_n_jobs(0)
+    execute.assert_creates_implicit_collection(0)
 
 
 @dataclass
@@ -478,6 +503,27 @@ def test_map_over_collection(
 
 
 @requires_tool_id("cat|cat1")
+def test_dce_as_input(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
+    """Test using a dataset collection element (dce) as a direct input to a tool.
+
+    This corresponds to drag-and-dropping an individual element from a collection
+    onto a tool input, which sends {"src": "dce", "id": "<dce_id>"} as the input value.
+    """
+    hdca = target_history.with_pair(["123", "456"])
+    collection_details = target_history._dataset_populator.get_history_collection_details(
+        target_history.id, content_id=hdca.id
+    )
+    forward_element = collection_details["elements"][0]
+    assert forward_element["element_identifier"] == "forward"
+    dce_src_dict = {"src": "dce", "id": forward_element["id"]}
+    inputs = tool_input_format.when.any({"input1": dce_src_dict})
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_single_job.with_single_output.with_contents_stripped("123")
+
+
+@requires_tool_id("cat|cat1")
 def test_map_over_data_with_paired_or_unpaired_unpaired(target_history: TargetHistory, required_tool: RequiredTool):
     hdca = target_history.with_unpaired()
     execute = required_tool.execute().with_inputs({"input1": {"batch": True, "values": [hdca.src_dict]}})
@@ -571,6 +617,31 @@ def test_map_over_paired_or_unpaired_with_list_of_lists(target_history: TargetHi
     assert len(as_dict_0["object"]["elements"]) == 3
 
 
+@requires_tool_id("collection_list_paired_or_unpaired")
+def test_map_over_list_paired_or_unpaired_with_list_of_lists(
+    target_history: TargetHistory, required_tool: RequiredTool
+):
+    hdca = target_history.with_example_list_of_lists()
+    execute = required_tool.execute().with_inputs(
+        {"f1": {"batch": True, "values": [{"map_over_type": "list", **hdca.src_dict}]}}
+    )
+    execute.assert_has_n_jobs(1).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    assert output_collection.details["collection_type"] == "list"
+
+
+@requires_tool_id("collection_paired_test")
+def test_paired_or_unpaired_not_consumed_by_paired_when_mapping(
+    target_history: TargetHistory, required_tool: RequiredTool
+):
+    """PAIRED_OR_UNPAIRED_NOT_CONSUMED_BY_PAIRED_WHEN_MAPPING:
+    list:paired_or_unpaired cannot be mapped over a paired tool input."""
+    hdca = target_history.with_list_of_paired_and_unpaired()
+    required_tool.execute().with_inputs(
+        {"f1": {"batch": True, "values": [{"map_over_type": "paired", **hdca.src_dict}]}}
+    ).assert_fails.with_error_containing("Cannot split collection")
+
+
 @requires_tool_id("collection_paired_test")
 def test_simple_subcollection_mapping(
     target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
@@ -649,6 +720,34 @@ def test_map_over_data_param_with_list_of_lists(target_history: TargetHistory, r
     execute.assert_creates_implicit_collection(0)
 
 
+@requires_tool_id("gx_data")
+def test_job_cache_not_used_for_datasets_with_different_extra_files(
+    target_history: TargetHistory, required_tool: RequiredTool
+) -> None:
+    velvet_upload_request: dict[str, Any] = {
+        "src": "composite",
+        "ext": "velvet",
+        "composite": {
+            "items": [
+                {"src": "pasted", "paste_content": "sequences content"},
+                {"src": "pasted", "paste_content": "roadmaps content"},
+                {"src": "pasted", "paste_content": "log content"},
+            ]
+        },
+    }
+    velvet1_hda = target_history._dataset_populator.fetch_hda(target_history.id, velvet_upload_request, wait=True)
+    velvet1 = {"src": "hda", "id": velvet1_hda["id"]}
+    _ = required_tool.execute().with_inputs({"parameter": velvet1}).assert_has_single_job
+
+    # Same primary file ("sequences"), but a different extra file ("roadmaps").
+    velvet_modified_request = copy.deepcopy(velvet_upload_request)
+    velvet_modified_request["composite"]["items"][1]["paste_content"] = "roadmaps content MODIFIED"
+    velvet2_hda = target_history._dataset_populator.fetch_hda(target_history.id, velvet_modified_request, wait=True)
+    velvet2 = {"src": "hda", "id": velvet2_hda["id"]}
+    job = required_tool.execute(use_cached_job=True).with_inputs({"parameter": velvet2}).assert_has_single_job
+    assert not job.final_details["copied_from_job_id"]
+
+
 @requires_tool_id("gx_repeat_boolean_min")
 def test_optional_repeats_with_mins_filled_id(target_history: TargetHistory, required_tool: RequiredTool):
     # we have a tool test for this but I wanted to verify it wasn't just the
@@ -716,6 +815,7 @@ def test_select_optional_null_by_default(required_tools: list[RequiredTool], too
 
 @requires_tool_id("gx_select_multiple")
 @requires_tool_id("gx_select_multiple_optional")
+@requires_tool_id("gx_select_multiple_no_options_validation")
 def test_select_multiple_does_not_select_first_by_default(
     required_tools: list[RequiredTool], tool_input_format: DescribeToolInputs
 ):
@@ -729,6 +829,17 @@ def test_select_multiple_does_not_select_first_by_default(
         required_tool.execute().with_inputs(null_parameter).assert_has_single_job.with_output(
             "output"
         ).with_contents_stripped("None")
+
+
+@requires_tool_id("gx_genomebuild_multiple")
+def test_genomebuild_multiple_is_optional_by_default(
+    required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
+    # genomebuild is a SelectToolParameter subclass, so multiple implies optional here too
+    for inputs in [tool_input_format.when.any({}), tool_input_format.when.any({"parameter": None})]:
+        required_tool.execute().with_inputs(inputs).assert_has_single_job.with_output("output").with_contents_stripped(
+            "parameter: None"
+        )
 
 
 @requires_tool_id("gx_select_multiple_one_default")
@@ -780,6 +891,74 @@ def test_null_to_text_tool_with_validation(required_tool: RequiredTool, tool_inp
     required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": ""})).assert_fails()
 
 
+@requires_tool_id("gx_text_optional_with_empty_default")
+def test_optional_text_with_empty_default(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    # absent — all formats resolve to value="" default
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
+
+    # explicit null
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": None}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
+
+    # explicit empty string
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": ""}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
+
+    # provided value
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": "hello"}))
+    execute.assert_has_single_job.with_output("output").with_contents_stripped("hello")
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": "hello"})
+
+
+@requires_tool_id("gx_text_optional_regex_validation")
+def test_optional_text_with_regex_validation(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    # absent — no value="" default so all formats treat as None
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
+
+    # explicit null
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": None}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
+
+    # explicit empty string — optional so skip regex validation, "" stays as ""
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": ""}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
+
+    # valid value
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": "0.5"}))
+    execute.assert_has_single_job.with_output("output").with_contents_stripped("0.5")
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": "0.5"})
+
+    # invalid value should fail regardless of format
+    required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": "abc"})).assert_fails()
+
+
+@requires_tool_id("gx_text_optional_with_empty_default_regex_validation")
+def test_optional_text_with_empty_default_with_regex_validation(
+    required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
+    # absent — all formats resolve to value="" default
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
+
+    # explicit null
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": None}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
+
+    # explicit empty string — optional so runtime skips regex validation
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": ""}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
+
+    # valid value
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": "0.5"}))
+    execute.assert_has_single_job.with_output("output").with_contents_stripped("0.5")
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": "0.5"})
+
+    # invalid value should fail regardless of format
+    required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": "abc"})).assert_fails()
+
+
 @requires_tool_id("cat|cat1")
 def test_deferred_basic(required_tool: RequiredTool, target_history: TargetHistory):
     has_src_dict = target_history.with_deferred_dataset_for_test_file("1.bed", ext="bed")
@@ -810,6 +989,48 @@ def test_deferred_multi_input(required_tool: RequiredTool, target_history: Targe
     output = required_tool.execute().with_inputs(inputs).assert_has_single_job.with_single_output
     output.assert_contains("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
     output.assert_contains("chr1    4225    19670")
+
+
+def _assert_input_is_compressed_fasta_gz(target_history: TargetHistory, has_src_dict) -> None:
+    details = target_history._dataset_populator.get_history_dataset_details(
+        target_history.id, dataset_id=has_src_dict.id, assert_ok=False
+    )
+    assert (
+        details["file_ext"] == "fasta.gz"
+    ), f"Test precondition failed: input HDA was stored as {details['file_ext']!r}, not compressed 'fasta.gz'"
+
+
+@requires_tool_id("implicit_conversion")
+def test_implicit_gz_conversion_sync(required_tool: RequiredTool, target_history: TargetHistory):
+    # Upload a compressed fasta.gz HDA (kept compressed, ext=fasta.gz). The tool wants
+    # tabular, so this needs a double implicit conversion fasta.gz -> fasta -> tabular.
+    has_src_dict = target_history.with_dataset_for_test_file("1.fasta.gz", file_type="fasta.gz")
+    _assert_input_is_compressed_fasta_gz(target_history, has_src_dict)
+    inputs = {"input1": has_src_dict.src_dict}
+    output = required_tool.execute().with_inputs(inputs).assert_has_single_job.with_single_output
+    output.assert_contains("hg17")
+
+
+@requires_tool_id("implicit_conversion")
+def test_implicit_gz_conversion_async(required_tool: RequiredTool, target_history: TargetHistory):
+    # Same as the sync test above but submitted via the tool-request (async) API. This
+    # reproduces the bug where the async path runs the tool against the raw fasta.gz
+    # instead of the implicitly-converted (decompressed) dataset.
+    has_src_dict = target_history.with_dataset_for_test_file("1.fasta.gz", file_type="fasta.gz")
+    inputs = {"input1": has_src_dict.src_dict}
+    output = required_tool.execute().with_request(inputs).assert_has_single_job.with_single_output
+    output.assert_contains("hg17")
+
+
+@requires_tool_id("implicit_conversion")
+def test_implicit_gz_conversion_async_deferred(required_tool: RequiredTool, target_history: TargetHistory):
+    # Same conversion, but the fasta.gz input is a DEFERRED dataset (as the async
+    # tool-request test harness stages test data). It is materialized at job time; the
+    # question is whether the implicit fasta.gz -> fasta decompression still happens.
+    has_src_dict = target_history.with_deferred_dataset_for_test_file("1.fasta.gz", ext="fasta.gz")
+    inputs = {"input1": has_src_dict.src_dict}
+    output = required_tool.execute().with_request(inputs).assert_has_single_job.with_single_output
+    output.assert_contains("hg17")
 
 
 @requires_tool_id("collection_mixed_param")
@@ -860,5 +1081,46 @@ def test_map_over_dce_on_non_multiple_data_param(
     execute = required_tool.execute().with_inputs(inputs)
     execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
     output_collection = execute.assert_creates_implicit_collection(0)
-    output_collection.assert_has_dataset_element("test0").with_contents_stripped("123")
-    output_collection.assert_has_dataset_element("test1").with_contents_stripped("456")
+    output_collection.assert_has_dataset_element("forward").with_contents_stripped("123")
+    output_collection.assert_has_dataset_element("reverse").with_contents_stripped("456")
+
+
+@requires_tool_id("gx_repeat_optional")
+def test_empty_repeat_explicit(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    """Empty repeat as explicit [] executes — tool sees zero repeat instances.
+
+    Contrasts with workflow execution where an absent repeat key in tool_state
+    causes Cheetah template failure (see test_wf_conversion_artifacts.py).
+    Direct API execution handles both empty [] and absent repeat identically
+    because populate_state initializes all params with defaults.
+    """
+    inputs = tool_input_format.when.flat({}).when.nested({"parameter": []}).when.request({"parameter": []})
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_single_job.with_single_output.containing("length: 0")
+
+
+@requires_tool_id("gx_repeat_optional")
+def test_absent_repeat(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    """Absent repeat key executes via API — populate_state initializes defaults.
+
+    Unlike workflow execution (which uses params_from_strings and skips absent
+    keys), direct API execution uses populate_state which initializes all params
+    with get_initial_value() before processing inputs. So an absent repeat
+    becomes [] and the tool runs fine.
+    """
+    inputs = tool_input_format.when.any({})
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_single_job.with_single_output.containing("length: 0")
+
+
+@requires_tool_id("gx_repeat_optional")
+def test_repeat_with_instances(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    """Repeat with instances provided works across all formats."""
+    inputs = (
+        tool_input_format.when.flat({"parameter_0|text_parameter": "hello", "parameter_1|text_parameter": "world"})
+        .when.nested({"parameter": [{"text_parameter": "hello"}, {"text_parameter": "world"}]})
+        .when.request({"parameter": [{"text_parameter": "hello"}, {"text_parameter": "world"}]})
+    )
+    execute = required_tool.execute().with_inputs(inputs)
+    output = execute.assert_has_single_job.with_single_output
+    output.containing("length: 2").containing("hello").containing("world")

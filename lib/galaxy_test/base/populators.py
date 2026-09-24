@@ -64,7 +64,6 @@ from typing import (
     cast,
     Literal,
     NamedTuple,
-    Optional,
     Union,
 )
 from uuid import UUID
@@ -73,10 +72,7 @@ import cwltest.compare
 import requests
 import yaml
 from bioblend.galaxyclient import GalaxyClient
-from gxformat2 import (
-    convert_and_import_workflow,
-    ImporterGalaxyInterface,
-)
+from gxformat2 import python_to_workflow
 from gxformat2.yaml import ordered_load
 from pydantic import (
     BaseModel,
@@ -138,9 +134,16 @@ from .api import (
 )
 from .api_util import random_name
 from .env import REQUIRE_ALL_NEEDED_TOOLS
+from .test_http_server import TestHttpServer
 
 FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
+
+
+def local_file_url(test_http_server: TestHttpServer) -> str:
+    """Local stand-in for ``FILE_URL``, serving the same test-data/4.bed contents."""
+    return test_http_server.get_url(remote_url=FILE_URL, file_path="test-data/4.bed")
+
 
 CWL_TOOL_DIRECTORY = os.path.join(galaxy_root_path, "test", "functional", "tools", "cwl_tools")
 
@@ -224,6 +227,19 @@ def skip_without_tool(tool_id: str):
         return wrapped_method
 
     return method_wrapper
+
+
+def skip_without_agents(method):
+    @wraps(method)
+    def wrapped_method(api_test_case, *args, **kwd):
+        interactor = api_test_case.anonymous_galaxy_interactor
+        resp = interactor.get("configuration")
+        api_asserts.assert_status_code_is_ok(resp)
+        if not resp.json().get("llm_api_configured", False):
+            raise unittest.SkipTest("Agents not available")
+        return method(api_test_case, *args, **kwd)
+
+    return wrapped_method
 
 
 def skip_without_asgi(method):
@@ -519,10 +535,9 @@ class BaseDatasetPopulator(BasePopulator):
     def new_bam_dataset(self, history_id: str, test_data_resolver):
         return self.new_dataset_from_test_data(history_id, test_data_resolver, "1.bam", "bam")
 
-    def new_dataset_from_test_data(self, history_id: str, test_data_resolver, filename: str, file_type: str):
-        return self.new_dataset(
-            history_id, content=open(test_data_resolver.get_filename(filename), "rb"), file_type=file_type, wait=True
-        )
+    def new_dataset_from_test_data(self, history_id: str, test_data_resolver, filename: str, file_type: str, **kwds):
+        with open(test_data_resolver.get_filename(filename), "rb") as content:
+            return self.new_dataset(history_id, content=content, file_type=file_type, wait=True, **kwds)
 
     def new_directory_dataset(
         self, test_data_resolver: TestDataResolver, history_id: str, directory: str, format: str = "directory"
@@ -568,7 +583,7 @@ class BaseDatasetPopulator(BasePopulator):
         payload: dict,
         assert_ok: bool = True,
         timeout: timeout_type = DEFAULT_TIMEOUT,
-        wait: Optional[bool] = None,
+        wait: bool | None = None,
     ):
         tool_response = self._post("tools/fetch", data=payload, json=True)
         if wait is None:
@@ -605,7 +620,7 @@ class BaseDatasetPopulator(BasePopulator):
         assert len(hdas) == 1
         return hdas[0]
 
-    def create_deferred_hda(self, history_id: str, uri: str, ext: Optional[str] = None) -> dict[str, Any]:
+    def create_deferred_hda(self, history_id: str, uri: str, ext: str | None = None) -> dict[str, Any]:
         item = {
             "src": "url",
             "url": uri,
@@ -661,9 +676,9 @@ class BaseDatasetPopulator(BasePopulator):
 
     def create_from_store(
         self,
-        store_dict: Optional[dict[str, Any]] = None,
-        store_path: Optional[str] = None,
-        model_store_format: Optional[str] = None,
+        store_dict: dict[str, Any] | None = None,
+        store_path: str | None = None,
+        model_store_format: str | None = None,
     ) -> dict[str, Any]:
         payload = _store_payload(store_dict=store_dict, store_path=store_path, model_store_format=model_store_format)
         create_response = self.create_from_store_raw(payload)
@@ -672,9 +687,9 @@ class BaseDatasetPopulator(BasePopulator):
 
     def create_from_store_async(
         self,
-        store_dict: Optional[dict[str, Any]] = None,
-        store_path: Optional[str] = None,
-        model_store_format: Optional[str] = None,
+        store_dict: dict[str, Any] | None = None,
+        store_path: str | None = None,
+        model_store_format: str | None = None,
     ) -> dict[str, Any]:
         payload = _store_payload(store_dict=store_dict, store_path=store_path, model_store_format=model_store_format)
         create_response = self.create_from_store_raw_async(payload)
@@ -688,9 +703,9 @@ class BaseDatasetPopulator(BasePopulator):
     def create_contents_from_store(
         self,
         history_id: str,
-        store_dict: Optional[dict[str, Any]] = None,
-        store_path: Optional[str] = None,
-        discarded_data: Optional[str] = None,
+        store_dict: dict[str, Any] | None = None,
+        store_path: str | None = None,
+        discarded_data: str | None = None,
     ) -> list[dict[str, Any]]:
         if store_dict is not None:
             assert isinstance(store_dict, dict)
@@ -778,7 +793,7 @@ class BaseDatasetPopulator(BasePopulator):
 
     def wait_for_jobs(
         self,
-        jobs: Union[list[dict], list[str]],
+        jobs: list[dict] | list[str],
         assert_ok: bool = False,
         timeout: timeout_type = DEFAULT_TIMEOUT,
         ok_states=None,
@@ -812,8 +827,8 @@ class BaseDatasetPopulator(BasePopulator):
     def compute_hash(
         self,
         dataset_id: str,
-        hash_function: Optional[str] = "MD5",
-        extra_files_path: Optional[str] = None,
+        hash_function: str | None = "MD5",
+        extra_files_path: str | None = None,
         wait: bool = True,
     ) -> Response:
         data: dict[str, Any] = {}
@@ -855,12 +870,25 @@ class BaseDatasetPopulator(BasePopulator):
         ]
         return active_jobs
 
+    def build_for_rerun(self, job_id: str, **kwd) -> dict[str, Any]:
+        response = self._get(f"jobs/{job_id}/build_for_rerun", kwd or None)
+        response.raise_for_status()
+        return response.json()
+
     def cancel_job(self, job_id: str) -> Response:
         return self._delete(f"jobs/{job_id}")
 
     def delete_history(self, history_id: str) -> None:
         delete_response = self._delete(f"histories/{history_id}")
         delete_response.raise_for_status()
+
+    def purge_history(self, history_id: str) -> dict:
+        purge_response = self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        purge_response.raise_for_status()
+        result = purge_response.json()
+        if purge_task := result.get("purge_task"):
+            self.wait_on_task_id(purge_task["id"])
+        return result
 
     def delete_dataset(
         self,
@@ -899,13 +927,13 @@ class BaseDatasetPopulator(BasePopulator):
     def rename_dataset(
         self,
         content_id: str,
-        new_name: Optional[str] = None,
+        new_name: str | None = None,
     ):
         if not new_name:
             new_name = self.get_random_name()
         return self.update_dataset(content_id, {"name": new_name})
 
-    def rename_collection(self, content_id: str, new_name: Optional[str] = None):
+    def rename_collection(self, content_id: str, new_name: str | None = None):
         if not new_name:
             new_name = self.get_random_name()
         self.update_dataset_collection(content_id, {"name": new_name})
@@ -1044,7 +1072,7 @@ class BaseDatasetPopulator(BasePopulator):
             assert response.status_code == 200, response.text
         return response.json()
 
-    def create_tool(self, representation, tool_directory: Optional[str] = None) -> dict[str, Any]:
+    def create_tool(self, representation, tool_directory: str | None = None) -> dict[str, Any]:
         payload = dict(
             representation=representation,
             tool_directory=tool_directory,
@@ -1093,16 +1121,18 @@ class BaseDatasetPopulator(BasePopulator):
             yield history_id
 
     @contextlib.contextmanager
-    def test_history(self, require_new: bool = True, name: Optional[str] = None) -> Generator[str, None, None]:
-        with self._test_history(require_new=require_new, cleanup_callback=self._cleanup_history) as history_id:
+    def test_history(self, require_new: bool = True, name: str | None = None) -> Generator[str, None, None]:
+        with self._test_history(
+            require_new=require_new, cleanup_callback=self._cleanup_history, name=name
+        ) as history_id:
             yield history_id
 
     @contextlib.contextmanager
     def _test_history(
         self,
         require_new: bool = True,
-        cleanup_callback: Optional[Callable[[str], None]] = None,
-        name: Optional[str] = None,
+        cleanup_callback: Callable[[str], None] | None = None,
+        name: str | None = None,
     ) -> Generator[str, None, None]:
         if name is not None:
             kwds = {"name": name}
@@ -1164,7 +1194,7 @@ class BaseDatasetPopulator(BasePopulator):
         payload = {"history_id": history_id, "targets": targets, "__files": __files}
         return payload
 
-    def upload_payload(self, history_id: str, content: Optional[str] = None, **kwds) -> dict:
+    def upload_payload(self, history_id: str, content: str | None = None, **kwds) -> dict:
         name = kwds.get("name", "Test_Dataset")
         dbkey = kwds.get("dbkey", "?")
         file_type = kwds.get("file_type", "txt")
@@ -1204,7 +1234,7 @@ class BaseDatasetPopulator(BasePopulator):
         api_asserts.assert_status_code_is_ok(download_response)
         return self._get_response_to_tempfile(download_response)
 
-    def run_tool_payload(self, tool_id: Optional[str], inputs: dict, history_id: str, **kwds) -> dict:
+    def run_tool_payload(self, tool_id: str | None, inputs: dict, history_id: str, **kwds) -> dict:
         # Remove files_%d|file_data parameters from inputs dict and attach
         # as __files dictionary.
         for key, value in list(inputs.items()):
@@ -1218,7 +1248,7 @@ class BaseDatasetPopulator(BasePopulator):
             kwds["credentials_context"] = json.dumps(kwds["credentials_context"])
         return dict(tool_id=tool_id, inputs=json.dumps(inputs), history_id=history_id, **kwds)
 
-    def build_tool_state(self, tool_id: str, history_id: str, inputs: Optional[dict] = None):
+    def build_tool_state(self, tool_id: str, history_id: str, inputs: dict | None = None):
         if inputs is not None:
             payload = {"history_id": history_id, "inputs": inputs}
             response = self._post(f"tools/{tool_id}/build", data=payload, json=True)
@@ -1227,7 +1257,7 @@ class BaseDatasetPopulator(BasePopulator):
         response.raise_for_status()
         return response.json()
 
-    def run_tool_raw(self, tool_id: Optional[str], inputs: dict, history_id: str, **kwds) -> Response:
+    def run_tool_raw(self, tool_id: str | None, inputs: dict, history_id: str, **kwds) -> Response:
         payload = self.run_tool_payload(tool_id, inputs, history_id, **kwds)
         return self.tools_post(payload)
 
@@ -1273,6 +1303,18 @@ class BaseDatasetPopulator(BasePopulator):
     def get_history_dataset_content(
         self, history_id: str, wait=True, filename=None, type="text", to_ext=None, raw=False, **kwds
     ):
+        display_response = self.get_history_dataset_content_raw(
+            history_id, wait=wait, filename=filename, to_ext=to_ext, raw=raw, **kwds
+        )
+        assert display_response.status_code == 200, display_response.text
+        if type == "text":
+            return display_response.text
+        else:
+            return display_response.content
+
+    def get_history_dataset_content_raw(
+        self, history_id: str, wait=True, filename=None, to_ext=None, raw=False, preview: bool | None = None, **kwds
+    ) -> Response:
         dataset_id = self.__history_content_id(history_id, wait=wait, **kwds)
         data = {}
         if filename:
@@ -1281,14 +1323,11 @@ class BaseDatasetPopulator(BasePopulator):
             data["raw"] = True
         if to_ext is not None:
             data["to_ext"] = to_ext
-        display_response = self._get_contents_request(history_id, f"/{dataset_id}/display", data=data)
-        assert display_response.status_code == 200, display_response.text
-        if type == "text":
-            return display_response.text
-        else:
-            return display_response.content
+        if preview is not None:
+            data["preview"] = preview
+        return self._get_contents_request(history_id, f"/{dataset_id}/display", data=data)
 
-    def display_chunk(self, dataset_id: str, offset: int = 0, ck_size: Optional[int] = None) -> dict[str, Any]:
+    def display_chunk(self, dataset_id: str, offset: int = 0, ck_size: int | None = None) -> dict[str, Any]:
         # use the dataset display API endpoint with the offset parameter to enable chunking
         # of the target dataset for certain datatypes
         kwds = {
@@ -1318,13 +1357,13 @@ class BaseDatasetPopulator(BasePopulator):
         assert isinstance(transform, list)
         return {t["action"] for t in transform}
 
-    def get_history_dataset_details(self, history_id: str, keys: Optional[str] = None, **kwds) -> dict[str, Any]:
+    def get_history_dataset_details(self, history_id: str, keys: str | None = None, **kwds) -> dict[str, Any]:
         dataset_id = self.__history_content_id(history_id, **kwds)
         details_response = self.get_history_dataset_details_raw(history_id, dataset_id, keys=keys)
         details_response.raise_for_status()
         return details_response.json()
 
-    def get_history_dataset_details_raw(self, history_id: str, dataset_id: str, keys: Optional[str] = None) -> Response:
+    def get_history_dataset_details_raw(self, history_id: str, dataset_id: str, keys: str | None = None) -> Response:
         data = None
         if keys:
             data = {"keys": keys}
@@ -1343,6 +1382,13 @@ class BaseDatasetPopulator(BasePopulator):
         details_response = self._get_contents_request(history_id, f"/dataset_collections/{hdca_id}")
         assert details_response.status_code == 200, details_response.content
         return details_response.json()
+
+    def get_hdca_implicit_collection_jobs_id(self, history_id: str, hdca_id: str, **kwds) -> str:
+        """Encoded ImplicitCollectionJobs id of a map-over output HDCA."""
+        details = self.get_history_collection_details(history_id, content_id=hdca_id, **kwds)
+        icj_id = details.get("implicit_collection_jobs_id")
+        assert icj_id, f"HDCA {hdca_id} has no implicit_collection_jobs_id"
+        return icj_id
 
     def run_collection_creates_list(self, history_id: str, hdca_id: str) -> Response:
         inputs = {
@@ -1374,7 +1420,7 @@ class BaseDatasetPopulator(BasePopulator):
         return output_details["id"]
 
     def report_job_error_raw(
-        self, job_id: str, dataset_id: str, message: str = "", email: Optional[str] = None
+        self, job_id: str, dataset_id: str, message: str = "", email: str | None = None
     ) -> Response:
         url = f"jobs/{job_id}/error"
         payload = dict(
@@ -1386,9 +1432,7 @@ class BaseDatasetPopulator(BasePopulator):
         report_response = self._post(url, data=payload, json=True)
         return report_response
 
-    def report_job_error(
-        self, job_id: str, dataset_id: str, message: str = "", email: Optional[str] = None
-    ) -> Response:
+    def report_job_error(self, job_id: str, dataset_id: str, message: str = "", email: str | None = None) -> Response:
         report_response = self.report_job_error_raw(job_id, dataset_id, message=message, email=email)
         api_asserts.assert_status_code_is_ok(report_response)
         return report_response.json()
@@ -1481,6 +1525,88 @@ class BaseDatasetPopulator(BasePopulator):
         get_storage_response = self._get(storage_url)
         return get_storage_response
 
+    def bulk_storage_operation_preview_raw(
+        self, history_id: str, payload: dict[str, Any], expected_status: int = 200
+    ) -> Response:
+        response = self._post(
+            f"histories/{history_id}/contents/bulk/storage/preview",
+            data=payload,
+            json=True,
+        )
+        api_asserts.assert_status_code_is(response, expected_status)
+        return response
+
+    def bulk_storage_operation_preview(
+        self, history_id: str, payload: dict[str, Any], expected_status: int = 200
+    ) -> dict[str, Any]:
+        return self.bulk_storage_operation_preview_raw(history_id, payload, expected_status=expected_status).json()
+
+    def bulk_storage_operation_execute_raw(
+        self, history_id: str, payload: dict[str, Any], expected_status: int = 200
+    ) -> Response:
+        response = self._post(
+            f"histories/{history_id}/contents/bulk/storage/execute",
+            data=payload,
+            json=True,
+        )
+        api_asserts.assert_status_code_is(response, expected_status)
+        return response
+
+    def bulk_storage_operation_execute(
+        self, history_id: str, payload: dict[str, Any], expected_status: int = 200
+    ) -> dict[str, Any]:
+        return self.bulk_storage_operation_execute_raw(history_id, payload, expected_status=expected_status).json()
+
+    def bulk_storage_operation_run_status_raw(
+        self, history_id: str, run_id: str, expected_status: int = 200
+    ) -> Response:
+        response = self._get(f"histories/{history_id}/contents/bulk/storage/runs/{run_id}")
+        api_asserts.assert_status_code_is(response, expected_status)
+        return response
+
+    def bulk_storage_operation_run_status(
+        self, history_id: str, run_id: str, expected_status: int = 200
+    ) -> dict[str, Any]:
+        response = self.bulk_storage_operation_run_status_raw(history_id, run_id, expected_status=expected_status)
+        return response.json()
+
+    def bulk_storage_operation_run_items(
+        self,
+        history_id: str,
+        run_id: str,
+        expected_status: int = 200,
+        offset: int = 0,
+        limit: int = 50,
+        search: str | None = None,
+    ) -> list[dict[str, Any]]:
+        query: dict[str, Any] = {
+            "offset": offset,
+            "limit": limit,
+        }
+        if search is not None:
+            query["search"] = search
+        response = self._get(f"histories/{history_id}/contents/bulk/storage/runs/{run_id}/items", data=query)
+        api_asserts.assert_status_code_is(response, expected_status)
+        return response.json()
+
+    def wait_for_bulk_storage_operation_run(
+        self,
+        history_id: str,
+        run_id: str,
+        include_items_on_terminal: bool = False,
+        search: str | None = None,
+        timeout: timeout_type = DEFAULT_TIMEOUT,
+    ) -> dict[str, Any]:
+        def is_terminal():
+            run_data = self.bulk_storage_operation_run_status(history_id, run_id)
+            if run_data["run"]["state"] in ("completed", "failed"):
+                if include_items_on_terminal:
+                    run_data["items"] = self.bulk_storage_operation_run_items(history_id, run_id, search=search)
+                return run_data
+            return None
+
+        return wait_on(is_terminal, "bulk storage operation run completion", timeout=timeout)
+
     def get_roles(self) -> list:
         using_requirement("admin")
         roles_response = self._get("roles", admin=True)
@@ -1523,7 +1649,7 @@ class BaseDatasetPopulator(BasePopulator):
         usage_response.raise_for_status()
         return usage_response.json()
 
-    def get_usage_for(self, label: Optional[str]) -> dict[str, Any]:
+    def get_usage_for(self, label: str | None) -> dict[str, Any]:
         label_as_str = label if label is not None else "__null__"
         usage_response = self.galaxy_interactor.get(f"users/current/usage/{label_as_str}")
         usage_response.raise_for_status()
@@ -1534,7 +1660,7 @@ class BaseDatasetPopulator(BasePopulator):
         api_asserts.assert_status_code_is_ok(update_response)
         return update_response.json()
 
-    def set_user_preferred_object_store_id(self, store_id: Optional[str]) -> None:
+    def set_user_preferred_object_store_id(self, store_id: str | None) -> None:
         user_properties = self.update_user({"preferred_object_store_id": store_id})
         assert user_properties["preferred_object_store_id"] == store_id
 
@@ -1556,7 +1682,7 @@ class BaseDatasetPopulator(BasePopulator):
         update_response.raise_for_status()
         return update_response
 
-    def create_role(self, user_ids: list, description: Optional[str] = None, role_type="admin") -> dict:
+    def create_role(self, user_ids: list, description: str | None = None, role_type="admin") -> dict:
         using_requirement("admin")
         payload = {
             "name": self.get_random_name(prefix="testpop"),
@@ -1574,6 +1700,26 @@ class BaseDatasetPopulator(BasePopulator):
         try:
             yield
         finally:
+            self._delete(f"roles/{role['id']}", admin=True).raise_for_status()
+            self._post(f"roles/{role['id']}/purge", admin=True).raise_for_status()
+
+    @contextlib.contextmanager
+    def user_tool_execute_permissions_via_group(self):
+        # Grant USER_TOOL_EXECUTE indirectly: role has no direct user, group binds user to role.
+        role = self.create_role([], role_type="user_tool_execute")
+        group_payload = {
+            "name": self.get_random_name(prefix="testpop-utx-group"),
+            "user_ids": [self.user_id()],
+            "role_ids": [role["id"]],
+        }
+        group_response = self._post("groups", data=group_payload, admin=True, json=True)
+        assert group_response.status_code == 200
+        group = group_response.json()[0]
+        try:
+            yield
+        finally:
+            self._delete(f"groups/{group['id']}", admin=True).raise_for_status()
+            self._post(f"groups/{group['id']}/purge", admin=True).raise_for_status()
             self._delete(f"roles/{role['id']}", admin=True).raise_for_status()
             self._post(f"roles/{role['id']}/purge", admin=True).raise_for_status()
 
@@ -1628,7 +1774,7 @@ class BaseDatasetPopulator(BasePopulator):
         assert update_response.status_code == 200, update_response.content
         return update_response.json()
 
-    def validate_dataset_and_wait(self, history_id, dataset_id) -> Optional[str]:
+    def validate_dataset_and_wait(self, history_id, dataset_id) -> str | None:
         self.validate_dataset(history_id, dataset_id)
 
         def validated():
@@ -1743,11 +1889,17 @@ class BaseDatasetPopulator(BasePopulator):
         api_asserts.assert_status_code_is_ok(put_response)
         return put_response.json()
 
+    def hide_dataset(self, dataset_id: str) -> dict[str, Any]:
+        return self.update_dataset(dataset_id, {"visible": False})
+
     def update_dataset_collection(self, dataset_collection_id: str, update_payload: dict[str, Any]):
         update_url = f"dataset_collections/{dataset_collection_id}"
         put_response = self._put(update_url, update_payload, json=True)
         api_asserts.assert_status_code_is_ok(put_response)
         return put_response.json()
+
+    def hide_dataset_collection(self, dataset_collection_id: str) -> dict[str, Any]:
+        return self.update_dataset_collection(dataset_collection_id, {"visible": False})
 
     def get_histories(self):
         history_index_response = self._get("histories")
@@ -1812,6 +1964,14 @@ class BaseDatasetPopulator(BasePopulator):
         response = self._get(f"histories/{history_id}/tool_requests")
         api_asserts.assert_status_code_is_ok(response)
         return response.json()
+
+    def get_history_graph(self, history_id: str, **params: Any) -> dict[str, Any]:
+        response = self.get_history_graph_raw(history_id, **params)
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
+    def get_history_graph_raw(self, history_id: str, **params: Any) -> Response:
+        return self._get(f"histories/{history_id}/graph", data=params or None)
 
     def wait_on_task(self, async_task_response: Response):
         response_json = async_task_response.json()
@@ -1892,7 +2052,7 @@ class BaseDatasetPopulator(BasePopulator):
 
         return imported_history_id
 
-    def get_random_name(self, prefix: Optional[str] = None, suffix: Optional[str] = None, len: int = 10) -> str:
+    def get_random_name(self, prefix: str | None = None, suffix: str | None = None, len: int = 10) -> str:
         return random_name(prefix=prefix, suffix=suffix, len=len)
 
     def wait_for_dataset(
@@ -1947,21 +2107,21 @@ class BaseDatasetPopulator(BasePopulator):
         return selectable_object_store_ids
 
     def new_page(
-        self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: Optional[str] = None
+        self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: str | None = None
     ) -> dict[str, Any]:
         page_response = self.new_page_raw(slug=slug, title=title, content_format=content_format, content=content)
         api_asserts.assert_status_code_is(page_response, 200)
         return page_response.json()
 
     def new_page_raw(
-        self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: Optional[str] = None
+        self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: str | None = None
     ) -> Response:
         page_request = self.new_page_payload(slug=slug, title=title, content_format=content_format, content=content)
         page_response = self._post("pages", page_request, json=True)
         return page_response
 
     def new_page_payload(
-        self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: Optional[str] = None
+        self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: str | None = None
     ) -> dict[str, str]:
         if content is None:
             if content_format == "html":
@@ -1975,6 +2135,115 @@ class BaseDatasetPopulator(BasePopulator):
             content_format=content_format,
         )
         return request
+
+    # --- History Page helpers (pages attached to histories) ---
+
+    def new_history_page_raw(
+        self,
+        history_id: str,
+        title: str | None = None,
+        content: str = "",
+        content_format: str = "markdown",
+    ) -> Response:
+        payload: dict[str, Any] = {
+            "history_id": history_id,
+            "content": content,
+            "content_format": content_format,
+        }
+        if title:
+            payload["title"] = title
+        return self._post("pages", payload, json=True)
+
+    def new_history_page(
+        self,
+        history_id: str,
+        title: str | None = None,
+        content: str = "",
+        content_format: str = "markdown",
+    ) -> dict[str, Any]:
+        response = self.new_history_page_raw(history_id, title=title, content=content, content_format=content_format)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def get_history_page(self, page_id: str) -> dict[str, Any]:
+        response = self._get(f"pages/{page_id}")
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def list_history_pages(self, history_id: str) -> list[dict[str, Any]]:
+        response = self._get("pages", data={"history_id": history_id, "show_own": True, "show_published": False})
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def update_history_page_raw(
+        self,
+        page_id: str,
+        content: str,
+        title: str | None = None,
+        edit_source: str | None = None,
+    ) -> Response:
+        payload: dict[str, Any] = {"content": content, "content_format": "markdown"}
+        if title:
+            payload["title"] = title
+        if edit_source:
+            payload["edit_source"] = edit_source
+        return self._put(f"pages/{page_id}", payload, json=True)
+
+    def update_history_page(
+        self,
+        page_id: str,
+        content: str,
+        title: str | None = None,
+        edit_source: str | None = None,
+    ) -> dict[str, Any]:
+        response = self.update_history_page_raw(page_id, content=content, title=title, edit_source=edit_source)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def delete_history_page(self, page_id: str) -> None:
+        response = self._delete(f"pages/{page_id}")
+        api_asserts.assert_status_code_is(response, 204)
+
+    def list_page_revisions(self, page_id: str) -> list[dict[str, Any]]:
+        response = self._get(f"pages/{page_id}/revisions")
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def revert_page_revision(self, page_id: str, revision_id: str) -> dict[str, Any]:
+        response = self._post(f"pages/{page_id}/revisions/{revision_id}/revert", json=True)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def send_page_chat_raw(
+        self,
+        page_id: str,
+        query: str,
+        agent_type: str = "page_assistant",
+        exchange_id: str | None = None,
+    ):
+        payload: dict[str, Any] = {"query": query, "page_id": page_id}
+        if exchange_id is not None:
+            payload["exchange_id"] = exchange_id
+        return self._post(f"chat?agent_type={agent_type}", payload, json=True)
+
+    def send_page_chat(
+        self,
+        page_id: str,
+        query: str,
+        agent_type: str = "page_assistant",
+        exchange_id: str | None = None,
+    ) -> dict[str, Any]:
+        response = self.send_page_chat_raw(page_id, query, agent_type=agent_type, exchange_id=exchange_id)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def get_page_chat_history_raw(self, page_id: str):
+        return self._get(f"chat/page/{page_id}/history")
+
+    def get_page_chat_history(self, page_id: str) -> list[dict[str, Any]]:
+        response = self.get_page_chat_history_raw(page_id)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
 
     def export_history_to_uri_async(
         self, history_id: str, target_uri: str, model_store_format: str = "tgz", include_files: bool = True
@@ -2024,7 +2293,7 @@ class BaseDatasetPopulator(BasePopulator):
             self.wait_on_task_id(export_record["task_uuid"])
 
     def archive_history(
-        self, history_id: str, export_record_id: Optional[str] = None, purge_history: Optional[bool] = False
+        self, history_id: str, export_record_id: str | None = None, purge_history: bool | None = False
     ) -> Response:
         payload = (
             {
@@ -2037,11 +2306,11 @@ class BaseDatasetPopulator(BasePopulator):
         archive_response = self._post(f"histories/{history_id}/archive", data=payload, json=True)
         return archive_response
 
-    def restore_archived_history(self, history_id: str, force: Optional[bool] = None) -> Response:
+    def restore_archived_history(self, history_id: str, force: bool | None = None) -> Response:
         restore_response = self._put(f"histories/{history_id}/archive/restore{f'?force={force}' if force else ''}")
         return restore_response
 
-    def get_archived_histories(self, query: Optional[str] = None) -> list[dict[str, Any]]:
+    def get_archived_histories(self, query: str | None = None) -> list[dict[str, Any]]:
         if query:
             query = f"?{query}"
         index_response = self._get(f"histories/archived{query if query else ''}")
@@ -2088,8 +2357,8 @@ class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
     def _test_history(
         self,
         require_new: bool = True,
-        cleanup_callback: Optional[Callable[[str], None]] = None,
-        name: Optional[str] = None,
+        cleanup_callback: Callable[[str], None] | None = None,
+        name: str | None = None,
     ) -> Generator[str, None, None]:
         with self.galaxy_interactor.test_history(
             require_new=require_new, cleanup_callback=cleanup_callback
@@ -2114,7 +2383,7 @@ class BaseCredentialsPopulator(BasePopulator):
         source_version: str = DEFAULT_SOURCE_VERSION,
         service_name: str = DEFAULT_SERVICE_NAME,
         service_version: str = DEFAULT_SERVICE_VERSION,
-        group_name: Optional[str] = None,
+        group_name: str | None = None,
     ) -> dict:
         """Build and return a credentials payload dict without posting it."""
         if group_name is None:
@@ -2155,8 +2424,8 @@ class BaseCredentialsPopulator(BasePopulator):
 
     def list_credentials(
         self,
-        source_type: Optional[str] = None,
-        source_id: Optional[str] = None,
+        source_type: str | None = None,
+        source_id: str | None = None,
         include_definition: bool = False,
         expected_status: int = 200,
     ) -> list:
@@ -2195,7 +2464,7 @@ class BaseCredentialsPopulator(BasePopulator):
         source_id: str,
         source_version: str,
         user_credentials_id: str,
-        current_group_id: Optional[str],
+        current_group_id: str | None,
         expected_status: int = 204,
     ) -> None:
         """PUT /api/users/current/credentials to select (or unset) the current group."""
@@ -2296,12 +2565,15 @@ class CredentialsPopulator(GalaxyInteractorHttpMixin, BaseCredentialsPopulator):
 
 
 # Things gxformat2 knows how to upload as workflows
-YamlContentT = Union[StrPath, dict]
+YamlContentT = StrPath | dict
 
 
 class BaseWorkflowPopulator(BasePopulator):
     dataset_populator: BaseDatasetPopulator
     dataset_collection_populator: "BaseDatasetCollectionPopulator"
+
+    @abstractmethod
+    def import_workflow(self, workflow, **kwds) -> dict[str, Any]: ...
 
     def load_workflow(self, name: str, content: str = workflow_str, add_pja=False) -> dict:
         workflow = json.loads(content)
@@ -2318,7 +2590,7 @@ class BaseWorkflowPopulator(BasePopulator):
     def load_random_x2_workflow(self, name: str) -> dict:
         return self.load_workflow(name, content=workflow_random_x2_str)
 
-    def load_workflow_from_resource(self, name: str, filename: Optional[str] = None) -> dict:
+    def load_workflow_from_resource(self, name: str, filename: str | None = None) -> dict:
         if filename is None:
             filename = f"data/{name}.ga"
         content = resource_string(__name__, filename)
@@ -2328,7 +2600,7 @@ class BaseWorkflowPopulator(BasePopulator):
         workflow = self.load_workflow(name)
         return self.create_workflow(workflow, **create_kwds)
 
-    def import_workflow_from_path_raw(self, from_path: str, object_id: Optional[str] = None) -> Response:
+    def import_workflow_from_path_raw(self, from_path: str, object_id: str | None = None) -> Response:
         data = dict(
             from_path=from_path,
             object_id=object_id,
@@ -2336,7 +2608,7 @@ class BaseWorkflowPopulator(BasePopulator):
         import_response = self._post("workflows", data=data)
         return import_response
 
-    def import_workflow_from_path(self, from_path: str, object_id: Optional[str] = None) -> str:
+    def import_workflow_from_path(self, from_path: str, object_id: str | None = None) -> str:
         import_response = self.import_workflow_from_path_raw(from_path, object_id)
         api_asserts.assert_status_code_is(import_response, 200)
         return import_response.json()["id"]
@@ -2355,9 +2627,32 @@ class BaseWorkflowPopulator(BasePopulator):
     def upload_yaml_workflow(self, yaml_content: YamlContentT, **kwds) -> str:
         round_trip_conversion = kwds.get("round_trip_format_conversion", False)
         client_convert = kwds.pop("client_convert", not round_trip_conversion)
-        kwds["convert"] = client_convert
-        workflow = convert_and_import_workflow(yaml_content, galaxy_interface=self, **kwds)
-        workflow_id = workflow["id"]
+        source_type = kwds.get("source_type", None)
+        workflow_directory = None
+
+        if source_type == "path":
+            assert isinstance(yaml_content, (str, os.PathLike))
+            workflow_directory = os.path.abspath(os.path.dirname(yaml_content))
+            with open(yaml_content) as f:
+                yaml_content = ordered_load(f)
+
+        if client_convert:
+            as_python = ordered_load(yaml_content) if not isinstance(yaml_content, dict) else yaml_content
+            workflow = python_to_workflow(as_python, galaxy_interface=None, workflow_directory=workflow_directory)
+        else:
+            workflow = {"yaml_content": yaml_content} if not isinstance(yaml_content, dict) else yaml_content
+
+        if (name := kwds.get("name")) is not None:
+            workflow["name"] = name
+        import_kwds = {"fill_defaults": kwds.get("fill_defaults", True)}
+        if kwds.get("publish"):
+            import_kwds["publish"] = True
+        if kwds.get("exact_tools"):
+            import_kwds["exact_tools"] = True
+
+        result = self.import_workflow(workflow, **import_kwds)
+        workflow_id = result["id"]
+
         if round_trip_conversion:
             workflow_yaml_wrapped = self.download_workflow(workflow_id, style="format2_wrapped_yaml")
             assert "yaml_content" in workflow_yaml_wrapped, workflow_yaml_wrapped
@@ -2370,7 +2665,7 @@ class BaseWorkflowPopulator(BasePopulator):
 
     def wait_for_invocation(
         self,
-        workflow_id: Optional[str],
+        workflow_id: str | None,
         invocation_id: str,
         timeout: timeout_type = DEFAULT_TIMEOUT,
         assert_ok: bool = True,
@@ -2404,7 +2699,7 @@ class BaseWorkflowPopulator(BasePopulator):
         history_id: str,
         assert_ok: bool = True,
         timeout: timeout_type = DEFAULT_TIMEOUT,
-        expected_invocation_count: Optional[int] = None,
+        expected_invocation_count: int | None = None,
     ) -> None:
         if expected_invocation_count is not None:
 
@@ -2423,7 +2718,7 @@ class BaseWorkflowPopulator(BasePopulator):
 
     def wait_for_workflow(
         self,
-        workflow_id: Optional[str],
+        workflow_id: str | None,
         invocation_id: str,
         history_id: str,
         assert_ok: bool = True,
@@ -2461,9 +2756,9 @@ class BaseWorkflowPopulator(BasePopulator):
     def create_invocation_from_store_raw(
         self,
         history_id: str,
-        store_dict: Optional[dict[str, Any]] = None,
-        store_path: Optional[str] = None,
-        model_store_format: Optional[str] = None,
+        store_dict: dict[str, Any] | None = None,
+        store_path: str | None = None,
+        model_store_format: str | None = None,
     ) -> Response:
         url = "invocations/from_store"
         payload = _store_payload(store_dict=store_dict, store_path=store_path, model_store_format=model_store_format)
@@ -2474,9 +2769,9 @@ class BaseWorkflowPopulator(BasePopulator):
     def create_invocation_from_store(
         self,
         history_id: str,
-        store_dict: Optional[dict[str, Any]] = None,
-        store_path: Optional[str] = None,
-        model_store_format: Optional[str] = None,
+        store_dict: dict[str, Any] | None = None,
+        store_path: str | None = None,
+        model_store_format: str | None = None,
     ) -> list[dict[str, Any]]:
         create_response = self.create_invocation_from_store_raw(
             history_id, store_dict=store_dict, store_path=store_path, model_store_format=model_store_format
@@ -2487,20 +2782,13 @@ class BaseWorkflowPopulator(BasePopulator):
     def validate_biocompute_object(
         self, bco, expected_schema_version="https://w3id.org/ieee/ieee-2791-schema/2791object.json"
     ):
-        JsonSchemaValidator.validate_using_schema_url(bco, expected_schema_version)
+        JsonSchemaValidator.validate_using_vendored_schema(bco, expected_schema_version)
 
     def get_ro_crate(self, invocation_id, include_files=False):
         crate_response = self.download_invocation_to_store(
             invocation_id=invocation_id, include_files=include_files, extension="rocrate.zip"
         )
         return ROCrate(crate_response)
-
-    def validate_invocation_crate_directory(self, crate_directory):
-        # TODO: where can a ro_crate be extracted
-        metadata_json_path = crate_directory / "ro-crate-metadata.json"
-        with metadata_json_path.open() as f:
-            metadata_json = json.load(f)
-            assert metadata_json["@context"] == "https://w3id.org/ro/crate/1.1/context"
 
     def invoke_workflow_raw(self, workflow_id: str, request: dict, assert_ok: bool = False) -> Response:
         url = f"workflows/{workflow_id}/invocations"
@@ -2512,9 +2800,9 @@ class BaseWorkflowPopulator(BasePopulator):
     def invoke_workflow(
         self,
         workflow_id: str,
-        history_id: Optional[str] = None,
-        inputs: Optional[dict] = None,
-        request: Optional[dict] = None,
+        history_id: str | None = None,
+        inputs: dict | None = None,
+        request: dict | None = None,
         inputs_by: str = "step_index",
     ) -> Response:
         if inputs is None:
@@ -2536,9 +2824,9 @@ class BaseWorkflowPopulator(BasePopulator):
     def invoke_workflow_and_assert_ok(
         self,
         workflow_id: str,
-        history_id: Optional[str] = None,
-        inputs: Optional[dict] = None,
-        request: Optional[dict] = None,
+        history_id: str | None = None,
+        inputs: dict | None = None,
+        request: dict | None = None,
         inputs_by: str = "step_index",
     ) -> str:
         invocation_response = self.invoke_workflow(
@@ -2551,9 +2839,9 @@ class BaseWorkflowPopulator(BasePopulator):
     def invoke_workflow_and_wait(
         self,
         workflow_id: str,
-        history_id: Optional[str] = None,
-        inputs: Optional[dict] = None,
-        request: Optional[dict] = None,
+        history_id: str | None = None,
+        inputs: dict | None = None,
+        request: dict | None = None,
         assert_ok: bool = True,
     ) -> Response:
         invoke_return = self.invoke_workflow(workflow_id, history_id=history_id, inputs=inputs, request=request)
@@ -2584,11 +2872,11 @@ class BaseWorkflowPopulator(BasePopulator):
     def download_workflow(
         self,
         workflow_id: str,
-        style: Optional[str] = None,
-        history_id: Optional[str] = None,
-        instance: Optional[bool] = None,
-        version: Optional[int] = None,
-        preserve_external_subworkflow_links: Optional[bool] = None,
+        style: str | None = None,
+        history_id: str | None = None,
+        instance: bool | None = None,
+        version: int | None = None,
+        preserve_external_subworkflow_links: bool | None = None,
     ) -> dict:
         params: dict[str, Any] = {}
         if style is not None:
@@ -2628,9 +2916,9 @@ class BaseWorkflowPopulator(BasePopulator):
         self,
         workflow_id: str,
         actions: list,
-        dry_run: Optional[bool] = None,
-        style: Optional[str] = None,
-        version: Optional[int] = None,
+        dry_run: bool | None = None,
+        style: str | None = None,
+        version: int | None = None,
     ) -> Response:
         data: dict[str, Any] = dict(
             actions=actions,
@@ -2655,23 +2943,33 @@ class BaseWorkflowPopulator(BasePopulator):
     def run_workflow(
         self,
         has_workflow: YamlContentT,
-        test_data: Optional[Union[str, dict]] = None,
-        history_id: Optional[str] = None,
+        test_data: str | dict | None = None,
+        history_id: str | None = None,
         wait: bool = True,
-        source_type: Optional[str] = None,
+        source_type: str | None = None,
         jobs_descriptions=None,
         expected_response: int = 200,
         assert_ok: bool = True,
-        client_convert: Optional[bool] = None,
-        extra_invocation_kwds: Optional[dict[str, Any]] = None,
+        client_convert: bool | None = None,
+        extra_invocation_kwds: dict[str, Any] | None = None,
         round_trip_format_conversion: bool = False,
         invocations: int = 1,
-        raw_yaml: bool = False,
         use_cached_job: bool = False,
         copy_inputs_to_history: bool = False,
-        job_dir: Optional[str] = None,
+        job_dir: str | None = None,
+        test_data_format: Literal["cwl_style"] | None = None,
+        timeout: timeout_type = DEFAULT_TIMEOUT,
     ):
-        """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
+        """High-level wrapper around workflow API, etc. to invoke format 2 workflows.
+
+        ``test_data_format="cwl_style"`` opts in to strict CWL-style semantics:
+        bare scalars in the ``job:`` dict are routed as literal params (int/text/
+        bool/select values for workflow inputs), and staging goes through
+        :func:`stage_inputs` unconditionally. Legacy ``type: File``/``raw``/
+        ``Directory`` dict forms are rejected at this layer so callers migrate
+        fixtures to ``class: File`` + ``path``/``location``/``contents``.
+        Default ``None`` preserves today's behavior for all existing callers.
+        """
         workflow_populator = self
         if client_convert is None:
             client_convert = not round_trip_format_conversion
@@ -2681,7 +2979,6 @@ class BaseWorkflowPopulator(BasePopulator):
             source_type=source_type,
             client_convert=client_convert,
             round_trip_format_conversion=round_trip_format_conversion,
-            raw_yaml=raw_yaml,
         )
 
         if test_data is None:
@@ -2703,15 +3000,34 @@ class BaseWorkflowPopulator(BasePopulator):
         replacement_parameters = test_data_dict.pop("replacement_parameters", {})
         if history_id is None:
             history_id = self.dataset_populator.new_history()
-        if _uses_class_syntax(test_data_dict):
+        use_stage_inputs = test_data_format == "cwl_style" or _uses_class_syntax(test_data_dict)
+        if use_stage_inputs:
             # Copy because galactic_job_json() mutates the dict in-place
             job_copy = dict(test_data_dict)
-            # Extract raw parameters before staging — galactic_job_json
-            # doesn't understand type: raw and would misinterpret them
             raw_params = {}
             for k, v in list(job_copy.items()):
                 if isinstance(v, dict) and v.get("type") == "raw":
+                    if test_data_format == "cwl_style":
+                        raise ValueError(
+                            f"Legacy 'type: raw' form in job input '{k}' is not allowed with "
+                            "test_data_format='cwl_style'. Use a bare scalar value."
+                        )
                     raw_params[k] = v["value"]
+                    del job_copy[k]
+                elif test_data_format == "cwl_style" and isinstance(v, dict) and v.get("type") in ("File", "Directory"):
+                    raise ValueError(
+                        f"Legacy 'type: {v['type']}' form in job input '{k}' is not allowed with "
+                        "test_data_format='cwl_style'. Use 'class: File' + path/location/contents."
+                    )
+                elif test_data_format == "cwl_style" and not isinstance(v, (dict, list)):
+                    raw_params[k] = v
+                    del job_copy[k]
+                elif (
+                    test_data_format == "cwl_style"
+                    and isinstance(v, list)
+                    and not any(isinstance(x, (dict, list)) for x in v)
+                ):
+                    raw_params[k] = v
                     del job_copy[k]
             staged_job, datasets = stage_inputs(
                 self.dataset_populator.galaxy_interactor,
@@ -2759,9 +3075,16 @@ class BaseWorkflowPopulator(BasePopulator):
             assert_ok=assert_ok,
             invocations=invocations,
             expected_response=expected_response,
+            timeout=timeout,
         )
 
-    def rerun(self, run_jobs_summary: "RunJobsSummary", wait: bool = True, assert_ok: bool = True) -> "RunJobsSummary":
+    def rerun(
+        self,
+        run_jobs_summary: "RunJobsSummary",
+        wait: bool = True,
+        assert_ok: bool = True,
+        use_cached_job: bool = False,
+    ) -> "RunJobsSummary":
         history_id = run_jobs_summary.history_id
         invocation_id = run_jobs_summary.invocation_id
         inputs = run_jobs_summary.inputs
@@ -2769,6 +3092,8 @@ class BaseWorkflowPopulator(BasePopulator):
         workflow_id = workflow_request["workflow_id"]
         assert workflow_request["history_id"] == history_id
         assert workflow_request["instance"] is True
+        if use_cached_job:
+            workflow_request["use_cached_job"] = True
         return self._request_to_summary(
             history_id,
             workflow_id,
@@ -2790,6 +3115,7 @@ class BaseWorkflowPopulator(BasePopulator):
         assert_ok: bool,
         invocations: int,
         expected_response: int,
+        timeout: timeout_type = DEFAULT_TIMEOUT,
     ):
         workflow_populator = self
         assert invocations > 0
@@ -2808,10 +3134,10 @@ class BaseWorkflowPopulator(BasePopulator):
                 # complete.
                 if wait:
                     if assert_ok:
-                        workflow_populator.wait_for_invocation_and_completion(invocation_id)
+                        workflow_populator.wait_for_invocation_and_completion(invocation_id, timeout=timeout)
                     else:
                         workflow_populator.wait_for_workflow(
-                            workflow_id, invocation_id, history_id, assert_ok=assert_ok
+                            workflow_id, invocation_id, history_id, assert_ok=assert_ok, timeout=timeout
                         )
                 jobs.extend(self.dataset_populator.invocation_jobs(invocation_id))
 
@@ -2849,10 +3175,10 @@ class BaseWorkflowPopulator(BasePopulator):
 
     def setup_workflow_run(
         self,
-        workflow: Optional[dict[str, Any]] = None,
+        workflow: dict[str, Any] | None = None,
         inputs_by: str = "step_id",
-        history_id: Optional[str] = None,
-        workflow_id: Optional[str] = None,
+        history_id: str | None = None,
+        workflow_id: str | None = None,
     ) -> tuple[dict[str, Any], str, str]:
         ds_entry = self.dataset_populator.ds_entry
         if not workflow_id:
@@ -2860,9 +3186,9 @@ class BaseWorkflowPopulator(BasePopulator):
             workflow_id = self.create_workflow(workflow)
         if not history_id:
             history_id = self.dataset_populator.new_history()
-        hda1: Optional[dict[str, Any]] = None
-        hda2: Optional[dict[str, Any]] = None
-        label_map: Optional[dict[str, Any]] = None
+        hda1: dict[str, Any] | None = None
+        hda2: dict[str, Any] | None = None
+        label_map: dict[str, Any] | None = None
         if inputs_by != "url":
             hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
             hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6", wait=True)
@@ -2916,7 +3242,7 @@ class BaseWorkflowPopulator(BasePopulator):
         return jobs
 
     def wait_for_invocation_and_jobs(
-        self, history_id: str, workflow_id: Optional[str], invocation_id: str, assert_ok: bool = True
+        self, history_id: str, workflow_id: str | None, invocation_id: str, assert_ok: bool = True
     ) -> None:
         """Wait for invocation to be scheduled and all jobs to complete.
 
@@ -2931,7 +3257,7 @@ class BaseWorkflowPopulator(BasePopulator):
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok)
         time.sleep(0.5)
 
-    def get_invocation_completion(self, invocation_id: str) -> Optional[dict[str, Any]]:
+    def get_invocation_completion(self, invocation_id: str) -> dict[str, Any] | None:
         """Get completion record for an invocation.
 
         Returns the completion record if it exists, or None if the invocation
@@ -2970,14 +3296,14 @@ class BaseWorkflowPopulator(BasePopulator):
 
     def index(
         self,
-        show_shared: Optional[bool] = None,
-        show_published: Optional[bool] = None,
-        sort_by: Optional[str] = None,
-        sort_desc: Optional[bool] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        search: Optional[str] = None,
-        skip_step_counts: Optional[bool] = None,
+        show_shared: bool | None = None,
+        show_published: bool | None = None,
+        sort_by: str | None = None,
+        sort_desc: bool | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        search: str | None = None,
+        skip_step_counts: bool | None = None,
     ):
         endpoint = "workflows?"
         if show_shared is not None:
@@ -3002,13 +3328,13 @@ class BaseWorkflowPopulator(BasePopulator):
 
     def index_ids(
         self,
-        show_shared: Optional[bool] = None,
-        show_published: Optional[bool] = None,
-        sort_by: Optional[str] = None,
-        sort_desc: Optional[bool] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        search: Optional[str] = None,
+        show_shared: bool | None = None,
+        show_published: bool | None = None,
+        sort_by: str | None = None,
+        sort_desc: bool | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        search: str | None = None,
     ):
         workflows = self.index(
             show_shared=show_shared,
@@ -3040,14 +3366,12 @@ class RunJobsSummary(NamedTuple):
         return [j for j in self.jobs if j["tool_id"] == tool_id]
 
 
-class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, ImporterGalaxyInterface):
+class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator):
     def __init__(self, galaxy_interactor):
         self.galaxy_interactor = galaxy_interactor
         self.dataset_populator = DatasetPopulator(galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(galaxy_interactor)
 
-    # Required for ImporterGalaxyInterface interface - so we can recursively import
-    # nested workflows.
     def import_workflow(self, workflow, **kwds) -> dict[str, Any]:
         workflow_str = json.dumps(workflow, indent=4)
         data = {
@@ -3058,14 +3382,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         assert upload_response.status_code == 200, upload_response.text
         return upload_response.json()
 
-    def import_tool(self, tool) -> dict[str, Any]:
-        """Import a new dynamically defined tool
-
-        Required to implement ImporterGalaxyInterface.
-        """
-        return self.dataset_populator.create_tool(tool)
-
-    def build_module(self, step_type: str, content_id: Optional[str] = None, inputs: Optional[dict[str, Any]] = None):
+    def build_module(self, step_type: str, content_id: str | None = None, inputs: dict[str, Any] | None = None):
         payload = {"inputs": inputs or {}, "type": step_type, "content_id": content_id}
         response = self._post("workflows/build_module", data=payload, json=True)
         assert response.status_code == 200, response
@@ -3158,7 +3475,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         return workflow_dict
 
     @staticmethod
-    def _link(link: str, output_name: Optional[str] = None) -> dict[str, Any]:
+    def _link(link: str, output_name: str | None = None) -> dict[str, Any]:
         if output_name is not None:
             link = f"{str(link)}/{output_name}"
         return {"$link": link}
@@ -3189,7 +3506,7 @@ class CwlPopulator:
         history_id: str,
         assert_ok: bool = True,
     ) -> CwlToolRun:
-        galaxy_tool_id: Optional[str] = tool_id
+        galaxy_tool_id: str | None = tool_id
         tool_uuid = None
 
         if os.path.exists(tool_id):
@@ -3232,10 +3549,10 @@ class CwlPopulator:
     def run_cwl_job(
         self,
         artifact: str,
-        job_path: Optional[str] = None,
-        job: Optional[dict] = None,
-        test_data_directory: Optional[str] = None,
-        history_id: Optional[str] = None,
+        job_path: str | None = None,
+        job: dict | None = None,
+        test_data_directory: str | None = None,
+        history_id: str | None = None,
         assert_ok: bool = True,
     ) -> CwlRun:
         """
@@ -3346,7 +3663,7 @@ class LibraryPopulator:
         return create_response
 
     def create_from_store(
-        self, store_dict: Optional[dict[str, Any]] = None, store_path: Optional[str] = None
+        self, store_dict: dict[str, Any] | None = None, store_path: str | None = None
     ) -> list[dict[str, Any]]:
         payload = _store_payload(store_dict=store_dict, store_path=store_path)
         create_response = self.create_from_store_raw(payload)
@@ -3360,12 +3677,12 @@ class LibraryPopulator:
         create_response = self.galaxy_interactor.post("libraries", data=data, admin=True, json=True)
         return create_response.json()
 
-    def fetch_single_url_to_folder(self, file_type="auto", assert_ok=True):
+    def fetch_single_url_to_folder(self, file_type="auto", assert_ok=True, url: str = FILE_URL):
         history_id, library, destination = self.setup_fetch_to_folder("single_url")
         items = [
             {
                 "src": "url",
-                "url": FILE_URL,
+                "url": url,
                 "MD5": FILE_MD5,
                 "ext": file_type,
             }
@@ -3385,12 +3702,12 @@ class LibraryPopulator:
     def get_permissions(
         self,
         library_id,
-        scope: Optional[str] = "current",
-        is_library_access: Optional[bool] = False,
-        page: Optional[int] = 1,
-        page_limit: Optional[int] = 1000,
-        q: Optional[str] = None,
-        admin: Optional[bool] = True,
+        scope: str | None = "current",
+        is_library_access: bool | None = False,
+        page: int | None = 1,
+        page_limit: int | None = 1000,
+        q: str | None = None,
+        admin: bool | None = True,
     ):
         query = f"&q={q}" if q else ""
         response = self.galaxy_interactor.get(
@@ -3850,7 +4167,7 @@ class BaseDatasetCollectionPopulator:
             payload["__files"] = kwds.pop("__files")
         return payload
 
-    def wait_for_fetched_collection(self, fetch_response: Union[dict[str, Any], Response]):
+    def wait_for_fetched_collection(self, fetch_response: dict[str, Any] | Response):
         fetch_response_dict: dict[str, Any]
         if isinstance(fetch_response, Response):
             fetch_response_dict = fetch_response.json()
@@ -4062,6 +4379,10 @@ def load_data_dict(
                 fetch_response = dataset_collection_populator.create_list_of_pairs_in_history(
                     history_id, contents=elements, wait=True, **new_collection_kwds
                 ).json()
+            elif collection_type == "list:paired_or_unpaired":
+                fetch_response = dataset_collection_populator.create_list_of_paired_and_unpaired_in_history(
+                    history_id, wait=True, **new_collection_kwds
+                ).json()
             elif collection_type and ":" in collection_type:
                 fetch_response = {
                     "outputs": [
@@ -4074,6 +4395,15 @@ def load_data_dict(
                 fetch_response = dataset_collection_populator.create_list_in_history(
                     history_id, contents=elements, direct_upload=True, wait=True, **new_collection_kwds
                 ).json()
+            elif collection_type == "paired_or_unpaired":
+                if elements:
+                    fetch_response = dataset_collection_populator.upload_collection(
+                        history_id, "paired_or_unpaired", elements=elements, wait=True, **new_collection_kwds
+                    ).json()
+                else:
+                    fetch_response = dataset_collection_populator.create_paired_or_unpaired_pair_in_history(
+                        history_id, wait=True, **new_collection_kwds
+                    ).json()
             else:
                 fetch_response = dataset_collection_populator.create_pair_in_history(
                     history_id, contents=elements or None, direct_upload=True, wait=True, **new_collection_kwds
@@ -4126,7 +4456,7 @@ def stage_inputs(
     use_fetch_api: bool = True,
     to_posix_lines: bool = True,
     tool_or_workflow: Literal["tool", "workflow"] = "workflow",
-    job_dir: Optional[str] = None,
+    job_dir: str | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Alternative to load_data_dict that uses production-style workflow inputs."""
     test_data_resolver = TestDataResolver()
@@ -4195,6 +4525,7 @@ def wait_on_state(
             "stop",
             "stopped",
             "setting_metadata",
+            "finishing",
             "waiting",
             "cancelling",
             "deleting",
@@ -4211,9 +4542,9 @@ def wait_on_state(
 
 
 def _store_payload(
-    store_dict: Optional[dict[str, Any]] = None,
-    store_path: Optional[str] = None,
-    model_store_format: Optional[str] = None,
+    store_dict: dict[str, Any] | None = None,
+    store_path: str | None = None,
+    model_store_format: str | None = None,
 ) -> dict[str, Any]:
     payload: dict[str, Any] = {}
     # Ensure only one store method set.
@@ -4231,7 +4562,6 @@ def _store_payload(
 
 
 class DescribeToolExecutionOutput:
-
     def __init__(self, dataset_populator: BaseDatasetPopulator, history_id: str, hda_id: str):
         self._dataset_populator = dataset_populator
         self._history_id = history_id
@@ -4289,7 +4619,6 @@ class DescribeToolExecutionOutput:
 
 
 class DescribeToolExecutionOutputCollection:
-
     def __init__(self, dataset_populator: BaseDatasetPopulator, history_id: str, hdca_id: str):
         self._dataset_populator = dataset_populator
         self._history_id = history_id
@@ -4312,7 +4641,7 @@ class DescribeToolExecutionOutputCollection:
             raise AssertionError("Collection contained {count} elements and not the expected {n} elements")
         return self
 
-    def with_element_dict(self, index: Union[str, int]) -> dict[str, Any]:
+    def with_element_dict(self, index: str | int) -> dict[str, Any]:
         elements = self.elements
         if isinstance(index, int):
             element_dict = elements[index]
@@ -4320,7 +4649,7 @@ class DescribeToolExecutionOutputCollection:
             element_dict = [e for e in elements if e["element_identifier"] == index][0]
         return element_dict
 
-    def with_dataset_element(self, index: Union[str, int]) -> "DescribeToolExecutionOutput":
+    def with_dataset_element(self, index: str | int) -> "DescribeToolExecutionOutput":
         element_dict = self.with_element_dict(index)
         element_object = element_dict["object"]
         return DescribeToolExecutionOutput(self._dataset_populator, self._history_id, element_object["id"])
@@ -4331,7 +4660,7 @@ class DescribeToolExecutionOutputCollection:
         return self
 
     # aliases that might help make tests more like English in particular cases.
-    def assert_has_dataset_element(self, index: Union[str, int]) -> "DescribeToolExecutionOutput":
+    def assert_has_dataset_element(self, index: str | int) -> "DescribeToolExecutionOutput":
         return self.with_dataset_element(index)
 
     def assert_collection_type_is(self, collection_type: str):
@@ -4339,17 +4668,16 @@ class DescribeToolExecutionOutputCollection:
 
 
 class DescribeJob:
-
     def __init__(self, dataset_populator: BaseDatasetPopulator, history_id: str, job_id: str):
         self._dataset_populator = dataset_populator
         self._history_id = history_id
         self._job_id = job_id
-        self._final_details: Optional[dict[str, Any]] = None
+        self._final_details: dict[str, Any] | None = None
 
-    def _wait_for(self):
+    def _wait_for(self) -> None:
         if self._final_details is None:
             self._dataset_populator.wait_for_job(self._job_id, assert_ok=False)
-            self._final_details = self._dataset_populator.get_job_details(self._job_id).json()
+            self._final_details = self._dataset_populator.get_job_details(self._job_id, full=True).json()
 
     @property
     def final_details(self) -> dict[str, Any]:
@@ -4375,11 +4703,11 @@ class DescribeJob:
     def with_single_output(self) -> DescribeToolExecutionOutput:
         return self.with_output(0)
 
-    def with_output(self, output: Union[str, int]) -> DescribeToolExecutionOutput:
+    def with_output(self, output: str | int) -> DescribeToolExecutionOutput:
         self.with_final_state("ok")
         outputs = self._dataset_populator.job_outputs(self._job_id)
         by_name = isinstance(output, str)
-        dataset_id: Optional[str] = None
+        dataset_id: str | None = None
         if by_name:
             for output_assoc in outputs:
                 if output_assoc["name"] == output:
@@ -4392,7 +4720,7 @@ class DescribeJob:
         return DescribeToolExecutionOutput(self._dataset_populator, self._history_id, dataset_id)
 
     # aliases that might help make tests more like English in particular cases.
-    def assert_has_output(self, output: Union[str, int]) -> DescribeToolExecutionOutput:
+    def assert_has_output(self, output: str | int) -> DescribeToolExecutionOutput:
         return self.with_output(output)
 
     @property
@@ -4401,7 +4729,7 @@ class DescribeJob:
 
 
 class DescribeFailure:
-    def __init__(self, response: Response, tool_request: Optional[dict[str, Any]] = None):
+    def __init__(self, response: Response, tool_request: dict[str, Any] | None = None):
         self._response = response
         self._tool_request = tool_request
 
@@ -4416,16 +4744,20 @@ class DescribeFailure:
         if message not in (actual_text := self._response.text):
             if self._tool_request:
                 state_message = self._tool_request["state_message"]
-                if message not in state_message:
-                    raise AssertionError(f"'{message}' not found in '{state_message}'")
+                error_text = (
+                    state_message.get("err_msg", str(state_message))
+                    if isinstance(state_message, dict)
+                    else state_message
+                )
+                if message not in error_text:
+                    raise AssertionError(f"'{message}' not found in '{error_text}'")
             else:
                 raise AssertionError(f"'{message}' not found in '{actual_text}'")
         return self
 
 
 class RequiredTool:
-
-    def __init__(self, dataset_populator: BaseDatasetPopulator, tool_id: str, default_history_id: Optional[str]):
+    def __init__(self, dataset_populator: BaseDatasetPopulator, tool_id: str, default_history_id: str | None):
         self._dataset_populator = dataset_populator
         self._tool_id = tool_id
         self._default_history_id = default_history_id
@@ -4439,7 +4771,7 @@ class RequiredTool:
 
 class DescribeToolInputs:
     _input_format: INPUT_FORMAT_T = "legacy"
-    _inputs: Optional[dict[str, Any]]
+    _inputs: dict[str, Any] | None
 
     def __init__(self, input_format: INPUT_FORMAT_T):
         self._input_format = input_format
@@ -4475,11 +4807,11 @@ class DescribeToolInputs:
 
 
 class DescribeToolExecution:
-    _history_id: Optional[str] = None
-    _execute_response: Optional[Response] = None
-    _input_format: Optional[INPUT_FORMAT_T] = None
+    _history_id: str | None = None
+    _execute_response: Response | None = None
+    _input_format: INPUT_FORMAT_T | None = None
     _inputs: dict[str, Any]
-    _tool_request_id: Optional[str] = None  # if input_format == "request" request ID
+    _tool_request_id: str | None = None  # if input_format == "request" request ID
 
     def __init__(self, dataset_populator: BaseDatasetPopulator, tool_id: str, use_cached_job: bool = False) -> None:
         self._dataset_populator = dataset_populator
@@ -4494,7 +4826,7 @@ class DescribeToolExecution:
             self._history_id = has_history_id._history_id
         return self
 
-    def with_inputs(self, inputs: Union[DescribeToolInputs, dict[str, Any]]) -> Self:
+    def with_inputs(self, inputs: DescribeToolInputs | dict[str, Any]) -> Self:
         if isinstance(inputs, DescribeToolInputs):
             self._inputs = inputs._inputs or {}
             self._input_format = inputs._input_format
@@ -4599,7 +4931,7 @@ class DescribeToolExecution:
             raise AssertionError(f"Expected tool execution to produce {n} implicit but it produced {len(collections)}")
         return self
 
-    def assert_creates_implicit_collection(self, index: Union[str, int]) -> "DescribeToolExecutionOutputCollection":
+    def assert_creates_implicit_collection(self, index: str | int) -> "DescribeToolExecutionOutputCollection":
         collections = self._implicit_collections
         assert isinstance(index, int)  # TODO: implement and then prefer str.
         history_id = self._ensure_history_id
@@ -4719,11 +5051,10 @@ class GiWorkflowPopulator(GiHttpMixin, BaseWorkflowPopulator):
         self.dataset_populator = GiDatasetPopulator(gi)
 
 
-ListContentsDescription = Union[list[str], list[tuple[str, str]]]
+ListContentsDescription = list[str] | list[tuple[str, str]]
 
 
 class TargetHistory:
-
     def __init__(
         self,
         dataset_populator: DatasetPopulator,
@@ -4741,7 +5072,7 @@ class TargetHistory:
     def with_dataset(
         self,
         content: str,
-        named: Optional[str] = None,
+        named: str | None = None,
     ) -> "HasSrcDict":
         kwd = {}
         if named is not None:
@@ -4755,11 +5086,37 @@ class TargetHistory:
         )
         return HasSrcDict("hda", new_dataset)
 
+    def with_dataset_for_test_file(
+        self,
+        filename: str,
+        file_type: str,
+        named: str | None = None,
+    ) -> "HasSrcDict":
+        """Upload a real test-data file with an explicit ``file_type`` (ext preserved).
+
+        Unlike ``with_dataset`` (which uploads inline text and lets the server
+        sniff/auto-decompress), this stages an actual file - e.g. a compressed
+        ``*.fasta.gz`` - and forces ``ext`` to ``file_type`` so it is kept in
+        that (possibly compressed) datatype. Useful for exercising job-time
+        implicit conversion of compressed inputs.
+        """
+        test_data_resolver = TestDataResolver()
+        kwd: dict[str, Any] = {"file_type": file_type, "wait": True}
+        if named is not None:
+            kwd["name"] = named
+        new_dataset = self._dataset_populator.new_dataset(
+            history_id=self._history_id,
+            content=open(test_data_resolver.get_filename(filename), "rb"),
+            assert_ok=True,
+            **kwd,
+        )
+        return HasSrcDict("hda", new_dataset)
+
     def with_deferred_dataset(
         self,
         uri: str,
-        named: Optional[str] = None,
-        ext: Optional[str] = None,
+        named: str | None = None,
+        ext: str | None = None,
     ) -> "HasSrcDict":
         kwd = {}
         if named is not None:
@@ -4774,8 +5131,8 @@ class TargetHistory:
     def with_deferred_dataset_for_test_file(
         self,
         filename: str,
-        named: Optional[str] = None,
-        ext: Optional[str] = None,
+        named: str | None = None,
+        ext: str | None = None,
     ) -> "HasSrcDict":
         base64_url = self._dataset_populator.base64_url_for_test_file(filename)
         return self.with_deferred_dataset(base64_url, named=named, ext=ext)
@@ -4797,21 +5154,21 @@ class TargetHistory:
             )
         )
 
-    def with_pair(self, contents: Optional[list[str]] = None) -> "HasSrcDict":
+    def with_pair(self, contents: list[str] | None = None) -> "HasSrcDict":
         return self._fetch_response(
             self._dataset_collection_populator.create_pair_in_history(
                 self._history_id, contents=contents, direct_upload=True, wait=True
             )
         )
 
-    def with_list(self, contents: Optional[ListContentsDescription] = None) -> "HasSrcDict":
+    def with_list(self, contents: ListContentsDescription | None = None) -> "HasSrcDict":
         return self._fetch_response(
             self._dataset_collection_populator.create_list_in_history(
                 self._history_id, contents=contents, direct_upload=True, wait=True
             )
         )
 
-    def with_sample_sheet(self, contents: Optional[ListContentsDescription] = None) -> "HasSrcDict":
+    def with_sample_sheet(self, contents: ListContentsDescription | None = None) -> "HasSrcDict":
         if contents is None:
             contents = [("foo", "text for foo element")]
         create_response = self._dataset_collection_populator.create_sample_sheet(
@@ -4845,9 +5202,9 @@ class SrcDict(TypedDict):
 
 
 class HasSrcDict:
-    api_object: Union[str, dict[str, Any]]
+    api_object: str | dict[str, Any]
 
-    def __init__(self, src_type: str, api_object: Union[str, dict[str, Any]]):
+    def __init__(self, src_type: str, api_object: str | dict[str, Any]):
         self.src_type = src_type
         self.api_object = api_object
 

@@ -1,29 +1,42 @@
 <script setup lang="ts">
 import { faSave, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BModal } from "bootstrap-vue";
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 import localize from "@/utils/localization";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 
 interface Props {
     /** Show the save changes modal */
     showModal: boolean;
     /** The URL to navigate to before saving/ignoring changes */
     navUrl: string;
+    /** Whether to append the version to the URL */
+    appendVersion: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     showModal: false,
+    appendVersion: false,
 });
 
 const busy = ref(false);
 
+// Reset `busy` whenever the modal reopens
+watch(
+    () => props.showModal,
+    (showModal) => {
+        if (showModal) {
+            busy.value = false;
+        }
+    },
+);
+
 const emit = defineEmits<{
     /** Proceed with or without saving the changes */
     (e: "on-proceed", url: string, forceSave: boolean, ignoreChanges: boolean, appendVersion: boolean): void;
-    /** Update the nav URL prop */
-    (e: "update:nav-url", url: string): void;
     /** Update the show modal boolean prop */
     (e: "update:show-modal", showModal: boolean): void;
 }>();
@@ -41,54 +54,48 @@ const buttonTitles = {
 
 function closeModal() {
     emit("update:show-modal", false);
-    emit("update:nav-url", "");
+    busy.value = false;
 }
 
 function dontSave() {
     busy.value = true;
-    emit("on-proceed", props.navUrl, false, true, true);
+    emit("on-proceed", props.navUrl, false, true, props.appendVersion);
 }
 
 function saveChanges() {
     busy.value = true;
-    closeModal();
-    emit("on-proceed", props.navUrl, true, false, true);
+    emit("on-proceed", props.navUrl, true, false, props.appendVersion);
 }
 </script>
 
 <template>
-    <BModal :title="title" :visible="props.showModal" @close="closeModal" @hide="closeModal">
+    <GModal footer :title="title" size="small" :show="props.showModal" @close="closeModal">
         <div>
             {{ body }}
         </div>
-        <template v-slot:modal-footer>
-            <BButton
-                v-b-tooltip.noninteractive.hover
-                :title="buttonTitles['cancel']"
-                variant="secondary"
-                :disabled="busy"
-                @click="closeModal">
-                <FontAwesomeIcon :icon="faTimes" />
-                {{ localize("Cancel") }}
-            </BButton>
-            <BButton
-                v-b-tooltip.noninteractive.hover
-                :title="buttonTitles['dontSave']"
-                variant="danger"
-                :disabled="busy"
-                @click="dontSave">
-                <FontAwesomeIcon :icon="faTrash" />
-                {{ localize("Don't Save") }}
-            </BButton>
-            <BButton
-                v-b-tooltip.noninteractive.hover
-                :title="buttonTitles['save']"
-                variant="primary"
-                :disabled="busy"
-                @click="saveChanges">
-                <FontAwesomeIcon :icon="faSave" />
-                {{ localize("Save") }}
-            </BButton>
+        <template v-slot:footer>
+            <div class="save-changes-modal-button-container">
+                <GButton tooltip :title="buttonTitles['cancel']" :disabled="busy" @click="closeModal">
+                    <FontAwesomeIcon :icon="faTimes" />
+                    {{ localize("Cancel") }}
+                </GButton>
+                <GButton tooltip :title="buttonTitles['dontSave']" color="red" :disabled="busy" @click="dontSave">
+                    <FontAwesomeIcon :icon="faTrash" />
+                    {{ localize("Don't Save") }}
+                </GButton>
+                <GButton tooltip :title="buttonTitles['save']" color="blue" :disabled="busy" @click="saveChanges">
+                    <FontAwesomeIcon :icon="faSave" />
+                    {{ localize("Save") }}
+                </GButton>
+            </div>
         </template>
-    </BModal>
+    </GModal>
 </template>
+
+<style scoped lang="scss">
+.save-changes-modal-button-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-2);
+}
+</style>

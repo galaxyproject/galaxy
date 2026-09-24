@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCaretDown, faCaretUp, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faCaretUp, faCopy, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -10,14 +10,18 @@ interface Props {
     numElements: number;
     upButtonId: string;
     downButtonId: string;
+    cloneButtonId: string;
     canDelete: boolean;
+    canClone: boolean;
     deleteTooltip: string;
+    cloneTooltip: string;
 }
 
 defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "delete"): void;
+    (e: "clone"): void;
     (e: "swap-up"): void;
     (e: "swap-down"): void;
 }>();
@@ -48,6 +52,18 @@ const emit = defineEmits<{
             size="small"
             @click="() => emit('swap-down')">
             <FontAwesomeIcon :icon="faCaretDown" />
+        </GButton>
+        <GButton
+            :id="cloneButtonId"
+            :disabled="!canClone"
+            tooltip
+            tooltip-placement="bottom"
+            :title="cloneTooltip"
+            color="blue"
+            transparent
+            size="small"
+            @click="() => emit('clone')">
+            <FontAwesomeIcon :icon="faCopy" />
         </GButton>
         <GButton
             :disabled="!canDelete"

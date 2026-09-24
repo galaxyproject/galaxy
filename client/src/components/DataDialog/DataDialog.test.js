@@ -12,7 +12,6 @@ vi.mock("app");
 const mockOptions = {
     callback: () => {},
     history: "history",
-    modalStatic: true,
 };
 
 describe("model.js", () => {

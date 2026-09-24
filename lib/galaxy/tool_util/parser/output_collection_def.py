@@ -3,10 +3,6 @@ dataset collection after jobs are finished.
 """
 
 import abc
-from typing import (
-    List,
-    Optional,
-)
 
 from galaxy.tool_util_models.tool_outputs import (
     DatasetCollectionDescriptionT,
@@ -46,12 +42,12 @@ def dataset_collector_descriptions_from_elem(elem, legacy=True):
     if num_discover_dataset_blocks == 0 and legacy:
         collectors = [DEFAULT_DATASET_COLLECTOR_DESCRIPTION]
     else:
-        default_format = elem.attrib.get("format")
+        default_format = (
+            None if elem.tag == "collection" and elem.attrib.get("format_source") else elem.attrib.get("format")
+        )
         collectors = []
         for e in primary_dataset_elems:
-            description_attributes = e.attrib
-            if default_format and "format" not in description_attributes and "ext" not in description_attributes:
-                description_attributes["format"] = default_format
+            description_attributes = _inherit_default_format(e.attrib, default_format)
             collectors.append(dataset_collection_description(**description_attributes))
 
     return _validate_collectors(collectors)
@@ -61,8 +57,20 @@ def dataset_collector_descriptions_from_output_dict(as_dict):
     discover_datasets_dicts = as_dict.get("discover_datasets") or []
     if is_dict(discover_datasets_dicts):
         discover_datasets_dicts = [discover_datasets_dicts]
+    default_format = (
+        None if as_dict.get("type") == "collection" and as_dict.get("format_source") else as_dict.get("format")
+    )
+    discover_datasets_dicts = [
+        _inherit_default_format(description, default_format) for description in discover_datasets_dicts
+    ]
     dataset_collector_descriptions = dataset_collector_descriptions_from_list(discover_datasets_dicts)
     return _validate_collectors(dataset_collector_descriptions)
+
+
+def _inherit_default_format(description, default_format):
+    if default_format and not description.get("format") and not description.get("ext"):
+        return {**description, "format": default_format}
+    return description
 
 
 def _validate_collectors(collectors):
@@ -95,10 +103,10 @@ def dataset_collection_description(**kwargs):
 
 class DatasetCollectionDescription(metaclass=abc.ABCMeta):
     discover_via: DiscoverViaT
-    default_ext: Optional[str]
+    default_ext: str | None
     default_visible: bool
     assign_primary_output: bool
-    directory: Optional[str]
+    directory: str | None
     recurse: bool
     match_relative_path: bool
 
@@ -132,7 +140,7 @@ class DatasetCollectionDescription(metaclass=abc.ABCMeta):
         return self.to_model().model_dump()
 
     @property
-    def discover_patterns(self) -> List[str]:
+    def discover_patterns(self) -> list[str]:
         return []
 
 
@@ -140,9 +148,10 @@ class ToolProvidedMetadataDatasetCollection(DatasetCollectionDescription):
     discover_via = "tool_provided_metadata"
 
     def to_model(self) -> ToolProvidedMetadataDatasetCollectionModel:
+        # ``dbkey`` is not part of the pydantic discovery model (it was silently
+        # dropped before; the model now forbids extras), so don't pass it.
         return ToolProvidedMetadataDatasetCollectionModel(
             discover_via=self.discover_via,
-            dbkey=self.default_dbkey,
             format=self.default_ext,
             visible=self.default_visible,
             assign_primary_output=self.assign_primary_output,
@@ -191,9 +200,11 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
             self.sort_comp = sort_comp
 
     def to_model(self) -> FilePatternDatasetCollectionDescriptionModel:
+        # ``dbkey`` and ``sort_by`` are not fields on the pydantic model (sort info is
+        # carried by sort_key/sort_comp/sort_reverse); they were silently dropped
+        # before and the model now forbids extras, so don't pass them.
         return FilePatternDatasetCollectionDescriptionModel(
             discover_via=self.discover_via,
-            dbkey=self.default_dbkey,
             format=self.default_ext,
             visible=self.default_visible,
             assign_primary_output=self.assign_primary_output,
@@ -203,12 +214,11 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
             sort_key=self.sort_key,
             sort_comp=self.sort_comp,
             pattern=self.pattern,
-            sort_by=self.sort_by,
             sort_reverse=self.sort_reverse,
         )
 
     @property
-    def discover_patterns(self) -> List[str]:
+    def discover_patterns(self) -> list[str]:
         return [self.pattern]
 
 

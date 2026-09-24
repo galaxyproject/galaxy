@@ -3,6 +3,7 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 # Upload 11 datasets in order to exercise pagination in future
 UPLOAD_DATA = {
@@ -26,13 +27,19 @@ UPLOAD_DATA_3 = {
 }
 
 
-class TestHistoryStorage(SeleniumTestCase):
+class TestHistoryStorage(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
+
+    def _upload_named_paste_content(self, data: dict[str, str]) -> None:
+        uploader = self.upload_context("paste-content")
+        for name, content in data.items():
+            uploader.stage_paste_content(content, {"name": name})
+        uploader.start()
 
     @selenium_test
     @managed_history
     def test_history_storage_accessibility(self):
-        self.perform_upload_of_pasted_content(UPLOAD_DATA)
+        self._upload_named_paste_content(UPLOAD_DATA)
         self.history_panel_wait_for_hid_visible(11)
         self.wait_for_history()
         self.components.history_panel.storage_overview.wait_for_and_click()
@@ -60,7 +67,7 @@ class TestHistoryStorage(SeleniumTestCase):
     def test_delete_dataset_from_storage_view(self):
         """Test deleting a dataset from the history storage overview."""
         # Upload test data with different sizes
-        self.perform_upload_of_pasted_content(UPLOAD_DATA_3)
+        self._upload_named_paste_content(UPLOAD_DATA_3)
         self.wait_for_history()
 
         # Navigate to history storage overview
@@ -76,7 +83,7 @@ class TestHistoryStorage(SeleniumTestCase):
         # Delete the dataset
         self.components.history_storage.dataset_by_size_delete.wait_for_and_click()
         self.screenshot("history_storage_confirm_delete")
-        self.components.history_storage.confirm_delete.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
 
         # Verify dataset is removed from storage view
         self.components.history_storage.dataset_by_size(name="big").wait_for_absent()

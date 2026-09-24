@@ -37,52 +37,51 @@
         </div>
         <template v-if="!embedded">
             <div id="dd-helper" />
-            <Toast ref="toastRef" />
+            <GToast />
             <ConfirmDialog ref="confirmDialogRef" />
-            <UploadModal ref="uploadModal" />
             <BroadcastsOverlay />
             <DragGhost />
+            <template v-if="showMasthead">
+                <WindowManagerWindow v-for="win in windowManagerStore.windows" :key="win.id" :window="win" />
+            </template>
             <TourRunner v-if="currentTour?.id" :key="currentTour.id" :tour-id="currentTour.id" />
         </template>
     </div>
 </template>
 <script>
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
-import ConfirmDialog from "@/components/ConfirmDialog";
 import short from "@/components/plugins/short";
-import Toast from "@/components/Toast";
 import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
-import { setGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useRouteQueryBool } from "@/composables/route";
-import { setToastComponentRef } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
-
-import { WindowManager } from "./window-manager";
+import { useWindowManagerStore } from "@/stores/windowManagerStore";
 
 import Alert from "@/components/Alert.vue";
+import GToast from "@/components/BaseComponents/GToast.vue";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import DragGhost from "@/components/DragGhost.vue";
 import Masthead from "@/components/Masthead/Masthead.vue";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
 import TourRunner from "@/components/Tour/TourRunner.vue";
-import UploadModal from "@/components/Upload/UploadModal.vue";
+import WindowManagerWindow from "@/components/WindowManager/WindowManagerWindow.vue";
 
 export default {
     components: {
         Alert,
         DragGhost,
         Masthead,
-        Toast,
+        WindowManagerWindow,
+        GToast,
         ConfirmDialog,
-        UploadModal,
         BroadcastsOverlay,
         TourRunner,
     },
@@ -96,18 +95,34 @@ export default {
         const userStore = useUserStore();
         const { currentTheme } = storeToRefs(userStore);
 
-        const toastRef = ref(null);
-        setToastComponentRef(toastRef);
-
         const confirmDialogRef = ref(null);
         setConfirmDialogComponentRef(confirmDialogRef);
 
-        const uploadModal = ref(null);
-        setGlobalUploadModal(uploadModal);
+        const windowManagerStore = useWindowManagerStore();
 
-        const embedded = useRouteQueryBool("embed");
+        // Treat any iframe context as embedded: scratchbook pops dataset
+        // displays into ``WinBox`` iframes that hit the same routes without
+        // an ``embed`` query param, and each one would otherwise open its own
+        // SSE + polling traffic, quickly saturating the HTTP/1.1 per-origin
+        // connection pool (e.g. ``test_scratchbook_window_persistence`` hangs
+        // indefinitely after two windows are open).
+        const inIframe = (() => {
+            if (typeof window === "undefined") {
+                return false;
+            }
+            try {
+                return window.top !== window.self;
+            } catch {
+                // Cross-origin access throws — that's definitely an iframe.
+                return true;
+            }
+        })();
+        const embeddedQuery = useRouteQueryBool("embed");
+        const embedded = computed(() => embeddedQuery.value || inIframe);
         const historyStore = useHistoryStore();
-        historyStore.startWatchingHistory();
+        if (!embedded.value) {
+            historyStore.startWatchingHistory();
+        }
 
         watch(
             () => embedded.value,
@@ -142,19 +157,17 @@ export default {
 
         return {
             confirmation,
-            toastRef,
             confirmDialogRef,
-            uploadModal,
             currentTheme,
             embedded,
             currentTour,
+            windowManagerStore,
         };
     },
     data() {
         return {
             config: getGalaxyInstance().config,
             resendUrl: `${getAppRoot()}user/resend_verification`,
-            windowManager: null,
         };
     },
     computed: {
@@ -182,7 +195,7 @@ export default {
             return null;
         },
         windowTab() {
-            return this.windowManager.getTab();
+            return this.windowManagerStore.getTab();
         },
     },
     watch: {
@@ -194,9 +207,9 @@ export default {
     mounted() {
         if (!this.embedded) {
             this.Galaxy = getGalaxyInstance();
-            this.Galaxy.frame = this.windowManager;
             if (this.showMasthead) {
-                this.windowManager.restore();
+                this.Galaxy.frame = this.windowManagerStore;
+                this.windowManagerStore.restore();
             }
             if (this.Galaxy.config.interactivetools_enable) {
                 this.startWatchingEntryPoints();
@@ -208,10 +221,8 @@ export default {
     },
     created() {
         if (!this.embedded) {
-            this.windowManager = new WindowManager();
-
             window.onbeforeunload = () => {
-                if (this.confirmation || this.windowManager.beforeUnload()) {
+                if (this.confirmation || this.windowManagerStore.beforeUnload()) {
                     return "Are you sure you want to leave the page?";
                 }
             };

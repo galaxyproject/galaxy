@@ -4,15 +4,18 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, set as VueSet, unref, watch } from "vue";
 
 import { type HistoryItemSummary, type HistorySummaryExtended, userOwnsHistory } from "@/api";
+import { getGalaxyInstance } from "@/app";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useStorageOperationsStore } from "@/stores/storageOperationsStore";
 import { useUserStore } from "@/stores/userStore";
 import { type Alias, getOperatorForAlias } from "@/utils/filtering";
 import { setItemDragstart } from "@/utils/setDrag";
+import { refreshHistoryFromPush } from "@/watch/watchHistory";
 
 import { useHistoryDragDrop } from "../../../composables/historyDragDrop";
 
@@ -74,6 +77,7 @@ const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistor
 
 const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
+const storageOperationsStore = useStorageOperationsStore();
 const { currentUser } = storeToRefs(useUserStore());
 
 const historyIdComputed = computed(() => props.history.id);
@@ -107,6 +111,10 @@ const isProcessing = computed(() => {
 
 const historyItems = computed(() => {
     return historyItemsStore.getHistoryItems(props.history.id, filterText.value);
+});
+
+const activeStorageRuns = computed(() => {
+    return storageOperationsStore.getActiveRuns(props.history.id);
 });
 
 const visibleHistoryItems = computed(() => {
@@ -328,7 +336,11 @@ function updateContentStats() {
 }
 
 function reloadContents() {
-    historyStore.startWatchingHistory();
+    // ``startWatchingHistory`` is idempotent, so the prior call did nothing
+    // once SSE/polling was already initialized. Force a refresh through the
+    // same code path SSE pushes use so the user-initiated click actually
+    // re-fetches the history and items.
+    refreshHistoryFromPush(getGalaxyInstance()).catch((err) => console.error("Manual history refresh failed:", err));
 }
 
 function setInvisible(item: HistoryItemSummary) {
@@ -447,6 +459,7 @@ const {
                     :history="history"
                     :editable="canEditHistory"
                     :is-multi-view-item="isMultiViewItem"
+                    :active-storage-runs="activeStorageRuns"
                     :show-selection="showSelection"
                     :expanded-count="expandedCount"
                     :has-matches="hasMatches(historyItems)"

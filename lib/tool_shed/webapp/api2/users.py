@@ -1,8 +1,5 @@
 import logging
 import os
-from typing import (
-    Optional,
-)
 
 from fastapi import (
     Body,
@@ -19,6 +16,7 @@ from sqlalchemy import (
 
 import tool_shed.util.shed_util_common as suc
 from galaxy.exceptions import (
+    AuthenticationRequired,
     InsufficientPermissionsException,
     ObjectNotFound,
     RequestParameterInvalidException,
@@ -55,7 +53,7 @@ router = Router(tags=["users"])
 
 log = logging.getLogger(__name__)
 
-TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT: Optional[str] = os.environ.get("TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT", None)
+TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT: str | None = os.environ.get("TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT", None)
 SENSITIVE_API_REQUEST_LIMIT = TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT or "10/minute"
 
 
@@ -91,7 +89,7 @@ class UiRegisterResponse(BaseModel):
     email: str
     activation_sent: bool = False
     activation_error: bool = False
-    contact_email: Optional[str] = None
+    contact_email: str | None = None
 
 
 class UiChangePasswordRequest(BaseModel):
@@ -134,7 +132,7 @@ class FastAPIUsers:
     def current(self, trans: SessionRequestContext = DependsOnTrans) -> User:
         user = trans.user
         if not user:
-            raise ObjectNotFound()
+            raise AuthenticationRequired()
 
         return get_api_user(trans.app, user)
 
@@ -328,7 +326,7 @@ def handle_user_login(trans: SessionRequestContext, user: SaUser) -> None:
     replace_previous_session(trans, user)
 
 
-def handle_user_logout(trans, logout_all=False):
+def handle_user_logout(trans: SessionRequestContext, logout_all=False):
     """
     Logout the current user:
         - invalidate current session + previous sessions (optional)
@@ -341,13 +339,16 @@ def handle_user_logout(trans, logout_all=False):
     replace_previous_session(trans, None)
 
 
-def replace_previous_session(trans, user):
+def replace_previous_session(trans: SessionRequestContext, user):
     prev_galaxy_session = trans.get_galaxy_session()
     # Invalidate previous session
     if prev_galaxy_session:
         prev_galaxy_session.is_valid = False
     # Create new session
-    new_session = create_new_session(trans, prev_galaxy_session, user)
+    # tool_shed.context.SessionRequestContext structurally satisfies everything
+    # create_new_session uses (.security, .app, .request) but is a distinct
+    # hierarchy from galaxy.webapps.base.webapp.GalaxyWebTransaction.
+    new_session = create_new_session(trans, prev_galaxy_session, user)  # type: ignore[arg-type]
     trans.set_galaxy_session(new_session)
     trans.sa_session.add_all((prev_galaxy_session, new_session))
     trans.sa_session.commit()

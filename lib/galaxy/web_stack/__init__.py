@@ -7,7 +7,6 @@ import sys
 import threading
 from collections.abc import Callable
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -27,7 +26,7 @@ class ApplicationStackLogFilter(logging.Filter):
 
 
 class ApplicationStack:
-    name: Optional[str] = None
+    name: str | None = None
     prohibited_middleware: frozenset[str] = frozenset()
     log_filter_class: type[logging.Filter] = ApplicationStackLogFilter
     log_format = "%(name)s %(levelname)s %(asctime)s [pN:%(processName)s,p:%(process)d,tN:%(threadName)s] %(message)s"
@@ -220,7 +219,7 @@ class GunicornApplicationStack(ApplicationStack):
     def log_startup(self):
         msg = [f"Galaxy server instance '{self.config.server_name}' is running"]
         if "GUNICORN_LISTENERS" in os.environ:
-            message = f'\nServing on {os.environ["GUNICORN_LISTENERS"]}\n'
+            message = f"\nServing on {os.environ['GUNICORN_LISTENERS']}\n"
             msg.append(f"\033[92m{message}\033[0m")  # Highlight in green
         log.info("\n".join(msg))
 

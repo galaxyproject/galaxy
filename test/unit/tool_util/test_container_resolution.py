@@ -42,7 +42,7 @@ def container_registry():
 
 
 def test_container_registry(container_registry, mocker):
-    mocker.patch("galaxy.tool_util.deps.mulled.util._get_namespace", return_value=["samtools"])
+    mocker.patch("galaxy.tool_util.deps.mulled.util.quay_repositories", return_value=["samtools"])
     tool_info = ToolInfo(requirements=[ToolRequirement(name="samtools", version="1.10", type="package")])
     container_description = container_registry.find_best_container_description(
         [DOCKER_CONTAINER_TYPE],
@@ -63,7 +63,7 @@ def test_docker_container_resolver_detects_docker_cli(appinfo, mocker):
     """
     - CachedMulledDockerContainerResolver properly detects present docker binary
     """
-    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled", return_value="/bin/docker")
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.which", return_value="/bin/docker")
     resolver = CachedMulledDockerContainerResolver(appinfo)
     assert resolver.cli_available
 

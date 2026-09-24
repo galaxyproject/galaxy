@@ -13,7 +13,7 @@ const filter = ref("");
 const filterFields: Array<keyof DetailedDatatypes> = ["extension"];
 
 const { datatypes } = useDetailedDatatypes();
-const filteredDatatypes = useFilterObjectArray(datatypes, filter, filterFields);
+const { filtered: filteredDatatypes } = useFilterObjectArray(datatypes, filter, filterFields);
 
 const fields: TableField[] = [
     {
@@ -60,7 +60,7 @@ const edamLink = (edamIRI: string) => `https://edamontology.github.io/edam-brows
                     :href="item.descriptionUrl">
                     {{ item.extension }}
                 </GLink>
-                <span v-else v-b-tooltip.hover :title="optionalString(item.description)">
+                <span v-else v-g-tooltip.hover :title="optionalString(item.description)">
                     {{ item.extension }}
                 </span>
             </template>

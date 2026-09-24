@@ -41,6 +41,11 @@ onMounted(() => {
 });
 
 const rootBoundingBox = useElementBounding(positionedParent);
+// useElementBounding only refreshes on size/scroll changes, not when a sibling
+// mounts/unmounts and shifts our position. Re-measure on each drag tick so the
+// math survives layout reflows triggered elsewhere (e.g. a second right-side
+// FlexPanel appearing or disappearing).
+const refreshBoundingBox = rootBoundingBox.update;
 
 const { position: draggablePosition, isDragging } = useDraggable(draggable, {
     preventDefault: true,
@@ -66,6 +71,7 @@ watch(
 const borderWidth = 6;
 
 function updatePosition() {
+    refreshBoundingBox();
     if (props.side === "left") {
         handlePosition.value = draggablePosition.value.x - rootBoundingBox.left.value + borderWidth;
     } else {

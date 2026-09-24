@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from markupsafe import escape
 
@@ -20,23 +19,20 @@ from galaxy.webapps.base.controller import (
     UsesStoredWorkflowMixin,
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
-from galaxy.workflow.extract import (
-    extract_workflow,
-    summarize,
-)
 from ..api import depends
 
 log = logging.getLogger(__name__)
 
 
 class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesItemRatings):
+    app: StructuredApp
     history_manager: HistoryManager = depends(HistoryManager)
     slug_builder = SlugBuilder()
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
 
-    def _display_by_username_and_slug(self, trans, username, slug, format="html", **kwargs):
+    def _display_by_username_and_slug(self, trans: GalaxyWebTransaction, username, slug, format="html", **kwargs):
         """
         Display workflow based on a username and slug. Format can be html, json, or json-download.
         """
@@ -61,7 +57,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         elif format == "json-download":
             return self.export_to_file(trans, encoded_id)
 
-    def _display(self, trans, stored_workflow):
+    def _display(self, trans: GalaxyWebTransaction, stored_workflow):
         """Diplay workflow in client."""
         if stored_workflow is None:
             raise web.httpexceptions.HTTPNotFound()
@@ -93,7 +89,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     @web.expose
     @web.require_login("to import a workflow", use_panels=True)
-    def imp(self, trans, id, **kwargs):
+    def imp(self, trans: GalaxyWebTransaction, id, **kwargs):
         """Imports a workflow shared by other users."""
         # Set referer message.
         referer = trans.request.referer
@@ -125,7 +121,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     @web.expose
     @web.require_login("use Galaxy workflows")
-    def gen_image(self, trans, id, embed="false", version="", **kwargs):
+    def gen_image(self, trans: GalaxyWebTransaction, id, embed="false", version="", **kwargs):
         embed = util.asbool(embed)
         if version:
             version_int_or_none = int(version)
@@ -143,7 +139,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             return trans.show_error_message(error_message)
 
     @web.json_pretty
-    def for_direct_import(self, trans, id, **kwargs):
+    def for_direct_import(self, trans: GalaxyWebTransaction, id, **kwargs):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         encode it as a json string that can be imported back into Galaxy
@@ -156,7 +152,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return self._workflow_to_dict(trans, stored)
 
     @web.json_pretty
-    def export_to_file(self, trans, id, **kwds):
+    def export_to_file(self, trans: GalaxyWebTransaction, id, **kwds):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         export it to a JSON file that can be imported back into Galaxy.
@@ -180,55 +176,3 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy-Workflow-{sname}.ga"'
         trans.response.set_content_type("application/galaxy-archive")
         return stored_dict
-
-    @web.expose
-    def build_from_current_history(
-        self,
-        trans: GalaxyWebTransaction,
-        job_ids=None,
-        dataset_ids=None,
-        dataset_collection_ids=None,
-        workflow_name: Optional[str] = None,
-        dataset_names=None,
-        dataset_collection_names=None,
-        history_id: Optional[str] = None,
-        **kwargs,
-    ) -> str:
-        user = trans.get_user()
-        history = trans.history
-        if history_id:
-            # Optionally target a different history than the current one.
-            history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=history)
-        if not user:
-            trans.response.status = 403
-            return trans.show_error_message("Must be logged in to create workflows")
-        if workflow_name is None:
-            # Initial page load - render the extraction form
-            jobs, warnings = summarize(trans, history)
-            return trans.fill_template("build_from_current_history.mako", jobs=jobs, warnings=warnings, history=history)
-        else:
-            # If there is just one dataset name selected or one dataset collection, these
-            # come through as string types instead of lists. xref #3247.
-            dataset_names = util.listify(dataset_names)
-            dataset_collection_names = util.listify(dataset_collection_names)
-            # Decode encoded job IDs from form submission
-            job_ids = [self.decode_id(job_id) for job_id in util.listify(job_ids)]
-            stored_workflow = extract_workflow(
-                trans,
-                user=user,
-                history=history,
-                job_ids=job_ids,
-                dataset_ids=dataset_ids,
-                dataset_collection_ids=dataset_collection_ids,
-                workflow_name=workflow_name,
-                dataset_names=dataset_names,
-                dataset_collection_names=dataset_collection_names,
-            )
-            # Index page with message
-            workflow_id = trans.security.encode_id(stored_workflow.id)
-            edit_url = url_for(f"/workflows/edit?id={workflow_id}")
-            run_url = url_for(f"/workflows/run?id={workflow_id}")
-            return trans.show_message(
-                f'Workflow "{escape(workflow_name)}" created from current history. '
-                f'You can <a href="{edit_url}" target="_parent">edit</a> or <a href="{run_url}" target="_parent">run</a> the workflow.'
-            )

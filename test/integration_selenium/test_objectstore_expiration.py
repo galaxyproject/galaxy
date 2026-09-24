@@ -6,6 +6,7 @@ from typing import (
 
 from galaxy_test.driver.integration_util import ConfiguresObjectStores
 from galaxy_test.selenium.framework import managed_history
+from galaxy_test.selenium.upload_activity_helpers import UsesUploadActivity
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
@@ -62,7 +63,9 @@ backends:
 AvailableObjectStoreIDs = Literal["default", "short_term", "mid_term"]
 
 
-class TestObjectStoreContentsExpirationIntegration(SeleniumIntegrationTestCase, ConfiguresObjectStores):
+class TestObjectStoreContentsExpirationIntegration(
+    SeleniumIntegrationTestCase, ConfiguresObjectStores, UsesUploadActivity
+):
     ensure_registered = True
     dataset_populator: "SeleniumSessionDatasetPopulator"
     dataset_collection_populator: "SeleniumSessionDatasetCollectionPopulator"
@@ -92,7 +95,7 @@ class TestObjectStoreContentsExpirationIntegration(SeleniumIntegrationTestCase, 
     def test_no_expiration_for_default_storage(self):
         self._select_history_storage("default")
 
-        self.perform_upload_of_pasted_content("default storage content")
+        self.upload_context("paste-content").stage_paste_content("default storage content").start()
         self.history_panel_wait_for_hid_visible(1)
         self._assert_no_expiration_indicator_for(hid=1)
 
@@ -101,7 +104,7 @@ class TestObjectStoreContentsExpirationIntegration(SeleniumIntegrationTestCase, 
     def test_expiration_of_single_dataset(self):
         self._select_history_storage("short_term")
 
-        self.perform_upload_of_pasted_content("my test content")
+        self.upload_context("paste-content").stage_paste_content("my test content").start()
         self.history_panel_wait_for_hid_visible(1)
         self._assert_expiration_indicator_visible_for(hid=1, expected_storage_id="short_term")
 
@@ -110,10 +113,10 @@ class TestObjectStoreContentsExpirationIntegration(SeleniumIntegrationTestCase, 
     def test_expiration_of_collection(self):
         self._select_history_storage("short_term")
 
-        self.perform_upload_of_pasted_content("dataset 1 content")
+        self.upload_context("paste-content").stage_paste_content("dataset 1 content").start()
         self.history_panel_wait_for_hid_visible(1)
 
-        self.perform_upload_of_pasted_content("dataset 2 content")
+        self.upload_context("paste-content").stage_paste_content("dataset 2 content").start()
         self.history_panel_wait_for_hid_visible(2)
 
         self.history_panel_wait_for_and_select([1, 2])
@@ -129,19 +132,19 @@ class TestObjectStoreContentsExpirationIntegration(SeleniumIntegrationTestCase, 
     def test_expiration_if_mixed_storage_in_collection(self):
         self._select_history_storage("default")
 
-        self.perform_upload_of_pasted_content("dataset stored in default storage")
+        self.upload_context("paste-content").stage_paste_content("dataset stored in default storage").start()
         self.history_panel_wait_for_hid_visible(1)
         self._assert_no_expiration_indicator_for(hid=1)
 
         self._select_history_storage("short_term")
 
-        self.perform_upload_of_pasted_content("dataset stored in short term storage")
+        self.upload_context("paste-content").stage_paste_content("dataset stored in short term storage").start()
         self.history_panel_wait_for_hid_visible(2)
         self._assert_expiration_indicator_visible_for(hid=2, expected_storage_id="short_term")
 
         self._select_history_storage("mid_term")
 
-        self.perform_upload_of_pasted_content("dataset stored in mid term storage")
+        self.upload_context("paste-content").stage_paste_content("dataset stored in mid term storage").start()
         self.history_panel_wait_for_hid_visible(3)
         self._assert_expiration_indicator_visible_for(hid=3, expected_storage_id="mid_term")
 

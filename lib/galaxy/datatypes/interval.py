@@ -5,10 +5,6 @@ Interval datatypes
 import logging
 import sys
 import tempfile
-from typing import (
-    Optional,
-    Union,
-)
 from urllib.parse import quote_plus
 
 import pysam
@@ -43,6 +39,7 @@ from galaxy.datatypes.util.gff_util import (
     parse_gff3_attributes,
     parse_gff_attributes,
 )
+from galaxy.exceptions import InvalidFileFormatError
 from galaxy.util import compression_utils
 from galaxy.util.compression_utils import FileObjType
 from . import (
@@ -123,7 +120,7 @@ class Interval(Tabular):
         Tabular.__init__(self, **kwd)
         self.add_display_app("ucsc", "display at UCSC", "as_ucsc_display_file", "ucsc_links")
 
-    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: HasMetadata | None = None) -> None:
         Tabular.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(
@@ -202,10 +199,10 @@ class Interval(Tabular):
     def get_estimated_display_viewport(
         self,
         dataset: DatasetProtocol,
-        chrom_col: Optional[int] = None,
-        start_col: Optional[int] = None,
-        end_col: Optional[int] = None,
-    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
+        chrom_col: int | None = None,
+        start_col: int | None = None,
+        end_col: int | None = None,
+    ) -> tuple[str | None, str | None, str | None]:
         """Return a chrom, start, stop tuple for viewing a file."""
         viewport_feature_count = 100  # viewport should check at least 100 features; excludes comment lines
         max_line_count = max(viewport_feature_count, 500)  # maximum number of lines to check; includes comment lines
@@ -263,7 +260,7 @@ class Interval(Tabular):
             log.exception("Exception caught attempting to generate viewport for dataset '%d'", dataset.id)
         return (None, None, None)
 
-    def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> FileObjType | str:
         """Returns file contents with only the bed data"""
         with tempfile.NamedTemporaryFile(delete=False, mode="w") as fh:
             c, s, e, t, n = (
@@ -274,27 +271,30 @@ class Interval(Tabular):
                 dataset.metadata.nameCol or 0,
             )
             c, s, e, t, n = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1, int(n) - 1
-            if t >= 0:  # strand column (should) exists
-                for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
-                    strand = "+"
-                    name = f"region_{i}"
-                    if n >= 0 and n < len(elems):
-                        name = elems[n]
-                    if t < len(elems):
-                        strand = elems[t]
-                    tmp = [elems[c], elems[s], elems[e], name, "0", strand]
-                    fh.write("{}\n".format("\t".join(tmp)))
-            elif n >= 0:  # name column (should) exists
-                for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
-                    name = f"region_{i}"
-                    if n >= 0 and n < len(elems):
-                        name = elems[n]
-                    tmp = [elems[c], elems[s], elems[e], name]
-                    fh.write("{}\n".format("\t".join(tmp)))
-            else:
-                for elems in compression_utils.file_iter(dataset.get_file_name()):
-                    tmp = [elems[c], elems[s], elems[e]]
-                    fh.write("{}\n".format("\t".join(tmp)))
+            try:
+                if t >= 0:  # strand column (should) exists
+                    for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
+                        strand = "+"
+                        name = f"region_{i}"
+                        if n >= 0 and n < len(elems):
+                            name = elems[n]
+                        if t < len(elems):
+                            strand = elems[t]
+                        tmp = [elems[c], elems[s], elems[e], name, "0", strand]
+                        fh.write("{}\n".format("\t".join(tmp)))
+                elif n >= 0:  # name column (should) exists
+                    for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
+                        name = f"region_{i}"
+                        if n >= 0 and n < len(elems):
+                            name = elems[n]
+                        tmp = [elems[c], elems[s], elems[e], name]
+                        fh.write("{}\n".format("\t".join(tmp)))
+                else:
+                    for elems in compression_utils.file_iter(dataset.get_file_name()):
+                        tmp = [elems[c], elems[s], elems[e]]
+                        fh.write("{}\n".format("\t".join(tmp)))
+            except IndexError:
+                raise InvalidFileFormatError("Dataset row has fewer columns than its metadata declares.")
             return compression_utils.get_fileobj(fh.name, mode="rb")
 
     def display_peek(self, dataset: DatasetProtocol) -> str:
@@ -425,7 +425,7 @@ class BedGraph(Interval):
     track_type = "LineTrack"
     data_sources = {"data": "bigwig", "index": "bigwig"}
 
-    def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> FileObjType | str:
         """
         Returns file contents as is with no modifications.
         TODO: this is a functional stub and will need to be enhanced moving forward to provide additional support for bedgraph.
@@ -435,10 +435,10 @@ class BedGraph(Interval):
     def get_estimated_display_viewport(
         self,
         dataset: DatasetProtocol,
-        chrom_col: Optional[int] = 0,
-        start_col: Optional[int] = 1,
-        end_col: Optional[int] = 2,
-    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
+        chrom_col: int | None = 0,
+        start_col: int | None = 1,
+        end_col: int | None = 2,
+    ) -> tuple[str | None, str | None, str | None]:
         """
         Set viewport based on dataset's first 100 lines.
         """
@@ -514,7 +514,7 @@ class Bed(Interval):
                         break
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
-    def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> FileObjType | str:
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""
         for line in open(dataset.get_file_name()):
             line = line.strip()
@@ -875,9 +875,7 @@ class Gff(Tabular, _RemoteCallMixin):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def get_estimated_display_viewport(
-        self, dataset: DatasetProtocol
-    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
+    def get_estimated_display_viewport(self, dataset: DatasetProtocol) -> tuple[str | None, str | None, str | None]:
         """
         Return a chrom, start, stop tuple for viewing a file.  There are slight differences between gff 2 and gff 3
         formats.  This function should correctly handle both...
@@ -1287,9 +1285,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
         self.add_display_app("ucsc", "display at UCSC", "as_ucsc_display_file", "ucsc_links")
         self.add_display_app("gbrowse", "display in Gbrowse", "as_gbrowse_display_file", "gbrowse_links")
 
-    def get_estimated_display_viewport(
-        self, dataset: DatasetProtocol
-    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
+    def get_estimated_display_viewport(self, dataset: DatasetProtocol) -> tuple[str | None, str | None, str | None]:
         """Return a chrom, start, stop tuple for viewing a file."""
         viewport_feature_count = 100  # viewport should check at least 100 features; excludes comment lines
         max_line_count = max(viewport_feature_count, 500)  # maximum number of lines to check; includes comment lines
@@ -1475,10 +1471,10 @@ class CustomTrack(Tabular):
     def get_estimated_display_viewport(
         self,
         dataset: DatasetProtocol,
-        chrom_col: Optional[int] = None,
-        start_col: Optional[int] = None,
-        end_col: Optional[int] = None,
-    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
+        chrom_col: int | None = None,
+        start_col: int | None = None,
+        end_col: int | None = None,
+    ) -> tuple[str | None, str | None, str | None]:
         """Return a chrom, start, stop tuple for viewing a file."""
         # FIXME: only BED and WIG custom tracks are currently supported
         # As per previously existing behavior, viewport will only be over the first intervals
@@ -1781,7 +1777,7 @@ class IntervalTabix(Interval):
         dataset: DatasetProtocol,
         overwrite: bool = True,
         first_line_is_header: bool = False,
-        metadata_tmp_files_dir: Optional[str] = None,
+        metadata_tmp_files_dir: str | None = None,
         **kwd,
     ) -> None:
         # We don't use the method Interval.set_meta as we don't want to guess the columns for chr start end

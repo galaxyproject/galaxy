@@ -5,58 +5,51 @@ are fine otherwise because we're using the typing system to interact with pydant
 and build runtime models not to use mypy to type check static code.
 """
 
+from types import UnionType
 from typing import (
+    Annotated,
     Any,
     cast,
-    Dict,
-    List,
-    Optional,
-    Type,
+    get_args,
+    get_origin,
+    TypeVar,
     Union,
 )
 
+
+def optional(type_: type) -> type:
+    return cast(type, type_ | None)
+
+
+def optional_if_needed(type_: type, is_optional: bool) -> type:
+    return optional(type_) if is_optional else type_
+
+
+def union_type(args: list[type]) -> type:
+    result = args[0]
+    for t in args[1:]:
+        result = cast(type, result | t)
+    return result
+
+
+T = TypeVar("T")
+
+
+def list_type(arg: type[T]) -> type[list[T]]:
+    return list[arg]  # type: ignore[valid-type]
+
+
+def dict_type(key: type, val: type) -> type:
+    return dict[key, val]  # type: ignore[valid-type]
+
+
 # https://stackoverflow.com/questions/56832881/check-if-a-field-is-typing-optional
-from typing_extensions import (
-    Annotated,
-    get_args,
-    get_origin,
-)
-
-
-def optional(type: Type) -> Type:
-    return_type: Type = Optional[type]  # type: ignore[assignment]
-    return return_type
-
-
-def optional_if_needed(type: Type, is_optional: bool) -> Type:
-    return_type: Type = type
-    if is_optional:
-        return_type = optional(type)
-    return return_type
-
-
-def union_type(args: List[Type]) -> Type:
-    return Union[tuple(args)]  # type: ignore[return-value]
-
-
-def list_type(arg: Type) -> Type:
-    return List[arg]  # type: ignore[valid-type]
-
-
-def dict_type(key: Type, val: Type) -> Type:
-    return Dict[key, val]  # type: ignore[valid-type]
-
-
-def cast_as_type(arg) -> Type:
-    return cast(Type, arg)
-
-
 def is_optional(field) -> bool:
     f = _strip_annotation(field)
     if f == type(None):  # noqa: E721
         return True
     origin = get_origin(f)
-    if origin is Union:
+    if origin in (Union, UnionType):
         return any(is_optional(f) for f in get_args(f))
 
     return False
@@ -71,7 +64,7 @@ def _strip_annotation(field):
         return field
 
 
-def expand_annotation(field: Type, new_annotations: List[Any]) -> Type:
+def expand_annotation(field: type, new_annotations: list[Any]) -> type:
     is_annotation = get_origin(field) is Annotated
     if is_annotation:
         args = get_args(field)  # noqa: F841

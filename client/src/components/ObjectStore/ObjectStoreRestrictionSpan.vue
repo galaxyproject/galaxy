@@ -19,7 +19,7 @@ const title = computed(() => {
 </script>
 
 <template>
-    <span v-b-tooltip.hover class="stored-how object-store-help-on-hover" :title="title">{{ text }}</span>
+    <span v-g-tooltip.hover class="stored-how object-store-help-on-hover" :title="title">{{ text }}</span>
 </template>
 
 <style scoped>

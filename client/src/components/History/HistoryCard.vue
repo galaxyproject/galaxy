@@ -29,7 +29,6 @@
 
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
 
 import { userOwnsHistory } from "@/api";
 import type { AnyHistoryEntry } from "@/api/histories";
@@ -120,8 +119,6 @@ const props = withDefaults(defineProps<Props>(), {
     highlighted: false,
 });
 
-const router = useRouter();
-
 const historyStore = useHistoryStore();
 
 const userStore = useUserStore();
@@ -142,6 +139,12 @@ const emit = defineEmits<{
      * @event titleClick
      */
     (e: "titleClick", history: AnyHistoryEntry["id"]): void;
+
+    /**
+     * Emitted when the rename action is triggered
+     * @event rename
+     */
+    (e: "rename", id: string, name: string): void;
 
     /**
      * Emitted when a tag is clicked for filtering
@@ -178,8 +181,8 @@ const emit = defineEmits<{
  * Handles clicking on the history title to navigate to the history view
  * @function onTitleClick
  */
-function onTitleClick() {
-    router.push(`/histories/view?id=${props.history.id}`);
+async function onTitleClick() {
+    await historyStore.setCurrentHistory(props.history.id);
 }
 
 /**
@@ -189,7 +192,7 @@ function onTitleClick() {
 const historyCardTitle = computed(() => {
     return {
         label: props.history.name,
-        title: localize("Click to view this history"),
+        title: localize("Click to set as current"),
         handler: onTitleClick,
     };
 });
@@ -270,7 +273,7 @@ function onKeyDown(event: KeyboardEvent) {
         :clickable="props.clickable"
         :highlighted="props.highlighted"
         @titleClick="onTitleClick"
-        @rename="() => router.push(`/histories/rename?id=${history.id}`)"
+        @rename="emit('rename', history.id, history.name)"
         @select="isMyHistory(history) && emit('select', history)"
         @tagsUpdate="(tags) => onTagsUpdate(history.id, tags)"
         @tagClick="(tag) => emit('tagClick', tag)"

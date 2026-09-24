@@ -18,22 +18,27 @@ concurrency:
 defaults:
   run:
     working-directory: 'galaxy root'
+permissions: {}
 jobs:
   check:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     name: Check database indexes
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        db: ['postgresql', 'sqlite']
-        postgresql-version: ['17']
+        db: ['postgresql']
+        postgresql-version: ['9.6', '10', '11', '14', '18']
         python-version: ['3.10']
         include:
-          - db: postgresql
-            postgresql-version: '9.6'
+          - db: sqlite
             python-version: '3.10'
     services:
       postgres:
-        image: postgres:${{ matrix.postgresql-version }}
+        image: ${{ matrix.db == 'postgresql' && format('postgres:{0}', matrix.postgresql-version) || '' }}  # zizmor: ignore[unpinned-images]
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -41,23 +46,18 @@ jobs:
         ports:
           - 5432:5432
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
         with:
           path: 'galaxy root'
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.1.0
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-      - name: Get full Python version
-        id: full-python-version
-        shell: bash
-        run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Set database connection on PostgreSQL
         if: matrix.db == 'postgresql'
-        run: echo 'GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION=postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8' >> $GITHUB_ENV
+        run: echo 'GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION=postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8' >> $GITHUB_ENV
       - name: Check indexes
         run: tox -e check_indexes

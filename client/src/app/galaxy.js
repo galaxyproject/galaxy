@@ -29,6 +29,7 @@ export class GalaxyApp {
         this.data = {};
         this.data.create = (...args) => create(this, ...args);
         this.data.dialog = (...args) => dialog(this, ...args);
+        this.router = null;
     }
 
     _processOptions(options) {

@@ -320,14 +320,10 @@ class TestHistoryContentsFilterParser(HistoryAsContainerBaseTestCase):
     def test_date_parser(self):
         # -- seconds and milliseconds from epoch
         self.log("should be able to parse epoch seconds")
-        assert self.filter_parser.parse_date("1234567890") == datetime.datetime.fromtimestamp(1234567890).isoformat(
-            sep=" "
-        )
+        assert self.filter_parser.parse_date("1234567890") == datetime.datetime.fromtimestamp(1234567890)
 
         self.log("should be able to parse floating point epoch seconds.milliseconds")
-        assert self.filter_parser.parse_date("1234567890.123") == datetime.datetime.fromtimestamp(
-            1234567890.123
-        ).isoformat(sep=" ")
+        assert self.filter_parser.parse_date("1234567890.123") == datetime.datetime.fromtimestamp(1234567890.123)
 
         self.log("should error if bad epoch is used")
         with self.assertRaises(ValueError):
@@ -335,17 +331,23 @@ class TestHistoryContentsFilterParser(HistoryAsContainerBaseTestCase):
 
         # -- datetime strings
         self.log("should allow date alone")
-        assert self.filter_parser.parse_date("2009-02-13") == "2009-02-13"
+        assert self.filter_parser.parse_date("2009-02-13") == datetime.datetime(2009, 2, 13)
 
         self.log("should allow date and time")
-        assert self.filter_parser.parse_date("2009-02-13 18:13:00") == "2009-02-13 18:13:00"
-        assert self.filter_parser.parse_date("2009-02-13T18:13:00") == "2009-02-13 18:13:00"
-        assert self.filter_parser.parse_date("2009-02-13T18:13:00Z") == "2009-02-13 18:13:00"
+        assert self.filter_parser.parse_date("2009-02-13 18:13:00") == datetime.datetime(2009, 2, 13, 18, 13, 0)
+        assert self.filter_parser.parse_date("2009-02-13T18:13:00") == datetime.datetime(2009, 2, 13, 18, 13, 0)
+        assert self.filter_parser.parse_date("2009-02-13T18:13:00Z") == datetime.datetime(2009, 2, 13, 18, 13, 0)
 
         self.log("should allow date and time with milliseconds")
-        assert self.filter_parser.parse_date("2009-02-13 18:13:00.123") == "2009-02-13 18:13:00.123"
-        assert self.filter_parser.parse_date("2009-02-13T18:13:00.123") == "2009-02-13 18:13:00.123"
-        assert self.filter_parser.parse_date("2009-02-13T18:13:00.123Z") == "2009-02-13 18:13:00.123"
+        assert self.filter_parser.parse_date("2009-02-13 18:13:00.123") == datetime.datetime(
+            2009, 2, 13, 18, 13, 0, 123000
+        )
+        assert self.filter_parser.parse_date("2009-02-13T18:13:00.123") == datetime.datetime(
+            2009, 2, 13, 18, 13, 0, 123000
+        )
+        assert self.filter_parser.parse_date("2009-02-13T18:13:00.123Z") == datetime.datetime(
+            2009, 2, 13, 18, 13, 0, 123000
+        )
 
         self.log("should error if timezone is added")
         with self.assertRaises(ValueError):

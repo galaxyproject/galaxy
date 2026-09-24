@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { TourSummary } from "@/api/tours";
 import { withPrefix } from "@/utils/redirect";
 
+import GAlert from "../BaseComponents/GAlert.vue";
 import GLink from "../BaseComponents/GLink.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 
@@ -47,7 +47,7 @@ loadTours();
             started (and remember, you can click 'End Tour' at any time).
         </p>
         <h2 class="h-sm">Tours</h2>
-        <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
+        <GAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
         <div v-else>
             <DelayedInput class="mb-3" :value="searchQuery" placeholder="search tours" :delay="0" @change="onSearch" />
             <div v-for="tour in tours" :key="tour.id">

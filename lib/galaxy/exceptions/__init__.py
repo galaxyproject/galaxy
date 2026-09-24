@@ -16,8 +16,6 @@ have nothing to do with the web - keep this in mind when defining exception name
 and messages.
 """
 
-from typing import Optional
-
 from .error_codes import (
     error_codes_by_name,
     ErrorCode,
@@ -32,7 +30,7 @@ class MessageException(Exception):
     # Error code information embedded into API json responses.
     err_code: ErrorCode = error_codes_by_name["UNKNOWN"]
 
-    def __init__(self, err_msg: Optional[str] = None, type="info", **extra_error_info):
+    def __init__(self, err_msg: str | None = None, type="info", **extra_error_info):
         self.err_msg = err_msg or self.err_code.default_error_message
         self.type = type
         self.extra_error_info = extra_error_info
@@ -66,7 +64,7 @@ class AcceptedRetryLater(MessageException):
     err_code = error_codes_by_name["ACCEPTED_RETRY_LATER"]
     retry_after: int
 
-    def __init__(self, msg: Optional[str] = None, retry_after=60):
+    def __init__(self, msg: str | None = None, retry_after=60):
         super().__init__(msg)
         self.retry_after = retry_after
 
@@ -138,7 +136,7 @@ class ToolMissingException(MessageException):
     status_code = 400
     err_code = error_codes_by_name["USER_TOOL_MISSING_PROBLEM"]
 
-    def __init__(self, err_msg: Optional[str] = None, type="info", tool_id=None, **extra_error_info):
+    def __init__(self, err_msg: str | None = None, type="info", tool_id=None, **extra_error_info):
         super().__init__(err_msg, type, **extra_error_info)
         self.tool_id = tool_id
 
@@ -155,7 +153,7 @@ class ToolInputsNotReadyException(MessageException):
 
 class ToolInputsNotOKException(MessageException):
     def __init__(
-        self, err_msg: Optional[str] = None, type="info", *, src: str, id: str, input_name: str, **extra_error_info
+        self, err_msg: str | None = None, type="info", *, src: str, id: str, input_name: str, **extra_error_info
     ):
         super().__init__(err_msg, type, src=src, id=id, input_name=input_name, **extra_error_info)
         self.src = src
@@ -174,6 +172,11 @@ class RealUserRequiredException(MessageException):
 class AuthenticationFailed(MessageException):
     status_code = 401
     err_code = error_codes_by_name["USER_AUTHENTICATION_FAILED"]
+
+
+class FileSourceCredentialExpired(MessageException):
+    status_code = 401
+    err_code = error_codes_by_name["FILE_SOURCE_CREDENTIAL_EXPIRED"]
 
 
 class AuthenticationRequired(MessageException):
@@ -257,6 +260,13 @@ class DeprecatedMethod(MessageException):
     err_code = error_codes_by_name["DEPRECATED_API_CALL"]
 
 
+class TooManyRequestsException(MessageException):
+    status_code = 429
+    err_code = error_codes_by_name["TOO_MANY_REQUESTS"]
+    #: Seconds until the limit window resets; emitted as the ``Retry-After`` header.
+    retry_after: int | None = None
+
+
 class ConfigurationError(Exception):
     status_code = 500
     err_code = error_codes_by_name["CONFIG_ERROR"]
@@ -306,6 +316,16 @@ class ServerNotConfiguredForRequest(MessageException):
     # request being "forbidden". It just isn't configured.
     status_code = 501
     err_code = error_codes_by_name["SERVER_NOT_CONFIGURED_FOR_REQUEST"]
+
+
+class UpstreamProxyError(MessageException):
+    status_code = 502
+    err_code = error_codes_by_name["UPSTREAM_PROXY_ERROR"]
+
+
+class GatewayTimeoutException(MessageException):
+    status_code = 504
+    err_code = error_codes_by_name["UPSTREAM_PROXY_TIMEOUT"]
 
 
 class HandlerAssignmentError(Exception):

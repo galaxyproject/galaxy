@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { faCloudUploadAlt, faFileImport, faIdBadge, faLink, faSearch } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, nextTick, onMounted, type Ref, ref } from "vue";
 import { useRoute } from "vue-router/composables";
 
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import type { TrsSelection } from "@/components/Workflow/Import/types";
+import { validateWorkflowFile } from "@/components/Workflow/Import/workflowValidation";
 import { Services } from "@/components/Workflow/services";
+import { useFileDrop } from "@/composables/fileDrop";
 
 import GCard from "@/components/Common/GCard.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
@@ -22,6 +26,8 @@ const trsServers: Ref<TrsSelection[]> = ref([]);
 const fileComponent = ref<InstanceType<typeof FromFile>>();
 const urlComponent = ref<InstanceType<typeof FromUrl>>();
 const trsComponent = ref<InstanceType<typeof TrsImport>>();
+const uploadCardRef = ref<HTMLElement | null>(null);
+const droppedFile: Ref<File | null> = ref(null);
 
 // Validation states for each step
 const uploadValid = ref(false);
@@ -29,6 +35,32 @@ const urlValid = ref(false);
 const trsSearchValid = ref(false);
 const trsUrlValid = ref(false);
 const trsIdValid = ref(false);
+
+// Drop zone on the "Upload file" method card — allows dropping a workflow file
+// directly on the card to skip straight to the upload step with the file pre-populated
+async function onUploadCardDrop(evt: DragEvent) {
+    if (evt.dataTransfer?.files?.length) {
+        const file = evt.dataTransfer.files[0];
+        if (!file) {
+            return;
+        }
+        const result = await validateWorkflowFile(file, { checkContent: true });
+        if (result.valid) {
+            droppedFile.value = file;
+            selectMethod("upload");
+        }
+        // If invalid, the drop is silently ignored — the user can still click the card
+    }
+}
+
+const { isFileOverDropZone: isFileOverUploadCard } = useFileDrop({
+    dropZone: uploadCardRef,
+    onDrop: onUploadCardDrop,
+    onDropCancel: () => {},
+    solo: false,
+    idleTime: 10000,
+    ignoreChildrenOnLeave: true,
+});
 
 const queryParams = computed(() => ({
     trsId: route.query.trs_id as string | undefined,
@@ -153,10 +185,26 @@ onMounted(async () => {
 
 function selectMethod(method: ImportMethod) {
     selectedMethod.value = method;
+    // Navigate to the appropriate step based on the selected method
+    if (method === "upload") {
+        wizard.goTo("upload-file");
+    } else if (method === "fetch") {
+        wizard.goTo("fetch-url");
+    } else if (method === "repository") {
+        wizard.goTo("select-trs-method");
+    }
 }
 
 function selectTrsMethod(method: TrsMethod) {
     selectedTrsMethod.value = method;
+    // Navigate to the appropriate TRS step
+    if (method === "search") {
+        wizard.goTo("trs-search");
+    } else if (method === "url") {
+        wizard.goTo("trs-url");
+    } else if (method === "id") {
+        wizard.goTo("trs-id");
+    }
 }
 
 function onSubmit() {
@@ -202,17 +250,24 @@ function onTrsIdValid(e: boolean) {
             <div v-if="wizard.isCurrent('select-method')" class="method-selection">
                 <div class="row">
                     <div class="col-xl-4 my-5">
-                        <GCard
-                            class="h-100 workflow-import-file-link text-center"
-                            :class="{ selected: selectedMethod === 'upload' }"
-                            :clickable="true"
-                            @click="selectMethod('upload')">
-                            <h4>Upload file</h4>
-                            <p class="text-muted mb-0">
-                                Upload a <code>*.ga</code> file from your computer. These files can be downloaded from
-                                Galaxy servers or workflow repositories.
-                            </p>
-                        </GCard>
+                        <div
+                            ref="uploadCardRef"
+                            class="h-100"
+                            :class="{ 'drop-zone-active': isFileOverUploadCard }"
+                            data-galaxy-file-drop-target>
+                            <GCard
+                                class="h-100 workflow-import-file-link text-center"
+                                :class="{ selected: selectedMethod === 'upload' }"
+                                :clickable="true"
+                                @click="selectMethod('upload')">
+                                <FontAwesomeIcon :icon="faFileImport" size="3x" class="mb-3 text-muted" />
+                                <h4>Upload file</h4>
+                                <p class="text-muted mb-0">
+                                    Upload a <code>*.ga</code> or <code>*.gxwf.yml</code> file from your computer. You
+                                    can also drag and drop a file here.
+                                </p>
+                            </GCard>
+                        </div>
                     </div>
 
                     <div class="col-xl-4 my-5">
@@ -221,10 +276,11 @@ function onTrsIdValid(e: boolean) {
                             :class="{ selected: selectedMethod === 'fetch' }"
                             :clickable="true"
                             @click="selectMethod('fetch')">
+                            <FontAwesomeIcon :icon="faLink" size="3x" class="mb-3 text-muted" />
                             <h4>Fetch URL</h4>
                             <p class="text-muted mb-0">
-                                Fetch a remote <code>*.ga</code> file from any publicly accessible URL. This can be
-                                generated by any Galaxy server, or public repositories like GitHub.
+                                Fetch a remote <code>Galaxy Workflow</code> file from any publicly accessible URL. This
+                                can be generated by any Galaxy server, or public repositories like GitHub.
                             </p>
                         </GCard>
                     </div>
@@ -235,6 +291,7 @@ function onTrsIdValid(e: boolean) {
                             :class="{ selected: selectedMethod === 'repository' }"
                             :clickable="true"
                             @click="selectMethod('repository')">
+                            <FontAwesomeIcon :icon="faCloudUploadAlt" size="3x" class="mb-3 text-muted" />
                             <h4>Import from repository</h4>
                             <p class="text-muted mb-0">
                                 Search and import workflows from our configured workflow repositories ({{
@@ -248,7 +305,7 @@ function onTrsIdValid(e: boolean) {
 
             <div v-else-if="wizard.isCurrent('upload-file')" class="import-form">
                 <div class="container-narrow">
-                    <FromFile ref="fileComponent" @input-valid="onUploadValid" />
+                    <FromFile ref="fileComponent" :dropped-file="droppedFile" @input-valid="onUploadValid" />
                 </div>
             </div>
 
@@ -266,6 +323,7 @@ function onTrsIdValid(e: boolean) {
                             :class="{ selected: selectedTrsMethod === 'search' }"
                             :clickable="true"
                             @click="selectTrsMethod('search')">
+                            <FontAwesomeIcon :icon="faSearch" size="3x" class="mb-3 text-muted" />
                             <h4>Search workflow registries</h4>
                             <p class="text-muted mb-0">Search for workflows across configured GA4GH servers.</p>
                         </GCard>
@@ -277,6 +335,7 @@ function onTrsIdValid(e: boolean) {
                             :class="{ selected: selectedTrsMethod === 'url' }"
                             :clickable="true"
                             @click="selectTrsMethod('url')">
+                            <FontAwesomeIcon :icon="faLink" size="3x" class="mb-3 text-muted" />
                             <h4>TRS URL</h4>
                             <p class="text-muted mb-0">Import directly from any GA4GH server with a TRS URL.</p>
                         </GCard>
@@ -288,6 +347,7 @@ function onTrsIdValid(e: boolean) {
                             :class="{ selected: selectedTrsMethod === 'id' }"
                             :clickable="true"
                             @click="selectTrsMethod('id')">
+                            <FontAwesomeIcon :icon="faIdBadge" size="3x" class="mb-3 text-muted" />
                             <h4>TRS ID</h4>
                             <p class="text-muted mb-0">
                                 When you know the TRS ID for a workflow in one of the configured GA4GH servers.
@@ -354,5 +414,10 @@ function onTrsIdValid(e: boolean) {
 .container-narrow {
     width: 100%;
     max-width: 600px;
+}
+.drop-zone-active {
+    border-radius: 0.3rem;
+    outline: 2px dashed var(--brand-primary, #2c3143);
+    outline-offset: 2px;
 }
 </style>

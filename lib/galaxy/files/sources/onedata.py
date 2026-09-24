@@ -4,8 +4,6 @@ except ImportError:
     OnedataRESTFS = None
 
 
-from typing import Union
-
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
@@ -23,9 +21,9 @@ def remove_prefix(prefix: str, string: str) -> str:
 
 
 class OnedataFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
-    access_token: Union[str, TemplateExpansion]
-    onezone_domain: Union[str, TemplateExpansion]
-    disable_tls_certificate_validation: Union[bool, TemplateExpansion] = False
+    access_token: str | TemplateExpansion
+    onezone_domain: str | TemplateExpansion
+    disable_tls_certificate_validation: bool | TemplateExpansion = False
 
 
 class OnedataFileSourceConfiguration(BaseFileSourceConfiguration):

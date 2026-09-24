@@ -17,6 +17,7 @@ from galaxy.schema.schema import (
     CreateWorkflowLandingRequestPayload,
     WorkflowLandingRequest,
 )
+from galaxy.util.unittest_utils import skip_if_dockstore_down
 from galaxy_test.base.api_asserts import (
     assert_error_code_is,
     assert_status_code_is,
@@ -119,6 +120,34 @@ class TestLandingApi(ApiTestCase):
         assert target["elements"]
         assert len(target["elements"]) == 1
 
+    def test_data_landing_origin(self):
+        data_landing_request_state = DataLandingRequestState(
+            targets=[
+                {
+                    "destination": {"type": "hdas"},
+                    "items": [
+                        {
+                            "src": "url",
+                            "url": "base64://eyJ0ZXN0IjogInRlc3QifQ==",  # base64 encoded {"test": "test"}
+                            "ext": "txt",
+                            "deferred": False,
+                        }
+                    ],
+                }
+            ],
+        )
+        payload = CreateDataLandingPayload(
+            request_state=data_landing_request_state,
+            public=True,
+            origin=HttpUrl("http://example.localhost/"),
+        )
+        response = self.dataset_populator.create_data_landing(payload)
+        assert response.tool_id == "__DATA_FETCH__"
+        assert str(response.origin) == "http://example.localhost/"
+
+        tool_landing = self.dataset_populator.use_tool_landing(response.uuid)
+        assert str(tool_landing.origin) == "http://example.localhost/"
+
     def test_file_landing_with_sample_sheet(self):
         """Test that sample sheet metadata is preserved through landing request creation and claiming."""
         file_landing_request_state = FileOrCollectionRequestsAdapter.validate_python(
@@ -184,6 +213,29 @@ class TestLandingApi(ApiTestCase):
         assert target["rows"]["sample1"] == [1, "control"]
         assert "sample2" in target["rows"]
         assert target["rows"]["sample2"] == [2, "treatment"]
+
+    def test_file_landing_origin(self):
+        file_landing_request_state = FileOrCollectionRequestsAdapter.validate_python(
+            [
+                {
+                    "class": "File",
+                    "location": "base64://dGVzdCBmaWxl",  # base64 encoded "test file"
+                    "filetype": "txt",
+                    "deferred": False,
+                }
+            ],
+        )
+        payload = CreateFileLandingPayload(
+            request_state=file_landing_request_state,
+            public=True,
+            origin=HttpUrl("http://example.localhost/"),
+        )
+        response = self.dataset_populator.create_file_landing(payload)
+        assert response.tool_id == "__DATA_FETCH__"
+        assert str(response.origin) == "http://example.localhost/"
+
+        tool_landing = self.dataset_populator.use_tool_landing(response.uuid)
+        assert str(tool_landing.origin) == "http://example.localhost/"
 
     def test_file_landing_with_sample_sheet_invalid_collection_type(self):
         """Test that sample sheet metadata with non-sample_sheet collection_type is rejected."""
@@ -331,6 +383,7 @@ class TestLandingApi(ApiTestCase):
         # Make sure url is turned into location
         assert landing_request["request_state"]["WorkflowInput1"]["location"]
 
+    @skip_if_dockstore_down
     def test_landing_claim_preserves_source_metadata(self):
         request = CreateWorkflowLandingRequestPayload(
             workflow_id="https://dockstore.org/api/ga4gh/trs/v2/tools/#workflow/github.com/iwc-workflows/chipseq-pe/main/versions/v0.12",

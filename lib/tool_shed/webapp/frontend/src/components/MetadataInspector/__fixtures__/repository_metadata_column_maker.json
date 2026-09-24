@@ -44,33 +44,84 @@
                 "tests": [
                     {
                         "inputs": [
-                            ["cond", "c3-c2"],
-                            ["input", "1.bed"],
-                            ["round", "no"]
+                            [
+                                "cond",
+                                "c3-c2"
+                            ],
+                            [
+                                "input",
+                                "1.bed"
+                            ],
+                            [
+                                "round",
+                                "no"
+                            ]
                         ],
                         "name": "Test-1",
-                        "outputs": [["name", "value"]],
-                        "required_files": ["1.bed", "value"]
+                        "outputs": [
+                            [
+                                "name",
+                                "value"
+                            ]
+                        ],
+                        "required_files": [
+                            "1.bed",
+                            "value"
+                        ]
                     },
                     {
                         "inputs": [
-                            ["cond", "c4*1"],
-                            ["input", "1.interval"],
-                            ["round", "no"]
+                            [
+                                "cond",
+                                "c4*1"
+                            ],
+                            [
+                                "input",
+                                "1.interval"
+                            ],
+                            [
+                                "round",
+                                "no"
+                            ]
                         ],
                         "name": "Test-2",
-                        "outputs": [["name", "value"]],
-                        "required_files": ["1.interval", "value"]
+                        "outputs": [
+                            [
+                                "name",
+                                "value"
+                            ]
+                        ],
+                        "required_files": [
+                            "1.interval",
+                            "value"
+                        ]
                     },
                     {
                         "inputs": [
-                            ["cond", "c4*1"],
-                            ["input", "1.interval"],
-                            ["round", "yes"]
+                            [
+                                "cond",
+                                "c4*1"
+                            ],
+                            [
+                                "input",
+                                "1.interval"
+                            ],
+                            [
+                                "round",
+                                "yes"
+                            ]
                         ],
                         "name": "Test-3",
-                        "outputs": [["name", "value"]],
-                        "required_files": ["1.interval", "value"]
+                        "outputs": [
+                            [
+                                "name",
+                                "value"
+                            ]
+                        ],
+                        "required_files": [
+                            "1.interval",
+                            "value"
+                        ]
                     }
                 ],
                 "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmps6x53uus/tmpbbvbl8yc/database/files/000/repo_1/column_maker/column_maker.xml",
@@ -79,7 +130,8 @@
                 "version_string_cmd": null
             }
         ],
-        "invalid_tools": []
+        "invalid_tools": [],
+        "create_time": "2024-01-15T10:30:00.000000"
     },
     "1:191823ad7f25": {
         "model_class": "RepositoryMetadata",
@@ -126,33 +178,84 @@
                 "tests": [
                     {
                         "inputs": [
-                            ["cond", "c3-c2"],
-                            ["input", "1.bed"],
-                            ["round", "no"]
+                            [
+                                "cond",
+                                "c3-c2"
+                            ],
+                            [
+                                "input",
+                                "1.bed"
+                            ],
+                            [
+                                "round",
+                                "no"
+                            ]
                         ],
                         "name": "Test-1",
-                        "outputs": [["name", "value"]],
-                        "required_files": ["1.bed", "value"]
+                        "outputs": [
+                            [
+                                "name",
+                                "value"
+                            ]
+                        ],
+                        "required_files": [
+                            "1.bed",
+                            "value"
+                        ]
                     },
                     {
                         "inputs": [
-                            ["cond", "c4*1"],
-                            ["input", "1.interval"],
-                            ["round", "no"]
+                            [
+                                "cond",
+                                "c4*1"
+                            ],
+                            [
+                                "input",
+                                "1.interval"
+                            ],
+                            [
+                                "round",
+                                "no"
+                            ]
                         ],
                         "name": "Test-2",
-                        "outputs": [["name", "value"]],
-                        "required_files": ["1.interval", "value"]
+                        "outputs": [
+                            [
+                                "name",
+                                "value"
+                            ]
+                        ],
+                        "required_files": [
+                            "1.interval",
+                            "value"
+                        ]
                     },
                     {
                         "inputs": [
-                            ["cond", "c4*1"],
-                            ["input", "1.interval"],
-                            ["round", "yes"]
+                            [
+                                "cond",
+                                "c4*1"
+                            ],
+                            [
+                                "input",
+                                "1.interval"
+                            ],
+                            [
+                                "round",
+                                "yes"
+                            ]
                         ],
                         "name": "Test-3",
-                        "outputs": [["name", "value"]],
-                        "required_files": ["1.interval", "value"]
+                        "outputs": [
+                            [
+                                "name",
+                                "value"
+                            ]
+                        ],
+                        "required_files": [
+                            "1.interval",
+                            "value"
+                        ]
                     }
                 ],
                 "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmps6x53uus/tmpbbvbl8yc/database/files/000/repo_1/column_maker/column_maker.xml",
@@ -161,7 +264,8 @@
                 "version_string_cmd": null
             }
         ],
-        "invalid_tools": []
+        "invalid_tools": [],
+        "create_time": "2024-01-15T10:30:00.000000"
     },
     "2:062143ff0665": {
         "model_class": "RepositoryMetadata",
@@ -208,33 +312,84 @@
                 "tests": [
                     {
                         "inputs": [
-                            ["cond", "c3-c2"],
-                            ["input", "1.bed"],
-                            ["round", "no"]
+                            [
+                                "cond",
+                                "c3-c2"
+                            ],
+                            [
+                                "input",
+                                "1.bed"
+                            ],
+                            [
+                                "round",
+                                "no"
+                            ]
                         ],
                         "name": "Test-1",
-                        "outputs": [["name", "value"]],
-                        "required_files": ["1.bed", "value"]
+                        "outputs": [
+                            [
+                                "name",
+                                "value"
+                            ]
+                        ],
+                        "required_files": [
+                            "1.bed",
+                            "value"
+                        ]
                     },
                     {
                         "inputs": [
-                            ["cond", "c4*1"],
-                            ["input", "1.interval"],
-                            ["round", "no"]
+                            [
+                                "cond",
+                                "c4*1"
+                            ],
+                            [
+                                "input",
+                                "1.interval"
+                            ],
+                            [
+                                "round",
+                                "no"
+                            ]
                         ],
                         "name": "Test-2",
-                        "outputs": [["name", "value"]],
-                        "required_files": ["1.interval", "value"]
+                        "outputs": [
+                            [
+                                "name",
+                                "value"
+                            ]
+                        ],
+                        "required_files": [
+                            "1.interval",
+                            "value"
+                        ]
                     },
                     {
                         "inputs": [
-                            ["cond", "c4*1"],
-                            ["input", "1.interval"],
-                            ["round", "yes"]
+                            [
+                                "cond",
+                                "c4*1"
+                            ],
+                            [
+                                "input",
+                                "1.interval"
+                            ],
+                            [
+                                "round",
+                                "yes"
+                            ]
                         ],
                         "name": "Test-3",
-                        "outputs": [["name", "value"]],
-                        "required_files": ["1.interval", "value"]
+                        "outputs": [
+                            [
+                                "name",
+                                "value"
+                            ]
+                        ],
+                        "required_files": [
+                            "1.interval",
+                            "value"
+                        ]
                     }
                 ],
                 "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmps6x53uus/tmpbbvbl8yc/database/files/000/repo_1/column_maker/column_maker.xml",
@@ -243,6 +398,7 @@
                 "version_string_cmd": null
             }
         ],
-        "invalid_tools": []
+        "invalid_tools": [],
+        "create_time": "2024-01-15T10:30:00.000000"
     }
 }

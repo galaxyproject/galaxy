@@ -1,6 +1,13 @@
-from json import loads
+from json import (
+    JSONDecodeError,
+    loads,
+)
 
 from galaxy.datatypes.tabular import Tabular
+from galaxy.exceptions import (
+    RequestParameterInvalidException,
+    RequestParameterMissingException,
+)
 from galaxy.model import DatasetInstance
 
 
@@ -37,7 +44,9 @@ class ColumnDataProvider(BaseDataProvider):
     def __init__(self, original_dataset, max_lines_returned=MAX_LINES_RETURNED):
         # Compatibility check.
         if not isinstance(original_dataset.datatype, Tabular):
-            raise Exception("Data provider can only be used with tabular data")
+            raise RequestParameterInvalidException(
+                "The 'column_with_stats' data provider can only be used with tabular datasets"
+            )
 
         # Attribute init.
         self.original_dataset = original_dataset
@@ -50,7 +59,7 @@ class ColumnDataProvider(BaseDataProvider):
         where each list is a line of data.
         """
         if not columns:
-            raise TypeError("parameter required: columns")
+            raise RequestParameterMissingException("parameter required: columns")
 
         # TODO: validate kwargs
         try:
@@ -75,12 +84,22 @@ class ColumnDataProvider(BaseDataProvider):
             start_val = int(self.original_dataset.metadata.comment_lines)
 
         # columns is an array of ints for now (should handle column names later)
-        columns = loads(columns)
-        for column in columns:
-            assert column < self.original_dataset.metadata.columns and column >= 0, (
-                f"column index ({column}) must be positive and less"
-                f" than the number of columns: {self.original_dataset.metadata.columns}"
+        try:
+            columns = loads(columns)
+        except (JSONDecodeError, TypeError):
+            raise RequestParameterInvalidException(
+                "parameter 'columns' must be a JSON-encoded list of integer column indices"
             )
+        if not isinstance(columns, list) or not all(isinstance(column, int) for column in columns):
+            raise RequestParameterInvalidException(
+                "parameter 'columns' must be a JSON-encoded list of integer column indices"
+            )
+        num_columns = self.original_dataset.metadata.columns
+        for column in columns:
+            if column < 0 or column >= num_columns:
+                raise RequestParameterInvalidException(
+                    f"column index ({column}) must be in the range [0, {num_columns})"
+                )
 
         # set up the response, column lists
         response = {}

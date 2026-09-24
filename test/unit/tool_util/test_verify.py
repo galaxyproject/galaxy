@@ -5,17 +5,13 @@ import math
 import tempfile
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
 )
 
 import numpy
 import pytest
 from PIL import Image
 
+from galaxy.tool_util.parser.interface import TestCollectionOutputDef
 from galaxy.tool_util.verify import (
     files_contains,
     files_delta,
@@ -24,6 +20,7 @@ from galaxy.tool_util.verify import (
     files_re_match,
     files_re_match_multiline,
 )
+from galaxy.tool_util.verify.interactor import verify_collection
 
 F1 = b"A\nB\nC"
 F2 = b"A\nB\nD\nE" * 61
@@ -32,7 +29,7 @@ F4 = b"A\r\nB\nC"
 MULTILINE_MATCH = b".*"
 TestFile = collections.namedtuple("TestFile", "value path")
 
-TestDef = Tuple[bytes, bytes, Optional[Dict[str, Any]], Optional[Type[AssertionError]]]
+TestDef = tuple[bytes, bytes, dict[str, Any] | None, type[AssertionError] | None]
 
 
 def _encode_image(im, **kwargs):
@@ -125,7 +122,7 @@ def _test_file_list():
 
 def generate_tests(multiline=False):
     f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9, f10 = _test_file_list()
-    tests: List[TestDef]
+    tests: list[TestDef]
     if multiline:
         tests = [(multiline_match, f1, {"lines_diff": 0, "sort": True}, None)]
     else:
@@ -144,7 +141,7 @@ def generate_tests(multiline=False):
 def generate_tests_sim_size():
     f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9, f10 = _test_file_list()
     # tests for equal files
-    tests: List[TestDef] = [
+    tests: list[TestDef] = [
         (f1, f1, None, None),  # pass default values
         (f1, f1, {"delta": 0}, None),  # pass for values that should always pass
         (f1, f1, {"delta_frac": 0.0}, None),
@@ -171,7 +168,7 @@ def generate_tests_image_diff():
     f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9, f10 = _test_file_list()
     metrics = ["mae", "mse", "rms", "fro", "iou"]
     # tests for equal files (uint8, PNG)
-    tests: List[TestDef] = [(f6, f6, {"metric": metric}, None) for metric in metrics]
+    tests: list[TestDef] = [(f6, f6, {"metric": metric}, None) for metric in metrics]
     # tests for equal files (uint8, TIFF)
     tests += [(f7, f7, {"metric": metric}, None) for metric in metrics]
     # tests for equal files (float, TIFF)
@@ -257,3 +254,56 @@ def test_files_image_diff(file1, file2, attributes, expect):
             files_image_diff(file1.path, file2.path, attributes)
     else:
         files_image_diff(file1.path, file2.path, attributes)
+
+
+def test_verify_collection_element_tests_on_single_dataset():
+    output_def = TestCollectionOutputDef.from_dict(
+        {
+            "name": "My Report",
+            "element_tests": {"sample1": {"asserts": {"has_text": {"text": "hello"}}}},
+        }
+    )
+    with pytest.raises(AssertionError) as exc_info:
+        verify_collection(output_def, {"path": "/tmp/whatever", "class": "File"}, lambda *a, **k: None)
+    assert "My Report" in str(exc_info.value)
+
+
+def _nested_data_collection():
+    return {
+        "collection_type": "list:list",
+        "elements": [
+            {
+                "element_identifier": "sample1",
+                "element_type": "dataset_collection",
+                "object": {
+                    "elements": [
+                        {"element_identifier": "dnacomp", "element_type": "hda", "_output_object": {}},
+                    ],
+                },
+            },
+        ],
+    }
+
+
+def test_verify_collection_nested_element_tests_are_checked():
+    output_def = TestCollectionOutputDef.from_dict(
+        {
+            "name": "mapDamage Visualisation",
+            "element_tests": {"sample1": {"element_tests": {"dnacomp": {"asserts": {"has_text": {"text": "x"}}}}}},
+        }
+    )
+    calls = []
+    verify_collection(output_def, _nested_data_collection(), lambda el, a, o: calls.append(el["element_identifier"]))
+    assert calls == ["dnacomp"]
+
+
+def test_verify_collection_nested_elements_alias_still_checked():
+    output_def = TestCollectionOutputDef.from_dict(
+        {
+            "name": "mapDamage Visualisation",
+            "element_tests": {"sample1": {"elements": {"dnacomp": {"asserts": {"has_text": {"text": "x"}}}}}},
+        }
+    )
+    calls = []
+    verify_collection(output_def, _nested_data_collection(), lambda el, a, o: calls.append(el["element_identifier"]))
+    assert calls == ["dnacomp"]

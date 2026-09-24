@@ -1,6 +1,7 @@
 import { computed, del, ref, set } from "vue";
 
 import type { Color } from "@/components/Workflow/Editor/Comments/colors";
+import { assertDefined } from "@/utils/assertions";
 import {
     AxisAlignedBoundingBox,
     type Rectangle,
@@ -10,8 +11,7 @@ import {
     vecReduceFigures,
     vecSubtract,
     type Vector,
-} from "@/components/Workflow/Editor/modules/geometry";
-import { assertDefined } from "@/utils/assertions";
+} from "@/utils/geometry";
 import { hasKeys, match } from "@/utils/utils";
 
 import { defineScopedStore } from "./scopedStore";

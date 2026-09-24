@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BModal, BSpinner } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
@@ -8,7 +8,9 @@ import localize from "@/utils/localization";
 import type { CleanupResult } from "./model";
 
 import Alert from "@/components/Alert.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import GTable from "@/components/Common/GTable.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface CleanupResultDialogProps {
     result?: CleanupResult;
@@ -51,13 +53,13 @@ defineExpose({
 </script>
 
 <template>
-    <BModal id="cleanup-result-modal" v-model="showModal" :title="title" title-tag="h2" hide-footer static>
+    <GModal id="cleanup-result-modal" :show.sync="showModal" :title="title" size="medium">
         <div class="text-center">
             <Alert
                 variant="info"
                 message="After the operation, the storage space that will be freed up will only be for the unique items. This means that some items may not free up any storage space because they are duplicates of other items." />
 
-            <BSpinner v-if="isLoading" class="mx-auto" data-test-id="loading-spinner" />
+            <LoadingSpan v-if="isLoading" class="mx-auto" message="Cleaning Up" data-test-id="loading-spinner" />
             <div v-else-if="result">
                 <BAlert v-if="result.hasFailed" show variant="danger" data-test-id="error-alert">
                     {{ result.errorMessage }}
@@ -84,5 +86,5 @@ defineExpose({
                     data-test-id="errors-table" />
             </div>
         </div>
-    </BModal>
+    </GModal>
 </template>

@@ -2,7 +2,6 @@ import logging
 import os
 from typing import (
     Any,
-    Optional,
 )
 
 from rocrate.model.computationalworkflow import (
@@ -102,6 +101,7 @@ class WorkflowRunCrateProfileBuilder:
         return crate
 
     def _add_file(self, dataset: HistoryDatasetAssociation, properties: dict[Any, Any], crate: ROCrate) -> File:
+        assert dataset.dataset is not None
         if dataset.dataset.id in self.model_store.dataset_id_to_path:
             filename, _ = self.model_store.dataset_id_to_path[dataset.dataset.id]
             description = ""
@@ -192,12 +192,12 @@ class WorkflowRunCrateProfileBuilder:
 
         return collection_entity
 
-    def _get_collection_additional_type(self, collection_type: Optional[str]) -> str:
+    def _get_collection_additional_type(self, collection_type: str | None) -> str:
         if collection_type and "paired" in collection_type:
             return "https://training.galaxyproject.org/training-material/faqs/galaxy/collections_build_list_paired.html"
         return "https://training.galaxyproject.org/training-material/faqs/galaxy/collections_build_list.html"
 
-    def _get_parameter_additional_type(self, parameter_type: Optional[str]) -> str:
+    def _get_parameter_additional_type(self, parameter_type: str | None) -> str:
         if parameter_type in self.param_type_mapping:
             return self.param_type_mapping[parameter_type]
         return "Text"
@@ -576,6 +576,7 @@ class WorkflowRunCrateProfileBuilder:
         )
 
     def _add_dataset_formal_parameter(self, hda: HistoryDatasetAssociation, crate: ROCrate):
+        assert hda.dataset is not None
         return crate.add(
             ContextEntity(
                 crate,

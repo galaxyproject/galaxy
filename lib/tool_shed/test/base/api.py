@@ -1,7 +1,6 @@
 import os
 from typing import (
     Any,
-    Optional,
 )
 
 import pytest
@@ -25,7 +24,7 @@ from .populators import ToolShedPopulator
 
 
 class ShedBaseTestCase(DrivenFunctionalTestCase):
-    _populator: Optional[ToolShedPopulator] = None
+    _populator: ToolShedPopulator | None = None
 
     @property
     def populator(self) -> ToolShedPopulator:
@@ -102,7 +101,7 @@ class ShedGalaxyInteractorApi(GalaxyInteractorApi):
 
 
 class ShedApiTestCase(ShedBaseTestCase, UsesShedApi):
-    _galaxy_interactor: Optional[GalaxyInteractorApi] = None
+    _galaxy_interactor: GalaxyInteractorApi | None = None
 
     @property
     def galaxy_interactor(self) -> GalaxyInteractorApi:

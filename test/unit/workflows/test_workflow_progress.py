@@ -196,6 +196,7 @@ class TestWorkflowProgress(TestCase):
             self.invocation.workflow.step_by_index(1)
         )
         session = self.app.model.session
+        session.add(self.invocation)
         session.add(subworkflow_invocation)
         session.commit()
         progress = self._new_workflow_progress()

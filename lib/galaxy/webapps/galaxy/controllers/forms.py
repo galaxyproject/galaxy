@@ -24,6 +24,7 @@ from galaxy.webapps.base.controller import (
     BaseUIController,
     web,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -33,15 +34,15 @@ VALID_FIELDNAME_RE = re.compile(r"^[a-zA-Z0-9\_]+$")
 class FormsGrid(grids.GridData):
     # Custom column types
     class NameColumn(grids.GridColumn):
-        def get_value(self, trans, grid, form):
+        def get_value(self, trans: GalaxyWebTransaction, grid, form):
             return form.latest_form.name
 
     class DescriptionColumn(grids.GridColumn):
-        def get_value(self, trans, grid, form):
+        def get_value(self, trans: GalaxyWebTransaction, grid, form):
             return form.latest_form.desc
 
     class TypeColumn(grids.GridColumn):
-        def get_value(self, trans, grid, form):
+        def get_value(self, trans: GalaxyWebTransaction, grid, form):
             return form.latest_form.type
 
     # Grid definition
@@ -100,12 +101,12 @@ class Forms(BaseUIController):
 
     @web.legacy_expose_api
     @web.require_admin
-    def forms_list(self, trans, payload=None, **kwd):
+    def forms_list(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         return self.forms_grid(trans, **kwd)
 
     @web.legacy_expose_api
     @web.require_admin
-    def create_form(self, trans, payload=None, **kwd):
+    def create_form(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         if trans.request.method == "GET":
             fd_types = sorted(model.FormDefinition.types.__members__.items())
             return {
@@ -157,7 +158,7 @@ class Forms(BaseUIController):
 
     @web.legacy_expose_api
     @web.require_admin
-    def edit_form(self, trans, payload=None, **kwd):
+    def edit_form(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         id = kwd.get("id")
         if not id:
             return self.message_exception(trans, "No form id received for editing.")
@@ -166,8 +167,8 @@ class Forms(BaseUIController):
         if trans.request.method == "GET":
             fd_types = sorted(model.FormDefinition.types.__members__.items())
             ff_types = [(t.__name__, t.__name__) for t in model.FormDefinition.supported_field_types]
-            field_cache = []
-            field_inputs = [
+            field_cache: list = []
+            field_inputs: list[dict] = [
                 {
                     "name": "name",
                     "label": "Name",
@@ -223,7 +224,7 @@ class Forms(BaseUIController):
             message = f"The form '{payload.get('name')}' has been updated."
             return {"message": message}
 
-    def get_current_form(self, trans, payload=None, **kwd):
+    def get_current_form(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         """
         This method gets all the unsaved user-entered form details and returns a
         dictionary containing the name, desc, type, layout & fields of the form
@@ -249,7 +250,7 @@ class Forms(BaseUIController):
                 break
         return dict(name=name, desc=desc, type=type, layout=[], fields=fields)
 
-    def save_form_definition(self, trans, form_id=None, payload=None, **kwd):
+    def save_form_definition(self, trans: GalaxyWebTransaction, form_id=None, payload=None, **kwd):
         """
         This method saves a form given an id
         """

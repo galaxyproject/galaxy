@@ -1,28 +1,164 @@
+<script setup lang="ts">
+import { faExchangeAlt, faPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, ref } from "vue";
+
+import type { BeaconHistory } from "@/api/histories";
+import { createNewHistory, getBeaconHistories as fetchBeaconHistories } from "@/api/histories";
+import { fetchBeaconSettings, toggleBeaconIntegration } from "@/api/users";
+import { useToast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import GButton from "../BaseComponents/GButton.vue";
+import GModal from "../BaseComponents/GModal.vue";
+import GTable from "../Common/GTable.vue";
+import Heading from "../Common/Heading.vue";
+import ExternalLink from "../ExternalLink.vue";
+import UtcDate from "../UtcDate.vue";
+
+const BEACON_HISTORY_NAME = "Beacon Export 📡";
+
+const fields = [
+    { key: "name", label: "Name", sortable: true },
+    { key: "create_time", label: "Created", sortable: true },
+    { key: "set_current", label: "" },
+];
+
+const Toast = useToast();
+
+const historyStore = useHistoryStore();
+
+const userStore = useUserStore();
+const { currentUser } = storeToRefs(userStore);
+
+const userId = computed(() => (currentUser.value && "id" in currentUser.value ? currentUser.value.id : undefined));
+
+const enabled = ref(false);
+const beaconHistories = ref<BeaconHistory[]>([]);
+const loadingHistories = ref(false);
+const historyOperationRunning = ref(false);
+const togglingBeacon = ref(false);
+
+async function getBeaconHistories() {
+    loadingHistories.value = true;
+    try {
+        beaconHistories.value = await fetchBeaconHistories(BEACON_HISTORY_NAME);
+    } catch (error) {
+        Toast.error(errorMessageAsString(error, "Error fetching beacon histories"));
+    } finally {
+        loadingHistories.value = false;
+    }
+}
+
+async function createBeaconHistory() {
+    if (historyOperationRunning.value) {
+        return;
+    }
+
+    const annotation = "Variants will be collected from VCF datasets in this history if beacon sharing is activated";
+
+    historyOperationRunning.value = true;
+    try {
+        const response = await createNewHistory(BEACON_HISTORY_NAME);
+        await historyStore.updateHistory(response.id, { name: BEACON_HISTORY_NAME, annotation });
+        await getBeaconHistories();
+    } catch (error) {
+        Toast.error(errorMessageAsString(error, "Error creating beacon history"));
+    } finally {
+        historyOperationRunning.value = false;
+    }
+}
+
+async function toggleBeacon(enable: boolean) {
+    if (!userId.value) {
+        Toast.error("User not found");
+        return;
+    }
+
+    togglingBeacon.value = true;
+    try {
+        const response = await toggleBeaconIntegration(userId.value, enable);
+
+        if (response.enabled !== enable) {
+            Toast.error(`Failed to ${enable ? "enable" : "disable"} beacon sharing`);
+            return;
+        }
+        enabled.value = enable;
+    } catch (error) {
+        Toast.error(errorMessageAsString(error, `Error ${enable ? "opting in to" : "opting out of"} beacon`));
+    } finally {
+        togglingBeacon.value = false;
+    }
+}
+
+async function loadSettings() {
+    if (!userId.value) {
+        Toast.error("User not found");
+        return;
+    }
+
+    try {
+        const response = await fetchBeaconSettings(userId.value);
+        enabled.value = response.enabled;
+    } catch (error) {
+        Toast.error(errorMessageAsString(error, "Error loading beacon settings"));
+    }
+}
+
+async function onOpenModal() {
+    await Promise.all([loadSettings(), getBeaconHistories()]);
+}
+
+async function switchHistory(historyId: string) {
+    if (historyOperationRunning.value) {
+        return;
+    }
+
+    historyOperationRunning.value = true;
+    try {
+        await historyStore.setCurrentHistory(historyId);
+    } catch (error) {
+        Toast.error(errorMessageAsString(error, "Error switching to beacon history"));
+    } finally {
+        historyOperationRunning.value = false;
+    }
+}
+
+onOpenModal();
+</script>
+
 <template>
-    <BModal
+    <GModal
         id="modal-beacon"
         ref="modal"
-        size="xl"
-        ok-only
-        visible
+        size="medium"
+        :fixed-height="enabled"
+        show
         title="Manage Beacon"
-        title-tag="h1"
-        @hidden="$emit('reset')">
+        @close="$emit('reset')">
         <!-- Explanation text-->
         <p>
             The
-            <a href="https://beacon-project.io">Global Alliance for Genomics & Health Beacon Project</a> enables safe
-            sharing of human genetic variants.<br />
-            <br />
+            <ExternalLink href="https://beacon-project.io">
+                Global Alliance for Genomics & Health Beacon Project
+            </ExternalLink>
+            enables safe sharing of human genetic variants.
+        </p>
+        <p>
             Galaxy lets you use the Beacon protocol to share genetic variants directly from your analysis with the
-            scientific community in the following anonymous way:<br />
-            <br />
+            scientific community in the following anonymous way:
+        </p>
+        <p>
             For participating users, we will merge variant lists to be shared into a single Beacon dataset per reference
-            genome and make that dataset accessible through a Beacon server.<br />
-            If someone queries the server for a specific variant that is in our Beacon dataset, the server will reply
-            with
-            <span class="cursive">“Yes, we have seen such a variant”</span>.<br />
-            <br />
+            genome and make that dataset accessible through a Beacon server. If someone queries the server for a
+            specific variant that is in our Beacon dataset, the server will reply with
+            <i>“Yes, we have seen such a variant”</i>.
+        </p>
+        <p>
             The user that issued the query then has the possibility to contact a Galaxy server admin who can link the
             variant call in question to particular Galaxy users. If you are among the users that shared the variant, the
             admin will, in turn, contact you and ask if you want to contact the user that initiated the query to
@@ -30,237 +166,99 @@
         </p>
 
         <BAlert v-if="enabled" show>
-            <div class="flex-row space-between">
-                <div class="no-shrink">Beacon sharing is <span class="bold">enabled</span> for your profile</div>
-                <div class="fill"></div>
-                <div class="no-shrink">
-                    <BButton variant="danger" @click="optOut">Disable</BButton>
-                </div>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>Beacon sharing is <span class="font-weight-bold">enabled</span> for your profile</div>
+                <GButton :disabled="togglingBeacon" color="red" @click="toggleBeacon(false)">Disable</GButton>
             </div>
         </BAlert>
 
         <!-- Setting to show when beacon is disabled -->
-        <BAlert v-if="!enabled" show>
-            <div class="flex-row space-between">
-                <div class="no-shrink">
-                    Beacon sharing is currently <span class="bold">disabled</span> - no data will be shared
-                </div>
-                <div class="fill"></div>
+        <BAlert v-else show>
+            <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <BButton variant="success" @click="optIn">Enable</BButton>
+                    Beacon sharing is currently <span class="font-weight-bold">disabled</span> - no data will be shared
                 </div>
+                <GButton :disabled="togglingBeacon" color="green" @click="toggleBeacon(true)">Enable</GButton>
             </div>
         </BAlert>
 
-        <div v-if="enabled">
-            <p>
-                You can share data by copying VCF or VCF.bgzip files to a history called
-                <span class="cursive gray-background">{{ beaconHistoryName }}</span
-                >. <br />
-                <br />
-                The Beacon database is rebuilt periodically. Therefore, changes do not go into effect immediately. If
-                you disable beacon sharing or remove a dataset from the beacon history, the corresponding variants will
-                disappear from the beacon dataset during the next rebuild.
-            </p>
-        </div>
+        <template v-if="enabled">
+            <div>
+                <p>
+                    You can share data by copying VCF or VCF.bgzip files to a history called
+                    <i>"{{ BEACON_HISTORY_NAME }}"</i>
+                </p>
+                <p>
+                    The Beacon database is rebuilt periodically. Therefore, changes do not go into effect immediately.
+                    If you disable beacon sharing or remove a dataset from the beacon history, the corresponding
+                    variants will disappear from the beacon dataset during the next rebuild.
+                </p>
+            </div>
 
-        <!-- Detailed information about the beacon history -->
-        <div v-if="enabled" class="gray-box">
-            <!-- Case: History does not exist-->
-            <div v-if="beaconHistories.length < 1" class="flex-row history-entry">
-                <div class="no-shrink">No beacon history found</div>
-                <div class="fill"></div>
-                <div class="no-shrink">
-                    <BButton @click="createBeaconHistory">Create Beacon History</BButton>
+            <!-- Detailed information about the beacon history -->
+            <div class="my-1">
+                <!-- Case: History does not exist-->
+                <BAlert v-if="!beaconHistories.length" show>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>No beacon history found</div>
+                        <GButton color="blue" @click="createBeaconHistory">
+                            <FontAwesomeIcon :icon="faPlus" fixed-width />
+                            Create Beacon History
+                        </GButton>
+                    </div>
+                </BAlert>
+
+                <div v-else>
+                    <Heading separator size="sm">Existing Beacon Histories</Heading>
+
+                    <!-- Case: History exists -->
+                    <GTable
+                        id="beacon-histories-table"
+                        striped
+                        :fields="fields"
+                        :items="beaconHistories"
+                        sort-by="create_time"
+                        sort-desc
+                        :overlay-loading="loadingHistories">
+                        <template v-slot:cell(name)="{ item }">
+                            {{ BEACON_HISTORY_NAME }}
+                            <span v-if="item.contents_active"> with {{ item.contents_active.active }} datasets </span>
+                        </template>
+                        <template v-slot:cell(create_time)="{ item }">
+                            <UtcDate v-if="item.create_time" :date="item.create_time" mode="elapsed" />
+                        </template>
+                        <template v-slot:cell(set_current)="{ item }">
+                            <GButton
+                                class="text-nowrap float-right"
+                                color="blue"
+                                :disabled="historyOperationRunning || historyStore.currentHistoryId === item.id"
+                                :disabled-title="
+                                    historyStore.currentHistoryId === item.id ? 'History is current' : undefined
+                                "
+                                @click="switchHistory(item.id)">
+                                <FontAwesomeIcon
+                                    :icon="historyOperationRunning ? faSpinner : faExchangeAlt"
+                                    fixed-width
+                                    :spin="historyOperationRunning" />
+                                Switch to History
+                            </GButton>
+                        </template>
+                    </GTable>
                 </div>
             </div>
 
-            <!-- Case: History exists -->
-            <div
-                v-for="beaconHistory in beaconHistories"
-                :key="beaconHistory.id"
-                class="flex-row history-entry"
-                :class="{
-                    'gray-border-bottom': beaconHistory.id !== beaconHistories[beaconHistories.length - 1].id,
-                }">
-                <div v-if="beaconHistory.contents" class="no-shrink">
-                    History with {{ beaconHistory.contents.length }} datasets
-                </div>
-                <div class="fill"></div>
-                <div class="no-shrink">
-                    <BButton @click="switchHistory(beaconHistory.id)">Switch to History</BButton>
-                </div>
+            <div class="mt-3">
+                <p>Datasets must fulfill the following conditions in order to be processed</p>
+                <ul>
+                    <li>must be VCF or VCF.bgzip format</li>
+                    <li>must have a human reference assigned to it (e.g. hg19)</li>
+                    <li>must define at least one sample in a dedicated genotype column</li>
+                    <li>
+                        must contain the info field <i>AC</i>, with the total number of alternate alleles in called
+                        genotypes
+                    </li>
+                </ul>
             </div>
-        </div>
-
-        <div v-if="enabled">
-            <p>Datasets must fulfill the following conditions in order to be processed</p>
-            <ul>
-                <li>must be VCF or VCF.bgzip format</li>
-                <li>must have a human reference assigned to it (e.g. hg19)</li>
-                <li>must define at least one sample in a dedicated genotype column</li>
-                <li>
-                    must contain the info field <span class="cursive">AC</span>, with the total number of alternate
-                    alleles in called genotypes
-                </li>
-            </ul>
-        </div>
-    </BModal>
+        </template>
+    </GModal>
 </template>
-
-<script>
-import axios from "axios";
-import { BAlert, BButton, BModal } from "bootstrap-vue";
-import { mapActions, storeToRefs } from "pinia";
-
-import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
-import { withPrefix } from "@/utils/redirect";
-
-export default {
-    components: { BButton, BModal, BAlert },
-    setup() {
-        const userStore = useUserStore();
-        const { currentUser } = storeToRefs(userStore);
-        return { userId: currentUser.value?.id };
-    },
-    data() {
-        return {
-            enabled: false,
-            beaconHistoryName: "Beacon Export 📡",
-            beaconHistories: [{}],
-        };
-    },
-    methods: {
-        ...mapActions(useHistoryStore, ["setCurrentHistory"]),
-        switchHistory: async function (historyId) {
-            await this.setCurrentHistory(historyId);
-        },
-        getBeaconHistories: function () {
-            axios
-                .get(withPrefix("api/histories?&keys=id,contents&q=name&qv=" + encodeURI(this.beaconHistoryName)))
-                .then((response) => {
-                    this.beaconHistories = this.removeDeletedContents(response.data);
-                })
-                .catch((error) => {
-                    console.log(error.response);
-                });
-        },
-        removeDeletedContents: function (beaconHistories) {
-            beaconHistories.forEach((beaconHistory) => {
-                beaconHistory.contents.splice(
-                    0,
-                    beaconHistory.contents.length,
-                    ...beaconHistory.contents.filter((dataset) => {
-                        return !dataset.deleted;
-                    }),
-                );
-            });
-            return beaconHistories;
-        },
-        createBeaconHistory: function () {
-            const annotation =
-                "Variants will be collected from VCF datasets in this history if beacon sharing is activated";
-            axios
-                .post(withPrefix("api/histories"), { name: this.beaconHistoryName })
-                .then((response) => {
-                    axios.put(withPrefix(`api/histories/${response.data.id}`), { annotation: annotation }).then(() => {
-                        this.getBeaconHistories();
-                    });
-                })
-                .catch((error) => {
-                    (this.errorMessages.push(error.response.data.err_msg), console.log(error.response));
-                });
-        },
-        optIn() {
-            try {
-                axios.post(withPrefix(`api/users/${this.userId}/beacon`), { enabled: true }).then((response) => {
-                    // TODO check response
-                    this.loadSettings();
-                    if (this.beaconHistories.length < 1) {
-                        this.createBeaconHistory();
-                        this.getBeaconHistories();
-                    }
-                });
-            } catch (e) {
-                console.log(e);
-            }
-        },
-        optOut() {
-            try {
-                axios.post(withPrefix(`api/users/${this.userId}/beacon`), { enabled: false }).then((response) => {
-                    // TODO check response
-                    this.loadSettings();
-                });
-            } catch (e) {
-                console.log(e);
-            }
-        },
-        onOpenModal() {
-            this.loadSettings();
-            this.getBeaconHistories();
-        },
-        async loadSettings() {
-            try {
-                await axios.get(withPrefix(`api/users/${this.userId}/beacon`)).then((response) => {
-                    this.enabled = response.data.enabled;
-                });
-            } catch (e) {
-                console.log(e);
-            }
-        },
-    },
-};
-</script>
-
-<style scoped>
-span.bold {
-    font-weight: bold;
-}
-
-.pref-icon {
-    width: 3rem;
-}
-
-.gray-box {
-    margin-top: 32px;
-    margin-bottom: 32px;
-    border: 1px solid #bdc6d0;
-    border-radius: 5px;
-    background-color: rgba(0, 0, 0, 0.04);
-}
-
-.flex-row {
-    display: flex;
-    flex-flow: row;
-}
-
-.history-entry {
-    padding: 8px;
-}
-
-.gray-border-bottom {
-    border-bottom: 1px solid #bdc6d0;
-}
-
-.space-between {
-    justify-content: space-between;
-    align-items: center;
-}
-
-.cursive {
-    font-style: italic;
-}
-
-.bold {
-    font-weight: bolder;
-}
-
-.fill {
-    width: 100%;
-}
-
-.no-shrink {
-    flex-shrink: 0;
-}
-</style>

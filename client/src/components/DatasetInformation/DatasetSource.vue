@@ -29,7 +29,7 @@ function copyLink() {
 
 <template>
     <li class="dataset-source">
-        <a v-if="browserCompatUri" v-b-tooltip.hover title="Dataset Source URL" :href="sourceUri" target="_blank">
+        <a v-if="browserCompatUri" v-g-tooltip.hover title="Dataset Source URL" :href="sourceUri" target="_blank">
             {{ source.source_uri }}
             <FontAwesomeIcon :icon="faExternalLinkAlt" />
         </a>
@@ -37,7 +37,7 @@ function copyLink() {
             {{ source.source_uri }}
         </span>
 
-        <span v-b-tooltip.hover title="Copy URI">
+        <span v-g-tooltip.hover title="Copy URI">
             <FontAwesomeIcon :icon="faCopy" style="cursor: pointer" @click="copyLink" />
         </span>
 

@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy.exceptions import error_codes
@@ -131,6 +130,36 @@ class TestRolesApi(ApiTestCase):
         assert_status_code_is(response, 404)
 
     @requires_admin
+    def test_list_with_pagination(self):
+        self._create_role()
+        self._create_role()
+        # Test limit
+        response = self._get("roles", data={"limit": 1}, admin=True)
+        assert_status_code_is(response, 200)
+        data = response.json()
+        assert len(data) == 1
+        # Test limit + offset returns different result
+        response_offset = self._get("roles", data={"limit": 1, "offset": 1}, admin=True)
+        assert_status_code_is(response_offset, 200)
+        data_offset = response_offset.json()
+        assert len(data_offset) == 1
+        assert data[0]["id"] != data_offset[0]["id"]
+
+    @requires_admin
+    def test_list_with_search(self):
+        unique = self.dataset_populator.get_random_name()
+        role = self._create_role(name=f"searchable-{unique}")
+        response = self._get("roles", data={"search": unique}, admin=True)
+        assert_status_code_is(response, 200)
+        data = response.json()
+        assert any(r["id"] == role["id"] for r in data)
+        # Search for non-existing returns empty
+        response = self._get("roles", data={"search": "nonexistent-xyz-99999"}, admin=True)
+        assert_status_code_is(response, 200)
+        data = response.json()
+        assert len(data) == 0
+
+    @requires_admin
     def test_create_only_admin(self):
         response = self._post("roles", json=True)
         assert_status_code_is(response, 403)
@@ -191,7 +220,7 @@ class TestRolesApi(ApiTestCase):
         response = self._post("roles", payload, admin=True, json=True)
         self._assert_status_code_is(response, 200)
 
-    def _create_role(self, name: Optional[str] = None, description: Optional[str] = None) -> dict[str, Any]:
+    def _create_role(self, name: str | None = None, description: str | None = None) -> dict[str, Any]:
         payload = self._build_valid_role_payload(name=name, description=description)
         response = self._post("roles", payload, admin=True, json=True)
         assert_status_code_is(response, 200)
@@ -199,7 +228,7 @@ class TestRolesApi(ApiTestCase):
         self.check_role_dict(role)
         return role
 
-    def _build_valid_role_payload(self, name: Optional[str] = None, description: Optional[str] = None):
+    def _build_valid_role_payload(self, name: str | None = None, description: str | None = None):
         name = name or self.dataset_populator.get_random_name()
         description = description or f"A test role with name: {name}."
         payload = {
@@ -210,7 +239,7 @@ class TestRolesApi(ApiTestCase):
         return payload
 
     @staticmethod
-    def check_role_dict(role_dict: dict[str, Any], assert_id: Optional[str] = None) -> None:
+    def check_role_dict(role_dict: dict[str, Any], assert_id: str | None = None) -> None:
         assert_has_keys(role_dict, "id", "name", "model_class", "url")
         assert role_dict["model_class"] == "Role"
         if assert_id is not None:

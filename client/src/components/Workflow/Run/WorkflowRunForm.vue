@@ -9,15 +9,16 @@
         <div class="h4 clearfix mb-3">
             <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
             <div class="float-right d-flex flex-gapx-1">
-                <b-button
+                <GButton
                     v-if="!disableSimpleForm"
-                    v-b-tooltip.hover.noninteractive
-                    variant="link"
+                    v-g-tooltip.hover
+                    transparent
+                    color="blue"
                     class="text-decoration-none"
                     title="Use simplified run form instead"
                     @click="$emit('showSimple')">
                     <span class="fas fa-arrow-left" /> Simple Form
-                </b-button>
+                </GButton>
                 <ButtonSpinner
                     id="run-workflow"
                     title="Run Workflow"
@@ -84,6 +85,7 @@
                 v-else
                 :model="step"
                 :validation-scroll-to="getValidationScrollTo(step.index)"
+                :history-id="currentHistoryId"
                 @onChange="onDefaultStepInputs"
                 @onValidation="onValidation" />
         </div>
@@ -104,6 +106,7 @@ import { invokeWorkflow } from "./services";
 
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep.vue";
 import WorkflowRunInputStep from "./WorkflowRunInputStep.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
@@ -114,6 +117,7 @@ import WorkflowCredentials from "@/components/Workflow/Run/WorkflowCredentials.v
 export default {
     components: {
         BAlert,
+        GButton,
         ButtonSpinner,
         FormDisplay,
         FormCard,

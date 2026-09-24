@@ -1,14 +1,18 @@
 """Integration tests for the job resubmission."""
 
 import os
+from decimal import Decimal
 
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 JOB_RESUBMISSION_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_job_conf.yml")
-JOB_RESUBMISSION_DEFAULT_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_default_job_conf.xml")
+JOB_RESUBMISSION_DEFAULT_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_default_job_conf.yml")
 JOB_RESUBMISSION_DYNAMIC_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_dynamic_job_conf.xml")
+JOB_RESUBMISSION_DYNAMIC_MULTIPLE_JOB_CONFIG_FILE = os.path.join(
+    SCRIPT_DIRECTORY, "resubmission_dynamic_multiple_job_conf.yml"
+)
 JOB_RESUBMISSION_SMALL_MEMORY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_small_memory_job_conf.xml")
 JOB_RESUBMISSION_SMALL_MEMORY_RESUBMISSION_TO_LARGE_JOB_CONFIG_FILE = os.path.join(
     SCRIPT_DIRECTORY, "resubmission_small_memory_resubmission_to_large_job_conf.xml"
@@ -58,9 +62,32 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
         config["job_resource_params_file"] = JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE
         config["job_runner_monitor_sleep"] = 1
         config["job_handler_monitor_sleep"] = 1
+        # Deliberately just the default: resubmission_count rides along with core.
         config["job_metrics"] = [{"type": "core"}]
         # Can't set job_metrics_config_file to None as default location will be used otherwise
         config["job_metrics_config_file"] = "xxx.xml"
+
+    def _job_metrics(self, history_id):
+        jobs = self.dataset_populator.history_jobs(history_id=history_id)
+        assert len(jobs) == 1
+        job_metrics = self.dataset_populator._get(f"/api/jobs/{jobs[0]['id']}/metrics").json()
+        assert job_metrics
+        return job_metrics
+
+    def _assert_resubmission_count(self, history_id, expected_count):
+        job_metrics = self._job_metrics(history_id)
+        resubmission_metric = next(metric for metric in job_metrics if metric["name"] == "resubmission_count")
+        assert resubmission_metric["plugin"] == "core"
+        assert resubmission_metric["title"] == "Resubmission Count"
+        assert resubmission_metric["value"] == str(expected_count)
+        # raw_value is the metric's numeric column rendered as a string, so its shape follows
+        # the database: PostgreSQL yields "1.0000000" for a count of one. Compare numerically.
+        assert Decimal(resubmission_metric["raw_value"]) == expected_count
+
+    def _assert_resubmission_metric_not_displayed(self, history_id):
+        """A count of zero is recorded, but the formatter keeps it out of what the API returns."""
+        job_metrics = self._job_metrics(history_id)
+        assert not [metric for metric in job_metrics if metric["name"] == "resubmission_count"]
 
     def test_retry_tools_have_resource_params(self):
         tool_show = self._get("tools/simple_constructs", data=dict(io_details=True)).json()
@@ -92,15 +119,15 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
                 },
                 history_id=history_id,
             )
-            jobs = self.dataset_populator.history_jobs(history_id=history_id)
-            assert len(jobs) == 1
-            job_metrics = self.dataset_populator._get(f"/api/jobs/{jobs[0]['id']}/metrics").json()
-            assert job_metrics
+            self._assert_resubmission_metric_not_displayed(history_id)
 
     def test_walltime_resubmission(self):
-        self._assert_job_passes(
-            resource_parameters={"test_name": "test_walltime_resubmission", "failure_state": "walltime_reached"}
-        )
+        with self.dataset_populator.test_history() as history_id:
+            self._assert_job_passes(
+                resource_parameters={"test_name": "test_walltime_resubmission", "failure_state": "walltime_reached"},
+                history_id=history_id,
+            )
+            self._assert_resubmission_count(history_id, 1)
 
     def test_memory_resubmission(self):
         self._assert_job_passes(
@@ -159,6 +186,18 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
                 "failure_state": "walltime_reached",
             }
         )
+
+    def test_multiple_resubmissions_are_counted_after_working_directory_reset(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._assert_job_fails(
+                resource_parameters={
+                    "test_name": "test_condition_attempt",
+                    "initial_target_environment": "fail_two_attempts",
+                    "failure_state": "unknown_error",
+                },
+                history_id=history_id,
+            )
+            self._assert_resubmission_count(history_id, 2)
 
     def test_condition_seconds_running(self):
         self._assert_job_passes(
@@ -220,6 +259,39 @@ class TestJobResubmissionDynamicIntegration(_BaseResubmissionIntegrationTestCase
         config["job_config_file"] = JOB_RESUBMISSION_DYNAMIC_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
+        self._assert_job_passes()
+
+
+class TestJobResubmissionDynamicMultipleIntegration(_BaseResubmissionIntegrationTestCase):
+    """Verify resubmission through chained dynamic destinations more than once.
+
+    Three dynamic destinations form a chain: initial -> secondary -> tertiary.
+    Each link uses ``failure_runner`` and resubmits to the next link via its
+    ``resubmit.environment``; the last link routes to ``local`` (which passes).
+
+    Each rule also reads ``job.destination_params["chain_attempt"]`` set by
+    the prior link and asserts on its value, so the test simultaneously
+    verifies that:
+
+    1. Every resubmit re-walks the chain from the persisted dynamic intent
+       rather than reusing the cached resolved destination of the previous
+       attempt (chain re-walk).
+    2. Prior attempt's ``destination_params`` survive the resubmit handler
+       and are visible to the rule on the next pickup (params carry-forward).
+
+    A regression in either property surfaces as a ``JobMappingException``
+    raised inside the rule rather than a silently-wrong destination, so the
+    job fails the test instead of passing with the wrong behaviour.
+    """
+
+    framework_tool_and_types = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["job_config_file"] = JOB_RESUBMISSION_DYNAMIC_MULTIPLE_JOB_CONFIG_FILE
+
+    def test_chained_dynamic_resubmission_with_params_carry_forward(self):
         self._assert_job_passes()
 
 

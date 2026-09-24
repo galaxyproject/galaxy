@@ -59,7 +59,6 @@ def test_validate_email_str():
 
 
 class TestIsEmailBanned:
-
     mock_ban_list = ["ab@foo.com", "ab@gmail.com", "Not.Canonical+email+gmail+address@gmail.com"]
 
     def test_default_canonical_rules(self, monkeypatch, appconfig):
@@ -80,7 +79,7 @@ class TestIsEmailBanned:
         assert is_email_banned("ab+bar@gmail.com", "_", rules)
         assert not is_email_banned("ab-bar@gmail.com", "_", rules)  # different sub-addressing delimiter
 
-    def test_no_canonical_rules(self, monkeypatch, appconfig):
+    def test_no_canonical_rules(self, monkeypatch):
         """No rules loaded."""
         monkeypatch.setattr(validate_user_input, "_read_email_ban_list", lambda a: self.mock_ban_list)
 
@@ -97,7 +96,7 @@ class TestIsEmailBanned:
         assert not is_email_banned("a.b@gmail.com", "_", rules)
         assert not is_email_banned("ab+bar@gmail.com", "_", rules)
 
-    def test_custom_canonical_rules(self, monkeypatch, appconfig):
+    def test_custom_canonical_rules(self, monkeypatch):
         """No rules loaded."""
         monkeypatch.setattr(validate_user_input, "_read_email_ban_list", lambda a: self.mock_ban_list)
 

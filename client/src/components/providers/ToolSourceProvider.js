@@ -7,7 +7,10 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
 
 async function toolSource({ id, uuid }) {
-    const url = `${getAppRoot()}api/tools/${uuid || id}/raw_tool_source`;
+    let url = `${getAppRoot()}api/tools/${id || uuid}/raw_tool_source`;
+    if (uuid) {
+        url += `?tool_uuid=${uuid}`;
+    }
     try {
         const { data, headers } = await axios.get(url);
         const result = {};

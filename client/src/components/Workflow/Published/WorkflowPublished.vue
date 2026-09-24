@@ -68,6 +68,8 @@ const initialPosition = computed(() => ({
 /** Workflow steps force typed as `Steps` from the `workflowStepStore` */
 const workflowSteps = computed(() => (workflow.value?.steps as unknown as Steps) ?? []);
 
+const showHeader = computed(() => props.showHeading || props.showButtons);
+
 async function load() {
     errorMessage.value = "";
 
@@ -117,7 +119,7 @@ defineExpose({
     <div id="columns" class="workflow-published">
         <ActivityBar v-if="!props.embed && !props.quickView" />
 
-        <div id="center" class="container-root" :class="{ 'm-3': !props.quickView }">
+        <div id="center" class="container-root" :class="{ 'p-3': !props.quickView }">
             <div v-if="loading">
                 <Heading h1 separator size="lg">
                     <FontAwesomeIcon :icon="faSpinner" spin />
@@ -131,8 +133,8 @@ defineExpose({
                     {{ errorMessage }}
                 </BAlert>
             </div>
-            <div v-else-if="workflowInfo" class="published-workflow">
-                <div v-if="props.showHeading || props.showButtons" class="workflow-header">
+            <div v-else-if="workflowInfo" class="published-workflow" :class="{ 'has-header': showHeader }">
+                <div v-if="showHeader" class="workflow-header">
                     <Heading v-if="props.showHeading" h1 separator inline size="lg" class="flex-grow-1 mb-0">
                         <span v-if="props.showAbout"> Workflow Preview </span>
                         <span v-else> {{ workflowInfo.name }} </span>
@@ -177,34 +179,51 @@ defineExpose({
     .container-root {
         container-type: inline-size;
         width: 100%;
+        height: 100%;
+        min-height: 0;
         overflow: auto;
     }
 
     .published-workflow {
         display: grid;
         gap: 0.5rem 1rem;
-        grid-template-columns: auto auto 30%;
+        grid-template-columns: minmax(0, 1fr) minmax(18rem, 30%);
+        grid-template-rows: minmax(0, 1fr);
 
         height: 100%;
+        min-height: 0;
+
+        &.has-header {
+            grid-template-rows: auto minmax(0, 1fr);
+        }
 
         .workflow-header {
-            grid-column: 1 / span 3;
+            grid-column: 1 / -1;
 
             display: flex;
+            align-items: center;
+            gap: 1rem;
             justify-content: flex-end;
         }
 
         .workflow-preview {
-            grid-column: 1 / span 2;
+            grid-column: 1;
+            min-height: 0;
 
             &.only-preview {
-                grid-column: 1 / span 3;
+                grid-column: 1 / -1;
+            }
+
+            &:deep(.card-body) {
+                height: 100%;
+                min-height: 0;
             }
         }
 
         &:deep(.workflow-information-container) {
             height: 100%;
             max-width: 500px;
+            align-self: stretch;
             overflow: auto;
         }
     }
@@ -212,10 +231,11 @@ defineExpose({
     @container (max-width: 900px) {
         .published-workflow {
             height: unset;
-            grid-template-columns: auto;
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: auto auto auto;
 
             .workflow-preview {
-                grid-column: 1 / span 3;
+                grid-column: 1;
                 height: 450px;
             }
 
@@ -225,7 +245,7 @@ defineExpose({
             }
 
             .workflow-information-container {
-                grid-column: 1 / span 3;
+                grid-column: 1;
             }
         }
     }

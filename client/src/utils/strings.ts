@@ -45,7 +45,10 @@ export function snakeCaseToTitleCase(str: string): string {
 /**
  * Capitalize the first letter of a string
  */
-export function capitalizeFirstLetter(str: string): string {
+export function capitalizeFirstLetter(str?: string): string {
+    if (!str) {
+        return "";
+    }
     str = str.trim();
     return str.charAt(0).toUpperCase() + str.slice(1);
 }

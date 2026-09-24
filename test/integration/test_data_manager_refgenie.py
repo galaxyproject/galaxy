@@ -88,13 +88,15 @@ class TestDataManagerIntegration(integration_util.IntegrationTestCase, UsesShed)
                     history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT
                 )
 
-        entries = self._app.tool_data_tables.get("all_fasta").get_entries("dbkey", "dm6", "dbkey")
+        table = self._app.tool_data_tables.get("all_fasta")
+        entries = table.get_entries("dbkey", "dm6", "dbkey")
         assert "dm6" in entries
 
-        self._app.tool_data_tables.get("all_fasta").remove_entry(
-            self._app.tool_data_tables.get("all_fasta").to_dict(view="element")["fields"][0]
-        )
-        entries = self._app.tool_data_tables.get("all_fasta").get_entries("dbkey", "dm6", "dbkey")
+        # Other tests may already have populated this shared .loc file, so
+        # remove the row this test added instead of assuming it is row zero.
+        dm6_entry = next(fields for fields in table.get_fields() if fields[table.columns["dbkey"]] == "dm6")
+        table.remove_entry(dm6_entry)
+        entries = table.get_entries("dbkey", "dm6", "dbkey")
         assert not entries
 
     def test_data_manager_manual_refgenie_dbkeys(self):
@@ -113,13 +115,14 @@ class TestDataManagerIntegration(integration_util.IntegrationTestCase, UsesShed)
                     history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT
                 )
 
-        entries = self._app.tool_data_tables.get("__dbkeys__").get_entries("name", "dm7", "name")
+        table = self._app.tool_data_tables.get("__dbkeys__")
+        entries = table.get_entries("name", "dm7", "name")
         assert "dm7" in entries
 
-        self._app.tool_data_tables.get("__dbkeys__").remove_entry(
-            self._app.tool_data_tables.get("__dbkeys__").to_dict(view="element")["fields"][0]
-        )
-        entries = self._app.tool_data_tables.get("all_fasta").get_entries("name", "dm7", "name")
+        # Refgenie can contribute its own rows before the data-manager row.
+        dm7_entry = next(fields for fields in table.get_fields() if fields[table.columns["name"]] == "dm7")
+        table.remove_entry(dm7_entry)
+        entries = table.get_entries("name", "dm7", "name")
         assert not entries
 
     @classmethod

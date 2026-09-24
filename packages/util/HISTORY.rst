@@ -4,10 +4,103 @@ History
 .. to_doc
 
 ---------
-26.1.dev0
+26.2.dev0
 ---------
 
 
+
+-------------------
+26.1.1 (2026-08-04)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+26.1.0 (2026-08-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Use correct binary unit prefixes (KiB/MiB/GiB) by `@dannon <https://github.com/dannon>`_ in `#22153 <https://github.com/galaxyproject/galaxy/pull/22153>`_
+* Always attempt to build tool request for new API endpoint by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22894 <https://github.com/galaxyproject/galaxy/pull/22894>`_
+* Default S3 request checksum to when_required for non-AWS endpoints by `@mvdbeek <https://github.com/mvdbeek>`_ in `#23034 <https://github.com/galaxyproject/galaxy/pull/23034>`_
+
+============
+Enhancements
+============
+
+* Allow etree.XMLParser to resolve external entities by `@jancrichter <https://github.com/jancrichter>`_ in `#17504 <https://github.com/galaxyproject/galaxy/pull/17504>`_
+* Improvements for ssh file sources by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#21646 <https://github.com/galaxyproject/galaxy/pull/21646>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#21707 <https://github.com/galaxyproject/galaxy/pull/21707>`_
+* Handle missing \`future\` package in galaxy-util by `@mr-c <https://github.com/mr-c>`_ in `#21924 <https://github.com/galaxyproject/galaxy/pull/21924>`_
+* Use \`\`os.path.join()\`\` or \`\`pathlib.Path\`\` instead of f-strings for filesystem paths by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21954 <https://github.com/galaxyproject/galaxy/pull/21954>`_
+* Migrate Python packages to \`src\` layout and pure namespace packages by `@mr-c <https://github.com/mr-c>`_ in `#21977 <https://github.com/galaxyproject/galaxy/pull/21977>`_
+* More precise \`\`metric_prefix()\`\` implementation by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22155 <https://github.com/galaxyproject/galaxy/pull/22155>`_
+* Test against psycopg3 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22210 <https://github.com/galaxyproject/galaxy/pull/22210>`_
+* Support IEC units in \`\`size_to_bytes()\`\`, add \`\`QuotaManager\`\` unit tests by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22237 <https://github.com/galaxyproject/galaxy/pull/22237>`_
+* Allow attaching OIDC access token to DRS requests by `@marius-mather <https://github.com/marius-mather>`_ in `#22484 <https://github.com/galaxyproject/galaxy/pull/22484>`_
+* Add \`\`RetrySession\`\` to automatically retry idempotent HTTP requests by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22567 <https://github.com/galaxyproject/galaxy/pull/22567>`_
+* Use now() wrapper instead of datetime.now() by `@bgruening <https://github.com/bgruening>`_ in `#22579 <https://github.com/galaxyproject/galaxy/pull/22579>`_
+* Add support for file checksums in Zenodo/Invenio by `@davelopez <https://github.com/davelopez>`_ in `#22691 <https://github.com/galaxyproject/galaxy/pull/22691>`_
+
+=============
+Other changes
+=============
+
+* Update version to 26.1.rc1 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22764 <https://github.com/galaxyproject/galaxy/pull/22764>`_
+
+-------------------
+26.0.1 (2026-06-04)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fixes looks_like_flattened_repeat_key helper by `@guerler <https://github.com/guerler>`_ in `#22578 <https://github.com/galaxyproject/galaxy/pull/22578>`_
+
+============
+Enhancements
+============
+
+* Replace per-term joins in workflow search with EXISTS subqueries by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22548 <https://github.com/galaxyproject/galaxy/pull/22548>`_
+
+-------------------
+26.0.0 (2026-04-08)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Plumbing for tracking potential fixes for transient failures (and a fix demonstrating it) by `@jmchilton <https://github.com/jmchilton>`_ in `#21243 <https://github.com/galaxyproject/galaxy/pull/21243>`_
+* Remove unused handle_tool_shed_url_protocol by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21925 <https://github.com/galaxyproject/galaxy/pull/21925>`_
+* Raise MessageException instead of generic Exception in rules_dsl by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22285 <https://github.com/galaxyproject/galaxy/pull/22285>`_
+* Improve timeout and error handling in ``/api/proxy`` endpoint by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22297 <https://github.com/galaxyproject/galaxy/pull/22297>`_
+* Skip WorkflowHub tests when workflowhub.eu is down by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22302 <https://github.com/galaxyproject/galaxy/pull/22302>`_
+* Discard rest of line in chunks in iter_start_of_line by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22332 <https://github.com/galaxyproject/galaxy/pull/22332>`_
+* Fix Content-Disposition header with trailing whitespace by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22379 <https://github.com/galaxyproject/galaxy/pull/22379>`_
+
+============
+Enhancements
+============
+
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#21043 <https://github.com/galaxyproject/galaxy/pull/21043>`_
+* Add Playwright Backend Support to Galaxy Browser Automation Framework by `@jmchilton <https://github.com/jmchilton>`_ in `#21102 <https://github.com/galaxyproject/galaxy/pull/21102>`_
+* Add Custom Validation for User-Configured Templates by `@davelopez <https://github.com/davelopez>`_ in `#21155 <https://github.com/galaxyproject/galaxy/pull/21155>`_
+* Add type annotations to job handling code by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21171 <https://github.com/galaxyproject/galaxy/pull/21171>`_
+* Richer tracking of transient failures. by `@jmchilton <https://github.com/jmchilton>`_ in `#21227 <https://github.com/galaxyproject/galaxy/pull/21227>`_
+* Update fastapi to 0.123.4 and ``get_openapi()`` fork by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21384 <https://github.com/galaxyproject/galaxy/pull/21384>`_
+* Add AI Agent Framework and ChatGXY 2.0 by `@dannon <https://github.com/dannon>`_ in `#21434 <https://github.com/galaxyproject/galaxy/pull/21434>`_
+* Fix use of function, method and argument names deprecated in pyparsing 3.0.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21517 <https://github.com/galaxyproject/galaxy/pull/21517>`_
+* Apply 2026 black style by `@galaxybot <https://github.com/galaxybot>`_ in `#21618 <https://github.com/galaxyproject/galaxy/pull/21618>`_
+* Add tests for oidc usernames by `@nuwang <https://github.com/nuwang>`_ in `#21655 <https://github.com/galaxyproject/galaxy/pull/21655>`_
+* Various fixes to file source template's validation system by `@davelopez <https://github.com/davelopez>`_ in `#21704 <https://github.com/galaxyproject/galaxy/pull/21704>`_
 
 -------------------
 25.1.2 (2026-03-09)

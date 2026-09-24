@@ -4,9 +4,6 @@ Mothur Metagenomics Datatypes
 
 import logging
 import re
-from typing import (
-    Optional,
-)
 
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import MetadataElement
@@ -126,7 +123,7 @@ class Sabund(Otu):
         """
         super().__init__(**kwd)
 
-    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: HasMetadata | None = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
@@ -170,10 +167,10 @@ class GroupAbund(Otu):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: HasMetadata | None = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, skip: Optional[int] = 1, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, skip: int | None = 1, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         # See if file starts with header line
@@ -351,10 +348,10 @@ class DistanceMatrix(Text):
         no_value="?",
     )
 
-    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: HasMetadata | None = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, skip: Optional[int] = 0, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, skip: int | None = 0, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
         headers = iter_headers(dataset.get_file_name(), sep="\t")
@@ -376,7 +373,7 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
         """Initialize secondary structure map datatype"""
         super().__init__(**kwd)
 
-    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: HasMetadata | None = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
@@ -441,7 +438,7 @@ class SquareDistanceMatrix(DistanceMatrix):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: HasMetadata | None = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
@@ -507,7 +504,7 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
         self.column_names = ["Sequence", "Sequence", "Distance"]
         self.column_types = ["str", "str", "float"]
 
-    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, skip: Optional[int] = None, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, skip: int | None = None, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
@@ -599,8 +596,8 @@ class Group(Tabular):
         self,
         dataset: DatasetProtocol,
         overwrite: bool = True,
-        skip: Optional[int] = None,
-        max_data_lines: Optional[int] = None,
+        skip: int | None = None,
+        max_data_lines: int | None = None,
         **kwd,
     ) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=skip, max_data_lines=max_data_lines, **kwd)
@@ -847,8 +844,8 @@ class CountTable(Tabular):
         self,
         dataset: DatasetProtocol,
         overwrite: bool = True,
-        skip: Optional[int] = 1,
-        max_data_lines: Optional[int] = None,
+        skip: int | None = 1,
+        max_data_lines: int | None = None,
         **kwd,
     ) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
@@ -1059,8 +1056,8 @@ class SffFlow(Tabular):
         self,
         dataset: DatasetProtocol,
         overwrite: bool = True,
-        skip: Optional[int] = 1,
-        max_data_lines: Optional[int] = None,
+        skip: int | None = 1,
+        max_data_lines: int | None = None,
         **kwd,
     ) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=1, max_data_lines=max_data_lines, **kwd)
@@ -1072,7 +1069,7 @@ class SffFlow(Tabular):
         except Exception as e:
             log.warning(f"SffFlow set_meta {e}")
 
-    def make_html_table(self, dataset: DatasetProtocol, skipchars: Optional[list] = None, **kwargs) -> str:
+    def make_html_table(self, dataset: DatasetProtocol, skipchars: list | None = None, **kwargs) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []
         try:

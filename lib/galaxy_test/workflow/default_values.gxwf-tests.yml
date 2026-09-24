@@ -11,9 +11,7 @@
     Test that explicit null is not replaced and fails
   expect_failure: true
   job:
-    required_int_with_default:
-      type: raw
-      value: null
+    required_int_with_default: null
   outputs:
     out:
       class: File
@@ -24,9 +22,7 @@
     Test that empty string is not replaced and fails
   expect_failure: true
   job:
-    required_int_with_default:
-      type: raw
-      value: ""
+    required_int_with_default: ""
   outputs:
     out:
       class: File
