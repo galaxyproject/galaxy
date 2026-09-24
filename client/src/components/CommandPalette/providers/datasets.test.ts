@@ -34,6 +34,7 @@ function makeDataset(id: string, name: string, updateTime: string): HDASummary {
         id,
         name,
         extension: "txt",
+        history_content_type: "dataset",
         state: "ok",
         history_id: "history_1",
         update_time: updateTime,
