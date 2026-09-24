@@ -18,6 +18,7 @@ import pytest
 import yaml
 from cwl_utils.expression import do_eval as cwl_do_eval
 from cwl_utils.types import CWLObjectType
+from gxformat2 import python_to_workflow
 
 from galaxy.tool_util.lint import lint_user_tool_source
 from galaxy.tool_util_models import UserToolSource
@@ -95,7 +96,13 @@ def _blocks(language: str) -> List[Tuple[str, str]]:
     ]
 
 
-YAML_BLOCKS = _blocks("yaml")
+def _is_workflow(source: str) -> bool:
+    document = yaml.safe_load(source)
+    return isinstance(document, dict) and document.get("class") == "GalaxyWorkflow"
+
+
+YAML_BLOCKS = [(section_id, source) for section_id, source in _blocks("yaml") if not _is_workflow(source)]
+WORKFLOW_BLOCKS = [(section_id, source) for section_id, source in _blocks("yaml") if _is_workflow(source)]
 JSON_BLOCKS = _blocks("json")
 CONSOLE_BLOCKS = _blocks("console")
 
@@ -252,6 +259,23 @@ def test_documented_yaml_fragments_validate_and_lint(section_id: str, source: st
     tool = _tool_from_fragment(section_id, source)
 
     assert lint_user_tool_source(tool) == []
+
+
+@pytest.mark.parametrize(
+    ("section_id", "source"),
+    WORKFLOW_BLOCKS,
+    ids=[section_id for section_id, _ in WORKFLOW_BLOCKS],
+)
+def test_documented_workflows_convert_with_embedded_tools(section_id: str, source: str) -> None:
+    native = python_to_workflow(yaml.safe_load(source), None, workflow_directory=None)
+    tool_steps = [step for step in native["steps"].values() if step["type"] == "tool"]
+    assert tool_steps, section_id
+
+    for step in tool_steps:
+        tool = UserToolSource.model_validate(step["tool_representation"])
+        assert lint_user_tool_source(tool) == [], section_id
+        evaluated_command = _do_eval(tool.shell_command, _runtime_inputs(tool), _javascript_requirements(tool))
+        _assert_shell_syntax(evaluated_command)
 
 
 @pytest.mark.parametrize(
