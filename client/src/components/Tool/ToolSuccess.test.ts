@@ -22,6 +22,10 @@ vi.mock("@/composables/config", () => ({
     useConfig: vi.fn(),
 }));
 
+vi.mock("@/api/invocations", () => ({
+    fetchInvocationForJob: vi.fn(),
+}));
+
 vi.mock("axios", () => ({
     default: {
         get: vi.fn().mockResolvedValue({ data: [] }),
@@ -39,7 +43,6 @@ const { server, http } = useServerMock();
 
 beforeEach(() => {
     server.use(
-        http.get("/api/invocations", ({ response }) => response(200).json([])),
         http.get("/api/jobs/{job_id}", ({ response, params }) =>
             response(200).json({ ...jobInformationResponse, id: params.job_id, state: "ok" } as never),
         ),
@@ -96,12 +99,6 @@ async function mountToolSuccess(latestResponse: Record<string, unknown> | null, 
         pinia: testPinia,
         stubs: {
             FontAwesomeIcon: true,
-            JobHeader: true,
-            JobState: true,
-            RerunJobButton: true,
-            Webhook: true,
-            ToolRecommendation: true,
-            ToolSuccessOutputs: true,
         },
     }) as VueWrapper;
 
