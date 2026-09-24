@@ -5,7 +5,6 @@ from abc import (
     abstractmethod,
 )
 
-from galaxy.managers import workflows
 from galaxy.managers.markdown_util import (
     internal_galaxy_markdown_to_pdf,
     populate_invocation_markdown,
@@ -37,7 +36,7 @@ class WorkflowMarkdownGeneratorPlugin(WorkflowReportGeneratorPlugin, metaclass=A
 
     def generate_report_json(self, trans, invocation: WorkflowInvocation, runtime_report_config_json=None):
         """ """
-        workflow_manager = workflows.WorkflowsManager(trans.app)
+        workflow_manager = trans.app.workflow_manager
         workflow_encoded_id = trans.app.security.encode_id(invocation.workflow_id)
         workflow = workflow_manager.get_stored_accessible_workflow(trans, workflow_encoded_id, by_stored_id=False)
         internal_markdown = self._generate_internal_markdown(

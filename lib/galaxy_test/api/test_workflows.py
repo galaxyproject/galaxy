@@ -10370,6 +10370,55 @@ outer_input:
             with self.dataset_populator.test_history() as history_id:
                 self._run_user_defined_tool_workflow(format2_reimported_id, history_id)
 
+    def test_user_defined_tool_workflow_export_imported_by_another_user(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            workflow_id = self.workflow_populator.create_workflow(
+                self._build_user_defined_tool_run_workflow_dict("basecommand", unprivileged_tool["uuid"])
+            )
+            native = self.workflow_populator.download_workflow(workflow_id, style="ga")
+        with self._different_user(), self.dataset_populator.user_tool_execute_permissions():
+            imported_id = self.workflow_populator.import_workflow(native)["id"]
+            self._assert_user_defined_tool_step_copied(imported_id, unprivileged_tool)
+
+    def test_user_defined_tool_workflow_shared_import_by_another_user(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            workflow_id = self.workflow_populator.create_workflow(
+                self._build_user_defined_tool_run_workflow_dict("basecommand", unprivileged_tool["uuid"]),
+                publish=True,
+            )
+        with self._different_user(), self.dataset_populator.user_tool_execute_permissions():
+            import_response = self.__import_workflow(workflow_id)
+            self._assert_status_code_is(import_response, 200)
+            self._assert_user_defined_tool_step_copied(import_response.json()["id"], unprivileged_tool)
+
+    def test_user_defined_tool_workflow_shared_import_requires_role(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            workflow_id = self.workflow_populator.create_workflow(
+                self._build_user_defined_tool_run_workflow_dict("basecommand", unprivileged_tool["uuid"]),
+                publish=True,
+            )
+        with self._different_user():
+            import_response = self.__import_workflow(workflow_id)
+            self._assert_status_code_is(import_response, 403)
+
+    def _assert_user_defined_tool_step_copied(self, workflow_id: str, unprivileged_tool: dict[str, Any]) -> None:
+        step = self.workflow_populator.download_workflow(workflow_id, style="instance")["steps"]["1"]
+        assert step["tool_id"] == unprivileged_tool["tool_id"]
+        assert step["tool_uuid"] not in (None, unprivileged_tool["uuid"])
+        owned_uuids = [tool["uuid"] for tool in self.dataset_populator.get_unprivileged_tools()]
+        assert step["tool_uuid"] in owned_uuids
+        with self.dataset_populator.test_history() as history_id:
+            self._run_user_defined_tool_workflow(workflow_id, history_id)
+
     def _invoke_paused_workflow(self, history_id):
         workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
         workflow_id = self.workflow_populator.create_workflow(workflow)

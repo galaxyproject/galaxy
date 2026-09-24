@@ -2413,28 +2413,26 @@ class ToolModule(WorkflowModule):
             if tool_id:
                 tool_id = remove_version_from_guid(tool_id) or tool_id
             kwds = dict(kwds, exact_tools=False)
-        if tool_id is None and tool_uuid is None:
-            tool_representation = d.get("tool_representation")
-            if tool_representation:
-                if tool_representation.get("class") == "GalaxyUserTool":
-                    # User-defined tool embedded in the workflow: create it as a
-                    # private UDT owned by the importing user. Requires
-                    # USER_TOOL_EXECUTE; create_unprivileged_tool raises
-                    # InsufficientPermissionsException otherwise.
-                    if trans.user is None:
-                        raise exceptions.InsufficientPermissionsException(
-                            "User is not allowed to run unprivileged tools"
-                        )
-                    unprivileged_request = DynamicUnprivilegedToolCreatePayload(representation=tool_representation)
-                    dynamic_tool = trans.app.dynamic_tool_manager.create_unprivileged_tool(
-                        trans.user, unprivileged_request
-                    )
-                else:
-                    if not trans.user_is_admin:
-                        raise exceptions.AdminRequiredException("Only admin users can create tools dynamically.")
-                    create_request = DynamicToolCreatePayload(src="representation", representation=tool_representation)
-                    dynamic_tool = trans.app.dynamic_tool_manager.create_tool(create_request)
+        tool_representation = d.get("tool_representation")
+        if tool_representation and tool_representation.get("class") == "GalaxyUserTool":
+            # User-defined tool embedded in the workflow. A referenced tool the
+            # importing user owns is reused; otherwise (an export by another
+            # user or from another Galaxy) the embedded definition becomes a
+            # private UDT owned by the importing user. Requires
+            # USER_TOOL_EXECUTE; create_unprivileged_tool raises
+            # InsufficientPermissionsException otherwise.
+            if trans.user is None:
+                raise exceptions.InsufficientPermissionsException("User is not allowed to run unprivileged tools")
+            if not (tool_uuid and trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)):
+                unprivileged_request = DynamicUnprivilegedToolCreatePayload(representation=tool_representation)
+                dynamic_tool = trans.app.dynamic_tool_manager.create_unprivileged_tool(trans.user, unprivileged_request)
                 tool_uuid = dynamic_tool.uuid
+        elif tool_representation and tool_id is None and tool_uuid is None:
+            if not trans.user_is_admin:
+                raise exceptions.AdminRequiredException("Only admin users can create tools dynamically.")
+            create_request = DynamicToolCreatePayload(src="representation", representation=tool_representation)
+            dynamic_tool = trans.app.dynamic_tool_manager.create_tool(create_request)
+            tool_uuid = dynamic_tool.uuid
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException(f"No content id could be located for for step [{d}]")
         module = super().from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)

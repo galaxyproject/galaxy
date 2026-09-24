@@ -62,6 +62,7 @@ from galaxy.managers.base import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.executables import artifact_class
+from galaxy.managers.tools import DynamicToolManager
 from galaxy.model import (
     History,
     StoredWorkflow,
@@ -85,6 +86,7 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import WorkflowIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
 from galaxy.tools.parameters import (
     params_to_incoming,
     visit_input_values,
@@ -154,6 +156,16 @@ INDEX_SEARCH_FILTERS = {
 }
 
 
+def _tool_steps(workflow: model.Workflow) -> list[model.WorkflowStep]:
+    steps = []
+    for step in workflow.steps:
+        if step.type == "tool":
+            steps.append(step)
+        elif step.type == "subworkflow" and step.subworkflow:
+            steps.extend(_tool_steps(step.subworkflow))
+    return steps
+
+
 class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], deletable.DeletableManagerMixin):
     """Handle CRUD type operations related to workflows. More interesting
     stuff regarding workflow execution, step sorting, etc... can be found in
@@ -164,9 +176,32 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
     foreign_key_name = "stored_workflow"
     user_share_model = model.StoredWorkflowUserShareAssociation
 
-    def __init__(self, app: MinimalManagerApp):
+    def __init__(self, app: MinimalManagerApp, dynamic_tool_manager: DynamicToolManager):
         super().__init__(app)
         self.app = app
+        self.dynamic_tool_manager = dynamic_tool_manager
+
+    def copy_workflow_for_user(self, user: model.User, workflow: model.Workflow) -> model.Workflow:
+        """Copy ``workflow`` for ``user``, with private copies of the user-defined tools they don't own."""
+        # Created before copying, so a user who may not create user-defined tools
+        # gets an error instead of a workflow they cannot run.
+        tool_copies: dict[int, model.DynamicTool] = {}
+        for step in _tool_steps(workflow):
+            dynamic_tool = step.dynamic_tool
+            if dynamic_tool is None or dynamic_tool.public or dynamic_tool.id in tool_copies:
+                continue
+            if dynamic_tool.uuid is None or self.dynamic_tool_manager.get_unprivileged_tool_by_uuid(
+                user, dynamic_tool.uuid
+            ):
+                continue
+            tool_copies[dynamic_tool.id] = self.dynamic_tool_manager.create_unprivileged_tool(
+                user, DynamicUnprivilegedToolCreatePayload(representation=dynamic_tool.value)
+            )
+        copied_workflow = workflow.copy(user=user)
+        for step in _tool_steps(copied_workflow):
+            if step.dynamic_tool is not None and step.dynamic_tool.id in tool_copies:
+                step.dynamic_tool = tool_copies[step.dynamic_tool.id]
+        return copied_workflow
 
     def index_query(
         self, trans: ProvidesUserContext, payload: WorkflowIndexQueryPayload, include_total_count: bool = False
