@@ -26,10 +26,10 @@ import type { CardBadge } from "../Common/GCard.types";
 import { useToolsListCardActions } from "./useToolsListCardActions";
 
 import GButton from "../BaseComponents/GButton.vue";
-import GPopover from "../BaseComponents/GPopover.vue";
 import GCard from "../Common/GCard.vue";
 import ToolHelp from "../Tool/ToolHelp.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 
 type OntologyBadge = {
     id: string;

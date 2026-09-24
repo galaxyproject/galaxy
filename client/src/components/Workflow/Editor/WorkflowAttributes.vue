@@ -179,7 +179,6 @@ const BEST_PRACTICE_HIGHLIGHT_TIME = 4000;
 export default {
     name: "WorkflowAttributes",
     components: {
-        GPopover,
         StatelessTags,
         LicenseSelector,
         CreatorEditor,
@@ -187,6 +186,7 @@ export default {
         ActivityPanel,
         GButton,
         GLink,
+        GPopover,
         WorkflowVersionSelector,
     },
     props: {

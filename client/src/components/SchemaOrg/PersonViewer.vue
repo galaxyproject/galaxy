@@ -61,9 +61,9 @@ import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
-        GPopover,
         FontAwesomeIcon,
         GLink,
+        GPopover,
         GTable,
     },
     mixins: [ThingViewerMixin],
