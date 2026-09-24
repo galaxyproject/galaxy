@@ -86,7 +86,7 @@ async function searchVisualizations(
         await ensureHydrated();
     }
     const cached = rankPaletteItems(store.getVisualizations(VARIANT).map(visualizationToItem), query);
-    if (cacheOnly || !query || cached.length >= limit) {
+    if (cacheOnly || query.length < PALETTE_LIMITS.minBackendQuery || cached.length >= limit) {
         return cached.slice(0, limit);
     }
     const fetched = await store.fetchVisualizations(VARIANT, { search: query, limit });

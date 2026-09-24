@@ -97,10 +97,15 @@ async function storeFirstItems(
     }
 
     const nothingCached = pageStore.getPages(variant).length === 0;
-    const needsMore = items.length < limit && !pageStore.isComplete(variant);
+    // a query too short to search is answered from the listing alone
+    const searchable = query.length >= PALETTE_LIMITS.minBackendQuery;
+    const needsMore = (searchable || !query) && items.length < limit && !pageStore.isComplete(variant);
     if (!pageStore.isLoaded(variant) || needsMore) {
         try {
-            await pageStore.fetchPages(variant, query ? { search: query, limit } : { limit: PALETTE_LIMITS.section });
+            await pageStore.fetchPages(
+                variant,
+                searchable ? { search: query, limit } : { limit: PALETTE_LIMITS.section },
+            );
             items = rankPaletteItems(cachedItems(variant), query);
         } catch (error) {
             if (nothingCached) {

@@ -184,6 +184,16 @@ describe("reportsProvider", () => {
             expect(sections.at(-1)?.items.map((item) => item.id)).toEqual(["pages:a"]);
         });
 
+        it("answers a single character from the listing without searching", async () => {
+            // the total says there is more, so only the length holds the query back
+            vi.mocked(loadPages).mockResolvedValue({ data: [mockPage("a", { title: "Notes" })], totalMatches: 5 });
+
+            const sections = (await reportsProvider.searchScoped?.(scope("r"), "n", makeCtx())) ?? [];
+
+            expect(loadPages).not.toHaveBeenCalledWith(expect.objectContaining({ search: "n" }));
+            expect(sections.at(-1)?.items.map((item) => item.id)).toEqual(["pages:a"]);
+        });
+
         it("refreshes a complete cache in the background once it goes stale", async () => {
             mockPages([mockPage("a")]);
             await reportsProvider.searchScoped?.(scope("r"), "", makeCtx());
