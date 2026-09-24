@@ -110,7 +110,7 @@ class QuotaManager:
             return None
         try:
             return util.size_to_bytes(amount)
-        except ValueError:
+        except (AssertionError, ValueError):
             return False
 
     def rename_quota(self, quota: Quota, params) -> str | None:
@@ -157,31 +157,40 @@ class QuotaManager:
             else:
                 return None
 
-    def edit_quota(self, quota: Quota, params) -> str | None:
-        if params.amount.lower() in ("unlimited", "none", "no limit"):
-            new_amount = None
-        else:
-            try:
-                new_amount = util.size_to_bytes(params.amount)
-            except (AssertionError, ValueError):
-                new_amount = False
-        if not params.amount:
+    def check_update(self, quota: Quota, params, manage_associations: bool) -> None:
+        """Reject an update before any part of it is applied, since each update step commits on its own."""
+        if params.amount:
+            self._parse_new_amount(params.amount, params.operation)
+        if manage_associations:
+            will_be_default = params.default not in (None, "no") or (params.default is None and quota.default)
+            if will_be_default:
+                raise ActionInputError("Default quotas cannot be associated with specific users and groups.")
+            if None in (self.sa_session.get(model.User, x) for x in util.listify(params.in_users)):
+                raise ActionInputError("One or more invalid user id has been provided.")
+            if None in (self.sa_session.get(model.Group, x) for x in util.listify(params.in_groups)):
+                raise ActionInputError("One or more invalid group id has been provided.")
+
+    def _parse_new_amount(self, amount: str, operation: str) -> int | None:
+        if not amount:
             raise ActionInputError("Enter a valid amount.")
-        elif new_amount is False:
-            raise ActionInputError("Unable to parse the provided amount.")
-        elif params.operation not in model.Quota.valid_operations:
+        if operation not in model.Quota.valid_operations:
             raise ActionInputError("Enter a valid operation.")
-        else:
-            old_display_amount = quota.display_amount
-            old_operation = quota.operation
-            quota.amount = new_amount
-            quota.operation = params.operation
-            self.sa_session.add(quota)
-            self.sa_session.commit()
-            if old_display_amount != quota.display_amount or old_operation != quota.operation:
-                return f"Quota '{quota.name}' is now '{quota.operation}{quota.display_amount}'."
-            else:
-                return None
+        new_amount = self._parse_amount(amount)
+        if new_amount is False:
+            raise ActionInputError("Unable to parse the provided amount.")
+        return new_amount
+
+    def edit_quota(self, quota: Quota, params) -> str | None:
+        new_amount = self._parse_new_amount(params.amount, params.operation)
+        old_display_amount = quota.display_amount
+        old_operation = quota.operation
+        quota.amount = new_amount
+        quota.operation = params.operation
+        self.sa_session.add(quota)
+        self.sa_session.commit()
+        if old_display_amount != quota.display_amount or old_operation != quota.operation:
+            return f"Quota '{quota.name}' is now '{quota.operation}{quota.display_amount}'."
+        return None
 
     def set_quota_default(self, quota: Quota, params) -> str | None:
         if params.default != "no" and params.default not in model.DefaultQuotaAssociation.types.__members__.values():
