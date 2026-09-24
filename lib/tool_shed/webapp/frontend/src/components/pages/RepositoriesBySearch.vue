@@ -82,7 +82,7 @@ watch(
         if (queryValue !== searchQuery.value) {
             searchQuery.value = queryValue
         }
-    }
+    },
 )
 </script>
 <template>

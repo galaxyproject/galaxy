@@ -34,7 +34,7 @@ watch(
         }
         loading.value = false
     },
-    { immediate: true }
+    { immediate: true },
 )
 
 const toolTitle = computed(() => {
