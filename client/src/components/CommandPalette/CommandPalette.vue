@@ -26,6 +26,7 @@ import { usePaletteDialog } from "./usePaletteDialog";
 import { secondaryLabelFor, usePaletteFooter } from "./usePaletteFooter";
 import { type PaletteMode, usePaletteMachine } from "./usePaletteMachine";
 import { usePaletteModifiers } from "./usePaletteModifiers";
+import { useScrollEdges } from "./useScrollEdges";
 import { BACKEND_RANKED_SCORE, scorePaletteItems } from "./utilities";
 
 import CommandPaletteItem from "./CommandPaletteItem.vue";
@@ -72,8 +73,10 @@ const {
 const dialogElement = ref<HTMLDialogElement | null>(null);
 const inputElement = ref<HTMLInputElement | null>(null);
 const resultsElement = ref<HTMLElement | null>(null);
+const categoriesElement = ref<HTMLElement | null>(null);
 const { closeDialog, onClickDialog, onDialogCancel, onDialogClose, onDialogMousedown, openDialog, paletteVisible } =
     usePaletteDialog({ closePalette, dialogElement, handleEscape, inputElement, isPaletteOpen, resultsElement });
+const { fadeEnd, fadeStart, revealChild } = useScrollEdges(categoriesElement);
 
 const searching = ref(false);
 const sections = ref<ResultSection[]>([]);
@@ -573,6 +576,13 @@ watch(selectedIndex, () => {
     }
 });
 
+// ←→ can land on a chip scrolled out of the row, and the row can reappear on a narrowed category
+watch(
+    [activeCategoryId, showCategoryRow],
+    () => revealChild(categoriesElement.value?.querySelector(".palette-category.active")),
+    { flush: "post" },
+);
+
 // sync so old rows never show under a new badge; reads `mode` as a sync watcher can see a stale computed
 watch(() => searchIdentity(mode.value), clearResults, { flush: "sync" });
 
@@ -679,8 +689,9 @@ watchImmediate(isPaletteOpen, (open) => {
         <!-- Focus stays in the combobox input; the row is driven by ↑↓←→ -->
         <div
             v-if="showCategoryRow"
+            ref="categoriesElement"
             class="palette-categories"
-            :class="{ 'row-selected': categoryRowSelected }"
+            :class="{ 'fade-end': fadeEnd, 'fade-start': fadeStart, 'row-selected': categoryRowSelected }"
             role="tablist"
             :aria-label="localize('Result categories')"
             data-description="palette categories">
@@ -853,6 +864,33 @@ $palette-transition: 130ms ease-out;
         padding: var(--spacing-2) var(--spacing-3);
         border-bottom: 1px solid var(--color-grey-200);
         overflow-x: auto;
+        // scrollable without a scrollbar; the faded edges show there is more
+        scrollbar-width: none;
+        // keeps chips revealed by the arrow keys clear of the fade
+        scroll-padding-inline: var(--palette-fade-width);
+        --palette-fade-width: 2rem;
+        --palette-fade-start: 0;
+        --palette-fade-end: 0;
+        // a mask fades whatever sits beneath, so it needs no theme colors
+        mask-image: linear-gradient(
+            to right,
+            transparent,
+            #000 calc(var(--palette-fade-start) * var(--palette-fade-width)),
+            #000 calc(100% - var(--palette-fade-end) * var(--palette-fade-width)),
+            transparent
+        );
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+
+        &.fade-start {
+            --palette-fade-start: 1;
+        }
+
+        &.fade-end {
+            --palette-fade-end: 1;
+        }
 
         .palette-category {
             flex: none;
