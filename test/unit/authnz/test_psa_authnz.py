@@ -59,6 +59,7 @@ from galaxy.config import GalaxyAppConfiguration
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesAppContext
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 
 @pytest.fixture(scope="module")
@@ -447,7 +448,9 @@ def test_logout_uses_id_token_hint_and_post_logout_redirect_uri():
         patch.object(PSAAuthnz, "_load_backend", return_value=backend),
         patch("galaxy.authnz.psa_authnz.is_oidc_backend", return_value=True),
     ):
-        logout_url = psa_authnz.logout(trans, post_user_logout_href="http://galaxy.example.com/root/login")
+        logout_url = psa_authnz.logout(
+            cast("GalaxyWebTransaction", trans), post_user_logout_href="http://galaxy.example.com/root/login"
+        )
 
     parsed_url = parse.urlparse(logout_url)
     query_params = parse.parse_qs(parsed_url.query)
