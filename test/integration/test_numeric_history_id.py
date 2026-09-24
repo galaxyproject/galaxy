@@ -16,7 +16,6 @@ class TestNumericHistoryId(integration_util.IntegrationTestCase):
     def test_form_submission(self):
         populator = DatasetPopulator(self.galaxy_interactor)
         history_id = populator.new_history()
-        print(f"REPRO history_id={history_id} decoded={self._app.security.decode_id(history_id)}")
         assert history_id == "7456249629763929"
         dataset = populator.new_dataset(
             history_id, content="chr1\ttest\texon\t1\t10\t.\t+\t.\tgene_id x\n", file_type="gff", wait=True
