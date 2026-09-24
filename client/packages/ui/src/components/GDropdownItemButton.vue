@@ -42,7 +42,7 @@ function onClick(event: MouseEvent) {
 </script>
 
 <template>
-    <button type="button" :class="classes" :disabled="disabled" role="menuitem" @click="onClick">
+    <button type="button" :class="classes" :disabled="disabled" role="menuitem" tabindex="-1" @click="onClick">
         <slot />
     </button>
 </template>

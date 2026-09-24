@@ -77,6 +77,7 @@ function onClick(event: MouseEvent) {
         :title="title"
         :aria-disabled="disabled || undefined"
         role="menuitem"
+        tabindex="-1"
         @click.native="onClick">
         <slot />
     </router-link>
@@ -88,6 +89,7 @@ function onClick(event: MouseEvent) {
         :title="title"
         :aria-disabled="disabled || undefined"
         role="menuitem"
+        tabindex="-1"
         @click="onClick">
         <slot />
     </a>
