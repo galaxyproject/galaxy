@@ -36,10 +36,7 @@ function visualizationToItem(visualization: VisualizationSummary): PaletteItem {
     };
 }
 
-/**
- * The user's saved visualizations, store first. The unfiltered fetch reports the
- * total, so a cache holding that many answers any query on its own.
- */
+/** The user's visualizations, store first; a cache as large as the unfiltered total answers any query */
 function visualizationList(): StoreFirstList {
     const store = useVisualizationStore();
     return {
@@ -93,11 +90,7 @@ export const visualizationsProvider: CommandPaletteProvider = {
     emptyQueryItems() {
         return latestItems();
     },
-    /**
-     * Root mode fan-out, ranking the cached visualizations without a request —
-     * unlike the histories, workflows, reports and tools ones, which search the
-     * backend there too; the `v:` scope does the fetching.
-     */
+    /** Root fan-out ranks the cache without a request, unlike the other listings; `v:` does the fetching */
     async search(query: string) {
         if (!query) {
             return latestItems();
