@@ -67,11 +67,6 @@ the following considerations:
 - Cookies: get_cookies
 - Storage: set_local_storage, remove_local_storage
 
-**Known Limitations:**
-1. wait_for_element_count_of_at_least() - Not implemented (raises NotImplementedError)
-   - Playwright doesn't have an equivalent to Selenium's element count waiting
-   - Use wait_for_present() and then check length of find_elements() instead
-
 Implementation Details
 ----------------------
 **Locator Strategy:**
@@ -583,8 +578,8 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             self._frame_or_page.wait_for_selector(selector, state="visible", timeout=timeout_ms)
 
             # Wait for element to be enabled
-            def is_enabled() -> bool:
-                return locator.is_enabled()
+            def is_enabled() -> Optional[bool]:
+                return True if locator.is_enabled() else None
 
             wait_on(is_enabled, "locator to be enabled", timeout=timeout_ms / 1000)
 
@@ -618,7 +613,19 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
     def _wait_on_condition_count(self, locator_tuple: tuple, n: int, message: str, **kwds) -> None:
         """Wait for at least N elements."""
-        raise NotImplementedError("wait_for_element_count_of_at_least not yet implemented for Playwright")
+        timeout_ms = self._timeout_in_ms(**kwds)
+        selector = self._selenium_locator_to_playwright_selector(*locator_tuple)
+        locator = self._frame_or_page.locator(selector)
+
+        # wait_on keeps polling only while the condition returns None.
+        def enough_elements() -> Optional[bool]:
+            return True if locator.count() >= n else None
+
+        try:
+            wait_on(enough_elements, message, timeout=timeout_ms / 1000)
+        except TimeoutAssertionError as e:
+            raise PlaywrightTimeoutException(self._timeout_message(message)) from e
+        return None
 
     # TODO: typevar here Any needs to be return type of condition_func thunk.
     def _wait_on_custom(self, condition_func, message: str, **kwds) -> Any:
@@ -627,7 +634,9 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         if timeout is UNSPECIFIED_TIMEOUT:
             timeout = self.timeout_handler(kwds.get("wait_type"))
 
-        return wait_on(condition_func, message, timeout)
+        # Match Selenium's WebDriverWait, which keeps polling on any falsy result;
+        # wait_on alone stops on anything but None.
+        return wait_on(lambda: condition_func() or None, message, timeout)
 
     def _unwrap_element(self, element: WebElementProtocol) -> ElementHandle:
         """
