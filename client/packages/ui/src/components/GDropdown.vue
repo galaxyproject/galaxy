@@ -7,6 +7,7 @@
  * Keyboard support follows the WAI-ARIA APG menu button pattern.
  */
 
+import { autoUpdate, computePosition, flip, offset, type Placement, shift } from "@floating-ui/dom";
 import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from "vue";
 
 import { useUid } from "../composables/uid";
@@ -71,10 +72,26 @@ const toggleEl = ref<HTMLButtonElement>();
 const menuEl = ref<HTMLDivElement>();
 const hasBeenOpened = ref(false);
 let unmounted = false;
+let stopAutoUpdate: (() => void) | undefined;
+/** Settles once the opened menu has its first position */
+let menuPositioned: Promise<void> = Promise.resolve();
 
 const uid = useUid("g-dropdown-");
 const toggleId = computed(() => `${uid.value}-toggle`);
 const menuId = computed(() => `${uid.value}-menu`);
+
+const menuPlacement = computed<Placement>(() => {
+    if (props.dropup) {
+        return props.right ? "top-end" : "top-start";
+    }
+    if (props.dropright) {
+        return "right-start";
+    }
+    if (props.dropleft) {
+        return "left-start";
+    }
+    return props.right ? "bottom-end" : "bottom-start";
+});
 
 function toggle(event?: MouseEvent) {
     if (props.disabled) {
@@ -97,13 +114,53 @@ function show() {
     isOpen.value = true;
     hasBeenOpened.value = true;
     emit("show");
-    nextTick(() => {
+    menuPositioned = nextTick().then(() => {
         // An unmount before this tick has already removed the listeners
         if (isOpen.value && !unmounted) {
             document.addEventListener("click", onOutsideEvent, true);
             document.addEventListener("focusin", onOutsideEvent, true);
+            return startPositioning();
         }
     });
+}
+
+/** The same reference element as BDropdown: the whole group for split buttons and right-aligned dropups */
+function getMenuReference() {
+    return props.split || (props.dropup && props.right) ? dropdownEl.value : toggleEl.value;
+}
+
+async function positionMenu() {
+    const reference = getMenuReference();
+    const menu = menuEl.value;
+    if (!reference || !menu) {
+        return;
+    }
+    // Flip and shift keep the menu inside its scroll container and the viewport, with Popper's 5px padding
+    const { x, y } = await computePosition(reference, menu, {
+        placement: menuPlacement.value,
+        middleware: [offset(2), flip({ padding: 5 }), shift({ padding: 5 })],
+    });
+    // Replaces Bootstrap's static offsets and its 2px spacer margin, which offset() stands in for
+    Object.assign(menu.style, { top: `${y}px`, left: `${x}px`, right: "auto", bottom: "auto", margin: "0" });
+}
+
+function startPositioning() {
+    // show(), hide() and show() in one tick start twice
+    stopPositioning();
+    const reference = getMenuReference();
+    const menu = menuEl.value;
+    if (!reference || !menu) {
+        return;
+    }
+    // Resolves on the first update, which autoUpdate runs right away
+    return new Promise<void>((resolve) => {
+        stopAutoUpdate = autoUpdate(reference, menu, () => positionMenu().then(resolve));
+    });
+}
+
+function stopPositioning() {
+    stopAutoUpdate?.();
+    stopAutoUpdate = undefined;
 }
 
 function removeOutsideListeners() {
@@ -120,6 +177,7 @@ function hide(restoreFocus = true) {
     isOpen.value = false;
     emit("hide");
     removeOutsideListeners();
+    stopPositioning();
     if (restoreFocus && focusInMenu) {
         toggleEl.value?.focus();
     }
@@ -151,15 +209,18 @@ function focusMenuItem(index: number) {
 
 async function openAndFocusMenuItem(index: number) {
     show();
-    await nextTick();
-    focusMenuItem(index);
+    // Focus scrolls to the item, so it waits for the menu to be placed and possibly flipped
+    await menuPositioned;
+    if (isOpen.value) {
+        focusMenuItem(index);
+    }
 }
 
 function onToggleClick(event: MouseEvent) {
     toggle(event);
     // Clicks synthesized from Enter/Space have no click count
     if (isOpen.value && event.detail === 0) {
-        nextTick(() => focusMenuItem(0));
+        openAndFocusMenuItem(0);
     }
 }
 
@@ -271,6 +332,7 @@ watch(
 onBeforeUnmount(() => {
     unmounted = true;
     removeOutsideListeners();
+    stopPositioning();
 });
 
 defineExpose({
