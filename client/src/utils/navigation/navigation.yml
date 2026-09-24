@@ -173,6 +173,8 @@ dataset_display:
   selectors:
     container: .dataset-display
     content: body
+    tabular_rows: .dataset-display tbody tr
+    tabular_row: '.dataset-display tbody tr:nth-child(${index})'
 
 history_panel:
   menu:
