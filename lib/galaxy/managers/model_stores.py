@@ -110,24 +110,26 @@ class ModelStoreManager:
         export_metadata = self.set_history_export_request_metadata(request)
 
         exception_exporting_history: Exception | None = None
-        try:
-            with storage_context(
-                request.short_term_storage_request_id, self._short_term_storage_monitor
-            ) as short_term_storage_target:
+        with storage_context(
+            request.short_term_storage_request_id, self._short_term_storage_monitor
+        ) as short_term_storage_target:
+            # Record the result before storage_context marks the download ready, so a client
+            # polling the download never sees the export record still preparing.
+            try:
                 with model.store.get_export_store_factory(self._app, model_store_format, export_files=export_files)(
                     short_term_storage_target.path
                 ) as export_store:
                     export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
-        except Exception as exception:
-            exception_exporting_history = exception
-            raise
-        finally:
-            self.set_history_export_result_metadata(
-                request.export_association_id,
-                export_metadata,
-                success=not bool(exception_exporting_history),
-                error=str(exception_exporting_history) if exception_exporting_history else None,
-            )
+            except Exception as exception:
+                exception_exporting_history = exception
+                raise
+            finally:
+                self.set_history_export_result_metadata(
+                    request.export_association_id,
+                    export_metadata,
+                    success=not bool(exception_exporting_history),
+                    error=str(exception_exporting_history) if exception_exporting_history else None,
+                )
 
     def prepare_history_content_download(self, request: GenerateHistoryContentDownload):
         model_store_format = request.model_store_format
@@ -155,10 +157,11 @@ class ModelStoreManager:
         export_metadata = self.set_invocation_export_request_metadata(request)
 
         exception_exporting_invocation: Exception | None = None
-        try:
-            with storage_context(
-                request.short_term_storage_request_id, self._short_term_storage_monitor
-            ) as short_term_storage_target:
+        with storage_context(
+            request.short_term_storage_request_id, self._short_term_storage_monitor
+        ) as short_term_storage_target:
+            # Record the result before the download is marked ready, see prepare_history_download.
+            try:
                 with model.store.get_export_store_factory(
                     self._app,
                     model_store_format,
@@ -171,16 +174,16 @@ class ModelStoreManager:
                         include_hidden=request.include_hidden,
                         include_deleted=request.include_deleted,
                     )
-        except Exception as exception:
-            exception_exporting_invocation = exception
-            raise
-        finally:
-            self.set_invocation_export_result_metadata(
-                request.export_association_id,
-                export_metadata,
-                success=not bool(exception_exporting_invocation),
-                error=str(exception_exporting_invocation) if exception_exporting_invocation else None,
-            )
+            except Exception as exception:
+                exception_exporting_invocation = exception
+                raise
+            finally:
+                self.set_invocation_export_result_metadata(
+                    request.export_association_id,
+                    export_metadata,
+                    success=not bool(exception_exporting_invocation),
+                    error=str(exception_exporting_invocation) if exception_exporting_invocation else None,
+                )
 
     def write_invocation_to(self, request: WriteInvocationTo):
         model_store_format = request.model_store_format
