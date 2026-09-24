@@ -596,6 +596,88 @@ describe("GPopover hover", () => {
     });
 });
 
+describe("GPopover focus", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        wrapper?.destroy();
+        wrapper = undefined;
+        document.body.innerHTML = "";
+        vi.useRealTimers();
+    });
+
+    function outsideButton() {
+        const button = document.createElement("button");
+        document.body.appendChild(button);
+        return button;
+    }
+
+    it("opens a hover popover when its trigger gets keyboard focus", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+
+        target.focus();
+        await nextTick();
+
+        expect(isShown()).toBe(true);
+    });
+
+    it("ignores the focus a mouse click leaves on a hover trigger", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        vi.spyOn(target, "matches").mockImplementation((selector) => selector !== ":focus-visible");
+
+        target.focus();
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+
+        expect(isShown()).toBe(false);
+    });
+
+    it("opens explicit focus triggers for any focus", async () => {
+        const target = await mountWithTrigger({ triggers: "hover focus" });
+        vi.spyOn(target, "matches").mockImplementation((selector) => selector !== ":focus-visible");
+
+        target.focus();
+        await nextTick();
+
+        expect(isShown()).toBe(true);
+    });
+
+    it("closes when focus leaves the trigger", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.focus();
+        await nextTick();
+
+        outsideButton().focus();
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS);
+
+        expect(isShown()).toBe(false);
+    });
+
+    it("stays open while focus moves into the popover", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.focus();
+        await nextTick();
+
+        popoverEl().querySelector("a")!.focus();
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS * 2);
+
+        expect(isShown()).toBe(true);
+    });
+
+    it("stays open when the pointer leaves while the trigger keeps focus", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.focus();
+        await nextTick();
+
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        target.dispatchEvent(new MouseEvent("mouseleave"));
+        await advance(INTERACTIVE_POPOVER_CLOSE_DELAY_MS * 2);
+
+        expect(isShown()).toBe(true);
+    });
+});
+
 describe("GPopover description", () => {
     afterEach(() => {
         wrapper?.destroy();

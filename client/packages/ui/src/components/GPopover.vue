@@ -174,9 +174,15 @@ function scheduleOpen() {
     }
 }
 
+// Either of these keeps a hover or focus popover open (WCAG 2.1 SC 1.4.13, persistent).
+let pointerInside = false;
+let focusInside = false;
+
 function scheduleClose() {
     openDelay.clear();
-    closeDelay.schedule(hidePopover);
+    if (!pointerInside && !focusInside) {
+        closeDelay.schedule(hidePopover);
+    }
 }
 
 // Where the pointer may go after leaving the trigger or popover without closing it (safe triangle).
@@ -288,6 +294,9 @@ async function onVisibilityChange(visible: boolean) {
         await nextTick();
         emit("shown");
     } else {
+        // A popover hidden under the pointer or focus never sees the matching leave event.
+        pointerInside = false;
+        focusInside = false;
         emit("hidden");
     }
 }
@@ -348,6 +357,11 @@ function removeIdReference(el: Element, attribute: string, id: string) {
     }
 }
 
+// :focus-visible tells keyboard focus apart from the focus a mouse click leaves on a button.
+function isKeyboardFocus(element: EventTarget | null) {
+    return element instanceof Element && element.matches(":focus-visible");
+}
+
 let activeListeners: Array<{ el: EventTarget; event: string; handler: (e: Event) => void; capture: boolean }> = [];
 
 function listen(el: EventTarget, event: string, handler: (e: Event) => void, capture = false) {
@@ -366,20 +380,48 @@ function setupListeners() {
     }
     boundTarget = target;
 
-    if (parsedTriggers.value.has("hover")) {
-        listen(target, "mouseenter", scheduleOpen);
+    const opensOnHover = parsedTriggers.value.has("hover");
+    const opensOnFocus = parsedTriggers.value.has("focus");
+
+    if (opensOnHover) {
+        listen(target, "mouseenter", () => {
+            pointerInside = true;
+            scheduleOpen();
+        });
         listen(target, "pointerleave", (event) => startHoverBridge(event, true));
-        listen(target, "mouseleave", onHoverLeave);
+        listen(target, "mouseleave", () => {
+            pointerInside = false;
+            onHoverLeave();
+        });
     }
 
-    if (parsedTriggers.value.has("hover") || parsedTriggers.value.has("focus")) {
+    // Hover popovers also open on keyboard focus; explicit focus triggers open on mouse-click focus too.
+    if (opensOnHover || opensOnFocus) {
         // Screen readers announce the popover content as the trigger's description, as for GTooltip.
         linkIdReference(target, "aria-describedby");
-    }
 
-    if (parsedTriggers.value.has("focus")) {
-        listen(target, "focus", showPopover);
-        listen(target, "blur", hidePopover);
+        const onFocusOut = (event: Event) => {
+            const next = (event as FocusEvent).relatedTarget;
+            if (next instanceof Node && (target.contains(next) || popoverEl.value?.contains(next))) {
+                return;
+            }
+            focusInside = false;
+            scheduleClose();
+        };
+        listen(target, "focusin", (event) => {
+            if (opensOnFocus || isKeyboardFocus(event.target)) {
+                focusInside = true;
+                showPopover();
+            }
+        });
+        listen(target, "focusout", onFocusOut);
+        if (popoverEl.value) {
+            listen(popoverEl.value, "focusin", () => {
+                focusInside = true;
+                closeDelay.clear();
+            });
+            listen(popoverEl.value, "focusout", onFocusOut);
+        }
     }
 
     if (parsedTriggers.value.has("click")) {
@@ -401,10 +443,16 @@ function setupListeners() {
     }
 
     // Keep popover open when hovering over it
-    if (parsedTriggers.value.has("hover") && popoverEl.value) {
-        listen(popoverEl.value, "mouseenter", holdOpen);
+    if (opensOnHover && popoverEl.value) {
+        listen(popoverEl.value, "mouseenter", () => {
+            pointerInside = true;
+            holdOpen();
+        });
         listen(popoverEl.value, "pointerleave", (event) => startHoverBridge(event, false));
-        listen(popoverEl.value, "mouseleave", onHoverLeave);
+        listen(popoverEl.value, "mouseleave", () => {
+            pointerInside = false;
+            onHoverLeave();
+        });
     }
 }
 
