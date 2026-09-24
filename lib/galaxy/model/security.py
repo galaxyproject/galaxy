@@ -1761,9 +1761,7 @@ def is_unique_constraint_violation(error):
     if isinstance(error.orig, sqlite3.IntegrityError):
         return error.orig.args[0].startswith("UNIQUE constraint failed")
     else:
-        # If this is a PostgreSQL unique constraint, then error.orig is an instance of psycopg2.errors.UniqueViolation
-        # and should have an attribute `pgcode` = 23505.
-        return int(getattr(error.orig, "pgcode", -1)) == 23505
+        return _postgres_error_code(error) == "23505"
 
 
 def is_foreign_key_violation(error):
@@ -1775,9 +1773,12 @@ def is_foreign_key_violation(error):
     if isinstance(error.orig, sqlite3.IntegrityError):
         return error.orig.args[0] == "FOREIGN KEY constraint failed"
     else:
-        # If this is a PostgreSQL foreign key error, then error.orig is an instance of psycopg2.errors.ForeignKeyViolation
-        # and should have an attribute `pgcode` = 23503.
-        return int(getattr(error.orig, "pgcode", -1)) == 23503
+        return _postgres_error_code(error) == "23503"
+
+
+def _postgres_error_code(error) -> str | None:
+    # PostgreSQL SQLSTATE of the driver error: psycopg exposes it as `sqlstate`, psycopg2 as `pgcode`.
+    return getattr(error.orig, "sqlstate", None) or getattr(error.orig, "pgcode", None)
 
 
 def _get_valid_roles_exposed(session, search_query, is_admin, limit, page, page_limit):
