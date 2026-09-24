@@ -15,19 +15,12 @@ import type {
 } from "../types";
 import { dedupePaletteItemsByEntity, rankPaletteItems } from "../utilities";
 import { PaletteFetchError } from "./errors";
+import { PALETTE_LIMITS } from "./limits";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
 /** Entity type used for the palette's most-recently-used list */
 export const PAGE_MRU_TYPE = "page";
-
-/** Per section cap, small enough to keep the scoped view scannable */
-const SECTION_LIMIT = 8;
-const RECENT_LIMIT = 5;
-/** How many rows the root fan-out shows from the published listing */
-const ROOT_VARIANT_LIMIT = 3;
-/** Below this length an unscoped query fans out too broadly to be useful */
-const MIN_ROOT_QUERY_LENGTH = 2;
 
 /** Canonical read-only view of a page, same target the pages grids use */
 export function pageDisplayPath(pageId: string): string {
@@ -107,7 +100,7 @@ async function storeFirstItems(
     const needsMore = items.length < limit && !pageStore.isComplete(variant);
     if (!pageStore.isLoaded(variant) || needsMore) {
         try {
-            await pageStore.fetchPages(variant, query ? { search: query, limit } : { limit: SECTION_LIMIT });
+            await pageStore.fetchPages(variant, query ? { search: query, limit } : { limit: PALETTE_LIMITS.section });
             items = rankPaletteItems(cachedItems(variant), query);
         } catch (error) {
             if (nothingCached) {
@@ -119,7 +112,9 @@ async function storeFirstItems(
         }
         markListRefreshed(`pages:${variant}`);
     } else {
-        refreshListWhenStale(`pages:${variant}`, () => pageStore.fetchPages(variant, { limit: SECTION_LIMIT }));
+        refreshListWhenStale(`pages:${variant}`, () =>
+            pageStore.fetchPages(variant, { limit: PALETTE_LIMITS.section }),
+        );
     }
     return items.slice(0, limit);
 }
@@ -141,7 +136,11 @@ async function publishedItems(query: string, limit: number): Promise<PaletteItem
     const pageStore = usePageStore();
     try {
         const pages =
-            (await pageStore.fetchPages("published", { search: query, limit: SECTION_LIMIT, record: false })) ?? [];
+            (await pageStore.fetchPages("published", {
+                search: query,
+                limit: PALETTE_LIMITS.section,
+                record: false,
+            })) ?? [];
         return rankPaletteItems(
             pages.map((page) => pageToItem(page, "published")),
             query,
@@ -162,10 +161,10 @@ async function publishedItems(query: string, limit: number): Promise<PaletteItem
  */
 async function rootItems(query: string, isAnonymous: boolean, localOnly = false): Promise<PaletteItem[]> {
     // the search starts before the cache is filtered, so the two run in parallel
-    const published = localOnly ? Promise.resolve([]) : publishedItems(query, ROOT_VARIANT_LIMIT);
-    const own = isAnonymous ? [] : await storeFirstItems("my", query, RECENT_LIMIT, true);
+    const published = localOnly ? Promise.resolve([]) : publishedItems(query, PALETTE_LIMITS.rootListing);
+    const own = isAnonymous ? [] : await storeFirstItems("my", query, PALETTE_LIMITS.rootOwn, true);
     const merged = dedupePaletteItemsByEntity([...own, ...(await published)]);
-    return rankPaletteItems(merged, query).slice(0, RECENT_LIMIT + ROOT_VARIANT_LIMIT);
+    return rankPaletteItems(merged, query).slice(0, PALETTE_LIMITS.rootOwn + PALETTE_LIMITS.rootListing);
 }
 
 /** Items the user opened through the palette before, best match first */
@@ -197,11 +196,11 @@ export const reportsProvider: CommandPaletteProvider = {
         if (ctx.isAnonymous) {
             return [];
         }
-        return recentItems("", RECENT_LIMIT);
+        return recentItems("", PALETTE_LIMITS.recent);
     },
     /** Unscoped fan-out over the cached own pages and the published ones */
     async search(query: string, ctx: PaletteContext, options: PaletteSearchOptions = {}) {
-        if (query.length < MIN_ROOT_QUERY_LENGTH) {
+        if (query.length < PALETTE_LIMITS.minBackendQuery) {
             return [];
         }
         return rootItems(query, ctx.isAnonymous, options.localOnly);
@@ -220,11 +219,11 @@ export const reportsProvider: CommandPaletteProvider = {
         if (ctx.isAnonymous && variant === "my") {
             return [];
         }
-        const recent = variant === "my" ? recentItems(query, RECENT_LIMIT) : [];
+        const recent = variant === "my" ? recentItems(query, PALETTE_LIMITS.recent) : [];
         const recentIds = new Set(recent.map((item) => item.id));
-        const listed = (await storeFirstItems(variant, query, SECTION_LIMIT + recentIds.size))
+        const listed = (await storeFirstItems(variant, query, PALETTE_LIMITS.section + recentIds.size))
             .filter((item) => !recentIds.has(item.id))
-            .slice(0, SECTION_LIMIT);
+            .slice(0, PALETTE_LIMITS.section);
 
         const sections: ScopedSection[] = [];
         if (recent.length) {
