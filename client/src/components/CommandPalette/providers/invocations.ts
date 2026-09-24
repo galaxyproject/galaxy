@@ -9,6 +9,7 @@ import { shortDateLabel } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteItem, ScopedSection } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { PALETTE_LIMITS } from "./limits";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
 
@@ -20,9 +21,6 @@ const LATEST_LIMIT = 15;
 
 /** Identity of the cached list in the palette's refresh bookkeeping */
 const REFRESH_KEY = "invocations:latest";
-
-/** Maximum rows rendered per section */
-const SECTION_CAP = 8;
 
 function invocationRoute(invocationId: string): string {
     return `/workflows/invocations/${invocationId}`;
@@ -129,7 +127,7 @@ function recentInvocationItems(): PaletteItem[] {
 }
 
 function section(id: string, title: string, items: PaletteItem[]): ScopedSection[] {
-    return items.length ? [{ id, items: items.slice(0, SECTION_CAP), title }] : [];
+    return items.length ? [{ id, items: items.slice(0, PALETTE_LIMITS.section), title }] : [];
 }
 
 export const invocationsProvider: CommandPaletteProvider = {
@@ -138,7 +136,7 @@ export const invocationsProvider: CommandPaletteProvider = {
     /** Whatever the store already knows, newest first -- never fetches */
     emptyQueryItems() {
         const invocationStore = useInvocationStore();
-        return invocationStore.latestInvocations.slice(0, SECTION_CAP).map(invocationToItem);
+        return invocationStore.latestInvocations.slice(0, PALETTE_LIMITS.section).map(invocationToItem);
     },
     /**
      * Root mode fan-out: this provider only filters what the store already
@@ -149,7 +147,7 @@ export const invocationsProvider: CommandPaletteProvider = {
         if (!query) {
             return [];
         }
-        return filterInvocations(useInvocationStore().latestInvocations, query).slice(0, SECTION_CAP);
+        return filterInvocations(useInvocationStore().latestInvocations, query).slice(0, PALETTE_LIMITS.section);
     },
     async searchScoped(_scope: ScopeDefinition, query: string): Promise<ScopedSection[]> {
         const invocations = await ensureLatestInvocations();

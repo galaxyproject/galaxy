@@ -11,21 +11,11 @@ import type {
     ScopedSection,
 } from "../types";
 import { rankPaletteItems } from "../utilities";
+import { PALETTE_LIMITS } from "./limits";
 import type { ScopeDefinition } from "./scopes";
 
-/**
- * Shorter queries are answered from the hydrated tool store instead of the
- * backend — the palette can afford one or two characters because the whole
- * toolbox is already cached client side (the tool panel keeps its 3 character
- * rule for the whooshy backend search).
- */
-const MIN_BACKEND_QUERY_LENGTH = 3;
 /** Cap of the flat result list, and of the scoped "Tools" section */
 const MAX_RESULTS = 10;
-/** Cap of the favorites/recent sections shown above the scoped results */
-const MAX_SECTION_ITEMS = 8;
-/** Cap of the toolbox fallback an empty `t:` falls back to */
-const MAX_FALLBACK_ITEMS = 8;
 
 function toolToItem(tool: Tool): PaletteItem {
     return {
@@ -74,12 +64,12 @@ function localMatches(query: string, limit: number): PaletteItem[] {
     return rankPaletteItems(items, query).slice(0, limit);
 }
 
-/** Local match for short queries, backend search from `MIN_BACKEND_QUERY_LENGTH` on */
+/** Local match for short queries, backend search from `PALETTE_LIMITS.minToolBackendQuery` on */
 async function searchTools(query: string, limit: number): Promise<PaletteItem[]> {
     if (!query) {
         return [];
     }
-    if (query.length < MIN_BACKEND_QUERY_LENGTH) {
+    if (query.length < PALETTE_LIMITS.minToolBackendQuery) {
         await ensureHydrated();
         return localMatches(query, limit);
     }
@@ -135,19 +125,19 @@ export const toolsProvider: CommandPaletteProvider = {
     async searchScoped(_scope: ScopeDefinition, query: string): Promise<ScopedSection[]> {
         await ensureHydrated();
 
-        const favorites = rankPaletteItems(favoriteToolItems(), query).slice(0, MAX_SECTION_ITEMS);
+        const favorites = rankPaletteItems(favoriteToolItems(), query).slice(0, PALETTE_LIMITS.section);
         const favoriteIds = new Set(favorites.map((item) => item.id));
         // the tool panel hides favorites from the recent list too
         const recent = rankPaletteItems(
             recentToolItems().filter((item) => !favoriteIds.has(item.id)),
             query,
-        ).slice(0, MAX_SECTION_ITEMS);
+        ).slice(0, PALETTE_LIMITS.section);
 
         const sections = [...section("favorites", "Favorites", favorites), ...section("recent", "Recent", recent)];
         if (!query) {
             // a fresh account has neither, and an empty scope reads as broken —
             // the toolbox itself is the fallback, no request needed
-            return sections.length ? sections : section("results", "Tools", firstTools(MAX_FALLBACK_ITEMS));
+            return sections.length ? sections : section("results", "Tools", firstTools(PALETTE_LIMITS.section));
         }
 
         const listed = new Set([...favorites, ...recent].map((item) => item.id));
