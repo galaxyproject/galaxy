@@ -172,6 +172,14 @@ class TestGroupsApi(ApiTestCase):
         update_response = self._put(f"groups/{group['id']}", data=update_payload, admin=True, json=True)
         self._assert_status_code_is_ok(update_response)
 
+    def test_update_with_invalid_user_keeps_name(self):
+        group = self._create_valid_group()
+        invalid_user_id = self._get("configuration/encode/999999999", admin=True).json()["encoded_id"]
+        update_payload = {"name": f"{group['name']}-renamed", "user_ids": [invalid_user_id]}
+        update_response = self._put(f"groups/{group['id']}", data=update_payload, admin=True, json=True)
+        self._assert_status_code_is(update_response, 400)
+        assert self._get(f"groups/{group['id']}", admin=True).json()["name"] == group["name"]
+
     def test_update_duplicating_name_raises_409(self):
         group_a = self._create_valid_group()
         group_b = self._create_valid_group()
