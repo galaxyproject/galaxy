@@ -10,6 +10,7 @@
 import { computed, nextTick, onBeforeUnmount, provide, ref } from "vue";
 
 import { useUid } from "../composables/uid";
+import { dropdownHideKey } from "./dropdownContext";
 
 const props = withDefaults(
     defineProps<{
@@ -202,7 +203,7 @@ function onSplitClick(event: MouseEvent) {
 }
 
 // Provide hide function to child items so they can close the menu on click
-provide("g-dropdown-hide", hide);
+provide(dropdownHideKey, hide);
 
 const containerClasses = computed(() => ({
     "btn-group": !props.block,

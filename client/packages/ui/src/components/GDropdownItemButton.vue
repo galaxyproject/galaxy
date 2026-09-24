@@ -6,6 +6,8 @@
 
 import { computed, inject } from "vue";
 
+import { dropdownHideKey } from "./dropdownContext";
+
 const props = withDefaults(
     defineProps<{
         active?: boolean;
@@ -23,7 +25,7 @@ const emit = defineEmits<{
     (e: "click", event: MouseEvent): void;
 }>();
 
-const hideDropdown = inject<() => void>("g-dropdown-hide", () => {});
+const hideDropdown = inject(dropdownHideKey, () => {});
 
 const classes = computed(() => ({
     "dropdown-item": true,

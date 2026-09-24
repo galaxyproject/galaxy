@@ -10,6 +10,7 @@ export {
     type ComponentVariantClassList,
     prefix,
 } from "./components/componentVariants";
+export { dropdownHideKey } from "./components/dropdownContext";
 export { default as GForm } from "./components/Form/GForm.vue";
 export { default as GFormInput } from "./components/Form/GFormInput.vue";
 export { default as GFormLabel } from "./components/Form/GFormLabel.vue";
