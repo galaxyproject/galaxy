@@ -4,7 +4,12 @@ Location of protocols used in datatypes
 
 from typing import Any
 
-from typing_extensions import Protocol
+from typing_extensions import (
+    Protocol,
+    runtime_checkable,
+)
+
+from galaxy.objectstore import ObjectStoreAuth
 
 
 class HasClearAssociatedFiles(Protocol):
@@ -16,6 +21,10 @@ class HasCreatingJob(Protocol):
     def creating_job(self): ...
 
 
+class HasDeleted(Protocol):
+    deleted: bool
+
+
 class HasExt(Protocol):
     @property
     def ext(self): ...
@@ -23,13 +32,14 @@ class HasExt(Protocol):
 
 class HasExtraFilesPath(Protocol):
     @property
-    def extra_files_path(self): ...
+    def extra_files_path(self) -> str: ...
 
 
 class HasFileName(Protocol):
-    def get_file_name(self, sync_cache=True) -> str: ...
+    def get_file_name(self, sync_cache=True, auth: ObjectStoreAuth | None = None) -> str: ...
 
 
+@runtime_checkable
 class HasHid(Protocol):
     hid: str
 
@@ -47,7 +57,7 @@ class HasMetadata(Protocol):
 
 
 class HasName(Protocol):
-    name: str
+    name: str | None
 
 
 class HasExtraFilesAndMetadata(HasExtraFilesPath, HasMetadata, Protocol): ...
@@ -55,6 +65,7 @@ class HasExtraFilesAndMetadata(HasExtraFilesPath, HasMetadata, Protocol): ...
 
 class DatasetProtocol(
     HasCreatingJob,
+    HasDeleted,
     HasExt,
     HasExtraFilesPath,
     HasFileName,

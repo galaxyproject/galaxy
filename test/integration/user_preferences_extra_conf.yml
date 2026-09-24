@@ -21,3 +21,15 @@ preferences:
               type: secret
               store: vault
               required: True
+
+    non_vault_test_section:
+        description: For testing Settings
+        inputs:
+            - name: user
+              label: User
+              type: text
+              required: True
+            - name: pass
+              label: Pass
+              type: secret # It's a secret but not stored in vault
+              required: True

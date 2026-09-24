@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 column_maker_repository_name = "column_maker_0030"
 column_maker_repository_description = "Add column"
@@ -14,7 +14,7 @@ emboss_repository_long_description = "Galaxy wrappers for Emboss version 5.0.0 t
 running_standalone = False
 
 
-class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
+class TestUninstallingAndReinstallingRepositories(ShedTestCase):
     """Test uninstalling and reinstalling a repository with repository dependency revisions."""
 
     requires_galaxy = True
@@ -131,7 +131,6 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0010_install_emboss_repository(self):
         """Install the emboss repository into the Galaxy instance."""
-        global running_standalone
         self._install_repository(
             emboss_repository_name,
             common.test_user_1_name,

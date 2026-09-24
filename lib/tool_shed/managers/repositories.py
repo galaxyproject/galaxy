@@ -5,20 +5,18 @@ Manager and Serializer for TS repositories.
 import json
 import logging
 from collections import namedtuple
+from collections.abc import Callable
 from time import strftime
 from typing import (
     Any,
-    Callable,
     cast,
-    Dict,
-    List,
-    Optional,
-    Union,
 )
 
 from pydantic import BaseModel
 from sqlalchemy import (
     false,
+    func,
+    or_,
     select,
 )
 from sqlalchemy.orm import scoped_session
@@ -32,9 +30,21 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_shed.util import dependency_display
+from galaxy.tool_shed.util.hg_util import (
+    get_changectx_for_changeset,
+    reversed_lower_upper_bounded_changelog,
+)
+from galaxy.tool_shed.util.repository_util import get_repository_dependency_types
 from galaxy.util import listify
-from galaxy.util.tool_shed.encoding_util import tool_shed_encode
+from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
+from galaxy.util.tool_shed.encoding_util import (
+    encoding_sep,
+    encoding_sep2,
+    tool_shed_decode,
+    tool_shed_encode,
+)
 from tool_shed.context import (
     ProvidesRepositoriesContext,
     ProvidesUserContext,
@@ -44,11 +54,14 @@ from tool_shed.repository_types import util as rt_util
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util import hg_util
 from tool_shed.util.metadata_util import (
+    build_invalid_tools,
     get_all_dependencies,
     get_current_repository_metadata_for_changeset_revision,
     get_metadata_revisions,
     get_next_downloadable_changeset_revision,
+    get_previous_metadata_changeset_revision,
     get_repository_metadata_by_changeset_revision,
+    get_updated_changeset_revisions,
 )
 from tool_shed.util.readme_util import build_readme_files_dict
 from tool_shed.util.repository_content_util import upload_tar
@@ -56,7 +69,6 @@ from tool_shed.util.repository_util import (
     create_repository as low_level_create_repository,
     get_repo_info_dict,
     get_repositories_by_category,
-    get_repository_by_name_and_owner,
     get_repository_in_tool_shed,
     validate_repository_name,
 )
@@ -67,16 +79,25 @@ from tool_shed.util.shed_util_common import (
 from tool_shed.util.tool_util import generate_message_for_invalid_tools
 from tool_shed.webapp.model import (
     Repository,
+    RepositoryCategoryAssociation,
     RepositoryMetadata,
+    User,
 )
+from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 from tool_shed.webapp.search.repo_search import RepoSearch
 from tool_shed_client.schema import (
     CreateRepositoryRequest,
     DetailedRepository,
     ExtraRepoInfo,
+    IndexSortByType,
     LegacyInstallInfoTuple,
+    PaginatedRepositoryIndexResults,
     Repository as SchemaRepository,
     RepositoryMetadataInstallInfoDict,
+    RepositoryMetadataPreview,
+    RepositoryRevisionMetadata,
+    ResetMetadataOnRepositoriesRequest,
+    ResetMetadataOnRepositoriesResponse,
     ResetMetadataOnRepositoryResponse,
 )
 from .categories import get_value_mapper as category_value_mapper
@@ -130,24 +151,30 @@ def search(trans: ProvidesUserContext, q: str, page: int = 1, page_size: int = 1
     )
 
     results = repo_search.search(trans, search_term, page, page_size, boosts)
-    results["hostname"] = web.url_for("/", qualified=True)
+    results["hostname"] = deprecated_hostname(app)
     return results
 
 
+def deprecated_hostname(app: ToolShedApp) -> str:
+    if tool_shed_url := app.config.tool_shed_url:
+        return tool_shed_url.rstrip("/") + "/"
+    return web.url_for("/", qualified=True)
+
+
 class UpdatesRequest(BaseModel):
-    name: Optional[str] = None
-    owner: Optional[str] = None
+    name: str | None = None
+    owner: str | None = None
     changeset_revision: str
     hexlify: bool = True
 
 
-def check_updates(app: ToolShedApp, request: UpdatesRequest) -> Union[str, Dict[str, Any]]:
+def check_updates(app: ToolShedApp, request: UpdatesRequest) -> str | dict[str, Any]:
     name = request.name
     owner = request.owner
     changeset_revision = request.changeset_revision
     hexlify_this = request.hexlify
     repository = get_repository_by_name_and_owner(
-        app, name, owner, eagerload_columns=[Repository.downloadable_revisions]
+        app.model.context, name, owner, eagerload_columns=[Repository.downloadable_revisions]
     )
     if repository and repository.downloadable_revisions:
         repository_metadata = get_repository_metadata_by_changeset_revision(
@@ -197,13 +224,13 @@ def check_updates(app: ToolShedApp, request: UpdatesRequest) -> Union[str, Dict[
     return tool_shed_encode({}) if hexlify_this else json.dumps({})
 
 
-def guid_to_repository(app: ToolShedApp, tool_id: str) -> "Repository":
+def guid_to_repository(app: ToolShedApp, tool_id: str) -> Repository:
     # tool_id = remove_protocol_and_user_from_clone_url(tool_id)
     shed, _, owner, name, rest = tool_id.split("/", 5)
-    return _get_repository_by_name_and_owner(app.model.context, name, owner, app.model.User)
+    return _get_repository_by_name_and_owner(app.model.context, name, owner)
 
 
-def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
+def index_tool_ids(app: ToolShedApp, tool_ids: list[str]) -> dict[str, Any]:
     repository_found = []
     all_metadata = {}
     for tool_id in tool_ids:
@@ -211,19 +238,19 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
         owner = repository.user.username
         name = repository.name
         assert name
-        repository = _get_repository_by_name_and_owner(app.model.session().current, name, owner, app.model.User)
+        repository = _get_repository_by_name_and_owner(app.model.session, name, owner)
         if not repository:
             log.warning(f"Repository {owner}/{name} does not exist, skipping")
             continue
         for changeset, changehash in repository.installable_revisions(app):
             metadata = get_current_repository_metadata_for_changeset_revision(app, repository, changehash)
-            tools: Optional[List[Dict[str, Any]]] = metadata.metadata.get("tools")
+            tools: list[dict[str, Any]] | None = metadata.metadata.get("tools")
             if not tools:
                 log.warning(f"Repository {owner}/{name}/{changehash} does not contain valid tools, skipping")
                 continue
             for tool_metadata in tools:
                 if tool_metadata["guid"] in tool_ids:
-                    repository_found.append("%d:%s" % (int(changeset), changehash))
+                    repository_found.append(f"{int(changeset)}:{changehash}")
             metadata = get_current_repository_metadata_for_changeset_revision(app, repository, changehash)
             if metadata is None:
                 continue
@@ -252,9 +279,40 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
         return {}
 
 
-def index_repositories(app: ToolShedApp, name: Optional[str], owner: Optional[str], deleted: bool):
-    return list(
-        _get_repositories_by_name_and_owner_and_deleted(app.model.context, name, owner, deleted, app.model.User)
+class IndexRequest(BaseModel):
+    name: str | None = None
+    owner: str | None = None
+    deleted: bool = False
+    filter: str | None = None
+    category_id: str | None = None
+    sort_by: IndexSortByType = "name"
+    sort_desc: bool = False
+
+
+class PaginatedIndexRequest(IndexRequest):
+    page: int
+    page_size: int
+
+
+def index_repositories(app: ToolShedApp, index_request: IndexRequest) -> list[Repository]:
+    session = app.model.context
+    return list(session.scalars(_get_repositories_by_name_and_owner_and_deleted(app.security, index_request)))
+
+
+def index_repositories_paginated(
+    app: ToolShedApp, index_request: PaginatedIndexRequest
+) -> PaginatedRepositoryIndexResults:
+    session = app.model.context
+    stmt = _get_repositories_by_name_and_owner_and_deleted(app.security, index_request)
+    total_results = session.scalar(select(func.count()).select_from(stmt.subquery()))
+    stmt = stmt.limit(index_request.page_size).offset((index_request.page - 1) * index_request.page_size)
+    results = (to_model(app, r) for r in session.scalars(stmt).all())
+    return PaginatedRepositoryIndexResults(
+        total_results=total_results,
+        page=index_request.page,
+        page_size=index_request.page_size,
+        hits=list(results),
+        hostname=deprecated_hostname(app),
     )
 
 
@@ -273,8 +331,7 @@ def get_repository_metadata_for_management(
     trans: ProvidesUserContext, encoded_repository_id: str, changeset_revision: str
 ) -> RepositoryMetadata:
     repository = get_repository_in_tool_shed(trans.app, encoded_repository_id)
-    if not can_manage_repo(trans, repository):
-        raise InsufficientPermissionsException("Cannot manage target repository")
+    ensure_can_manage(trans, repository, "Cannot manage target repository")
     revisions = [r for r in repository.metadata_revisions if r.changeset_revision == changeset_revision]
     if len(revisions) != 1:
         raise ObjectNotFound()
@@ -290,7 +347,7 @@ def get_install_info(trans: ProvidesRepositoriesContext, name, owner, changeset_
     if name and owner and changeset_revision:
         # Get the repository information.
         repository = get_repository_by_name_and_owner(
-            app, name, owner, eagerload_columns=[Repository.downloadable_revisions]
+            app.model.context, name, owner, eagerload_columns=[Repository.downloadable_revisions]
         )
         if repository is None:
             log.debug(f"Cannot locate repository {name} owned by {owner}")
@@ -330,7 +387,13 @@ def get_install_info(trans: ProvidesRepositoriesContext, name, owner, changeset_
                 includes_tools_for_display_in_tool_panel,
                 has_repository_dependencies,
                 has_repository_dependencies_only_if_compiling_contained_td,
-            ) = get_repo_info_dict(trans, encoded_repository_id, changeset_revision)
+            ) = get_repo_info_dict(
+                trans,
+                encoded_repository_id,
+                changeset_revision,
+                repository=repository,
+                repository_metadata=repository_metadata,
+            )
             return repository_dict, repository_metadata_dict, repo_info_dict
         else:
             log.debug(
@@ -346,7 +409,7 @@ def get_install_info(trans: ProvidesRepositoriesContext, name, owner, changeset_
         return {}, {}, {}
 
 
-def get_value_mapper(app: ToolShedApp) -> Dict[str, Callable]:
+def get_value_mapper(app: ToolShedApp) -> dict[str, Callable]:
     value_mapper = {
         "id": app.security.encode_id,
         "repository_id": app.security.encode_id,
@@ -356,12 +419,14 @@ def get_value_mapper(app: ToolShedApp) -> Dict[str, Callable]:
 
 
 def get_ordered_installable_revisions(
-    app: ToolShedApp, name: Optional[str], owner: Optional[str], tsr_id: Optional[str]
-) -> List[str]:
+    app: ToolShedApp, name: str | None, owner: str | None, tsr_id: str | None
+) -> list[str]:
     eagerload_columns = [Repository.downloadable_revisions]
     if None not in [name, owner]:
         # Get the repository information.
-        repository = get_repository_by_name_and_owner(app, name, owner, eagerload_columns=eagerload_columns)
+        repository = get_repository_by_name_and_owner(
+            app.model.context, name, owner, eagerload_columns=eagerload_columns
+        )
         if repository is None:
             raise ObjectNotFound(f"No repository named {name} found with owner {owner}")
     elif tsr_id is not None:
@@ -374,32 +439,84 @@ def get_ordered_installable_revisions(
     return [revision[1] for revision in repository.installable_revisions(app, sort_revisions=True)]
 
 
-def get_repository_metadata_dict(app: ToolShedApp, id: str, recursive: bool, downloadable_only: bool) -> Dict[str, Any]:
+def get_repository_metadata_dict_for_repository(
+    app: ToolShedApp, repository: Repository, recursive: bool, downloadable_only: bool
+) -> dict[str, Any]:
+    """Get metadata dict for a Repository object (vs encoded ID string)."""
     all_metadata = {}
-    repository = get_repository_in_tool_shed(app, id, eagerload_columns=[Repository.downloadable_revisions])
     for changeset, changehash in get_metadata_revisions(
         app, repository, sort_revisions=True, downloadable=downloadable_only
     ):
         metadata = get_current_repository_metadata_for_changeset_revision(app, repository, changehash)
         if metadata is None:
             continue
-        metadata_dict = metadata.to_dict(
-            value_mapper={"id": app.security.encode_id, "repository_id": app.security.encode_id}
-        )
-        metadata_dict["repository"] = repository.to_dict(
-            value_mapper={"id": app.security.encode_id, "user_id": app.security.encode_id}
-        )
-        if metadata.has_repository_dependencies and recursive:
-            metadata_dict["repository_dependencies"] = get_all_dependencies(
-                app, metadata, processed_dependency_links=[]
-            )
-        else:
-            metadata_dict["repository_dependencies"] = []
-        if metadata.includes_tools:
-            metadata_dict["tools"] = metadata.metadata["tools"]
-        metadata_dict["invalid_tools"] = metadata.metadata.get("invalid_tools", [])
+        metadata_dict = get_repository_revision_metadata_dict(app, repository, metadata, recursive=recursive)
         all_metadata[f"{int(changeset)}:{changehash}"] = metadata_dict
     return all_metadata
+
+
+def get_repository_metadata_dict(app: ToolShedApp, id: str, recursive: bool, downloadable_only: bool) -> dict[str, Any]:
+    repository = get_repository_in_tool_shed(app, id, eagerload_columns=[Repository.downloadable_revisions])
+    return get_repository_metadata_dict_for_repository(app, repository, recursive, downloadable_only)
+
+
+def serialize_regenerated_metadata(
+    app: ToolShedApp, repository: Repository, regenerated_metadata: dict[str, "RepositoryMetadata"]
+) -> dict[str, Any]:
+    """Serialize in-memory RepositoryMetadata objects (for dry_run after snapshot).
+
+    Args:
+        app: The ToolShed app
+        repository: The repository these metadata objects belong to
+        regenerated_metadata: Dict mapping changeset_revision (hash) to RepositoryMetadata objects
+
+    Returns:
+        Dict mapping "{numeric_rev}:{changeset_hash}" to serialized metadata dicts
+    """
+    all_metadata = {}
+    hg_repo = repository.hg_repo
+
+    for changeset_hash, metadata_obj in regenerated_metadata.items():
+        # Look up numeric revision from the mercurial repo
+        try:
+            ctx = hg_repo[changeset_hash]
+            numeric_rev = ctx.rev()
+        except Exception:
+            # If we can't find the changeset, use -1 as a fallback
+            numeric_rev = -1
+
+        metadata_dict = get_repository_revision_metadata_dict(app, repository, metadata_obj, recursive=False)
+        all_metadata[f"{int(numeric_rev)}:{changeset_hash}"] = metadata_dict
+
+    return all_metadata
+
+
+def get_repository_revision_metadata_dict(
+    app: ToolShedApp, repository: Repository, metadata: RepositoryMetadata, recursive: bool = False
+):
+    # Create a safe encoder that handles None IDs (for unpersisted dry-run objects)
+    def safe_encode_id(id_value):
+        return app.security.encode_id(id_value) if id_value is not None else None
+
+    metadata_dict = metadata.to_dict(value_mapper={"id": safe_encode_id, "repository_id": safe_encode_id})
+    metadata_dict["repository"] = repository.to_dict(
+        value_mapper={"id": app.security.encode_id, "user_id": app.security.encode_id}
+    )
+    if metadata.has_repository_dependencies and recursive:
+        metadata_dict["repository_dependencies"] = get_all_dependencies(app, metadata, processed_dependency_links=[])
+    else:
+        metadata_dict["repository_dependencies"] = []
+    if metadata.includes_tools:
+        metadata_dict["tools"] = metadata.metadata["tools"]
+    metadata_dict["invalid_tools"] = build_invalid_tools(metadata.metadata)
+    return metadata_dict
+
+
+def get_repository_revision_metadata_model(
+    app: ToolShedApp, repository: Repository, metadata: RepositoryMetadata, recursive: bool = False
+) -> RepositoryRevisionMetadata:
+    as_dict = get_repository_revision_metadata_dict(app, repository, metadata, recursive=recursive)
+    return RepositoryRevisionMetadata(**as_dict)
 
 
 def readmes(app: ToolShedApp, repository: Repository, changeset_revision: str) -> dict:
@@ -412,11 +529,25 @@ def readmes(app: ToolShedApp, repository: Repository, changeset_revision: str) -
     return {}
 
 
-def reset_metadata_on_repository(trans: ProvidesUserContext, repository_id) -> ResetMetadataOnRepositoryResponse:
+def reset_metadata_on_repository(
+    trans: ProvidesRepositoriesContext,
+    repository_id,
+    dry_run: bool = False,
+    verbose: bool = False,
+    repository_clone_url: str | None = None,
+) -> ResetMetadataOnRepositoryResponse:
     app: ToolShedApp = trans.app
 
-    def handle_repository(trans, start_time, repository):
-        results = dict(start_time=start_time, repository_status=[])
+    def handle_repository(
+        trans: ProvidesRepositoriesContext,
+        start_time,
+        repository,
+        dry_run: bool,
+        verbose: bool,
+        clone_url: str | None = None,
+    ):
+        results: dict = dict(start_time=start_time, repository_status=[], dry_run=dry_run)
+        regenerated_metadata = {}
         try:
             rmm = repository_metadata_manager.RepositoryMetadataManager(
                 trans,
@@ -425,7 +556,12 @@ def reset_metadata_on_repository(trans: ProvidesUserContext, repository_id) -> R
                 updating_installed_repository=False,
                 persist=False,
             )
-            rmm.reset_all_metadata_on_repository_in_tool_shed()
+            reset_result = rmm.reset_all_metadata_on_repository_in_tool_shed(
+                repository_clone_url=clone_url, dry_run=dry_run, verbose=verbose
+            )
+            if verbose:
+                results["changeset_details"] = reset_result.changeset_details
+            regenerated_metadata = reset_result.regenerated_metadata
             rmm_invalid_file_tups = rmm.get_invalid_file_tups()
             if rmm_invalid_file_tups:
                 message = generate_message_for_invalid_tools(
@@ -433,9 +569,8 @@ def reset_metadata_on_repository(trans: ProvidesUserContext, repository_id) -> R
                 )
                 results["status"] = "warning"
             else:
-                message = (
-                    f"Successfully reset metadata on repository {repository.name} owned by {repository.user.username}"
-                )
+                action_desc = "Would reset" if dry_run else "Successfully reset"
+                message = f"{action_desc} metadata on repository {repository.name} owned by {repository.user.username}"
                 results["status"] = "ok"
         except Exception as e:
             message = (
@@ -444,16 +579,115 @@ def reset_metadata_on_repository(trans: ProvidesUserContext, repository_id) -> R
             results["status"] = "error"
         status = f"{repository.name} : {message}"
         results["repository_status"].append(status)
-        return results
+        return results, regenerated_metadata
 
     if repository_id is not None:
         repository = get_repository_in_tool_shed(app, repository_id)
         start_time = strftime("%Y-%m-%d %H:%M:%S")
-        log.debug(f"{start_time}...resetting metadata on repository {repository.name}")
-        results = handle_repository(trans, start_time, repository)
+        log.debug(f"{start_time}...resetting metadata on repository {repository.name} (dry_run={dry_run})")
+
+        # Capture before state if verbose
+        metadata_before = None
+        if verbose:
+            as_dict = get_repository_metadata_dict_for_repository(
+                app, repository, recursive=False, downloadable_only=False
+            )
+            metadata_before = RepositoryMetadataPreview(root=as_dict)
+
+        results, regenerated_metadata = handle_repository(
+            trans, start_time, repository, dry_run, verbose, repository_clone_url
+        )
+
+        # Capture after state if verbose - use regenerated metadata for accurate diff
+        metadata_after = None
+        if verbose:
+            # Use the regenerated metadata objects for the "after" snapshot
+            # This shows what was actually generated (and persisted for non-dry-run,
+            # or what would be persisted for dry-run)
+            as_dict = serialize_regenerated_metadata(app, repository, regenerated_metadata)
+            metadata_after = RepositoryMetadataPreview(root=as_dict)
+
         stop_time = strftime("%Y-%m-%d %H:%M:%S")
         results["stop_time"] = stop_time
+        results["repository_metadata_before"] = metadata_before
+        results["repository_metadata_after"] = metadata_after
     return ResetMetadataOnRepositoryResponse(**results)
+
+
+def reset_metadata_on_repositories(
+    trans: ProvidesRepositoriesContext, request: ResetMetadataOnRepositoriesRequest
+) -> ResetMetadataOnRepositoriesResponse:
+
+    def handle_repository(trans: ProvidesRepositoriesContext, repository, results):
+        log.debug(f"Resetting metadata on repository {repository.name}")
+        try:
+            rmm = repository_metadata_manager.RepositoryMetadataManager(
+                trans,
+                resetting_all_metadata_on_repository=True,
+                updating_installed_repository=False,
+                repository=repository,
+                persist=False,
+            )
+            rmm.reset_all_metadata_on_repository_in_tool_shed()
+            rmm_invalid_file_tups = rmm.get_invalid_file_tups()
+            if rmm_invalid_file_tups:
+                message = generate_message_for_invalid_tools(
+                    trans.app, rmm_invalid_file_tups, repository, None, as_html=False
+                )
+                results["unsuccessful_count"] += 1
+            else:
+                message = (
+                    f"Successfully reset metadata on repository {repository.name} owned by {repository.user.username}"
+                )
+                results["successful_count"] += 1
+        except Exception as e:
+            message = (
+                f"Error resetting metadata on repository {repository.name} owned by {repository.user.username}: {e}"
+            )
+            results["unsuccessful_count"] += 1
+        status = f"{repository.name} : {message}"
+        results["repository_status"].append(status)
+        return results
+
+    start_time = strftime("%Y-%m-%d %H:%M:%S")
+    results = dict(start_time=start_time, repository_status=[], successful_count=0, unsuccessful_count=0)
+    handled_repository_ids: list[str] = []
+    encoded_ids_to_skip = request.encoded_ids_to_skip or []
+    if trans.user_is_admin:
+        my_writable = request.my_writable
+    else:
+        my_writable = True
+    rmm = repository_metadata_manager.RepositoryMetadataManager(
+        trans,
+        resetting_all_metadata_on_repository=True,
+        updating_installed_repository=False,
+        persist=False,
+    )
+    # First reset metadata on all repositories of type repository_dependency_definition.
+    for repository in rmm.get_repositories_for_setting_metadata(my_writable=my_writable, order=False):
+        encoded_id = trans.security.encode_id(repository.id)
+        if encoded_id in encoded_ids_to_skip:
+            log.debug(
+                "Skipping repository with id %s because it is in encoded_ids_to_skip %s",
+                repository.id,
+                encoded_ids_to_skip,
+            )
+        elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
+            results = handle_repository(trans, repository, results)
+    # Now reset metadata on all remaining repositories.
+    for repository in rmm.get_repositories_for_setting_metadata(my_writable=my_writable, order=False):
+        encoded_id = trans.security.encode_id(repository.id)
+        if encoded_id in encoded_ids_to_skip:
+            log.debug(
+                "Skipping repository with id %s because it is in encoded_ids_to_skip %s",
+                repository.id,
+                encoded_ids_to_skip,
+            )
+        elif repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
+            results = handle_repository(trans, repository, results)
+    stop_time = strftime("%Y-%m-%d %H:%M:%S")
+    results["stop_time"] = stop_time
+    return ResetMetadataOnRepositoriesResponse(**results)
 
 
 def create_repository(trans: ProvidesUserContext, request: CreateRepositoryRequest) -> Repository:
@@ -479,7 +713,7 @@ def create_repository(trans: ProvidesUserContext, request: CreateRepositoryReque
     return repo
 
 
-def to_element_dict(app, repository: Repository, include_categories: bool = False) -> Dict[str, Any]:
+def to_element_dict(app, repository: Repository, include_categories: bool = False) -> dict[str, Any]:
     value_mapper = get_value_mapper(app)
     repository_dict = repository.to_dict(view="element", value_mapper=value_mapper)
     if include_categories:
@@ -490,13 +724,13 @@ def to_element_dict(app, repository: Repository, include_categories: bool = Fals
 def repositories_by_category(
     app: ToolShedApp,
     category_id: str,
-    page: Optional[int] = None,
+    page: int | None = None,
     sort_key: str = "name",
     sort_order: str = "asc",
     installable: bool = True,
 ):
     category = get_category(app, category_id)
-    category_dict: Dict[str, Any]
+    category_dict: dict[str, Any]
     if category is None:
         category_dict = dict(message=f"Unable to locate category record for id {str(id)}.", status="error")
         return category_dict
@@ -582,27 +816,378 @@ def upload_tar_and_set_metadata(
     return message
 
 
-def _get_repository_by_name_and_owner(session: scoped_session, name: str, owner: str, user_model):
+def ensure_can_manage(trans: ProvidesUserContext, repository: Repository, error_message: str | None = None) -> None:
+    if not can_manage_repo(trans, repository):
+        error_message = error_message or "You do not have permission to update this repository."
+        raise InsufficientPermissionsException(error_message)
+
+
+def _get_repository_by_name_and_owner(session: scoped_session, name: str, owner: str):
     stmt = (
         select(Repository)
         .where(Repository.deprecated == false())
         .where(Repository.deleted == false())
         .where(Repository.name == name)
-        .where(user_model.username == owner)
-        .where(Repository.user_id == user_model.id)
+        .where(User.username == owner)
+        .where(Repository.user_id == User.id)
         .limit(1)
     )
     return session.scalars(stmt).first()
 
 
-def _get_repositories_by_name_and_owner_and_deleted(
-    session: scoped_session, name: Optional[str], owner: Optional[str], deleted: bool, user_model
-):
+def _get_repositories_by_name_and_owner_and_deleted(security: IdEncodingHelper, index_request: IndexRequest):
+    owner = index_request.owner
+    name = index_request.name
+    deleted = index_request.deleted
+    filter = index_request.filter
     stmt = select(Repository).where(Repository.deprecated == false()).where(Repository.deleted == deleted)
+    if owner is not None or filter:
+        stmt = stmt.join(Repository.user)
     if owner is not None:
-        stmt = stmt.where(user_model.username == owner)
-        stmt = stmt.where(Repository.user_id == user_model.id)
+        stmt = stmt.where(User.username == owner)
     if name is not None:
         stmt = stmt.where(Repository.name == name)
-    stmt = stmt.order_by(Repository.name)
-    return session.scalars(stmt)
+    if filter:
+        filter_ilike_str = f"%{filter}%"
+        stmt = stmt.where(
+            or_(
+                User.username.ilike(filter_ilike_str),
+                Repository.name.ilike(filter_ilike_str),
+                Repository.description.ilike(filter_ilike_str),
+            )
+        )
+    if index_request.category_id is not None:
+        category_id = security.decode_id(index_request.category_id)
+        stmt = stmt.where(RepositoryCategoryAssociation.category_id == category_id)
+        stmt = stmt.where(RepositoryCategoryAssociation.repository_id == Repository.id)
+    sort_by_str = index_request.sort_by
+    sort_desc = index_request.sort_desc
+    sort_by: Any
+    if sort_by_str == "name":
+        sort_by = Repository.name
+    elif sort_by_str == "create_time":
+        sort_by = Repository.create_time
+    if sort_desc:
+        sort_by = sort_by.desc()
+    stmt = stmt.order_by(sort_by)
+    return stmt
+
+
+def usernames_with_admin_role(app: ToolShedApp, repository: Repository) -> list[str]:
+    """Return usernames associated with the repository's admin role."""
+    admin_role = repository.admin_role
+    return [ura.user.username for ura in admin_role.users]
+
+
+def add_admin_user(app: ToolShedApp, repository: Repository, username: str) -> list[str]:
+    """Grant admin role to a user by username. Returns updated admin list."""
+    sa_session = app.model.session
+    user = sa_session.scalars(select(User).where(User.username == username)).first()
+    if user is None:
+        raise ObjectNotFound(f"No user found with username '{username}'")
+    admin_role = repository.admin_role
+    for ura in admin_role.users:
+        if ura.user.id == user.id:
+            return usernames_with_admin_role(app, repository)
+    app.security_agent.associate_user_role(user, admin_role)
+    sa_session.refresh(admin_role)
+    return usernames_with_admin_role(app, repository)
+
+
+def remove_admin_user(app: ToolShedApp, repository: Repository, username: str) -> list[str]:
+    """Revoke admin role from a user. Owner cannot be removed."""
+    sa_session = app.model.session
+    if username == repository.user.username:
+        raise RequestParameterInvalidException("The repository owner cannot be removed from the admin role.")
+    admin_role = repository.admin_role
+    for ura in admin_role.users:
+        if ura.user.username == username:
+            sa_session.delete(ura)
+            sa_session.commit()
+            sa_session.refresh(admin_role)
+            return usernames_with_admin_role(app, repository)
+    raise ObjectNotFound(f"User '{username}' is not an admin of this repository.")
+
+
+# ---------------------------------------------------------------------------
+# Galaxy→ToolShed install-protocol helpers (migrated from legacy controller)
+# ---------------------------------------------------------------------------
+
+
+def _has_galaxy_utilities(repository_metadata: RepositoryMetadata | None) -> dict:
+    """Extract boolean flags describing what Galaxy utilities a repository revision contains."""
+    d = dict(
+        includes_data_managers=False,
+        includes_datatypes=False,
+        includes_tools=False,
+        includes_tools_for_display_in_tool_panel=False,
+        has_repository_dependencies=False,
+        has_repository_dependencies_only_if_compiling_contained_td=False,
+        includes_tool_dependencies=False,
+        includes_workflows=False,
+    )
+    if repository_metadata:
+        metadata = repository_metadata.metadata
+        if metadata:
+            if "data_manager" in metadata:
+                d["includes_data_managers"] = True
+            if "datatypes" in metadata:
+                d["includes_datatypes"] = True
+            if "tools" in metadata:
+                d["includes_tools"] = True
+            if "tool_dependencies" in metadata:
+                d["includes_tool_dependencies"] = True
+            repository_dependencies_dict = metadata.get("repository_dependencies", {})
+            repository_dependencies = repository_dependencies_dict.get("repository_dependencies", [])
+            (
+                has_repository_dependencies,
+                has_repository_dependencies_only_if_compiling_contained_td,
+            ) = get_repository_dependency_types(repository_dependencies)
+            d["has_repository_dependencies"] = has_repository_dependencies
+            d["has_repository_dependencies_only_if_compiling_contained_td"] = (
+                has_repository_dependencies_only_if_compiling_contained_td
+            )
+            if "workflows" in metadata:
+                d["includes_workflows"] = True
+    return d
+
+
+def get_ctx_rev_for_repository(app: ToolShedApp, name: str, owner: str, changeset_revision: str) -> str:
+    """Given a repository and changeset_revision, return the correct ctx.rev() value."""
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
+    repo = repository.hg_repo
+    if ctx := get_changectx_for_changeset(repo, changeset_revision):
+        return str(ctx.rev())
+    return ""
+
+
+def get_changeset_revision_and_ctx_rev_str(app: ToolShedApp, name: str, owner: str, changeset_revision: str) -> str:
+    """Determine update target for an installed repository and return tool_shed_encode'd dict."""
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
+    repository_metadata = get_repository_metadata_by_changeset_revision(
+        app, app.security.encode_id(repository.id), changeset_revision
+    )
+    has_galaxy_utilities_dict = _has_galaxy_utilities(repository_metadata)
+    includes_data_managers = has_galaxy_utilities_dict["includes_data_managers"]
+    includes_datatypes = has_galaxy_utilities_dict["includes_datatypes"]
+    includes_tools = has_galaxy_utilities_dict["includes_tools"]
+    includes_tools_for_display_in_tool_panel = has_galaxy_utilities_dict["includes_tools_for_display_in_tool_panel"]
+    includes_tool_dependencies = has_galaxy_utilities_dict["includes_tool_dependencies"]
+    has_repository_dependencies = has_galaxy_utilities_dict["has_repository_dependencies"]
+    has_repository_dependencies_only_if_compiling_contained_td = has_galaxy_utilities_dict[
+        "has_repository_dependencies_only_if_compiling_contained_td"
+    ]
+    includes_workflows = has_galaxy_utilities_dict["includes_workflows"]
+    repo = repository.hg_repo
+    # Default to the received changeset revision and ctx_rev.
+    update_to_ctx = get_changectx_for_changeset(repo, changeset_revision)
+    ctx_rev = str(update_to_ctx.rev())
+    latest_changeset_revision = changeset_revision
+    update_dict = dict(
+        changeset_revision=changeset_revision,
+        ctx_rev=ctx_rev,
+        includes_data_managers=includes_data_managers,
+        includes_datatypes=includes_datatypes,
+        includes_tools=includes_tools,
+        includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
+        includes_tool_dependencies=includes_tool_dependencies,
+        has_repository_dependencies=has_repository_dependencies,
+        has_repository_dependencies_only_if_compiling_contained_td=has_repository_dependencies_only_if_compiling_contained_td,
+        includes_workflows=includes_workflows,
+    )
+    if changeset_revision == repository.tip():
+        # If changeset_revision is the repository tip, there are no additional updates.
+        return tool_shed_encode(update_dict)
+    else:
+        if repository_metadata:
+            # If changeset_revision is in the repository_metadata table, no additional updates.
+            return tool_shed_encode(update_dict)
+        else:
+            # The changeset_revision column has been updated with a new value since the
+            # repository was installed.  Find the changeset_revision to update to.
+            update_to_changeset_hash = None
+            for changeset in repo.changelog:
+                includes_tools = False
+                has_repository_dependencies = False
+                has_repository_dependencies_only_if_compiling_contained_td = False
+                changeset_hash = str(repo[changeset])
+                if update_to_changeset_hash:
+                    update_to_repository_metadata = get_repository_metadata_by_changeset_revision(
+                        app, app.security.encode_id(repository.id), changeset_hash
+                    )
+                    if update_to_repository_metadata:
+                        has_galaxy_utilities_dict = _has_galaxy_utilities(repository_metadata)
+                        includes_data_managers = has_galaxy_utilities_dict["includes_data_managers"]
+                        includes_datatypes = has_galaxy_utilities_dict["includes_datatypes"]
+                        includes_tools = has_galaxy_utilities_dict["includes_tools"]
+                        includes_tools_for_display_in_tool_panel = has_galaxy_utilities_dict[
+                            "includes_tools_for_display_in_tool_panel"
+                        ]
+                        includes_tool_dependencies = has_galaxy_utilities_dict["includes_tool_dependencies"]
+                        has_repository_dependencies = has_galaxy_utilities_dict["has_repository_dependencies"]
+                        has_repository_dependencies_only_if_compiling_contained_td = has_galaxy_utilities_dict[
+                            "has_repository_dependencies_only_if_compiling_contained_td"
+                        ]
+                        includes_workflows = has_galaxy_utilities_dict["includes_workflows"]
+                        # We found a RepositoryMetadata record.
+                        if changeset_hash == repository.tip():
+                            # The current ctx is the repository tip, so use it.
+                            update_to_ctx = get_changectx_for_changeset(repo, changeset_hash)
+                            latest_changeset_revision = changeset_hash
+                        else:
+                            update_to_ctx = get_changectx_for_changeset(repo, update_to_changeset_hash)
+                            latest_changeset_revision = update_to_changeset_hash
+                        break
+                elif not update_to_changeset_hash and changeset_hash == changeset_revision:
+                    # We've found the changeset in the changelog for which we need to get the next update.
+                    update_to_changeset_hash = changeset_hash
+            update_dict["includes_data_managers"] = includes_data_managers
+            update_dict["includes_datatypes"] = includes_datatypes
+            update_dict["includes_tools"] = includes_tools
+            update_dict["includes_tools_for_display_in_tool_panel"] = includes_tools_for_display_in_tool_panel
+            update_dict["includes_tool_dependencies"] = includes_tool_dependencies
+            update_dict["includes_workflows"] = includes_workflows
+            update_dict["has_repository_dependencies"] = has_repository_dependencies
+            update_dict["has_repository_dependencies_only_if_compiling_contained_td"] = (
+                has_repository_dependencies_only_if_compiling_contained_td
+            )
+            update_dict["changeset_revision"] = str(latest_changeset_revision)
+    update_dict["ctx_rev"] = str(update_to_ctx.rev())
+    return tool_shed_encode(update_dict)
+
+
+def get_repository_dependencies_for_install(
+    app: ToolShedApp, trans: ProvidesRepositoriesContext, name: str, owner: str, changeset_revision: str
+) -> str:
+    """Return an encoded dictionary of all repository dependencies for installation."""
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
+    dependencies = repository.get_repository_dependencies(
+        app, changeset_revision, trans.repositories_hostname, trans=trans
+    )
+    if dependencies:
+        return tool_shed_encode(dependencies)
+    return ""
+
+
+def _get_repository_information(
+    trans: ProvidesRepositoriesContext, repository_ids: list, changeset_revisions: list
+) -> dict:
+    """Build repo info dicts for a batch of repositories needed for installation."""
+    includes_tools = False
+    includes_tools_for_display_in_tool_panel = False
+    has_repository_dependencies = False
+    has_repository_dependencies_only_if_compiling_contained_td = False
+    includes_tool_dependencies = False
+    repo_info_dicts = []
+    for repository_id, changeset_revision in zip(listify(repository_ids), listify(changeset_revisions)):
+        (
+            repo_info_dict,
+            cur_includes_tools,
+            cur_includes_tool_dependencies,
+            cur_includes_tools_for_display_in_tool_panel,
+            cur_has_repository_dependencies,
+            cur_has_repository_dependencies_only_if_compiling_contained_td,
+        ) = get_repo_info_dict(trans, repository_id, changeset_revision)
+        if cur_has_repository_dependencies and not has_repository_dependencies:
+            has_repository_dependencies = True
+        if (
+            cur_has_repository_dependencies_only_if_compiling_contained_td
+            and not has_repository_dependencies_only_if_compiling_contained_td
+        ):
+            has_repository_dependencies_only_if_compiling_contained_td = True
+        if cur_includes_tools and not includes_tools:
+            includes_tools = True
+        if cur_includes_tool_dependencies and not includes_tool_dependencies:
+            includes_tool_dependencies = True
+        if cur_includes_tools_for_display_in_tool_panel and not includes_tools_for_display_in_tool_panel:
+            includes_tools_for_display_in_tool_panel = True
+        repo_info_dicts.append(tool_shed_encode(repo_info_dict))
+    return dict(
+        includes_tools=includes_tools,
+        includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
+        has_repository_dependencies=has_repository_dependencies,
+        has_repository_dependencies_only_if_compiling_contained_td=has_repository_dependencies_only_if_compiling_contained_td,
+        includes_tool_dependencies=includes_tool_dependencies,
+        repo_info_dicts=repo_info_dicts,
+    )
+
+
+def get_required_repo_info_dict_from_encoded(trans: ProvidesRepositoriesContext, encoded_str: str | None) -> dict:
+    """Decode an encoded string of repository dependency tuples and return installation info."""
+    repo_info_dict: dict = {}
+    if encoded_str:
+        encoded_required_repository_str = tool_shed_decode(encoded_str)
+        encoded_required_repository_tups = encoded_required_repository_str.split(encoding_sep2)
+        decoded_required_repository_tups = []
+        for encoded_required_repository_tup in encoded_required_repository_tups:
+            decoded_required_repository_tups.append(encoded_required_repository_tup.split(encoding_sep))
+        encoded_repository_ids = []
+        changeset_revisions = []
+        for required_repository_tup in decoded_required_repository_tups:
+            (
+                tool_shed,
+                name,
+                owner,
+                changeset_revision,
+                prior_installation_required,
+                only_if_compiling_contained_td,
+            ) = parse_repository_dependency_tuple(required_repository_tup)
+            repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
+            encoded_repository_ids.append(trans.security.encode_id(repository.id))
+            changeset_revisions.append(changeset_revision)
+        if encoded_repository_ids and changeset_revisions:
+            repo_info_dict = _get_repository_information(trans, encoded_repository_ids, changeset_revisions)
+    return repo_info_dict
+
+
+def next_installable_changeset_revision_str(app: ToolShedApp, name: str, owner: str, changeset_revision: str) -> str:
+    """Return the next installable changeset revision beyond the given one."""
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
+    next_changeset_revision = get_next_downloadable_changeset_revision(app, repository, changeset_revision)
+    if next_changeset_revision and next_changeset_revision != changeset_revision:
+        return next_changeset_revision
+    return ""
+
+
+def previous_changeset_revisions_str(
+    app: ToolShedApp, name: str, owner: str, changeset_revision: str, from_tip: bool = False
+) -> str:
+    """Return comma-separated changeset hashes between previous metadata revision and the given one."""
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
+    if from_tip:
+        changeset_revision = repository.tip()
+    if changeset_revision is not None:
+        repo = repository.hg_repo
+        lower_bound_changeset_revision = get_previous_metadata_changeset_revision(
+            app, repository, changeset_revision, downloadable=True
+        )
+        changeset_hashes = []
+        for changeset in reversed_lower_upper_bounded_changelog(
+            repo, lower_bound_changeset_revision, changeset_revision
+        ):
+            changeset_hashes.append(str(repo[changeset]))
+        if changeset_hashes:
+            return ",".join(changeset_hashes)
+    return ""
+
+
+def updated_changeset_revisions_str(app: ToolShedApp, name: str, owner: str, changeset_revision: str) -> str:
+    """Return comma-separated changeset revision hashes for all available updates."""
+    if name and owner and changeset_revision:
+        return get_updated_changeset_revisions(app, name, owner, changeset_revision)
+    return ""
+
+
+def get_repository_type_str(app: ToolShedApp, name: str, owner: str) -> str:
+    """Given a repository name and owner, return the type."""
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
+    return str(repository.type)
+
+
+def get_tool_dependencies_for_changeset(app: ToolShedApp, name: str, owner: str, changeset_revision: str) -> str:
+    """Return encoded tool dependencies for a changeset revision."""
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
+    dependencies = repository.get_tool_dependencies(app, changeset_revision)
+    if len(dependencies) > 0:
+        return tool_shed_encode(dependencies)
+    return ""

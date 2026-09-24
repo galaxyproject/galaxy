@@ -92,7 +92,7 @@ def display(api_key, url, return_formatted=True):
                 # All collection members should have a name in the response.
                 # url is optional
                 if "url" in i:
-                    print("#%d: %s" % (n + 1, i.pop("url")))
+                    print("#{}: {}".format(n + 1, i.pop("url")))
                 if "name" in i:
                     print(f"  name: {i.pop('name')}")
                 try:
@@ -102,7 +102,7 @@ def display(api_key, url, return_formatted=True):
                     for item in i:
                         print(item)
         print("")
-        print("%d element(s) in collection" % len(r))
+        print(f"{len(r)} element(s) in collection")
     elif isinstance(r, dict):
         # Response is an element as defined in the REST style.
         print("Member Information")

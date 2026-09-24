@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 310" width="680" height="310">
+  <defs>
+    <filter id="shadow" x="-4%" y="-4%" width="110%" height="110%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+      <feComponentTransfer in="blur">
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+    </marker>
+  </defs>
+
+  <!-- Input A -->
+  <rect x="10" y="10" width="150" height="90" rx="8" ry="8" fill="#fef3e2" stroke="#d4760a" stroke-width="1" filter="url(#shadow)"/>
+  <text x="85" y="28" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#d4760a">Input A</text>
+
+  <rect x="22" y="36" width="126" height="22" rx="4" ry="4" fill="#fff" stroke="#d4760a" stroke-width="0.5"/>
+  <text x="85" y="51" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#d4760a">a1</text>
+
+  <rect x="22" y="64" width="126" height="22" rx="4" ry="4" fill="#fff" stroke="#d4760a" stroke-width="0.5"/>
+  <text x="85" y="79" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#d4760a">a2</text>
+
+  <!-- Input B -->
+  <rect x="10" y="120" width="150" height="90" rx="8" ry="8" fill="#f0e8f5" stroke="#7b4fa0" stroke-width="1" filter="url(#shadow)"/>
+  <text x="85" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#7b4fa0">Input B</text>
+
+  <rect x="22" y="146" width="126" height="22" rx="4" ry="4" fill="#fff" stroke="#7b4fa0" stroke-width="0.5"/>
+  <text x="85" y="161" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#7b4fa0">b1</text>
+
+  <rect x="22" y="174" width="126" height="22" rx="4" ry="4" fill="#fff" stroke="#7b4fa0" stroke-width="0.5"/>
+  <text x="85" y="189" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#7b4fa0">b2</text>
+
+  <!-- Arrow -->
+  <line x1="175" y1="130" x2="310" y2="130" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="243" y="120" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#555">Cross</text>
+  <text x="243" y="148" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#888">product</text>
+
+  <!-- Output A (flat) -->
+  <rect x="325" y="10" width="170" height="140" rx="8" ry="8" fill="#fef3e2" stroke="#d4760a" stroke-width="1" filter="url(#shadow)"/>
+  <text x="410" y="28" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#d4760a">Output A</text>
+
+  <rect x="337" y="36" width="146" height="20" rx="4" ry="4" fill="#fff" stroke="#d4760a" stroke-width="0.5"/>
+  <text x="410" y="50" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#333">a1_b1  →  a1</text>
+
+  <rect x="337" y="62" width="146" height="20" rx="4" ry="4" fill="#fff" stroke="#d4760a" stroke-width="0.5"/>
+  <text x="410" y="76" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#333">a1_b2  →  a1</text>
+
+  <rect x="337" y="88" width="146" height="20" rx="4" ry="4" fill="#fff" stroke="#d4760a" stroke-width="0.5"/>
+  <text x="410" y="102" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#333">a2_b1  →  a2</text>
+
+  <rect x="337" y="114" width="146" height="20" rx="4" ry="4" fill="#fff" stroke="#d4760a" stroke-width="0.5"/>
+  <text x="410" y="128" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#333">a2_b2  →  a2</text>
+
+  <!-- Output B (flat) -->
+  <rect x="325" y="165" width="170" height="140" rx="8" ry="8" fill="#f0e8f5" stroke="#7b4fa0" stroke-width="1" filter="url(#shadow)"/>
+  <text x="410" y="183" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#7b4fa0">Output B</text>
+
+  <rect x="337" y="191" width="146" height="20" rx="4" ry="4" fill="#fff" stroke="#7b4fa0" stroke-width="0.5"/>
+  <text x="410" y="205" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#333">a1_b1  →  b1</text>
+
+  <rect x="337" y="217" width="146" height="20" rx="4" ry="4" fill="#fff" stroke="#7b4fa0" stroke-width="0.5"/>
+  <text x="410" y="231" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#333">a1_b2  →  b2</text>
+
+  <rect x="337" y="243" width="146" height="20" rx="4" ry="4" fill="#fff" stroke="#7b4fa0" stroke-width="0.5"/>
+  <text x="410" y="257" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#333">a2_b1  →  b1</text>
+
+  <rect x="337" y="269" width="146" height="20" rx="4" ry="4" fill="#fff" stroke="#7b4fa0" stroke-width="0.5"/>
+  <text x="410" y="283" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#333">a2_b2  →  b2</text>
+
+  <!-- Annotation -->
+  <text x="580" y="80" text-anchor="middle" font-family="sans-serif" font-size="10" font-style="italic" fill="#666">Match element-wise</text>
+  <text x="580" y="95" text-anchor="middle" font-family="sans-serif" font-size="10" font-style="italic" fill="#666">to get all-vs-all</text>
+
+  <!-- Brace-like connector -->
+  <line x1="500" y1="75" x2="530" y2="75" stroke="#aaa" stroke-width="1"/>
+  <line x1="500" y1="230" x2="530" y2="230" stroke="#aaa" stroke-width="1"/>
+  <line x1="530" y1="75" x2="530" y2="230" stroke="#aaa" stroke-width="1"/>
+  <line x1="530" y1="152" x2="545" y2="152" stroke="#aaa" stroke-width="1"/>
+
+  <text x="580" y="140" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#888">a1_b1: compare(a1,b1)</text>
+  <text x="580" y="153" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#888">a1_b2: compare(a1,b2)</text>
+  <text x="580" y="166" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#888">a2_b1: compare(a2,b1)</text>
+  <text x="580" y="179" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#888">a2_b2: compare(a2,b2)</text>
+
+</svg>

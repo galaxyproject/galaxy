@@ -5,10 +5,7 @@ Manager and Serializer for Library Folders.
 import logging
 from dataclasses import dataclass
 from typing import (
-    List,
-    Optional,
-    Tuple,
-    Union,
+    TYPE_CHECKING,
 )
 
 from sqlalchemy import (
@@ -48,10 +45,19 @@ from galaxy.model import (
     LibraryFolder,
     LibraryFolderPermissions,
 )
-from galaxy.model.base import transaction
+from galaxy.model.db.role import (
+    get_private_role_user_emails_dict,
+    role_name_id_pairs,
+)
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.schema import LibraryFolderContentsIndexQueryPayload
 from galaxy.security import RBACAgent
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import (
+        ProvidesAppContext,
+        ProvidesUserContext,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -60,7 +66,7 @@ log = logging.getLogger(__name__)
 class SecurityParams:
     """Contains security data bundled for reusability."""
 
-    user_role_ids: List[model.Role]
+    user_role_ids: list[int]
     security_agent: RBACAgent
     is_admin: bool
 
@@ -86,7 +92,13 @@ class FolderManager:
     Interface/service object for interacting with folders.
     """
 
-    def get(self, trans, decoded_folder_id: int, check_manageable: bool = False, check_accessible: bool = True):
+    def get(
+        self,
+        trans: "ProvidesUserContext",
+        decoded_folder_id: int,
+        check_manageable: bool = False,
+        check_accessible: bool = True,
+    ):
         """
         Get the folder from the DB.
 
@@ -110,7 +122,13 @@ class FolderManager:
         folder = self.secure(trans, folder, check_manageable, check_accessible)
         return folder
 
-    def secure(self, trans, folder, check_manageable=True, check_accessible=True):
+    def secure(
+        self,
+        trans: "ProvidesUserContext",
+        folder: LibraryFolder,
+        check_manageable: bool = True,
+        check_accessible: bool = True,
+    ):
         """
         Check if (a) user can manage folder or (b) folder is accessible to user.
 
@@ -133,7 +151,7 @@ class FolderManager:
             folder = self.check_accessible(trans, folder)
         return folder
 
-    def check_modifyable(self, trans, folder):
+    def check_modifyable(self, trans: "ProvidesUserContext", folder):
         """
         Check whether the user can modify the folder (name and description).
 
@@ -150,7 +168,7 @@ class FolderManager:
         else:
             return folder
 
-    def check_manageable(self, trans, folder):
+    def check_manageable(self, trans: "ProvidesUserContext", folder):
         """
         Check whether the user can manage the folder.
 
@@ -167,14 +185,14 @@ class FolderManager:
         else:
             return folder
 
-    def check_accessible(self, trans, folder):
+    def check_accessible(self, trans: "ProvidesUserContext", folder):
         """
         Check whether the folder is accessible to current user.
         By default every folder is accessible (contents have their own permissions).
         """
         return folder
 
-    def get_folder_dict(self, trans, folder):
+    def get_folder_dict(self, trans: "ProvidesUserContext", folder):
         """
         Return folder data in the form of a dictionary.
 
@@ -189,7 +207,13 @@ class FolderManager:
         folder_dict["update_time"] = folder.update_time
         return folder_dict
 
-    def create(self, trans, parent_folder_id, new_folder_name, new_folder_description=""):
+    def create(
+        self,
+        trans: "ProvidesUserContext",
+        parent_folder_id: int,
+        new_folder_name: str,
+        new_folder_description: str | None = None,
+    ):
         """
         Create a new folder under the given folder.
 
@@ -220,13 +244,12 @@ class FolderManager:
         new_folder.genome_build = trans.app.genome_builds.default_value
         parent_folder.add_folder(new_folder)
         trans.sa_session.add(new_folder)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         # New folders default to having the same permissions as their parent folder
         trans.app.security_agent.copy_library_permissions(trans, parent_folder, new_folder)
         return new_folder
 
-    def update(self, trans, folder, name=None, description=None):
+    def update(self, trans: "ProvidesUserContext", folder, name=None, description=None):
         """
         Update the given folder's name or description.
 
@@ -255,11 +278,10 @@ class FolderManager:
             changed = True
         if changed:
             trans.sa_session.add(folder)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
+            trans.sa_session.commit()
         return folder
 
-    def delete(self, trans, folder, undelete=False):
+    def delete(self, trans: "ProvidesUserContext", folder, undelete=False):
         """
         Mark given folder deleted/undeleted based on the flag.
 
@@ -280,11 +302,10 @@ class FolderManager:
         else:
             folder.deleted = True
         trans.sa_session.add(folder)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
         return folder
 
-    def get_current_roles(self, trans, folder):
+    def get_current_roles(self, trans: "ProvidesUserContext", folder):
         """
         Find all roles currently connected to relevant permissions
         on the folder.
@@ -311,21 +332,16 @@ class FolderManager:
                 folder, trans.app.security_agent.permitted_actions.LIBRARY_ADD
             )
         )
-
-        modify_folder_role_list = [
-            (modify_role.name, trans.security.encode_id(modify_role.id)) for modify_role in modify_roles
-        ]
-        manage_folder_role_list = [
-            (manage_role.name, trans.security.encode_id(manage_role.id)) for manage_role in manage_roles
-        ]
-        add_library_item_role_list = [(add_role.name, trans.security.encode_id(add_role.id)) for add_role in add_roles]
+        all_role_ids = {r.id for r in modify_roles | manage_roles | add_roles}
+        private_role_emails = get_private_role_user_emails_dict(trans.sa_session, role_ids=all_role_ids)
+        encode_id = trans.security.encode_id
         return dict(
-            modify_folder_role_list=modify_folder_role_list,
-            manage_folder_role_list=manage_folder_role_list,
-            add_library_item_role_list=add_library_item_role_list,
+            modify_folder_role_list=role_name_id_pairs(modify_roles, private_role_emails, encode_id),
+            manage_folder_role_list=role_name_id_pairs(manage_roles, private_role_emails, encode_id),
+            add_library_item_role_list=role_name_id_pairs(add_roles, private_role_emails, encode_id),
         )
 
-    def can_add_item(self, trans, folder):
+    def can_add_item(self, trans: "ProvidesUserContext", folder):
         """
         Return true if the user has permissions to add item to the given folder.
         """
@@ -360,7 +376,7 @@ class FolderManager:
             raise MalformedId(f"Malformed folder id ( {str(encoded_folder_id)} ) specified, unable to decode.")
         return cut_id
 
-    def decode_folder_id(self, trans, encoded_folder_id):
+    def decode_folder_id(self, trans: "ProvidesAppContext", encoded_folder_id):
         """
         Decode the folder id given that it has already lost the prefixed 'F'.
 
@@ -374,7 +390,7 @@ class FolderManager:
         """
         return trans.security.decode_id(encoded_folder_id, object_name="folder")
 
-    def cut_and_decode(self, trans, encoded_folder_id):
+    def cut_and_decode(self, trans: "ProvidesAppContext", encoded_folder_id):
         """
         Cuts the folder prefix (the prepended 'F') and returns the decoded id.
 
@@ -388,10 +404,10 @@ class FolderManager:
 
     def get_contents(
         self,
-        trans,
+        trans: "ProvidesUserContext",
         folder: LibraryFolder,
         payload: LibraryFolderContentsIndexQueryPayload,
-    ) -> Tuple[List[Union[LibraryFolder, LibraryDataset]], int]:
+    ) -> tuple[list[LibraryFolder | LibraryDataset], int]:
         """Retrieves the contents of the given folder that match the provided filters and pagination parameters.
         Returns a tuple with the list of paginated contents and the total number of items contained in the folder."""
         limit = payload.limit
@@ -403,7 +419,7 @@ class FolderManager:
             is_admin=trans.user_is_admin,
         )
 
-        content_items: List[Union[LibraryFolder, LibraryDataset]] = []
+        content_items: list[LibraryFolder | LibraryDataset] = []
         sub_folders_stmt = self._get_sub_folders_statement(sa_session, folder, security_params, payload)
         total_sub_folders = get_count(sa_session, sub_folders_stmt)
         if payload.order_by in FOLDER_SORT_COLUMN_MAP:
@@ -505,7 +521,7 @@ class FolderManager:
             stmt = stmt.where(
                 or_(
                     func.lower(ldda.name).contains(search_text, autoescape=True),
-                    func.lower(ldda.message).contains(search_text, autoescape=True),  # type:ignore[attr-defined]
+                    func.lower(ldda.message).contains(search_text, autoescape=True),
                 )
             )
         sort_column = LDDA_SORT_COLUMN_MAP[payload.order_by](ldda, associated_dataset)
@@ -514,7 +530,7 @@ class FolderManager:
         return stmt
 
     def _filter_by_include_deleted(
-        self, stmt, item_model, item_permissions_model, include_deleted: Optional[bool], security: SecurityParams
+        self, stmt, item_model, item_permissions_model, include_deleted: bool | None, security: SecurityParams
     ):
         if include_deleted:  # Admins or users with MODIFY permissions can see deleted contents
             if not security.is_admin:
@@ -536,7 +552,7 @@ class FolderManager:
 
     def build_folder_path(
         self, sa_session: galaxy_scoped_session, folder: model.LibraryFolder
-    ) -> List[Tuple[int, Optional[str]]]:
+    ) -> list[tuple[int, str | None]]:
         """
         Returns the folder path from root to the given folder.
 
@@ -558,5 +574,5 @@ def get_folder(session, folder_id):
 
 
 def get_count(session, statement):
-    stmt = select(func.count()).select_from(statement)
+    stmt = select(func.count()).select_from(statement.subquery())
     return session.scalar(stmt)

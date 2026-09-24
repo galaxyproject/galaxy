@@ -1,4 +1,4 @@
-import { Toast } from "composables/toast";
+import { Toast } from "@/composables/toast";
 
 export const MAX_DESCRIPTION_LENGTH = 40;
 export const DEFAULT_PER_PAGE = 10;
@@ -19,7 +19,7 @@ export function onError(error) {
  */
 export function buildFields(fieldTitles, data) {
     return Object.entries(fieldTitles).flatMap(([property, title]) =>
-        data[property] ? { name: title, value: data[property] } : []
+        data[property] ? { name: title, value: data[property] } : [],
     );
 }
 

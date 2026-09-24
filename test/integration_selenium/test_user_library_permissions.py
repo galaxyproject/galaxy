@@ -1,4 +1,5 @@
 import os
+import os.path
 
 from galaxy_test.selenium.framework import retry_assertion_during_transitions
 from .framework import (
@@ -28,9 +29,8 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         current_user_import_dir = os.path.join(self.user_import_dir(), email)
         os.makedirs(current_user_import_dir)
         random_filename = self._get_random_name()
-        file = open(f"{current_user_import_dir}/{random_filename}", "w")
-        file.write(random_filename)
-        file.close()
+        with open(os.path.join(current_user_import_dir, random_filename), "w") as f:
+            f.write(random_filename)
 
         # allow user to add new datasets in the newly created library
         self.create_lib_and_permit_adding(email)
@@ -53,11 +53,8 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         self.assert_num_displayed_items_is(0)
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_user_import_dir)
 
-        # importing modal should be hidden
-        self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
-
-        # assert 'user import folder was not created' warning
-        self.components.libraries.folder.toast_warning.wait_for_visible()
+        # assert 'user import folder was not created' warning is shown inside the import modal
+        self.components.libraries.folder.alert_not_exists_user_import_dir.wait_for_visible()
 
     @selenium_test
     def test_user_library_dataset_permissions(self):

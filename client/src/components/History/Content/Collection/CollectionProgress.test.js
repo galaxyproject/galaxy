@@ -1,8 +1,10 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
-import CollectionProgress from "./CollectionProgress";
 import { JobStateSummary } from "./JobStateSummary";
+
+import CollectionProgress from "./CollectionProgress.vue";
 
 const localVue = getLocalVue();
 

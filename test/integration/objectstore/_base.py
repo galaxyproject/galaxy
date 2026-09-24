@@ -3,50 +3,72 @@ import random
 import string
 import subprocess
 import time
+from typing import Any
+
+import boto3
+from botocore.client import Config
+from botocore.exceptions import (
+    BotoCoreError,
+    ClientError,
+)
 
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
+from galaxy_test.driver.integration_util import (
+    docker_exec,
+    docker_ip_address,
+    docker_rm,
+    docker_run,
+)
 
 OBJECT_STORE_HOST = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_HOST", "127.0.0.1")
-OBJECT_STORE_PORT = int(os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_PORT", 9000))
-OBJECT_STORE_ACCESS_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_ACCESS_KEY", "minioadmin")
-OBJECT_STORE_SECRET_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_SECRET_KEY", "minioadmin")
+OBJECT_STORE_PORT = int(os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_PORT", 8333))
+OBJECT_STORE_ACCESS_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_ACCESS_KEY", "admin")
+OBJECT_STORE_SECRET_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_SECRET_KEY", "admin")
 OBJECT_STORE_RUCIO_ACCOUNT = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_ACCOUNT", "root")
 OBJECT_STORE_RUCIO_USERNAME = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_USERNAME", "rucio")
 OBJECT_STORE_RUCIO_RSE_NAME = "TEST"
 OBJECT_STORE_RUCIO_ACCESS = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_ACCESS", "rucio")
+OBJECT_STORE_RUCIO_IMAGE = os.environ.get(
+    "GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_IMAGE", "savannah.ornl.gov/ndip/public-docker/rucio:40.2.0-pg"
+)
 
-OBJECT_STORE_CONFIG = string.Template(
-    """
+OBJECT_STORE_CONFIG = string.Template("""
 <object_store type="hierarchical" id="primary">
     <backends>
-        <object_store id="swifty" type="generic_s3" weight="1" order="0">
+        <object_store id="swifty" type="boto3" weight="1" order="0">
             <auth access_key="${access_key}" secret_key="${secret_key}" />
-            <bucket name="galaxy" use_reduced_redundancy="False" max_chunk_size="250"/>
-            <connection host="${host}" port="${port}" is_secure="False" conn_path="" multipart="True"/>
+            <bucket name="galaxy" />
+            <connection endpoint_url="http://${host}:${port}" region="us-east-1" />
             <cache path="${temp_directory}/object_store_cache" size="1000" cache_updated_data="${cache_updated_data}" />
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory_swift"/>
             <extra_dir type="temp" path="${temp_directory}/tmp_swift"/>
         </object_store>
     </backends>
 </object_store>
-"""
-)
-RUCIO_OBJECT_STORE_CONFIG = string.Template(
-    """
-<object_store type="rucio">
-    <rucio_auth account="${rucio_account}" host="http://${host}:${port}" username="${rucio_username}" password="${rucio_password}" type="userpass" />
-    <rucio_connection host="http://${host}:${port}"/>
-    <rucio_upload_scheme rse="${rucio_rse}" scheme="file" scope="galaxy"/>
-    <rucio_download_scheme rse="${rucio_rse}" scheme="file"/>
-    <cache path="${temp_directory}/object_store_cache" size="1000" cache_updated_data="${cache_updated_data}" />
-    <extra_dir type="job_work" path="${temp_directory}/job_working_directory_swift"/>
-    <extra_dir type="temp" path="${temp_directory}/tmp_swift"/>
-</object_store>
-"""
-)
-AZURE_OBJECT_STORE_CONFIG = string.Template(
-    """
+""")
+RUCIO_OBJECT_STORE_CONFIG = string.Template("""
+    type: rucio
+    upload_rse_name: ${rucio_rse}
+    upload_scheme: file
+    register_only: false
+    download_schemes:
+      - rse: ${rucio_rse}
+        scheme: file
+        ignore_checksum: false
+    scope: galaxy
+    host: http://${host}:${port}
+    account: ${rucio_account}
+    auth_host: http://${host}:${port}
+    username: ${rucio_username}
+    password: ${rucio_password}
+    auth_type: userpass
+    cache:
+      path: ${temp_directory}/object_store_cache
+      size: 1000
+      cache_updated_data: ${cache_updated_data}
+""")
+AZURE_OBJECT_STORE_CONFIG = string.Template("""
 type: distributed
 backends:
 - type: azure_blob
@@ -83,14 +105,12 @@ backends:
     path: "${temp_directory}/database/job_working_directory_azure_2"
   - type: temp
     path: "${temp_directory}/database/tmp_azure_2"
-"""
-)
+""")
 
 # Onedata setup for the test is done according to this documentation:
 # https://onedata.org/#/home/documentation/topic/stable/demo-mode
 ONEDATA_DEMO_SPACE_NAME = "demo-space"
-ONEDATA_OBJECT_STORE_CONFIG = string.Template(
-    """
+ONEDATA_OBJECT_STORE_CONFIG = string.Template("""
 <object_store type="onedata">
     <auth access_token="${access_token}" />
     <connection onezone_domain="${onezone_domain}" disable_tls_certificate_validation="True"/>
@@ -99,13 +119,13 @@ ONEDATA_OBJECT_STORE_CONFIG = string.Template(
     <extra_dir type="job_work" path="${temp_directory}/job_working_directory_onedata"/>
     <extra_dir type="temp" path="${temp_directory}/tmp_onedata"/>
 </object_store>
-"""
-)
+""")
 
 
 def wait_rucio_ready(container_name):
     timeout = 30
     start_time = time.time()
+    rse = None
     while True:
         try:
             rse = docker_exec(container_name, "rucio", "list-rses").decode("utf-8").strip()
@@ -114,14 +134,13 @@ def wait_rucio_ready(container_name):
         except subprocess.CalledProcessError:
             pass
         if time.time() - start_time >= timeout:
-            raise TimeoutError(rse)
+            raise TimeoutError(f"cannot start Rucio {rse}")
         time.sleep(1)
 
 
 def start_rucio(container_name):
     ports = [(OBJECT_STORE_PORT, 80)]
-    docker_run("code.ornl.gov:4567/ndip/public-docker/rucio:1.29.8", container_name, ports=ports)
-
+    docker_run(OBJECT_STORE_RUCIO_IMAGE, container_name, ports=ports)
     wait_rucio_ready(container_name)
 
 
@@ -132,6 +151,18 @@ class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase, i
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    def upload_dataset_and_wait_for_hash(self, history_id: str, **new_dataset_kwds) -> dict[str, Any]:
+        """Upload a dataset and block until its ``compute_dataset_hash`` task has run.
+
+        The upload job is visible as terminal before ``JobWrapper.finish`` dispatches that task,
+        and the task reads the dataset file, pulling it back into the object store cache if it is
+        no longer there. A test that evicts cache files and then counts them must not leave the
+        task pending, or it (or the next test in the class) sees a stray file.
+        """
+        hda = self.dataset_populator.new_dataset(history_id, wait=True, **new_dataset_kwds)
+        self.dataset_populator.wait_for_dataset_hashes(history_id, hda["id"])
+        return hda
 
 
 def get_files(directory):
@@ -151,7 +182,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
     @classmethod
     def setUpClass(cls):
         cls.container_name = f"{cls.__name__}_container"
-        start_minio(cls.container_name)
+        start_seaweedfs(cls.container_name)
         super().setUpClass()
 
     @classmethod
@@ -164,7 +195,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
         super().handle_galaxy_config_kwds(config)
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
-        cls.object_store_cache_path = f"{temp_directory}/object_store_cache"
+        cls.object_store_cache_path = os.path.join(temp_directory, "object_store_cache")
         config_path = os.path.join(temp_directory, "object_store_conf.xml")
         config["object_store_store_by"] = "uuid"
         config["metadata_strategy"] = "extended"
@@ -207,7 +238,7 @@ class BaseAzureObjectStoreIntegrationTestCase(
         cls._disable_workflow_scheduling(config)
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
-        cls.object_store_cache_path = f"{temp_directory}/object_store_cache"
+        cls.object_store_cache_path = os.path.join(temp_directory, "object_store_cache")
         config_path = os.path.join(temp_directory, "object_store_conf.yml")
         config["object_store_store_by"] = "uuid"
         config["metadata_strategy"] = "extended"
@@ -255,28 +286,12 @@ class BaseRucioObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
         super().handle_galaxy_config_kwds(config)
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
-        cls.object_store_cache_path = f"{temp_directory}/object_store_cache"
-        config_path = os.path.join(temp_directory, "object_store_conf.xml")
+        cls.object_store_cache_path = os.path.join(temp_directory, "object_store_cache")
+        config_path = os.path.join(temp_directory, "object_store_conf.yml")
         config["object_store_store_by"] = "uuid"
         config["metadata_strategy"] = "extended"
         config["outputs_to_working_directory"] = True
         config["retry_metadata_internally"] = False
-        # Rucio client requires a config file to exist on disk. This is ugly,
-        # but we have to live with it for now. An issue is created: https://github.com/rucio/rucio/issues/6410
-        rucio_config_path = os.path.join(temp_directory, "rucio.cfg")
-        env_file = os.path.join(temp_directory, "env_set.sh")
-        with open(env_file, "w") as f:
-            f.write(f"export RUCIO_CONFIG={rucio_config_path}\n")
-        config["environment_setup_file"] = env_file
-        with open(rucio_config_path, "w") as f:
-            f.write("[client]\n")
-            f.write(f"rucio_host = http://{OBJECT_STORE_HOST}:{OBJECT_STORE_PORT}\n")
-            f.write(f"auth_host = http://{OBJECT_STORE_HOST}:{OBJECT_STORE_PORT}\n")
-            f.write(f"account = {OBJECT_STORE_RUCIO_ACCOUNT}\n")
-            f.write("auth_type = userpass\n")
-            f.write(f"username = {OBJECT_STORE_RUCIO_USERNAME}\n")
-            f.write(f"password = {OBJECT_STORE_RUCIO_ACCESS}\n")
-        os.environ["RUCIO_CONFIG"] = rucio_config_path
         with open(config_path, "w") as f:
             f.write(
                 RUCIO_OBJECT_STORE_CONFIG.safe_substitute(
@@ -292,7 +307,6 @@ class BaseRucioObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
                     }
                 )
             )
-
         config["object_store_config_file"] = config_path
 
     def setUp(self):
@@ -333,7 +347,7 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
         super().handle_galaxy_config_kwds(config)
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
-        cls.object_store_cache_path = f"{temp_directory}/object_store_cache"
+        cls.object_store_cache_path = os.path.join(temp_directory, "object_store_cache")
         config_path = os.path.join(temp_directory, "object_store_conf.xml")
         config["object_store_store_by"] = "uuid"
         config["metadata_strategy"] = "extended"
@@ -364,9 +378,43 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
         return True
 
 
-def start_minio(container_name):
-    ports = [(OBJECT_STORE_PORT, 9000)]
-    docker_run("minio/minio:latest", container_name, "server", "/data", ports=ports)
+def start_seaweedfs(container_name):
+    ports = [(OBJECT_STORE_PORT, 8333)]
+    docker_run("chrislusf/seaweedfs:latest", container_name, "server", "-s3", ports=ports)
+    wait_seaweedfs_ready()
+
+
+def wait_seaweedfs_ready(bucket: str = "galaxy", timeout: float = 60) -> None:
+    """Block until the SeaweedFS S3 gateway accepts requests and ``bucket`` exists.
+
+    The gateway comes up a few seconds after the container does, and the object store
+    initialization in Galaxy does not retry, so wait for the whole master -> volume -> filer -> s3
+    chain to be up by creating the bucket through it.
+    """
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=f"http://{OBJECT_STORE_HOST}:{OBJECT_STORE_PORT}",
+        aws_access_key_id=OBJECT_STORE_ACCESS_KEY,
+        aws_secret_access_key=OBJECT_STORE_SECRET_KEY,
+        region_name="us-east-1",
+        config=Config(signature_version="s3v4", retries={"max_attempts": 1}, connect_timeout=2, read_timeout=5),
+    )
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            s3.create_bucket(Bucket=bucket)
+            return
+        except ClientError as e:
+            if e.response["Error"]["Code"] in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
+                return
+            if e.response["ResponseMetadata"]["HTTPStatusCode"] < 500:
+                raise
+            last_error: Exception = e
+        except BotoCoreError as e:
+            last_error = e
+        if time.monotonic() > deadline:
+            raise TimeoutError(f"SeaweedFS S3 gateway not ready after {timeout}s: {last_error}") from last_error
+        time.sleep(0.5)
 
 
 def start_onezone(oz_container_name):
@@ -383,49 +431,3 @@ def await_oneprovider_demo_readiness(op_container_name):
 
 def get_onedata_access_token(oz_container_name):
     return docker_exec(oz_container_name, "demo-access-token").decode("utf-8").strip()
-
-
-def docker_run(image, name, *args, detach=True, remove=True, ports=None):
-    cmd = ["docker", "run"]
-
-    if ports:
-        for container_port, host_port in ports:
-            cmd.extend(["-p", f"{container_port}:{host_port}"])
-
-    if detach:
-        cmd.append("-d")
-
-    cmd.extend(["--name", name])
-
-    if remove:
-        cmd.append("--rm")
-
-    cmd.append(image)
-    cmd.extend(args)
-
-    subprocess.check_call(cmd)
-
-
-def docker_exec(container_name, *args, output=True):
-    cmd = ["docker", "exec", container_name]
-    cmd.extend(args)
-
-    if output:
-        return subprocess.check_output(cmd)
-    else:
-        subprocess.check_call(cmd)
-
-
-def docker_ip_address(container_name):
-    cmd = [
-        "docker",
-        "inspect",
-        "-f",
-        "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
-        container_name,
-    ]
-    return subprocess.check_output(cmd).decode("utf-8").strip()
-
-
-def docker_rm(container_name):
-    subprocess.check_call(["docker", "rm", "-f", container_name])

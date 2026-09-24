@@ -1,12 +1,14 @@
 import { faArrowLeft, faEye, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { invocationsFetcher, type WorkflowInvocation } from "@/api/invocations";
+import { GalaxyApi } from "@/api";
+import type { WorkflowInvocation } from "@/api/invocations";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import _l from "@/utils/localization";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import type { ActionArray, FieldArray, GridConfig } from "./types";
 
@@ -26,7 +28,7 @@ async function getData(
     search: string,
     sort_by: string,
     sort_desc: boolean,
-    extraProps?: Record<string, unknown>
+    extraProps?: Record<string, unknown>,
 ) {
     const userStore = useUserStore();
     if (userStore.currentUser?.isAnonymous || !userStore.currentUser || !extraProps || !extraProps["workflow_id"]) {
@@ -35,16 +37,25 @@ async function getData(
     }
     const workflowId = extraProps["workflow_id"] as string;
 
-    const { data, headers } = await invocationsFetcher({
-        limit,
-        offset,
-        sort_by: sort_by as SortKeyLiteral,
-        sort_desc,
-        user_id: userStore.currentUser.id,
-        workflow_id: workflowId,
+    const { response, data, error } = await GalaxyApi().GET("/api/invocations", {
+        params: {
+            query: {
+                limit,
+                offset,
+                sort_by: sort_by as SortKeyLiteral,
+                sort_desc,
+                user_id: userStore.currentUser.id,
+                workflow_id: workflowId,
+            },
+        },
     });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
     fetchHistories(data);
-    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
+    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0");
     return [data, totalMatches];
 }
 
@@ -59,7 +70,7 @@ function fetchHistories(invocations: Array<WorkflowInvocation>) {
         historyIds.add(invocation.history_id);
     });
     historyIds.forEach(
-        (history_id) => historyStore.getHistoryById(history_id) || historyStore.loadHistoryById(history_id)
+        (history_id) => historyStore.getHistoryById(history_id) || historyStore.loadHistoryById(history_id),
     );
 }
 
@@ -123,7 +134,7 @@ const fields: FieldArray = [
             const invocation = data as WorkflowInvocation;
             const workflowStore = useWorkflowStore();
             const workflow = workflowStore.getStoredWorkflowByInstanceId(
-                invocation.workflow_id
+                invocation.workflow_id,
             ) as unknown as StoredWorkflowDetailed;
             return !workflow?.deleted;
         },

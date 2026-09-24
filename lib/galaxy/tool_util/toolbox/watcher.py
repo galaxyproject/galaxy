@@ -5,7 +5,7 @@ import threading
 try:
     from watchdog.events import FileSystemEventHandler
 except ImportError:
-    FileSystemEventHandler = object  # type:ignore[assignment, misc, unused-ignore]
+    FileSystemEventHandler = object  # type: ignore[assignment, misc, unused-ignore]
 
 from galaxy.util.hash_util import md5_hash_file
 from galaxy.util.watcher import (

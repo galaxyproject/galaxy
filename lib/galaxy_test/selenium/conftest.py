@@ -2,13 +2,14 @@ import os
 
 import pytest
 
-from galaxy_test.driver.driver_util import GalaxyTestDriver
 from galaxy_test.selenium.framework import SeleniumTestCase
 
 
 @pytest.fixture(scope="session")
 def real_driver():
     if not os.environ.get("GALAXY_TEST_ENVIRONMENT_CONFIGURED"):
+        from galaxy_test.driver.driver_util import GalaxyTestDriver
+
         driver = GalaxyTestDriver()
         driver.setup(SeleniumTestCase)
         try:

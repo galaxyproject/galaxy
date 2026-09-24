@@ -75,7 +75,7 @@ class Shapefile(Binary):
                 opt_text = " (optional)"
             if composite_file.get("description"):
                 rval.append(
-                    f"<li><a href=\"{fn}\" type=\"application/binary\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>"
+                    f'<li><a href="{fn}" type="application/binary">{fn} ({composite_file.get("description")})</a>{opt_text}</li>'
                 )
             else:
                 rval.append(f'<li><a href="{fn}" type="application/binary">{fn}</a>{opt_text}</li>')

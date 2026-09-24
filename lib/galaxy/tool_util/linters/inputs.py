@@ -3,10 +3,9 @@
 import ast
 import re
 import warnings
+from collections.abc import Iterator
+from copy import deepcopy
 from typing import (
-    Iterator,
-    Optional,
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -130,7 +129,6 @@ PARAM_TYPE_CHILD_COMBINATIONS = [
 ]
 
 # TODO lint for valid param type - attribute combinations
-# TODO check if dataset is available for filters referring other datasets
 # TODO check if ref input param is present for from_dataset
 
 
@@ -143,8 +141,7 @@ class InputsNum(Linter):
         tool_node = tool_xml.find("./inputs")
         if tool_node is None:
             tool_node = tool_xml.getroot()
-        num_inputs = len(tool_xml.findall("./inputs//param"))
-        if num_inputs:
+        if num_inputs := len(tool_xml.findall("./inputs//param")):
             lint_ctx.info(f"Found {num_inputs} input parameters.", linter=cls.name(), node=tool_node)
 
 
@@ -199,7 +196,7 @@ class InputsDatasourceTags(Linter):
                     )
 
 
-def _iter_param(tool_xml: "ElementTree") -> Iterator[Tuple["Element", str]]:
+def _iter_param(tool_xml: "ElementTree") -> Iterator[tuple["Element", str]]:
     for param in tool_xml.findall("./inputs//param"):
         if "name" not in param.attrib and "argument" not in param.attrib:
             continue
@@ -207,7 +204,7 @@ def _iter_param(tool_xml: "ElementTree") -> Iterator[Tuple["Element", str]]:
         yield param, param_name
 
 
-def _iter_param_type(tool_xml: "ElementTree") -> Iterator[Tuple["Element", str, str]]:
+def _iter_param_type(tool_xml: "ElementTree") -> Iterator[tuple["Element", str, str]]:
     for param, param_name in _iter_param(tool_xml):
         if "type" not in param.attrib:
             continue
@@ -343,7 +340,7 @@ class InputsNameDuplicateOutput(Linter):
         for output in outputs:
             if output.get("name") in input_names:
                 lint_ctx.error(
-                    f'Tool defines an output with a name equal to the name of an input: \'{output.get("name")}\'',
+                    f"Tool defines an output with a name equal to the name of an input: '{output.get('name')}'",
                     linter=cls.name(),
                     node=output,
                 )
@@ -488,6 +485,196 @@ class InputsDataOptionsFiltersType(Linter):
                             linter=cls.name(),
                             node=filter,
                         )
+
+
+FILTER_REQUIRED_ATTRIBUTES = {
+    "data_meta": ["type", "ref", "key"],  # column needs special treatment
+    "param_value": ["type", "ref", "column"],
+    "static_value": ["type", "column", "value"],
+    "regexp": ["type", "column", "value"],
+    "unique_value": ["type", "column"],
+    "multiple_splitter": ["type", "column"],
+    "attribute_value_splitter": ["type", "column"],
+    "add_value": ["type", "value"],
+    "remove_value": ["type"],  # this is handled separately in InputsOptionsRemoveValueFilterRequiredAttributes
+    "sort_by": ["type", "column"],
+    "data_table": ["type", "column", "table_name", "data_table_column"],
+}
+
+
+class InputsOptionsFiltersRequiredAttributes(Linter):
+    """
+    check required attributes of filters
+    """
+
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        for param, param_name in _iter_param(tool_xml):
+            options = param.find("./options")
+            if options is None:
+                continue
+            for filter in param.findall("./options/filter"):
+                filter_type = filter.get("type", None)
+                if filter_type is None or filter_type not in FILTER_ALLOWED_ATTRIBUTES:
+                    continue
+                for attrib in FILTER_REQUIRED_ATTRIBUTES[filter_type]:
+                    if attrib not in filter.attrib:
+                        lint_ctx.error(
+                            f"Select parameter [{param_name}] '{filter_type}' filter misses required attribute '{attrib}'",
+                            linter=cls.name(),
+                            node=filter,
+                        )
+
+
+class InputsOptionsRemoveValueFilterRequiredAttributes(Linter):
+    """
+    check required attributes of remove_value filter
+    """
+
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        for param, param_name in _iter_param(tool_xml):
+            options = param.find("./options")
+            if options is None:
+                continue
+            for filter in param.findall("./options/filter"):
+                filter_type = filter.get("type", None)
+                # check for required attributes for filter (remove_value needs a bit more logic here)
+                if filter_type != "remove_value":
+                    continue
+                if not (
+                    (
+                        "value" in filter.attrib
+                        and "ref" not in filter.attrib
+                        and "meta_ref" not in filter.attrib
+                        and "key" not in filter.attrib
+                    )
+                    or (
+                        "value" not in filter.attrib
+                        and "ref" in filter.attrib
+                        and "meta_ref" not in filter.attrib
+                        and "key" not in filter.attrib
+                    )
+                    or (
+                        "value" not in filter.attrib
+                        and "ref" not in filter.attrib
+                        and "meta_ref" in filter.attrib
+                        and "key" in filter.attrib
+                    )
+                ):
+                    lint_ctx.error(
+                        f"Select parameter [{param_name}] '{filter_type}'' filter needs either the 'value'; 'ref'; or 'meta' and 'key' attribute(s)",
+                        linter=cls.name(),
+                        node=filter,
+                    )
+
+
+FILTER_ALLOWED_ATTRIBUTES = deepcopy(FILTER_REQUIRED_ATTRIBUTES)
+FILTER_ALLOWED_ATTRIBUTES["static_value"].append("keep")
+FILTER_ALLOWED_ATTRIBUTES["regexp"].append("keep")
+FILTER_ALLOWED_ATTRIBUTES["data_meta"].extend(["column", "multiple", "separator"])
+FILTER_ALLOWED_ATTRIBUTES["param_value"].extend(["keep", "ref_attribute"])
+FILTER_ALLOWED_ATTRIBUTES["multiple_splitter"].append("separator")
+FILTER_ALLOWED_ATTRIBUTES["attribute_value_splitter"].extend(["pair_separator", "name_val_separator"])
+FILTER_ALLOWED_ATTRIBUTES["add_value"].extend(["name", "index"])
+FILTER_ALLOWED_ATTRIBUTES["remove_value"].extend(["value", "ref", "meta_ref", "key"])
+FILTER_ALLOWED_ATTRIBUTES["data_table"].append("keep")
+FILTER_ALLOWED_ATTRIBUTES["sort_by"].append("reverse_sort_order")
+
+
+class InputsOptionsFiltersAllowedAttributes(Linter):
+    """
+    check allowed attributes of filters
+    """
+
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+
+        for param, param_name in _iter_param(tool_xml):
+            options = param.find("./options")
+            if options is None:
+                continue
+            for filter in param.findall("./options/filter"):
+                filter_type = filter.get("type", None)
+                if filter_type is None or filter_type not in FILTER_ALLOWED_ATTRIBUTES:
+                    continue
+                for attrib in filter.attrib:
+                    if attrib not in FILTER_ALLOWED_ATTRIBUTES[filter_type]:
+                        lint_ctx.warn(
+                            f"Select parameter [{param_name}] '{filter_type}' filter specifies unnecessary attribute '{attrib}'",
+                            linter=cls.name(),
+                            node=filter,
+                        )
+
+
+class InputsOptionsRegexFilterExpression(Linter):
+    """
+    Check the regular expression of regexp filters
+    """
+
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+
+        for param, param_name in _iter_param(tool_xml):
+            options = param.find("./options")
+            if options is None:
+                continue
+            for filter in param.findall("./options/filter"):
+                filter_type = filter.get("type", None)
+                if filter_type == "regexp" and "value" in filter.attrib:
+                    try:
+                        re.compile(filter.attrib["value"])
+                    except re.error as re_error:
+                        lint_ctx.error(
+                            f"Select parameter [{param_name}] '{filter_type}'' filter 'value' is not a valid regular expression ({re_error})'",
+                            linter=cls.name(),
+                            node=filter,
+                        )
+
+
+class InputsOptionsFiltersCheckReferences(Linter):
+    """
+    Check the references used in filters
+    """
+
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+
+        # get the set of param names
+        param_names = {param_name for _, param_name in _iter_param(tool_xml)}
+
+        for param, param_name in _iter_param(tool_xml):
+            options = param.find("./options")
+            if options is None:
+                continue
+            for filter in param.findall("./options/filter"):
+                filter_type = filter.get("type", None)
+                if filter_type is not None:
+                    # check for references to other inputs
+                    # TODO: currently ref and metaref seem only to work for top level params,
+                    # once this is fixed the linter needs to be extended, e.g. `f.attrib[ref_attrib].split('|')[-1]`
+                    for ref_attrib in ["meta_ref", "ref"]:
+                        if ref_attrib in filter.attrib and filter.attrib[ref_attrib] not in param_names:
+                            lint_ctx.error(
+                                f"Select parameter [{param_name}] '{filter_type}'' filter attribute '{ref_attrib}' refers to non existing parameter '{filter.attrib[ref_attrib]}'",
+                                linter=cls.name(),
+                                node=filter,
+                            )
 
 
 class InputsDataOptionsFiltersRef(Linter):
@@ -710,12 +897,14 @@ class InputsSelectOptionsDefinesOptions(Linter):
             # TODO check if input param is present for from_dataset
             from_dataset = options.get("from_dataset", None)
             from_data_table = options.get("from_data_table", None)
+            from_url = options.get("from_url", None)
 
             if (
                 from_file is None
                 and from_parameter is None
                 and from_dataset is None
                 and from_data_table is None
+                and from_url is None
                 and not filter_adds_options
             ):
                 lint_ctx.error(
@@ -953,7 +1142,7 @@ class InputsSelectOptionalRadio(Linter):
                     )
 
 
-def _iter_param_validator(tool_xml: "ElementTree") -> Iterator[Tuple[str, str, "Element", str]]:
+def _iter_param_validator(tool_xml: "ElementTree") -> Iterator[tuple[str, str, "Element", str]]:
     input_params = tool_xml.findall("./inputs//param[@type]")
     for param in input_params:
         try:
@@ -1243,7 +1432,7 @@ class ValidatorMetadataName(Linter):
                 )
 
 
-def _iter_conditional(tool_xml: "ElementTree") -> Iterator[Tuple["Element", Optional[str], "Element", Optional[str]]]:
+def _iter_conditional(tool_xml: "ElementTree") -> Iterator[tuple["Element", str | None, "Element", str | None]]:
     conditionals = tool_xml.findall("./inputs//conditional")
     for conditional in conditionals:
         conditional_name = conditional.get("name")

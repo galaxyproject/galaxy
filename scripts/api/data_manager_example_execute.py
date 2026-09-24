@@ -8,7 +8,7 @@ import optparse
 import time
 from urllib.parse import urljoin
 
-from common import (  # noqa: I100,I202
+from common import (
     get,
     post,
 )
@@ -87,7 +87,7 @@ if __name__ == "__main__":
         default=DEFAULT_SLEEP_TIME,
         help="How long to sleep between check loops",
     )
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
 
     # check options
     assert options.api_key is not None, ValueError("You must specify an API key.")

@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, type Ref, ref } from "vue";
 
-import { ApiResponse } from "@/api/schema";
-import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import type { TableField } from "@/components/Common/GTable.types";
+import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
+interface BasicItem extends SelectionItem {
+    time: string | null;
+}
+
 interface Props {
     detailsKey?: string;
-    getData: () => Promise<ApiResponse<Array<object>>>;
+    getData: () => Promise<Array<object> | undefined>;
     isEncoded?: boolean;
     labelKey?: string;
     leafIcon?: string;
@@ -37,13 +41,13 @@ const modalShow = ref(true);
 const optionsShow = ref(false);
 const showTime = ref(false);
 
-const fields = computed(() => {
-    const fields = [{ key: "label" }];
+const fields = computed<TableField[]>(() => {
+    const fields = [{ key: "label", label: "Name" }];
     if (props.detailsKey) {
-        fields.push({ key: "details" });
+        fields.push({ key: "details", label: "Details" });
     }
     if (showTime.value) {
-        fields.push({ key: "time" });
+        fields.push({ key: "time", label: "Time" });
     }
     return fields;
 });
@@ -51,20 +55,25 @@ const fields = computed(() => {
 async function load() {
     optionsShow.value = false;
     try {
-        const response = await props.getData();
-        const incoming = response.data;
-        items.value = incoming.map((item: any) => {
-            const timeStamp = item[props.timeKey];
-            showTime.value = !!timeStamp;
-            return {
-                id: item.id,
-                label: item[props.labelKey] || null,
-                details: item[props.detailsKey] || null,
-                time: timeStamp || null,
-                isLeaf: true,
-                url: "",
-            };
-        });
+        // TODO: Consider supporting pagination here
+        // this could potentially load quite a lot of items
+        const incoming = await props.getData();
+        if (incoming) {
+            items.value = incoming.map((entry: any) => {
+                const timeStamp = entry[props.timeKey];
+                showTime.value = !!timeStamp;
+                const item: BasicItem = {
+                    id: entry.id,
+                    label: entry[props.labelKey] || null,
+                    details: entry[props.detailsKey] || null,
+                    time: timeStamp || null,
+                    entry: entry,
+                    isLeaf: true,
+                    url: "",
+                };
+                return item;
+            });
+        }
         optionsShow.value = true;
     } catch (err) {
         errorMessage.value = errorMessageAsString(err);

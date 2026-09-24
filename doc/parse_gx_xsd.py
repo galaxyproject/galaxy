@@ -8,11 +8,15 @@ import sys
 from io import StringIO
 
 from lxml import etree
+from yaml import safe_load
 
 with open(sys.argv[2]) as f:
     xmlschema_doc = etree.parse(f)
 
 markdown_buffer = StringIO()
+
+DIRECTIVES_PATH = "../client/src/components/Markdown/directives.yml"
+DIRECTIVES = safe_load(open(DIRECTIVES_PATH))
 
 
 def main():
@@ -74,6 +78,7 @@ def _build_tag(tag, hide_attributes):
     annotation_el = tag_el.find("{http://www.w3.org/2001/XMLSchema}annotation")
     text = annotation_el.find("{http://www.w3.org/2001/XMLSchema}documentation").text
     text = _replace_attribute_list(tag, text, attributes)
+    text = _expand_directives(text)
     for line in text.splitlines():
         if line.startswith("$assertions"):
             assertions_tag = xmlschema_doc.find(
@@ -83,37 +88,27 @@ def _build_tag(tag, hide_attributes):
             assertions_buffer.write(_doc_or_none(assertions_tag))
             assertions_buffer.write("\n\n")
 
-            assertion_groups = assertions_tag.xpath(
-                "xs:choice/xs:group", namespaces={"xs": "http://www.w3.org/2001/XMLSchema"}
+            assertion_tag = xmlschema_doc.find("//{http://www.w3.org/2001/XMLSchema}group[@name='TestAssertion']")
+            elements = assertion_tag.findall(
+                "{http://www.w3.org/2001/XMLSchema}choice/{http://www.w3.org/2001/XMLSchema}element"
             )
-            for group in assertion_groups:
-                ref = group.attrib["ref"]
-                assertion_tag = xmlschema_doc.find("//{http://www.w3.org/2001/XMLSchema}group[@name='" + ref + "']")
-                doc = _doc_or_none(assertion_tag)
-                assertions_buffer.write(f"### {doc}\n\n")
-                elements = assertion_tag.findall(
-                    "{http://www.w3.org/2001/XMLSchema}choice/{http://www.w3.org/2001/XMLSchema}element"
-                )
-                for element in elements:
+            for element in elements:
+                doc = _doc_or_none(element)
+                if doc is None:
                     doc = _doc_or_none(element)
-                    if doc is None:
-                        doc = _doc_or_none(_type_el(element))
-                    assert doc is not None, f"Documentation for {element.attrib['name']} is empty"
-                    doc = doc.strip()
+                assert doc is not None, f"Documentation for {element.attrib['name']} is empty"
+                doc = doc.strip()
 
-                    element_el = _find_tag_el(element)
-                    element_attributes = _find_attributes(element_el)
-                    doc = _replace_attribute_list(element_el, doc, element_attributes)
-                    assertions_buffer.write(f"#### ``{element.attrib['name']}``:\n\n{doc}\n\n")
+                element_attributes = _find_attributes(element)
+                doc = _replace_attribute_list(element, doc, element_attributes)
+                assertions_buffer.write(f"#### ``{element.attrib['name']}``:\n\n{doc}\n\n")
             text = text.replace(line, assertions_buffer.getvalue())
     tag_help.write(text)
     if best_practices := _get_bp_link(annotation_el):
         tag_help.write("\n\n### Best Practices\n")
-        tag_help.write(
-            f"""
+        tag_help.write(f"""
 Find the Intergalactic Utilities Commission suggested best practices for this
-element [here]({best_practices})."""
-        )
+element [here]({best_practices}).""")
     tag_help.write(_build_attributes_table(tag, attributes, hide_attributes))
 
     return tag_help.getvalue()
@@ -132,6 +127,29 @@ def _replace_attribute_list(tag, text, attributes):
         text = text.replace(
             line, _build_attributes_table(tag, attributes, attribute_names=attribute_names, header_level=header_level)
         )
+    return text
+
+
+def _build_directive_table(line: str) -> str:
+    _, directives_str = line.split(":", 1)
+    directives = directives_str.split(",")
+    attribute_table = StringIO()
+    attribute_table.write("\n\n")
+    for directive in directives:
+        header_level = 3
+        header_prefix = "#" * header_level
+        attribute_table.write(f"\n{header_prefix} {directive}\n\n")
+        directive_info = DIRECTIVES[directive]
+        if "help" in directive_info:
+            attribute_table.write(DIRECTIVES[directive]["help"])
+    return attribute_table.getvalue()
+
+
+def _expand_directives(text):
+    for line in text.splitlines():
+        if not line.startswith("$directive_list:"):
+            continue
+        text = text.replace(line, _build_directive_table(line))
     return text
 
 

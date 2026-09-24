@@ -165,7 +165,7 @@ Selenium test cases can all be found in :doc:`../dev/writing_tests`.
     add ``ensure_registered = True`` on the test case class. Your test case can
     use an admin key to populate fixtures without any extra annotation but to ensure
     a user logged in with ``ensure_registered`` is an admin user simply annotate
-    your test case with ``requires_admin = True``.
+    your test case with ``run_as_admin = True``.
 
 .. _papermill: https://papermill.readthedocs.io/en/latest/
 

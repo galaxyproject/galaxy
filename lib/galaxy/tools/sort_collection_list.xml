@@ -2,8 +2,11 @@
       name="Sort collection"
       version="1.0.0"
       tool_type="sort_collection">
-    <description></description>
+    <description>elements alphabetically, numerically, or by a custom order</description>
     <type class="SortTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <edam_operations>
@@ -146,53 +149,59 @@
 Synopsis
 ========
 
-Sorts dataset collection alphabetically, numerically, or using predetermined order from a supplied file.
+Reorders elements of a collection alphabetically, numerically, or using a custom order from a file.
 
 ===========
 Description
 ===========
 
-**Numeric sort**
+This tool takes a collection and produces a new collection with the same elements in a different order. The datasets themselves are not modified — only the element ordering changes.
 
-The tool sort in ascending order. When *numeric* sort is chosen, the tool ignores non-numeric characters. For example, if a collection contains the following elements::
+Three sort modes are available:
 
- Collection: [Horse123] 
-             [Donkey543] 
-             [Mule176]
+========
+Examples
+========
 
-The tool will output::
+**Alphabetical sort**
 
- Collection: [Horse123]
-             [Mule176] 
-             [Donkey543] 
+Elements are sorted by their identifiers in ascending alphabetical (lexicographic) order::
+
+ Input:   sampleC, sampleA, sampleB
+ Output:  sampleA, sampleB, sampleC
 
 -------
 
-**Sorting from file**
+**Numeric sort**
 
-Alternative, one can supply a single column text file containing elements identifiers in the desired sort order. For example, suppose there a collection::
+Non-numeric characters are stripped from each identifier, and elements are sorted by the resulting number in ascending order::
 
- Collection: [Horse123] 
-             [Donkey543] 
-             [Mule176]
+ Input:   sample100, sample3, sample20
+ Output:  sample3, sample20, sample100
 
-and a file specifying sort order::
+-------
 
- Donkey543
- Horse123 
- Mule176
- 
-the output will predictably look like this::
+**Sort from file**
 
- Collection: [Donkey543] 
-             [Horse123] 
-             [Mule176]
+You supply a single-column text file listing identifiers in the desired order. The file must contain every element identifier exactly once::
+
+ Text file:     Output:
+
+ sampleB        sampleB
+ sampleC        sampleC
+ sampleA        sampleA
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/sort.svg
+  :alt: Sort collection elements
+  :width: 500
 
 -------
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
-     ]]></help>
+    ]]></help>
 </tool>

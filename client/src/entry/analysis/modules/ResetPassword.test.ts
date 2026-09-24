@@ -1,11 +1,14 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
+import { describe, expect, it } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import ResetPassword from "./ResetPassword.vue";
 
 const localVue = getLocalVue(true);
+const { server, http } = useServerMock();
 
 const mockRouter = (query: object) => ({
     currentRoute: {
@@ -14,7 +17,7 @@ const mockRouter = (query: object) => ({
 });
 
 function mountResetPassword(routerQuery: object = {}) {
-    return mount(ResetPassword, {
+    return mount(ResetPassword as object, {
         localVue,
         attachTo: document.body,
         mocks: {
@@ -24,73 +27,61 @@ function mountResetPassword(routerQuery: object = {}) {
 }
 
 describe("ResetPassword", () => {
-    it("query", async () => {
-        const email = "test";
-        const wrapper = mountResetPassword({ email: "test" });
+    it("prefills the email from the route query", () => {
+        const email = "test@example.com";
+        const wrapper = mountResetPassword({ email });
 
         const emailField = wrapper.find("#reset-email");
         const emailValue = (emailField.element as HTMLInputElement).value;
         expect(emailValue).toBe(email);
     });
 
-    it("button text", async () => {
+    it("renders the localized submit label", () => {
         const wrapper = mountResetPassword();
         const submitButton = wrapper.find("#reset-password");
         (expect(submitButton.text()) as any).toBeLocalizationOf("Send password reset email");
     });
 
-    it("validate email", async () => {
+    it("uses native email validation", async () => {
         const wrapper = mountResetPassword();
-        const submitButton = wrapper.find("#reset-password");
         const emailField = wrapper.find("#reset-email");
         const emailElement = emailField.element as HTMLInputElement;
 
-        let email = "";
-        await emailField.setValue(email);
-        expect(emailElement.value).toBe(email);
-        await submitButton.trigger("click");
+        await emailField.setValue("");
         expect(emailElement.checkValidity()).toBe(false);
 
-        email = "test";
-        await emailField.setValue(email);
-        expect(emailElement.value).toBe(email);
-        await submitButton.trigger("click");
+        await emailField.setValue("test");
         expect(emailElement.checkValidity()).toBe(false);
 
-        email = "test@test.com";
-        await emailField.setValue(email);
-        expect(emailElement.value).toBe(email);
-        await submitButton.trigger("click");
+        await emailField.setValue("test@example.com");
         expect(emailElement.checkValidity()).toBe(true);
     });
 
-    it("display success message", async () => {
-        const wrapper = mountResetPassword({ email: "test@test.com" });
-        const mockAxios = new MockAdapter(axios);
-        const submitButton = wrapper.find("#reset-password");
+    it("displays the success response", async () => {
+        server.use(
+            http.untyped.post(/.*\/user\/reset_password.*/, () =>
+                HttpResponse.json({ message: "Reset link has been sent to your email." }),
+            ),
+        );
+        const wrapper = mountResetPassword({ email: "test@example.com" });
 
-        mockAxios.onPost("/user/reset_password").reply(200, {
-            message: "Reset link has been sent to your email.",
-        });
-        await submitButton.trigger("click");
-        setTimeout(async () => {
-            const alertSuccess = wrapper.find("#reset-password-alert");
-            expect(alertSuccess.text()).toBe("Reset link has been sent to your email.");
-        });
+        await wrapper.find("form").trigger("submit");
+        await flushPromises();
+
+        expect(wrapper.find("#reset-password-alert").text()).toBe("Reset link has been sent to your email.");
     });
 
-    it("display error message", async () => {
-        const wrapper = mountResetPassword({ email: "test@test.com" });
-        const submitButton = wrapper.find("#reset-password");
+    it("displays an error response", async () => {
+        server.use(
+            http.untyped.post(/.*\/user\/reset_password.*/, () =>
+                HttpResponse.json({ err_msg: "Please provide your email." }, { status: 400 }),
+            ),
+        );
+        const wrapper = mountResetPassword({ email: "test@example.com" });
 
-        const mockAxios = new MockAdapter(axios);
-        mockAxios.onPost("/user/reset_password").reply(400, {
-            err_msg: "Please provide your email.",
-        });
-        await submitButton.trigger("click");
-        setTimeout(async () => {
-            const alertError = wrapper.find("#reset-password-alert");
-            expect(alertError.text()).toBe("Please provide your email.");
-        });
+        await wrapper.find("form").trigger("submit");
+        await flushPromises();
+
+        expect(wrapper.find("#reset-password-alert").text()).toBe("Please provide your email.");
     });
 });

@@ -51,7 +51,7 @@ export const useUserTagsStore = defineStore("userTagsStore", () => {
                 dbLoaded.value = true;
             }
         },
-        { immediate: true }
+        { immediate: true },
     );
 
     /** removes the x oldest tags from the database */

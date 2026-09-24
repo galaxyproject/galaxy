@@ -1,33 +1,30 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
-import { BAlert, BButton, BCard, BFormCheckbox, BOverlay, BPagination } from "bootstrap-vue";
+import { BAlert, BCard, BFormCheckbox, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
+import type { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
 
+import LoadingOverlay from "../Common/LoadingOverlay.vue";
 import HelpText from "../Help/HelpText.vue";
 import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
 import GridBoolean from "./GridElements/GridBoolean.vue";
-import GridDatasets from "./GridElements/GridDatasets.vue";
 import GridExpand from "./GridElements/GridExpand.vue";
 import GridLink from "./GridElements/GridLink.vue";
 import GridOperations from "./GridElements/GridOperations.vue";
 import GridText from "./GridElements/GridText.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import SharingIndicators from "@/components/Indices/SharingIndicators.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 const eventBus = useEventBus<string>("grid-router-push");
 const router = useRouter();
-
-library.add(faCaretDown, faCaretUp, faShieldAlt);
 
 interface Props {
     // provide a grid configuration
@@ -94,13 +91,13 @@ const filterText = ref("");
 const showAdvanced = ref(false);
 const filterClass = props.gridConfig.filtering;
 const rawFilters = computed(() =>
-    Object.fromEntries(filterClass?.getFiltersForText(filterText.value, true, false) || [])
+    Object.fromEntries(filterClass?.getFiltersForText(filterText.value, true, false) || []),
 );
 const validFilters = computed(() => filterClass?.getValidFilters(rawFilters.value, true).validFilters);
 const invalidFilters = computed(() => filterClass?.getValidFilters(rawFilters.value, true).invalidFilters);
 const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
 const hasInvalidFilters = computed(
-    () => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value || {}).length > 0
+    () => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value || {}).length > 0,
 );
 
 // hide message helper
@@ -167,14 +164,14 @@ async function getGridData() {
             return;
         }
         try {
-            const offset = props.limit * (currentPage.value - 1);
+            const offset = props.limit * (currentPage.value ? currentPage.value - 1 : 0);
             const [responseData, responseTotal] = await props.gridConfig.getData(
                 offset,
                 props.limit,
                 validatedFilterText(),
                 sortBy.value,
                 sortDesc.value,
-                props.extraProps
+                props.extraProps,
             );
             gridData.value = responseData;
             totalRows.value = responseTotal;
@@ -291,7 +288,7 @@ function validatedFilterText() {
         return filterText.value;
     }
     // there are valid filters derived from the `filterText`
-    return filterClass?.getFilterText(validFilters.value || {}, false) || "";
+    return filterClass?.getFilterText(validFilters.value || {}, false, filterText.value) || "";
 }
 
 /**
@@ -329,21 +326,22 @@ watch(operationMessage, () => {
         <BAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</BAlert>
         <div v-if="!embedded || filterClass" class="grid-header d-flex justify-content-between pb-2 flex-column">
             <div v-if="!embedded" class="d-flex">
-                <Heading h1 separator inline size="xl" class="flex-grow-1 m-0" data-description="grid title">
+                <Heading h1 separator inline size="lg" class="flex-grow-1 m-0" data-description="grid title">
                     <span v-localize>{{ gridConfig.title }}</span>
                 </Heading>
                 <div class="d-flex justify-content-between">
-                    <BButton
+                    <GButton
                         v-for="(action, actionIndex) in gridConfig.actions"
                         :key="actionIndex"
                         class="m-1"
-                        size="sm"
-                        variant="outline-primary"
+                        size="small"
+                        color="blue"
+                        outline
                         :data-description="`grid action ${action.title.toLowerCase()}`"
                         @click="action.handler()">
-                        <Icon :icon="action.icon" class="mr-1" />
+                        <FontAwesomeIcon :icon="action.icon" class="mr-1" />
                         <span v-localize>{{ action.title }}</span>
-                    </BButton>
+                    </GButton>
                 </div>
             </div>
             <FilterMenu
@@ -357,7 +355,9 @@ watch(operationMessage, () => {
                 :show-advanced.sync="showAdvanced"
                 view="compact" />
         </div>
-        <LoadingSpan v-if="initDataLoading" />
+        <div v-if="initDataLoading" class="position-relative h-100" data-description="grid initial loading">
+            <LoadingOverlay />
+        </div>
         <span v-else-if="!isAvailable || hasInvalidFilters">
             <BAlert v-if="!hasInvalidFilters" variant="info" show>
                 <span v-if="filterText">
@@ -379,7 +379,7 @@ watch(operationMessage, () => {
                 </a>
                 or
                 <a
-                    v-b-tooltip.noninteractive.hover
+                    v-g-tooltip.hover
                     title="Note that this might produce inaccurate results"
                     href="javascript:void(0)"
                     class="ui-link"
@@ -388,145 +388,146 @@ watch(operationMessage, () => {
                 </a>
             </BAlert>
         </span>
-        <BOverlay v-else :show="resultsLoading" rounded="sm">
-            <table class="grid-table">
-                <thead>
-                    <th v-if="!!gridConfig.batch">
-                        <BFormCheckbox
-                            class="m-2"
-                            :checked="selectedAll"
-                            :indeterminate="selectedIndeterminate"
-                            @change="onSelectAll" />
-                    </th>
-                    <th
-                        v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
-                        :key="fieldIndex"
-                        class="text-nowrap px-2"
-                        :data-description="`grid header ${fieldIndex}`">
-                        <span v-if="gridConfig.sortKeys.includes(fieldEntry.key)">
-                            <BButton
-                                variant="link"
-                                class="text-nowrap font-weight-bold p-0"
-                                :data-description="`grid sort key ${fieldEntry.key}`"
-                                @click="onSort(fieldEntry.key)">
-                                <span>{{ fieldTitle(fieldEntry) }}</span>
-                                <span v-if="sortBy === fieldEntry.key">
-                                    <FontAwesomeIcon
-                                        v-if="sortDesc"
-                                        icon="caret-down"
-                                        data-description="grid sort desc" />
-                                    <FontAwesomeIcon v-else icon="caret-up" data-description="grid sort asc" />
-                                </span>
-                            </BButton>
-                        </span>
-                        <span v-else-if="fieldTitle(fieldEntry)">{{ fieldTitle(fieldEntry) }}</span>
-                    </th>
-                </thead>
-                <tbody v-for="(rowData, rowIndex) in gridData" :key="rowIndex" data-description="grid item">
-                    <tr :class="{ 'grid-dark-row': rowIndex % 2 }">
-                        <td v-if="!!gridConfig.batch">
+        <template v-else>
+            <div class="position-relative">
+                <LoadingOverlay v-if="resultsLoading" />
+                <table class="grid-table">
+                    <thead>
+                        <th v-if="!!gridConfig.batch">
                             <BFormCheckbox
-                                :checked="selected.has(rowData)"
-                                class="m-2 cursor-pointer"
-                                data-description="grid selected"
-                                @change="onSelect(rowData)" />
-                        </td>
-                        <td
+                                class="m-2"
+                                :checked="selectedAll"
+                                :indeterminate="selectedIndeterminate"
+                                @change="onSelectAll" />
+                        </th>
+                        <th
                             v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
                             :key="fieldIndex"
-                            class="px-2 py-3"
-                            :style="{ width: `${fieldEntry.width}%` }">
-                            <div
-                                v-if="!fieldEntry.condition || fieldEntry.condition(rowData)"
-                                :data-description="`grid cell ${rowIndex}-${fieldIndex}`">
-                                <GridOperations
-                                    v-if="fieldEntry.type == 'operations' && fieldEntry.operations"
-                                    :operations="fieldEntry.operations"
-                                    :row-data="rowData"
-                                    :title="rowData[fieldEntry.key]"
-                                    @execute="onOperation($event, rowData)" />
-                                <GridExpand
-                                    v-else-if="fieldEntry.type == 'expand'"
-                                    :details-showing="expanded.has(rowData)"
-                                    @show-details="(s) => showDetails(rowData, s)" />
-                                <GridBoolean
-                                    v-else-if="fieldEntry.type == 'boolean'"
-                                    :value="rowData[fieldEntry.key]" />
-                                <GridDatasets
-                                    v-else-if="fieldEntry.type == 'datasets'"
-                                    :history-id="rowData[fieldEntry.key]" />
-                                <GridText
-                                    v-else-if="fieldEntry.type == 'text'"
-                                    :text="fieldText(fieldEntry, rowData)" />
-                                <GridLink
-                                    v-else-if="fieldEntry.type == 'link'"
-                                    :text="fieldText(fieldEntry, rowData)"
-                                    @click="fieldEntry.handler && fieldEntry.handler(rowData)" />
-                                <BButton
-                                    v-else-if="fieldEntry.type == 'button'"
-                                    class="d-flex flex-inline flex-gapx-1 align-items-center"
-                                    variant="primary"
-                                    @click="fieldEntry.handler && fieldEntry.handler(rowData)">
-                                    <FontAwesomeIcon v-if="fieldEntry.icon" :icon="fieldEntry.icon" />
-                                    <span v-if="fieldText(fieldEntry, rowData)" v-localize>{{
-                                        fieldText(fieldEntry, rowData)
-                                    }}</span>
-                                </BButton>
-                                <SwitchToHistoryLink
-                                    v-else-if="fieldEntry.type == 'history'"
-                                    :history-id="rowData[fieldEntry.key]" />
-                                <HelpText
-                                    v-else-if="fieldEntry.type == 'helptext' && fieldEntry.converter"
-                                    :uri="fieldEntry.converter(rowData)"
-                                    :text="rowData[fieldEntry.key]" />
-                                <SharingIndicators
-                                    v-else-if="fieldEntry.type == 'sharing'"
-                                    :object="rowData"
-                                    @filter="onFilter($event)" />
-                                <UtcDate
-                                    v-else-if="fieldEntry.type == 'date'"
-                                    :date="rowData[fieldEntry.key]"
-                                    mode="elapsed" />
-                                <StatelessTags
-                                    v-else-if="fieldEntry.type == 'tags'"
-                                    clickable
-                                    :value="rowData[fieldEntry.key]"
-                                    :disabled="fieldEntry.disabled"
-                                    @input="onTagInput(rowData, $event, fieldEntry.handler)"
-                                    @tag-click="applyFilter('tag', $event, true)" />
-                                <span v-else v-localize> Not available. </span>
-                            </div>
-                            <FontAwesomeIcon v-else icon="fa-shield-alt" />
-                        </td>
-                    </tr>
-                    <tr v-if="expanded.has(rowData)" data-description="grid expanded row">
-                        <td :colspan="gridConfig.fields.length + 2">
-                            <BCard class="p-2">
-                                <slot name="expanded" :row-data="rowData" />
-                            </BCard>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </BOverlay>
+                            class="text-nowrap px-2"
+                            :data-description="`grid header ${fieldIndex}`">
+                            <span v-if="gridConfig.sortKeys.includes(fieldEntry.key)">
+                                <GButton
+                                    transparent
+                                    color="blue"
+                                    class="text-nowrap font-weight-bold p-0"
+                                    :data-description="`grid sort key ${fieldEntry.key}`"
+                                    @click="onSort(fieldEntry.key)">
+                                    <span>{{ fieldTitle(fieldEntry) }}</span>
+                                    <span v-if="sortBy === fieldEntry.key">
+                                        <FontAwesomeIcon
+                                            v-if="sortDesc"
+                                            :icon="faCaretDown"
+                                            data-description="grid sort desc" />
+                                        <FontAwesomeIcon v-else :icon="faCaretUp" data-description="grid sort asc" />
+                                    </span>
+                                </GButton>
+                            </span>
+                            <span v-else-if="fieldTitle(fieldEntry)">{{ fieldTitle(fieldEntry) }}</span>
+                        </th>
+                    </thead>
+                    <tbody v-for="(rowData, rowIndex) in gridData" :key="rowIndex" data-description="grid item">
+                        <tr :class="{ 'grid-dark-row': rowIndex % 2 }">
+                            <td v-if="!!gridConfig.batch">
+                                <BFormCheckbox
+                                    :checked="selected.has(rowData)"
+                                    class="m-2 cursor-pointer"
+                                    data-description="grid selected"
+                                    @change="onSelect(rowData)" />
+                            </td>
+                            <td
+                                v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
+                                :key="fieldIndex"
+                                class="px-2 py-3"
+                                :style="{ width: `${fieldEntry.width}%` }">
+                                <div
+                                    v-if="!fieldEntry.condition || fieldEntry.condition(rowData)"
+                                    :data-description="`grid cell ${rowIndex}-${fieldIndex}`">
+                                    <GridOperations
+                                        v-if="fieldEntry.type == 'operations' && fieldEntry.operations"
+                                        :operations="fieldEntry.operations"
+                                        :row-data="rowData"
+                                        :title="rowData[fieldEntry.key]"
+                                        @execute="onOperation($event, rowData)" />
+                                    <GridExpand
+                                        v-else-if="fieldEntry.type == 'expand'"
+                                        :details-showing="expanded.has(rowData)"
+                                        @show-details="(s) => showDetails(rowData, s)" />
+                                    <GridBoolean
+                                        v-else-if="fieldEntry.type == 'boolean'"
+                                        :value="rowData[fieldEntry.key]" />
+                                    <GridText
+                                        v-else-if="fieldEntry.type == 'text'"
+                                        :text="fieldText(fieldEntry, rowData)" />
+                                    <GridLink
+                                        v-else-if="fieldEntry.type == 'link'"
+                                        :text="fieldText(fieldEntry, rowData)"
+                                        @click="fieldEntry.handler && fieldEntry.handler(rowData)" />
+                                    <GButton
+                                        v-else-if="fieldEntry.type == 'button'"
+                                        color="blue"
+                                        @click="fieldEntry.handler && fieldEntry.handler(rowData)">
+                                        <FontAwesomeIcon v-if="fieldEntry.icon" :icon="fieldEntry.icon" />
+                                        <span v-if="fieldText(fieldEntry, rowData)" v-localize>{{
+                                            fieldText(fieldEntry, rowData)
+                                        }}</span>
+                                    </GButton>
+                                    <template v-else-if="fieldEntry.type == 'history'">
+                                        <span v-if="!rowData[fieldEntry.key]" v-localize> No history found </span>
+                                        <SwitchToHistoryLink v-else :history-id="rowData[fieldEntry.key]" />
+                                    </template>
+                                    <HelpText
+                                        v-else-if="fieldEntry.type == 'helptext' && fieldEntry.converter"
+                                        :uri="fieldEntry.converter(rowData)"
+                                        :text="rowData[fieldEntry.key]" />
+                                    <SharingIndicators
+                                        v-else-if="fieldEntry.type == 'sharing'"
+                                        :object="rowData"
+                                        @filter="onFilter($event)" />
+                                    <UtcDate
+                                        v-else-if="fieldEntry.type == 'date'"
+                                        :date="rowData[fieldEntry.key]"
+                                        mode="elapsed" />
+                                    <StatelessTags
+                                        v-else-if="fieldEntry.type == 'tags'"
+                                        clickable
+                                        :value="rowData[fieldEntry.key]"
+                                        :disabled="fieldEntry.disabled"
+                                        @input="onTagInput(rowData, $event, fieldEntry.handler)"
+                                        @tag-click="applyFilter('tag', $event, true)" />
+                                    <span v-else v-localize> Not available. </span>
+                                </div>
+                                <FontAwesomeIcon v-else :icon="faShieldAlt" />
+                            </td>
+                        </tr>
+                        <tr v-if="expanded.has(rowData)" data-description="grid expanded row">
+                            <td :colspan="gridConfig.fields.length + 2">
+                                <BCard class="p-2">
+                                    <slot name="expanded" :row-data="rowData" />
+                                </BCard>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </template>
         <div class="flex-grow-1 h-100" />
         <div class="grid-footer">
             <div v-if="isAvailable" class="d-flex justify-content-between pt-3">
                 <div class="d-flex">
                     <div v-for="(batchOperation, batchIndex) in gridConfig.batch" :key="batchIndex">
-                        <BButton
+                        <GButton
                             v-if="
                                 selected.size > 0 &&
                                 (!batchOperation.condition || batchOperation.condition(Array.from(selected)))
                             "
                             class="mr-2"
-                            size="sm"
-                            variant="primary"
+                            size="small"
+                            color="blue"
                             :data-description="`grid batch ${batchOperation.title.toLowerCase()}`"
                             @click="onBatchOperation(batchOperation, Array.from(selected))">
-                            <Icon :icon="batchOperation.icon" class="mr-1" />
+                            <FontAwesomeIcon :icon="batchOperation.icon" class="mr-1" />
                             <span v-localize>{{ batchOperation.title }} ({{ selected.size }})</span>
-                        </BButton>
+                        </GButton>
                     </div>
                 </div>
                 <BPagination
@@ -547,7 +548,7 @@ watch(operationMessage, () => {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .grid-footer {
     @extend .grid-sticky;

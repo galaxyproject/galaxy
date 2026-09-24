@@ -3,12 +3,10 @@ from abc import (
     ABC,
     abstractmethod,
 )
+from collections.abc import Sequence
 from contextlib import contextmanager
 from typing import (
     Any,
-    List,
-    Optional,
-    Sequence,
 )
 
 import sqlalchemy as sa
@@ -24,7 +22,7 @@ log = logging.getLogger(__name__)
 class DDLOperation(ABC):
     """Base class for all DDL operations."""
 
-    def run(self) -> Optional[Any]:
+    def run(self) -> Any | None:
         if not self._is_repair_mode():
             return self.execute()
         else:
@@ -35,7 +33,7 @@ class DDLOperation(ABC):
                 return None
 
     @abstractmethod
-    def execute(self) -> Optional[Any]: ...
+    def execute(self) -> Any | None: ...
 
     @abstractmethod
     def pre_execute_check(self) -> bool: ...
@@ -65,13 +63,13 @@ class DDLAlterOperation(DDLOperation):
     def __init__(self, table_name: str) -> None:
         self.table_name = table_name
 
-    def run(self) -> Optional[Any]:
+    def run(self) -> Any | None:
         if context.is_offline_mode():
             log.info("Generation of `alter` statements is disabled in offline mode.")
             return None
         return super().run()
 
-    def execute(self) -> Optional[Any]:
+    def execute(self) -> Any | None:
         if _is_sqlite():
             with legacy_alter_table(), op.batch_alter_table(self.table_name) as batch_op:
                 return self.batch_execute(batch_op)
@@ -79,10 +77,10 @@ class DDLAlterOperation(DDLOperation):
             return self.non_batch_execute()  # use regular op context for non-sqlite db
 
     @abstractmethod
-    def batch_execute(self, batch_op) -> Optional[Any]: ...
+    def batch_execute(self, batch_op) -> Any | None: ...
 
     @abstractmethod
-    def non_batch_execute(self) -> Optional[Any]: ...
+    def non_batch_execute(self) -> Any | None: ...
 
 
 class CreateTable(DDLOperation):
@@ -92,7 +90,7 @@ class CreateTable(DDLOperation):
         self.table_name = table_name
         self.columns = columns
 
-    def execute(self) -> Optional[sa.Table]:
+    def execute(self) -> sa.Table | None:
         return op.create_table(self.table_name, *self.columns)
 
     def pre_execute_check(self) -> bool:
@@ -226,8 +224,8 @@ class CreateForeignKey(DDLAlterOperation):
         foreign_key_name: str,
         table_name: str,
         referent_table: str,
-        local_cols: List[str],
-        remote_cols: List[str],
+        local_cols: list[str],
+        remote_cols: list[str],
         **kw: Any,
     ) -> None:
         super().__init__(table_name)
@@ -258,7 +256,7 @@ class CreateForeignKey(DDLAlterOperation):
 class CreateUniqueConstraint(DDLAlterOperation):
     """Wraps alembic's create_unique_constraint directive."""
 
-    def __init__(self, constraint_name: str, table_name: str, columns: List[str]) -> None:
+    def __init__(self, constraint_name: str, table_name: str, columns: list[str]) -> None:
         super().__init__(table_name)
         self.constraint_name = constraint_name
         self.columns = columns
@@ -298,7 +296,7 @@ class DropConstraint(DDLAlterOperation):
         self._log_object_does_not_exist_message(name)
 
 
-def create_table(table_name: str, *columns: sa.schema.SchemaItem) -> Optional[sa.Table]:
+def create_table(table_name: str, *columns: sa.schema.SchemaItem) -> sa.Table | None:
     return CreateTable(table_name, *columns).run()
 
 
@@ -330,14 +328,14 @@ def create_foreign_key(
     foreign_key_name: str,
     table_name: str,
     referent_table: str,
-    local_cols: List[str],
-    remote_cols: List[str],
+    local_cols: list[str],
+    remote_cols: list[str],
     **kw: Any,
 ) -> None:
     CreateForeignKey(foreign_key_name, table_name, referent_table, local_cols, remote_cols, **kw).run()
 
 
-def create_unique_constraint(constraint_name: str, table_name: str, columns: List[str]) -> None:
+def create_unique_constraint(constraint_name: str, table_name: str, columns: list[str]) -> None:
     CreateUniqueConstraint(constraint_name, table_name, columns).run()
 
 

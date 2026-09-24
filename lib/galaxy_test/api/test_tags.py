@@ -1,5 +1,4 @@
 import json
-from typing import List
 from unittest import SkipTest
 from uuid import uuid4
 
@@ -31,7 +30,7 @@ class TagsApiTests(ApiTestCase):
 
         new_tags = ["APITag"]
         update_history_tags_response = self._update_tags_using_tags_api(item_id, new_tags)
-        self._assert_status_code_is(update_history_tags_response, 204)
+        self._assert_status_code_is_ok(update_history_tags_response)
         self._assert_tags_in_item(item_id, new_tags)
 
         # other users can't create or update tags
@@ -51,7 +50,7 @@ class TagsApiTests(ApiTestCase):
         item = item_response.json()
         return item
 
-    def _assert_tags_in_item(self, item_id, expected_tags: List[str]):
+    def _assert_tags_in_item(self, item_id, expected_tags: list[str]):
         item = self._get_item(item_id)
         assert "tags" in item
         assert item["tags"] == expected_tags
@@ -112,6 +111,13 @@ class TestLibraryDatasetTags(TagsApiTests):
         item = item_response.json()
         return item
 
+    def test_upload_file_contents_with_tags(self):
+        initial_tags = ["name:foobar", "barfoo"]
+        ld = self.library_populator.new_library_dataset(
+            name=f"test-library-dataset-{uuid4()}", tags=json.dumps(initial_tags)
+        )
+        assert ld["tags"] == initial_tags
+
 
 class TestPageTags(TagsApiTests):
     api_name = "pages"
@@ -150,12 +156,10 @@ class TestVisualizationTags(TagsApiTests):
 
         title = f"Test Visualization {uuid_str}"
         slug = f"test-visualization-{uuid_str}"
-        config = json.dumps(
-            {
-                "x": 10,
-                "y": 12,
-            }
-        )
+        config = {
+            "x": 10,
+            "y": 12,
+        }
         create_payload = {
             "title": title,
             "slug": slug,
@@ -164,7 +168,7 @@ class TestVisualizationTags(TagsApiTests):
             "annotation": "this is a test visualization for tags",
             "config": config,
         }
-        response = self._post("visualizations", data=create_payload)
+        response = self._post("visualizations", data=create_payload, json=True)
         self._assert_status_code_is(response, 200)
         viz = response.json()
         return viz["id"]

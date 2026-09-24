@@ -1,11 +1,12 @@
 import importlib
 import logging
 import pkgutil
+from types import ModuleType
 
 log = logging.getLogger(__name__)
 
 
-def import_submodules(module, ordered=True, recursive=False):
+def import_submodules(module: ModuleType | str, ordered: bool = True, recursive: bool = False) -> list[ModuleType]:
     """Import all submodules of a module
 
     :param module: module (package name or actual module)
@@ -28,7 +29,7 @@ def import_submodules(module, ordered=True, recursive=False):
         return sub_modules
 
 
-def __import_submodules_impl(module, recursive=False):
+def __import_submodules_impl(module: ModuleType | str, recursive: bool = False) -> list[ModuleType]:
     """Implementation of import only, without sorting.
 
     :param module: module (package name or actual module)
@@ -37,14 +38,14 @@ def __import_submodules_impl(module, recursive=False):
     """
     if isinstance(module, str):
         module = importlib.import_module(module)
-    submodules = []
+    submodules: list[ModuleType] = []
     for _, name, is_pkg in pkgutil.walk_packages(module.__path__):
         full_name = f"{module.__name__}.{name}"
         try:
             submodule = importlib.import_module(full_name)
             submodules.append(submodule)
             if recursive and is_pkg:
-                submodules.update(__import_submodules_impl(submodule, recursive=True))
+                submodules.extend(__import_submodules_impl(submodule, recursive=True))
         except Exception:
             message = f"{full_name} dynamic module could not be loaded (traceback follows):"
             log.exception(message)

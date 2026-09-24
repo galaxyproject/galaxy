@@ -7,32 +7,37 @@ import logging
 import sys
 import threading
 import traceback
-from urllib.parse import urljoin
 
 from paste import httpexceptions
-from tuswsgi import TusMiddleware
 
 import galaxy.app
 import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework
-import galaxy.webapps.base.webapp
 from galaxy import util
 from galaxy.security.validate_user_input import VALID_PUBLICNAME_RE
+from galaxy.structured_app import MinimalApp
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
 from galaxy.web.framework.middleware.error import ErrorMiddleware
 from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
 from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
-from galaxy.webapps.base.webapp import build_url_map
+from galaxy.webapps.base.webapp import (
+    build_url_map,
+    WebApplication,
+)
 from galaxy.webapps.util import wrap_if_allowed
 
 log = logging.getLogger(__name__)
 
 
-class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
+class GalaxyWebApplication(WebApplication):
     injection_aware = True
+
+    def __init__(self, galaxy_app: MinimalApp, session_cookie: str = "galaxysession", name: str | None = None) -> None:
+        super().__init__(galaxy_app, session_cookie, name)
+        self.session_factories.append(galaxy_app.install_model)
 
 
 def app_factory(*args, **kwargs):
@@ -81,17 +86,18 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_route("/activate", controller="user", action="activate")
 
     # Authentication endpoints.
-    webapp.add_route("/authnz/", controller="authnz", action="index", provider=None)
-    webapp.add_route("/authnz/{provider}/login", controller="authnz", action="login", provider=None)
-    webapp.add_route("/authnz/{provider}/callback", controller="authnz", action="callback", provider=None)
-    webapp.add_route(
-        "/authnz/{provider}/disconnect/{email}", controller="authnz", action="disconnect", provider=None, email=None
-    )
-    webapp.add_route("/authnz/{provider}/logout", controller="authnz", action="logout", provider=None)
-    webapp.add_route("/authnz/{provider}/create_user", controller="authnz", action="create_user")
-    # Returns the provider specific logout url for currently logged in provider
-    webapp.add_route("/authnz/logout", controller="authnz", action="get_logout_url")
-    webapp.add_route("/authnz/get_cilogon_idps", controller="authnz", action="get_cilogon_idps")
+    if app.config.enable_oidc:
+        webapp.add_route("/authnz/", controller="authnz", action="index", provider=None, redirect=None)
+        webapp.add_route("/authnz/{provider}/login", controller="authnz", action="login", provider=None)
+        webapp.add_route("/authnz/{provider}/callback", controller="authnz", action="callback", provider=None)
+        webapp.add_route(
+            "/authnz/{provider}/disconnect/{email}", controller="authnz", action="disconnect", provider=None, email=None
+        )
+        webapp.add_route("/authnz/{provider}/logout", controller="authnz", action="logout", provider=None)
+        webapp.add_route("/authnz/{provider}/create_user", controller="authnz", action="create_user")
+        # Returns the provider specific logout url for currently logged in provider
+        webapp.add_route("/authnz/logout", controller="authnz", action="get_logout_url")
+        webapp.add_route("/authnz/get_cilogon_idps", controller="authnz", action="get_cilogon_idps")
 
     # These two routes handle our simple needs at the moment
     webapp.add_route(
@@ -186,7 +192,9 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     # The following are routes that are handled completely on the clientside.
     # The following routes don't bootstrap any information, simply provide the
     # base analysis interface at which point the application takes over.
-
+    webapp.add_client_route("/")
+    webapp.add_client_route("/root")
+    webapp.add_client_route("/index")
     webapp.add_client_route("/about")
     webapp.add_client_route("/admin")
     webapp.add_client_route("/admin/data_tables")
@@ -213,12 +221,21 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/admin/form/{form_id}")
     webapp.add_client_route("/admin/api_keys")
     webapp.add_client_route("/carbon_emissions_calculations")
+    webapp.add_client_route("/help/terms/{term_id}")
     webapp.add_client_route("/datatypes")
     webapp.add_client_route("/login/start")
+    webapp.add_client_route("/register/start")
     webapp.add_client_route("/tools/list")
+    webapp.add_client_route("/tools/list/ontologies")
     webapp.add_client_route("/tools/json")
+    webapp.add_client_route("/tools/editor")
+    webapp.add_client_route("/tools/editor/{uuid}")
+    webapp.add_client_route("/tool_landings/{uuid}")
+    webapp.add_client_route("/workflow_landings/{uuid}")
     webapp.add_client_route("/tours")
     webapp.add_client_route("/tours/{tour_id}")
+    webapp.add_client_route("/galaxyai")
+    webapp.add_client_route("/galaxyai/{exchange_id}")
     webapp.add_client_route("/user")
     webapp.add_client_route("/user/notifications{path:.*?}")
     webapp.add_client_route("/user/{form_id}")
@@ -234,10 +251,12 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/file_source_templates/{template_id}/new")
     webapp.add_client_route("/welcome/new")
     webapp.add_client_route("/visualizations")
-    webapp.add_client_route("/visualizations/edit")
+    webapp.add_client_route("/visualizations/create/{visualization}")
     webapp.add_client_route("/visualizations/display{path:.*?}")
+    webapp.add_client_route("/visualizations/edit")
     webapp.add_client_route("/visualizations/sharing")
     webapp.add_client_route("/visualizations/list_published")
+    webapp.add_client_route("/visualizations/list_shared")
     webapp.add_client_route("/visualizations/list")
     webapp.add_client_route("/pages/list")
     webapp.add_client_route("/pages/list_published")
@@ -253,8 +272,15 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/histories/list")
     webapp.add_client_route("/histories/import")
     webapp.add_client_route("/histories/{history_id}/export")
+    webapp.add_client_route("/histories/{history_id}/extract_workflow")
     webapp.add_client_route("/histories/{history_id}/archive")
     webapp.add_client_route("/histories/{history_id}/invocations")
+    webapp.add_client_route("/histories/{history_id}/graph")
+    webapp.add_client_route("/histories/{history_id}/graph/{path:.*?}")
+    webapp.add_client_route("/histories/{history_id}/pages")
+    webapp.add_client_route("/histories/{history_id}/pages/{page_id}")
+    webapp.add_client_route("/histories/{history_id}/storage/runs")
+    webapp.add_client_route("/histories/{history_id}/storage/runs/{path:.*?}")
     webapp.add_client_route("/histories/archived")
     webapp.add_client_route("/histories/list_published")
     webapp.add_client_route("/histories/list_shared")
@@ -263,27 +289,37 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/histories/permissions")
     webapp.add_client_route("/histories/view")
     webapp.add_client_route("/histories/view_multiple")
+    webapp.add_client_route("/datasets/copy")
     webapp.add_client_route("/datasets/list")
     webapp.add_client_route("/datasets/{dataset_id}/edit")
     webapp.add_client_route("/datasets/{dataset_id}/error")
     webapp.add_client_route("/datasets/{dataset_id}/details")
     webapp.add_client_route("/datasets/{dataset_id}/preview")
+    webapp.add_client_route("/datasets/{dataset_id}/raw")
+    webapp.add_client_route("/datasets/{dataset_id}/report")
     webapp.add_client_route("/datasets/{dataset_id}/show_params")
+    webapp.add_client_route("/datasets/{dataset_id}/visualize")
+    webapp.add_client_route("/datasets/{dataset_id}")
+    webapp.add_client_route("/display_applications/{path:.*?}")
     webapp.add_client_route("/collection/{collection_id}/edit")
+    webapp.add_client_route("/collection/{collection_id}/sheet")
+    webapp.add_client_route("/collection/new_list")
     webapp.add_client_route("/jobs/submission/success")
     webapp.add_client_route("/jobs/{job_id}/view")
+    webapp.add_client_route("/rules")
     webapp.add_client_route("/workflows/list")
     webapp.add_client_route("/workflows/list_published")
     webapp.add_client_route("/workflows/list_shared_with_me")
     webapp.add_client_route("/workflows/edit")
     webapp.add_client_route("/workflows/export")
-    webapp.add_client_route("/workflows/create")
+    webapp.add_client_route("/workflows/rerun")
     webapp.add_client_route("/workflows/run")
     webapp.add_client_route("/workflows/import")
     webapp.add_client_route("/workflows/trs_import")
     webapp.add_client_route("/workflows/trs_search")
     webapp.add_client_route("/workflows/invocations")
     webapp.add_client_route("/workflows/invocations/{invocation_id}")
+    webapp.add_client_route("/workflows/invocations/{invocation_id}/{tab:.*?}")
     webapp.add_client_route("/workflows/invocations/import")
     webapp.add_client_route("/workflows/sharing")
     webapp.add_client_route("/workflows/{stored_workflow_id}/invocations")
@@ -293,6 +329,9 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/interactivetool_entry_points/list")
     webapp.add_client_route("/libraries{path:.*?}")
     webapp.add_client_route("/storage{path:.*?}")
+    webapp.add_client_route("/import/zip")
+    webapp.add_client_route("/downloads")
+    webapp.add_client_route("/upload{path:.*?}")
 
     # ==== Done
     # Indicate that all configuration settings have been provided
@@ -320,7 +359,7 @@ def postfork_setup():
     app.application_stack.log_startup()
 
 
-def populate_api_routes(webapp, app):
+def populate_api_routes(webapp: WebApplication, app: MinimalApp):
     webapp.add_api_controllers("galaxy.webapps.galaxy.api", app)
 
     _add_item_annotation_controller(
@@ -417,7 +456,6 @@ def populate_api_routes(webapp, app):
     )
     webapp.mapper.connect("/api/tools/{id:.+?}", action="show", controller="tools")
     webapp.mapper.resource("tool", "tools", path_prefix="/api")
-    webapp.mapper.resource("dynamic_tools", "dynamic_tools", path_prefix="/api")
 
     webapp.mapper.connect(
         "/api/sanitize_allow", action="index", controller="sanitize_allow", conditions=dict(method=["GET"])
@@ -579,34 +617,12 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["POST"]),
     )
 
-    webapp.mapper.resource("visualization", "visualizations", path_prefix="/api")
-    webapp.mapper.resource("plugins", "plugins", path_prefix="/api")
     webapp.mapper.connect("/api/workflows/build_module", action="build_module", controller="workflows")
     webapp.mapper.connect(
         "/api/workflows/menu", action="set_workflow_menu", controller="workflows", conditions=dict(method=["PUT"])
     )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
 
-    # ---- visualizations registry ---- generic template renderer
-    # @deprecated: this route should be considered deprecated
-    webapp.add_route(
-        "/visualization/show/{visualization_name}", controller="visualization", action="render", visualization_name=None
-    )
-
-    # provide an alternate route to visualization plugins that's closer to their static assets
-    # (/plugins/visualizations/{visualization_name}/static) and allow them to use relative urls to those
-    webapp.mapper.connect(
-        "visualization_plugin",
-        "/plugins/visualizations/{visualization_name}/show",
-        controller="visualization",
-        action="render",
-    )
-    webapp.mapper.connect(
-        "saved_visualization",
-        "/plugins/visualizations/{visualization_name}/saved",
-        controller="visualization",
-        action="saved",
-    )
     # Deprecated in favor of POST /api/workflows with 'workflow' in payload.
     webapp.mapper.connect(
         "import_workflow_deprecated",
@@ -842,19 +858,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["POST", "GET"]),
     )
 
-    webapp.mapper.resource(
-        "content",
-        "contents",
-        controller="library_contents",
-        name_prefix="library_",
-        path_prefix="/api/libraries/{library_id}",
-        parent_resources=dict(member_name="library", collection_name="libraries"),
-    )
-
-    _add_item_extended_metadata_controller(
-        webapp, name_prefix="library_dataset_", path_prefix="/api/libraries/{library_id}/contents/{library_content_id}"
-    )
-
     webapp.mapper.connect(
         "build_for_rerun",
         "/api/jobs/{id}/build_for_rerun",
@@ -1024,7 +1027,8 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # other middleware):
     app = wrap_if_allowed(app, stack, httpexceptions.make_middleware, name="paste.httpexceptions", args=(conf,))
     # Statsd request timing and profiling
-    if statsd_host := conf.get("statsd_host", None):
+    statsd_host = conf.get("statsd_host", None)
+    if statsd_host and conf.get("enable_statsd_middleware", statsd_host is not None):
         from galaxy.web.framework.middleware.statsd import StatsdMiddleware
 
         app = wrap_if_allowed(
@@ -1070,30 +1074,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         from galaxy.web.framework.middleware.translogger import TransLogger
 
         app = wrap_if_allowed(app, stack, TransLogger)
-    # TUS upload middleware
-    app = wrap_if_allowed(
-        app,
-        stack,
-        TusMiddleware,
-        kwargs={
-            "upload_path": urljoin(f"{application_stack.config.galaxy_url_prefix}/", "api/upload/resumable_upload"),
-            "tmp_dir": application_stack.config.tus_upload_store or application_stack.config.new_file_path,
-            "max_size": application_stack.config.maximum_upload_file_size,
-        },
-    )
-    # TUS upload middleware for job files....
-    app = wrap_if_allowed(
-        app,
-        stack,
-        TusMiddleware,
-        kwargs={
-            "upload_path": urljoin(f"{application_stack.config.galaxy_url_prefix}/", "api/job_files/resumable_upload"),
-            "tmp_dir": application_stack.config.tus_upload_store_job_files
-            or application_stack.config.tus_upload_store
-            or application_stack.config.new_file_path,
-            "max_size": application_stack.config.maximum_upload_file_size,
-        },
-    )
     # X-Forwarded-Host handling
     app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
     # Request ID middleware

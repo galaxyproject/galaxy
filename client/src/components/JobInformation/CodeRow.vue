@@ -1,10 +1,5 @@
 <template>
-    <tr
-        v-b-tooltip.hover
-        :title="`click to ${action}`"
-        @mousedown="mouseIsDown = true"
-        @mousemove="mouseIsDown ? (mouseMoved = true) : (mouseMoved = false)"
-        @mouseup="toggleExpanded()">
+    <tr>
         <td>
             <span v-if="helpUri">
                 <HelpText :uri="helpUri" :text="codeLabel" />
@@ -18,7 +13,13 @@
                 <b-col cols="11">
                     <pre :class="codeClass">{{ codeItem }}</pre>
                 </b-col>
-                <b-col class="nopadding pointer">
+                <b-col
+                    v-g-tooltip.hover
+                    class="nopadding pointer"
+                    :title="`click to ${action}`"
+                    @mousedown="mouseIsDown = true"
+                    @mousemove="mouseIsDown ? (mouseMoved = true) : (mouseMoved = false)"
+                    @mouseup="toggleExpanded()">
                     <FontAwesomeIcon :icon="iconClass" />
                 </b-col>
             </b-row>
@@ -27,12 +28,11 @@
     </tr>
 </template>
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCompressAlt, faExpandAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import HelpText from "components/Help/HelpText";
 
-library.add(faCompressAlt, faExpandAlt);
+import HelpText from "@/components/Help/HelpText.vue";
+
 export default {
     components: {
         FontAwesomeIcon,
@@ -48,6 +48,9 @@ export default {
             mouseIsDown: false,
             mouseMoved: false,
             expanded: false,
+            lastPos: 0,
+            faCompressAlt,
+            faExpandAlt,
         };
     },
     computed: {
@@ -58,8 +61,20 @@ export default {
             return this.expanded ? "code" : "code preview";
         },
         iconClass() {
-            return this.expanded ? ["fas", "compress-alt"] : ["fas", "expand-alt"];
+            return this.expanded ? this.faCompressAlt : this.faExpandAlt;
         },
+    },
+    updated() {
+        try {
+            var codeDiv = this.$el.querySelector(".code");
+            if (codeDiv.scrollTop + codeDiv.offsetHeight >= this.lastPos - 5) {
+                // scroll is at the bottom
+                codeDiv.scrollTop = codeDiv.scrollHeight;
+            }
+            this.lastPos = codeDiv.scrollHeight;
+        } catch (exception) {
+            console.debug("Code div is not present");
+        }
     },
     methods: {
         toggleExpanded() {
@@ -79,5 +94,9 @@ export default {
 .nopadding {
     padding: 0;
     margin: 0;
+}
+.code {
+    max-height: 50em;
+    overflow: auto;
 }
 </style>

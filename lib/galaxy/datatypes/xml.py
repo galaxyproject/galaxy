@@ -4,7 +4,6 @@ XML format classes
 
 import logging
 import re
-from typing import List
 
 from galaxy import util
 from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
@@ -25,6 +24,13 @@ log = logging.getLogger(__name__)
 
 OWL_MARKER = re.compile(r"\<owl:")
 SBML_MARKER = re.compile(r"\<sbml")
+TEI_MARKER = re.compile(
+    # XML-spec comment body: `[^-]` or a lone `-` not followed by `-`. Avoids the
+    # ambiguous `.*?` inside `(...)*` that triggers exponential backtracking on
+    # repeated `--><!--` runs (CodeQL py/redos).
+    r"^\s*(?:<\?xml[^>]*>\s*)?(?:<!--(?:[^-]|-(?!-))*-->\s*)*<([A-Za-z_][\w.-]*:)?TEI(?:\s|>|/)",
+    re.DOTALL,
+)
 
 
 @dataproviders.decorators.has_dataproviders
@@ -67,7 +73,7 @@ class GenericXml(data.Text):
         return file_prefix.startswith("<?xml ")
 
     @staticmethod
-    def merge(split_files: List[str], output_file: str) -> None:
+    def merge(split_files: list[str], output_file: str) -> None:
         """Merging multiple XML files is non-trivial and must be done in subclasses."""
         if len(split_files) > 1:
             raise NotImplementedError(
@@ -112,6 +118,27 @@ class CisML(GenericXml):
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
+
+
+class Tei(GenericXml):
+    """Text Encoding Initiative XML data."""
+
+    file_ext = "tei"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
+            dataset.blurb = "TEI XML data"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is TEI XML.
+        """
+        return bool(file_prefix.search(TEI_MARKER))
 
 
 class Dzi(GenericXml):

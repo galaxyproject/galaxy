@@ -2,12 +2,12 @@ import gzip
 import os
 import shutil
 import tempfile
-from typing import Tuple
 
 try:
     import h5py
 except ImportError:
     h5py = None
+import pytest
 
 from galaxy.tool_util.parser.xml import __parse_assert_list_from_elem
 from galaxy.tool_util.verify import asserts
@@ -172,7 +172,7 @@ def test_has_text_n_success():
 def test_has_text_n_failure():
     """test has_text with n .. negative test"""
     a = run_assertions(TEXT_HAS_TEXT_ASSERTION_N, TEXT_DATA_HAS_TEXT)
-    assert "Expected 2+-0 occurences of 'test text' in output ('test text\n') found 1" in a
+    assert "Expected 2+-0 occurrences of 'test text' in output ('test text\n') found 1" in a
     assert len(a) == 1
 
 
@@ -185,7 +185,7 @@ def test_has_text_n_delta_success():
 def test_has_text_n_delta_failure():
     """test has_text with n and delta .. negative test"""
     a = run_assertions(TEXT_HAS_TEXT_ASSERTION_N_DELTA, TEXT_DATA_HAS_TEXT)
-    assert "Expected 3+-1 occurences of 'test text' in output ('test text\n') found 1" in a
+    assert "Expected 3+-1 occurrences of 'test text' in output ('test text\n') found 1" in a
     assert len(a) == 1
 
 
@@ -198,7 +198,7 @@ def test_has_text_minmax_delta_success():
 def test_has_text_minmax_delta_failure():
     """test has_text with min max .. negative test"""
     a = run_assertions(TEXT_HAS_TEXT_ASSERTION_MIN_MAX, TEXT_DATA_HAS_TEXT)
-    assert "Expected that the number of occurences of 'test text' in output is in [2:4] ('test text\n') found 1" in a
+    assert "Expected that the number of occurrences of 'test text' in output is in [2:4] ('test text\n') found 1" in a
     assert len(a) == 1
 
 
@@ -237,7 +237,7 @@ def test_has_text_negate_n_success():
 def test_has_text_negate_n_failure():
     """test has_text negate with n .. negative test"""
     a = run_assertions(TEXT_HAS_TEXT_ASSERTION_N_NEGATE, TEXT_DATA_HAS_TEXT * 2)
-    assert "Did not expect 2+-0 occurences of 'test text' in output ('test text\ntest text\n') found 2" in a
+    assert "Did not expect 2+-0 occurrences of 'test text' in output ('test text\ntest text\n') found 2" in a
     assert len(a) == 1
 
 
@@ -250,7 +250,7 @@ def test_has_text_negate_n_delta_success():
 def test_has_text_negate_n_delta_failure():
     """test has_text negate with n and delta .. negative test"""
     a = run_assertions(TEXT_HAS_TEXT_ASSERTION_N_DELTA_NEGATE, TEXT_DATA_HAS_TEXT * 2)
-    assert "Did not expect 3+-1 occurences of 'test text' in output ('test text\ntest text\n') found 2" in a
+    assert "Did not expect 3+-1 occurrences of 'test text' in output ('test text\ntest text\n') found 2" in a
     assert len(a) == 1
 
 
@@ -264,7 +264,7 @@ def test_has_text_negate_minmax_delta_failure():
     """test has_text negate with min max .. negative test"""
     a = run_assertions(TEXT_HAS_TEXT_ASSERTION_MIN_MAX_NEGATE, TEXT_DATA_HAS_TEXT * 2)
     assert (
-        "Did not expect that the number of occurences of 'test text' in output is in [2:4] ('test text\ntest text\n') found 2"
+        "Did not expect that the number of occurrences of 'test text' in output is in [2:4] ('test text\ntest text\n') found 2"
         in a
     )
     assert len(a) == 1
@@ -489,15 +489,17 @@ with tempfile.NamedTemporaryFile(mode="w", delete=False) as txttmp:
     GZA100 = gzip.compress(A100)
 
 
-def test_has_size_success():
+@pytest.mark.parametrize("size_attrib", ["size", "value"])
+def test_has_size_success(size_attrib):
     """test has_size"""
-    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(size_attrib="size", value=10), TEXT_DATA_HAS_TEXT)
+    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(size_attrib=size_attrib, value=10), TEXT_DATA_HAS_TEXT)
     assert len(a) == 0
 
 
-def test_has_size_failure():
+@pytest.mark.parametrize("size_attrib", ["size", "value"])
+def test_has_size_failure(size_attrib):
     """test has_size .. negative test"""
-    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(size_attrib="value", value="10"), TEXT_DATA_HAS_TEXT * 2)
+    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(size_attrib=size_attrib, value="10"), TEXT_DATA_HAS_TEXT * 2)
     assert "Expected file size of 10+-0 found 20" in a
     assert len(a) == 1
 
@@ -848,7 +850,7 @@ def test_xml_element_failure_due_to_minmax_in_combination_with_negate():
         ),
         VALID_XML,
     )
-    assert "Did not expect that the number of occurences of path './/more' in xml is in [1:3] found 3" in a
+    assert "Did not expect that the number of occurrences of path './/more' in xml is in [1:3] found 3" in a
     assert len(a) == 1
 
 
@@ -1259,7 +1261,7 @@ def test_has_json_property_with_text_neg():
 if h5py is not None:
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         h5name = tmp.name
-        with h5py.File(tmp.name, "w") as h5fh:
+        with h5py.File(tmp.name, "w", locking=False) as h5fh:
             h5fh.attrs["myfileattr"] = "myfileattrvalue"
             h5fh.attrs["myfileattrint"] = 1
             dset = h5fh.create_dataset("myint", (100,), dtype="i")
@@ -1315,15 +1317,16 @@ if h5py is not None:
         """test has_attribute .. negative"""
         a = run_assertions(H5_HAS_ATTRIBUTE_NEGATIVE, H5BYTES)
         assert (
-            "Not a HDF5 file or H5 attributes do not match:\n\t[('myfileattr', 'myfileattrvalue'), ('myfileattrint', 1)]\n\n\t(myfileattr : wrong)"
+            "Not a HDF5 file or H5 attributes do not match:\n\t[('myfileattr', 'myfileattrvalue'), ('myfileattrint', '1')]\n\n\t(myfileattr : wrong)"
             in a
         )
         assert len(a) == 1
 
 
-def run_assertions(assertion_xml: str, data, decompress=False) -> Tuple:
+def run_assertions(assertion_xml: str, data, decompress=False) -> tuple:
     assertion = parse_xml_string(assertion_xml)
     assertion_description = __parse_assert_list_from_elem(assertion)
+    assert assertion_description
     try:
         asserts.verify_assertions(data, assertion_description, decompress=decompress)
     except AssertionError as e:

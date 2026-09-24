@@ -73,7 +73,7 @@ class LSF(BaseJobExec):
                 rval[job_id] = self._get_job_state(state)
         return rval
 
-    def parse_single_status(self, status, job_id):
+    def parse_single_status(self, status, job_id, shell_interfance):
         if not status:
             # Job not found in LSF, most probably finished and forgotten.
             # lsf outputs: Job <num> is not found -- but that is on the stderr

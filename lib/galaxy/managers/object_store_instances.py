@@ -8,13 +8,9 @@ To Test:
 """
 
 import logging
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
 from uuid import uuid4
+
+from pydantic import UUID4
 
 from galaxy.exceptions import (
     ItemOwnershipException,
@@ -29,6 +25,7 @@ from galaxy.objectstore import (
     build_test_object_store_from_user_config,
     ConcreteObjectStoreModel,
     QuotaModel,
+    USER_OBJECTS_SCHEME,
     UserObjectStoresAppConfig,
 )
 from galaxy.objectstore.badges import serialize_badges
@@ -47,38 +44,48 @@ from galaxy.util.config_templates import (
     PluginStatus,
     settings_exception_to_status,
     status_template_definition,
+    TemplateReference,
     TemplateVariableValueType,
     validate_no_extra_secrets_defined,
     validate_no_extra_variables_defined,
 )
 from ._config_templates import (
+    CanTestPluginStatus,
     CreateInstancePayload,
+    CreateTestTarget,
     ModifyInstancePayload,
     prepare_environment,
-    prepare_environment_from_root,
+    prepare_template_parameters_for_testing,
     purge_template_instance,
     recover_secrets,
     save_template_instance,
     sort_templates,
+    TemplateServerConfiguration,
+    TestModifyInstancePayload,
+    TestUpdateInstancePayload,
+    TestUpgradeInstancePayload,
+    to_template_reference,
     update_instance_secret,
     update_template_instance,
     updated_template_variables,
     UpdateInstancePayload,
     UpdateInstanceSecretPayload,
+    UpdateTestTarget,
     upgrade_secrets,
     UpgradeInstancePayload,
+    UpgradeTestTarget,
 )
 
 log = logging.getLogger(__name__)
 
 
 class UserConcreteObjectStoreModel(ConcreteObjectStoreModel):
-    uuid: str
+    uuid: UUID4
     type: ObjectStoreTemplateType
     template_id: str
     template_version: int
-    variables: Optional[Dict[str, TemplateVariableValueType]]
-    secrets: List[str]
+    variables: dict[str, TemplateVariableValueType] | None
+    secrets: list[str]
     hidden: bool
     active: bool
     purged: bool
@@ -106,7 +113,7 @@ class ObjectStoreInstancesManager:
         return self._catalog.summaries
 
     def modify_instance(
-        self, trans: ProvidesUserContext, id: str, payload: ModifyInstancePayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: ModifyInstancePayload
     ) -> UserConcreteObjectStoreModel:
         if isinstance(payload, UpgradeInstancePayload):
             return self._upgrade_instance(trans, id, payload)
@@ -116,19 +123,17 @@ class ObjectStoreInstancesManager:
             assert isinstance(payload, UpdateInstancePayload)
             return self._update_instance(trans, id, payload)
 
-    def purge_instance(self, trans: ProvidesUserContext, id: str) -> None:
+    def purge_instance(self, trans: ProvidesUserContext, id: UUID4) -> None:
         persisted_object_store = self._get(trans, id)
         purge_template_instance(trans, persisted_object_store, self._app_config)
 
     def _upgrade_instance(
-        self, trans: ProvidesUserContext, id: str, payload: UpgradeInstancePayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: UpgradeInstancePayload
     ) -> UserConcreteObjectStoreModel:
         persisted_object_store = self._get(trans, id)
-        template = self._get_template(persisted_object_store, payload.template_version)
+        template = self._get_and_validate_target_upgrade_template(persisted_object_store, payload)
         persisted_object_store.template_version = template.version
         persisted_object_store.template_definition = template.model_dump()
-        validate_no_extra_variables_defined(payload.variables, template)
-        validate_no_extra_secrets_defined(payload.secrets, template)
         actual_variables = updated_template_variables(
             payload.variables,
             persisted_object_store,
@@ -139,8 +144,18 @@ class ObjectStoreInstancesManager:
         self._save(persisted_object_store)
         return self._to_model(trans, persisted_object_store)
 
+    def _get_and_validate_target_upgrade_template(
+        self,
+        persisted_object_store: UserObjectStore,
+        payload: UpgradeInstancePayload | TestUpgradeInstancePayload,
+    ) -> ObjectStoreTemplate:
+        template = self._get_template(persisted_object_store, payload.template_version)
+        validate_no_extra_variables_defined(payload.variables, template)
+        validate_no_extra_secrets_defined(payload.secrets, template)
+        return template
+
     def _update_instance(
-        self, trans: ProvidesUserContext, id: str, payload: UpdateInstancePayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: UpdateInstancePayload
     ) -> UserConcreteObjectStoreModel:
         persisted_object_store = self._get(trans, id)
         template = self._get_template(persisted_object_store)
@@ -148,7 +163,7 @@ class ObjectStoreInstancesManager:
         return self._to_model(trans, persisted_object_store)
 
     def _update_instance_secret(
-        self, trans: ProvidesUserContext, id: str, payload: UpdateInstanceSecretPayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: UpdateInstanceSecretPayload
     ) -> UserConcreteObjectStoreModel:
         persisted_object_store = self._get(trans, id)
         template = self._get_template(persisted_object_store)
@@ -196,18 +211,18 @@ class ObjectStoreInstancesManager:
         self._save(persisted_object_store)
         return self._to_model(trans, persisted_object_store)
 
-    def index(self, trans: ProvidesUserContext) -> List[UserConcreteObjectStoreModel]:
+    def index(self, trans: ProvidesUserContext) -> list[UserConcreteObjectStoreModel]:
         stores = self._sa_session.query(UserObjectStore).filter(UserObjectStore.user_id == trans.user.id).all()
         return [self._to_model(trans, s) for s in stores]
 
-    def show(self, trans: ProvidesUserContext, id: str) -> UserConcreteObjectStoreModel:
+    def show(self, trans: ProvidesUserContext, id: UUID4) -> UserConcreteObjectStoreModel:
         user_object_store = self._get(trans, id)
         return self._to_model(trans, user_object_store)
 
     def _save(self, persisted_object_store: UserObjectStore) -> None:
         save_template_instance(self._sa_session, persisted_object_store)
 
-    def _get(self, trans: ProvidesUserContext, id: str) -> UserObjectStore:
+    def _get(self, trans: ProvidesUserContext, id: UUID4) -> UserObjectStore:
         filter = self._index_filter(id)
         user_object_store = self._sa_session.query(UserObjectStore).filter(filter).one_or_none()
         if user_object_store is None:
@@ -216,8 +231,47 @@ class ObjectStoreInstancesManager:
             raise ItemOwnershipException()
         return user_object_store
 
+    def test_modify_instance(
+        self, trans: ProvidesUserContext, id: UUID4, payload: TestModifyInstancePayload
+    ) -> PluginStatus:
+        persisted_object_store = self._get(trans, id)
+        if isinstance(payload, TestUpgradeInstancePayload):
+            return self._plugin_status_for_upgrade(trans, payload, persisted_object_store)
+        else:
+            assert isinstance(payload, TestUpdateInstancePayload)
+            return self._plugin_status_for_update(trans, payload, persisted_object_store)
+
+    def _plugin_status_for_update(
+        self, trans: ProvidesUserContext, payload: TestUpdateInstancePayload, persisted_object_store: UserObjectStore
+    ) -> PluginStatus:
+        template = self._get_template(persisted_object_store)
+        target = UpdateTestTarget(persisted_object_store, payload)
+        return self._plugin_status_for_template(trans, target, template)
+
+    def _plugin_status_for_upgrade(
+        self, trans: ProvidesUserContext, payload: TestUpgradeInstancePayload, persisted_object_store: UserObjectStore
+    ) -> PluginStatus:
+        template = self._get_and_validate_target_upgrade_template(persisted_object_store, payload)
+        target = UpgradeTestTarget(persisted_object_store, payload)
+        return self._plugin_status_for_template(trans, target, template)
+
+    def plugin_status_for_instance(self, trans: ProvidesUserContext, id: UUID4):
+        persisted_object_store = self._get(trans, id)
+        return self._plugin_status(trans, persisted_object_store, to_template_reference(persisted_object_store))
+
     def plugin_status(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> PluginStatus:
-        template = self._catalog.find_template(payload)
+        target = CreateTestTarget(payload, UserObjectStore)
+        return self._plugin_status(trans, target, payload)
+
+    def _plugin_status(
+        self, trans: ProvidesUserContext, target: CanTestPluginStatus, template_reference: TemplateReference
+    ):
+        template = self._catalog.find_template(template_reference)
+        return self._plugin_status_for_template(trans, target, template)
+
+    def _plugin_status_for_template(
+        self, trans: ProvidesUserContext, payload: CanTestPluginStatus, template: ObjectStoreTemplate
+    ):
         template_definition_status = status_template_definition(template)
         status_kwds = {"template_definition": template_definition_status}
         if template_definition_status.is_not_ok:
@@ -241,31 +295,24 @@ class ObjectStoreInstancesManager:
     def _template_settings_status(
         self,
         trans: ProvidesUserContext,
-        payload: CreateInstancePayload,
+        payload: CanTestPluginStatus,
         template: ObjectStoreTemplate,
-    ) -> Tuple[Optional[ObjectStoreConfiguration], PluginAspectStatus]:
-        secrets = payload.secrets
-        variables = payload.variables
-        environment = prepare_environment_from_root(template.environment, self._app_vault, self._app_config)
-        user_details = trans.user.config_template_details()
+    ) -> tuple[ObjectStoreConfiguration | None, PluginAspectStatus]:
+        template_parameters = prepare_template_parameters_for_testing(
+            trans, template, TemplateServerConfiguration(), payload, self._app_vault, self._app_config
+        )
 
         configuration = None
         exception = None
         try:
-            configuration = template_to_configuration(
-                template,
-                variables=variables,
-                secrets=secrets,
-                user_details=user_details,
-                environment=environment,
-            )
+            configuration = template_to_configuration(template, **template_parameters)
         except Exception as e:
             exception = e
         return configuration, settings_exception_to_status(exception)
 
     def _connection_status(
-        self, trans: ProvidesUserContext, payload: CreateInstancePayload, configuration: ObjectStoreConfiguration
-    ) -> Tuple[Optional[BaseObjectStore], PluginAspectStatus]:
+        self, trans: ProvidesUserContext, payload: CanTestPluginStatus, configuration: ObjectStoreConfiguration
+    ) -> tuple[BaseObjectStore | None, PluginAspectStatus]:
         object_store = None
         exception = None
         try:
@@ -274,18 +321,20 @@ class ObjectStoreInstancesManager:
             exception = e
         return object_store, connection_exception_to_status("storage location", exception)
 
-    def _index_filter(self, uuid: str):
+    def _index_filter(self, uuid: UUID4):
         return UserObjectStore.__table__.c.uuid == uuid
 
     def _get_template(
-        self, persisted_object_store: UserObjectStore, template_version: Optional[int] = None
+        self, persisted_object_store: UserObjectStore, template_version: int | None = None
     ) -> ObjectStoreTemplate:
         catalog = self._catalog
         target_template_version = template_version or persisted_object_store.template_version
         template = catalog.find_template_by(persisted_object_store.template_id, target_template_version)
         return template
 
-    def _to_model(self, trans, persisted_object_store: UserObjectStore) -> UserConcreteObjectStoreModel:
+    def _to_model(
+        self, trans: ProvidesUserContext, persisted_object_store: UserObjectStore
+    ) -> UserConcreteObjectStoreModel:
         quota = QuotaModel(source=None, enabled=False)
         object_store_type = persisted_object_store.template.configuration.type
         admin_badges = persisted_object_store.template.configuration.badges or []
@@ -298,7 +347,7 @@ class ObjectStoreInstancesManager:
         )
         secrets = persisted_object_store.template_secrets or []
         uuid = str(persisted_object_store.uuid)
-        object_store_id = f"user_objects://{uuid}"
+        object_store_id = f"{USER_OBJECTS_SCHEME}{uuid}"
 
         return UserConcreteObjectStoreModel(
             uuid=uuid,
@@ -352,6 +401,9 @@ class UserObjectStoreResolverImpl(BaseUserObjectStoreResolver):
 __all__ = (
     "CreateInstancePayload",
     "ModifyInstancePayload",
+    "TestUpgradeInstancePayload",
+    "TestUpdateInstancePayload",
+    "TestModifyInstancePayload",
     "UpdateInstancePayload",
     "UpdateInstanceSecretPayload",
     "UpgradeInstancePayload",

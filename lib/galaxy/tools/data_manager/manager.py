@@ -1,11 +1,9 @@
 import errno
 import logging
 import os
+from collections.abc import Mapping
 from typing import (
-    Dict,
-    List,
     Optional,
-    Union,
 )
 
 from typing_extensions import Protocol
@@ -27,15 +25,15 @@ log = logging.getLogger(__name__)
 
 
 class DataManagers(DataManagersInterface):
-    data_managers: Dict[str, "DataManager"]
-    managed_data_tables: Dict[str, "DataManager"]
+    data_managers: dict[str, "DataManager"]
+    managed_data_tables: dict[str, "DataManager"]
     __reload_count: int
 
-    def __init__(self, app: StructuredApp, xml_filename=None, reload_count: Optional[int] = None):
+    def __init__(self, app: StructuredApp, xml_filename=None, reload_count: int | None = None):
         self.app = app
         self.data_managers = {}
         self.managed_data_tables = {}
-        self.tool_path: Optional[str] = None
+        self.tool_path: str | None = None
         self.__reload_count = reload_count or 0
         self.filename = xml_filename or self.app.config.data_manager_config_file
         for filename in util.listify(self.filename):
@@ -110,7 +108,7 @@ class DataManagers(DataManagersInterface):
     def get_manager(self, *args, **kwds):
         return self.data_managers.get(*args, **kwds)
 
-    def remove_manager(self, manager_ids: Union[str, List[str]]) -> None:
+    def remove_manager(self, manager_ids: str | list[str]) -> None:
         if not isinstance(manager_ids, list):
             manager_ids = [manager_ids]
         for manager_id in manager_ids:
@@ -141,22 +139,22 @@ class DataManager:
     GUID_TYPE = "data_manager"
     DEFAULT_VERSION = "0.0.1"
 
-    tool: Optional[Tool]
+    tool: Tool | None
 
-    def __init__(self, data_managers: DataManagers, elem: Optional[Element] = None, tool_path: Optional[str] = None):
+    def __init__(self, data_managers: DataManagers, elem: Element | None = None, tool_path: str | None = None):
         self.data_managers = data_managers
-        self.declared_id: Optional[str] = None
-        self.name: Optional[str] = None
-        self.description: Optional[str] = None
+        self.declared_id: str | None = None
+        self.name: str | None = None
+        self.description: str | None = None
         self.version = self.DEFAULT_VERSION
-        self.guid: Optional[str] = None
+        self.guid: str | None = None
         self.tool = None
-        self.tool_shed_repository_info: Optional[RepoInfo] = None
+        self.tool_shed_repository_info: RepoInfo | None = None
         self.undeclared_tables = False
         if elem is not None:
             self._load_from_element(elem, tool_path or self.data_managers.tool_path)
 
-    def _load_from_element(self, elem: Element, tool_path: Optional[str]) -> None:
+    def _load_from_element(self, elem: Element, tool_path: str | None) -> None:
         assert (
             elem.tag == "data_manager"
         ), f'A data manager configuration must have a "data_manager" tag as the root. "{elem.tag}" is present'
@@ -172,6 +170,7 @@ class DataManager:
                 tool_elem is not None
             ), f"Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n{util.xml_to_string(elem)}"
             path = tool_elem.get("file")
+            assert path is not None, f"A tool file path could not be determined:\n{util.xml_to_string(elem)}"
             tool_guid = tool_elem.get("guid")
             # need to determine repository info so that dependencies will work correctly
             tool_shed_repository = self.data_managers.app.toolbox.get_tool_repository_from_xml_item(tool_elem, path)
@@ -187,7 +186,6 @@ class DataManager:
                 shed_conf = self.data_managers.app.toolbox.get_shed_config_dict_by_filename(shed_conf_file)
                 if shed_conf:
                     tool_path = shed_conf.get("tool_path", tool_path)
-        assert path is not None, f"A tool file path could not be determined:\n{util.xml_to_string(elem)}"
         assert tool_path, "A tool root path is required"
         self._load_tool(
             os.path.join(tool_path, path),
@@ -221,11 +219,12 @@ class DataManager:
             tool_shed_repository=tool_shed_repository,
             use_cached=True,
         )
+        assert tool.id
         self.data_managers.app.toolbox.data_manager_tools[tool.id] = tool
         self.tool = tool
         return tool
 
-    def process_result(self, out_data: Dict[str, OutputDataset]) -> None:
+    def process_result(self, out_data: dict[str, OutputDataset]) -> None:
         tool_data_tables = self.data_managers.app.tool_data_tables
         options = BundleProcessingOptions(
             what=f"data manager '{self.id}'",
@@ -243,13 +242,15 @@ class DataManager:
 
     def write_bundle(
         self,
-        out_data: Dict[str, OutputDataset],
-    ) -> Dict[str, OutputDataset]:
+        out_data: dict[str, OutputDataset],
+        source_extra_files_paths: Mapping[str, str] | None = None,
+    ) -> dict[str, OutputDataset]:
         tool_data_tables = self.data_managers.app.tool_data_tables
         return tool_data_tables.write_bundle(
             out_data,
             self.processor_description,
             self.repo_info,
+            source_extra_files_paths,
         )
 
     @property
@@ -262,11 +263,11 @@ class DataManager:
         )
 
     @property
-    def repo_info(self) -> Optional[RepoInfo]:
+    def repo_info(self) -> RepoInfo | None:
         return self.tool_shed_repository_info
 
     # legacy stuff because tool shed code calls this...
     # data manager manual integration test provides coverage
-    def get_tool_shed_repository_info_dict(self) -> Optional[dict]:
+    def get_tool_shed_repository_info_dict(self) -> dict | None:
         repo_info = self.repo_info
         return repo_info.model_dump(mode="json") if repo_info else None

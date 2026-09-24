@@ -46,8 +46,7 @@ def dockerfile_build(path, dockerfile=None, error=log.error, **kwds):
         commands.execute(docker_command_parts)
 
     commands.execute(docker_command_parts)
-    docker_image_cache = kwds["docker_image_cache"]
-    if docker_image_cache:
+    if docker_image_cache := kwds["docker_image_cache"]:
         destination = docker_cache_path(docker_image_cache, image_identifier)
         save_image_command_parts = docker_util.build_save_image_command(
             image_identifier, destination, **docker_host_args(**kwds)

@@ -1,12 +1,10 @@
 from datetime import datetime
 from enum import Enum
 from typing import (
-    List,
-    Union,
+    Literal,
 )
 
 from pydantic import Field
-from typing_extensions import Literal
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -31,7 +29,7 @@ class CleanableItemsSummary(Model):
     )
 
 
-StoredItemType = Union[Literal["history"], Literal["dataset"]]
+StoredItemType = Literal["history"] | Literal["dataset"]
 
 
 class StoredItem(Model):
@@ -59,11 +57,11 @@ class StorageItemCleanupError(Model):
 
 
 class CleanupStorageItemsRequest(Model):
-    item_ids: List[DecodedDatabaseIdField]
+    item_ids: list[DecodedDatabaseIdField]
 
 
 class StorageItemsCleanupResult(Model):
     total_item_count: int
     success_item_count: int
     total_free_bytes: int
-    errors: List[StorageItemCleanupError]
+    errors: list[StorageItemCleanupError]

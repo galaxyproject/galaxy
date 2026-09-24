@@ -5,10 +5,8 @@ from sqlalchemy import inspect
 
 from galaxy import model as m
 from galaxy.model.unittest_utils.db_helpers import get_hdca_by_name
-from . import (
-    MockTransaction,
-    PRIVATE_OBJECT_STORE_ID,
-)
+from . import MockTransaction
+from .. import PRIVATE_OBJECT_STORE_ID
 
 
 def test_history_update(make_history, make_hda, session):
@@ -226,6 +224,21 @@ def test_history_contents(session, make_history, make_hda):
     assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id]) == ["1", "2", "3", "4"]
     assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id], max_in_filter_length=1) == ["1", "2", "3", "4"]
     assert contents_iter_names(ids=[d1.id, d3.id]) == ["1", "3"]
+
+
+def test_history_content_views(session, make_history, make_hda):
+    h1 = make_history()
+    make_hda(history=h1, name="1")  # visible, active
+    make_hda(history=h1, name="2", visible=False, create_dataset=True, sa_session=session)  # hidden, active
+    make_hda(history=h1, name="3", deleted=True, create_dataset=True, sa_session=session)  # visible, deleted
+    make_hda(history=h1, name="4", visible=False, deleted=True)  # hidden, deleted
+
+    history = session.get(m.History, h1.id)
+    assert [c.name for c in history.active_contents] == ["1"]
+    assert [c.name for c in history.visible_contents] == ["1", "3"]
+    # all_contents (used by workflow extraction) must include the hidden
+    # intermediate "2" that visible_contents drops.
+    assert [c.name for c in history.all_contents] == ["1", "2", "3", "4"]
 
 
 def test_current_galaxy_session(make_user, make_galaxy_session):

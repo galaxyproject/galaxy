@@ -1,9 +1,13 @@
+import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import DescribeObjectStore from "./DescribeObjectStore";
+import DescribeObjectStore from "./DescribeObjectStore.vue";
 
 const localVue = getLocalVue();
+localVue.use(PiniaVuePlugin);
 
 const DESCRIPTION = "My cool **markdown**";
 
@@ -30,11 +34,18 @@ const TEST_STORAGE_API_RESPONSE_WITH_NAME = {
 
 describe("DescribeObjectStore.vue", () => {
     let wrapper;
+    let pinia;
+
+    beforeEach(() => {
+        pinia = createTestingPinia({ createSpy: vi.fn });
+        setActivePinia(pinia);
+    });
 
     async function mountWithResponse(response) {
         wrapper = shallowMount(DescribeObjectStore, {
             propsData: { storageInfo: response, what: "where i am throwing my test dataset" },
             localVue,
+            pinia,
         });
     }
 

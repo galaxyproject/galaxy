@@ -11,6 +11,8 @@ from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
+pytest.importorskip("webdav4.fsspec")
+
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "file_sources_conf.yml")
 

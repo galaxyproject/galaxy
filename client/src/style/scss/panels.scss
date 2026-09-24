@@ -37,24 +37,11 @@
                 color: $brand-info;
             }
         }
-        .panel-header-button-toolbox {
-            color: $brand-dark;
-            flex: 1;
-            @extend .p-1;
-            text-align: center;
-            font-size: $h4-font-size;
-            align-items: center;
-            &:hover {
-                color: $brand-info;
-                background-color: $brand-light;
-                text-decoration: none !important;
-                border-color: $brand-light;
-            }
-        }
     }
 }
 .unified-panel-controls {
     @extend .px-3;
+    @extend .pt-1;
 }
 .unified-panel-body {
     @extend .p-0;

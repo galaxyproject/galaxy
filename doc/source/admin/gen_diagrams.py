@@ -8,13 +8,25 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 from galaxy.files.templates.models import (
     AzureFileSourceConfiguration,
     AzureFileSourceTemplateConfiguration,
+    DropboxFileSourceConfiguration,
+    DropboxFileSourceTemplateConfiguration,
+    eLabFTWFileSourceConfiguration,
+    eLabFTWFileSourceTemplateConfiguration,
     FileSourceTemplate,
     FtpFileSourceConfiguration,
     FtpFileSourceTemplateConfiguration,
+    InvenioFileSourceConfiguration,
+    InvenioFileSourceTemplateConfiguration,
     PosixFileSourceConfiguration,
     PosixFileSourceTemplateConfiguration,
+    RSpaceFileSourceConfiguration,
+    RSpaceFileSourceTemplateConfiguration,
     S3FSFileSourceConfiguration,
     S3FSFileSourceTemplateConfiguration,
+    WebdavFileSourceConfiguration,
+    WebdavFileSourceTemplateConfiguration,
+    ZenodoFileSourceConfiguration,
+    ZenodoFileSourceTemplateConfiguration,
 )
 from galaxy.objectstore.templates.models import (
     AwsS3ObjectStoreConfiguration,
@@ -47,13 +59,25 @@ class_to_diagram = {
     FileSourceTemplate: "file_source_templates",
     AzureFileSourceTemplateConfiguration: "file_source_azure_configuration_template",
     AzureFileSourceConfiguration: "file_source_azure_configuration",
+    DropboxFileSourceTemplateConfiguration: "file_source_dropbox_configuration_template",
+    DropboxFileSourceConfiguration: "file_source_dropbox_configuration",
     PosixFileSourceTemplateConfiguration: "file_source_posix_configuration_template",
     PosixFileSourceConfiguration: "file_source_posix_configuration",
     S3FSFileSourceTemplateConfiguration: "file_source_s3fs_configuration_template",
     S3FSFileSourceConfiguration: "file_source_s3fs_configuration",
     FtpFileSourceTemplateConfiguration: "file_source_ftp_configuration_template",
     FtpFileSourceConfiguration: "file_source_ftp_configuration",
+    WebdavFileSourceTemplateConfiguration: "file_source_webdav_configuration_template",
+    WebdavFileSourceConfiguration: "file_source_webdav_configuration",
+    eLabFTWFileSourceTemplateConfiguration: "file_source_elabftw_configuration_template",
+    eLabFTWFileSourceConfiguration: "file_source_elabftw_configuration",
+    InvenioFileSourceTemplateConfiguration: "file_source_invenio_configuration_template",
+    InvenioFileSourceConfiguration: "file_source_invenio_configuration",
+    ZenodoFileSourceTemplateConfiguration: "file_source_zenodo_configuration_template",
+    ZenodoFileSourceConfiguration: "file_source_zenodo_configuration",
+    RSpaceFileSourceTemplateConfiguration: "file_source_rspace_configuration_template",
+    RSpaceFileSourceConfiguration: "file_source_rspace_configuration",
 }
 
 for clazz, diagram_name in class_to_diagram.items():
-    erd.draw(clazz, out=f"{DOC_SOURCE_DIR}/{diagram_name}.png")
+    erd.draw(clazz, out=os.path.join(DOC_SOURCE_DIR, f"{diagram_name}.png"))

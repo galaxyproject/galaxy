@@ -2,8 +2,8 @@ import { faCopy, faEdit, faEye, faPlus, faShareAlt, faTrash, faTrashRestore } fr
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { fetcher } from "@/api/schema";
 import { updateTags } from "@/api/tags";
+import { loadVisualizations, type VisualizationSortByLiteral } from "@/api/visualizations";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
@@ -13,31 +13,25 @@ import type { ActionArray, FieldArray, GridConfig } from "./types";
 const { emit } = useEventBus<string>("grid-router-push");
 
 /**
- * Api endpoint handlers
- */
-const getVisualizations = fetcher.path("/api/visualizations").method("get").create();
-
-/**
  * Local types
  */
-type SortKeyLiteral = "create_time" | "title" | "update_time" | "username" | undefined;
 type VisualizationEntry = Record<string, unknown>;
 
 /**
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { data, headers } = await getVisualizations({
+    const { data, totalMatches } = await loadVisualizations({
         limit,
         offset,
         search,
-        sort_by: sort_by as SortKeyLiteral,
-        sort_desc,
-        show_published: false,
-        show_own: true,
-        show_shared: false,
+        sortBy: sort_by as VisualizationSortByLiteral,
+        sortDesc: sort_desc,
+        showOwn: true,
+        showPublished: false,
+        showShared: false,
     });
-    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
+
     return [data, totalMatches];
 }
 
@@ -232,7 +226,7 @@ const gridConfig: GridConfig = {
     id: "visualizations-grid",
     actions: actions,
     fields: fields,
-    filtering: new Filtering(validFilters, undefined, false, false),
+    filtering: new Filtering(validFilters, undefined, false),
     getData: getData,
     plural: "Visualizations",
     sortBy: "update_time",

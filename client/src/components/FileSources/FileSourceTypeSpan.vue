@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-const MESSAGES = {
-    posix: "This is a simple path based object store that assumes the all the relevant paths are already mounted on the Galaxy server and target worker nodes.",
-    s3fs: "This is an remote file source plugin based on the Amazon Simple Storage Service (S3) interface. The AWS interface has become an industry standard and many storage vendors support it and use it to expose 'object' based storage.",
-};
+import type { FileSourceTypes } from "@/api/fileSources";
+import { templateTypes } from "@/api/fileSources";
+
+const MESSAGES = Object.fromEntries(
+    Object.entries(templateTypes).map(([type, { message }]) => [type, message]),
+) as Record<FileSourceTypes, string>;
 
 interface Props {
-    type: "posix" | "s3fs";
+    type: FileSourceTypes;
 }
 
 const props = defineProps<Props>();
@@ -15,7 +17,7 @@ const title = computed<string>(() => MESSAGES[props.type] ?? "");
 </script>
 
 <template>
-    <span v-b-tooltip.hover class="file-source-type file-source-help-on-hover" :title="title">{{ type }}</span>
+    <span v-g-tooltip.hover class="file-source-type file-source-help-on-hover" :title="title">{{ type }}</span>
 </template>
 
 <style scoped>

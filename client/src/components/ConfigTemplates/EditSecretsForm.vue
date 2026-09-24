@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TemplateSummary } from "@/api/configTemplates";
+import type { TemplateSummary } from "@/api/configTemplates";
 
 import VaultSecret from "./VaultSecret.vue";
 import FormCard from "@/components/Form/FormCard.vue";
@@ -29,6 +29,7 @@ async function update(secretName: string, secretValue: string) {
                     :name="secret.name"
                     :help="secret.help || ''"
                     :is-set="true"
+                    :multiline="secret.multiline || false"
                     @update="update">
                 </VaultSecret>
             </div>

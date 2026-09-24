@@ -1,7 +1,4 @@
-from .cwltool_deps import (
-    needs_shell_quoting,
-    shellescape,
-)
+from .cwltool_deps import needs_shell_quoting
 from .parser import (
     tool_proxy,
     tool_proxy_from_persistent_representation,
@@ -21,5 +18,4 @@ __all__ = (
     "to_cwl_job",
     "to_galaxy_parameters",
     "needs_shell_quoting",
-    "shellescape",
 )

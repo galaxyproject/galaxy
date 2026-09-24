@@ -1,9 +1,4 @@
 import logging
-from typing import (
-    Dict,
-    Optional,
-    Set,
-)
 
 from galaxy.managers.base import StorageCleanerManager
 from galaxy.managers.context import ProvidesHistoryContext
@@ -31,7 +26,7 @@ class StorageCleanerService(ServiceBase):
         self.user_manager = user_manager
         self.history_cleaner = history_cleaner
         self.hda_cleaner = hda_cleaner
-        self.storage_cleaner_map: Dict[StoredItemType, StorageCleanerManager] = {
+        self.storage_cleaner_map: dict[StoredItemType, StorageCleanerManager] = {
             "history": self.history_cleaner,
             "dataset": self.hda_cleaner,
         }
@@ -44,9 +39,9 @@ class StorageCleanerService(ServiceBase):
         self,
         trans: ProvidesHistoryContext,
         stored_item_type: StoredItemType,
-        offset: Optional[int] = None,
-        limit: Optional[int] = None,
-        order: Optional[StoredItemOrderBy] = None,
+        offset: int | None = None,
+        limit: int | None = None,
+        order: StoredItemOrderBy | None = None,
     ):
         user = self.get_authenticated_user(trans)
         return self.storage_cleaner_map[stored_item_type].get_discarded(user, offset, limit, order)
@@ -59,13 +54,13 @@ class StorageCleanerService(ServiceBase):
         self,
         trans: ProvidesHistoryContext,
         stored_item_type: StoredItemType,
-        offset: Optional[int] = None,
-        limit: Optional[int] = None,
-        order: Optional[StoredItemOrderBy] = None,
+        offset: int | None = None,
+        limit: int | None = None,
+        order: StoredItemOrderBy | None = None,
     ):
         user = self.get_authenticated_user(trans)
         return self.storage_cleaner_map[stored_item_type].get_archived(user, offset, limit, order)
 
-    def cleanup_items(self, trans: ProvidesHistoryContext, stored_item_type: StoredItemType, item_ids: Set[int]):
+    def cleanup_items(self, trans: ProvidesHistoryContext, stored_item_type: StoredItemType, item_ids: set[int]):
         user = self.get_authenticated_user(trans)
         return self.storage_cleaner_map[stored_item_type].cleanup_items(user, item_ids)

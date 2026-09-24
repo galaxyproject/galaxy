@@ -4,13 +4,15 @@ import datetime
 import os
 import sys
 import time
+from typing import Any
 
 from galaxy.selenium import cli
+from galaxy.selenium.navigates_galaxy import TourCallbackProtocol
 
 DESCRIPTION = "Walk a Galaxy tour and dump screenshots."
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> None:
     if argv is None:
         argv = sys.argv[1:]
 
@@ -27,20 +29,20 @@ def main(argv=None):
     driver_wrapper.run_tour(args.tour, tour_callback=callback)
 
 
-class DumpTourCallback:
+class DumpTourCallback(TourCallbackProtocol):
     driver_wrapper: cli.DriverWrapper
 
-    def __init__(self, driver_wrapper, output):
+    def __init__(self, driver_wrapper: cli.DriverWrapper, output: str) -> None:
         self.driver_wrapper = driver_wrapper
         self.output = output
 
-    def handle_step(self, step, step_index):
+    def handle_step(self, step: dict[str, Any], step_index: int) -> None:
         time.sleep(0.5)
-        self.driver_wrapper.driver.save_screenshot("%s/%i.png" % (self.output, step_index))
+        self.driver_wrapper.save_screenshot(f"{self.output}/{step_index}.png")
         time.sleep(0.5)
 
 
-def _arg_parser():
+def _arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument("tour", metavar="TOUR", help="tour to walk")
     parser.add_argument("-o", "--output", default="tour_dump_TIMESTAMP", help="directory to dump tour to")

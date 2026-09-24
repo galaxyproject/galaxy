@@ -1,14 +1,23 @@
 import type {
+    CreateInstancePayload,
     Instance,
     PluginStatus,
     SecretData,
     TemplateSecret,
     TemplateSummary,
     TemplateVariable,
+    TemplateVariableValidator,
     VariableData,
     VariableValueType,
 } from "@/api/configTemplates";
 import { markup } from "@/components/ObjectStore/configurationMarkdown";
+
+// Galaxy's form select widget (FormSelection) consumes options as [label, value] tuples.
+export type SelectFormOption = [string, string];
+
+// Options for dynamic-options select variables, keyed by variable name, supplied at
+// form-render time (e.g. the GitHub repositories the user authorized).
+export type DynamicOptions = Record<string, SelectFormOption[]>;
 
 export interface FormEntry {
     name: string;
@@ -16,7 +25,10 @@ export interface FormEntry {
     optional?: boolean;
     help?: string | null;
     type: string;
+    area?: boolean;
     value?: any;
+    options?: SelectFormOption[];
+    validators?: TemplateVariableValidator[];
 }
 
 export function metadataFormEntryName(what: string): FormEntry {
@@ -34,34 +46,59 @@ export function metadataFormEntryDescription(what: string): FormEntry {
         name: "_meta_description",
         label: "Description",
         optional: true,
-        type: "textarea",
+        type: "text",
+        area: true,
         help: `Provide some notes to yourself about this ${what} - perhaps to remind you how it is configured, where it stores the data, etc..`,
     };
 }
 
-export function templateVariableFormEntry(variable: TemplateVariable, variableValue: VariableValueType): FormEntry {
+export function templateVariableFormEntry(
+    variable: TemplateVariable,
+    variableValue?: VariableValueType,
+    dynamicOptions?: DynamicOptions,
+): FormEntry {
     const common_fields = {
         name: variable.name,
         label: variable.label ?? variable.name,
         help: markup(variable.help || "", true),
+        validators: variable.validators ?? [],
+        optional: variable.optional || false,
     };
-    if (variable.type == "string") {
+    if (variable.type == "select") {
+        const staticOptions: SelectFormOption[] = (variable.options ?? []).map(
+            (option): SelectFormOption => [option.label, option.value],
+        );
+        let options = dynamicOptions?.[variable.name] ?? staticOptions;
+        const value = variableValue == undefined ? (variable.default ?? "") : variableValue;
+        // Keep a preset value (e.g. when editing an existing instance) selectable even
+        // before dynamic options are fetched, so the stored choice stays visible.
+        if (options.length == 0 && value) {
+            const presetOption: SelectFormOption = [String(value), String(value)];
+            options = [presetOption];
+        }
+        return {
+            type: "select",
+            options,
+            value,
+            ...common_fields,
+        };
+    } else if (variable.type == "string") {
         const defaultValue = variable.default ?? "";
         return {
             type: "text",
+            area: variable.multiline || false,
             value: variableValue == undefined ? defaultValue : variableValue,
             ...common_fields,
         };
     } else if (variable.type == "path_component") {
         const defaultValue = variable.default ?? "";
-        // TODO: do extra validation with form somehow...
         return {
             type: "text",
             value: variableValue == undefined ? defaultValue : variableValue,
             ...common_fields,
         };
     } else if (variable.type == "integer") {
-        const defaultValue = variable.default ?? 0;
+        const defaultValue = variable.default ?? (variable.optional ? "" : 0);
         return {
             type: "integer",
             value: variableValue == undefined ? defaultValue : variableValue,
@@ -83,9 +120,11 @@ export function templateSecretFormEntry(secret: TemplateSecret): FormEntry {
     return {
         name: secret.name,
         label: secret.label ?? secret.name,
-        type: "password",
+        type: secret.multiline ? "text" : "password",
+        area: secret.multiline || false,
         help: markup(secret.help || "", true),
         value: "",
+        optional: secret.optional || false,
     };
 }
 
@@ -124,14 +163,18 @@ export function editFormDataToPayload(template: TemplateSummary, formData: any) 
     return payload;
 }
 
-export function createTemplateForm(template: TemplateSummary, what: string): FormEntry[] {
+export function createTemplateForm(
+    template: TemplateSummary,
+    what: string,
+    dynamicOptions?: DynamicOptions,
+): FormEntry[] {
     const form = [];
     const variables = template.variables ?? [];
     const secrets = template.secrets ?? [];
     form.push(metadataFormEntryName(what));
     form.push(metadataFormEntryDescription(what));
     for (const variable of variables) {
-        form.push(templateVariableFormEntry(variable, undefined));
+        form.push(templateVariableFormEntry(variable, undefined, dynamicOptions));
     }
     for (const secret of secrets) {
         form.push(templateSecretFormEntry(secret));
@@ -139,7 +182,7 @@ export function createTemplateForm(template: TemplateSummary, what: string): For
     return form;
 }
 
-export function createFormDataToPayload(template: TemplateSummary, formData: any) {
+export function createFormDataToPayload(template: TemplateSummary, formData: any): CreateInstancePayload {
     const variables = template.variables ?? [];
     const secrets = template.secrets ?? [];
     const variableData: VariableData = {};
@@ -155,7 +198,7 @@ export function createFormDataToPayload(template: TemplateSummary, formData: any
     }
     const name: string = formData._meta_name;
     const description: string = formData._meta_description;
-    const payload = {
+    const payload: CreateInstancePayload = {
         name: name,
         description: description,
         secrets: secretData,
@@ -166,14 +209,20 @@ export function createFormDataToPayload(template: TemplateSummary, formData: any
     return payload;
 }
 
-export function formDataTypedGet(variableDefinition: TemplateVariable, formData: any): VariableValueType {
+export function formDataTypedGet(variableDefinition: TemplateVariable, formData: any): VariableValueType | undefined {
     // galaxy form library doesn't type values traditionally, so add a typed
     // access to the data if coming back as string. Though it does seem to be
     // typed properly - this might not be needed anymore?
     const variableType = variableDefinition.type;
     const variableName = variableDefinition.name;
     const rawValue: boolean | string | number | null | undefined = formData[variableName];
-    if (variableType == "string") {
+    if (variableType == "select") {
+        if (rawValue == null || rawValue == undefined) {
+            return undefined;
+        } else {
+            return String(rawValue);
+        }
+    } else if (variableType == "string") {
         if (rawValue == null || rawValue == undefined) {
             return undefined;
         } else {
@@ -192,7 +241,7 @@ export function formDataTypedGet(variableDefinition: TemplateVariable, formData:
             return String(rawValue).toLowerCase() == "true";
         }
     } else if (variableType == "integer") {
-        if (rawValue == null || rawValue == undefined || typeof rawValue == "boolean") {
+        if (rawValue == null || rawValue == undefined || rawValue === "" || typeof rawValue == "boolean") {
             return undefined;
         } else {
             if (typeof rawValue == "string") {
@@ -217,9 +266,7 @@ export function upgradeForm(template: TemplateSummary, instance: Instance): Form
     }
     for (const secret of secrets) {
         const secretName = secret.name;
-        if (secretsSet.indexOf(secretName) >= 0) {
-            console.log("skipping...");
-        } else {
+        if (secretsSet.indexOf(secretName) < 0) {
             form.push(templateSecretFormEntry(secret));
         }
     }

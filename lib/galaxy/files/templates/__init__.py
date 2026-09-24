@@ -4,6 +4,8 @@ from .models import (
     FileSourceTemplate,
     FileSourceTemplateSummaries,
     FileSourceTemplateType,
+    get_oauth2_config,
+    get_oauth2_config_or_none,
     template_to_configuration,
 )
 
@@ -13,5 +15,7 @@ __all__ = (
     "FileSourceTemplate",
     "FileSourceTemplateSummaries",
     "FileSourceTemplateType",
+    "get_oauth2_config",
+    "get_oauth2_config_or_none",
     "template_to_configuration",
 )

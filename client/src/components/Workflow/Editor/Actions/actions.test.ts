@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { LazyUndoRedoAction, UndoRedoAction, useUndoRedoStore } from "@/stores/undoRedoStore";
+import { LazyUndoRedoAction, type UndoRedoAction, useUndoRedoStore } from "@/stores/undoRedoStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
@@ -14,9 +15,10 @@ import {
     LazyChangeDataAction,
     LazyChangePositionAction,
     LazyChangeSizeAction,
+    RemoveAllFreehandCommentsAction,
     ToggleCommentSelectedAction,
 } from "./commentActions";
-import { mockComment, mockToolStep, mockWorkflow } from "./mockData";
+import { mockComment, mockFreehandComment, mockToolStep, mockWorkflow } from "./mockData";
 import {
     CopyStepAction,
     InsertStepAction,
@@ -41,7 +43,7 @@ import {
 const workflowId = "mock-workflow";
 
 describe("Workflow Undo Redo Actions", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -86,6 +88,12 @@ describe("Workflow Undo Redo Actions", () => {
 
     function addComment() {
         const comment = mockComment(commentStore.highestCommentId + 1);
+        commentStore.addComments([comment]);
+        return comment;
+    }
+
+    function addFreehandComment() {
+        const comment = mockFreehandComment(commentStore.highestCommentId + 1);
         commentStore.addComments([comment]);
         return comment;
     }
@@ -141,6 +149,15 @@ describe("Workflow Undo Redo Actions", () => {
             const action = new ToggleCommentSelectedAction(commentStore, comment);
             testUndoRedo(action);
         });
+
+        it("RemoveAllFreehandCommentsAction", () => {
+            addFreehandComment();
+            addFreehandComment();
+            addFreehandComment();
+
+            const action = new RemoveAllFreehandCommentsAction(commentStore);
+            testUndoRedo(action);
+        });
     });
 
     describe("Workflow Actions", () => {
@@ -149,7 +166,7 @@ describe("Workflow Undo Redo Actions", () => {
                 workflow.tags = tags;
             };
 
-            const showCanvasCallback = jest.fn();
+            const showCanvasCallback = vi.fn();
 
             const action = new LazySetValueAction([], ["hello", "world"], setValueCallback, showCanvasCallback);
             testUndoRedo(action);
@@ -171,7 +188,7 @@ describe("Workflow Undo Redo Actions", () => {
                 commentStore.comments,
                 Object.values(stores.stepStore.steps) as any,
                 { x: 0, y: 0 },
-                { x: 500, y: 500 }
+                { x: 500, y: 500 },
             );
             testUndoRedo(action);
         });
@@ -234,7 +251,7 @@ describe("Workflow Undo Redo Actions", () => {
                 },
                 {
                     outputs: [{ name: "output", extensions: ["input"], type: "data", optional: true }],
-                }
+                },
             );
             testUndoRedo(action);
         });
@@ -253,11 +270,8 @@ describe("Workflow Undo Redo Actions", () => {
 
         it("RemoveStepAction", () => {
             const step = addStep();
-            const showAttributesCallback = jest.fn();
-            const action = new RemoveStepAction(stepStore, stateStore, connectionStore, showAttributesCallback, step);
+            const action = new RemoveStepAction(stepStore, stateStore, connectionStore, step);
             testUndoRedo(action);
-
-            expect(showAttributesCallback).toBeCalledTimes(2);
         });
 
         it("CopyStepAction", () => {

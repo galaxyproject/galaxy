@@ -26,7 +26,6 @@
 
         /init &
         sleep 5 &&
-
         chmod 777 /tmp -R &&
         tail --retry -f /var/log/rstudio/rstudio-server/rserver.log
 

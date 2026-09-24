@@ -1,12 +1,11 @@
 from datetime import datetime
-from typing import Union
-
-from pydantic import ValidationInfo
-from pydantic.functional_validators import AfterValidator
-from typing_extensions import (
+from typing import (
     Annotated,
     Literal,
 )
+
+from pydantic import ValidationInfo
+from pydantic.functional_validators import AfterValidator
 
 # Relative URLs cannot be validated with AnyUrl, they need a scheme.
 # Making them an alias of `str` for now
@@ -29,5 +28,5 @@ def strip_tzinfo(v: datetime, info: ValidationInfo) -> datetime:
 OffsetNaiveDatetime = Annotated[datetime, AfterValidator(strip_tzinfo)]
 
 CoercedStringType = Annotated[
-    Union[str, int, float, bool], AfterValidator(lambda val: val if isinstance(val, str) else str(val))
+    str | int | float | bool, AfterValidator(lambda val: val if isinstance(val, str) else str(val))
 ]

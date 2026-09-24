@@ -4,7 +4,7 @@
         ref="el"
         class="workflow-node card"
         :scale="scale"
-        :root-offset="rootOffset"
+        :root-offset="reactive(rootOffset)"
         :position="position"
         :name="name"
         :node-label="title"
@@ -18,42 +18,56 @@
         <div
             class="unselectable clearfix card-header py-1 px-2"
             :class="headerClass"
-            @click.exact="makeActive"
+            @pointerdown.exact="onPointerDown"
+            @pointerup.exact="onPointerUp"
+            @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected"
             @keyup.enter="makeActive">
-            <b-button-group class="float-right">
+            <GButtonGroup class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
-                <b-button
-                    v-if="canClone && !readonly"
-                    v-b-tooltip.hover
+                <GButton
+                    v-if="credentials.length > 0"
+                    v-g-tooltip.hover
+                    class="node-credentials py-0 inline-icon-button"
+                    transparent
+                    icon-only
+                    color="blue"
+                    size="small"
+                    aria-label="tool has credentials"
+                    title="Tool requires credentials">
+                    <FontAwesomeIcon :icon="faKey" />
+                </GButton>
+                <GButton
+                    v-if="!readonly"
+                    v-g-tooltip.hover
                     class="node-clone py-0"
-                    variant="primary"
-                    size="sm"
+                    color="blue"
+                    size="small"
                     aria-label="clone node"
                     title="Duplicate"
                     @click.prevent.stop="onClone">
                     <i class="fa fa-files-o" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="!readonly"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     class="node-destroy py-0"
-                    variant="primary"
-                    size="sm"
+                    color="blue"
+                    size="small"
                     aria-label="destroy node"
                     title="Remove"
                     @click.prevent.stop="remove">
                     <i class="fa fa-times" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="isEnabled && !readonly"
                     :id="popoverId"
                     class="node-recommendations py-0"
-                    variant="primary"
-                    size="sm"
+                    color="blue"
+                    size="small"
                     aria-label="tool recommendations">
                     <i class="fa fa-arrow-right" />
-                </b-button>
+                </GButton>
                 <b-popover
                     v-if="isEnabled && !readonly"
                     :target="popoverId"
@@ -68,20 +82,20 @@
                             @onCreate="onCreate" />
                     </div>
                 </b-popover>
-            </b-button-group>
+            </GButtonGroup>
             <i :class="iconClass" />
-            <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
-                <FontAwesomeIcon icon="fa-code-branch" />
+            <span v-if="step.when" v-g-tooltip.hover title="This step is conditionally executed.">
+                <FontAwesomeIcon :icon="faCodeBranch" />
             </span>
             <span
-                v-b-tooltip.hover
+                v-g-tooltip.hover
                 title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
                 >{{ step.id + 1 }}:
             </span>
             <span class="node-title">{{ title }}</span>
             <span class="float-right">
                 <FontAwesomeIcon
-                    v-if="isInvocation && invocationStep.headerIcon"
+                    v-if="(isInvocation || isPopulatedInput) && invocationStep.headerIcon"
                     :icon="invocationStep.headerIcon"
                     :spin="invocationStep.headerIconSpin" />
             </span>
@@ -91,7 +105,9 @@
             variant="danger"
             show
             class="node-error m-0 rounded-0 rounded-bottom"
-            @click.exact="makeActive"
+            @pointerdown.exact="onPointerDown"
+            @pointerup.exact="onPointerUp"
+            @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected">
             {{ errors }}
         </b-alert>
@@ -99,8 +115,10 @@
         <div
             v-else
             class="node-body position-relative card-body p-0 mx-2"
-            :class="{ 'cursor-pointer': isInvocation }"
-            @click.exact="makeActive"
+            :class="{ 'cursor-pointer': isInvocation || isPopulatedInput }"
+            @pointerdown.exact="onPointerDown"
+            @pointerup.exact="onPointerUp"
+            @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected"
             @keyup.enter="makeActive">
             <NodeInput
@@ -115,19 +133,19 @@
                 :root-offset="rootOffset"
                 :scroll="scroll"
                 :scale="scale"
-                :parent-node="elHtml"
+                :parent-node="elHtml ?? undefined"
                 :readonly="readonly"
                 @onChange="onChange" />
             <div v-if="!isInvocation && showRule" class="rule" />
-            <NodeInvocationText v-if="isInvocation" :invocation-step="invocationStep" />
+            <NodeInvocationText v-if="isInvocation || isPopulatedInput" :invocation-step="invocationStep" />
             <NodeOutput
                 v-for="(output, index) in outputs"
                 :key="`out-${index}-${output.name}`"
-                :class="isInvocation && 'invocation-node-output'"
+                :class="(isInvocation || isPopulatedInput) && 'invocation-node-output'"
                 :output="output"
                 :workflow-outputs="workflowOutputs"
                 :post-job-actions="postJobActions"
-                :blank="isInvocation"
+                :blank="isInvocation || isPopulatedInput"
                 :step-id="id"
                 :step-type="step.type"
                 :step-position="step.position ?? { top: 0, left: 0 }"
@@ -145,10 +163,9 @@
 </template>
 
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
+import { faCodeBranch, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { type UseElementBoundingReturn, type UseScrollReturn, type VueInstance } from "@vueuse/core";
+import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
 import BootstrapVue from "bootstrap-vue";
 import type { PropType, Ref } from "vue";
 import Vue, { computed, reactive, ref } from "vue";
@@ -160,11 +177,21 @@ import WorkflowIcons from "@/components/Workflow/icons";
 import type { GraphStep } from "@/composables/useInvocationGraph";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
-import type { Step } from "@/stores/workflowStepStore";
+import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorStore";
+import {
+    getCombinedStepInputs,
+    type InputTerminalSource,
+    type OutputTerminalSource,
+    type Step,
+} from "@/stores/workflowStepStore";
+import { composedPartialPath, isClickable } from "@/utils/dom";
 
+import { isWorkflowInput } from "../constants";
 import { ToggleStepSelectedAction } from "./Actions/stepActions";
 import type { OutputTerminals } from "./modules/terminals";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
@@ -173,8 +200,6 @@ import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
 
 Vue.use(BootstrapVue);
-
-library.add(faCodeBranch);
 
 const props = defineProps({
     id: { type: Number, required: true },
@@ -193,6 +218,8 @@ const props = defineProps({
     highlight: { type: Boolean, default: false },
     isInvocation: { type: Boolean, default: false },
     readonly: { type: Boolean, default: false },
+    populatedInputs: { type: Boolean, default: false },
+    isOutOfFocus: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -224,20 +251,31 @@ const postJobActions = computed(() => props.step.post_job_actions || {});
 const workflowOutputs = computed(() => props.step.workflow_outputs || []);
 const { connectionStore, stateStore, stepStore, undoRedoStore } = useWorkflowStores();
 const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
+
 useNodePosition(
     elHtml,
     props.id,
     stateStore,
-    computed(() => props.scale)
+    computed(() => props.scale),
 );
+
+const credentials = computed(() => props.step.config_form?.credentials || []);
+
 const title = computed(() => props.step.label || props.step.name);
 const idString = computed(() => `wf-node-step-${props.id}`);
 const showRule = computed(() => props.step.inputs?.length > 0 && props.step.outputs?.length > 0);
 const iconClass = computed(() => `icon fa fa-fw ${WorkflowIcons[props.step.type]}`);
-const canClone = computed(() => props.step.type !== "subworkflow"); // Why ?
 const isEnabled = getGalaxyInstance().config.enable_tool_recommendations; // getGalaxyInstance is not reactive
 
 const isActive = computed(() => props.id === props.activeNodeId);
+
+const isPopulatedInput = computed(
+    () =>
+        props.populatedInputs &&
+        isWorkflowInput(props.step.type) &&
+        "nodeText" in props.step &&
+        props.step.nodeText !== undefined,
+);
 
 const classes = computed(() => {
     return {
@@ -245,24 +283,30 @@ const classes = computed(() => {
         "node-highlight": props.highlight || isActive.value,
         "is-active": isActive.value,
         "node-multi-selected": stateStore.getStepMultiSelected(props.id),
+        "node-not-in-focus": props.isOutOfFocus && !isActive.value,
     };
 });
+
 const style = computed(() => {
     return { top: props.step.position!.top + "px", left: props.step.position!.left + "px" };
 });
+
 const errors = computed(() => props.step.errors || stateStore.getStepLoadingState(props.id)?.error);
+
 const headerClass = computed(() => {
     return {
         ...invocationStep.value.headerClass,
-        "cursor-pointer": props.isInvocation,
-        "node-header": !props.isInvocation || invocationStep.value.headerClass === undefined,
+        "cursor-pointer": props.isInvocation || isPopulatedInput.value,
+        "node-header": invocationStep.value.headerClass === undefined,
         "cursor-move": !props.readonly && !props.isInvocation,
     };
 });
+
 const inputs = computed(() => {
     const connections = connectionStore.getConnectionsForStep(props.id);
-    const extraStepInputs = stepStore.getStepExtraInputs(props.id);
-    const stepInputs = [...extraStepInputs, ...(props.step.inputs || [])];
+    // Use getCombinedStepInputs for Step objects, fall back to direct access for GraphStep
+    const step = stepStore.getStep(props.id);
+    const stepInputs = step ? getCombinedStepInputs(step, stepStore) : [...(props.step.inputs || [])];
     const unknownInputs: string[] = [];
     connections.forEach((connection) => {
         if (connection.input.stepId == props.id && !stepInputs.find((input) => input.name === connection.input.name)) {
@@ -271,22 +315,39 @@ const inputs = computed(() => {
     });
     const invalidInputNames = [...new Set(unknownInputs)];
     const invalidInputTerminalSource = invalidInputNames.map((name) => {
-        return { name, optional: false, extensions: [], valid: false, input_type: "dataset" };
+        const invalidInput: InputTerminalSource = {
+            name,
+            label: name,
+            multiple: false,
+            optional: false,
+            extensions: [],
+            valid: false,
+            input_type: "dataset",
+        };
+        return invalidInput;
     });
     return [...stepInputs, ...invalidInputTerminalSource];
 });
+
 const invalidOutputs = computed(() => {
     const connections = connectionStore.getConnectionsForStep(props.id);
     const invalidConnections = connections.filter(
         (connection) =>
             connection.output.stepId == props.id &&
-            !props.step.outputs.find((output) => output.name === connection.output.name)
+            !props.step.outputs.find((output) => output.name === connection.output.name),
     );
     const invalidOutputNames = [...new Set(invalidConnections.map((connection) => connection.output.name))];
     return invalidOutputNames.map((name) => {
-        return { name, optional: false, datatypes: [], valid: false };
+        const invalidOutput: OutputTerminalSource = {
+            name,
+            optional: false,
+            valid: false,
+            extensions: [],
+        };
+        return invalidOutput;
     });
 });
+
 const invocationStep = computed(() => props.step as GraphStep);
 const outputs = computed(() => {
     return [...props.step.outputs, ...invalidOutputs.value];
@@ -296,7 +357,58 @@ function onDragConnector(dragPosition: TerminalPosition, terminal: OutputTermina
     emit("onDragConnector", dragPosition, terminal);
 }
 
+const mouseMovementThreshold = 9;
+const singleClickTimeout = 800;
+
+let mouseDownTime = 0;
+
+let movementDistance = 0;
+let lastPosition: XYPosition | null = null;
+
+const inspectorStore = useWorkflowNodeInspectorStore();
+
+function onPointerDown() {
+    mouseDownTime = Date.now();
+}
+
+function onPointerUp(e: PointerEvent) {
+    const path = composedPartialPath(e);
+    const unclickable = path.every((target) => !isClickable(target as Element));
+
+    if (!unclickable) {
+        return;
+    }
+
+    const mouseUpTime = Date.now();
+    const clickTime = mouseUpTime - mouseDownTime;
+
+    if (clickTime <= singleClickTimeout && movementDistance <= mouseMovementThreshold) {
+        makeActive();
+    }
+
+    lastPosition = null;
+    movementDistance = 0;
+}
+
+function onDoubleClick(e: MouseEvent) {
+    const path = composedPartialPath(e);
+    const unclickable = path.every((target) => !isClickable(target as Element));
+
+    if (!unclickable) {
+        return;
+    }
+
+    inspectorStore.setMaximized(props.step, true);
+}
+
 function onMoveTo(position: XYPosition) {
+    if (lastPosition) {
+        movementDistance += Math.abs(position.x - lastPosition.x);
+        movementDistance += Math.abs(position.y - lastPosition.y);
+    }
+
+    lastPosition = position;
+
     emit("onUpdateStepPosition", props.id, {
         top: position.y + props.scroll.y.value / props.scale,
         left: position.x + props.scroll.x.value / props.scale,
@@ -334,9 +446,11 @@ function toggleSelected() {
 </script>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .workflow-node {
+    --dblclick: prevent;
+
     position: absolute;
     z-index: 100;
     width: $workflow-node-width;
@@ -344,8 +458,16 @@ function toggleSelected() {
 
     $multi-selected: lighten($brand-info, 20%);
 
+    transition: opacity 0.2s ease;
+
+    &.node-not-in-focus {
+        opacity: 0.7;
+    }
+
     &.node-multi-selected {
-        box-shadow: 0 0 0 2px $white, 0 0 0 4px $multi-selected;
+        box-shadow:
+            0 0 0 2px $white,
+            0 0 0 4px $multi-selected;
     }
 
     &.node-highlight {
@@ -354,7 +476,9 @@ function toggleSelected() {
         box-shadow: 0 0 0 2px $brand-primary;
 
         &.node-multi-selected {
-            box-shadow: 0 0 0 2px $brand-primary, 0 0 0 4px $multi-selected;
+            box-shadow:
+                0 0 0 2px $brand-primary,
+                0 0 0 4px $multi-selected;
         }
     }
 
@@ -371,7 +495,9 @@ function toggleSelected() {
         box-shadow: 0 0 0 3px $brand-primary;
 
         &.node-multi-selected {
-            box-shadow: 0 0 0 3px $brand-primary, 0 0 0 5px $multi-selected;
+            box-shadow:
+                0 0 0 3px $brand-primary,
+                0 0 0 5px $multi-selected;
         }
     }
 

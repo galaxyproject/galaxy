@@ -2,30 +2,14 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
-from enum import Enum
-from typing import cast
 from uuid import UUID
 
 from celery.result import AsyncResult
 
-
-class TaskState(str, Enum):
-    """Enum representing the possible states of a task."""
-
-    PENDING = "PENDING"
-    """The task is waiting for execution."""
-
-    STARTED = "STARTED"
-    """The task has been started."""
-
-    RETRY = "RETRY"
-    """The task is to be retried, possibly because of failure."""
-
-    FAILURE = "FAILURE"
-    """The task raised an exception, or has exceeded the retry limit."""
-
-    SUCCESS = "SUCCESS"
-    """The task executed successfully."""
+from galaxy.schema.tasks import (
+    TaskResult,
+    TaskState,
+)
 
 
 class AsyncTasksManager(metaclass=ABCMeta):
@@ -52,6 +36,10 @@ class AsyncTasksManager(metaclass=ABCMeta):
     def get_state(self, task_uuid: UUID) -> TaskState:
         """Returns the current state of the task as a string."""
 
+    @abstractmethod
+    def get_result(self, task_uuid: UUID) -> TaskResult:
+        """Returns the final state and result message of the task."""
+
 
 class CeleryAsyncTasksManager(AsyncTasksManager):
     """Thin wrapper around Celery tasks AsyncResult queries."""
@@ -73,7 +61,14 @@ class CeleryAsyncTasksManager(AsyncTasksManager):
 
     def get_state(self, task_uuid: UUID) -> TaskState:
         """Returns the tasks current state as a string."""
-        return cast(TaskState, str(self._get_result(task_uuid).state))
+        result = self._get_result(task_uuid)
+        state = TaskState(result.state)
+        return state
+
+    def get_result(self, task_uuid: UUID) -> TaskResult:
+        async_result = self._get_result(task_uuid)
+        result = TaskResult(state=TaskState(async_result.state), result=str(async_result.result or ""))
+        return result
 
     def _get_result(self, task_uuid: UUID) -> AsyncResult:
         return AsyncResult(str(task_uuid))

@@ -1,7 +1,10 @@
 import os
+from typing import Any
 
+from galaxy.selenium.navigates_galaxy import TourCallbackProtocol
 from galaxy.util import galaxy_root_path
 from .framework import (
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
     TIMEOUT_MULTIPLIER,
@@ -38,6 +41,9 @@ class TestStockToursTestCase(SeleniumTestCase):
             tour_callback=TourCallback(self),
         )
 
+    # Timeout finding tool_panel.tool_link(tool_id=cat1) after search textinsert.
+    # Tour step 18 can't find a[href$="/?tool_id=cat1&version=latest"] in Playwright.
+    @selenium_only
     @selenium_test
     def test_core_deferred(self):
         self.run_tour(
@@ -46,9 +52,9 @@ class TestStockToursTestCase(SeleniumTestCase):
         )
 
 
-class TourCallback:
+class TourCallback(TourCallbackProtocol):
     def __init__(self, test_case: TestStockToursTestCase):
         self.test_case = test_case
 
-    def handle_step(self, step, step_index):
+    def handle_step(self, step: dict[str, Any], step_index: int) -> None:
         self.test_case.assert_baseline_accessibility()

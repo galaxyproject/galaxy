@@ -41,7 +41,7 @@ def main():
     path, galaxy_user_name, gid = validate_parameters()
     for cmd in [["chown", "-Rh", galaxy_user_name, path], ["chgrp", "-Rh", gid, path]]:
         p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (stdoutdata, stderrdata) = p.communicate()
+        stdoutdata, stderrdata = p.communicate()
         exitcode = p.returncode
         if exitcode != 0:
             sys.exit("external_chown_script: could not chown\ncmd was {}\n".format(" ".join(cmd)))

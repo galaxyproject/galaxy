@@ -27,7 +27,7 @@ const props = withDefaults(
     }>(),
     {
         showDetails: false,
-    }
+    },
 );
 
 const { stepStore, undoRedoStore, stateStore, connectionStore } = useWorkflowStores();
@@ -38,7 +38,7 @@ const title = computed(() => (props.showDetails ? `Label for: '${props.name}'` :
 const label = computed(() => {
     if (props.step.workflow_outputs?.length) {
         const workflowOutput = props.step.workflow_outputs.find(
-            (workflowOutput) => workflowOutput.output_name === props.name
+            (workflowOutput) => workflowOutput.output_name === props.name,
         );
         if (workflowOutput) {
             return workflowOutput.label;
@@ -61,7 +61,7 @@ function onInput(newLabel: string | undefined | null) {
     if (newLabel === "") {
         // user deleted existing label, we inactivate this as output
         const strippedWorkflowOutputs = (props.step.workflow_outputs || []).filter(
-            (workflowOutput) => workflowOutput.output_name !== props.name
+            (workflowOutput) => workflowOutput.output_name !== props.name,
         );
         setOutputLabel(props.step, strippedWorkflowOutputs, oldLabel, newLabel);
         error.value = undefined;
@@ -72,7 +72,7 @@ function onInput(newLabel: string | undefined | null) {
     if (!existingWorkflowOutput) {
         // got a new label that isn't in use yet
         const newWorkflowOutputs = [...(props.step.workflow_outputs || [])].filter(
-            (workflowOutput) => workflowOutput.output_name !== props.name
+            (workflowOutput) => workflowOutput.output_name !== props.name,
         );
         newWorkflowOutputs.push({
             label: newLabel,

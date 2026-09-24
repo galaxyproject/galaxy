@@ -13,10 +13,11 @@ export function useSelectMany({
     unselectedDisplayCount,
     selectedDisplayCount,
     caseSensitive,
+    maintainSelectionOrder,
 }) {
     // only start a single worker
     if (!worker) {
-        worker = new Worker(new URL("./selectMany.worker.js", import.meta.url));
+        worker = new Worker(new URL("./selectMany.worker.js", import.meta.url), { type: "module" });
     }
 
     workerReferenceCount += 1;
@@ -64,6 +65,7 @@ export function useSelectMany({
             unselectedDisplayCount: unselectedDisplayCount.value,
             selectedDisplayCount: selectedDisplayCount.value,
             caseSensitive: caseSensitive.value,
+            maintainSelectionOrder: maintainSelectionOrder.value,
         });
     });
 

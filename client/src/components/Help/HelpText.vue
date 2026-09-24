@@ -1,48 +1,58 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { ref } from "vue";
 
-import { hasHelp as hasHelpText, help as helpText } from "./terms";
-
-import ConfigurationMarkdown from "@/components/ObjectStore/ConfigurationMarkdown.vue";
+import HelpPopover from "./HelpPopover.vue";
 
 interface Props {
     uri: string;
-    text: string;
+    text?: string;
+    forTitle?: boolean;
+    /** Show an info icon that triggers the help popover */
+    infoIcon?: boolean;
 }
 
-const props = defineProps<Props>();
-
-const hasHelp = computed<boolean>(() => {
-    return hasHelpText(props.uri);
+withDefaults(defineProps<Props>(), {
+    text: "",
+    forTitle: false,
+    infoIcon: false,
 });
 
-const help = computed<string>(() => {
-    return helpText(props.uri) as string;
-});
+const helpTarget = ref();
 </script>
 
 <template>
-    <span>
-        <b-popover
-            v-if="hasHelp"
-            :target="
-                () => {
-                    return $refs.helpTarget;
-                }
-            "
-            triggers="hover"
-            placement="bottom">
-            <ConfigurationMarkdown :markdown="help" :admin="true" />
-        </b-popover>
-        <span v-if="hasHelp" ref="helpTarget" class="help-text">{{ text }}</span>
-        <span v-else>{{ text }}</span>
+    <span class="help-text-wrapper">
+        <HelpPopover v-if="helpTarget" :target="helpTarget" :term="uri" />
+        <span v-if="text" ref="helpTarget" class="help-text" :class="{ 'title-help-text': forTitle }">{{ text }}</span>
+        <span
+            v-else-if="infoIcon"
+            ref="helpTarget"
+            class="help-info-icon"
+            role="button"
+            tabindex="0"
+            aria-label="Help information">
+            <FontAwesomeIcon :icon="faInfoCircle" />
+        </span>
     </span>
 </template>
 
-<style scoped>
-/* Give visual indication of mouseover info */
-.help-text {
-    text-decoration-line: underline;
-    text-decoration-style: dashed;
+<style scoped lang="scss">
+@import "@/components/Help/help-text.scss";
+
+.help-text-wrapper {
+    display: inline;
+}
+
+.help-info-icon {
+    cursor: help;
+    opacity: 0.6;
+    margin-left: 0.25rem;
+
+    &:hover,
+    &:focus {
+        opacity: 1;
+    }
 }
 </style>

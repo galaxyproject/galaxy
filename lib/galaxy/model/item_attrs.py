@@ -5,7 +5,7 @@ from sqlalchemy.sql.expression import func
 
 # Cannot import galaxy.model b/c it creates a circular import graph.
 import galaxy
-from galaxy.model.base import transaction
+from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
@@ -47,13 +47,11 @@ class UsesItemRatings:
             item_rating_assoc_class = self._get_item_rating_assoc_class(item, webapp_model=webapp_model)
             item_rating = item_rating_assoc_class(user, item, rating)
             db_session.add(item_rating)
-            with transaction(db_session):
-                db_session.commit()
+            db_session.commit()
         elif item_rating.rating != rating:
             # User has rated item; update rating.
             item_rating.rating = rating
-            with transaction(db_session):
-                db_session.commit()
+            db_session.commit()
         return item_rating
 
     def get_user_item_rating(self, db_session, user, item, webapp_model=None):
@@ -98,8 +96,7 @@ class UsesAnnotations:
     def delete_item_annotation(self, db_session, user, item):
         if annotation_assoc := get_item_annotation_obj(db_session, user, item):
             db_session.delete(annotation_assoc)
-            with transaction(db_session):
-                db_session.commit()
+            db_session.commit()
 
     def copy_item_annotation(self, db_session, source_user, source_item, target_user, target_item):
         """Copy an annotation from a user/item source to a user/item target."""
@@ -128,6 +125,8 @@ def get_item_annotation_obj(db_session, user, item):
         annotation_assoc = annotation_assoc.filter_by(hda=item)
     elif item.__class__ == galaxy.model.HistoryDatasetCollectionAssociation:
         annotation_assoc = annotation_assoc.filter_by(history_dataset_collection=item)
+    elif item.__class__ == galaxy.model.LibraryDatasetCollectionAssociation:
+        annotation_assoc = annotation_assoc.filter_by(dataset_collection=item)
     elif item.__class__ == galaxy.model.StoredWorkflow:
         annotation_assoc = annotation_assoc.filter_by(stored_workflow=item)
     elif item.__class__ == galaxy.model.WorkflowStep:
@@ -151,7 +150,7 @@ def get_item_annotation_str(db_session, user, item):
     else:
         annotation_obj = get_item_annotation_obj(db_session, user, item)
     if annotation_obj:
-        return galaxy.util.unicodify(annotation_obj.annotation)
+        return unicodify(annotation_obj.annotation)
     return None
 
 
@@ -173,6 +172,8 @@ def add_item_annotation(db_session, user, item, annotation):
 
 def _get_annotation_assoc_class(item):
     """Returns an item's item-annotation association class."""
+    if item.__class__ == galaxy.model.LibraryDatasetCollectionAssociation:
+        return galaxy.model.LibraryDatasetCollectionAnnotationAssociation
     class_name = f"{item.__class__.__name__}AnnotationAssociation"
     return getattr(galaxy.model, class_name, None)
 

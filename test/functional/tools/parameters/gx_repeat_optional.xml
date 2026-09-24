@@ -1,0 +1,26 @@
+<tool id="gx_repeat_optional" name="gx_repeat_optional" version="1.0.0">
+    <command><![CDATA[
+#set $repeat_length = len($parameter)
+echo 'length: $repeat_length' >> '$output'
+#for $item in $parameter
+echo '$item.text_parameter' >> '$output'
+#end for
+    ]]></command>
+    <inputs>
+        <repeat name="parameter" title="Repeat Parameter">
+            <param name="text_parameter" type="text" value="default_val" />
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="length: 0" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

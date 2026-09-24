@@ -11,12 +11,9 @@ import os.path
 import re
 import shutil
 import tempfile
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -45,8 +42,13 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_METRIC,
     DEFAULT_PIN_LABELS,
 )
+from galaxy.tool_util.parser.yaml import to_test_assert_list
 from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
+from ._types import (
+    ExpandedToolInputsJsonified,
+    ToolTestDescriptionDict,
+)
 from .asserts import verify_assertions
 from .test_data import TestDataResolver
 
@@ -56,17 +58,19 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 DEFAULT_TEST_DATA_RESOLVER = TestDataResolver()
+GetFilenameT = Callable[[str], str] | None
+GetLocationT = Callable[[str], str] | None
 
 
 def verify(
     item_label: str,
     output_content: bytes,
-    attributes: Optional[Dict[str, Any]],
-    filename: Optional[str] = None,
-    get_filecontent: Optional[Callable[[str], bytes]] = None,
-    get_filename: Optional[Callable[[str], str]] = None,
-    keep_outputs_dir: Optional[str] = None,
-    verify_extra_files: Optional[Callable] = None,
+    attributes: dict[str, Any] | None,
+    filename: str | None = None,
+    get_filecontent: Callable[[str], bytes] | None = None,
+    get_filename: GetFilenameT = None,
+    keep_outputs_dir: str | None = None,
+    verify_extra_files: Callable | None = None,
     mode="file",
 ):
     """Verify the content of a test output using test definitions described by attributes.
@@ -106,8 +110,11 @@ def verify(
     if attributes is not None and attributes.get("md5", None) is not None:
         expected_checksum_type = "md5"
         expected_checksum = attributes.get("md5")
-    elif attributes is not None and attributes.get("checksum", None) is not None:
-        checksum_value = attributes.get("checksum", None)
+    elif attributes is not None and attributes.get("checksum") is not None:
+        checksum_value = attributes.get("checksum")
+        assert (
+            checksum_value is not None
+        )  # redundant with the test in the elif, but cannot use := until we drop support for Python 3.7
         expected_checksum_type, expected_checksum = checksum_value.split("$", 1)
 
     if expected_checksum_type:
@@ -247,8 +254,7 @@ def _verify_checksum(data, checksum_type, expected_checksum_value):
 
     h = hashlib.new(checksum_type)
     h.update(data)
-    actual_checksum_value = h.hexdigest()
-    if expected_checksum_value != actual_checksum_value:
+    if expected_checksum_value != (actual_checksum_value := h.hexdigest()):
         template = "Output checksum [%s] does not match expected [%s] (using hash algorithm %s)."
         message = template % (actual_checksum_value, expected_checksum_value, checksum_type)
         raise AssertionError(message)
@@ -263,12 +269,10 @@ def files_delta(file1, file2, attributes=None):
     s1 = os.path.getsize(file1)
     s2 = os.path.getsize(file2)
     if abs(s1 - s2) > delta:
-        raise AssertionError(
-            "Files %s=%db but %s=%db - compare by size (delta=%s) failed" % (file1, s1, file2, s2, delta)
-        )
+        raise AssertionError(f"Files {file1}={s1}b but {file2}={s2}b - compare by size (delta={delta}) failed")
     if delta_frac is not None and not (s1 - (s1 * delta_frac) <= s2 <= s1 + (s1 * delta_frac)):
         raise AssertionError(
-            "Files %s=%db but %s=%db - compare by size (delta_frac=%s) failed" % (file1, s1, file2, s2, delta_frac)
+            f"Files {file1}={s1}b but {file2}={s2}b - compare by size (delta_frac={delta_frac}) failed"
         )
 
 
@@ -279,7 +283,7 @@ def get_compressed_formats(attributes):
     return None if decompress else []
 
 
-def files_diff(file1, file2, attributes=None):
+def files_diff(file1: str, file2: str, attributes=None):
     """Check the contents of 2 files for differences."""
     attributes = attributes or {}
 
@@ -296,9 +300,9 @@ def files_diff(file1, file2, attributes=None):
         compressed_formats = get_compressed_formats(attributes)
         is_pdf = False
         try:
-            with get_fileobj(file2, compressed_formats=compressed_formats) as fh:
+            with get_fileobj(file2, compressed_formats=compressed_formats, mode="r") as fh:
                 history_data = fh.readlines()
-            with get_fileobj(file1, compressed_formats=compressed_formats) as fh:
+            with get_fileobj(file1, compressed_formats=compressed_formats, mode="r") as fh:
                 local_file = fh.readlines()
         except UnicodeDecodeError:
             if file1.endswith(".pdf") or file2.endswith(".pdf"):
@@ -358,8 +362,12 @@ def files_diff(file1, file2, attributes=None):
                         if not valid_diff:
                             invalid_diff_lines += 1
                 log.info(
-                    "## files diff on '%s' and '%s': lines_diff = %d, found diff = %d, found pdf invalid diff = %d"
-                    % (file1, file2, allowed_diff_count, diff_lines, invalid_diff_lines)
+                    "## files diff on '%s' and '%s': lines_diff = %d, found diff = %d, found pdf invalid diff = %d",
+                    file1,
+                    file2,
+                    allowed_diff_count,
+                    diff_lines,
+                    invalid_diff_lines,
                 )
                 if invalid_diff_lines > allowed_diff_count:
                     # Print out diff_slice so we can see what failed
@@ -367,8 +375,11 @@ def files_diff(file1, file2, attributes=None):
                     raise AssertionError("".join(diff_slice))
             else:
                 log.info(
-                    "## files diff on '%s' and '%s': lines_diff = %d, found diff = %d"
-                    % (file1, file2, allowed_diff_count, diff_lines)
+                    "## files diff on '%s' and '%s': lines_diff = %d, found diff = %d",
+                    file1,
+                    file2,
+                    allowed_diff_count,
+                    diff_lines,
                 )
                 raise AssertionError("".join(diff_slice))
 
@@ -391,14 +402,12 @@ def files_re_match(file1, file2, attributes=None):
             history_data = fh.readlines()
         with open(file1, "rb") as fh:
             local_file = fh.readlines()
-    assert len(local_file) == len(history_data), (
-        "Data File and Regular Expression File contain a different number of lines (%d != %d)\nHistory Data (first 40 lines):\n%s"
-        % (len(local_file), len(history_data), join_char.join(history_data[:40]))
-    )
+    assert len(local_file) == len(
+        history_data
+    ), f"Data File and Regular Expression File contain a different number of lines ({len(local_file)} != {len(history_data)})\nHistory Data (first 40 lines):\n{join_char.join(history_data[:40])}"
     if attributes.get("sort", False):
         history_data.sort()
         local_file.sort()
-    lines_diff = int(attributes.get("lines_diff", 0))
     line_diff_count = 0
     diffs = []
     for regex_line, data_line in zip(local_file, history_data):
@@ -407,9 +416,9 @@ def files_re_match(file1, file2, attributes=None):
         if not re.match(regex_line, data_line):
             line_diff_count += 1
             diffs.append(f"Regular Expression: {regex_line}, Data file: {data_line}\n")
-    if line_diff_count > lines_diff:
+    if line_diff_count > (lines_diff := int(attributes.get("lines_diff", 0))):
         raise AssertionError(
-            "Regular expression did not match data file (allowed variants=%i):\n%s" % (lines_diff, "".join(diffs))
+            "Regular expression did not match data file (allowed variants={}):\n{}".format(lines_diff, "".join(diffs))
         )
 
 
@@ -464,8 +473,8 @@ def files_contains(file1, file2, attributes=None):
 
 
 def _singleobject_intersection_over_union(
-    mask1: "numpy.typing.NDArray",
-    mask2: "numpy.typing.NDArray",
+    mask1: "numpy.typing.NDArray[numpy.bool_]",
+    mask2: "numpy.typing.NDArray[numpy.bool_]",
 ) -> "numpy.floating":
     return numpy.logical_and(mask1, mask2).sum() / numpy.logical_or(mask1, mask2).sum()
 
@@ -473,10 +482,10 @@ def _singleobject_intersection_over_union(
 def _multiobject_intersection_over_union(
     mask1: "numpy.typing.NDArray",
     mask2: "numpy.typing.NDArray",
-    pin_labels: Optional[List[int]] = None,
+    pin_labels: list[int] | None = None,
     repeat_reverse: bool = True,
-) -> List["numpy.floating"]:
-    iou_list = []
+) -> list["numpy.floating"]:
+    iou_list: list[numpy.floating] = []
     for label1 in numpy.unique(mask1):
         cc1 = mask1 == label1
 
@@ -487,13 +496,13 @@ def _multiobject_intersection_over_union(
 
         # Otherwise, use the object with the largest IoU value, excluding the pinned labels.
         else:
-            cc1_iou_list = []
+            cc1_iou_list: list[numpy.floating] = []
             for label2 in numpy.unique(mask2[cc1]):
                 if pin_labels is not None and label2 in pin_labels:
                     continue
                 cc2 = mask2 == label2
                 cc1_iou_list.append(_singleobject_intersection_over_union(cc1, cc2))
-            iou_list.append(max(cc1_iou_list))
+            iou_list.append(max(cc1_iou_list))  # type: ignore[type-var, unused-ignore]  # https://github.com/python/typeshed/issues/12562
 
     if repeat_reverse:
         iou_list.extend(_multiobject_intersection_over_union(mask2, mask1, pin_labels, repeat_reverse=False))
@@ -502,9 +511,9 @@ def _multiobject_intersection_over_union(
 
 
 def intersection_over_union(
-    mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray", pin_labels: Optional[List[int]] = None
+    mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray", pin_labels: list[int] | None = None
 ) -> "numpy.floating":
-    """Compute the intersection over union (IoU) for the objects in two masks containing lables.
+    """Compute the intersection over union (IoU) for the objects in two masks containing labels.
 
     The IoU is computed for each uniquely labeled image region (object), and the overall minimum value is returned (i.e. the worst value).
     To compute the IoU for each object, the corresponding object in the other mask needs to be determined.
@@ -522,10 +531,10 @@ def intersection_over_union(
         count = sum(label in mask for mask in (mask1, mask2))
         count_str = {1: "one", 2: "both"}
         assert count == 2, f"Label {label} is pinned but missing in {count_str[2 - count]} of the images."
-    return min(_multiobject_intersection_over_union(mask1, mask2, pin_labels))
+    return min(_multiobject_intersection_over_union(mask1, mask2, pin_labels))  # type: ignore[type-var, unused-ignore]  # https://github.com/python/typeshed/issues/12562
 
 
-def _parse_label_list(label_list_str: Optional[str]) -> List[int]:
+def _parse_label_list(label_list_str: str | None) -> list[int]:
     if label_list_str is None:
         return []
     else:
@@ -533,7 +542,7 @@ def _parse_label_list(label_list_str: Optional[str]) -> List[int]:
 
 
 def get_image_metric(
-    attributes: Dict[str, Any]
+    attributes: dict[str, Any],
 ) -> Callable[["numpy.typing.NDArray", "numpy.typing.NDArray"], "numpy.floating"]:
     metric_name = attributes.get("metric", DEFAULT_METRIC)
     pin_labels = _parse_label_list(attributes.get("pin_labels", DEFAULT_PIN_LABELS))
@@ -568,7 +577,7 @@ def _load_image(filepath: str) -> "numpy.typing.NDArray":
     return arr
 
 
-def files_image_diff(file1: str, file2: str, attributes: Optional[Dict[str, Any]] = None) -> None:
+def files_image_diff(file1: str, file2: str, attributes: dict[str, Any] | None = None) -> None:
     """Check the pixel data of 2 image files for differences."""
     attributes = attributes or {}
 
@@ -581,7 +590,126 @@ def files_image_diff(file1: str, file2: str, attributes: Optional[Dict[str, Any]
     if arr1.shape != arr2.shape:
         raise AssertionError(f"Image dimensions did not match ({arr1.shape}, {arr2.shape}).")
 
+    # Handle `bool` images by converting them to `uint8`
+    if numpy.issubdtype(arr1.dtype, bool):
+        arr1 = arr1.astype(numpy.uint8)
+    if numpy.issubdtype(arr2.dtype, bool):
+        arr2 = arr2.astype(numpy.uint8)
+
     distance = get_image_metric(attributes)(arr1, arr2)
-    distance_eps = attributes.get("eps", DEFAULT_EPS)
-    if distance > distance_eps:
+    if distance > (distance_eps := attributes.get("eps", DEFAULT_EPS)):
         raise AssertionError(f"Image difference {distance} exceeds eps={distance_eps}.")
+
+
+# TODO: After tool-util with this included is published, fefactor planemo.test._check_output
+# to use this function. There is already a comment there about breaking fewer abstractions.
+# https://github.com/galaxyproject/planemo/blob/master/planemo/test/_check_output.py
+# TODO: Also migrate the logic for checking non-dictionaries out of Planemo - this function now
+# does that check also.
+def verify_file_path_against_dict(
+    get_filename: GetFilenameT,
+    get_location: GetLocationT,
+    path: str,
+    output_content: bytes,
+    test_properties,
+    test_data_target_dir: str | None = None,
+) -> None:
+    with open(path, "rb") as f:
+        output_content = f.read()
+    item_label = f"Output with path {path}"
+    verify_file_contents_against_dict(
+        get_filename, get_location, item_label, output_content, test_properties, test_data_target_dir
+    )
+
+
+def verify_file_contents_against_dict(
+    get_filename: GetFilenameT,
+    get_location: GetLocationT,
+    item_label: str,
+    output_content: bytes,
+    test_properties,
+    test_data_target_dir: str | None = None,
+) -> None:
+    expected_file: str | None = None
+    if isinstance(test_properties, dict):
+        # Support Galaxy-like file location (using "file") or CWL-like ("path" or "location").
+        expected_file = test_properties.get("file", None)
+        if expected_file is None:
+            expected_file = test_properties.get("path", None)
+        if expected_file is None:
+            location = test_properties.get("location")
+            if location:
+                if location.startswith(("http://", "https://")):
+                    assert get_location
+                    expected_file = get_location(location)
+                else:
+                    expected_file = location.split("file://", 1)[-1]
+
+        if "asserts" in test_properties:
+            test_properties["assert_list"] = to_test_assert_list(test_properties["asserts"])
+        verify(
+            item_label,
+            output_content,
+            attributes=test_properties,
+            filename=expected_file,
+            get_filename=get_filename,
+            keep_outputs_dir=test_data_target_dir,
+            verify_extra_files=None,
+        )
+    else:
+        output_value = json.loads(output_content.decode("utf-8"))
+        if test_properties != output_value:
+            template = "Output [%s] value [%s] does not match expected value [%s]."
+            message = template % (item_label, output_value, test_properties)
+            raise AssertionError(message)
+
+
+def verify_job_metadata(
+    job_stdio: dict[str, Any],
+    expect_exit_code: int | None = None,
+    stdout_assertions: list | None = None,
+    stderr_assertions: list | None = None,
+    command_assertions: list | None = None,
+    command_version_assertions: list | None = None,
+) -> None:
+    """Verify job exit code, stdout/stderr, and command metadata.
+
+    Applies job_messages prefixes to stdout/stderr before checking assertions,
+    matching Galaxy's stdio regex/exit_code description handling.
+    """
+    if expect_exit_code is not None:
+        actual = job_stdio.get("exit_code")
+        if str(expect_exit_code) != str(actual):
+            raise AssertionError(f"Expected exit code {expect_exit_code}, got {actual}")
+    if command_assertions:
+        verify_assertions((job_stdio.get("command_line") or "").encode("utf-8"), command_assertions)
+    if command_version_assertions:
+        verify_assertions((job_stdio.get("command_version") or "").encode("utf-8"), command_version_assertions)
+    if stdout_assertions or stderr_assertions:
+        stdout_prefix = ""
+        stderr_prefix = ""
+        for msg in job_stdio.get("job_messages") or []:
+            msg_type = msg.get("type")
+            desc = msg.get("desc") or ""
+            if msg_type == "regex" and msg.get("stream") == "stderr":
+                stderr_prefix += f"{desc}\n"
+            elif msg_type == "regex" and msg.get("stream") == "stdout":
+                stdout_prefix += f"{desc}\n"
+            elif msg_type == "exit_code":
+                stderr_prefix += f"{desc}\n"
+        if stdout_assertions:
+            verify_assertions((stdout_prefix + job_stdio.get("stdout", "")).encode("utf-8"), stdout_assertions)
+        if stderr_assertions:
+            verify_assertions((stderr_prefix + job_stdio.get("stderr", "")).encode("utf-8"), stderr_assertions)
+
+
+__all__ = [
+    "DEFAULT_TEST_DATA_RESOLVER",
+    "ExpandedToolInputsJsonified",
+    "GetFilenameT",
+    "GetLocationT",
+    "ToolTestDescriptionDict",
+    "verify",
+    "verify_file_contents_against_dict",
+    "verify_job_metadata",
+]

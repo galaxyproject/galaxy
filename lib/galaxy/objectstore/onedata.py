@@ -13,11 +13,16 @@ try:
         OnedataRESTError,
     )
 except ImportError:
-    OnedataFileRESTClient = None
+    OnedataFileRESTClient = None  # type: ignore[assignment, misc, unused-ignore]
 
-from galaxy.util import string_as_bool
+from galaxy.util import (
+    mapped_chars,
+    string_as_bool,
+)
 from ._caching_base import CachingConcreteObjectStore
 from .caching import (
+    CacheShardManager,
+    CacheTarget,
     enable_cache_monitor,
     parse_caching_config_dict_from_xml,
 )
@@ -44,7 +49,7 @@ def _parse_config_xml(config_xml):
 
         space_xml = _get_config_xml_elements(config_xml, "space")[0]
         space_name = space_xml.get("name")
-        galaxy_root_dir = space_xml.get("path", "")
+        galaxy_root_dir = space_xml.get("galaxy_root_dir", "")
 
         cache_dict = parse_caching_config_dict_from_xml(config_xml)
 
@@ -107,9 +112,8 @@ class OnedataObjectStore(CachingConcreteObjectStore):
 
         cache_dict = config_dict.get("cache") or {}
         self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
-        self.cache_size = cache_dict["size"] or self.config.object_store_cache_size
-        self.staging_path = cache_dict["path"] or self.config.object_store_cache_path
         self.cache_updated_data = cache_dict.get("cache_updated_data", True)
+        self._cache_shards = CacheShardManager.from_config(cache_dict, self.config)
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         self.extra_dirs.update(extra_dirs)
@@ -125,8 +129,14 @@ class OnedataObjectStore(CachingConcreteObjectStore):
             f"(disable_tls_certificate_validation={self.disable_tls_certificate_validation})"
         )
 
+        alt_space_fqn_separators = [mapped_chars["@"]] if "@" in mapped_chars else None
         verify_ssl = not self.disable_tls_certificate_validation
-        self._client = OnedataFileRESTClient(self.onezone_domain, self.access_token, verify_ssl=verify_ssl)
+        self._client = OnedataFileRESTClient(
+            self.onezone_domain,
+            self.access_token,
+            alt_space_fqn_separators=alt_space_fqn_separators,
+            verify_ssl=verify_ssl,
+        )
 
         self._ensure_staging_path_writable()
         self._start_cache_monitor_if_needed()
@@ -147,11 +157,7 @@ class OnedataObjectStore(CachingConcreteObjectStore):
                     "disable_tls_certificate_validation": self.disable_tls_certificate_validation,
                 },
                 "space": {"name": self.space_name, "galaxy_root_dir": self.galaxy_root_dir},
-                "cache": {
-                    "size": self.cache_size,
-                    "path": self.staging_path,
-                    "cache_updated_data": self.cache_updated_data,
-                },
+                "cache": self._cache_config_to_dict(),
             }
         )
         return as_dict
@@ -179,9 +185,9 @@ class OnedataObjectStore(CachingConcreteObjectStore):
             log.exception("Trouble checking '%s' existence in Onedata", rel_path)
             return False
 
-    def _download(self, rel_path):
+    def _download(self, rel_path, *, cache_path: str, cache_target: CacheTarget):
         try:
-            dst_path = self._get_cache_path(rel_path)
+            dst_path = cache_path
 
             log.debug("Pulling file '%s' into cache to %s", rel_path, dst_path)
 
@@ -189,14 +195,15 @@ class OnedataObjectStore(CachingConcreteObjectStore):
             file_size = self._client.get_attributes(self.space_name, attributes=["size"], file_path=remote_path)["size"]
 
             # Test if cache is large enough to hold the new file
-            if not self._caching_allowed(rel_path, file_size):
+            if not self._caching_allowed(rel_path, cache_target=cache_target, remote_size=file_size):
                 return False
 
-            with open(dst_path, "wb") as dst:
-                for chunk in self._client.iter_file_content(
-                    self.space_name, chunk_size=STREAM_CHUNK_SIZE, file_path=remote_path
-                ):
-                    dst.write(chunk)
+            with self._atomic_download(dst_path) as tmp:
+                with open(tmp, "wb") as dst:
+                    for chunk in self._client.iter_file_content(
+                        self.space_name, chunk_size=STREAM_CHUNK_SIZE, file_path=remote_path
+                    ):
+                        dst.write(chunk)
 
             log.debug("Pulled '%s' into cache to %s", rel_path, dst_path)
 
@@ -205,14 +212,14 @@ class OnedataObjectStore(CachingConcreteObjectStore):
             log.exception("Problem downloading file '%s'", rel_path)
             return False
 
-    def _push_to_storage(self, rel_path, source_file=None, from_string=None):
+    def _push_to_storage(self, rel_path, source_file=None, from_string=None, *, cache_path: str):
         """
         Push the file pointed to by ``rel_path`` to the object store under ``rel_path``.
         If ``source_file`` is provided, push that file instead while still using
         ``rel_path`` as the path.
         """
         try:
-            source_file = source_file or self._get_cache_path(rel_path)
+            source_file = source_file or cache_path
             if os.path.exists(source_file):
                 if os.path.getsize(source_file) == 0 and self._exists_remotely(rel_path):
                     log.debug(
@@ -294,6 +301,6 @@ def _is_not_found_onedata_rest_error(ex):
             return True
 
         if ex.http_code == 400 and ex.category == "posix":
-            return ex.details["errno"] == "enoent"
+            return isinstance(ex.details, dict) and ex.details["errno"] == "enoent"
 
     return False

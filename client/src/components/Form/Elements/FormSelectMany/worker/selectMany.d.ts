@@ -14,6 +14,7 @@ export interface UseSelectManyOptions {
     unselectedDisplayCount: Ref<number>;
     selectedDisplayCount: Ref<number>;
     caseSensitive: Ref<boolean>;
+    maintainSelectionOrder: Ref<boolean>;
 }
 
 export interface UseSelectManyReturn {

@@ -1,28 +1,26 @@
 <template>
     <FormCard :title="stepTitle" :icon="nodeIcon">
         <template v-slot:operations>
-            <b-button
+            <GButton
                 v-if="isSubworkflow"
-                v-b-tooltip.hover
-                role="button"
+                v-g-tooltip.hover
                 title="Edit this Subworkflow. You will need to upgrade this Workflow Step afterwards."
-                variant="link"
-                size="sm"
+                transparent
+                size="small"
                 class="float-right py-0 px-1"
                 @click="onEditSubworkflow">
                 <span class="fa fa-pencil-alt" />
-            </b-button>
-            <b-button
+            </GButton>
+            <GButton
                 v-if="isSubworkflow"
-                v-b-tooltip.hover
-                role="button"
+                v-g-tooltip.hover
                 title="Upgrade this Workflow Step to latest Subworkflow version."
-                variant="link"
-                size="sm"
+                transparent
+                size="small"
                 class="float-right py-0 px-1"
                 @click="onUpgradeSubworkflow">
                 <span class="fa fa-sync" />
-            </b-button>
+            </GButton>
         </template>
         <template v-slot:body>
             <FormElement
@@ -30,7 +28,7 @@
                 :value="label"
                 title="Label"
                 help="Add a step label."
-                :error="uniqueErrorLabel"
+                :error="uniqueErrorLabel ?? undefined"
                 @input="onLabel" />
             <FormElement
                 id="__annotation"
@@ -43,8 +41,24 @@
                 v-if="isSubworkflow"
                 :step="step"
                 @onUpdateStep="(id, step) => emit('onUpdateStep', id, step)" />
+            <FormPickValue
+                v-if="type == 'pick_value'"
+                :step="step"
+                :datatypes="datatypes"
+                :node-inputs="stepInputs"
+                :post-job-actions="postJobActions"
+                @onChange="onChange"
+                @onChangePostJobActions="onChangePostJobActions" />
+            <FormInputCollection
+                v-else-if="type == 'data_collection_input'"
+                :key="formKey"
+                :step="step"
+                :datatypes="datatypes"
+                :inputs="configForm?.inputs"
+                @onChange="onChange">
+            </FormInputCollection>
             <FormDisplay
-                v-if="configForm?.inputs"
+                v-else-if="configForm?.inputs"
                 :id="formDisplayId"
                 :key="formKey"
                 :inputs="configForm.inputs"
@@ -75,10 +89,13 @@ import { useStepProps } from "../composables/useStepProps";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
 
 import FormConditional from "./FormConditional.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormElement from "@/components/Form/FormElement.vue";
+import FormInputCollection from "@/components/Workflow/Editor/Forms/FormInputCollection.vue";
 import FormOutputLabel from "@/components/Workflow/Editor/Forms/FormOutputLabel.vue";
+import FormPickValue from "@/components/Workflow/Editor/Forms/FormPickValue.vue";
 
 const props = defineProps<{
     step: Step;
@@ -91,15 +108,14 @@ const emit = defineEmits([
     "onEditSubworkflow",
     "onSetData",
     "onUpdateStep",
+    "onChangePostJobActions",
 ]);
 const stepRef = toRef(props, "step");
-const { stepId, contentId, annotation, label, name, type, configForm } = useStepProps(stepRef);
+const { stepId, contentId, annotation, label, name, type, configForm, stepInputs, postJobActions } =
+    useStepProps(stepRef);
 const { stepStore } = useWorkflowStores();
 const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
 const stepTitle = computed(() => {
-    if (label.value) {
-        return label.value;
-    }
     if (isSubworkflow.value) {
         return name.value;
     } else {
@@ -122,6 +138,9 @@ function onEditSubworkflow() {
 function onUpgradeSubworkflow() {
     emit("onAttemptRefactor", [{ action_type: "upgrade_subworkflow", step: { order_index: stepId.value } }]);
 }
+function onChangePostJobActions(postJobActions: unknown) {
+    emit("onChangePostJobActions", stepId.value, postJobActions);
+}
 
 // keeps the component from emitting the onCreate change event
 const initialChange = ref(true);
@@ -142,6 +161,6 @@ function onChange(values: any) {
 const { formKey } = storeToRefs(useRefreshFromStore());
 watch(
     () => formKey.value,
-    () => (initialChange.value = true)
+    () => (initialChange.value = true),
 );
 </script>

@@ -2,18 +2,17 @@ import json
 import logging
 import os
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 from urllib.parse import urljoin
 
-from routes import url_for
 from typing_extensions import Protocol
 
 from galaxy import util
 from galaxy.util.tool_shed import encoding_util
 
 if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
     from .tool_shed_registry import Registry as ToolShedRegistry
 
 log = logging.getLogger(__name__)
@@ -36,8 +35,7 @@ def accumulate_tool_dependencies(tool_shed_accessible, tool_dependencies, all_to
 
 
 def check_tool_tag_set(elem, migrated_tool_configs_dict, missing_tool_configs_dict):
-    file_path = elem.get("file", None)
-    if file_path:
+    if file_path := elem.get("file", None):
         name = os.path.basename(file_path)
         for migrated_tool_config in migrated_tool_configs_dict.keys():
             if migrated_tool_config in [file_path, name]:
@@ -127,7 +125,7 @@ def get_tool_shed_repository_ids(as_string=False, **kwd):
     return []
 
 
-def get_tool_shed_url_from_tool_shed_registry(app: HasToolShedRegistry, tool_shed: str) -> Optional[str]:
+def get_tool_shed_url_from_tool_shed_registry(app: HasToolShedRegistry, tool_shed: str) -> str | None:
     """
     The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is
     something like: http://toolshed.g2.bx.psu.edu/
@@ -152,31 +150,13 @@ def get_tool_shed_repository_url(app: HasToolShedRegistry, tool_shed: str, owner
     return tool_shed_url
 
 
-def handle_galaxy_url(trans, **kwd):
+def handle_galaxy_url(trans: "GalaxyWebTransaction", **kwd):
     galaxy_url = kwd.get("galaxy_url", None)
     if galaxy_url:
         trans.set_cookie(galaxy_url, name="toolshedgalaxyurl")
     else:
         galaxy_url = trans.get_cookie(name="toolshedgalaxyurl")
     return galaxy_url
-
-
-def handle_tool_shed_url_protocol(app: HasToolShedRegistry, shed_url: str) -> str:
-    """Handle secure and insecure HTTP protocol since they may change over time."""
-    try:
-        if app.name == "galaxy":
-            url = remove_protocol_from_tool_shed_url(shed_url)
-            tool_shed_url = get_tool_shed_url_from_tool_shed_registry(app, url)
-            assert tool_shed_url
-        else:
-            tool_shed_url = str(url_for("/", qualified=True)).rstrip("/")
-        return tool_shed_url
-    except Exception:
-        # We receive a lot of calls here where the tool_shed_url is None.  The container_util uses
-        # that value when creating a header row.  If the tool_shed_url is not None, we have a problem.
-        if shed_url is not None:
-            log.exception("Handled exception removing protocol from URL %s", str(shed_url))
-        return shed_url
 
 
 def parse_repository_dependency_tuple(repository_dependency_tuple, contains_error=False):
@@ -266,10 +246,7 @@ def remove_protocol_and_user_from_clone_url(repository_clone_url: str) -> str:
     return tmp_url.rstrip("/")
 
 
-def remove_protocol_from_tool_shed_url(tool_shed_url: str) -> str:
-    """Return a partial Tool Shed URL, eliminating the protocol if it exists."""
-    return util.remove_protocol_from_url(tool_shed_url)
-
+remove_protocol_from_tool_shed_url = util.remove_protocol_from_url
 
 __all__ = (
     "accumulate_tool_dependencies",
@@ -282,7 +259,6 @@ __all__ = (
     "get_tool_shed_url_from_tool_shed_registry",
     "get_tool_shed_repository_url",
     "handle_galaxy_url",
-    "handle_tool_shed_url_protocol",
     "parse_repository_dependency_tuple",
     "remove_port_from_tool_shed_url",
     "remove_protocol_and_port_from_tool_shed_url",

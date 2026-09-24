@@ -1,53 +1,62 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useDebounce, useDraggable } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
 
-import { useTimeoutThrottle } from "@/composables/throttle";
+import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
 
-import { determineWidth } from "./utilities";
-
-const { throttle } = useTimeoutThrottle(10);
-
-library.add(faChevronLeft, faChevronRight);
+const DEFAULT_WIDTH = 300;
 
 interface Props {
     collapsible?: boolean;
     side?: "left" | "right";
+    panelId?: string;
     minWidth?: number;
     maxWidth?: number;
-    defaultWidth?: number;
+    reactiveWidth?: number;
 }
 const props = withDefaults(defineProps<Props>(), {
     collapsible: true,
     side: "right",
+    panelId: undefined,
     minWidth: 200,
     maxWidth: 800,
-    defaultWidth: 300,
+    reactiveWidth: undefined,
 });
 
-const draggable = ref<HTMLElement | null>(null);
+const emit = defineEmits<{
+    (e: "update:reactive-width", width: number): void;
+    (e: "close"): void;
+}>();
+
+const localPanelWidth = ref(DEFAULT_WIDTH);
+
+const panelWidth = computed({
+    get: () => {
+        if (props.reactiveWidth !== undefined) {
+            return props.reactiveWidth;
+        }
+        return localPanelWidth.value;
+    },
+    set: (width) => {
+        if (props.reactiveWidth !== undefined) {
+            emit("update:reactive-width", width);
+        } else {
+            localPanelWidth.value = width;
+        }
+    },
+});
+
 const root = ref<HTMLElement | null>(null);
-
-const panelWidth = ref(props.defaultWidth);
 const show = ref(true);
-
-const { position, isDragging } = useDraggable(draggable, {
-    preventDefault: true,
-    exact: true,
-});
-
-const hoverDraggable = ref(false);
-const hoverDraggableDebounced = useDebounce(hoverDraggable, 100);
-const showHover = computed(() => (hoverDraggable.value && hoverDraggableDebounced.value) || isDragging.value);
 
 const showToggle = ref(false);
 const hoverToggle = ref(false);
-const hoverDraggableOrToggle = computed(
-    () => (hoverDraggableDebounced.value || hoverToggle.value) && !isDragging.value
-);
+
+const isHoveringDragHandle = ref(false);
+const isDragging = ref(false);
+
+const hoverDraggableOrToggle = computed(() => (isHoveringDragHandle.value || hoverToggle.value) && !isDragging.value);
 
 const toggleLinger = 500;
 const toggleShowDelay = 600;
@@ -67,136 +76,83 @@ watch(
                 showToggle.value = false;
             }, toggleLinger);
         }
-    }
-);
-
-/** Watch position changes and adjust width accordingly */
-watch(position, () => {
-    throttle(() => {
-        if (!root.value || !draggable.value) {
-            return;
-        }
-
-        const rectRoot = root.value.getBoundingClientRect();
-        const rectDraggable = draggable.value.getBoundingClientRect();
-        panelWidth.value = determineWidth(
-            rectRoot,
-            rectDraggable,
-            props.minWidth,
-            props.maxWidth,
-            props.side,
-            position.value.x
-        );
-    });
-});
-
-/** If the `maxWidth` changes, prevent the panel from exceeding it */
-watch(
-    () => props.maxWidth,
-    (newVal) => {
-        if (newVal && panelWidth.value > newVal) {
-            panelWidth.value = props.maxWidth;
-        }
     },
-    { immediate: true }
 );
-
-/** If the `minWidth` changes, ensure the panel width is at least the `minWidth` */
-watch(
-    () => props.minWidth,
-    (newVal) => {
-        if (newVal && panelWidth.value < newVal) {
-            panelWidth.value = newVal;
-        }
-    },
-    { immediate: true }
-);
-
-function onKeyLeft() {
-    if (props.side === "left") {
-        decreaseWidth();
-    } else {
-        increaseWidth();
-    }
-}
-
-function onKeyRight() {
-    if (props.side === "left") {
-        increaseWidth();
-    } else {
-        decreaseWidth();
-    }
-}
-
-function increaseWidth(by = 50) {
-    panelWidth.value = Math.min(panelWidth.value + by, props.maxWidth);
-}
-
-function decreaseWidth(by = 50) {
-    panelWidth.value = Math.max(panelWidth.value - by, props.minWidth);
-}
 
 const sideClasses = computed(() => ({
     left: props.side === "left",
     right: props.side === "right",
 }));
+
+defineExpose({
+    show,
+});
 </script>
 
 <template>
     <div
         v-if="show"
-        :id="side"
+        :id="panelId ?? side"
         ref="root"
         class="flex-panel"
-        :class="{ ...sideClasses, 'show-hover': showHover }"
+        :class="{ ...sideClasses }"
         :style="`--width: ${panelWidth}px`">
-        <button
-            ref="draggable"
-            class="drag-handle"
-            @mouseenter="hoverDraggable = true"
-            @focusin="hoverDraggable = true"
-            @mouseout="hoverDraggable = false"
-            @focusout="hoverDraggable = false"
-            @keydown.left="onKeyLeft"
-            @keydown.right="onKeyRight">
-            <span class="sr-only"> Side panel drag handle </span>
-        </button>
+        <DraggableSeparator
+            :position="panelWidth"
+            :side="props.side"
+            :min="props.minWidth"
+            :max="props.maxWidth"
+            @positionChanged="(v) => (panelWidth = v)"
+            @visibilityChanged="(v) => (isHoveringDragHandle = v)"
+            @dragging="(v) => (isDragging = v)" />
 
         <button
             v-if="props.collapsible"
             class="collapse-button open"
             :class="{ ...sideClasses, show: showToggle }"
             title="Close panel"
-            @click="show = false"
+            @click="
+                show = false;
+                emit('close');
+            "
             @mouseenter="hoverToggle = true"
             @focusin="hoverToggle = true"
             @mouseout="hoverToggle = false"
             @focusout="hoverToggle = false">
-            <FontAwesomeIcon v-if="side === 'left'" fixed-width icon="fa-chevron-left" />
-            <FontAwesomeIcon v-else icon="fa-chevron-right" fixed-width />
+            <FontAwesomeIcon v-if="side === 'left'" fixed-width :icon="faChevronLeft" />
+            <FontAwesomeIcon v-else :icon="faChevronRight" fixed-width />
         </button>
 
         <slot />
 
         <div v-if="isDragging" class="interaction-overlay" />
     </div>
-    <div v-else>
-        <button
-            class="collapse-button closed"
-            :class="{ ...sideClasses, show: true }"
-            title="Open panel"
-            @click="
-                show = true;
-                hoverToggle = false;
+    <div v-else class="flex-panel-closed" :class="{ ...sideClasses }">
+        <slot
+            name="closed-button"
+            :open="
+                () => {
+                    show = true;
+                    hoverToggle = false;
+                }
             ">
-            <FontAwesomeIcon v-if="side === 'right'" fixed-width icon="fa-chevron-left" />
-            <FontAwesomeIcon v-else icon="fa-chevron-right" fixed-width />
-        </button>
+            <button
+                class="collapse-button closed"
+                :class="{ ...sideClasses, show: true }"
+                title="Open panel"
+                @click="
+                    show = true;
+                    hoverToggle = false;
+                ">
+                <FontAwesomeIcon v-if="side === 'right'" fixed-width :icon="faChevronLeft" />
+                <FontAwesomeIcon v-else :icon="faChevronRight" fixed-width />
+            </button>
+        </slot>
     </div>
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 $border-width: 6px;
 
@@ -209,7 +165,9 @@ $border-width: 6px;
     border-color: transparent;
     border-width: $border-width;
     box-shadow: 1px 0 transparent;
-    transition: border-color 0.1s, box-shadow 0.1s;
+    transition:
+        border-color 0.1s,
+        box-shadow 0.1s;
     align-items: stretch;
     flex-direction: column;
 
@@ -221,27 +179,11 @@ $border-width: 6px;
         background-color: $border-color;
     }
 
-    &.show-hover {
-        border-color: $brand-info;
-
-        &::after {
-            background-color: $brand-info;
-        }
-    }
-
     &.left {
         border-right-style: solid;
 
         &::after {
             right: -1px;
-        }
-
-        .drag-handle {
-            right: -$border-width;
-
-            &:hover {
-                right: calc(-1 * $border-width - var(--hover-expand) / 2);
-            }
         }
     }
 
@@ -251,32 +193,6 @@ $border-width: 6px;
         &::after {
             left: -1px;
         }
-
-        .drag-handle {
-            left: -$border-width;
-
-            &:hover {
-                left: calc(-1 * $border-width - var(--hover-expand) / 2);
-            }
-        }
-    }
-}
-
-.drag-handle {
-    background: none;
-    border: none;
-    border-radius: 0;
-    position: absolute;
-    width: $border-width;
-    padding: 0;
-    height: 100%;
-    z-index: 10000;
-
-    --hover-expand: 4px;
-
-    &:hover {
-        cursor: ew-resize;
-        width: calc($border-width + var(--hover-expand));
     }
 }
 
@@ -289,7 +205,10 @@ $border-width: 6px;
     width: var(--width);
     overflow: hidden;
 
-    transition: width 0.1s, left 0.1s, right 0.1s;
+    transition:
+        width 0.1s,
+        left 0.1s,
+        right 0.1s;
     border-style: none;
 
     &:hover,
@@ -340,6 +259,10 @@ $border-width: 6px;
             left: 0;
         }
     }
+}
+
+.flex-panel-closed {
+    position: relative;
 }
 
 .interaction-overlay {

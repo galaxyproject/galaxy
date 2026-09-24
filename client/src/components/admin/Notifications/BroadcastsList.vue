@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faClock, faHourglassHalf, faRedo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCol, BRow } from "bootstrap-vue";
+import { BCol, BRow } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { fetchAllBroadcasts, updateBroadcast } from "@/api/notifications.broadcast";
 import { Toast } from "@/composables/toast";
-import { BroadcastNotification } from "@/stores/broadcastsStore";
+import type { BroadcastNotification } from "@/stores/broadcastsStore";
 
 import BroadcastCard from "./BroadcastCard.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-library.add(faCheck, faClock, faHourglassHalf, faRedo);
 
 const router = useRouter();
 
@@ -53,7 +54,7 @@ function onEdit(item: BroadcastNotification) {
 async function onForceExpire(item: BroadcastNotification) {
     await updateBroadcast(item.id, { expiration_time: new Date().toISOString().slice(0, 23) });
     await loadBroadcastsList(true);
-    Toast.info("Broadcast marked as expired and will be removed from the database in the next cleanup cycle.");
+    Toast.info("Broadcast marked as expired. It will be removed from the database in the next cleanup cycle.");
 }
 
 function onGoToLink(link: string) {
@@ -102,65 +103,66 @@ loadBroadcastsList();
                 <BCol class="ml-2">
                     <BRow align-h="start" align-v="center">
                         <span class="mx-2"> Filters: </span>
-                        <BButtonGroup>
-                            <BButton
+                        <GButtonGroup>
+                            <GButton
                                 id="show-active-filter-button"
-                                size="sm"
-                                :pressed="showActive"
+                                size="small"
+                                :pressed.sync="showActive"
                                 title="Show active broadcasts"
-                                variant="outline-primary"
-                                @click="showActive = !showActive">
+                                outline
+                                color="blue">
                                 <FontAwesomeIcon :icon="faCheck" />
                                 Active
-                            </BButton>
-                            <BButton
+                            </GButton>
+                            <GButton
                                 id="show-scheduled-filter-button"
-                                size="sm"
-                                :pressed="showScheduled"
+                                size="small"
+                                :pressed.sync="showScheduled"
                                 title="Show scheduled broadcasts"
-                                variant="outline-primary"
-                                @click="showScheduled = !showScheduled">
+                                outline
+                                color="blue">
                                 <FontAwesomeIcon :icon="faClock" />
                                 Scheduled
-                            </BButton>
-                            <BButton
+                            </GButton>
+                            <GButton
                                 id="show-expired-filter-button"
-                                size="sm"
-                                :pressed="showExpired"
+                                size="small"
+                                :pressed.sync="showExpired"
                                 title="Show expired broadcasts"
-                                variant="outline-primary"
-                                @click="showExpired = !showExpired">
+                                outline
+                                color="blue">
                                 <FontAwesomeIcon :icon="faHourglassHalf" />
                                 Expired
-                            </BButton>
-                        </BButtonGroup>
+                            </GButton>
+                        </GButtonGroup>
                     </BRow>
                 </BCol>
                 <BCol>
                     <BRow align-h="end" align-v="center" no-gutters>
-                        <BButton
-                            v-b-tooltip.hover
-                            size="sm"
+                        <GButton
+                            tooltip
+                            size="small"
                             :disabled="loading || overlay"
-                            variant="outline-primary"
+                            outline
+                            color="blue"
                             title="Refresh broadcasts"
-                            @click="loadBroadcastsList">
+                            @click="() => loadBroadcastsList(false)">
                             <FontAwesomeIcon :icon="faRedo" />
-                        </BButton>
+                        </GButton>
                     </BRow>
                 </BCol>
             </BRow>
         </div>
 
-        <BAlert v-if="loading" variant="info" show>
+        <GAlert v-if="loading" variant="info" show>
             <LoadingSpan message="Loading broadcasts" />
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-else-if="filteredBroadcasts.length === 0" id="empty-broadcast-list-alert" variant="info" show>
+        <GAlert v-else-if="filteredBroadcasts.length === 0" id="empty-broadcast-list-alert" variant="info" show>
             There are no broadcast notifications to show. Use the button above to create a new broadcast notification or
             change the filters.
-        </BAlert>
-        <BOverlay v-else :show="overlay" rounded="sm">
+        </GAlert>
+        <GOverlay v-else :show="overlay">
             <BroadcastCard
                 v-for="notification in filteredBroadcasts"
                 :key="notification.id"
@@ -169,12 +171,12 @@ loadBroadcastsList();
                 @edit="onEdit"
                 @expire="onForceExpire"
                 @go-to-link="onGoToLink" />
-        </BOverlay>
+        </GOverlay>
     </div>
 </template>
 
 <style scoped lang="scss">
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .list-operations {
     border-radius: 0.5rem;

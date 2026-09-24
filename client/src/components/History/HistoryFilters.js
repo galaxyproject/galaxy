@@ -1,5 +1,4 @@
-import { STATES } from "components/History/Content/model/states";
-import StatesInfo from "components/History/Content/model/StatesInfo";
+import { STATES } from "@/components/History/Content/model/states";
 import Filtering, {
     compare,
     contains,
@@ -8,7 +7,9 @@ import Filtering, {
     quotaSourceFilter,
     toBool,
     toDate,
-} from "utils/filtering";
+} from "@/utils/filtering";
+
+import StatesInfo from "@/components/History/Content/model/StatesInfo.vue";
 
 const excludeStates = ["empty", "failed", "upload", "placeholder", "failed_populated_state", "new_populated_state"];
 const states = Object.keys(STATES).filter((state) => !excludeStates.includes(state));
@@ -100,4 +101,4 @@ const validFilters = {
     update_time_lt: { handler: compare("update_time", "lt", toDate), menuItem: false },
 };
 
-export const HistoryFilters = new Filtering(validFilters);
+export const HistoryFilters = new Filtering(validFilters, undefined, true, "name");

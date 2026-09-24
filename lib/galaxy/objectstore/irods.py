@@ -2,10 +2,13 @@
 Object Store plugin for the Integrated Rule-Oriented Data System (iRODS)
 """
 
+import functools
 import logging
 import os
 import shutil
+import ssl
 import threading
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -15,10 +18,12 @@ try:
     from irods.exception import (
         CollectionDoesNotExist,
         DataObjectDoesNotExist,
+        NetworkException,
     )
     from irods.session import iRODSSession
 except ImportError:
     irods = None
+
 
 from galaxy.util import (
     ExecutionTimer,
@@ -26,6 +31,11 @@ from galaxy.util import (
     unlink,
 )
 from ._caching_base import CachingConcreteObjectStore
+from .caching import (
+    CacheShardManager,
+    CacheTarget,
+    parse_cache_dirs_from_xml,
+)
 
 IRODS_IMPORT_MESSAGE = "The Python irods package is required to use this feature, please install it"
 # 1 MB
@@ -34,13 +44,47 @@ log = logging.getLogger(__name__)
 logging.getLogger("irods.connection").setLevel(logging.INFO)  # irods logging generates gigabytes of logs
 
 
+_IRODS_RETRY_ATTEMPTS = 3
+_IRODS_RETRY_BACKOFF = 0.5
+
+# python-irodsclient is optional; fall back to ssl errors when NetworkException is unavailable.
+_RETRYABLE_CONNECTION_ERRORS: "tuple[type[BaseException], ...]"
+if irods is None:
+    _RETRYABLE_CONNECTION_ERRORS = (ssl.SSLError,)
+else:
+    _RETRYABLE_CONNECTION_ERRORS = (NetworkException, ssl.SSLError)
+
+
+def _retry_on_connection_error(func):
+    """Retry an iRODS operation on a transient connection error."""
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        for attempt in range(1, _IRODS_RETRY_ATTEMPTS + 1):
+            try:
+                return func(*args, **kwargs)
+            except _RETRYABLE_CONNECTION_ERRORS as exc:
+                if attempt == _IRODS_RETRY_ATTEMPTS:
+                    raise
+                log.warning(
+                    "Transient iRODS error in %s (attempt %d/%d), retrying on a fresh connection: %s",
+                    func.__name__,
+                    attempt,
+                    _IRODS_RETRY_ATTEMPTS,
+                    exc,
+                )
+                time.sleep(_IRODS_RETRY_BACKOFF * attempt)
+
+    return wrapper
+
+
 def _config_xml_error(tag):
     msg = f"No {tag} element in config XML tree"
     raise Exception(msg)
 
 
 def _config_dict_error(key):
-    msg = "No {key} key in config dictionary".forma(key=key)
+    msg = f"No {key} key in config dictionary"
     raise Exception(msg)
 
 
@@ -51,6 +95,26 @@ def parse_config_xml(config_xml):
             _config_xml_error("auth")
         username = a_xml[0].get("username")
         password = a_xml[0].get("password")
+
+        s_xml = config_xml.findall("ssl")
+        if s_xml:
+            client_server_negotiation = s_xml[0].get("client_server_negotiation", None)
+            client_server_policy = s_xml[0].get("client_server_policy", None)
+            encryption_algorithm = s_xml[0].get("encryption_algorithm", None)
+            encryption_key_size = int(s_xml[0].get("encryption_key_size", None))
+            encryption_num_hash_rounds = int(s_xml[0].get("encryption_num_hash_rounds", None))
+            encryption_salt_size = int(s_xml[0].get("encryption_salt_size", None))
+            ssl_verify_server = s_xml[0].get("ssl_verify_server", None)
+            ssl_ca_certificate_file = s_xml[0].get("ssl_ca_certificate_file", None)
+        else:
+            client_server_negotiation = None
+            client_server_policy = None
+            encryption_algorithm = None
+            encryption_key_size = None
+            encryption_num_hash_rounds = None
+            encryption_salt_size = None
+            ssl_verify_server = None
+            ssl_ca_certificate_file = None
 
         r_xml = config_xml.findall("resource")
         if not r_xml:
@@ -71,12 +135,28 @@ def parse_config_xml(config_xml):
         refresh_time = int(c_xml[0].get("refresh_time", 300))
         connection_pool_monitor_interval = int(c_xml[0].get("connection_pool_monitor_interval", -1))
 
+        l_xml = config_xml.findall("logical")
+        if l_xml:
+            logical_path = l_xml[0].get("path", None)
+        else:
+            logical_path = None
+
         c_xml = config_xml.findall("cache")
         if not c_xml:
             _config_xml_error("cache")
         cache_size = float(c_xml[0].get("size", -1))
         staging_path = c_xml[0].get("path", None)
         cache_updated_data = string_as_bool(c_xml[0].get("cache_updated_data", "True"))
+
+        cache_dict = {
+            "size": cache_size,
+            "path": staging_path,
+            "cache_updated_data": cache_updated_data,
+        }
+
+        dirs = parse_cache_dirs_from_xml(c_xml[0])
+        if dirs:
+            cache_dict["dirs"] = dirs
 
         attrs = ("type", "path")
         e_xml = config_xml.findall("extra_dir")
@@ -88,6 +168,16 @@ def parse_config_xml(config_xml):
             "auth": {
                 "username": username,
                 "password": password,
+            },
+            "ssl": {
+                "client_server_negotiation": client_server_negotiation,
+                "client_server_policy": client_server_policy,
+                "encryption_algorithm": encryption_algorithm,
+                "encryption_key_size": encryption_key_size,
+                "encryption_num_hash_rounds": encryption_num_hash_rounds,
+                "encryption_salt_size": encryption_salt_size,
+                "ssl_verify_server": ssl_verify_server,
+                "ssl_ca_certificate_file": ssl_ca_certificate_file,
             },
             "resource": {
                 "name": resource_name,
@@ -102,11 +192,10 @@ def parse_config_xml(config_xml):
                 "refresh_time": refresh_time,
                 "connection_pool_monitor_interval": connection_pool_monitor_interval,
             },
-            "cache": {
-                "size": cache_size,
-                "path": staging_path,
-                "cache_updated_data": cache_updated_data,
+            "logical": {
+                "path": logical_path,
             },
+            "cache": cache_dict,
             "extra_dirs": extra_dirs,
             "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
         }
@@ -138,6 +227,17 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         self.password = auth_dict.get("password")
         if self.password is None:
             _config_dict_error("auth->password")
+
+        ssl_dict = config_dict.get("ssl") or {}
+
+        self.client_server_negotiation = ssl_dict.get("client_server_negotiation")
+        self.client_server_policy = ssl_dict.get("client_server_policy")
+        self.encryption_algorithm = ssl_dict.get("encryption_algorithm")
+        self.encryption_key_size = ssl_dict.get("encryption_key_size")
+        self.encryption_num_hash_rounds = ssl_dict.get("encryption_num_hash_rounds")
+        self.encryption_salt_size = ssl_dict.get("encryption_salt_size")
+        self.ssl_verify_server = ssl_dict.get("ssl_verify_server")
+        self.ssl_ca_certificate_file = ssl_dict.get("ssl_ca_certificate_file")
 
         resource_dict = config_dict["resource"]
         if resource_dict is None:
@@ -172,36 +272,41 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         if self.connection_pool_monitor_interval is None:
             _config_dict_error("connection->connection_pool_monitor_interval")
 
-        cache_dict = config_dict.get("cache") or {}
-        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_path
-        if self.cache_size is None:
-            _config_dict_error("cache->size")
-        self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
-        if self.staging_path is None:
-            _config_dict_error("cache->path")
-        self.cache_updated_data = cache_dict.get("cache_updated_data", True)
+        logical_dict = config_dict.get("logical") or {}
+        self.logical_path = logical_dict.get("path") or f"/{self.zone}/home/{self.username}"
 
+        cache_dict = config_dict.get("cache") or {}
+        self.cache_updated_data = cache_dict.get("cache_updated_data", True)
+        self._cache_shards = CacheShardManager.from_config(cache_dict, self.config)
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
-        if not extra_dirs:
-            _config_dict_error("extra_dirs")
         self.extra_dirs.update(extra_dirs)
 
         if irods is None:
             raise Exception(IRODS_IMPORT_MESSAGE)
 
-        self.home = f"/{self.zone}/home/{self.username}"
-
         if irods is None:
             raise Exception(IRODS_IMPORT_MESSAGE)
 
-        self.session = iRODSSession(
-            host=self.host,
-            port=self.port,
-            user=self.username,
-            password=self.password,
-            zone=self.zone,
-            refresh_time=self.refresh_time,
-        )
+        session_params = {
+            "host": self.host,
+            "port": self.port,
+            "user": self.username,
+            "password": self.password,
+            "zone": self.zone,
+            "refresh_time": self.refresh_time,
+            "client_server_negotiation": self.client_server_negotiation,
+            "client_server_policy": self.client_server_policy,
+            "encryption_algorithm": self.encryption_algorithm,
+            "encryption_key_size": self.encryption_key_size,
+            "encryption_num_hash_rounds": self.encryption_num_hash_rounds,
+            "encryption_salt_size": self.encryption_salt_size,
+            "ssl_verify_server": self.ssl_verify_server,
+            "ssl_ca_certificate_file": self.ssl_ca_certificate_file,
+            "ssl_context": ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH),
+        }
+
+        self.session = iRODSSession(**session_params)
+
         # Set connection timeout
         self.session.connection_timeout = self.timeout
 
@@ -285,6 +390,16 @@ class IRODSObjectStore(CachingConcreteObjectStore):
                 "username": self.username,
                 "password": self.password,
             },
+            "ssl": {
+                "client_server_negotiation": self.client_server_negotiation,
+                "client_server_policy": self.client_server_policy,
+                "encryption_algorithm": self.encryption_algorithm,
+                "encryption_key_size": self.encryption_key_size,
+                "encryption_num_hash_rounds": self.encryption_num_hash_rounds,
+                "encryption_salt_size": self.encryption_salt_size,
+                "ssl_verify_server": self.ssl_verify_server,
+                "ssl_ca_certificate_file": self.ssl_ca_certificate_file,
+            },
             "resource": {
                 "name": self.resource,
             },
@@ -298,21 +413,21 @@ class IRODSObjectStore(CachingConcreteObjectStore):
                 "refresh_time": self.refresh_time,
                 "connection_pool_monitor_interval": self.connection_pool_monitor_interval,
             },
-            "cache": {
-                "size": self.cache_size,
-                "path": self.staging_path,
-                "cache_updated_data": self.cache_updated_data,
+            "logical": {
+                "path": self.logical_path,
             },
+            "cache": self._cache_config_to_dict(),
         }
 
     # rel_path is file or folder?
+    @_retry_on_connection_error
     def _get_remote_size(self, rel_path):
         ipt_timer = ExecutionTimer()
         p = Path(rel_path)
         data_object_name = p.stem + p.suffix
         subcollection_name = p.parent
 
-        collection_path = f"{self.home}/{subcollection_name}"
+        collection_path = f"{self.logical_path}/{subcollection_name}"
         data_object_path = f"{collection_path}/{data_object_name}"
         options = {kw.DEST_RESC_NAME_KW: self.resource}
 
@@ -326,13 +441,14 @@ class IRODSObjectStore(CachingConcreteObjectStore):
             log.debug("irods_pt _get_remote_size: %s", ipt_timer)
 
     # rel_path is file or folder?
+    @_retry_on_connection_error
     def _exists_remotely(self, rel_path):
         ipt_timer = ExecutionTimer()
         p = Path(rel_path)
         data_object_name = p.stem + p.suffix
         subcollection_name = p.parent
 
-        collection_path = f"{self.home}/{subcollection_name}"
+        collection_path = f"{self.logical_path}/{subcollection_name}"
         data_object_path = f"{collection_path}/{data_object_name}"
         options = {kw.DEST_RESC_NAME_KW: self.resource}
 
@@ -345,16 +461,16 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _exists_remotely: %s", ipt_timer)
 
-    def _download(self, rel_path):
+    @_retry_on_connection_error
+    def _download(self, rel_path, *, cache_path: str, cache_target: CacheTarget):
         ipt_timer = ExecutionTimer()
-        cache_path = self._get_cache_path(rel_path)
         log.debug("Pulling data object '%s' into cache to %s", rel_path, cache_path)
 
         p = Path(rel_path)
         data_object_name = p.stem + p.suffix
         subcollection_name = p.parent
 
-        collection_path = f"{self.home}/{subcollection_name}"
+        collection_path = f"{self.logical_path}/{subcollection_name}"
         data_object_path = f"{collection_path}/{data_object_name}"
         # we need to allow irods to override already existing zero-size output files created
         # in object store cache during job setup (see also https://github.com/galaxyproject/galaxy/pull/17025#discussion_r1394517033)
@@ -362,7 +478,8 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         options = {kw.FORCE_FLAG_KW: "", kw.DEST_RESC_NAME_KW: self.resource}
 
         try:
-            self.session.data_objects.get(data_object_path, cache_path, **options)
+            with self._atomic_download(cache_path) as tmp:
+                self.session.data_objects.get(data_object_path, tmp, **options)
             log.debug("Pulled data object '%s' into cache to %s", rel_path, cache_path)
             return True
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
@@ -371,7 +488,8 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _download: %s", ipt_timer)
 
-    def _push_to_storage(self, rel_path, source_file=None, from_string=None):
+    @_retry_on_connection_error
+    def _push_to_storage(self, rel_path, source_file=None, from_string=None, *, cache_path: str):
         """
         Push the file pointed to by ``rel_path`` to the iRODS. Extract folder name
         from rel_path as iRODS collection name, and extract file name from rel_path
@@ -385,7 +503,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         data_object_name = p.stem + p.suffix
         subcollection_name = p.parent
 
-        source_file = source_file if source_file else self._get_cache_path(rel_path)
+        source_file = source_file if source_file else cache_path
         options = {kw.FORCE_FLAG_KW: "", kw.DEST_RESC_NAME_KW: self.resource}
 
         if not os.path.exists(source_file):
@@ -395,7 +513,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
             return False
 
         # Check if the data object exists in iRODS
-        collection_path = f"{self.home}/{subcollection_name}"
+        collection_path = f"{self.logical_path}/{subcollection_name}"
         data_object_path = f"{collection_path}/{data_object_name}"
         exists = False
 
@@ -450,9 +568,12 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _push_to_storage: %s", ipt_timer)
 
-    def _delete(self, obj, entire_dir=False, **kwargs):
+    @_retry_on_connection_error
+    def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         ipt_timer = ExecutionTimer()
         rel_path = self._construct_path(obj, **kwargs)
+        object_id = self._get_object_id(obj)
+        cache_path = self._get_cache_path(rel_path, object_id)
         extra_dir = kwargs.get("extra_dir", None)
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)
@@ -471,9 +592,9 @@ class IRODSObjectStore(CachingConcreteObjectStore):
             # with all the files in it. This is easy for the local file system,
             # but requires iterating through each individual key in irods and deleing it.
             if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
+                shutil.rmtree(cache_path, ignore_errors=True)
 
-                col_path = f"{self.home}/{rel_path}"
+                col_path = f"{self.logical_path}/{rel_path}"
                 col = None
                 try:
                     col = self.session.collections.get(col_path)
@@ -495,13 +616,13 @@ class IRODSObjectStore(CachingConcreteObjectStore):
 
             else:
                 # Delete from cache first
-                unlink(self._get_cache_path(rel_path), ignore_errors=True)
+                unlink(cache_path, ignore_errors=True)
                 # Delete from irods as well
                 p = Path(rel_path)
                 data_object_name = p.stem + p.suffix
                 subcollection_name = p.parent
 
-                collection_path = f"{self.home}/{subcollection_name}"
+                collection_path = f"{self.logical_path}/{subcollection_name}"
                 data_object_path = f"{collection_path}/{data_object_name}"
 
                 try:
@@ -512,6 +633,10 @@ class IRODSObjectStore(CachingConcreteObjectStore):
                 except (DataObjectDoesNotExist, CollectionDoesNotExist):
                     log.info("Collection or data object (%s) does not exist", data_object_path)
                     return True
+        except _RETRYABLE_CONNECTION_ERRORS:
+            # ssl.SSLError is an OSError subclass; re-raise before the generic
+            # OSError handler below so @_retry_on_connection_error can retry it.
+            raise
         except OSError:
             log.exception("%s delete error", self._get_filename(obj, **kwargs))
         finally:
@@ -519,7 +644,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         return False
 
     # Unlike S3, url is not really applicable to iRODS
-    def _get_object_url(self, obj, **kwargs):
+    def _get_object_url(self, obj, content_disposition=None, content_type=None, **kwargs):
         if self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
 
@@ -527,7 +652,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
             data_object_name = p.stem + p.suffix
             subcollection_name = p.parent
 
-            collection_path = f"{self.home}/{subcollection_name}"
+            collection_path = f"{self.logical_path}/{subcollection_name}"
             data_object_path = f"{collection_path}/{data_object_name}"
 
             return data_object_path

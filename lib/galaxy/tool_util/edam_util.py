@@ -1,7 +1,5 @@
 import os
 from typing import (
-    Dict,
-    Optional,
     TextIO,
 )
 
@@ -16,7 +14,7 @@ ROOT_OPERATION = "operation_0004"
 ROOT_TOPIC = "topic_0003"
 
 
-def load_edam_tree(path: Optional[str] = None, *included_terms: str):
+def load_edam_tree(path: str | None = None, *included_terms: str):
     if path is not None:
         assert os.path.exists(path), f"Failed to load EDAM tabular data at [{path}] path does not exist."
         handle = open(path)
@@ -29,7 +27,7 @@ def load_edam_tree(path: Optional[str] = None, *included_terms: str):
 
 
 def load_edam_tree_from_tsv_stream(tsv_stream: TextIO, *included_terms: str):
-    edam: Dict[str, Dict] = {}
+    edam: dict[str, dict] = {}
 
     def _recurse_edam_parents(term, path=None):
         if edam[term]["parents"] and len(edam[term]["parents"]) > 0:

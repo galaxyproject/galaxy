@@ -29,10 +29,6 @@ import re
 import string
 import subprocess
 import sys
-from typing import (
-    List,
-    Tuple,
-)
 
 WHITESPACE_PATTERN = re.compile(r"[\s]+")
 
@@ -49,7 +45,7 @@ CANNOT_DETERMINE_TAP_ERROR_MESSAGE = (
 )
 VERBOSE = False
 RELAXED = False
-BREW_ARGS = []
+BREW_ARGS: list[str] = []
 
 
 class BrewContext:
@@ -446,7 +442,6 @@ def execute(cmds, env=None):
         subprocess_kwds["env"] = env
     p = subprocess.Popen(cmds, **subprocess_kwds)
     # log = p.stdout.read()
-    global VERBOSE
     stdout, stderr = p.communicate()
     if p.returncode != 0:
         raise CommandLineException(" ".join(cmds), stdout, stderr)
@@ -493,7 +488,7 @@ def extended_brew_info(recipe):
     return extra_info
 
 
-def brew_versions_info(package, tap_path: str) -> List[Tuple[str, str, bool]]:
+def brew_versions_info(package, tap_path: str) -> list[tuple[str, str, bool]]:
     def versioned(recipe_path: str):
         if not os.path.isabs(recipe_path):
             recipe_path = os.path.join(os.getcwd(), recipe_path)
@@ -521,11 +516,10 @@ def __action(sys):
 def recipe_cellar_path(cellar_path, recipe, version):
     recipe_base = recipe.split("/")[-1]
     recipe_base_path = os.path.join(cellar_path, recipe_base, version)
-    revision_paths = glob.glob(f"{recipe_base_path}_*")
-    if revision_paths:
+    if revision_paths := glob.glob(f"{recipe_base_path}_*"):
         revisions = (int(x.rsplit("_", 1)[-1]) for x in revision_paths)
         max_revision = max(revisions)
-        recipe_path = "%s_%d" % (recipe_base_path, max_revision)
+        recipe_path = f"{recipe_base_path}_{max_revision}"
     else:
         recipe_path = recipe_base_path
     return recipe_path

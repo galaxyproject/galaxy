@@ -1,8 +1,3 @@
-from typing import (
-    List,
-    Optional,
-)
-
 from pydantic import BaseModel
 from sqlalchemy import (
     cast,
@@ -26,11 +21,11 @@ from galaxy.web import url_for
 
 
 class InstalledToolShedRepositoryIndexRequest(BaseModel):
-    name: Optional[str] = None
-    owner: Optional[str] = None
-    changeset: Optional[str] = None
-    deleted: Optional[bool] = None
-    uninstalled: Optional[bool] = None
+    name: str | None = None
+    owner: str | None = None
+    changeset: str | None = None
+    deleted: bool | None = None
+    uninstalled: bool | None = None
 
 
 class ToolShedRepositoriesService:
@@ -42,7 +37,7 @@ class ToolShedRepositoriesService:
         self._install_model_context = install_model_context
         self._tool_shed_registry = tool_shed_registry
 
-    def index(self, request: InstalledToolShedRepositoryIndexRequest) -> List[InstalledToolShedRepository]:
+    def index(self, request: InstalledToolShedRepositoryIndexRequest) -> list[InstalledToolShedRepository]:
         repositories = self._get_tool_shed_repositories(
             name=request.name,
             owner=request.owner,
@@ -60,7 +55,7 @@ class ToolShedRepositoriesService:
         assert tool_shed_repository
         return self._show(tool_shed_repository)
 
-    def check_for_updates(self, repository_id: Optional[int]) -> CheckForUpdatesResponse:
+    def check_for_updates(self, repository_id: int | None) -> CheckForUpdatesResponse:
         message, status = check_for_updates(self._tool_shed_registry, self._install_model_context, repository_id)
         return CheckForUpdatesResponse(message=message, status=status)
 
@@ -75,7 +70,7 @@ class ToolShedRepositoriesService:
         stmt = select(ToolShedRepository)
         for key, value in kwd.items():
             if value is not None:
-                column = ToolShedRepository.__table__.c[key]  # type:ignore[attr-defined]
+                column = ToolShedRepository.__table__.c[key]  # type: ignore[attr-defined]
                 stmt = stmt.filter(column == value)
         stmt = stmt.order_by(ToolShedRepository.name).order_by(cast(ToolShedRepository.ctx_rev, Integer).desc())
         session = self._install_model_context

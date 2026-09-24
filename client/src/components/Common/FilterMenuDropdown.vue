@@ -1,24 +1,19 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BDropdown, BDropdownItem, BInputGroup, BInputGroupAppend, BModal } from "bootstrap-vue";
-import { capitalize } from "lodash";
-import { computed, onMounted, ref, type UnwrapRef, watch } from "vue";
+import { BDropdown, BDropdownItem, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { computed, onMounted, ref, watch } from "vue";
 
-import { QuotaUsage } from "@/components/User/DiskUsage/Quota/model";
-import { type FilterType, type ValidFilter } from "@/utils/filtering";
-import { errorMessageAsString } from "@/utils/simple-error";
+import type { QuotaUsage } from "@/api/users";
+import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
+import type { FilterType, ValidFilter } from "@/utils/filtering";
+import { capitalizeFirstLetter } from "@/utils/strings";
 
-import { fetch } from "../User/DiskUsage/Quota/services";
-
+import GButton from "../BaseComponents/GButton.vue";
+import GModal from "../BaseComponents/GModal.vue";
 import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
 
-library.add(faQuestion);
-
-type QuotaUsageUnwrapped = UnwrapRef<QuotaUsage>;
-
-type FilterValue = QuotaUsageUnwrapped | string | boolean | undefined;
+type FilterValue = QuotaUsage | string | boolean | undefined;
 
 type DatalistItem = { value: string; text: string };
 
@@ -48,13 +43,13 @@ watch(
     () => localValue.value,
     () => {
         emit("change", props.name, localValue.value);
-    }
+    },
 );
 watch(
     () => propValue.value,
     () => {
         localValue.value = propValue.value;
-    }
+    },
 );
 
 // datalist refs
@@ -74,7 +69,7 @@ const objectDatalist = computed<DatalistItem[]>(() => {
 
 // help modal button refs
 const helpToggle = ref(false);
-const modalTitle = `${capitalize(props.filter.placeholder)} Help`;
+const modalTitle = `${capitalizeFirstLetter(props.filter.placeholder || "")} Help`;
 function onHelp(_: string, value: string) {
     helpToggle.value = false;
     if (!props.disabled) {
@@ -83,36 +78,36 @@ function onHelp(_: string, value: string) {
 }
 
 // Quota Source refs and operations
-const quotaUsages = ref<QuotaUsage[]>([] as QuotaUsage[]);
-const errorMessage = ref<string>();
-async function loadQuotaUsages() {
-    try {
-        quotaUsages.value = await fetch();
+const quotaUsageStore = useQuotaUsageStore();
+const quotaUsages = computed<QuotaUsage[]>(() => quotaUsageStore.quotaUsages ?? []);
 
-        // if the propValue is a string, find the corresponding QuotaUsage object and update the localValue
-        if (propValue.value && typeof propValue.value === "string") {
-            localValue.value = quotaUsages.value.find(
-                (quotaUsage) => props.filter.handler.converter!(quotaUsage) === propValue.value
-            );
-        }
-    } catch (e) {
-        errorMessage.value = errorMessageAsString(e);
+async function loadQuotaUsages() {
+    await quotaUsageStore.loadQuotaUsages();
+
+    // if the propValue is a string, find the corresponding QuotaUsage object and update the localValue
+    if (propValue.value && typeof propValue.value === "string") {
+        localValue.value = quotaUsages.value.find(
+            (quotaUsage) => props.filter.handler.converter!(quotaUsage) === propValue.value,
+        );
     }
 }
+
 const hasMultipleQuotaSources = computed<boolean>(() => {
-    return !!(quotaUsages.value && quotaUsages.value.length > 1);
+    return quotaUsages.value.length > 1;
 });
+
 onMounted(async () => {
     if (props.type === "QuotaSource") {
         await loadQuotaUsages();
     }
 });
-function isQuotaUsageVal(value: FilterValue): value is QuotaUsageUnwrapped {
+
+function isQuotaUsage(value: FilterValue): value is QuotaUsage {
     return !!(value && value instanceof Object && "rawSourceLabel" in value);
 }
 
 const dropDownText = computed<string>(() => {
-    if (props.type === "QuotaSource" && isQuotaUsageVal(localValue.value)) {
+    if (props.type === "QuotaSource" && isQuotaUsage(localValue.value)) {
         return localValue.value.sourceLabel;
     }
     if (localValue.value) {
@@ -127,7 +122,7 @@ const dropDownText = computed<string>(() => {
     return "(any)";
 });
 
-function setValue(val: string | QuotaUsage | undefined) {
+function setValue(val: FilterValue) {
     localValue.value = val;
 }
 </script>
@@ -168,7 +163,7 @@ function setValue(val: string | QuotaUsage | undefined) {
                 <span v-else-if="props.type === 'QuotaSource'">
                     <BDropdownItem
                         v-for="quotaUsage in quotaUsages"
-                        :key="quotaUsage.id"
+                        :key="quotaUsage.sourceLabel"
                         href="#"
                         @click="setValue(quotaUsage)">
                         {{ quotaUsage.sourceLabel }}
@@ -182,15 +177,15 @@ function setValue(val: string | QuotaUsage | undefined) {
             </BDropdown>
             <BInputGroupAppend>
                 <!-- append Help Modal toggle for filter if included -->
-                <BButton v-if="props.filter.helpInfo" :title="modalTitle" size="sm" @click="helpToggle = true">
+                <GButton v-if="props.filter.helpInfo" :title="modalTitle" size="small" @click="helpToggle = true">
                     <FontAwesomeIcon :icon="faQuestion" />
-                </BButton>
+                </GButton>
             </BInputGroupAppend>
         </BInputGroup>
 
         <!-- if a filter has help component, place it within a modal -->
         <span v-if="props.filter.helpInfo">
-            <BModal v-model="helpToggle" :title="modalTitle" ok-only>
+            <GModal :show.sync="helpToggle" :title="modalTitle" size="small" fixed-height>
                 <component
                     :is="props.filter.helpInfo"
                     v-if="typeof props.filter.helpInfo == 'object'"
@@ -198,7 +193,7 @@ function setValue(val: string | QuotaUsage | undefined) {
                 <div v-else-if="typeof props.filter.helpInfo == 'string'">
                     <p>{{ props.filter.helpInfo }}</p>
                 </div>
-            </BModal>
+            </GModal>
         </span>
     </div>
 </template>

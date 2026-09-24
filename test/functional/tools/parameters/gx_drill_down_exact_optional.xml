@@ -1,0 +1,25 @@
+<tool id="gx_drill_down_exact_optional" name="gx_drill_down_exact_optional" version="1.0.0">
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command><![CDATA[
+echo "parameter: $parameter" > '$output'
+    ]]></command>
+    <inputs>
+        <!-- an explicitly optional drill_down - no selection is required and null is accepted -->
+        <param name="parameter" type="drill_down" hierarchy="exact" optional="true">
+            <expand macro="drill_down_static_options" />
+        </param>
+    </inputs>
+    <expand macro="simple_text_output" />
+    <tests>
+        <test>
+            <param name="parameter" value="a"/>
+            <expand macro="assert_output">
+                <has_line line="parameter: a"/>
+            </expand>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

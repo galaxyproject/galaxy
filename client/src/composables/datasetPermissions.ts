@@ -1,6 +1,5 @@
-import { AxiosResponse } from "axios";
-import type { Ref } from "vue";
-import { computed, ref } from "vue";
+import type { AxiosResponse } from "axios";
+import { computed, type Ref, ref } from "vue";
 
 import { useToast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -57,7 +56,7 @@ export function updateRefs(
     managePermissionsOptions: Ref<InputOption[]>,
     accessPermissionsOptions: Ref<InputOption[]>,
     managePermissions: Ref<number[]>,
-    accessPermissions: Ref<number[]>
+    accessPermissions: Ref<number[]>,
 ) {
     const { manageInput, accessInput } = permissionInputParts(inputs);
     managePermissionsOptions.value = manageInput.options.map((v: [string, number]) => {

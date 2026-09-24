@@ -7,16 +7,28 @@
   </command>
   <inputs>
     <param name="input1" type="data" label="Input" help="Input to be split." />
+    <param name="out_format" type="select" label="Output data type">
+      <option value="">do not change</option>
+      <option value="interval">interval</option>
+  </param>
   </inputs>
   <outputs>
     <!-- format is specified separately for the elements, i.e. default format (fasta in this case) is ignored -->
     <collection name="paired_output" format="fasta" type="paired" label="Split Pair">
-      <data name="forward" format="txt" />
+      <data name="forward" format="txt">
+        <change_format>
+          <when input="out_format" value="interval" format="interval" />
+        </change_format>
+      </data>
       <data name="reverse" format_source="input1" from_work_dir="reverse.txt" />
     </collection>
     <!-- no format is specified separately for the elements, i.e. default format (fasta in this case) is used -->
     <collection name="paired_output_default_format" format="fasta" type="paired" label="Split Pair">
-      <data name="forward" />
+      <data name="forward">
+        <change_format>
+          <when input="out_format" value="interval" format="interval" />
+        </change_format>
+      </data>
       <data name="reverse" from_work_dir="reverse.txt" />
     </collection>
   </outputs>
@@ -37,6 +49,34 @@
       </output_collection>
       <output_collection name="paired_output_default_format" type="paired">
         <element name="forward" ftype="fasta">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
+          </assert_contents>
+        </element>
+        <element name="reverse" ftype="fasta">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\nThis is a different line of text.\n$" />
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+    <test>
+      <param name="input1" ftype="bed" value="simple_lines_interleaved.txt" />
+      <param name="out_format" value="interval"/>
+      <output_collection name="paired_output" type="paired">
+        <element name="forward" ftype="interval">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
+          </assert_contents>
+        </element>
+        <element name="reverse" ftype="bed">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\nThis is a different line of text.\n$" />
+          </assert_contents>
+        </element>
+      </output_collection>
+      <output_collection name="paired_output_default_format" type="paired">
+        <element name="forward" ftype="interval">
           <assert_contents>
             <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
           </assert_contents>

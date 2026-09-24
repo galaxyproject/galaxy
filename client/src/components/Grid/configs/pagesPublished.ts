@@ -1,39 +1,34 @@
 import { faEye, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { fetcher } from "@/api/schema";
-import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
+import { loadPages, type PageSortBy } from "@/api/pages";
+import { GRID_LABELS } from "@/components/Page/constants";
+import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 
 import type { ActionArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
 /**
- * Api endpoint handlers
- */
-const getPages = fetcher.path("/api/pages").method("get").create();
-
-/**
  * Local types
  */
-type SortKeyLiteral = "create_time" | "title" | "update_time" | "username" | undefined;
 type PageEntry = Record<string, unknown>;
 
 /**
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { data, headers } = await getPages({
+    const { data, totalMatches } = await loadPages({
         limit,
         offset,
         search,
-        sort_by: sort_by as SortKeyLiteral,
-        sort_desc,
-        show_own: false,
-        show_published: true,
-        show_shared: true,
+        sortBy: sort_by as PageSortBy,
+        sortDesc: sort_desc,
+        showOwn: false,
+        showShared: true,
+        showPublished: true,
     });
-    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
+
     return [data, totalMatches];
 }
 
@@ -82,7 +77,10 @@ const fields: FieldArray = [
     {
         key: "username",
         title: "Owner",
-        type: "text",
+        type: "link",
+        handler: (data: PageEntry) => {
+            emit(`/pages/list_published?f-username=${data.username}`);
+        },
     },
 ];
 
@@ -92,6 +90,14 @@ const fields: FieldArray = [
 const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = {
     title: { placeholder: "title", type: String, handler: contains("title"), menuItem: true },
     slug: { handler: contains("slug"), menuItem: false },
+    user: { placeholder: "user", type: String, handler: contains("username"), menuItem: true },
+    standalone: {
+        placeholder: "Only standalone",
+        type: Boolean,
+        boolType: "is",
+        handler: equals("standalone", "type", toBool),
+        menuItem: true,
+    },
 };
 
 /**
@@ -101,13 +107,13 @@ const gridConfig: GridConfig = {
     id: "pages-published-grid",
     actions: actions,
     fields: fields,
-    filtering: new Filtering(validFilters, undefined, false, false),
+    filtering: new Filtering(validFilters, undefined, false),
     getData: getData,
-    plural: "Pages",
+    plural: GRID_LABELS.gridPlural,
     sortBy: "update_time",
     sortDesc: true,
     sortKeys: ["create_time", "title", "update_time"],
-    title: "Published Pages",
+    title: GRID_LABELS.publishedTitle,
 };
 
 export default gridConfig;

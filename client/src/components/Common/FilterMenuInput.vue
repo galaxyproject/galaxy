@@ -1,22 +1,14 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import {
-    BButton,
-    BFormDatalist,
-    BFormDatepicker,
-    BFormInput,
-    BInputGroup,
-    BInputGroupAppend,
-    BModal,
-} from "bootstrap-vue";
-import { capitalize } from "lodash";
+import { BFormDatalist, BFormDatepicker, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { type ValidFilter } from "@/utils/filtering";
+import type { ValidFilter } from "@/utils/filtering";
+import { capitalizeFirstLetter } from "@/utils/strings";
 
-library.add(faQuestion);
+import GButton from "../BaseComponents/GButton.vue";
+import GModal from "../BaseComponents/GModal.vue";
 
 type FilterType = string | boolean | undefined;
 
@@ -44,7 +36,7 @@ const propValue = computed(() => props.filters[props.name]);
 const localValue = ref(propValue.value);
 
 const helpToggle = ref(false);
-const modalTitle = `${capitalize(props.filter.placeholder)} Help`;
+const modalTitle = `${capitalizeFirstLetter(props.filter.placeholder || "")} Help`;
 
 function onHelp(_: string, value: string) {
     helpToggle.value = false;
@@ -59,14 +51,14 @@ watch(
     (newFilter) => {
         emit("change", props.name, newFilter);
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 watch(
     () => propValue.value,
     (newFilter) => {
         localValue.value = newFilter;
-    }
+    },
 );
 </script>
 
@@ -79,7 +71,7 @@ watch(
                 :id="`${identifier}-advanced-filter-${props.name}`"
                 ref="filterMenuInput"
                 v-model="localValue"
-                v-b-tooltip.focus.v-danger="props.error"
+                v-g-tooltip.focus.v-danger="props.error"
                 class="mw-100"
                 size="sm"
                 :state="props.error ? false : null"
@@ -96,9 +88,9 @@ watch(
 
             <!-- append Help Modal for filter if included or/and datepciker if type: Date -->
             <BInputGroupAppend>
-                <BButton v-if="props.filter.helpInfo" :title="modalTitle" size="sm" @click="helpToggle = true">
+                <GButton v-if="props.filter.helpInfo" :title="modalTitle" size="small" @click="helpToggle = true">
                     <FontAwesomeIcon :icon="faQuestion" />
-                </BButton>
+                </GButton>
 
                 <BFormDatepicker
                     v-if="props.filter.type == Date"
@@ -112,7 +104,7 @@ watch(
 
         <!-- if a filter has help component, place it within a modal -->
         <span v-if="props.filter.helpInfo">
-            <BModal v-model="helpToggle" :title="modalTitle" ok-only>
+            <GModal :show.sync="helpToggle" :title="modalTitle" size="small" fixed-height>
                 <component
                     :is="props.filter.helpInfo"
                     v-if="typeof props.filter.helpInfo == 'object'"
@@ -120,7 +112,7 @@ watch(
                 <div v-else-if="typeof props.filter.helpInfo == 'string'">
                     <p>{{ props.filter.helpInfo }}</p>
                 </div>
-            </BModal>
+            </GModal>
         </span>
     </div>
 </template>

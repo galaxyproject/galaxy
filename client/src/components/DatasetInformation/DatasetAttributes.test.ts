@@ -1,30 +1,41 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import DatasetAttributes from "./DatasetAttributes.vue";
 
 const DATASET_ID = "dataset_id";
 
 const localVue = getLocalVue();
+const { server, http } = useServerMock();
 
 async function mountDatasetAttributes(conversion_disable = false) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
-    const axiosMock = new MockAdapter(axios);
-    axiosMock.onPut(`/dataset/set_edit`).reply(200, { message: "success", status: "success" });
-    axiosMock.onGet(`/dataset/get_edit?dataset_id=${DATASET_ID}`).reply(200, {
-        attribute_inputs: [{ name: "attribute_text", type: "text" }],
-        conversion_inputs: [{ name: "conversion_text", type: "text" }],
-        conversion_disable: conversion_disable,
-        datatype_inputs: [{ name: "datatype_text", type: "text" }],
-        permission_inputs: [{ name: "permission_text", type: "text" }],
-    });
+    server.use(
+        http.untyped.put("/dataset/set_edit", () => {
+            return HttpResponse.json({ message: "success", status: "success" });
+        }),
+        http.untyped.get("/dataset/get_edit", ({ request }) => {
+            const url = new URL(request.url);
+            if (url.searchParams.get("dataset_id") === DATASET_ID) {
+                return HttpResponse.json({
+                    attribute_inputs: [{ name: "attribute_text", type: "text" }],
+                    conversion_inputs: [{ name: "conversion_text", type: "text" }],
+                    conversion_disable: conversion_disable,
+                    datatype_inputs: [{ name: "datatype_text", type: "text" }],
+                    permission_inputs: [{ name: "permission_text", type: "text" }],
+                });
+            }
+            return HttpResponse.json({}, { status: 404 });
+        }),
+    );
 
     const wrapper = mount(DatasetAttributes as object, {
         propsData: {
@@ -40,9 +51,12 @@ async function mountDatasetAttributes(conversion_disable = false) {
 }
 
 async function buildWrapperWithError(error: string) {
-    const axiosMock = new MockAdapter(axios);
-    axiosMock.onGet(`/dataset/get_edit?dataset_id=${DATASET_ID}`).reply(400);
-    const wrapper = mount(DatasetAttributes, {
+    server.use(
+        http.untyped.get("/dataset/get_edit", () => {
+            return HttpResponse.json({}, { status: 400 });
+        }),
+    );
+    const wrapper = mount(DatasetAttributes as object, {
         propsData: {
             datasetId: DATASET_ID,
             messageText: error,
@@ -62,6 +76,7 @@ describe("DatasetAttributes", () => {
     it("check rendering", async () => {
         const wrapper = await mountDatasetAttributes();
 
+        // 6 form buttons (GTabs nav uses <a> tags, not buttons)
         expect(wrapper.findAll("button").length).toBe(6);
         expect(wrapper.findAll("#attribute_text").length).toBe(1);
         expect(wrapper.findAll("#conversion_text").length).toBe(1);
@@ -82,6 +97,7 @@ describe("DatasetAttributes", () => {
     it("check rendering without conversion option", async () => {
         const wrapper = await mountDatasetAttributes(true);
 
+        // 5 form buttons (GTabs nav uses <a> tags, not buttons)
         expect(wrapper.findAll("button").length).toBe(5);
         expect(wrapper.findAll("#attribute_text").length).toBe(1);
         expect(wrapper.findAll("#conversion_text").length).toBe(0);

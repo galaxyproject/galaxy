@@ -20,15 +20,25 @@ function dismiss() {
     emits("dismiss")
 }
 
-watch(ref(props.error), () => {
-    show.value = true
-})
+watch(
+    () => props.error,
+    () => {
+        show.value = true
+    }
+)
 const effectiveShow = computed(() => props.error && show.value)
 </script>
 
 <template>
     <div class="q-pa-md q-gutter-sm">
-        <q-banner inline-actions rounded class="bg-negative text-white" v-if="effectiveShow">
+        <q-banner
+            inline-actions
+            rounded
+            class="bg-negative text-white"
+            role="alert"
+            aria-live="assertive"
+            v-if="effectiveShow"
+        >
             <strong>{{ props.error }}</strong>
             <template #action>
                 <q-btn flat label="Dismiss" @click="dismiss" />
