@@ -608,7 +608,7 @@ sections:
       a new `uuid`, so a workflow keeps using the old version until its step is
       updated.
 
-      Galaxy's own `.ga` export writes `tool_uuid` and also embeds the tool
-      definition as `tool_representation`. Another user or another Galaxy
-      server that imports the file gets a private copy of the tool from that
-      definition.
+      Galaxy's own `.ga` export embeds the tool definition as
+      `tool_representation` and leaves out `tool_uuid`, which only means
+      something to the tool's owner on the server that created it. Importing
+      the file creates a private copy of the tool for the importing user.

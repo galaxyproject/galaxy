@@ -1741,6 +1741,10 @@ class WorkflowContentsManager(UsesAnnotations):
                         step_dict["content_id"] = None
                         step_dict["tool_id"] = None
                         step_dict["tool_uuid"] = None
+                    elif step.user_defined_tool is not None and not internal:
+                        # A user-defined tool's uuid only resolves for its owner on this server;
+                        # a portable export carries the definition instead.
+                        step_dict["tool_uuid"] = None
 
                 step_dict["post_job_actions"] = _step_pja_dict(step)
 

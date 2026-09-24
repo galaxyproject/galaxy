@@ -232,9 +232,10 @@ class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCas
         udt_step = self._tool_step(tool_steps, dynamic_tool["tool_id"])
         cat1_step = self._tool_step(tool_steps, "cat1")
 
-        # The UDT step must be linked to its dynamic tool and embed its own tool
-        # representation, so the extracted workflow is self-contained.
-        assert udt_step.get("tool_uuid") is not None, udt_step
+        # The UDT step must be linked to its dynamic tool, which the export embeds as
+        # its tool representation (without the server-local uuid), so the extracted
+        # workflow is self-contained.
+        assert udt_step.get("tool_uuid") is None, udt_step
         udt_representation = udt_step.get("tool_representation")
         assert udt_representation is not None, udt_step
         assert udt_representation["class"] == "GalaxyUserTool", udt_representation
@@ -894,9 +895,10 @@ class TestWorkflowExtractionByIdsApi(_ExtractionHelpersMixin, BaseWorkflowsApiTe
         udt_step = self._tool_step(tool_steps, dynamic_tool["tool_id"])
         cat1_step = self._tool_step(tool_steps, "cat1")
 
-        # The UDT step must be linked to its dynamic tool and embed its own tool
-        # representation, so the extracted workflow is self-contained.
-        assert udt_step.get("tool_uuid") is not None, udt_step
+        # The UDT step must be linked to its dynamic tool, which the export embeds as
+        # its tool representation (without the server-local uuid), so the extracted
+        # workflow is self-contained.
+        assert udt_step.get("tool_uuid") is None, udt_step
         udt_representation = udt_step.get("tool_representation")
         assert udt_representation is not None, udt_step
         assert udt_representation["class"] == "GalaxyUserTool", udt_representation

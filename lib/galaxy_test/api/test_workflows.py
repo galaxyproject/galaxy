@@ -10086,7 +10086,7 @@ outer_input:
             assert update_response.status_code == 200, update_response.text
             rename_response = self._update_workflow(workflow_id, {"name": "renamed"})
             assert rename_response.status_code == 200, rename_response.text
-            workflow = self.workflow_populator.download_workflow(workflow_id)
+            workflow = self.workflow_populator.download_workflow(workflow_id, style="instance")
             assert workflow["name"] == "renamed"
             assert workflow["steps"]["0"]["tool_uuid"] == unprivileged_tool["uuid"]
 
@@ -10149,7 +10149,8 @@ outer_input:
             downloaded = self.workflow_populator.download_workflow(response.json()["id"])
             step_dict = downloaded["steps"]["0"]
             assert step_dict["tool_id"] == "basecommand"
-            assert step_dict["tool_uuid"] == unprivileged_tool["uuid"]
+            assert step_dict["tool_uuid"] is None
+            assert step_dict["tool_representation"]["class"] == "GalaxyUserTool"
 
             reimport_response = self._post("workflows", data={"workflow": json.dumps(downloaded)})
             assert reimport_response.status_code == 200, reimport_response.text
@@ -10162,7 +10163,7 @@ outer_input:
             wf = self._build_user_defined_workflow_dict(tool_uuid=unprivileged_tool["uuid"])
             response = self._post("workflows", data={"workflow": json.dumps(wf)})
             assert response.status_code == 200, response.text
-            downloaded = self.workflow_populator.download_workflow(response.json()["id"])
+            downloaded = self.workflow_populator.download_workflow(response.json()["id"], style="instance")
             assert downloaded["steps"]["0"]["tool_uuid"] == unprivileged_tool["uuid"]
 
     def test_import_exported_workflow_with_mismatched_user_defined_tool_id(self):
@@ -10312,6 +10313,7 @@ outer_input:
         export_step = self.workflow_populator.download_workflow(workflow_id, style="ga")["steps"]["1"]
         assert export_step["content_id"] == tool_id
         assert export_step["tool_id"] == tool_id
+        assert export_step["tool_uuid"] is None
         assert export_step["tool_representation"]["class"] == "GalaxyUserTool"
 
     def test_user_defined_tool_step_tool_id_derived_from_dynamic_tool(self):
@@ -10355,20 +10357,21 @@ outer_input:
             )
             native = self.workflow_populator.download_workflow(workflow_id, style="ga")
             native_reimported_id = self.workflow_populator.import_workflow(native)["id"]
-            self._assert_user_defined_tool_step_resolves(native_reimported_id, unprivileged_tool)
 
             format2 = self.workflow_populator.download_workflow(workflow_id, style="format2")
             format2_runs = [step["run"] for step in format2["steps"].values() if "run" in step]
             assert [run["class"] for run in format2_runs] == ["GalaxyUserTool"], format2
             format2_reimported_id = self.workflow_populator.upload_yaml_workflow(format2)
-            # The embedded representation is imported as a new UDT owned by the user.
-            reimported_step = self.workflow_populator.download_workflow(format2_reimported_id, style="instance")[
-                "steps"
-            ]["1"]
-            assert reimported_step["tool_id"] == "basecommand"
-            assert reimported_step["tool_uuid"] not in (None, unprivileged_tool["uuid"])
-            with self.dataset_populator.test_history() as history_id:
-                self._run_user_defined_tool_workflow(format2_reimported_id, history_id)
+
+            # Both exports carry only the definition, which is imported as a new UDT owned by the user.
+            for reimported_id in (native_reimported_id, format2_reimported_id):
+                reimported_step = self.workflow_populator.download_workflow(reimported_id, style="instance")["steps"][
+                    "1"
+                ]
+                assert reimported_step["tool_id"] == "basecommand"
+                assert reimported_step["tool_uuid"] not in (None, unprivileged_tool["uuid"])
+                with self.dataset_populator.test_history() as history_id:
+                    self._run_user_defined_tool_workflow(reimported_id, history_id)
 
     def test_user_defined_tool_workflow_export_imported_by_another_user(self):
         with self.dataset_populator.user_tool_execute_permissions():
