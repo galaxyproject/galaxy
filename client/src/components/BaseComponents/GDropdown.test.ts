@@ -111,6 +111,18 @@ describe("GDropdown.vue", () => {
         });
     });
 
+    describe("state", () => {
+        it("closes when it becomes disabled", async () => {
+            wrapper = mount(GDropdown as object, { localVue, propsData: { text: "Menu" }, attachTo: document.body });
+            await openMenu(wrapper);
+
+            await wrapper.setProps({ disabled: true });
+
+            expect(isMenuOpen(wrapper)).toBe(false);
+            expect(wrapper.emitted("hide")).toHaveLength(1);
+        });
+    });
+
     describe("link items", () => {
         it("render real anchors so they can be opened in a new tab", () => {
             const wrapper = mountDropdown(`

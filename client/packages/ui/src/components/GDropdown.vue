@@ -7,7 +7,7 @@
  * Keyboard support follows the WAI-ARIA APG menu button pattern.
  */
 
-import { computed, nextTick, onBeforeUnmount, provide, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from "vue";
 
 import { useUid } from "../composables/uid";
 import { dropdownHideKey } from "./dropdownContext";
@@ -255,6 +255,16 @@ const shouldRenderMenu = computed(() => {
     }
     return hasBeenOpened.value;
 });
+
+// The disabled toggle could no longer close it
+watch(
+    () => props.disabled,
+    (disabled) => {
+        if (disabled) {
+            hide(false);
+        }
+    },
+);
 
 onBeforeUnmount(() => {
     removeOutsideListeners();
