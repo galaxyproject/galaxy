@@ -678,6 +678,177 @@ describe("GPopover focus", () => {
     });
 });
 
+describe("GPopover escape", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        wrapper?.destroy();
+        wrapper = undefined;
+        document.body.innerHTML = "";
+        vi.useRealTimers();
+    });
+
+    function pressEscape(on: EventTarget = document.activeElement ?? document.body) {
+        const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+        on.dispatchEvent(event);
+        return event;
+    }
+
+    it("closes a focused hover popover and leaves focus on the trigger", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.focus();
+        await nextTick();
+
+        const event = pressEscape();
+        await nextTick();
+
+        expect(isShown()).toBe(false);
+        expect(document.activeElement).toBe(target);
+        expect(event.defaultPrevented).toBe(true);
+    });
+
+    it("closes a hovered popover while focus is elsewhere", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+
+        pressEscape(document.body);
+        await nextTick();
+
+        expect(isShown()).toBe(false);
+    });
+
+    it("returns focus to the trigger when it was inside the popover", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.focus();
+        await nextTick();
+        popoverEl().querySelector("a")!.focus();
+
+        pressEscape();
+        await nextTick();
+
+        expect(isShown()).toBe(false);
+        expect(document.activeElement).toBe(target);
+    });
+
+    it("closes a popover that was mounted open", async () => {
+        await mountWithTrigger({ triggers: "hover", show: true });
+        await nextTick();
+
+        expect(wrapper!.emitted("shown")).toHaveLength(1);
+        pressEscape(document.body);
+        expect(wrapper!.emitted("update:show")).toEqual([[false]]);
+    });
+
+    it("leaves the key alone when no popover is open", async () => {
+        await mountWithTrigger({ triggers: "hover" });
+
+        expect(pressEscape(document.body).defaultPrevented).toBe(false);
+    });
+
+    it("leaves an Escape that something else already handled", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.focus();
+        await nextTick();
+        target.addEventListener("keydown", (event) => event.preventDefault());
+
+        pressEscape(target);
+        await nextTick();
+
+        expect(isShown()).toBe(true);
+    });
+
+    it("leaves Escape to a modal dialog opened over it", async () => {
+        const target = await mountWithTrigger({ triggers: "hover" });
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+        const dialog = document.createElement("dialog");
+        const dialogButton = document.createElement("button");
+        dialog.appendChild(dialogButton);
+        document.body.appendChild(dialog);
+        dialog.showModal();
+        // happy-dom does not implement :modal.
+        vi.spyOn(dialog, "matches").mockImplementation((selector) => selector === ":modal");
+        dialogButton.focus();
+
+        const event = pressEscape(dialogButton);
+        await nextTick();
+
+        expect(isShown()).toBe(true);
+        expect(event.defaultPrevented).toBe(false);
+    });
+
+    it("lets a popover inside a modal take Escape over one behind it that opened later", async () => {
+        const dialog = document.createElement("dialog");
+        const modalTrigger = document.createElement("button");
+        modalTrigger.id = "modal-trigger";
+        const modalMountPoint = document.createElement("div");
+        dialog.append(modalTrigger, modalMountPoint);
+        document.body.appendChild(dialog);
+        dialog.showModal();
+        // happy-dom does not implement :modal.
+        vi.spyOn(dialog, "matches").mockImplementation((selector) => selector === ":modal");
+        const insideModal = mount(GPopover as object, {
+            attachTo: modalMountPoint,
+            propsData: { target: "modal-trigger", triggers: "hover", show: false },
+        });
+        await nextTick();
+        await nextTick();
+        await insideModal.setProps({ show: true });
+        // Behind the modal and opened later, as the history's storage helper can be.
+        await mountWithTrigger({ triggers: "manual hover", show: false });
+        await wrapper!.setProps({ show: true });
+        modalTrigger.focus();
+
+        const event = pressEscape(modalTrigger);
+        await nextTick();
+
+        expect(insideModal.emitted("update:show")?.at(-1)).toEqual([false]);
+        expect(wrapper!.emitted("update:show")).toBeUndefined();
+        expect(event.defaultPrevented).toBe(true);
+
+        insideModal.destroy();
+    });
+
+    it("closes only the most recently opened popover", async () => {
+        const mountPopover = (id: string) => {
+            const target = document.createElement("button");
+            target.id = id;
+            const mountPoint = document.createElement("div");
+            document.body.append(target, mountPoint);
+            return mount(GPopover as object, {
+                attachTo: mountPoint,
+                propsData: { target: id, triggers: "hover", show: false },
+                slots: { default: id },
+            });
+        };
+        const first = mountPopover("first-trigger");
+        const second = mountPopover("second-trigger");
+        await first.setProps({ show: true });
+        await second.setProps({ show: true });
+
+        pressEscape(document.body);
+        await nextTick();
+
+        expect(first.emitted("update:show")).toBeUndefined();
+        expect(second.emitted("update:show")).toEqual([[false]]);
+
+        first.destroy();
+        second.destroy();
+    });
+
+    it("does not dismiss manual popovers", async () => {
+        await mountWithTrigger({ triggers: "manual", show: true });
+
+        pressEscape(document.body);
+        await nextTick();
+
+        expect(isShown()).toBe(true);
+    });
+});
+
 describe("GPopover description", () => {
     afterEach(() => {
         wrapper?.destroy();

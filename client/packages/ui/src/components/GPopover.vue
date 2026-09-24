@@ -9,6 +9,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 
 import { useFloatingPosition } from "../composables/floatingPosition";
 import { useUid } from "../composables/uid";
+import { closeEscapeLayer, isTopEscapeLayer, openEscapeLayer } from "../utils/escapeStack";
 import { computeHoverBridge, computeHoverGap, isPointInPolygon, type Point } from "../utils/hoverBridge";
 import {
     DEFAULT_TOOLTIP_HOVER_DELAY_MS,
@@ -288,7 +289,47 @@ function togglePopover() {
     showState.value = !showState.value;
 }
 
+// A modal dialog above the popover owns Escape; focus inside the popover's own dialog means that one is on top.
+function isBehindModal(popover: HTMLElement) {
+    if (popover.closest("dialog")?.contains(document.activeElement)) {
+        return false;
+    }
+    return Array.from(document.querySelectorAll("dialog")).some(
+        (dialog) => dialog.matches(":modal") && !dialog.contains(popover),
+    );
+}
+
+// Behind a modal, the popover passes Escape down the stack, e.g. to a popover inside that modal.
+const escapeLayer = {
+    canHandle: () => !!popoverEl.value && !isBehindModal(popoverEl.value),
+};
+
+// Escape dismisses the popover without moving the pointer or focus (WCAG 2.1 SC 1.4.13, dismissible).
+function onDocumentKeydown(event: KeyboardEvent) {
+    if (event.key !== "Escape" || event.defaultPrevented || !showState.value || !isTopEscapeLayer(escapeLayer)) {
+        return;
+    }
+    // Focus inside goes back to the trigger first: hidden, it would strand on a hidden element or reopen the popover.
+    const target = resolveTarget();
+    if (popoverEl.value?.contains(document.activeElement) && target instanceof HTMLElement) {
+        target.focus();
+    }
+    hidePopover();
+    // Keeps an enclosing modal dialog from closing on the same key press.
+    event.preventDefault();
+}
+
+function toggleEscapeListener(listening: boolean) {
+    document.removeEventListener("keydown", onDocumentKeydown);
+    closeEscapeLayer(escapeLayer);
+    if (listening && opensOnInteraction.value) {
+        document.addEventListener("keydown", onDocumentKeydown);
+        openEscapeLayer(escapeLayer);
+    }
+}
+
 async function onVisibilityChange(visible: boolean) {
+    toggleEscapeListener(visible);
     if (visible) {
         relocate();
         await nextTick();
@@ -336,6 +377,9 @@ const parsedTriggers = computed(() => {
     }
     return result;
 });
+
+// Only popovers the page opens and closes on its own ("manual" alone) leave Escape to the page.
+const opensOnInteraction = computed(() => ["hover", "focus", "click"].some((t) => parsedTriggers.value.has(t)));
 
 let linkedAttributes: Array<{ el: Element; attribute: string }> = [];
 
@@ -511,6 +555,7 @@ watch(
 onBeforeUnmount(() => {
     unmounted = true;
     teardownListeners();
+    toggleEscapeListener(false);
     // Vue only removes the placeholder, which no longer holds the relocated popover.
     popoverEl.value?.remove();
 });
