@@ -384,7 +384,7 @@ defineExpose({
         </button>
 
         <!-- Dropdown menu -->
-        <!-- tabindex="-1" matches BDropdown behavior and allows send_keys/send_escape in Selenium tests -->
+        <!-- Focusable like BDropdown's menu, which Selenium sends keys to -->
         <div
             v-if="shouldRenderMenu"
             :id="menuId"
