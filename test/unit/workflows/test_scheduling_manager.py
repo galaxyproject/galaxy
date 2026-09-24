@@ -157,3 +157,20 @@ def test_history_change_committed_after_attempt_started_reschedules():
     # A transaction that flushed before the last attempt started but committed after it.
     harness.set_history_update_time(now() - timedelta(seconds=30))
     assert harness.attempt(scheduler) == 2
+
+
+def test_reschedules_after_backfill_interval_without_changes():
+    harness = SchedulingHarness()
+    job = model.Job()
+    job.state = model.Job.states.QUEUED
+    job_id = harness.persist(job)
+    scheduler = RecordingScheduler(pending(SchedulingDependency(DependencyType.JOB, job_id)))
+
+    assert harness.attempt(scheduler) == 1
+    assert harness.attempt(scheduler) == 1
+
+    tracking = harness.monitor.invocation_tracking[harness.invocation_id]
+    stale = tracking.observed_at - harness.monitor.timedelta - timedelta(seconds=1)
+    harness.monitor.invocation_tracking[harness.invocation_id] = tracking._replace(observed_at=stale)
+    assert harness.attempt(scheduler) == 2
+    assert harness.attempt(scheduler) == 2

@@ -1,5 +1,8 @@
 import os
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+)
 from functools import partial
 from typing import (
     NamedTuple,
@@ -29,6 +32,7 @@ from galaxy.schema.tasks import (
     RequestUser,
 )
 from galaxy.util import (
+    now,
     plugin_config,
     unicodify,
 )
@@ -55,6 +59,7 @@ log = get_logger(__name__)
 
 DEFAULT_SCHEDULER_ID = "default"  # well actually this should be called DEFAULT_DEFAULT_SCHEDULER_ID...
 DEFAULT_SCHEDULER_PLUGIN_TYPE = "core"
+DEFAULT_SCHEDULER_BACKFILL_SECONDS = int(os.getenv("GALAXY_SCHEDULER_BACKFILL_SECONDS", 300))
 
 EXCEPTION_MESSAGE_SHUTDOWN = "Exception raised while attempting to shutdown workflow scheduler."
 EXCEPTION_MESSAGE_NO_SCHEDULERS = "Failed to defined workflow schedulers - no workflow schedulers defined."
@@ -319,6 +324,7 @@ class InvocationTracking(NamedTuple):
     # while it runs are seen by the next attempt.
     history_update_time: datetime | None
     step_update_time: datetime | None
+    observed_at: datetime
     pending: SchedulingDependencies | None = None
 
 
@@ -331,6 +337,12 @@ class WorkflowRequestMonitor(Monitors):
         )
         self.invocation_grabber = None
         self.invocation_tracking: dict[int, InvocationTracking] = {}
+        backfill_seconds = (
+            min(app.config.maximum_workflow_invocation_duration, DEFAULT_SCHEDULER_BACKFILL_SECONDS)
+            if app.config.maximum_workflow_invocation_duration > 0
+            else DEFAULT_SCHEDULER_BACKFILL_SECONDS
+        )
+        self.timedelta = timedelta(seconds=backfill_seconds)
         self_handler_tags = set(self.app.job_config.self_handler_tags)
         self_handler_tags.add(self.workflow_scheduling_manager.default_handler_id)
         handler_assignment_method = InvocationGrabber.get_grabbable_handler_assignment_method(
@@ -349,6 +361,7 @@ class WorkflowRequestMonitor(Monitors):
         return InvocationTracking(
             history_update_time=invocation.history.update_time,
             step_update_time=invocation.get_last_workflow_invocation_step_update_time(),
+            observed_at=now(),
         )
 
     def ready_to_schedule_more(self, invocation: model.WorkflowInvocation, observed: InvocationTracking) -> bool:
@@ -361,6 +374,16 @@ class WorkflowRequestMonitor(Monitors):
         # so invoke() can fail the invocation with the appropriate state.
         maximum_duration = self.app.config.maximum_workflow_invocation_duration
         if maximum_duration > 0 and invocation.seconds_since_created > maximum_duration:
+            return True
+
+        # Fallback for a dependency that was missed or changed without leaving a trace.
+        since_last_schedule = observed.observed_at - previous.observed_at
+        if since_last_schedule > self.timedelta:
+            log.debug(
+                "Scheduling workflow invocation [%s] after %s seconds without scheduling.",
+                invocation.id,
+                since_last_schedule.total_seconds(),
+            )
             return True
 
         pending = previous.pending
