@@ -1003,6 +1003,24 @@ describe("CommandPalette", () => {
         expect(inputValue()).toBe("it: jupyter");
     });
 
+    it("keeps a scope token still being typed away from every backend search", async () => {
+        const searches = [toolsProvider, historiesProvider].map((provider) => vi.spyOn(provider, "search"));
+        try {
+            // interactivetools_enable is off in the mocked config, so `it:` stays plain text
+            await type("it:");
+            searches.forEach((search) =>
+                expect(search).toHaveBeenLastCalledWith("it:", expect.anything(), { localOnly: true }),
+            );
+
+            await type("fastqc");
+            searches.forEach((search) =>
+                expect(search).toHaveBeenLastCalledWith("fastqc", expect.anything(), { localOnly: false }),
+            );
+        } finally {
+            searches.forEach((search) => search.mockRestore());
+        }
+    });
+
     it("offers a login when an anonymous visitor types a scope that needs one", async () => {
         browseAnonymously();
         const push = vi.spyOn(router, "push").mockResolvedValue(undefined as never);

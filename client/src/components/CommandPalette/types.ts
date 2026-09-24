@@ -113,6 +113,16 @@ export interface ResultSection extends ScopedSection {
     score?: number;
 }
 
+/** How far a provider may go to answer one search */
+export interface PaletteSearchOptions {
+    /**
+     * Match the query against cached data only, never sending it to a backend.
+     * Set while the text still reads as a scope token (`xy:`), which is a filter
+     * being typed rather than a search term.
+     */
+    localOnly?: boolean;
+}
+
 /**
  * A source of palette results. Sync providers (navigation, actions) filter
  * local data; async providers (tools, and per-entity searches later) may
@@ -124,7 +134,7 @@ export interface CommandPaletteProvider {
     id: string;
     /** Items shown when the query is empty (recents, defaults) */
     emptyQueryItems?(ctx: PaletteContext): PaletteItem[];
-    search(query: string, ctx: PaletteContext): PaletteItem[] | Promise<PaletteItem[]>;
+    search(query: string, ctx: PaletteContext, options?: PaletteSearchOptions): PaletteItem[] | Promise<PaletteItem[]>;
     /** Multi-section search for one of the provider's scopes */
     searchScoped?(
         scope: ScopeDefinition,

@@ -6,7 +6,13 @@ import { type HistoryListVariant, useHistoryStore } from "@/stores/historyStore"
 import { useUserStore } from "@/stores/userStore";
 import { relativeUpdatedLabel } from "@/utils/dates";
 
-import type { CommandPaletteProvider, PaletteContext, PaletteItem, ScopedSection } from "../types";
+import type {
+    CommandPaletteProvider,
+    PaletteContext,
+    PaletteItem,
+    PaletteSearchOptions,
+    ScopedSection,
+} from "../types";
 import { dedupePaletteItemsByEntity, rankPaletteItems } from "../utilities";
 import { fetchOrFail } from "./errors";
 import { markListRefreshed, refreshListWhenStale } from "./refresh";
@@ -299,9 +305,11 @@ async function variantItems(variant: HistoryListVariant, query: string): Promise
  * lives. Copies of one history collapse into the own row, which may be made
  * current; the palette's debounce keeps the request volume down.
  */
-async function rootItems(query: string, isAnonymous: boolean): Promise<PaletteItem[]> {
+async function rootItems(query: string, isAnonymous: boolean, localOnly = false): Promise<PaletteItem[]> {
     // the searches start before the cache is filtered, so they run in parallel
-    const listed = Promise.all(rootVariants(isAnonymous).map((variant) => variantItems(variant, query)));
+    const listed = Promise.all(
+        (localOnly ? [] : rootVariants(isAnonymous)).map((variant) => variantItems(variant, query)),
+    );
     const own = isAnonymous ? [] : await listItems("my", query, ROOT_LIMIT, true);
     const merged = dedupePaletteItemsByEntity([own, ...(await listed)].flat());
     return rankPaletteItems(merged, query).slice(0, ROOT_LIMIT + ROOT_VARIANT_LIMIT);
@@ -350,11 +358,11 @@ export const historiesProvider: CommandPaletteProvider = {
         return recentItems("", ROOT_LIMIT);
     },
     /** Root mode fan-out over the cached own histories and the public listings */
-    async search(query: string, ctx: PaletteContext) {
+    async search(query: string, ctx: PaletteContext, options: PaletteSearchOptions = {}) {
         if (query.length < MIN_QUERY_LENGTH) {
             return [];
         }
-        return rootItems(query, ctx.isAnonymous);
+        return rootItems(query, ctx.isAnonymous, options.localOnly);
     },
     /**
      * `h:` shows the palette recents on top of the user's own listing; `hs:`,
