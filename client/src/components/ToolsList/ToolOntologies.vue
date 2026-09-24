@@ -190,7 +190,6 @@ watch([ontologiesFilter, sortOrder, showing], async () => {
                         :disabled="loading"
                         variant="link"
                         toggle-class="text-decoration-none"
-                        role="menu"
                         aria-label="Choose whether to show operations, topics, or all"
                         size="sm">
                         <template v-slot:button-content>

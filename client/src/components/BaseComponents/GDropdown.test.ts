@@ -37,6 +37,29 @@ afterEach(() => {
 });
 
 describe("GDropdown.vue", () => {
+    describe("menu button semantics", () => {
+        it("links the toggle and the menu", () => {
+            const wrapper = mountDropdown(`<GDropdownItem>Action</GDropdownItem>`);
+            const toggle = wrapper.get(".dropdown-toggle");
+            const menu = wrapper.get(".dropdown-menu");
+
+            expect(toggle.attributes("aria-haspopup")).toBe("menu");
+            expect(toggle.attributes("aria-controls")).toBe(menu.attributes("id"));
+            expect(menu.attributes("role")).toBe("menu");
+            expect(menu.attributes("aria-labelledby")).toBe(toggle.attributes("id"));
+            expect(wrapper.get(".dropdown-item").attributes("role")).toBe("menuitem");
+        });
+
+        it("reflects the open state in aria-expanded", async () => {
+            const wrapper = mountDropdown(`<GDropdownItem>Action</GDropdownItem>`);
+            const toggle = wrapper.get(".dropdown-toggle");
+
+            expect(toggle.attributes("aria-expanded")).toBe("false");
+            await openMenu(wrapper);
+            expect(toggle.attributes("aria-expanded")).toBe("true");
+        });
+    });
+
     describe("link items", () => {
         it("render real anchors so they can be opened in a new tab", () => {
             const wrapper = mountDropdown(`

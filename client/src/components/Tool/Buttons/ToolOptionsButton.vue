@@ -84,7 +84,6 @@ loadToolMenuWebhooks();
         <GDropdown
             no-caret
             right
-            role="button"
             title="Options"
             variant="link"
             aria-label="View all Options"

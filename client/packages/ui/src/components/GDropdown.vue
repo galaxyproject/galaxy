@@ -8,6 +8,8 @@
 
 import { computed, nextTick, onBeforeUnmount, provide, ref } from "vue";
 
+import { useUid } from "../composables/uid";
+
 const props = withDefaults(
     defineProps<{
         /** Text for the toggle button */
@@ -34,8 +36,6 @@ const props = withDefaults(
         menuClass?: string | string[] | Record<string, boolean>;
         /** Disabled state */
         disabled?: boolean;
-        /** ARIA role */
-        role?: string;
         /** Lazy render menu content */
         lazy?: boolean;
     }>(),
@@ -53,7 +53,6 @@ const props = withDefaults(
         toggleClass: undefined,
         menuClass: undefined,
         disabled: false,
-        role: undefined,
         lazy: false,
     },
 );
@@ -68,6 +67,10 @@ const isOpen = ref(false);
 const dropdownEl = ref<HTMLDivElement>();
 const menuEl = ref<HTMLDivElement>();
 const hasBeenOpened = ref(false);
+
+const uid = useUid("g-dropdown-");
+const toggleId = computed(() => `${uid.value}-toggle`);
+const menuId = computed(() => `${uid.value}-menu`);
 
 function toggle(event?: MouseEvent) {
     if (props.disabled) {
@@ -180,7 +183,7 @@ defineExpose({
 </script>
 
 <template>
-    <div ref="dropdownEl" :class="containerClasses" :role="role">
+    <div ref="dropdownEl" :class="containerClasses">
         <!-- Split button: action button + toggle -->
         <button
             v-if="split"
@@ -194,12 +197,14 @@ defineExpose({
 
         <!-- Toggle button -->
         <button
+            :id="toggleId"
             type="button"
             class="btn"
             :class="toggleBtnClasses"
             :disabled="disabled"
-            aria-haspopup="true"
-            :aria-expanded="isOpen"
+            aria-haspopup="menu"
+            :aria-expanded="isOpen ? 'true' : 'false'"
+            :aria-controls="shouldRenderMenu ? menuId : undefined"
             @click="toggle">
             <template v-if="!split">
                 <slot name="button-content">{{ text }}</slot>
@@ -211,10 +216,12 @@ defineExpose({
         <!-- tabindex="-1" matches BDropdown behavior and allows send_keys/send_escape in Selenium tests -->
         <div
             v-if="shouldRenderMenu"
+            :id="menuId"
             ref="menuEl"
             tabindex="-1"
+            role="menu"
             :class="menuClasses"
-            :role="role === 'menu' ? 'menu' : undefined"
+            :aria-labelledby="toggleId"
             @keydown.esc="hide">
             <slot />
         </div>
