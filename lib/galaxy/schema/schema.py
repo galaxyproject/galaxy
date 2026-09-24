@@ -47,7 +47,7 @@ from galaxy.schema.fields import (
     literal_to_value,
     ModelClassField,
 )
-from galaxy.schema.states import (  # noqa: F401 - Re-export legacy state names.
+from galaxy.schema.states import (
     DatasetCollectionPopulatedState as DatasetCollectionPopulatedState,
     DatasetSourceTransformActionType as DatasetSourceTransformActionType,
     DatasetSourceTransformActionTypeLiteral as DatasetSourceTransformActionTypeLiteral,
@@ -4380,3 +4380,11 @@ class SanitizedString(str):
             core_schema.str_schema(),
             serialization=core_schema.to_string_ser_schema(),
         )
+
+
+# Keep the module's existing star-import surface while naming the moved alias
+# explicitly for static analysis.
+__all__ = (
+    "DatasetSourceTransformActionTypeLiteral",
+    *(name for name in globals() if not name.startswith("_") and name != "DatasetSourceTransformActionTypeLiteral"),
+)
