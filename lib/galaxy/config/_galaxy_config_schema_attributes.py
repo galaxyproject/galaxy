@@ -100,6 +100,7 @@ class GalaxyAppConfigurationAttributes:
     visualization_plugins_directory: str
     tour_config_dir: str
     enable_tool_generated_tours: bool
+    admin_extensions_dir: str
     webhooks_dir: str
     job_working_directory: str
     template_cache_path: str
