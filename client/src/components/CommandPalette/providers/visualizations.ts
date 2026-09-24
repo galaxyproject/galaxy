@@ -6,18 +6,14 @@ import { useVisualizationStore } from "@/stores/visualizationStore";
 import { shortDateLabel } from "@/utils/dates";
 
 import type { CommandPaletteProvider, PaletteItem, ScopedSection } from "../types";
-import { rankPaletteItems } from "../utilities";
 import { PALETTE_LIMITS } from "./limits";
-import { markListRefreshed, refreshListWhenStale } from "./refresh";
+import { ensureListHydrated, storeFirstItems, type StoreFirstList } from "./storeFirst";
 
 /** Entity type used for the palette MRU list of visualizations */
 export const VISUALIZATION_RECENT_TYPE = "visualization";
 
 /** Only the saved visualizations of the current user are searchable (`v:`) */
 const VARIANT = "my";
-
-/** Identity of the cached list in the palette's refresh bookkeeping */
-const REFRESH_KEY = "visualizations:my";
 
 /** Same click target the saved visualizations grid uses to open an item */
 export function visualizationDisplayPath(visualization: { id: string; type?: string | null }): string {
@@ -31,7 +27,8 @@ function visualizationToItem(visualization: VisualizationSummary): PaletteItem {
     return {
         id: `visualizations:${visualization.id}`,
         icon: faChartBar,
-        keywords: visualization.type,
+        // the backend search also matches tags, and its rows are ranked locally
+        keywords: [visualization.type, ...(visualization.tags ?? [])].join(" "),
         mru: { type: VISUALIZATION_RECENT_TYPE, id: visualization.id },
         subtitle: [visualization.type, shortDateLabel(visualization.update_time)].filter(Boolean).join(" · "),
         title: visualization.title,
@@ -39,58 +36,25 @@ function visualizationToItem(visualization: VisualizationSummary): PaletteItem {
     };
 }
 
-/** Drops repeated ids, keeping the first (better ranked) occurrence */
-function dedupeById(items: PaletteItem[]): PaletteItem[] {
-    const seen = new Set<string>();
-    return items.filter((item) => {
-        if (seen.has(item.id)) {
-            return false;
-        }
-        seen.add(item.id);
-        return true;
-    });
-}
-
 /**
- * Hydrates the saved visualizations once per session and refreshes them in the
- * background afterwards, so a long lived tab does not keep serving the list it
- * saw first (see `refresh.ts`).
+ * The user's saved visualizations, store first. The unfiltered fetch reports the
+ * total, so a cache holding that many answers any query on its own.
  */
-async function ensureHydrated(): Promise<void> {
+function visualizationList(): StoreFirstList {
     const store = useVisualizationStore();
-    if (!store.hasLoadedVariant(VARIANT)) {
-        await store.ensureVariantLoaded(VARIANT);
-        markListRefreshed(REFRESH_KEY);
-    } else {
-        refreshListWhenStale(REFRESH_KEY, () => store.fetchVisualizations(VARIANT));
-    }
-}
-
-/**
- * Store-first search: rank whatever the store already cached, and only ask the
- * backend when the cache cannot fill the section. Backend results are merged
- * into the same store, so the two sources dedupe by id.
- *
- * @param cacheOnly never request anything, not even to hydrate an empty cache —
- * this provider answers the root fan-out from the cache alone, unlike the
- * histories, workflows, reports and tools ones, which search the backend there
- * too; the `v:` scope does the fetching.
- */
-async function searchVisualizations(
-    query: string,
-    limit = PALETTE_LIMITS.section,
-    cacheOnly = false,
-): Promise<PaletteItem[]> {
-    const store = useVisualizationStore();
-    if (!cacheOnly) {
-        await ensureHydrated();
-    }
-    const cached = rankPaletteItems(store.getVisualizations(VARIANT).map(visualizationToItem), query);
-    if (cacheOnly || query.length < PALETTE_LIMITS.minBackendQuery || cached.length >= limit) {
-        return cached.slice(0, limit);
-    }
-    const fetched = await store.fetchVisualizations(VARIANT, { search: query, limit });
-    return dedupeById([...cached, ...fetched.map(visualizationToItem)]).slice(0, limit);
+    return {
+        key: "visualizations:my",
+        isLoaded: () => store.hasLoadedVariant(VARIANT),
+        fetchListing: () => store.fetchVisualizations(VARIANT, { limit: PALETTE_LIMITS.page }),
+        cachedItems: () => store.getVisualizations(VARIANT).map(visualizationToItem),
+        isComplete: () =>
+            store.hasLoadedVariant(VARIANT) &&
+            store.getVisualizations(VARIANT).length >= store.totalMatchesByVariant[VARIANT],
+        async searchItems(query) {
+            const found = await store.fetchVisualizations(VARIANT, { search: query, limit: PALETTE_LIMITS.page });
+            return found.map(visualizationToItem);
+        },
+    };
 }
 
 /** Latest visualizations of the user, newest first, straight from the cache */
@@ -131,22 +95,26 @@ export const visualizationsProvider: CommandPaletteProvider = {
     emptyQueryItems() {
         return latestItems();
     },
-    /** Root mode fan-out, ranking the cached visualizations without a request */
+    /**
+     * Root mode fan-out, ranking the cached visualizations without a request —
+     * unlike the histories, workflows, reports and tools ones, which search the
+     * backend there too; the `v:` scope does the fetching.
+     */
     async search(query: string) {
         if (!query) {
             return latestItems();
         }
-        return searchVisualizations(query, PALETTE_LIMITS.section, true);
+        return storeFirstItems(visualizationList(), query, PALETTE_LIMITS.section, { cacheOnly: true });
     },
     async searchScoped(_scope, query: string): Promise<ScopedSection[]> {
         if (!query) {
-            await ensureHydrated();
+            await ensureListHydrated(visualizationList());
             return sectionsWithItems([
                 { id: "recent", items: recentItems(), title: "Recent" },
                 { id: "latest", items: latestItems(), title: "Latest visualizations" },
             ]);
         }
-        const items = await searchVisualizations(query);
+        const items = await storeFirstItems(visualizationList(), query, PALETTE_LIMITS.section);
         return sectionsWithItems([{ id: "results", items, title: "Visualizations" }]);
     },
 };
