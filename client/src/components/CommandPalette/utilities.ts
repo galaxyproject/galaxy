@@ -1,7 +1,7 @@
 import { type SearchCommonKeys, searchObjectsByKeys } from "@/components/Panels/utilities";
 
 import { ACTIONS_SCOPE, findScope, type ScopeDefinition } from "./providers/scopes";
-import type { PaletteItem } from "./types";
+import type { PaletteContext, PaletteItem } from "./types";
 
 /** A scope token: one or two letters followed by a colon, e.g. `w:` or `hs:` */
 const SCOPE_TOKEN = /^([a-zA-Z]{1,2}):(.*)$/;
@@ -109,4 +109,20 @@ export function dedupePaletteItemsByEntity(items: PaletteItem[]): PaletteItem[] 
         seen.add(key);
         return true;
     });
+}
+
+/** An item offered only to the users, and on the instances, it applies to */
+export interface Gated<T> {
+    /** Whether anonymous users may use it */
+    anonymous: boolean;
+    /** Extra availability check against the Galaxy configuration */
+    configGate?: (ctx: PaletteContext) => boolean;
+    item: T;
+}
+
+/** The gated items the current user can use on this instance */
+export function visibleFor<T>(definitions: Gated<T>[], ctx: PaletteContext): T[] {
+    return definitions
+        .filter((definition) => (definition.anonymous || !ctx.isAnonymous) && (definition.configGate?.(ctx) ?? true))
+        .map((definition) => definition.item);
 }
