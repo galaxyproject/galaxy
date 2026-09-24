@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faSearch, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useEventListener, watchDebounced, watchImmediate } from "@vueuse/core";
+import { watchDebounced, watchImmediate } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -11,7 +11,6 @@ import { useConfig } from "@/composables/config";
 import { useCommandPalette } from "@/composables/useCommandPalette";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { useUid } from "@/composables/utils/uid";
-import { useEventStore } from "@/stores/eventStore";
 import { useToolStore } from "@/stores/toolStore";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { useUserStore } from "@/stores/userStore";
@@ -25,6 +24,7 @@ import type { ScopeDefinition } from "./providers/scopes";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem, ResultSection } from "./types";
 import { usePaletteDialog } from "./usePaletteDialog";
 import { type PaletteMode, usePaletteMachine } from "./usePaletteMachine";
+import { usePaletteModifiers } from "./usePaletteModifiers";
 import { BACKEND_RANKED_SCORE, scorePaletteItems } from "./utilities";
 
 import CommandPaletteItem from "./CommandPaletteItem.vue";
@@ -59,7 +59,6 @@ const uploadMethods = useFilteredUploadMethods();
 const startNewChat = useStartNewChat();
 const router = useRouter();
 const { config } = useConfig();
-const eventStore = useEventStore();
 const toolStore = useToolStore();
 const unprivilegedToolStore = useUnprivilegedToolStore();
 const userStore = useUserStore();
@@ -90,10 +89,7 @@ const { closeDialog, onClickDialog, onDialogCancel, onDialogClose, onDialogMouse
 const searching = ref(false);
 const sections = ref<ResultSection[]>([]);
 const selectedIndex = ref(0);
-/** Whether ctrl/cmd is currently down, so the palette can preview "new tab" */
-const modifierHeld = ref(false);
-/** Whether shift is currently down, so the palette can preview the secondary run */
-const shiftHeld = ref(false);
+const { modifierHeld, modifierLabel, releaseModifiers, shiftHeld } = usePaletteModifiers(togglePalette);
 /** Scope whose provider has not landed yet; renders the temporary hint row */
 const pendingScope = ref<ScopeDefinition | null>(null);
 /** What the palette could not load, naming the scope in the error row */
@@ -107,8 +103,6 @@ const flatItems = computed(() => sections.value.flatMap((section) => section.ite
 const selectedItem = computed(() => flatItems.value[selectedIndex.value]);
 
 const activeDescendant = computed(() => (selectedItem.value ? optionId(selectedIndex.value) : undefined));
-
-const modifierLabel = computed(() => (eventStore.isMac ? "⌘" : "Ctrl+"));
 
 const paletteCategories = computed(() => availableCategories(buildContext()));
 
@@ -672,39 +666,6 @@ watch(selectedIndex, () => {
     }
 });
 
-function isNewTabModifier(key: string) {
-    return key === "Meta" || key === "Control";
-}
-
-useEventListener(window, "keydown", (event: KeyboardEvent) => {
-    if (isNewTabModifier(event.key)) {
-        modifierHeld.value = true;
-    }
-    if (event.key === "Shift") {
-        shiftHeld.value = true;
-    }
-    const platformModifier = eventStore.isMac ? event.metaKey : event.ctrlKey;
-    if (event.key.toLowerCase() === "k" && platformModifier && !event.shiftKey && !event.altKey && !event.repeat) {
-        event.preventDefault();
-        togglePalette();
-    }
-});
-
-useEventListener(window, "keyup", (event: KeyboardEvent) => {
-    if (isNewTabModifier(event.key)) {
-        modifierHeld.value = false;
-    }
-    if (event.key === "Shift") {
-        shiftHeld.value = false;
-    }
-});
-
-// opening a new tab moves focus away, so the matching keyup never arrives here
-useEventListener(window, "blur", () => {
-    modifierHeld.value = false;
-    shiftHeld.value = false;
-});
-
 // sync, so the old mode's rows never render, or run on enter, under the new badge;
 // the getter reads `mode` itself because a sync watcher can see a stale computed
 watch(() => searchIdentity(mode.value), clearResults, { flush: "sync" });
@@ -750,8 +711,7 @@ watchImmediate(isPaletteOpen, (open) => {
         runSearch();
         openDialog();
     } else {
-        modifierHeld.value = false;
-        shiftHeld.value = false;
+        releaseModifiers();
         // the one exception to preserving the input: an action's argument mode
         // parses nothing, so a `>` typed into a reopened palette would be
         // collected as the argument instead of opening the actions list
