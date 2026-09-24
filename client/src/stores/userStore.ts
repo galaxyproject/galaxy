@@ -97,6 +97,7 @@ export const useUserStore = defineStore("userStore", () => {
         currentPreferences.value = null;
         recentTools.value = [];
         loadPromise = null;
+        decodedIdCache.value = {};
     }
 
     const isAdmin = computed(() => {
@@ -368,7 +369,11 @@ export const useUserStore = defineStore("userStore", () => {
         return null;
     }
 
-    const { getItemById: getDecodedId } = useKeyedCache<number | null>(fetchdecodedIdById);
+    const { getItemById: getDecodedId, storedItems: decodedIdCache } = useKeyedCache<number | null>(
+        fetchdecodedIdById,
+        // Only fetch a decoded id if the current user is known and the item is undefined (not yet cached).
+        () => (item?: number | null) => currentUser.value !== null && item === undefined,
+    );
 
     return {
         currentUser,
