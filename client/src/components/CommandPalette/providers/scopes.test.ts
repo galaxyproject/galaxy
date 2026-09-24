@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
 import { parsePaletteQuery } from "../utilities";
 import {
     ACTIONS_SCOPE,
@@ -13,10 +13,6 @@ import {
     PALETTE_SCOPES,
     type ScopeDefinition,
 } from "./scopes";
-
-function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false, ...overrides };
-}
 
 describe("PALETTE_SCOPES", () => {
     it("has unique lowercase keys of at most two letters", () => {

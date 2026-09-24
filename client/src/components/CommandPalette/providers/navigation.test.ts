@@ -1,17 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import { makeCtx } from "../test-utils";
 import type { PaletteContext } from "../types";
 import { navigationProvider } from "./navigation";
 import { findScope } from "./scopes";
-
-function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return {
-        canUseUnprivilegedTools: false,
-        config: { interactivetools_enable: false, llm_api_configured: false },
-        isAnonymous: false,
-        ...overrides,
-    };
-}
 
 async function search(query: string, ctx: PaletteContext) {
     return navigationProvider.search(query, ctx);

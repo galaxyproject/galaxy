@@ -5,7 +5,7 @@ import { loadVisualizations, type VisualizationSummary } from "@/api/visualizati
 import type { RecentPaletteItem } from "@/composables/useRecentPaletteItems";
 import { useVisualizationStore } from "@/stores/visualizationStore";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
 import { resetListRefreshTracking } from "./refresh";
 import { visualizationsProvider } from "./visualizations";
 
@@ -39,10 +39,6 @@ function mockVisualization(id: string, title: string, type = "nvd3_bar"): Visual
         tags: [],
         username: "test-user",
     } as VisualizationSummary;
-}
-
-function makeCtx(): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false };
 }
 
 function mockList(...visualizations: VisualizationSummary[]) {

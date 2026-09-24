@@ -12,6 +12,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { usePageStore } from "@/stores/pageStore";
 
+import { makeCtx as makeBaseCtx } from "../test-utils";
 import type { PaletteContext, PaletteItem } from "../types";
 import { actionsProvider } from "./actions";
 
@@ -35,15 +36,12 @@ vi.mock("@/components/Workflow/workflows.services", () => ({
 const RNA_SEQ = { id: "wf1", name: "RNA-seq analysis", owner: "me", tags: [] } as unknown as WorkflowSummary;
 
 function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return {
-        canUseUnprivilegedTools: false,
-        config: {},
-        isAnonymous: false,
+    return makeBaseCtx({
         // the palette resolves these with `useFilteredUploadMethods`, which
         // already dropped whatever this user may not run
         uploadMethods: Object.values(uploadMethodRegistry).filter((method) => !method.requiresLogin),
         ...overrides,
-    };
+    });
 }
 
 async function search(query: string, ctx: PaletteContext) {

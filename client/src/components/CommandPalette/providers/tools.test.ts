@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
 import { PALETTE_SCOPES } from "./scopes";
 import { toolsProvider } from "./tools";
 
@@ -38,10 +38,6 @@ const BOWTIE = {
 const ALL_TOOLS = [FASTQC, BOWTIE];
 
 const TOOLS_SCOPE = PALETTE_SCOPES.find((scope) => scope.key === "t")!;
-
-function makeCtx(): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false };
-}
 
 /** Bulk `/api/tools` returns the toolbox, a `q` search returns matching ids */
 function mockToolsApi(searchResult: string[] = [FASTQC.id]) {

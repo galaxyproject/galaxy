@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import type { PaletteContext, PaletteItem } from "../types";
+import { makeCtx } from "../test-utils";
+import type { PaletteItem } from "../types";
 import {
     enabledPaletteProviders,
     findPaletteProvider,
@@ -12,14 +13,6 @@ import { ACTIONS_SCOPE, PALETTE_SCOPES } from "./scopes";
 
 function item(id: string, title: string, extras: Partial<PaletteItem> = {}): PaletteItem {
     return { id, title, ...extras };
-}
-
-function makeCtx(disabled: string[] = []): PaletteContext {
-    return {
-        canUseUnprivilegedTools: false,
-        config: { command_palette_disabled_providers: disabled },
-        isAnonymous: false,
-    };
 }
 
 /** Key of the scope a query resolves to, or undefined when it is plain text */
@@ -42,7 +35,9 @@ describe("paletteProviders", () => {
 
     it("drops the providers the instance disabled, keeping the registry order", () => {
         expect(enabledPaletteProviders(makeCtx())).toEqual(paletteProviders);
-        const enabled = enabledPaletteProviders(makeCtx(["workflows", "tools"])).map((provider) => provider.id);
+        const enabled = enabledPaletteProviders(
+            makeCtx({ config: { command_palette_disabled_providers: ["workflows", "tools"] } }),
+        ).map((provider) => provider.id);
         expect(enabled).not.toContain("workflows");
         expect(enabled).not.toContain("tools");
         expect(enabled).toEqual(

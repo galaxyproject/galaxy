@@ -2,21 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { ALL_CATEGORY, PALETTE_CATEGORIES } from "./providers/categories";
 import { ACTIONS_SCOPE, findScope } from "./providers/scopes";
-import type { PaletteContext, PaletteItem } from "./types";
+import { makeCtx } from "./test-utils";
+import type { PaletteItem } from "./types";
 import { usePaletteMachine } from "./usePaletteMachine";
 
 const WORKFLOWS = findScope("w")!;
 
 const NEW_HISTORY: PaletteItem = { id: "actions:new-history", title: "Create new history" };
-
-function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return {
-        canUseUnprivilegedTools: false,
-        config: { interactivetools_enable: false, llm_api_configured: false },
-        isAnonymous: false,
-        ...overrides,
-    };
-}
 
 describe("usePaletteMachine", () => {
     it("starts in root mode with an empty input", () => {

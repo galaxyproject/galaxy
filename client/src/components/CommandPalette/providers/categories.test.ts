@@ -1,12 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
 import { ALL_CATEGORY, availableCategories, categoryProviderId, PALETTE_CATEGORIES } from "./categories";
 import { paletteProviders } from "./index";
-
-function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous: false, ...overrides };
-}
 
 describe("PALETTE_CATEGORIES", () => {
     it("names a registered provider for every category", () => {

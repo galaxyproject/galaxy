@@ -6,7 +6,7 @@ import { sseMockFactory } from "@/stores/_testing/sseStoreSupport";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
-import type { PaletteContext } from "../types";
+import { makeCtx } from "../test-utils";
 import { PaletteFetchError } from "./errors";
 import { historiesProvider } from "./histories";
 import { resetListRefreshTracking } from "./refresh";
@@ -150,10 +150,6 @@ function mockHistoriesApi() {
         data: matching([ARCHIVED], search),
         total: 1,
     }));
-}
-
-function makeCtx(isAnonymous = false): PaletteContext {
-    return { canUseUnprivilegedTools: false, config: {}, isAnonymous };
 }
 
 function signIn(username = "me") {
@@ -425,7 +421,7 @@ describe("historiesProvider", () => {
 
     it("stays out of the unscoped fan-out for short queries", async () => {
         expect(await historiesProvider.search("v", makeCtx())).toEqual([]);
-        expect(await historiesProvider.search("v", makeCtx(true))).toEqual([]);
+        expect(await historiesProvider.search("v", makeCtx({ isAnonymous: true }))).toEqual([]);
         expect(getHistoryList).not.toHaveBeenCalled();
         expect(getSharedHistories).not.toHaveBeenCalled();
         expect(getPublishedHistories).not.toHaveBeenCalled();
@@ -532,7 +528,7 @@ describe("historiesProvider", () => {
     });
 
     it("searches the public listing alone for an anonymous root query", async () => {
-        const items = await historiesProvider.search("metagenomics", makeCtx(true));
+        const items = await historiesProvider.search("metagenomics", makeCtx({ isAnonymous: true }));
 
         expect(items.map((i) => i.title)).toEqual(["Public metagenomics"]);
         expect(getPublishedHistories).toHaveBeenCalledWith(expect.objectContaining({ search: "metagenomics" }));
@@ -554,6 +550,6 @@ describe("historiesProvider", () => {
         recent = [{ type: "history", id: "h1", name: "RNA-seq analysis" }];
 
         expect(historiesProvider.emptyQueryItems?.(makeCtx())?.map((i) => i.title)).toEqual(["RNA-seq analysis"]);
-        expect(historiesProvider.emptyQueryItems?.(makeCtx(true))).toEqual([]);
+        expect(historiesProvider.emptyQueryItems?.(makeCtx({ isAnonymous: true }))).toEqual([]);
     });
 });
