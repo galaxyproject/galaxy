@@ -24,7 +24,10 @@ from requests import (
 from galaxy.exceptions import error_codes
 from galaxy.tool_util_models import UserToolSource
 from galaxy.util import UNKNOWN
-from galaxy.util.unittest_utils import skip_if_github_down
+from galaxy.util.unittest_utils import (
+    skip_if_github_down,
+    skip_if_workflowhub_down,
+)
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.api_asserts import assert_error_message_contains
 from galaxy_test.base.populators import (
@@ -1652,6 +1655,7 @@ steps:
         reuploaded_workflow = self._download_workflow(reuploaded_workflow_id)
         assert reuploaded_workflow.get("source_metadata") is None
 
+    @skip_if_workflowhub_down
     def test_trs_import_from_workflowhub_trs_url(self):
         trs_payload = {
             "archive_source": "trs_tool",
