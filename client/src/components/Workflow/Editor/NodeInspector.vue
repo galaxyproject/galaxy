@@ -91,7 +91,13 @@ function updateStored(v: boolean) {
                     <ArrowRightToLine absolute-stroke-width :size="17" />
                 </GButton>
 
-                <GDropdown class="dropdown" toggle-class="heading-button" variant="link" size="md" no-caret>
+                <GDropdown
+                    class="dropdown"
+                    toggle-class="heading-button"
+                    variant="link"
+                    size="md"
+                    no-caret
+                    aria-label="Inspector options">
                     <template v-slot:button-content>
                         <FontAwesomeIcon :icon="faCog" fixed-width />
                     </template>

@@ -150,7 +150,7 @@ defineExpose({
 
             <GDropdown
                 v-if="columnOptions.length > 0"
-                text="Columns"
+                aria-label="Columns"
                 size="sm"
                 variant="outline-primary"
                 right

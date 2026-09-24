@@ -1498,7 +1498,8 @@ initializeWorkflowEditor();
                             right
                             variant="link"
                             style="z-index: 60000"
-                            title="Workflow contains steps that require credentials">
+                            title="Workflow contains steps that require credentials"
+                            aria-label="Workflow contains steps that require credentials">
                             <template v-slot:button-content>
                                 <FontAwesomeIcon :icon="faKey" fixed-width />
                             </template>
