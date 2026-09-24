@@ -400,6 +400,7 @@ function unexpandedClick(event: Event) {
                         :is-visible="item.visible"
                         :state="state"
                         :item-urls="itemUrls"
+                        :item-id="item.id"
                         :is-running-interactive-tool="itemIsRunningInteractiveTool"
                         :interactive-tool-id="
                             itemIsRunningInteractiveTool ? entryPointStore.entryPointsForHda(item.id)[0]?.id : ''

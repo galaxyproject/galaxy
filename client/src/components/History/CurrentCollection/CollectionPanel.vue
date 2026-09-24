@@ -83,9 +83,9 @@ const rootCollection = computed(() => {
     }
 });
 const isRoot = computed(() => dsc.value == rootCollection.value);
-const canEdit = computed(
-    () => isRoot.value && canMutateHistory(props.history) && userOwnsHistory(currentUser.value, props.history),
-);
+const currentUserOwnsHistory = computed(() => userOwnsHistory(currentUser.value, props.history));
+const canEdit = computed(() => isRoot.value && currentUserOwnsHistory.value && canMutateHistory(props.history));
+const writable = computed(() => currentUserOwnsHistory.value && canMutateHistory(props.history));
 async function updateDsc(collection: CollectionEntry, fields: Object | undefined) {
     if (!isHDCA(collection)) {
         return;
@@ -182,6 +182,7 @@ watch(
                                 :name="item.element_identifier"
                                 :expand-dataset="isExpanded(item)"
                                 :is-dataset="item.element_type == 'hda'"
+                                :writable="writable"
                                 :filterable="filterable"
                                 @drag-start="setItemDragstart(item, $event)"
                                 @update:expand-dataset="setExpanded(item, $event)"
