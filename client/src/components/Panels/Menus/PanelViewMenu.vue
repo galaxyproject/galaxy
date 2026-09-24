@@ -131,7 +131,6 @@ async function updatePanelView(panel: Panel) {
         :title="!loading ? localize('Show panel options') : 'Loading panel view'"
         variant="link"
         toggle-class="text-decoration-none"
-        role="menu"
         aria-label="View all tool panel configurations"
         class="tool-panel-dropdown"
         :class="styleClasses"

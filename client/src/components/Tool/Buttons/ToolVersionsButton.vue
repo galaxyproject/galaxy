@@ -25,7 +25,6 @@ const availableVersions = computed(() => [...props.versions].reverse());
     <GDropdown
         no-caret
         right
-        role="button"
         variant="link"
         aria-label="Select Versions"
         class="tool-versions"

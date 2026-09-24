@@ -50,7 +50,6 @@ function onSubmit(name: string, url: string, ftype?: string) {
         v-g-tooltip.hover
         no-caret
         right
-        role="button"
         title="Upload Examples"
         variant="link"
         aria-label="Upload Examples"

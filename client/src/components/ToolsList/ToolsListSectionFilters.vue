@@ -87,7 +87,6 @@ function searchWithinSections(sections: ToolSection[], query: string) {
                     variant="link"
                     class="tool-section-dropdown"
                     toggle-class="text-decoration-none"
-                    role="menu"
                     aria-label="Select a tool ontology to filter by"
                     size="sm">
                     <template v-slot:button-content>
