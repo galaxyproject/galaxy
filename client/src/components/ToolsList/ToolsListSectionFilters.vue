@@ -101,7 +101,8 @@ function searchWithinSections(sections: ToolSection[], query: string) {
                     <GDropdownGroup
                         id="searchable-sections"
                         class="sections-select-list"
-                        header-classes="search-header">
+                        header-classes="search-header"
+                        aria-label="Ontologies">
                         <template v-slot:header>
                             <GDropdownText>
                                 <BFormInput v-model="ontologiesFilter" type="text" placeholder="Filter ontologies..." />
@@ -111,7 +112,8 @@ function searchWithinSections(sections: ToolSection[], query: string) {
                         <GDropdownGroup
                             v-if="Object.keys(edamOperations).length"
                             id="edam-operations"
-                            class="unselectable">
+                            class="unselectable"
+                            :aria-label="panels['ontology:edam_operations']?.name">
                             <template v-slot:header>
                                 <FontAwesomeIcon
                                     v-if="getPanelIcon('ontology:edam_operations')"
@@ -132,7 +134,11 @@ function searchWithinSections(sections: ToolSection[], query: string) {
 
                         <GDropdownDivider />
 
-                        <GDropdownGroup v-if="Object.keys(edamTopics).length" id="edam-topics" class="unselectable">
+                        <GDropdownGroup
+                            v-if="Object.keys(edamTopics).length"
+                            id="edam-topics"
+                            class="unselectable"
+                            :aria-label="panels['ontology:edam_topics']?.name">
                             <template v-slot:header>
                                 <FontAwesomeIcon
                                     v-if="getPanelIcon('ontology:edam_topics')"
