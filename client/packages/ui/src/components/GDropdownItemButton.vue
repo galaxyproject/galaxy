@@ -51,4 +51,11 @@ function onClick(event: MouseEvent) {
 .dropdown-item {
     cursor: pointer;
 }
+
+/* Focus shares the hover background: the light ring tells them apart, the blue edge shows on unfilled active items */
+.dropdown-item:focus-visible {
+    outline: 2px solid var(--color-grey-100);
+    outline-offset: -4px;
+    box-shadow: inset 0 0 0 2px var(--color-blue-600);
+}
 </style>
