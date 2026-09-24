@@ -43,6 +43,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Python dependencies
+        # TEMP: pulsar-galaxy-lib is pinned to a git revision until 0.15.16 is
+        # released; its setup.py names itself "pulsar-app" without this.
+        env:
+          PULSAR_GALAXY_LIB: '1'
         run: |
           uv venv .venv
           . .venv/bin/activate
