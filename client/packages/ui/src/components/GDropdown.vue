@@ -70,6 +70,7 @@ const dropdownEl = ref<HTMLDivElement>();
 const toggleEl = ref<HTMLButtonElement>();
 const menuEl = ref<HTMLDivElement>();
 const hasBeenOpened = ref(false);
+let unmounted = false;
 
 const uid = useUid("g-dropdown-");
 const toggleId = computed(() => `${uid.value}-toggle`);
@@ -97,7 +98,8 @@ function show() {
     hasBeenOpened.value = true;
     emit("show");
     nextTick(() => {
-        if (isOpen.value) {
+        // An unmount before this tick has already removed the listeners
+        if (isOpen.value && !unmounted) {
             document.addEventListener("click", onOutsideEvent, true);
             document.addEventListener("focusin", onOutsideEvent, true);
         }
@@ -267,6 +269,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
+    unmounted = true;
     removeOutsideListeners();
 });
 
