@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { useUploadDatasetMonitorStore } from "@/stores/uploadDatasetMonitorStore";
+
 import { getUploadRootBreadcrumb } from "./uploadBreadcrumb";
 
 import UploadMethodList from "./UploadMethodList.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 const breadcrumbItems = [getUploadRootBreadcrumb()];
+useUploadDatasetMonitorStore();
 </script>
 
 <template>

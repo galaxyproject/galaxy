@@ -1,13 +1,10 @@
 import { createHistoryDatasetCollectionInstanceFull } from "@/api/datasetCollections";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { buildCollectionElements } from "@/composables/upload/collectionElements";
-import {
-    abortAllUploadControllers,
-    abortBatchController,
-    abortUploadController,
-} from "@/composables/upload/uploadCancellation";
+import { abortBatchController, abortUploadController } from "@/composables/upload/uploadCancellation";
 import type { NewUploadItem, UploadItem } from "@/composables/upload/uploadItemTypes";
 import { validateUploadItem } from "@/composables/upload/uploadItemTypes";
+import { resolveDirectCollectionResult } from "@/composables/upload/uploadTracking";
 import { useHistoryStore } from "@/stores/historyStore";
 import { getHistoryUploadActionErrorMessage, getHistoryUploadBlockReason } from "@/utils/historyUpload";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -113,7 +110,7 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
             }
 
             uploadState.setBatchCollectionId(batchId, response.id);
-            uploadState.updateBatchStatus(batchId, "completed");
+            uploadState.updateBatchStatus(batchId, "processing");
         } catch (err) {
             if (signal?.aborted) {
                 uploadState.updateBatchStatus(batchId, "cancelled");
@@ -183,9 +180,8 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
                     perFileProgress: (fileId, percentage) => {
                         uploadState.updateProgress(fileId, percentage);
                     },
-                    success: () => {
-                        ids.forEach((id) => uploadState.updateProgress(id, 100));
-                        uploadState.updateBatchStatus(batchId, "completed");
+                    success: (response) => {
+                        resolveDirectCollectionResult(uploadState, batchId, ids, response);
                     },
                     error: (err) => {
                         const errorMsg = errorMessageAsString(err);
@@ -228,12 +224,11 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
 
     function recoverIncompleteBatches(): void {
         uploadState.activeBatches.value.forEach((batch) => {
-            if (
-                batch.collectionId ||
-                batch.status === "error" ||
-                batch.status === "cancelled" ||
-                batch.directCreation
-            ) {
+            if (batch.status === "error" || batch.status === "cancelled" || batch.directCreation) {
+                return;
+            }
+
+            if (batch.collectionId) {
                 return;
             }
 
@@ -266,22 +261,45 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
     }
 
     function cancelUpload(uploadId: string): void {
+        if (!uploadState.isCancellable(uploadId)) {
+            return;
+        }
+
         uploadState.cancelUpload(uploadId);
         abortUploadController(uploadId);
     }
 
     function cancelBatch(batchId: string): void {
+        if (!uploadState.getBatch(batchId)) {
+            return;
+        }
+
         uploadState.cancelBatch(batchId);
         abortBatchController(batchId);
     }
 
     function cancelAll(): void {
+        // Fully-transferred items resolve through monitoring, so only abort in-flight transfers.
+        const abortableUploadIds = uploadState.activeItems.value
+            .filter((item) => !item.batchId && uploadState.isCancellable(item.id))
+            .map((item) => item.id);
+        const activeBatchIds = uploadState.activeBatches.value.map((batch) => batch.id);
+
         uploadState.cancelAll();
-        abortAllUploadControllers();
+        abortableUploadIds.forEach((id) => abortUploadController(id));
+        activeBatchIds.forEach((batchId) => abortBatchController(batchId));
     }
 
     function clearCompleted(): void {
         uploadState.clearCompleted();
+    }
+
+    function dismissUpload(uploadId: string): void {
+        uploadState.dismissUpload(uploadId);
+    }
+
+    function dismissBatch(batchId: string): void {
+        uploadState.dismissBatch(batchId);
     }
 
     function clearAll(): void {
@@ -300,6 +318,8 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
         clearAll,
         clearCompleted,
         createCollection,
+        dismissBatch,
+        dismissUpload,
         processDirectBatch,
         recoverIncompleteBatches,
         retryCollectionCreation,

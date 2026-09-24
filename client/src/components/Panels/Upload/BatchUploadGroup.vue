@@ -22,6 +22,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
     (e: "toggle"): void;
     (e: "cancel", batchId: string): void;
+    (e: "dismiss", batchId: string): void;
 }>();
 
 const historyStore = useHistoryStore();
@@ -35,6 +36,8 @@ const hasError = computed(() => props.batch.status === "error");
 const isCancellable = computed(
     () => props.batch.status === "uploading" || props.batch.status === "creating-collection",
 );
+
+const canDismiss = computed(() => props.batch.status === "error");
 
 const targetHistoryId = computed<string | null>(() => props.batch.uploads?.[0]?.targetHistoryId ?? null);
 
@@ -59,6 +62,11 @@ const badges = computed<CardBadge[]>(() => [
 function onCancel(event: Event) {
     event.stopPropagation();
     emit("cancel", props.batch.id);
+}
+
+function onDismiss(event: Event) {
+    event.stopPropagation();
+    emit("dismiss", props.batch.id);
 }
 </script>
 
@@ -94,6 +102,13 @@ function onCancel(event: Event) {
                     class="btn btn-link text-muted p-0 mr-2 cancel-btn"
                     title="Cancel batch"
                     @click="onCancel">
+                    <FontAwesomeIcon :icon="faTimesCircle" fixed-width />
+                </button>
+                <button
+                    v-if="canDismiss"
+                    class="btn btn-link text-muted p-0 mr-2 cancel-btn"
+                    title="Dismiss batch"
+                    @click="onDismiss">
                     <FontAwesomeIcon :icon="faTimesCircle" fixed-width />
                 </button>
                 <FontAwesomeIcon

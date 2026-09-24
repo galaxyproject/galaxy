@@ -6,7 +6,14 @@ import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
 import { getUploadItemDisplayInfo } from "./uploadProgressUi";
 
 function withState<T extends NewUploadItem>(item: T) {
-    return { ...item, id: "upload-1", status: "queued" as const, progress: 0, createdAt: 0 };
+    return {
+        ...item,
+        id: "upload-1",
+        status: "queued" as const,
+        progress: 0,
+        createdAt: 0,
+        datasetIds: [] as string[],
+    };
 }
 
 describe("getUploadItemDisplayInfo sourceUrl", () => {
