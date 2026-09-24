@@ -1,7 +1,4 @@
-/**
- * Row caps and query thresholds shared by the palette providers, so every
- * section of the same kind is sized the same way.
- */
+/** Row caps and query thresholds shared by the palette providers, so sections of a kind size alike */
 export const PALETTE_LIMITS = {
     /** Rows of a scoped result section, and of an action's argument rows */
     section: 8,
@@ -15,9 +12,6 @@ export const PALETTE_LIMITS = {
     page: 25,
     /** Shortest query sent to a backend search; the cache answers anything shorter */
     minBackendQuery: 2,
-    /**
-     * Tools keep the tool panel's three characters for their backend search: the
-     * whole toolbox is cached client side, so shorter queries are matched there.
-     */
+    /** Tools keep the tool panel's three characters: the cached toolbox matches shorter queries */
     minToolBackendQuery: 3,
 } as const;

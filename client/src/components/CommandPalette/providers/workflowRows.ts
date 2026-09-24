@@ -1,7 +1,4 @@
-/**
- * Workflow rows and their store-first lists, shared by the workflows provider and
- * the "Run workflow" action, which collects one of the user's workflows.
- */
+/** Workflow rows and store-first lists, shared by the workflows provider and the "Run workflow" action */
 import { faSitemap } from "@fortawesome/free-solid-svg-icons";
 
 import type { WorkflowSummary } from "@/api/workflows";
@@ -62,11 +59,7 @@ function workflowRows(workflows: WorkflowSummary[], variant: WorkflowListVariant
         .map((workflow) => workflowItem(workflow, variant));
 }
 
-/**
- * One workflow list, store first. The store keeps the rows of each query apart
- * from the listing, so a search is read back from its own list; the bookmarks
- * are only ever filtered locally.
- */
+/** One workflow list, store first; a search reads back its own list, the bookmarks only filter locally */
 export function workflowList(variant: WorkflowListVariant): StoreFirstList {
     const workflowStore = useWorkflowStore();
     return {
