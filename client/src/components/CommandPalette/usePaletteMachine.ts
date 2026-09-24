@@ -1,15 +1,17 @@
 import { computed, shallowRef } from "vue";
 
+import { ALL_CATEGORY, type PaletteCategory } from "./providers/categories";
 import { isScopeAvailable, type ScopeDefinition } from "./providers/scopes";
 import type { PaletteContext, PaletteItem } from "./types";
 import { parsePaletteQuery } from "./utilities";
 
 /**
  * What the palette is currently searching. Everything but `root` is rendered
- * as a removable badge chip in front of the input.
+ * as a removable badge chip in front of the input; `root` may be narrowed to a
+ * category instead, unset while "All" is active.
  */
 export type PaletteMode =
-    | { type: "root" }
+    | { type: "root"; category?: PaletteCategory }
     | { type: "scoped"; scope: ScopeDefinition }
     | { type: "action"; action: PaletteItem }
     | { type: "help" };
@@ -38,6 +40,9 @@ export function usePaletteMachine(getContext?: () => PaletteContext) {
     const query = computed(() => text.value.trim());
 
     const scope = computed(() => (mode.value.type === "scoped" ? mode.value.scope : undefined));
+
+    /** Category narrowing the root search, unset while "All" is active */
+    const category = computed(() => (mode.value.type === "root" ? mode.value.category : undefined));
 
     /** Label of the badge chip, unset while in root or help mode */
     const badgeLabel = computed(() => {
@@ -97,6 +102,22 @@ export function usePaletteMachine(getContext?: () => PaletteContext) {
         }
     }
 
+    /** Writes the input text; a category only ever narrows the query it was picked for */
+    function writeText(next: string) {
+        text.value = next;
+        if (category.value && next.trim() === "") {
+            mode.value = { type: "root" };
+        }
+    }
+
+    /** Narrows a root query to one category, keeping the text; "All" narrows nothing */
+    function selectCategory(next: PaletteCategory) {
+        const narrowed = next.id === ALL_CATEGORY.id ? undefined : next;
+        if (mode.value.type === "root" && query.value !== "" && narrowed?.id !== category.value?.id) {
+            mode.value = narrowed ? { type: "root", category: narrowed } : { type: "root" };
+        }
+    }
+
     /**
      * Applies raw input. A recognized token (`>` or `x:`) becomes a badge and
      * is stripped, a lone `?` in root opens help, anything else is kept as
@@ -120,13 +141,13 @@ export function usePaletteMachine(getContext?: () => PaletteContext) {
             enterHelp();
             return;
         }
-        text.value = next;
+        writeText(next);
     }
 
     /** Stepwise escape: clear the text, then the badge, then close */
     function handleEscape(): EscapeResult {
         if (text.value !== "") {
-            text.value = "";
+            writeText("");
             return "cleared-text";
         }
         if (mode.value.type !== "root") {
@@ -143,6 +164,7 @@ export function usePaletteMachine(getContext?: () => PaletteContext) {
 
     return {
         badgeLabel,
+        category,
         enterAction,
         enterHelp,
         enterScope,
@@ -153,6 +175,7 @@ export function usePaletteMachine(getContext?: () => PaletteContext) {
         query,
         reset,
         scope,
+        selectCategory,
         setText,
         text,
     };

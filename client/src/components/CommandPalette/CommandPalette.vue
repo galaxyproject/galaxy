@@ -19,7 +19,7 @@ import { localize } from "@/utils/localization";
 
 import { findPaletteProvider, paletteProviders, rankPaletteItems } from "./providers";
 import { actionsProvider } from "./providers/actions";
-import { ALL_CATEGORY, availableCategories, categoryScope, type PaletteCategory } from "./providers/categories";
+import { ALL_CATEGORY, availableCategories, categoryProviderId, type PaletteCategory } from "./providers/categories";
 import { isPaletteFetchError } from "./providers/errors";
 import { ACTIONS_SCOPE, availableScopes, type ScopeDefinition } from "./providers/scopes";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem } from "./types";
@@ -73,8 +73,20 @@ const userStore = useUserStore();
 
 // the machine needs the context to reject scope tokens the user may not use;
 // `buildContext` is a hoisted declaration, so it is safe to hand over here
-const { badgeLabel, enterAction, enterScope, exitAction, handleEscape, mode, popMode, query, setText, text } =
-    usePaletteMachine(buildContext);
+const {
+    badgeLabel,
+    category: activeCategory,
+    enterAction,
+    enterScope,
+    exitAction,
+    handleEscape,
+    mode,
+    popMode,
+    query,
+    selectCategory: narrowToCategory,
+    setText,
+    text,
+} = usePaletteMachine(buildContext);
 
 const dialogElement = ref<HTMLDialogElement | null>(null);
 const inputElement = ref<HTMLInputElement | null>(null);
@@ -82,8 +94,6 @@ const resultsElement = ref<HTMLElement | null>(null);
 const searching = ref(false);
 const sections = ref<ResultSection[]>([]);
 const selectedIndex = ref(0);
-/** Category the root results are narrowed to, "All" while nothing is picked */
-const activeCategoryId = ref(ALL_CATEGORY.id);
 /** Whether ctrl/cmd is currently down, so the palette can preview "new tab" */
 const modifierHeld = ref(false);
 /** Whether shift is currently down, so the palette can preview the secondary run */
@@ -112,14 +122,7 @@ const showCategoryRow = computed(() => mode.value.type === "root" && query.value
 /** Whether the arrow keys currently move the category instead of the selection */
 const categoryRowSelected = computed(() => showCategoryRow.value && selectedIndex.value === CATEGORY_ROW_INDEX);
 
-/** Category narrowing the results, unset while "All" is active or hidden */
-const activeCategory = computed(() => {
-    if (!showCategoryRow.value) {
-        return undefined;
-    }
-    const category = paletteCategories.value.find((entry) => entry.id === activeCategoryId.value);
-    return category?.providerId ? category : undefined;
-});
+const activeCategoryId = computed(() => activeCategory.value?.id ?? ALL_CATEGORY.id);
 
 /** Badge text, localized here because the providers keep their strings in English */
 const badgeText = computed(() => (badgeLabel.value ? localize(badgeLabel.value) : undefined));
@@ -410,11 +413,12 @@ async function rootSections(ctx: PaletteContext): Promise<ResultSection[]> {
  * cache-only — root search.
  */
 async function categorySections(category: PaletteCategory, ctx: PaletteContext): Promise<ResultSection[]> {
-    const provider = category.providerId ? findPaletteProvider(category.providerId) : undefined;
+    const providerId = categoryProviderId(category);
+    const provider = providerId ? findPaletteProvider(providerId) : undefined;
     if (!provider) {
         return [];
     }
-    return providerSections(provider, categoryScope(category), ctx);
+    return providerSections(provider, category.scope, ctx);
 }
 
 async function providerSections(
@@ -659,14 +663,14 @@ function moveSelection(delta: 1 | -1) {
  * rerun rides the shared debounce, so holding ←→ across the row costs one
  * search instead of one per category passed over.
  */
-function selectCategory(categoryId: string) {
-    activeCategoryId.value = categoryId;
+function selectCategory(category: PaletteCategory) {
+    narrowToCategory(category);
     selectedIndex.value = CATEGORY_ROW_INDEX;
 }
 
 /** The row is keyboard driven, so a clicked chip hands the focus straight back */
-function onCategoryClick(categoryId: string) {
-    selectCategory(categoryId);
+function onCategoryClick(category: PaletteCategory) {
+    selectCategory(category);
     refocusInput();
 }
 
@@ -675,12 +679,8 @@ function moveCategory(delta: 1 | -1) {
     const current = categories.findIndex((category) => category.id === activeCategoryId.value);
     const next = categories[(Math.max(current, 0) + delta + categories.length) % categories.length];
     if (next) {
-        selectCategory(next.id);
+        selectCategory(next);
     }
-}
-
-function resetCategory() {
-    activeCategoryId.value = ALL_CATEGORY.id;
 }
 
 function dismissBadge() {
@@ -806,14 +806,6 @@ watch(selectedIndex, () => {
     }
 });
 
-// a narrowed search only ever survives the query it was picked for
-watch(mode, resetCategory);
-watch(showCategoryRow, (visible) => {
-    if (!visible) {
-        resetCategory();
-    }
-});
-
 function isNewTabModifier(key: string) {
     return key === "Meta" || key === "Control";
 }
@@ -847,8 +839,8 @@ useEventListener(window, "blur", () => {
     shiftHeld.value = false;
 });
 
-// the category is part of what is being searched, so it shares the debounce
-watchDebounced([text, mode, activeCategoryId], runSearch, { debounce: SEARCH_DEBOUNCE });
+// the category is part of the mode, so a sweep across the row shares the debounce
+watchDebounced([text, mode], runSearch, { debounce: SEARCH_DEBOUNCE });
 
 /** Drives the enter/leave transition; the dialog element itself stays mounted */
 const paletteVisible = ref(false);
@@ -1070,7 +1062,7 @@ watchImmediate(isPaletteOpen, (open) => {
                 tabindex="-1"
                 :aria-selected="category.id === activeCategoryId ? 'true' : 'false'"
                 :data-description="`palette category ${category.id}`"
-                @click="onCategoryClick(category.id)">
+                @click="onCategoryClick(category)">
                 {{ localize(category.label) }}
             </button>
         </div>

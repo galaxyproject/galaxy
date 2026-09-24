@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { ALL_CATEGORY, PALETTE_CATEGORIES } from "./providers/categories";
 import { ACTIONS_SCOPE, findScope } from "./providers/scopes";
 import type { PaletteContext, PaletteItem } from "./types";
 import { usePaletteMachine } from "./usePaletteMachine";
@@ -213,6 +214,32 @@ describe("usePaletteMachine", () => {
         root.exitAction();
         expect(root.mode.value).toEqual({ type: "root" });
         expect(root.text.value).toBe("rna");
+    });
+
+    it("narrows a root query to a category until the query or the mode changes", () => {
+        const machine = usePaletteMachine();
+        const tools = PALETTE_CATEGORIES.find((category) => category.id === "tools")!;
+        machine.selectCategory(tools);
+        // there is no query to narrow yet
+        expect(machine.category.value).toBeUndefined();
+
+        machine.setText("rna");
+        machine.selectCategory(tools);
+        expect(machine.mode.value).toEqual({ type: "root", category: tools });
+        machine.setText("rna seq");
+        expect(machine.category.value).toBe(tools);
+        machine.selectCategory(ALL_CATEGORY);
+        expect(machine.mode.value).toEqual({ type: "root" });
+
+        machine.selectCategory(tools);
+        expect(machine.handleEscape()).toBe("cleared-text");
+        expect(machine.mode.value).toEqual({ type: "root" });
+
+        machine.setText("rna");
+        machine.selectCategory(tools);
+        machine.setText("w: rna");
+        machine.popMode();
+        expect(machine.category.value).toBeUndefined();
     });
 
     it("resets mode and text", () => {

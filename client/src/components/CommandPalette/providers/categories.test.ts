@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { PaletteContext } from "../types";
-import { ALL_CATEGORY, availableCategories, categoryScope, PALETTE_CATEGORIES } from "./categories";
+import { ALL_CATEGORY, availableCategories, categoryProviderId, PALETTE_CATEGORIES } from "./categories";
 import { paletteProviders } from "./index";
 
 function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
@@ -11,16 +11,16 @@ function makeCtx(overrides: Partial<PaletteContext> = {}): PaletteContext {
 describe("PALETTE_CATEGORIES", () => {
     it("names a registered provider for every category", () => {
         const providerIds = paletteProviders.map((provider) => provider.id);
-        PALETTE_CATEGORIES.forEach((category) => expect(providerIds).toContain(category.providerId));
+        PALETTE_CATEGORIES.forEach((category) => expect(providerIds).toContain(categoryProviderId(category)));
     });
 
     it("leaves the actions provider to the 'All' fan-out", () => {
-        expect(PALETTE_CATEGORIES.map((category) => category.providerId)).not.toContain("actions");
+        expect(PALETTE_CATEGORIES.map(categoryProviderId)).not.toContain("actions");
     });
 
-    it("resolves the scope every scoped category borrows", () => {
-        PALETTE_CATEGORIES.filter((category) => category.scopeKey).forEach((category) => {
-            expect(categoryScope(category)?.providerId).toBe(category.providerId);
+    it("gives every category either a scope or a provider of its own, never both", () => {
+        PALETTE_CATEGORIES.forEach((category) => {
+            expect(Boolean(category.scope) !== Boolean(category.providerId)).toBe(true);
         });
     });
 });

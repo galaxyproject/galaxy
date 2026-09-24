@@ -3,19 +3,19 @@ import { findScope, isScopeAvailable, type ScopeDefinition } from "./scopes";
 
 /**
  * One entry of the root mode category row. Every category but "All" narrows the
- * results down to a single provider; `scopeKey` names the scope it borrows for
- * that — both to decide whether the category may be offered at all and to reuse
- * the provider's scoped search once it is active.
+ * results down to a single provider: through the scope it borrows where it has
+ * one — which also decides whether the category may be offered at all — and
+ * through the provider's plain root search otherwise.
  */
 export interface PaletteCategory {
     /** Unique, also the suffix of the row's `data-description` */
     id: string;
     /** Label rendered on the tab */
     label: string;
-    /** Provider whose results are shown; unset for {@link ALL_CATEGORY} */
+    /** Provider of a category without a scope of its own */
     providerId?: string;
-    /** Scope reused to run the narrowed search, see {@link categoryScope} */
-    scopeKey?: string;
+    /** Scope the narrowed search runs through; its provider is the category's */
+    scope?: ScopeDefinition;
 }
 
 /** The default: every provider fans out, nothing is filtered away */
@@ -27,19 +27,19 @@ export const ALL_CATEGORY: PaletteCategory = { id: "all", label: "All" };
  * shown as part of "All", the `>` scope covers searching them on purpose.
  */
 export const PALETTE_CATEGORIES: PaletteCategory[] = [
-    { id: "workflows", label: "Workflows", providerId: "workflows", scopeKey: "w" },
-    { id: "histories", label: "Histories", providerId: "histories", scopeKey: "h" },
-    { id: "datasets", label: "Datasets", providerId: "datasets", scopeKey: "d" },
-    { id: "visualizations", label: "Visualizations", providerId: "visualizations", scopeKey: "v" },
-    { id: "invocations", label: "Invocations", providerId: "invocations", scopeKey: "i" },
-    { id: "pages", label: "Pages", providerId: "pages", scopeKey: "p" },
-    { id: "tools", label: "Tools", providerId: "tools", scopeKey: "t" },
+    { id: "workflows", label: "Workflows", scope: findScope("w") },
+    { id: "histories", label: "Histories", scope: findScope("h") },
+    { id: "datasets", label: "Datasets", scope: findScope("d") },
+    { id: "visualizations", label: "Visualizations", scope: findScope("v") },
+    { id: "invocations", label: "Invocations", scope: findScope("i") },
+    { id: "pages", label: "Pages", scope: findScope("p") },
+    { id: "tools", label: "Tools", scope: findScope("t") },
     { id: "navigation", label: "Navigation", providerId: "navigation" },
 ];
 
-/** Scope a category runs its narrowed search through, if it has one */
-export function categoryScope(category: PaletteCategory): ScopeDefinition | undefined {
-    return category.scopeKey ? findScope(category.scopeKey) : undefined;
+/** Provider a category narrows the results to, unset for {@link ALL_CATEGORY} */
+export function categoryProviderId(category: PaletteCategory): string | undefined {
+    return category.scope?.providerId ?? category.providerId;
 }
 
 /**
@@ -48,9 +48,8 @@ export function categoryScope(category: PaletteCategory): ScopeDefinition | unde
  * filter that can never hold anything.
  */
 export function availableCategories(ctx: PaletteContext): PaletteCategory[] {
-    const usable = PALETTE_CATEGORIES.filter((category) => {
-        const scope = categoryScope(category);
-        return scope ? isScopeAvailable(scope, ctx) : true;
-    });
+    const usable = PALETTE_CATEGORIES.filter((category) =>
+        category.scope ? isScopeAvailable(category.scope, ctx) : true,
+    );
     return [ALL_CATEGORY, ...usable];
 }
