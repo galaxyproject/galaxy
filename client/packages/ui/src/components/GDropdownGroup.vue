@@ -18,14 +18,15 @@ const headerId = useUid("g-dropdown-group-header-");
 
 <template>
     <div role="group" :aria-labelledby="header ? headerId : undefined">
-        <h6
+        <!-- header like BDropdownGroup: an h6 has a tighter line height and cannot hold the block controls some headers do -->
+        <header
             v-if="header || $slots.header"
             :id="headerId"
             class="dropdown-header"
             :class="headerClasses"
             role="presentation">
             <slot name="header">{{ header }}</slot>
-        </h6>
+        </header>
         <slot />
     </div>
 </template>
