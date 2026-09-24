@@ -121,6 +121,22 @@ describe("GDropdown.vue", () => {
             expect(isMenuOpen(wrapper)).toBe(false);
             expect(wrapper.emitted("hide")).toHaveLength(1);
         });
+
+        it("does not listen for outside clicks once unmounted while opening", async () => {
+            const addListener = vi.spyOn(document, "addEventListener");
+            const mounted = mount(GDropdown as object, {
+                localVue,
+                propsData: { text: "Menu" },
+                attachTo: document.body,
+            });
+
+            (mounted.get(".dropdown-toggle").element as HTMLElement).click();
+            mounted.destroy();
+            await flushPromises();
+
+            expect(addListener).not.toHaveBeenCalledWith("click", expect.any(Function), true);
+            addListener.mockRestore();
+        });
     });
 
     describe("link items", () => {
