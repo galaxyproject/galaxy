@@ -207,10 +207,9 @@ def conda_platform() -> str:
     machine = _platform_module.machine().lower()
     if IS_OS_X:
         conda_arch_map = {
-            "x86_64": "osx-64",
             "arm64": "osx-arm64",
         }
-        default_platform = "osx-64"
+        default_platform = "osx-arm64"
     else:
         conda_arch_map = {
             "x86_64": "linux-64",
