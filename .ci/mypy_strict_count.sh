@@ -27,6 +27,17 @@ set +e
     --disallow-untyped-defs \
     --warn-return-any \
     .) > "$output" 2>&1
+mypy_exit_code=$?
 set -e
+
+# mypy exits 0 (no errors) or 1 (errors found) on a normal run; anything else
+# is a crash or config problem, and the error count in $output can't be
+# trusted (e.g. "errors prevented further checking" still contains a line or
+# two matching ": error:", so it would otherwise look like a very low count).
+if [ "$mypy_exit_code" -gt 1 ]; then
+    cat "$output" >&2
+    echo "mypy exited with status $mypy_exit_code, see output above" >&2
+    exit 1
+fi
 
 grep ": error:" "$output" | grep -vc 'galaxy_test/'
