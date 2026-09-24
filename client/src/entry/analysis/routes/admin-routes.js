@@ -25,6 +25,7 @@ import QuotaForm from "@/components/admin/QuotaForm.vue";
 import ResetMetadata from "@/components/admin/ResetMetadata.vue";
 import RoleForm from "@/components/admin/RoleForm.vue";
 import SanitizeAllow from "@/components/admin/SanitizeAllow.vue";
+import UserRolesGroupsForm from "@/components/admin/UserRolesGroupsForm.vue";
 import FormGeneric from "@/components/Form/FormGeneric.vue";
 import GridInvocation from "@/components/Grid/GridInvocation.vue";
 import GridList from "@/components/Grid/GridList.vue";
@@ -191,11 +192,9 @@ export default [
             },
             {
                 path: "form/manage_roles_and_groups_for_user",
-                component: FormGeneric,
+                component: UserRolesGroupsForm,
                 props: (route) => ({
-                    url: `/admin/manage_roles_and_groups_for_user?id=${route.query.id}`,
-                    icon: "fa-users",
-                    redirect: "/admin/users",
+                    userId: route.query.id,
                 }),
             },
             {

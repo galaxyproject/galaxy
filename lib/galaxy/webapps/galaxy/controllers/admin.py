@@ -12,10 +12,7 @@ from galaxy import (
     util,
     web,
 )
-from galaxy.exceptions import (
-    ActionInputError,
-    RequestParameterInvalidException,
-)
+from galaxy.exceptions import ActionInputError
 from galaxy.managers.quotas import QuotaManager
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
@@ -593,76 +590,8 @@ class AdminGalaxy(controller.BaseUIController):
         else:
             return self.message_exception(trans, "Please specify user ids.")
 
-    @web.legacy_expose_api
-    @web.require_admin
-    def manage_roles_and_groups_for_user(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        user_id = kwd.get("id")
-        if not user_id:
-            return self.message_exception(trans, f"Invalid user id ({str(user_id)}) received")
-        user = get_user(trans, user_id)
-        if trans.request.method == "GET":
-            in_roles = []
-            all_roles = []
-            in_groups = []
-            all_groups = []
-            for role in (
-                trans.sa_session.query(trans.app.model.Role)
-                .filter(trans.app.model.Role.deleted == false())
-                .order_by(trans.app.model.Role.name)
-            ):
-                if role in [x.role for x in user.roles]:
-                    in_roles.append(trans.security.encode_id(role.id))
-                if role.type != trans.app.model.Role.types.PRIVATE:
-                    # There is a 1 to 1 mapping between a user and a PRIVATE role, so private roles should
-                    # not be listed in the roles form fields, except for the currently selected user's private
-                    # role, which should always be in in_roles.  The check above is added as an additional
-                    # precaution, since for a period of time we were including private roles in the form fields.
-                    all_roles.append((role.name, trans.security.encode_id(role.id)))
-            for group in (
-                trans.sa_session.query(trans.app.model.Group)
-                .filter(trans.app.model.Group.deleted == false())
-                .order_by(trans.app.model.Group.name)
-            ):
-                if group in [x.group for x in user.groups]:
-                    in_groups.append(trans.security.encode_id(group.id))
-                all_groups.append((group.name, trans.security.encode_id(group.id)))
-            return {
-                "title": f"Roles and groups for '{user.email}'",
-                "message": f"User '{user.email}' is currently associated with {len(in_roles) - 1} role(s) and is a member of {len(in_groups)} group(s).",
-                "status": "info",
-                "inputs": [
-                    build_select_input("in_roles", "Roles", all_roles, in_roles),
-                    build_select_input("in_groups", "Groups", all_groups, in_groups),
-                ],
-            }
-        else:
-            role_ids = [trans.security.decode_id(id) for id in util.listify(payload.get("in_roles"))]
-            group_ids = [trans.security.decode_id(id) for id in util.listify(payload.get("in_groups"))]
-            try:
-                trans.app.security_agent.set_user_group_and_role_associations(
-                    user, group_ids=group_ids, role_ids=role_ids
-                )
-                return {
-                    "message": f"User '{user.email}' has been updated with {len(role_ids)} associated roles and {len(group_ids)} associated groups (private roles are not displayed)."
-                }
-            except RequestParameterInvalidException:
-                return self.message_exception(trans, "One or more invalid role/group id has been provided.")
-
 
 # ---- Utility methods -------------------------------------------------------
-
-
-def build_select_input(name, label, options, value):
-    return {
-        "type": "select",
-        "multiple": True,
-        "optional": True,
-        "individual": True,
-        "name": name,
-        "label": label,
-        "options": options,
-        "value": value,
-    }
 
 
 def get_user(trans: GalaxyWebTransaction, user_id):
