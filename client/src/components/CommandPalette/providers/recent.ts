@@ -15,11 +15,7 @@ export interface RecentRows {
     fallback(entry: RecentPaletteItem): { id: string; icon: IconDefinition; title?: string; to: string };
 }
 
-/**
- * The remembered entities of one type matching `query`, most recently used
- * first: the store's copy renders current names and dates where it still holds
- * one, and a row built from what the palette remembered stands in otherwise.
- */
+/** Remembered entities matching `query`, newest first; the store's copy supplies current names where it has one */
 export function recentPaletteItems(rows: RecentRows, query: string, limit: number): PaletteItem[] {
     const { recentItems } = useRecentPaletteItems();
     const items = recentItems(rows.type).map((entry) => {

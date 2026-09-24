@@ -10,9 +10,8 @@ import { type Gated, rankPaletteItems, visibleFor } from "../utilities";
 const EXCLUDED_ACTIVITY_IDS = ["upload", "beta-upload"];
 
 /**
- * Useful destinations that are not activities, gated like the activity rows are:
- * `anonymous` mirrors the flag of {@link defaultActivities} (the routes redirect
- * anonymous users otherwise), `configGate` adds the check the route itself makes.
+ * Non-activity destinations gated like the activity rows: `anonymous` mirrors
+ * {@link defaultActivities}, `configGate` repeats the route's own check.
  */
 const EXTRA_DESTINATIONS: Gated<PaletteItem>[] = [
     {

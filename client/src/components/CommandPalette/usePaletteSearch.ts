@@ -39,11 +39,7 @@ interface PaletteSearchOptions {
     text: Readonly<Ref<string>>;
 }
 
-/**
- * The palette's results: which providers a mode asks, the sections they answer
- * with, and the selection riding on them. Searches rerun on every change of the
- * text or the mode; a change of what is searched clears the rows at once.
- */
+/** The palette's results per mode: provider sections and the selection; a new search subject clears the rows at once */
 export function usePaletteSearch(options: PaletteSearchOptions) {
     const { activeCategory, buildContext, helpHandlers, leadingSection, mode, modifierLabel, query, text } = options;
 
@@ -211,10 +207,8 @@ export function usePaletteSearch(options: PaletteSearchOptions) {
         }
         providers.forEach((provider) => {
             providerItems(provider.id, ctx)
-                // root mode is not local for every provider — tools, and the
-                // listing searches of histories, workflows and reports, do reach
-                // the backend — so a rejection is ordinary here: it costs its own
-                // section rather than the spinner it would leave running
+                // some root searches reach the backend, so a rejection is ordinary:
+                // it costs its own section, not a spinner left running
                 .catch(() => [] as PaletteItem[])
                 .then((items) => {
                     if (epoch !== searchEpoch) {

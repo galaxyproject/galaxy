@@ -80,8 +80,7 @@ export const useVisualizationStore = defineStore("visualizationStore", () => {
 
     /**
      * Fetches summaries for a variant and merges them into the cache. Unfiltered
-     * fetches also (re)define the ordered id list of that variant. Concurrent
-     * identical requests share a single promise.
+     * fetches also (re)define the ordered id list of that variant.
      */
     async function fetchVisualizations(
         variant: VisualizationVariant,

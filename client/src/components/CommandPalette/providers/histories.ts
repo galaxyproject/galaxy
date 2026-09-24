@@ -37,12 +37,7 @@ interface PaletteHistory {
     update_time: string;
 }
 
-/**
- * Narrows the store's two history shapes once: the user's own histories
- * (`AnyHistory`) and the shared, published and archived listings
- * (`AnyHistoryEntry`). The backend serializes the owner as `username`; `owner`
- * only exists on the listing types.
- */
+/** Own and listed histories as one shape; the backend sends the owner as `username`, listings alone add `owner` */
 function toPaletteHistory(history: AnyHistory | AnyHistoryEntry): PaletteHistory {
     const owner = ("username" in history && history.username) || ("owner" in history && history.owner) || undefined;
     return {
@@ -161,12 +156,7 @@ function cachedHistories(variant: HistoryVariant): PaletteHistory[] {
     return histories.map(toPaletteHistory);
 }
 
-/**
- * One history list, store first. Every variant is fetched one page at a time,
- * the own histories included: the palette renders a handful of rows and asks the
- * backend again for anything the page cannot answer, so pulling an unbounded list
- * would be wasted work.
- */
+/** One history list, store first; every variant fetches a single page, as the palette shows a handful of rows */
 function historyList(variant: HistoryVariant): StoreFirstList {
     const historyStore = useHistoryStore();
     return {
@@ -197,11 +187,7 @@ function historyList(variant: HistoryVariant): StoreFirstList {
     };
 }
 
-/**
- * The root answer's search of one listing: its matches alone, which are not the
- * listing, so `record: false` keeps them out of it — `hs:` and `hp:` still find
- * their listing unhydrated and hydrate it themselves.
- */
+/** Root-answer search of one listing; `record: false` keeps the matches out of the listing `hs:`/`hp:` hydrate */
 function listingSearch(variant: HistoryListVariant): ListingSearch {
     return async (query) => {
         const found = await useHistoryStore().fetchHistoryList(variant, {

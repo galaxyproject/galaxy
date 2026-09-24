@@ -69,12 +69,7 @@ function cachedRows(variant: PageListVariant): PaletteItem[] {
         .map((page) => pageToItem(page, variant));
 }
 
-/**
- * One page list, store first. Completeness comes from `pageStore.isComplete`,
- * which only trusts the total an unfiltered listing reported: a search that found
- * nothing says nothing about the rest of the list and must not silence later
- * requests.
- */
+/** One page list, store first; only an unfiltered total marks it complete, so an empty search silences nothing */
 function reportList(variant: PageListVariant): StoreFirstList {
     const pageStore = usePageStore();
     return {
@@ -91,11 +86,7 @@ function reportList(variant: PageListVariant): StoreFirstList {
     };
 }
 
-/**
- * The root answer's search of the published pages: its matches alone, which are
- * not the listing, so `record: false` keeps them out of it — `rp:` still finds
- * its listing unfetched and fetches it itself.
- */
+/** Root-answer search of the published pages; `record: false` keeps the matches out of the listing `rp:` fetches */
 async function publishedSearch(query: string): Promise<PaletteItem[]> {
     const pages = await usePageStore().fetchPages("published", {
         search: query,

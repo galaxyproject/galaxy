@@ -115,11 +115,7 @@ export interface ResultSection extends ScopedSection {
 
 /** How far a provider may go to answer one search */
 export interface PaletteSearchOptions {
-    /**
-     * Match the query against cached data only, never sending it to a backend.
-     * Set while the text still reads as a scope token (`xy:`), which is a filter
-     * being typed rather than a search term.
-     */
+    /** Cached data only, never a backend: set while the text reads as a scope token (`xy:`) being typed */
     localOnly?: boolean;
 }
 

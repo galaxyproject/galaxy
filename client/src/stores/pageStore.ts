@@ -187,10 +187,8 @@ export const usePageStore = defineStore("pageStore", () => {
     }
 
     /**
-     * Creates an empty markdown page with a slug derived from `title`, retrying a
-     * slug the user already owns once with a `-2` suffix, and puts it at the head of
-     * the user's listing: a consumer rendering that listing from the cache would
-     * otherwise not show it until the next unfiltered fetch.
+     * Creates a markdown page slugged from `title` (an owned slug retries once with `-2`) and heads the
+     * cached listing with it, which would otherwise miss it until the next unfiltered fetch.
      */
     async function createMarkdownPage(title: string): Promise<PageDetails> {
         // a title made of punctuation alone would leave no slug to send

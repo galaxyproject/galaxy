@@ -1,8 +1,4 @@
-/**
- * The store-first search shared by the providers that list entities (histories,
- * workflows, reports, visualizations): the cached list renders at once and
- * answers every keystroke, and the backend is only asked for what it cannot.
- */
+/** Store-first search of the listing providers: the cache answers each keystroke, the backend only what it cannot */
 import type { PaletteItem, PaletteSearchOptions } from "../types";
 import { dedupePaletteItemsByEntity, rankPaletteItems } from "../utilities";
 import { PaletteFetchError } from "./errors";
@@ -21,11 +17,7 @@ export interface StoreFirstList {
     cachedItems(): PaletteItem[];
     /** Whether the cache is everything the backend has, so it answers any query alone */
     isComplete(): boolean;
-    /**
-     * Asks the backend for `query`, resolving the rows it found. Rows the store
-     * merges into the listing are read back from the cache as well. Unset for a
-     * list the backend cannot narrow down further.
-     */
+    /** Backend search for `query`; rows the store merges into the listing come back through the cache */
     searchItems?(query: string): Promise<PaletteItem[]>;
 }
 
@@ -64,13 +56,8 @@ export async function ensureListHydrated(list: StoreFirstList): Promise<void> {
 }
 
 /**
- * Rows of `list` matching `query`, store first: the backend is only asked when the
- * query is long enough, the cache is incomplete and it cannot fill `limit` rows.
- * The found rows are merged with the cache, one row per entity, and ranked the
- * same way — the backends match loosely, so their rows are ranked locally too.
- *
- * @param options.cacheOnly never request anything, not even to hydrate an empty
- * cache; the root answer passes it for the user's own list
+ * Rows of `list` matching `query`; the backend is asked only for a long enough query the incomplete cache cannot
+ * fill, and its loose matches are ranked locally too. `cacheOnly` never requests, not even to hydrate.
  */
 export async function storeFirstItems(
     list: StoreFirstList,
@@ -98,17 +85,8 @@ export async function storeFirstItems(
 }
 
 /**
- * Root mode answer of a listing provider: the user's own list answers from the
- * cache, while the other listings are searched on the backend — the palette is
- * the one place that finds an entity without being told where it lives. Copies
- * of one entity collapse into the own row, which knows what the user may do with
- * it, and a failing listing contributes nothing. The palette's debounce keeps
- * the request volume down.
- *
- * @param own the user's own list, unset for an anonymous visitor
- * @param listings backend searches of the other listings; each one fetches a
- * whole page although only a few rows are shown, since the backend orders by
- * update time and its newest rows are often ranked away here
+ * Root answer of a listing provider: the own list from cache, other listings searched on the backend (a whole
+ * page each, as their newest rows often rank away). Copies collapse into the own row; failures add nothing.
  */
 export async function rootListItems(
     query: string,
