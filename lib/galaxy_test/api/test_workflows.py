@@ -25,6 +25,7 @@ from galaxy.exceptions import error_codes
 from galaxy.tool_util_models import UserToolSource
 from galaxy.util import UNKNOWN
 from galaxy.util.unittest_utils import (
+    skip_if_dockstore_down,
     skip_if_github_down,
     skip_if_workflowhub_down,
 )
@@ -1589,6 +1590,7 @@ steps:
         workflow = self._download_workflow(workflow_id)
         assert workflow["readme"] == big_but_valid_readme
 
+    @skip_if_dockstore_down
     def test_trs_import(self):
         trs_payload = {
             "archive_source": "trs_tool",
@@ -1618,6 +1620,7 @@ steps:
         reuploaded_workflow = self._download_workflow(reuploaded_workflow_id)
         assert reuploaded_workflow.get("source_metadata") is None
 
+    @skip_if_dockstore_down
     def test_trs_import_from_dockstore_trs_url(self):
         trs_payload = {
             "archive_source": "trs_tool",
@@ -1765,6 +1768,7 @@ steps:
         subworkflow = self._get_subworkflow_dict(workflow)
         assert subworkflow.get("source_metadata") == {"url": base64_url}
 
+    @skip_if_dockstore_down
     @skip_if_github_down
     def test_import_ga_workflow_with_trs_url_subworkflow(self):
         """Test importing a .ga workflow where a subworkflow is referenced via a TRS URL."""
@@ -1790,6 +1794,7 @@ steps:
         assert source_metadata["trs_version_id"] == "master"
         assert source_metadata["trs_url"] == trs_url
 
+    @skip_if_dockstore_down
     @skip_if_github_down
     def test_import_ga_workflow_with_trs_id_subworkflow(self):
         """Test importing a .ga workflow where a subworkflow is referenced via TRS server + tool ID + version."""
