@@ -45,6 +45,16 @@ def test_mapping_axis_reference_rejects_rank_mismatch():
         matching.MatchingCollectionAxisReference.from_dict(encoded)
 
 
+def test_consumer_residual_axis_identity_json_round_trip():
+    source = ("workflow-map", 83, ((107, "output"),))
+    axis_id = ("consumer-residual", (source, ("axis-prefix", source, 1)), 1)
+
+    encoded = matching.mapping_axis_id_to_dict(axis_id)
+
+    assert encoded["kind"] == "consumer_residual"
+    assert matching.mapping_axis_id_from_dict(encoded) == axis_id
+
+
 def test_pairs_match():
     assert_can_match(pair_instance(), pair_instance())
 

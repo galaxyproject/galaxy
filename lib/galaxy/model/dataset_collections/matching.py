@@ -59,6 +59,17 @@ def mapping_axis_id_to_dict(axis_id: Hashable) -> dict[str, Any]:
                 "parent": mapping_axis_id_to_dict(parent_axis_id),
                 "rank": rank,
             }
+        if kind == "consumer-residual" and len(axis_id) == 3:
+            _kind, source_axis_ids, covered_rank = axis_id
+            if not isinstance(source_axis_ids, tuple):
+                raise ValueError("consumer-residual source axes must be a tuple")
+            if not isinstance(covered_rank, int) or isinstance(covered_rank, bool) or covered_rank < 0:
+                raise ValueError("consumer-residual covered rank must be a non-negative integer")
+            return {
+                "kind": "consumer_residual",
+                "source_axes": [mapping_axis_id_to_dict(source_axis_id) for source_axis_id in source_axis_ids],
+                "covered_rank": covered_rank,
+            }
     raise ValueError(f"Unsupported mapping-axis identity [{axis_id!r}]")
 
 
@@ -107,6 +118,20 @@ def mapping_axis_id_from_dict(axis_id: dict[str, Any]) -> Hashable:
         if not isinstance(rank, int) or isinstance(rank, bool) or rank <= 0:
             raise ValueError("axis-prefix rank must be a positive integer")
         return ("axis-prefix", mapping_axis_id_from_dict(axis_id["parent"]), rank)
+    if kind == "consumer_residual":
+        if set(axis_id) != {"kind", "source_axes", "covered_rank"}:
+            raise ValueError("consumer-residual identity has unexpected fields")
+        source_axes = axis_id["source_axes"]
+        covered_rank = axis_id["covered_rank"]
+        if not isinstance(source_axes, list):
+            raise ValueError("consumer-residual source axes must be a list")
+        if not isinstance(covered_rank, int) or isinstance(covered_rank, bool) or covered_rank < 0:
+            raise ValueError("consumer-residual covered rank must be a non-negative integer")
+        return (
+            "consumer-residual",
+            tuple(mapping_axis_id_from_dict(source_axis_id) for source_axis_id in source_axes),
+            covered_rank,
+        )
     raise ValueError(f"Unknown mapping-axis identity kind [{kind!r}]")
 
 
