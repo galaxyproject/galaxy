@@ -43,10 +43,8 @@ async function searchQuietly(search: () => Promise<PaletteItem[]>): Promise<Pale
 }
 
 /**
- * Fetches the listing once, and afterwards only refreshes it in the background
- * once stale (see {@link refreshListWhenStale}). The stores share a request
- * already running, so a keystroke landing during the very first fetch waits for
- * it instead of rendering the still empty cache as "no results".
+ * Fetches the listing once, then refreshes it in the background once stale (see {@link refreshListWhenStale}).
+ * Stores share identical in-flight fetches, but own histories resolve early while another load runs.
  */
 export async function ensureListHydrated(list: StoreFirstList): Promise<void> {
     if (list.isLoaded()) {
