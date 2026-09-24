@@ -104,11 +104,12 @@ describe("reportsProvider", () => {
         });
 
         it("queries the backend when the cache holds too few matches", async () => {
-            const pageStore = usePageStore();
-            mockPages([mockPage("a", { title: "Notes" })]);
-            await pageStore.fetchPages("my", { search: "seed" });
-            vi.mocked(loadPages).mockClear();
-            mockPages([mockPage("z", { title: "Notes zulu" })]);
+            // the listing is one page of a longer list, so the cache cannot answer alone
+            vi.mocked(loadPages).mockImplementation(async ({ search }: LoadPagesOptions = {}) =>
+                search
+                    ? { data: [mockPage("z", { title: "Notes zulu" })], totalMatches: 1 }
+                    : { data: [mockPage("a", { title: "Notes" })], totalMatches: 30 },
+            );
 
             const sections = (await reportsProvider.searchScoped?.(scope("r"), "Notes", makeCtx())) ?? [];
 
@@ -176,12 +177,34 @@ describe("reportsProvider", () => {
             mockPages([]);
             await pageStore.fetchPages("my", { search: "zzz" });
             vi.mocked(loadPages).mockClear();
-            mockPages([mockPage("a", { title: "Notes" })]);
+            // the listing itself is longer than what it cached
+            vi.mocked(loadPages).mockResolvedValue({ data: [mockPage("a", { title: "Notes" })], totalMatches: 30 });
 
             const sections = (await reportsProvider.searchScoped?.(scope("r"), "Notes", makeCtx())) ?? [];
 
             expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ search: "Notes" }));
             expect(sections.at(-1)?.items.map((item) => item.id)).toEqual(["pages:a"]);
+        });
+
+        it("hydrates the listing before searching it", async () => {
+            mockPages([mockPage("a", { title: "Notes" })]);
+
+            await reportsProvider.searchScoped?.(scope("r"), "Notes", makeCtx());
+
+            expect(loadPages).toHaveBeenNthCalledWith(1, expect.objectContaining({ search: "" }));
+        });
+
+        it("refreshes a stale listing although the keystroke also searched it", async () => {
+            vi.mocked(loadPages).mockResolvedValue({ data: [mockPage("a")], totalMatches: 30 });
+            await reportsProvider.searchScoped?.(scope("r"), "", makeCtx());
+            // a later palette session, past the refresh interval
+            resetListRefreshTracking();
+            vi.mocked(loadPages).mockClear();
+
+            await reportsProvider.searchScoped?.(scope("r"), "Notes", makeCtx());
+
+            expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ search: "" }));
+            expect(loadPages).toHaveBeenCalledWith(expect.objectContaining({ search: "Notes" }));
         });
 
         it("answers a single character from the listing without searching", async () => {
@@ -252,7 +275,7 @@ describe("reportsProvider", () => {
             expect(items.map((item) => item.id).sort()).toEqual(["pages:a", "pages:z"]);
             // one page of public rows, which the client then ranks and caps itself
             expect(loadPages).toHaveBeenCalledWith(
-                expect.objectContaining({ showPublished: true, search: "notes", limit: 8 }),
+                expect.objectContaining({ showPublished: true, search: "notes", limit: 25 }),
             );
         });
 
@@ -274,7 +297,7 @@ describe("reportsProvider", () => {
             expect(items.map((item) => item.id)).toContain("pages:z");
             // a whole page is asked for, so the ranking has the match to find
             expect(loadPages).toHaveBeenCalledWith(
-                expect.objectContaining({ showPublished: true, search: "notes", limit: 8 }),
+                expect.objectContaining({ showPublished: true, search: "notes", limit: 25 }),
             );
             // the section itself stays capped at the handful of rows it renders
             expect(items.length).toBeLessThanOrEqual(3);

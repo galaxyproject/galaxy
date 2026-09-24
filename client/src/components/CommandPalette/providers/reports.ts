@@ -13,11 +13,10 @@ import type {
     PaletteSearchOptions,
     ScopedSection,
 } from "../types";
-import { dedupePaletteItemsByEntity, rankPaletteItems } from "../utilities";
-import { PaletteFetchError } from "./errors";
+import { rankPaletteItems } from "../utilities";
 import { PALETTE_LIMITS } from "./limits";
-import { markListRefreshed, refreshListWhenStale } from "./refresh";
 import type { ScopeDefinition } from "./scopes";
+import { rootListItems, storeFirstItems, type StoreFirstList } from "./storeFirst";
 
 /** Entity type used for the palette's most-recently-used list */
 export const PAGE_MRU_TYPE = "page";
@@ -64,7 +63,7 @@ function variantOf(scope: ScopeDefinition): PageListVariant {
 }
 
 /** Store cache as palette items, most recently updated first */
-function cachedItems(variant: PageListVariant): PaletteItem[] {
+function cachedRows(variant: PageListVariant): PaletteItem[] {
     const pageStore = usePageStore();
     return [...pageStore.getPages(variant)]
         .sort((a, b) => String(b.update_time ?? "").localeCompare(String(a.update_time ?? "")))
@@ -72,104 +71,39 @@ function cachedItems(variant: PageListVariant): PaletteItem[] {
 }
 
 /**
- * Renders from the store cache first and only asks the backend when the cache
- * was never filled or cannot hold enough matches; results are merged into the
- * store by `fetchPages`, so nothing is duplicated palette side.
- *
- * Completeness comes from `pageStore.isComplete`, which only trusts the total
- * reported by an unfiltered listing: a search that found nothing says nothing
- * about the rest of the list and must not silence later requests.
- *
- * @param cacheOnly never request anything, not even to fill an empty cache. The
- * root fan-out passes it for the user's own pages, which it filters locally; the
- * published ones it does search on the backend, see {@link publishedItems}.
+ * One page list, store first. Completeness comes from `pageStore.isComplete`,
+ * which only trusts the total an unfiltered listing reported: a search that found
+ * nothing says nothing about the rest of the list and must not silence later
+ * requests.
  */
-async function storeFirstItems(
-    variant: PageListVariant,
-    query: string,
-    limit: number,
-    cacheOnly = false,
-): Promise<PaletteItem[]> {
+function reportList(variant: PageListVariant): StoreFirstList {
     const pageStore = usePageStore();
-    let items = rankPaletteItems(cachedItems(variant), query);
-    if (cacheOnly) {
-        return items.slice(0, limit);
-    }
-
-    const nothingCached = pageStore.getPages(variant).length === 0;
-    // a query too short to search is answered from the listing alone
-    const searchable = query.length >= PALETTE_LIMITS.minBackendQuery;
-    const needsMore = (searchable || !query) && items.length < limit && !pageStore.isComplete(variant);
-    if (!pageStore.isLoaded(variant) || needsMore) {
-        try {
-            await pageStore.fetchPages(
-                variant,
-                searchable ? { search: query, limit } : { limit: PALETTE_LIMITS.section },
-            );
-            items = rankPaletteItems(cachedItems(variant), query);
-        } catch (error) {
-            if (nothingCached) {
-                // nothing to fall back on, so a failure is reported rather than
-                // rendered as an empty scope
-                throw new PaletteFetchError(error);
-            }
-            // keep whatever the cache holds; the palette never blocks on errors
-        }
-        markListRefreshed(`pages:${variant}`);
-    } else {
-        refreshListWhenStale(`pages:${variant}`, () =>
-            pageStore.fetchPages(variant, { limit: PALETTE_LIMITS.section }),
-        );
-    }
-    return items.slice(0, limit);
+    return {
+        key: `reports:${variant}`,
+        isLoaded: () => pageStore.isLoaded(variant),
+        fetchListing: () => pageStore.fetchPages(variant, { limit: PALETTE_LIMITS.page }),
+        cachedItems: () => cachedRows(variant),
+        isComplete: () => pageStore.isComplete(variant),
+        async searchItems(query) {
+            // merged into the listing by `fetchPages`, which the cache read picks up
+            await pageStore.fetchPages(variant, { search: query, limit: PALETTE_LIMITS.page });
+            return [];
+        },
+    };
 }
 
 /**
- * The published pages matching the query. Only the backend can answer for pages
- * the user does not own, and a failing search contributes nothing rather than
- * costing the fan-out the rows it already has. A handful of hits for one query
- * is not the listing, so `record: false` keeps them out of it: `rp:` still finds
+ * The root answer's search of the published pages: its matches alone, which are
+ * not the listing, so `record: false` keeps them out of it — `rp:` still finds
  * its listing unfetched and fetches it itself.
- *
- * The same page `rp:` searches is fetched even though only `limit` rows are
- * shown: the backend matches loosely and orders by update time, so the newest
- * few rows it answers with are often ranked away here, and asking for exactly as
- * many rows as the fan-out renders would leave it empty. The extra rows cost
- * nothing beyond the one request the search already makes.
  */
-async function publishedItems(query: string, limit: number): Promise<PaletteItem[]> {
-    const pageStore = usePageStore();
-    try {
-        const pages =
-            (await pageStore.fetchPages("published", {
-                search: query,
-                limit: PALETTE_LIMITS.section,
-                record: false,
-            })) ?? [];
-        return rankPaletteItems(
-            pages.map((page) => pageToItem(page, "published")),
-            query,
-        ).slice(0, limit);
-    } catch (error) {
-        console.debug("Command palette could not fetch published pages", error);
-        return [];
-    }
-}
-
-/**
- * Root mode results: the cached own pages answer the keystroke instantly, while
- * the published ones are searched on the backend — the palette is the one place
- * that finds a page without being told whose it is. A page listed twice
- * collapses into the own row, which knows about its editor; the palette's
- * debounce keeps the request volume down. An anonymous visitor has no own pages,
- * so the public ones are the whole answer.
- */
-async function rootItems(query: string, isAnonymous: boolean, localOnly = false): Promise<PaletteItem[]> {
-    // the search starts before the cache is filtered, so the two run in parallel
-    const published = localOnly ? Promise.resolve([]) : publishedItems(query, PALETTE_LIMITS.rootListing);
-    const own = isAnonymous ? [] : await storeFirstItems("my", query, PALETTE_LIMITS.rootOwn, true);
-    const merged = dedupePaletteItemsByEntity([...own, ...(await published)]);
-    return rankPaletteItems(merged, query).slice(0, PALETTE_LIMITS.rootOwn + PALETTE_LIMITS.rootListing);
+async function publishedSearch(query: string): Promise<PaletteItem[]> {
+    const pages = await usePageStore().fetchPages("published", {
+        search: query,
+        limit: PALETTE_LIMITS.page,
+        record: false,
+    });
+    return pages.map((page) => pageToItem(page, "published"));
 }
 
 /** Items the user opened through the palette before, best match first */
@@ -203,12 +137,11 @@ export const reportsProvider: CommandPaletteProvider = {
         }
         return recentItems("", PALETTE_LIMITS.recent);
     },
-    /** Unscoped fan-out over the cached own pages and the published ones */
-    async search(query: string, ctx: PaletteContext, options: PaletteSearchOptions = {}) {
-        if (query.length < PALETTE_LIMITS.minBackendQuery) {
-            return [];
-        }
-        return rootItems(query, ctx.isAnonymous, options.localOnly);
+    /** Root mode: the cached own pages, and the published ones searched */
+    search(query: string, ctx: PaletteContext, options: PaletteSearchOptions = {}) {
+        // an anonymous visitor has no own pages, so the public ones are the whole answer
+        const own = ctx.isAnonymous ? undefined : reportList("my");
+        return rootListItems(query, own, [publishedSearch], options);
     },
     /**
      * `r:` own pages as Recent + list sections, `rp:` the published list alone.
@@ -226,7 +159,7 @@ export const reportsProvider: CommandPaletteProvider = {
         }
         const recent = variant === "my" ? recentItems(query, PALETTE_LIMITS.recent) : [];
         const recentIds = new Set(recent.map((item) => item.id));
-        const listed = (await storeFirstItems(variant, query, PALETTE_LIMITS.section + recentIds.size))
+        const listed = (await storeFirstItems(reportList(variant), query, PALETTE_LIMITS.section + recentIds.size))
             .filter((item) => !recentIds.has(item.id))
             .slice(0, PALETTE_LIMITS.section);
 
