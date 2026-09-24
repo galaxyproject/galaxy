@@ -20,7 +20,7 @@ import { slugify } from "@/utils/slug";
 import type { CommandPaletteProvider, PaletteContext, PaletteItem } from "../types";
 import { type Gated, rankPaletteItems, visibleFor } from "../utilities";
 import { PALETTE_LIMITS } from "./limits";
-import { myWorkflowItems } from "./workflows";
+import { myWorkflowItems } from "./workflowRows";
 
 /** Upload methods, filtered by config and login exactly like the upload panel */
 function uploadMethodItems(argQuery: string, ctx: PaletteContext): PaletteItem[] {
