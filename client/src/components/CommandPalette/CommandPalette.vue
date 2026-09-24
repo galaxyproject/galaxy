@@ -471,13 +471,11 @@ function modeSections(activeMode: PaletteMode, ctx: PaletteContext): Promise<Res
 }
 
 let searchEpoch = 0;
-/** What the rendered sections are results *of*, see {@link searchIdentity} */
-let renderedIdentity = "";
 
 /**
- * Identity of what is being searched — the badge the results belong under. Only
- * the query may change without it changing, so anything else invalidates the
- * sections on screen the moment it does.
+ * Identity of what is being searched — the badge or category the results belong
+ * under. Only the query may change without it changing, so anything else
+ * invalidates the sections on screen the moment it does.
  */
 function searchIdentity(activeMode: PaletteMode): string {
     switch (activeMode.type) {
@@ -488,8 +486,18 @@ function searchIdentity(activeMode: PaletteMode): string {
         case "help":
             return "help";
         default:
-            return `root:${activeCategoryId.value}`;
+            return `root:${activeMode.category?.id ?? ALL_CATEGORY.id}`;
     }
+}
+
+/** Drops the rendered results and any search still in flight for them */
+function clearResults() {
+    searchEpoch++;
+    sections.value = [];
+    selectedIndex.value = 0;
+    pendingScope.value = null;
+    failedSubject.value = null;
+    searching.value = true;
 }
 
 async function runSearch() {
@@ -498,16 +506,8 @@ async function runSearch() {
     // picking a category reruns the search; the row keeps the selection so the
     // next ←→ moves on to the neighboring category
     const keepCategoryRow = categoryRowSelected.value;
-    const identity = searchIdentity(mode.value);
     pendingScope.value = null;
     failedSubject.value = null;
-    if (identity !== renderedIdentity) {
-        // a scope's fetch can take a while; the previous mode's results must
-        // never keep rendering under the badge of the new one
-        renderedIdentity = identity;
-        sections.value = [];
-        selectedIndex.value = 0;
-    }
     searching.value = true;
     try {
         const results = await modeSections(mode.value, ctx);
@@ -665,6 +665,7 @@ function moveSelection(delta: 1 | -1) {
  */
 function selectCategory(category: PaletteCategory) {
     narrowToCategory(category);
+    // after the narrowing, which cleared the rows and the selection with them
     selectedIndex.value = CATEGORY_ROW_INDEX;
 }
 
@@ -717,12 +718,6 @@ function onKeydown(event: KeyboardEvent) {
         }
         case "Enter":
             event.preventDefault();
-            if (searchIdentity(mode.value) !== renderedIdentity) {
-                // the search behind the new badge is still debounced, so the rows
-                // on screen are the previous mode's: running one of them would
-                // act on something the user has already typed past
-                break;
-            }
             if (categoryRowSelected.value) {
                 // the category is already applied, enter just returns to the list
                 selectedIndex.value = 0;
@@ -838,6 +833,10 @@ useEventListener(window, "blur", () => {
     modifierHeld.value = false;
     shiftHeld.value = false;
 });
+
+// sync, so the old mode's rows never render, or run on enter, under the new badge;
+// the getter reads `mode` itself because a sync watcher can see a stale computed
+watch(() => searchIdentity(mode.value), clearResults, { flush: "sync" });
 
 // the category is part of the mode, so a sweep across the row shares the debounce
 watchDebounced([text, mode], runSearch, { debounce: SEARCH_DEBOUNCE });
