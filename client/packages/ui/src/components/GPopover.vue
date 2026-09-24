@@ -8,7 +8,8 @@
  *
  * Supports:
  * - String target (element ID) or HTMLElement ref
- * - Trigger modes: hover, click, manual
+ * - Trigger modes: hover, focus, click ("click blur" also closes on outside click), manual
+ *   (no listeners of its own; "manual hover" still opens on hover, as with BPopover)
  * - Placement with flip/shift
  * - Title via prop or #title slot
  * - Content via prop or default slot
@@ -380,10 +381,6 @@ function listen(el: EventTarget, event: string, handler: (e: Event) => void, cap
 
 function setupListeners() {
     teardownListeners();
-
-    if (parsedTriggers.value.has("manual")) {
-        return;
-    }
 
     const target = resolveTarget();
     if (!target) {

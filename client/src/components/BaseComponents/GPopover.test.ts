@@ -225,6 +225,24 @@ describe("GPopover hover", () => {
         expect(isShown()).toBe(true);
     });
 
+    it("still opens on hover when combined with manual, as BPopover did", async () => {
+        const target = await mountWithTrigger({ triggers: "manual hover", show: false });
+
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+
+        expect(wrapper!.emitted("update:show")).toEqual([[true]]);
+    });
+
+    it("ignores hovering a manual-only popover", async () => {
+        const target = await mountWithTrigger({ triggers: "manual" });
+
+        target.dispatchEvent(new MouseEvent("mouseenter"));
+        await advance(DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+
+        expect(isShown()).toBe(false);
+    });
+
     it("does not open when the pointer passes over the trigger", async () => {
         const target = await mountWithTrigger({ triggers: "hover" });
 
