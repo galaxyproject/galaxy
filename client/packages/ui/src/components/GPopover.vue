@@ -29,19 +29,14 @@ import {
     INTERACTIVE_POPOVER_CLOSE_DELAY_MS,
     useDelayedAction,
 } from "../utils/tooltipTiming";
+import type { PopoverTarget } from "./popoverTypes";
 
 type TriggerType = "hover" | "click" | "click blur" | "hover focus" | "manual" | "manual hover" | "focus";
 
 const props = withDefaults(
     defineProps<{
-        /**
-         * Element ID string, Element ref, or function returning an element to anchor the popover to.
-         * Function return type is intentionally broad (any) to match BPopover's behavior — callers
-         * may pass `() => $refs.x` which can return a Vue component instance; resolveTarget handles
-         * unwrapping via .$el.
-         */
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        target?: string | Element | (() => any);
+        /** Element id, element, or getter returning an element or component to anchor the popover to */
+        target?: PopoverTarget;
         /** Trigger mode(s) */
         triggers?: TriggerType;
         /** Placement relative to target */

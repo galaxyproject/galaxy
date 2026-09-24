@@ -535,6 +535,24 @@ describe("GPopover description", () => {
         expect(target.getAttribute("aria-describedby")).toBe(popoverEl().id);
     });
 
+    it.each([
+        ["an element", (element: HTMLElement) => element],
+        ["a getter", (element: HTMLElement) => () => element],
+    ])("anchors to %s", async (_kind, toTarget) => {
+        const target = document.createElement("button");
+        const mountPoint = document.createElement("div");
+        document.body.append(target, mountPoint);
+
+        wrapper = mount(GPopover as object, {
+            attachTo: mountPoint,
+            propsData: { target: toTarget(target), triggers: "hover" },
+        });
+        await nextTick();
+        await nextTick();
+
+        expect(target.getAttribute("aria-describedby")).toBe(popoverEl().id);
+    });
+
     it("keeps existing descriptions and restores them when unmounted", async () => {
         const target = document.createElement("button");
         target.id = "described-trigger";
