@@ -1349,8 +1349,8 @@ describe("CommandPalette", () => {
         const store = useHistoryStore();
         vi.mocked(store.setCurrentHistory).mockRejectedValue(new Error("history is unavailable"));
         store.storedHistories = {
-            current: { id: "current", name: "Current history" },
-            target: { id: "target", name: "Target history" },
+            current: { id: "current", name: "Current history", tags: [], update_time: "2026-01-01T10:00:00" },
+            target: { id: "target", name: "Target history", tags: [], update_time: "2026-01-02T10:00:00" },
         } as never;
         vi.mocked(Toast.error).mockClear();
         await type("h: target");
