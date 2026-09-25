@@ -3,6 +3,7 @@ import os
 import pytest
 
 from galaxy.objectstore.irods import parse_config_xml
+from galaxy.objectstore.unittest_utils import Config
 from galaxy.util import parse_xml
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -80,3 +81,27 @@ def test_parse_config_xml_no_auth():
     root = tree.getroot()
     with pytest.raises(Exception, match="No auth element in config XML tree"):
         parse_config_xml(root)
+
+
+class FakeSessionPool:
+    idle: set = set()
+
+
+class FakeSession:
+    pool = FakeSessionPool()
+    cleaned_up = False
+
+    def cleanup(self):
+        self.cleaned_up = True
+
+
+def test_soft_shutdown_stops_monitor_and_keeps_session_open():
+    with open(CONFIG_FILE) as f:
+        config_xml = f.read()
+    with Config(config_xml) as (_, object_store):
+        object_store.session = FakeSession()
+        object_store.start()
+        object_store.soft_shutdown()
+        object_store.connection_pool_monitor_thread.join(5)
+        assert not object_store.connection_pool_monitor_thread.is_alive()
+        assert not object_store.session.cleaned_up
