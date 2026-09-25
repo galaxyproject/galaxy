@@ -148,7 +148,7 @@ class DataManager(BaseUIController):
                 values.append((key, value))
             data_manager_output.append(values)
         return {
-            "jobId": job_id,
+            "jobId": job.id,
             "exitCode": job.exit_code,
             "runUrl": web.url_for(controller="tool_runner", action="rerun", job_id=trans.security.encode_id(job.id)),
             "commandLine": job.command_line,
