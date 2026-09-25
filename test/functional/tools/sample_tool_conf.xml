@@ -65,6 +65,8 @@
   <tool file="select_from_dataset_in_conditional.xml" />
   <tool file="conditional_name_digit_suffix.xml" />
   <tool file="select_from_csvdataset.xml" />
+  <tool file="column_assertion_delimiter.xml" />
+  <tool file="column_assertion_delimiter_legacy.xml" />
   <tool file="select_from_dataset_optional.xml" />
   <tool file="drill_down.xml" />
   <tool file="dbkey_filter_input.xml" />

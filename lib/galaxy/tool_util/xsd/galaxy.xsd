@@ -84,6 +84,9 @@ List of behavior changes associated with profile versions:
   `discover_via="tool_provided_metadata"` in YAML tool definitions).
 - An `optional` `boolean` parameter with no `checked` attribute defaults to `None` instead of `False`, so an unset
   value stays distinct from an explicit false. Older profiles keep reporting `False`.
+- Test output assertions that count columns (e.g. `has_n_columns`) and do not declare a `sep` split on the
+  delimiter the datatype recorded for the output dataset - a comma for `csv` - instead of always splitting on
+  tabs. Older profiles keep the tab default.
 
 ### Examples
 
@@ -2740,9 +2743,11 @@ For instance, ``<has_n_columns n="3"/>``. The assertion tests only the first lin
 Number of columns can optionally also be specified with ``delta``. Alternatively the
 range of expected occurrences can be specified by ``min`` and/or ``max``.
 
-Optionally a column separator (``sep``, default is ``       ``) `and comment character(s)
+Optionally a column separator (``sep``) and comment character(s)
 can be specified (``comment``, default is empty string). The first non-comment
-line is used for determining the number of columns.
+line is used for determining the number of columns. For tools with profile >= 26.2,
+the default separator is the delimiter the datatype recorded for the dataset - a comma
+for csv, a tab for tabular and for datasets that declare no delimiter.
 
 $attribute_list::5]]></xs:documentation>
         </xs:annotation>
@@ -2769,7 +2774,7 @@ $attribute_list::5]]></xs:documentation>
           </xs:attribute>
           <xs:attribute name="sep" type="xs:string" use="optional">
             <xs:annotation>
-              <xs:documentation xml:lang="en"><![CDATA[Separator defining columns, default: tab]]></xs:documentation>
+              <xs:documentation xml:lang="en"><![CDATA[Separator defining columns, default: tab (for tools with profile >= 26.2, the dataset's delimiter metadata, e.g. comma for csv)]]></xs:documentation>
             </xs:annotation>
           </xs:attribute>
           <xs:attribute name="comment" type="xs:string" use="optional">
