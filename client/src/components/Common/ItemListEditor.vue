@@ -122,7 +122,7 @@ function resetForm() {
             <b-input v-model="currentItem" :state="currentItemError ? false : null" @focus="removeErrorMessage" />
             <div class="spacer"></div>
             <div v-if="currentItemError" class="error">{{ currentItemError }}</div>
-            <div v-if="props.description" v-html="description"></div>
+            <div v-if="props.description" v-sanitize-html="props.description"></div>
             <b-button variant="primary" @click="onSave">Save</b-button>
             <b-button variant="danger" @click="onReset">Cancel</b-button>
         </div>

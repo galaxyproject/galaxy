@@ -1,6 +1,8 @@
 import { mount, type Wrapper } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
+
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import type { UpgradeMessage } from "./modules/utilities";
 
@@ -81,5 +83,15 @@ describe("StateUpgradeModal.vue", () => {
         });
 
         expect(wrapper.find(MODAL_CONTENT_SELECTOR).exists()).toBeFalsy();
+    });
+
+    it("renders upgrade details through v-sanitize-html with the links profile", async () => {
+        vi.mocked(sanitizeHtml).mockImplementation((html) => `<span class="sanitized">${html}</span>`);
+        const detail =
+            'Tool version changed, see <a href="https://toolshed.g2.bx.psu.edu" target="_blank">the Tool Shed</a>';
+        await mountWith([{ stepIndex: 1, name: "step", details: [detail] }] as unknown as UpgradeMessage[]);
+
+        expect(sanitizeHtml).toHaveBeenCalledWith(detail, "links");
+        expect(wrapper.find(".workflow-state-upgrade-step-details .sanitized a").exists()).toBe(true);
     });
 });

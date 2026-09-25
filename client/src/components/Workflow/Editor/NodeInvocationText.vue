@@ -48,10 +48,9 @@ function toJobState(key: string | number): JobState {
                     size="sm"
                     readonly />
             </span>
-            <!-- eslint-disable vue/no-v-html -->
             <span
                 v-else-if="props.invocationStep.nodeText !== undefined"
-                v-html="textHtml(props.invocationStep.nodeText)" />
+                v-sanitize-html="textHtml(props.invocationStep.nodeText)" />
             <span v-else>This is an input</span>
         </div>
         <div v-else-if="props.invocationStep.type === 'subworkflow'">This is a subworkflow.</div>

@@ -278,14 +278,14 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions vuejs-accessibility/click-events-have-key-events -->
                 <span
                     ref="editableElement"
+                    v-sanitize-html="escapeAndSanitize(props.comment.data.title)"
                     :contenteditable="!props.readonly"
                     class="prevent-zoom"
                     spellcheck="false"
                     @blur="saveText"
                     @keydown.enter.prevent="saveText"
                     @dblclick.prevent="onDoubleClick"
-                    @mouseup.stop
-                    v-html="escapeAndSanitize(props.comment.data.title)" />
+                    @mouseup.stop />
             </div>
         </div>
 

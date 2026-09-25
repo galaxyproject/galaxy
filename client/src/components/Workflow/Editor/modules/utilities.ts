@@ -3,9 +3,21 @@ import WorkflowIcons from "@/components/Workflow/icons";
 export interface UpgradeMessage {
     stepIndex: string;
     name: string;
-    details: any[];
+    details: string[];
     iconType: string;
     label: string;
+}
+
+// Subworkflow steps nest their inner steps' messages ({"Step 2": {"inttest": "..."}}),
+// and the messages themselves are already self-describing, so only the leaves are shown.
+function flattenUpgradeMessages(messages: unknown): string[] {
+    if (messages === null || messages === undefined) {
+        return [];
+    }
+    if (typeof messages === "object") {
+        return Object.values(messages).flatMap(flattenUpgradeMessages);
+    }
+    return [String(messages)];
 }
 
 export function getStateUpgradeMessages(data: {
@@ -21,13 +33,11 @@ export function getStateUpgradeMessages(data: {
 }): UpgradeMessage[] {
     const messages: UpgradeMessage[] = [];
     for (const [step_id, step] of Object.entries(data.steps)) {
-        const details = [];
+        const details: string[] = [];
         if (step.errors) {
             details.push(step.errors);
         }
-        for (const m of Object.values(data.upgrade_messages[step_id] || {})) {
-            details.push(m);
-        }
+        details.push(...flattenUpgradeMessages(data.upgrade_messages[step_id]));
         if (details.length) {
             const iconType = WorkflowIcons[step.type as keyof typeof WorkflowIcons];
             const message: UpgradeMessage = {
