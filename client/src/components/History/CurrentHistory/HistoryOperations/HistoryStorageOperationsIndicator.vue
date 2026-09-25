@@ -64,9 +64,11 @@ function onDoNotShowAgain() {
 <template>
     <div v-if="!showSelection && hasActiveStorageRuns">
         <GButtonGroup>
+            <!-- The tooltip leaves the icon-only link unnamed. -->
             <GButton
                 :id="storageOperationsButtonId"
                 tooltip
+                :aria-label="localize('Background operations are running')"
                 :title="localize('Background operations are running')"
                 class="rounded-0"
                 size="small"
@@ -79,6 +81,8 @@ function onDoNotShowAgain() {
 
         <GPopover
             v-model:show="isStorageHelperVisible"
+            interactive
+            :aria-label="localize('Background storage operations')"
             :target="storageOperationsButtonId"
             triggers="manual hover"
             placement="bottomleft"
