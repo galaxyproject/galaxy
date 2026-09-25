@@ -288,6 +288,12 @@ class IRODSObjectStore(CachingConcreteObjectStore):
 
         log.debug("irods_pt shutdown: %s", ipt_timer)
 
+    def soft_shutdown(self):
+        # session.cleanup() also disconnects connections that are in use, so keep
+        # the session open for callers still holding this store.
+        if self.connection_pool_monitor_interval != -1:
+            self.stop_connection_pool_monitor_event.set()
+
     @classmethod
     def parse_xml(cls, config_xml):
         return parse_config_xml(config_xml)
