@@ -44,6 +44,28 @@ describe("useJobStore", () => {
         vi.clearAllTimers();
     });
 
+    it("auto-fetches a job on read via getJob, without going through pollJobUntilTerminal", async () => {
+        let callCount = 0;
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response }) => {
+                callCount++;
+                return response(200).json(buildJob("job0", "ok"));
+            }),
+        );
+
+        const store = useJobStore();
+        // Nothing has polled this id -- a plain read should still trigger a fetch, e.g. for a
+        // one-off, non-polled lookup that never calls pollJobUntilTerminal.
+        expect(store.getJob("job0")).toBeNull();
+        await flushPromises();
+        expect(callCount).toBe(1);
+        expect(store.getJob("job0")?.id).toBe("job0");
+
+        // Reading again is satisfied by the cache, not re-fetched.
+        await flushPromises();
+        expect(callCount).toBe(1);
+    });
+
     it("does not start a second polling loop for a job id that is already being polled", async () => {
         let callCount = 0;
         server.use(
@@ -204,6 +226,117 @@ describe("useJobStore", () => {
         await advanceTimersAndFlush(1000);
         expect(callCount).toBe(2);
         expect(lastFullParam).toBe("true");
+    });
+
+    it("merges a base response into an already-cached full job instead of overwriting it", async () => {
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response, request }) => {
+                const full = new URL(request.url).searchParams.get("full") === "true";
+                if (full) {
+                    return response(200).json({
+                        ...buildJob("job8", "running"),
+                        stdout: "full stdout",
+                        stderr: "full stderr",
+                    });
+                }
+                // A base (`full=false`) response never carries `stdout`/`stderr` at all -- they're
+                // not merely empty, they're absent from this (differently-shaped) response.
+                const { stdout: _stdout, stderr: _stderr, ...baseJob } = buildJob("job8", "running");
+                return response(200).json(baseJob);
+            }),
+        );
+
+        const store = useJobStore();
+        await store.fetchJob({ id: "job8", full: true });
+        expect(store.getJob("job8")?.stdout).toBe("full stdout");
+
+        // A later base fetch for the same id (e.g. a second, non-full caller) must not clobber
+        // the full-only fields already cached.
+        await store.fetchJob({ id: "job8", full: false });
+        expect(store.getJob("job8")?.stdout).toBe("full stdout");
+        expect(store.getJob("job8")?.stderr).toBe("full stderr");
+        // The base response's own fields (e.g. `state`) still come through fresh.
+        expect(store.getJob("job8")?.state).toBe("running");
+    });
+
+    it("does not let a full: true request piggyback on a concurrent in-flight full: false request", async () => {
+        let callCount = 0;
+        const fullParamsByCall: (string | null)[] = [];
+        let resolveBaseFetch: (() => void) | undefined;
+        server.use(
+            http.get("/api/jobs/{job_id}", async ({ response, request }) => {
+                callCount++;
+                const full = new URL(request.url).searchParams.get("full");
+                fullParamsByCall.push(full);
+                if (full === "false") {
+                    // Hold the base request open so a full: true request can race it.
+                    await new Promise<void>((resolve) => {
+                        resolveBaseFetch = resolve;
+                    });
+                }
+                return response(200).json(buildJob("job6", "ok"));
+            }),
+        );
+
+        const store = useJobStore();
+        // Kick off a base fetch and let it start (but not finish) before the full fetch begins.
+        const basePromise = store.fetchJob({ id: "job6", full: false });
+        await flushPromises();
+        expect(callCount).toBe(1);
+
+        // While the base fetch is still in flight, a full fetch for the same id comes in -- it
+        // must not be satisfied by the base fetch's (still pending) in-flight promise/result.
+        const fullPromise = store.fetchJob({ id: "job6", full: true });
+
+        resolveBaseFetch?.();
+        await Promise.all([basePromise, fullPromise]);
+
+        expect(callCount).toBe(2);
+        expect(fullParamsByCall).toEqual(["false", "true"]);
+    });
+
+    it("still fetches full once more if the poll was upgraded after an in-flight base tick already started", async () => {
+        let callCount = 0;
+        const fullParamsByCall: (string | null)[] = [];
+        let resolveBaseTick: (() => void) | undefined;
+        server.use(
+            http.get("/api/jobs/{job_id}", async ({ response, request }) => {
+                callCount++;
+                const full = new URL(request.url).searchParams.get("full");
+                fullParamsByCall.push(full);
+                // The first tick reports the job still running, so the poll schedules a second
+                // tick; the second tick (still base, since the upgrade hasn't landed yet) is held
+                // open so the upgrade below can land while it's in flight, then reports terminal.
+                if (full === "false" && callCount === 2) {
+                    await new Promise<void>((resolve) => {
+                        resolveBaseTick = resolve;
+                    });
+                    return response(200).json(buildJob("job7", "ok"));
+                }
+                return response(200).json(buildJob("job7", "running"));
+            }),
+        );
+
+        const store = useJobStore();
+        store.pollJobUntilTerminal({ id: "job7", full: false });
+        await flushPromises();
+        expect(callCount).toBe(1);
+
+        // Start the loop's next tick (still base, since it reads `full` before the upgrade below).
+        await advanceTimersAndFlush(1000);
+        expect(callCount).toBe(2);
+
+        // The upgrade arrives while that base tick is still in flight.
+        store.pollJobUntilTerminal({ id: "job7", full: true });
+
+        // Let the held-open base tick resolve (terminal). It must not stop polling having only
+        // ever fetched the base representation -- it should fetch full once more first.
+        resolveBaseTick?.();
+        await flushPromises();
+        expect(callCount).toBe(3);
+        expect(fullParamsByCall[2]).toBe("true");
+
+        expect(store.getJob("job7")).not.toBeNull();
     });
 
     it("stops polling for good after a non-retryable fetch error (e.g. a malformed job id)", async () => {
