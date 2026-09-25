@@ -75,4 +75,25 @@ describe("GAlert", () => {
         expect(wrapper.emitted("dismiss-count-down")?.map(([count]) => count)).toEqual([2, 1, 0]);
         expect(wrapper.emitted("dismissed")).toHaveLength(1);
     });
+
+    it.each([
+        ["danger", "alert"],
+        ["warning", "alert"],
+        ["info", "status"],
+        ["success", "status"],
+    ])("renders %s alerts with role=%s and no conflicting aria-live", (variant, role) => {
+        const wrapper = mount(GAlert as object, { localVue, propsData: { variant } });
+        const alert = wrapper.find(".alert");
+        expect(alert.attributes("role")).toBe(role);
+        expect(alert.attributes("aria-live")).toBeUndefined();
+    });
+
+    it("lets call sites override the role", () => {
+        const wrapper = mount(GAlert as object, {
+            localVue,
+            propsData: { variant: "danger" },
+            attrs: { role: "status" },
+        });
+        expect(wrapper.find(".alert").attributes("role")).toBe("status");
+    });
 });

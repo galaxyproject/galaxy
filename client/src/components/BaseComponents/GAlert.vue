@@ -50,6 +50,8 @@ const emit = defineEmits<{
 }>();
 
 const variantClass = computed(() => `alert-${props.variant || "info"}`);
+// danger/warning interrupt (implicit aria-live=assertive); everything else is a polite status message
+const role = computed(() => (props.variant === "danger" || props.variant === "warning" ? "alert" : "status"));
 
 const boundShow = computed<AlertShow>(() => {
     if (props.value !== undefined) {
@@ -183,8 +185,7 @@ export default {
             v-if="localShow"
             class="alert"
             :class="[variantClass, { 'alert-dismissible': dismissible }]"
-            role="alert"
-            aria-live="polite"
+            :role="role"
             aria-atomic="true">
             <slot />
             <button v-if="dismissible" type="button" class="close" :aria-label="dismissLabel" @click="onDismiss">
@@ -196,8 +197,7 @@ export default {
         v-else-if="localShow"
         class="alert"
         :class="[variantClass, { 'alert-dismissible': dismissible }]"
-        role="alert"
-        aria-live="polite"
+        :role="role"
         aria-atomic="true">
         <slot />
         <button v-if="dismissible" type="button" class="close" :aria-label="dismissLabel" @click="onDismiss">
@@ -207,6 +207,12 @@ export default {
 </template>
 
 <style scoped lang="scss">
+.alert .close:focus-visible {
+    opacity: 1;
+    outline: 2px solid currentColor;
+    outline-offset: -2px;
+}
+
 .g-alert-fade-enter-active,
 .g-alert-fade-leave-active {
     transition: opacity 0.15s linear;
