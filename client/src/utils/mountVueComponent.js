@@ -8,6 +8,7 @@ import Vue from "vue";
 
 import { localizationPlugin, vueRxShortcutPlugin } from "@/components/plugins";
 import { vGTooltip } from "@/directives/vGTooltip";
+import { vSanitizeHtml } from "@/directives/vSanitizeHtml";
 
 // Load Pinia
 Vue.use(PiniaVuePlugin);
@@ -17,6 +18,9 @@ Vue.use(BootstrapVue);
 
 // Custom tooltip directive
 Vue.directive("g-tooltip", vGTooltip);
+
+// Renders markup through DOMPurify; the replacement for raw v-html
+Vue.directive("sanitize-html", vSanitizeHtml);
 
 // localization filters and directives
 Vue.use(localizationPlugin);
