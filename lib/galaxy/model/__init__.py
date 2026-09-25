@@ -9307,9 +9307,9 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
 
     @property
     def effective_tool_id(self) -> Optional[str]:
-        # A user-defined tool's id is neither unique nor registered in the toolbox, so
-        # steps referencing one are identified by ``dynamic_tool`` alone and any stored
-        # ``tool_id`` is ignored.
+        # A step using a user-defined tool is identified by ``dynamic_tool``: the step's
+        # own ``tool_id`` column is ignored and the id comes from the tool definition.
+        # That id is neither unique nor in the toolbox, so lookups also pass ``tool_uuid``.
         if (user_defined_tool := self.user_defined_tool) is not None:
             return user_defined_tool.tool_id
         return self.tool_id
