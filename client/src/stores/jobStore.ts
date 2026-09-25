@@ -12,6 +12,12 @@ interface JobFetchParams {
     full?: boolean;
 }
 
+interface PollEntry {
+    watcher: ReturnType<typeof useResourceWatcher>;
+    full: boolean;
+    refCount: number;
+}
+
 /** Max number of jobs to keep cached at once, to avoid unbounded memory growth over a long
  * session. Exported so tests can exercise eviction. */
 export const MAX_CACHED_JOBS = 40;
@@ -178,10 +184,7 @@ export const useJobStore = defineStore("jobStore", () => {
     /** A track of all active polls (by `job_id` and whether the stored representation is full),
      * plus a count of how many callers still want that poll running, so we don't duplicate polls
      * for the same ID and stop polling once the last interested caller goes away. */
-    const activePolls = new Map<
-        string,
-        { watcher: ReturnType<typeof useResourceWatcher>; full: boolean; refCount: number }
-    >();
+    const activePolls = new Map<string, PollEntry>();
 
     /**
      * Polls a job until it reaches a terminal state. If the job is already terminal and cached,
@@ -225,7 +228,7 @@ export const useJobStore = defineStore("jobStore", () => {
             if (full && !runningPoll.full) {
                 runningPoll.full = true;
             }
-            return { stopWatchingJob: () => stopWatchingJob(id) };
+            return { stopWatchingJob: () => stopWatchingJob(id, runningPoll) };
         }
 
         const watcher = useResourceWatcher(
@@ -263,15 +266,23 @@ export const useJobStore = defineStore("jobStore", () => {
             },
             { shortPollingInterval: 1000, longPollingInterval: 1000 },
         );
-        activePolls.set(id, { watcher, full, refCount: 1 });
+        const pollEntry = { watcher, full, refCount: 1 };
+        activePolls.set(id, pollEntry);
         watcher.startWatchingResource();
-        return { stopWatchingJob: () => stopWatchingJob(id) };
+        return { stopWatchingJob: () => stopWatchingJob(id, pollEntry) };
     }
 
-    /** One caller is done watching a job; the poll stops once refCount hits 0. */
-    function stopWatchingJob(id: string) {
+    /** One caller is done watching a job; the poll stops once refCount hits 0.
+     *
+     * `entry` is the specific poll entry this caller's handle was issued for.
+     * If `id`'s current entry in `activePolls` is a *different* one (the original poll already ended
+     * and a new one started for the same id since), this is a stale handle and must be a no-op:
+     * decrementing the new, unrelated poll's `refCount` could stop it while a still-active caller
+     * still needs it.
+     */
+    function stopWatchingJob(id: string, entry: PollEntry) {
         const runningPoll = activePolls.get(id);
-        if (!runningPoll) {
+        if (!runningPoll || runningPoll !== entry) {
             return;
         }
         runningPoll.refCount--;
