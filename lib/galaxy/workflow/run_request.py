@@ -222,7 +222,7 @@ def _step_parameters(step: "WorkflowStep", param_map: dict, legacy: bool = False
 
     Note that this format allows only one parameter to be set per step.
     """
-    param_dict = param_map.get(step.tool_id, {}).copy()
+    param_dict = param_map.get(step.effective_tool_id, {}).copy()
     if legacy:
         param_dict.update(param_map.get(str(step.id), {}))
     else:

@@ -95,7 +95,13 @@ def _blocks(language: str) -> List[Tuple[str, str]]:
     ]
 
 
-YAML_BLOCKS = _blocks("yaml")
+def _is_workflow(source: str) -> bool:
+    document = yaml.safe_load(source)
+    return isinstance(document, dict) and document.get("class") == "GalaxyWorkflow"
+
+
+YAML_BLOCKS = [(section_id, source) for section_id, source in _blocks("yaml") if not _is_workflow(source)]
+WORKFLOW_BLOCKS = [(section_id, source) for section_id, source in _blocks("yaml") if _is_workflow(source)]
 JSON_BLOCKS = _blocks("json")
 CONSOLE_BLOCKS = _blocks("console")
 
@@ -252,6 +258,22 @@ def test_documented_yaml_fragments_validate_and_lint(section_id: str, source: st
     tool = _tool_from_fragment(section_id, source)
 
     assert lint_user_tool_source(tool) == []
+
+
+@pytest.mark.parametrize(
+    ("section_id", "source"),
+    WORKFLOW_BLOCKS,
+    ids=[section_id for section_id, _ in WORKFLOW_BLOCKS],
+)
+def test_documented_workflows_embed_valid_tools(section_id: str, source: str) -> None:
+    runs = [step["run"] for step in yaml.safe_load(source)["steps"].values() if "run" in step]
+    assert runs, section_id
+
+    for run in runs:
+        tool = UserToolSource.model_validate(run)
+        assert lint_user_tool_source(tool) == [], section_id
+        evaluated_command = _do_eval(tool.shell_command, _runtime_inputs(tool), _javascript_requirements(tool))
+        _assert_shell_syntax(evaluated_command)
 
 
 @pytest.mark.parametrize(

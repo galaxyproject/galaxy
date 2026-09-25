@@ -67,6 +67,14 @@ def _skip_output_assoc_name(name: str) -> bool:
     return ToolOutputCollectionPart.is_named_collection_part_name(name) or name.startswith("__new_primary_file")
 
 
+def _set_step_tool(step: WorkflowStep, job: Job) -> None:
+    step.dynamic_tool = job.dynamic_tool
+    if job.dynamic_tool is None or job.dynamic_tool.public:
+        # User-defined tool steps are identified by ``dynamic_tool`` alone, see
+        # ``WorkflowStep.effective_tool_id``.
+        step.tool_id = job.tool_id
+
+
 def _connect(step: WorkflowStep, input_name: str, source: tuple[WorkflowStep, str]) -> None:
     """Wire ``step``'s ``input_name`` to ``source`` (output_step, output_name).
     The source is always an earlier step - a job only consumes outputs of jobs
@@ -191,11 +199,9 @@ def extract_steps(
         tool_inputs, associations = step_inputs(trans, job)
         step = model.WorkflowStep()
         step.type = "tool"
-        step.tool_id = job.tool_id
         step.tool_version = job.tool_version
         step.tool_inputs = tool_inputs
-        if job.dynamic_tool_id:
-            step.dynamic_tool_id = job.dynamic_tool_id
+        _set_step_tool(step, job)
         # NOTE: We shouldn't need to do two passes here since only
         #       an earlier job can be used as an input to a later
         #       job.
@@ -673,11 +679,9 @@ def extract_steps_by_ids(
         tool_inputs, associations = step_inputs_by_id(trans, job)
         step = model.WorkflowStep()
         step.type = "tool"
-        step.tool_id = job.tool_id
         step.tool_version = job.tool_version
         step.tool_inputs = tool_inputs
-        if job.dynamic_tool_id:
-            step.dynamic_tool_id = job.dynamic_tool_id
+        _set_step_tool(step, job)
 
         mapped_inputs: dict[str, HistoryDatasetCollectionAssociation] = {}
         if output_hdcas:

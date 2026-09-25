@@ -2910,7 +2910,7 @@ class BcoModelExportStore(FileSourceModelExportStore, WorkflowInvocationOnlyExpo
                                 )
                                 output_subdomain_items.append(output)
                 step_index = workflow_step.order_index
-                step_name = workflow_step.label or workflow_step.tool_id
+                step_name = workflow_step.label or workflow_step.effective_tool_id
                 pipeline_step = PipelineStep(
                     step_number=step_index,
                     name=step_name,

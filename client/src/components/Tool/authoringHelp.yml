@@ -550,7 +550,50 @@ sections:
       ```
 
       Run the resulting tool by passing its `uuid` to the normal tool execution
-      endpoint: `POST /api/tools` with `tool_uuid` instead of `tool_id`.
+      endpoint: `POST /api/tools` with `tool_uuid` instead of `tool_id`. To use
+      it in a workflow, see "Using a tool in a workflow" below.
 
       Your server publishes the request and response details at
       `<galaxy_url>/api/docs` under the `dynamic_tools` tag.
+
+  - id: workflows
+    title: Using a tool in a workflow
+    kind: reference
+    body: |
+      In a format2 workflow (`.gxwf.yml`), put the tool definition under the
+      step's `run` key. The workflow is then self-contained: whoever imports it
+      gets a private copy of the tool, as long as they have the
+      `Custom Tool Execution` role.
+
+      ```yaml
+      class: GalaxyWorkflow
+      inputs:
+        text_file:
+          type: data
+      outputs:
+        without_comments:
+          outputSource: remove_comments/output_file
+      steps:
+        remove_comments:
+          run:
+            class: GalaxyUserTool
+            id: remove_comments
+            version: 0.1.0
+            name: Remove Comment Lines
+            container: quay.io/biocontainers/grep:3.4--hf43ccf4_4
+            shell_command: grep -v '^#' '$(inputs.input_file.path)' > output.txt || test "$?" = 1
+            inputs:
+              - name: input_file
+                type: data
+                format: txt
+            outputs:
+              - name: output_file
+                type: data
+                format_source: input_file
+                from_work_dir: output.txt
+          in:
+            input_file: text_file
+      ```
+
+      Galaxy's `.ga` export works the same way: it includes the tool definition
+      as `tool_representation`.
