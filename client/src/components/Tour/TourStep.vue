@@ -74,11 +74,9 @@ function createStep() {
         class="tour-element"
         :class="{ 'tour-element-sticky': !targetElementVisible, 'tour-has-title': !!step.title }">
         <div v-if="step.title" class="tour-header">
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <div class="tour-title" v-html="step.title"></div>
+            <div v-sanitize-html="step.title" class="tour-title" />
         </div>
-        <!-- eslint-disable-next-line vue/no-v-html -->
-        <div v-if="step.content" class="tour-content" v-html="step.content" />
+        <div v-if="step.content" v-sanitize-html="step.content" class="tour-content" />
         <div class="float-right p-2">
             <div>
                 <template v-if="waitingOnElement && (isPlaying || !isLast)">
