@@ -2,7 +2,6 @@ from galaxy.selenium.axe_results import FORMS_VIOLATIONS
 from .framework import (
     managed_history,
     retry_assertion_during_transitions,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -29,7 +28,6 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
         return after_latest_history_item
 
     @selenium_test
-    @selenium_only("Not yet migrated to support Playwright backend")
     @managed_history
     def test_history_dataset_display_text(self):
         original_name = "1.txt"
@@ -127,7 +125,6 @@ class TestDataset(UsesUploadActivity, SeleniumTestCase):
         assert annotation_component.wait_for_value() == TEST_ANNOTATION
         assert info_component.wait_for_value() == TEST_INFO
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_history_dataset_auto_detect_datatype(self):

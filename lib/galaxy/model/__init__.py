@@ -176,19 +176,19 @@ from galaxy.objectstore.templates import (
     ObjectStoreTemplate,
     template_to_configuration as object_store_template_to_configuration,
 )
-from galaxy.schema.invocation import (
-    InvocationCancellationUserRequest,
-    InvocationState,
-    InvocationStepState,
-)
+from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import (
+    InvocationsStateCounts,
+    MAX_ANNOTATION_SIZE,
+)
+from galaxy.schema.states import (
     DatasetCollectionPopulatedState,
     DatasetSourceTransformActionTypeLiteral,
     DatasetState,
     DatasetValidatedState,
-    InvocationsStateCounts,
+    InvocationState,
+    InvocationStepState,
     JobState,
-    MAX_ANNOTATION_SIZE,
     ToolRequestState,
 )
 from galaxy.schema.workflow.comments import WorkflowCommentModel
@@ -2465,17 +2465,27 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def set_final_state(self, final_state):
         self.set_state(final_state)
-        # TODO: migrate to where-in subqueries?
+        sa_session = required_object_session(self)
+        update_time = now()
+        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
+        params = {"job_id": self.id, "update_time": update_time}
+        # Update workflow_invocation_step for direct job_id
         statement = text("""
             UPDATE workflow_invocation_step
             SET update_time = :update_time
             WHERE job_id = :job_id;
         """)
-        sa_session = required_object_session(self)
-        update_time = now()
-        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
-        params = {"job_id": self.id, "update_time": update_time}
         sa_session.execute(statement, params)
+        # Also update via implicit_collection_jobs link
+        statement_icj = text("""
+            UPDATE workflow_invocation_step
+            SET update_time = :update_time
+            WHERE implicit_collection_jobs_id IN (
+                SELECT implicit_collection_jobs_id FROM implicit_collection_jobs_job_association
+                WHERE job_id = :job_id
+            );
+        """)
+        sa_session.execute(statement_icj, params)
 
     def get_destination_configuration(self, dest_params, config, key, default=None):
         """Get a destination parameter that can be defaulted back
@@ -5345,7 +5355,8 @@ class DatasetSource(Base, Dictifiable, Serializable):
     dataset_id: Mapped[int | None] = mapped_column(ForeignKey("dataset.id"), index=True)
     source_uri: Mapped[str | None] = mapped_column(TEXT)
     extra_files_path: Mapped[str | None] = mapped_column(TEXT)
-    # actions actually applied to this source when creating the dataset.
+    # actions actually applied to this source when creating the dataset. An empty list means the
+    # source was processed and stored unmodified, None that it has not been processed (or predates tracking).
     transform: Mapped[TRANSFORM_ACTIONS | None] = mapped_column(MutableJSONType)
     # actions that may be applied to this source when creating the dataset
     requested_transform: Mapped[REQUESTED_TRANSFORM_ACTIONS | None] = mapped_column(MutableJSONType)
@@ -7731,64 +7742,50 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
 
         return self._has_deferred_data
 
+    def _subcollection_ids_stmt(self, *where):
+        """Select the ids of the collections nested in this one that match ``where``.
+
+        Each nesting level is looked up from the ids of the level above, so empty
+        sub-collections are included. The leaf-DCE walk in
+        _build_nested_collection_attributes_stmt only reaches branches that
+        contain datasets.
+        """
+        session = required_object_session(self)
+        is_postgres = session.bind and session.bind.dialect.name == "postgresql"
+
+        def in_ids(column, ids):
+            if is_postgres:
+                # Evaluating each level into an array forces index scans, see
+                # _build_nested_collection_attributes_stmt.
+                return column == any_(func.array(ids.scalar_subquery()))
+            return column.in_(ids)
+
+        dce_table = DatasetCollectionElement.__table__
+        dc_table = DatasetCollection.__table__
+        level_conditions = []
+        level_ids = None
+        for _ in range(self.collection_type.count(":")):
+            dce = alias(dce_table)
+            if level_ids is None:
+                parent_condition = dce.c.dataset_collection_id == self.id
+            else:
+                parent_condition = in_ids(dce.c.dataset_collection_id, level_ids)
+            level_ids = select(dce.c.child_collection_id).where(parent_condition)
+            level_conditions.append(in_ids(dc_table.c.id, level_ids))
+        return select(dc_table.c.id).where(or_(*level_conditions), *where)
+
     @property
     def populated_optimized(self):
         if not hasattr(self, "_populated_optimized"):
             if not self.id:
                 return self.populated
-            _populated_optimized = True
             if ":" not in self.collection_type:
                 _populated_optimized = self.populated_state == DatasetCollection.populated_states.OK
             else:
-                session = required_object_session(self)
-                is_postgres = session.bind and session.bind.dialect.name == "postgresql"
-                if is_postgres:
-                    # Query intermediate collection IDs directly using the
-                    # ARRAY walk pattern, then check their populated_state.
-                    # Unlike the leaf-DCE ARRAY walk in
-                    # _build_nested_collection_attributes_stmt, this
-                    # correctly handles empty sub-collections (which have
-                    # no leaf DCEs but may still have non-OK state, e.g.
-                    # from skipped conditional workflow steps).
-                    dce_table = DatasetCollectionElement.__table__
-                    dc_table = DatasetCollection.__table__
-                    n_intermediates = self.collection_type.count(":")
-
-                    inner_dce = alias(dce_table)
-                    child_ids_array = func.array(
-                        select(inner_dce.c.child_collection_id)
-                        .where(inner_dce.c.dataset_collection_id == self.id)
-                        .scalar_subquery()
-                    )
-                    level_conditions = [dc_table.c.id == any_(child_ids_array)]
-
-                    for _ in range(n_intermediates - 1):
-                        next_dce = alias(dce_table)
-                        child_ids_array = func.array(
-                            select(next_dce.c.child_collection_id)
-                            .where(next_dce.c.dataset_collection_id == any_(child_ids_array))
-                            .scalar_subquery()
-                        )
-                        level_conditions.append(dc_table.c.id == any_(child_ids_array))
-
-                    stmt = (
-                        select(literal(1))
-                        .select_from(dc_table)
-                        .where(
-                            or_(*level_conditions),
-                            dc_table.c.populated_state != DatasetCollection.populated_states.OK,
-                        )
-                        .limit(1)
-                    )
-                    _populated_optimized = session.execute(stmt).first() is None
-                else:
-                    stmt = self._build_nested_collection_attributes_stmt(
-                        collection_attributes=("populated_state",),
-                    )
-                    for row in session.execute(stmt):
-                        if any(state not in (DatasetCollection.populated_states.OK, None) for state in row):
-                            _populated_optimized = False
-                            break
+                stmt = self._subcollection_ids_stmt(
+                    DatasetCollection.__table__.c.populated_state != DatasetCollection.populated_states.OK
+                ).limit(1)
+                _populated_optimized = required_object_session(self).execute(stmt).first() is None
             self._populated_optimized = _populated_optimized
 
         return self._populated_optimized
@@ -7858,10 +7855,18 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
 
     @property
     def waiting_for_elements(self):
-        top_level_waiting = self.populated_state == DatasetCollection.populated_states.NEW
-        if not top_level_waiting and self.has_subcollections:
-            return any(e.child_collection.waiting_for_elements for e in self.elements)
-        return top_level_waiting
+        return bool(self.unpopulated_collection_ids())
+
+    def unpopulated_collection_ids(self) -> list[int]:
+        """The ids of the collections in this tree that are still waiting for elements."""
+        if self.populated_state == DatasetCollection.populated_states.NEW:
+            return [self.id]
+        if not self.has_subcollections:
+            return []
+        stmt = self._subcollection_ids_stmt(
+            DatasetCollection.__table__.c.populated_state == DatasetCollection.populated_states.NEW
+        )
+        return list(required_object_session(self).scalars(stmt))
 
     def mark_as_populated(self):
         self.populated_state = DatasetCollection.populated_states.OK

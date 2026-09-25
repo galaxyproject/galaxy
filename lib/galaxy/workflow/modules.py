@@ -12,6 +12,8 @@ from collections.abc import (
     Callable,
     Iterable,
 )
+from dataclasses import dataclass
+from enum import Enum
 from typing import (
     Any,
     cast,
@@ -38,6 +40,7 @@ from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.managers.credentials import _build_user_credentials_query
 from galaxy.managers.tool_source import get_or_create_tool_source
 from galaxy.model import (
+    DatasetCollection,
     DatasetInstance,
     HistoryDatasetCollectionAssociation,
     Job,
@@ -306,7 +309,9 @@ def to_cwl(
         if step:
             if not value.dataset.in_ready_state():
                 why = f"dataset [{value.id}] is needed for valueFrom expression and is non-ready"
-                raise DelayedWorkflowEvaluation(why=why)
+                raise DelayedWorkflowEvaluation(
+                    why=why, dependencies=[SchedulingDependency(DependencyType.HDA, value.id)]
+                )
             if not value.is_ok:
                 raise FailWorkflowEvaluation(
                     why=InvocationFailureDatasetFailed(
@@ -942,6 +947,7 @@ class SubWorkflowModule(WorkflowModule):
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
         subworkflow_progress = subworkflow_invoker.progress
+        progress.record_subworkflow_delays(subworkflow_progress)
         outputs = {}
         for workflow_output in subworkflow.workflow_outputs:
             workflow_output_label = (
@@ -1980,7 +1986,10 @@ class PauseModule(WorkflowModule):
                     )
                 )
         delayed_why = "workflow paused at this step waiting for review"
-        raise DelayedWorkflowEvaluation(why=delayed_why)
+        dependencies = []
+        if invocation_step:
+            dependencies.append(SchedulingDependency(DependencyType.WORKFLOW_INVOCATION_STEP, invocation_step.id))
+        raise DelayedWorkflowEvaluation(why=delayed_why, dependencies=dependencies)
 
     def do_invocation_step_action(self, step, action):
         """Update or set the workflow invocation state action - generic
@@ -3408,9 +3417,51 @@ module_types = dict(
 module_factory = WorkflowModuleFactory(module_types)
 
 
+class DependencyType(str, Enum):
+    JOB = "job"
+    HDA = "hda"
+    DATASET_COLLECTION = "dataset_collection"
+    WORKFLOW_INVOCATION_STEP = "workflow_invocation_step"
+
+
+@dataclass(frozen=True)
+class SchedulingDependency:
+    dependency_type: DependencyType
+    id: int
+
+
+@dataclass(frozen=True)
+class SchedulingDependencies:
+    """What the next scheduling attempt of an invocation waits on."""
+
+    tracked: frozenset[SchedulingDependency]
+    # Why steps were delayed without a tracked dependency. The invocation is
+    # scheduled again on the next iteration and the reasons are logged.
+    untracked: tuple[str, ...]
+    # The iteration stopped before scheduling everything it could.
+    more_work: bool
+
+
+def unpopulated_collection_dependencies(collection: DatasetCollection) -> list[SchedulingDependency]:
+    return [
+        SchedulingDependency(DependencyType.DATASET_COLLECTION, collection_id)
+        for collection_id in collection.unpopulated_collection_ids()
+    ]
+
+
 class DelayedWorkflowEvaluation(Exception):
-    def __init__(self, why=None):
+    def __init__(
+        self,
+        why=None,
+        dependencies: Iterable[SchedulingDependency] = (),
+        *,
+        inherited: bool = False,
+    ):
         self.why = why
+        self.dependencies = list(dependencies)
+        # The step is delayed because another step of the invocation is delayed;
+        # that step's dependency covers this one.
+        self.inherited = inherited
 
 
 class CancelWorkflowEvaluation(Exception):

@@ -809,7 +809,7 @@ class HandleCompressedFileResponse(NamedTuple):
     ext: str
     uncompressed_path: str
     compressed_type: str | None
-    is_compressed: bool | None
+    is_compressed: bool
 
 
 def handle_compressed_file(
@@ -923,6 +923,11 @@ def convert_function(convert_to_posix_lines, convert_spaces_to_tabs) -> ConvertF
     return convert_fxn
 
 
+def should_convert_text(file_prefix: FilePrefix, is_compressed: bool) -> bool:
+    """Newline and space conversion only applies to uncompressed text content."""
+    return not file_prefix.binary and not is_compressed
+
+
 def handle_uploaded_dataset_file_internal(
     file_prefix: FilePrefix,
     datatypes_registry,
@@ -963,7 +968,7 @@ def handle_uploaded_dataset_file_internal(
                 auto_decompress=file_prefix.auto_decompress,
             )
 
-        if not is_binary and not is_compressed and (convert_to_posix_lines or convert_spaces_to_tabs):
+        if (convert_to_posix_lines or convert_spaces_to_tabs) and should_convert_text(file_prefix, is_compressed):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
             convert_fxn = convert_function(convert_to_posix_lines, convert_spaces_to_tabs)
             line_count, _converted_path, converted_newlines, converted_spaces = convert_fxn(
