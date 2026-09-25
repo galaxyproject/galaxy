@@ -53623,6 +53623,9 @@ export interface operations {
                  *     `user`
                  *     : The stored workflow's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
                  *
+                 *     `tool_id`
+                 *     : The id of a tool used by at least one step in the stored workflow.
+                 *
                  *     `is:published`
                  *     : Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.
                  *
@@ -53641,7 +53644,7 @@ export interface operations {
                  *     ## Free Text
                  *
                  *     Free text search terms will be searched against the following attributes of the
-                 *     Stored Workflows: `name`, `tag`, `user`.
+                 *     Stored Workflows: `name`, `tag`, `user`, `tool_id`.
                  */
                 search?: string | null;
                 /** @description Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts. */

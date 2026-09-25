@@ -75,6 +75,7 @@ from galaxy.model import (
     WorkflowInvocation,
     WorkflowInvocationStep,
     WorkflowInvocationToSubworkflowInvocationAssociation,
+    WorkflowStep,
 )
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.index_filter_util import (
@@ -150,6 +151,7 @@ INDEX_SEARCH_FILTERS = {
     "tag": "tag",
     "n": "name",
     "t": "tag",
+    "tool_id": "tool_id",
     "user": "user",
     "u": "user",
     "is": "is",
@@ -233,6 +235,18 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
             def name_filter(term):
                 return text_column_filter(StoredWorkflow.name, term)
 
+            def tool_id_exists(term_text: str, quoted: bool):
+                tool_id_column = WorkflowStep.tool_id
+                condition = tool_id_column == term_text if quoted else tool_id_column.ilike(f"%{term_text}%")
+                return (
+                    select(1)
+                    .select_from(WorkflowStep)
+                    .where(WorkflowStep.workflow_id == StoredWorkflow.latest_workflow_id)
+                    .where(condition)
+                    .correlate_except(WorkflowStep)
+                    .exists()
+                )
+
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
                     key = term.filter
@@ -241,6 +255,8 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                         stmt = stmt.where(w_tag_exists(term.text, term.quoted))
                     elif key == "name":
                         stmt = stmt.where(name_filter(term))
+                    elif key == "tool_id":
+                        stmt = stmt.where(tool_id_exists(term.text, term.quoted))
                     elif key == "user":
                         stmt = stmt.where(user_exists_filter(StoredWorkflow.user_id, term.text))
                     elif key == "is":

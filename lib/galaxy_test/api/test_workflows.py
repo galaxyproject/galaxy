@@ -744,6 +744,33 @@ steps:
         assert workflow_id_1 in index_ids
         assert workflow_id_2 not in index_ids
 
+    def test_index_search_tool_id(self):
+        name1, name2 = self.dataset_populator.get_random_name(), self.dataset_populator.get_random_name()
+        # test_workflow_1.ga (simple_workflow) has a "cat1" tool step.
+        workflow_id_1 = self.workflow_populator.simple_workflow(name1)
+        # test_workflow_2.ga (load_random_x2_workflow) only has "random_lines1" tool steps.
+        workflow_id_2 = self.workflow_populator.create_workflow(self.workflow_populator.load_random_x2_workflow(name2))
+
+        index_ids = self.workflow_populator.index_ids(search="tool_id:cat1")
+        assert workflow_id_1 in index_ids
+        assert workflow_id_2 not in index_ids
+
+        index_ids = self.workflow_populator.index_ids(search="tool_id:random_lines1")
+        assert workflow_id_1 not in index_ids
+        assert workflow_id_2 in index_ids
+
+        index_ids = self.workflow_populator.index_ids(search="tool_id:cat")
+        assert workflow_id_1 in index_ids
+        assert workflow_id_2 not in index_ids
+
+        index_ids = self.workflow_populator.index_ids(search="tool_id:'cat'")
+        assert workflow_id_1 not in index_ids
+        assert workflow_id_2 not in index_ids
+
+        index_ids = self.workflow_populator.index_ids(search="tool_id:'cat1'")
+        assert workflow_id_1 in index_ids
+        assert workflow_id_2 not in index_ids
+
     def test_index_published(self):
         # published workflows are also the default of what is displayed for anonymous API requests
         # this is tested in test_anonymous_published.

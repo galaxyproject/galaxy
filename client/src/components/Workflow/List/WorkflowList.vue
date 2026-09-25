@@ -12,6 +12,7 @@ import { deleteWorkflow, updateWorkflow } from "@/components/Workflow/workflows.
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { Toast } from "@/composables/toast";
+import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
@@ -43,6 +44,7 @@ const props = withDefaults(defineProps<Props>(), {
 const breadcrumbItems = [{ title: "Workflows" }];
 
 const router = useRouter();
+const toolStore = useToolStore();
 const userStore = useUserStore();
 const { confirm } = useConfirmDialog();
 
@@ -179,6 +181,21 @@ async function load(overlayLoading = false, silent = false) {
         }
         if (sharedWithMe.value && !workflowFilters.value.getFilterValue(search, "shared_with_me")) {
             search += " is:shared_with_me";
+        }
+
+        // If we have a valid length `tool_name` filter, find the first `tool_id` returned
+        // by `toolStore.getToolIdsByName`
+        let toolName = workflowFilters.value.getFilterValue(search, "tool_name");
+        if (toolName && typeof toolName === "string" && toolName.trim().length > 2) {
+            const isQuoted = /^(['"]).*\1$/.test(toolName);
+            toolName = isQuoted ? toolName.slice(1, -1) : toolName;
+            const toolIds = toolStore.getToolIdsByName(toolName, isQuoted);
+            if (toolIds.length > 0 && toolIds[0]) {
+                // Tool ID found, replace the `tool_name` filter with the corresponding `tool_id` filter
+                const toolId = toolIds[0];
+                search = workflowFilters.value.setFilterValue(search, "tool_id", toolId);
+                search = workflowFilters.value.applyFiltersToText({ tool_name: toolName }, search, true);
+            }
         }
     } else {
         // there are invalid filters, so we don't want to search
