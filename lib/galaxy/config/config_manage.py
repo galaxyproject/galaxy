@@ -36,7 +36,6 @@ if __name__ == "__main__":
 
 from galaxy.config import (
     GALAXY_CONFIG_SCHEMA_PATH,
-    REPORTS_CONFIG_SCHEMA_PATH,
     TOOL_SHED_CONFIG_SCHEMA_PATH,
 )
 from galaxy.config.schema import AppSchema
@@ -53,7 +52,7 @@ from galaxy.util.yaml_util import (
 
 DESCRIPTION = "Convert configuration files."
 
-APP_DESCRIPTION = """Application to target for operation (i.e. galaxy, tool_shed, or reports))"""
+APP_DESCRIPTION = """Application to target for operation (i.e. galaxy or tool_shed))"""
 DRY_RUN_DESCRIPTION = """If this action modifies files, just print what would be the result and continue."""
 UNKNOWN_OPTION_MESSAGE = "Option [%s] not found in schema - either it is invalid or the Galaxy team hasn't documented it. If invalid, you should manually remove it. If the option is valid but undocumented, please file an issue with the Galaxy team."
 NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults throughout."
@@ -228,14 +227,7 @@ SHED_APP = App(
     "config/tool_shed.yml",
     TOOL_SHED_CONFIG_SCHEMA_PATH,
 )
-REPORTS_APP = App(
-    ["reports_wsgi.ini", "config/reports.ini"],
-    "9001",
-    ["galaxy.webapps.reports.buildapp:app_factory"],
-    "config/reports.yml",
-    REPORTS_CONFIG_SCHEMA_PATH,
-)
-APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
+APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP}
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -268,7 +260,9 @@ def _to_rst(args: Namespace, app_desc: App) -> None:
         option = schema.get_app_option(key)
         option_value = OptionValue(key, default, option)
         _write_option_rst(args, rst, key, "~", option_value)
-    print(rst.getvalue())
+    # print() supplies the single trailing newline; the per-option blank lines would
+    # otherwise leave the file ending in blanks that end-of-file-fixer strips back out.
+    print(rst.getvalue().rstrip("\n"))
 
 
 def _write_option_rst(args: Namespace, rst: StringIO, key: str, heading_level: str, option_value: OptionValue) -> None:
@@ -438,7 +432,9 @@ def _build_sample_yaml(args: Namespace, app_desc: App) -> None:
     f = StringIO()
     if description := getattr(schema, "description", None):
         description = description.lstrip()
-        as_comment = "\n".join(f"# {line}" for line in description.split("\n")) + "\n"
+        # rstrip so blank description lines do not become "# " - trailing whitespace the
+        # trailing-whitespace hook would strip right back out.
+        as_comment = "\n".join(f"# {line}".rstrip() for line in description.split("\n")) + "\n"
         f.write(as_comment)
     if app_desc.app_name == "galaxy":
         if settings_to_sample is None:
@@ -450,7 +446,8 @@ def _build_sample_yaml(args: Namespace, app_desc: App) -> None:
 
 
 def _write_to_file(args: Namespace, f: StringIO, path: str) -> None:
-    contents = f.getvalue()
+    # Exactly one trailing newline, so regenerating does not fight end-of-file-fixer.
+    contents = f.getvalue().rstrip("\n") + "\n"
     if args.dry_run:
         contents_indented = "\n".join(f" |{line}" for line in contents.splitlines())
         print(f"Overwriting {path} with the following contents:\n{contents_indented}")
@@ -544,7 +541,6 @@ _SCHEMA_TO_PYTHON_TYPE: dict[str, str] = {
 _CONFIG_TYPE_CLASS_NAMES: dict[str, str] = {
     "galaxy": "GalaxyAppConfigurationAttributes",
     "tool_shed": "ToolShedAppConfigurationAttributes",
-    "reports": "ReportsAppConfigurationAttributes",
 }
 
 # Per-app overrides for attributes whose runtime Python type differs from what
@@ -581,13 +577,13 @@ _ATTR_TYPE_OVERRIDES: dict[str, dict[str, str]] = {
         # seq attrs with more specific element types
         "file_source_templates": "list[dict[str, Any]] | None",
         "object_store_templates": "list[dict[str, Any]] | None",
+        "subdomain_switcher": "list[dict[str, str]]",
         # Stored as float despite int schema type
         "object_store_cache_size": "float",
         # Converted from int (days) to timedelta by _process_config
         "password_expiration_period": "timedelta",
     },
     "tool_shed": {},
-    "reports": {},
 }
 
 _CONFIG_DIR = Path(__file__).resolve().parent

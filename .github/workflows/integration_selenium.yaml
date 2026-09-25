@@ -16,6 +16,7 @@ env:
   GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_TEST_SELENIUM_RETRIES: 1
+  GALAXY_TEST_DRIVER_BACKEND: 'playwright'
   YARN_INSTALL_OPTS: --frozen-lockfile
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
   GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT: '1'
@@ -29,8 +30,18 @@ concurrency:
 permissions: {}
 jobs:
   build-client:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     uses: ./.github/workflows/build_client.yaml
   test:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     name: Test
     needs: [build-client]
     runs-on: ubuntu-latest
@@ -58,7 +69,7 @@ jobs:
           path: 'galaxy root'
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.0.0
+        uses: astral-sh/setup-uv@v10.1.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Python
@@ -72,7 +83,7 @@ jobs:
       - name: Run tests
         run: ./run_tests.sh --coverage -integration test/integration_selenium
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v7.0.0
+      - uses: codecov/codecov-action@v7.1.1
         with:
           flags: integration-selenium
           working-directory: 'galaxy root'

@@ -255,6 +255,11 @@ GALAXY_TEST_RAW_DIFF            Don't slice up tool test diffs to keep output
 GALAXY_TEST_DEFAULT_WAIT        Max time allowed for a tool test before Galaxy
                                 gives up (default 86400) - tools may define a
                                 maxseconds attribute to extend this.
+GALAXY_TEST_POLLING_DELTA       Interval in seconds between checks on whether
+                                a tool test's job has finished (default 0.25).
+GALAXY_TEST_POLLING_BACKOFF     Amount added to the polling interval after each
+                                check, so longer jobs are polled less often
+                                (default 0, a fixed interval).
 GALAXY_TEST_TOOL_DEPENDENCY_DIR tool dependency dir to use for Galaxy during
                                 functional tests.
 GALAXY_TEST_FILE_DIR            Test data sources (default to
@@ -639,6 +644,11 @@ fi
 . ./scripts/common_startup_functions.sh
 
 setup_python
+
+if [ "$GALAXY_TEST_DRIVER_BACKEND" = "playwright" ] && [ ${#install_playwright_browers[@]} -eq 0 ]; then
+    # backend selected by environment rather than by the -playwright flag
+    install_playwright_browers=(chromium)
+fi
 
 if [ -n "$install_playwright_browers" ]; then
     playwright install "${install_playwright_browers[@]}"

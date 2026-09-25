@@ -1,0 +1,42 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://w3id.org/ieee/ieee-2791-schema/parametric_domain.json",
+    "type": "array",
+    "title": "Parametric Domain",
+    "description": "This represents the list of NON-default parameters customizing the computational flow which can affect the output of the calculations. These fields can be custom to each kind of analysis and are tied to a particular pipeline implementation",
+    "items":{
+        "required": [
+            "param",
+            "value",
+            "step"
+        ],
+        "additionalProperties": false,
+        "properties": {
+            "param": {
+                "type": "string",
+                "title": "param",
+                "description": "Specific variables for the computational workflow",
+                "examples": [
+                    "seed"
+                ]
+            },
+            "value": {
+                "type": "string",
+                "description": "Specific (non-default) parameter values for the computational workflow",
+                "title": "value",
+                "examples": [
+                    "14"
+                ]
+            },
+            "step": {
+                "type": "string",
+                "title": "step",
+                "description": "Refers to the specific step of the workflow relevant to the parameters specified in 'param' and 'value'",
+                "examples": [
+                    "1"
+                ],
+                "pattern": "^(.*)$"
+            }
+        }
+    }
+}

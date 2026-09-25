@@ -10,6 +10,7 @@ import { useServerMock } from "@/api/client/__mocks__";
 import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { makeCollectionConfig, makeLibraryItem, makeUrlItem } from "@/composables/upload/testHelpers/uploadFixtures";
+import { useUploadBatchOperations } from "@/composables/upload/useUploadBatchOperations";
 import { buildPreparedUpload } from "@/utils/upload";
 import * as uploadUtils from "@/utils/upload";
 
@@ -117,10 +118,37 @@ describe("useUploadSubmission", () => {
         const pastedEntry = state.activeItems.value.find((item) => item.name === "remote.txt");
         const libraryEntry = state.activeItems.value.find((item) => item.name === "library.txt");
 
-        expect(pastedEntry?.status).toBe("completed");
+        expect(pastedEntry?.status).toBe("processing");
         expect(pastedEntry?.progress).toBe(100);
-        expect(libraryEntry?.status).toBe("completed");
+        expect(pastedEntry?.datasetIds).toEqual(["hda_1"]);
+        expect(libraryEntry?.status).toBe("processing");
         expect(libraryEntry?.progress).toBe(100);
+        expect(libraryEntry?.datasetIds).toEqual(["hda_2"]);
+    });
+
+    it("preserves every dataset from standalone URL uploads", async () => {
+        let requestCount = 0;
+        server.use(
+            http.post("/api/tools/fetch", () => {
+                requestCount += 1;
+                return HttpResponse.json({
+                    outputs: [{ id: `hda_url_${requestCount}`, name: `url-${requestCount}.txt`, src: "hda" }],
+                });
+            }),
+        );
+
+        const firstItem = makeUrlItem({ name: "first.txt", url: "https://example.org/first.txt" });
+        const secondItem = makeUrlItem({ name: "second.txt", url: "https://example.org/second.txt" });
+        const wrapper = mountHarness(buildPreparedUpload([firstItem, secondItem]));
+        await flushPromises();
+
+        await wrapper.find(SELECTORS.RUN).trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_url_1"');
+        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_url_2"');
+        expect(useUploadState().activeItems.value.every((item) => item.status === "processing")).toBe(true);
+        expect(useUploadState().activeItems.value.every((item) => item.datasetIds.length === 1)).toBe(true);
     });
 
     it("marks all tracked uploads as errored when the fetch request fails", async () => {
@@ -175,6 +203,33 @@ describe("useUploadSubmission", () => {
         expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_3"');
     });
 
+    it("resolves the submission promise promptly when a tracked upload is cancelled", async () => {
+        server.use(
+            http.post("/api/tools/fetch", async () => {
+                await new Promise((resolve) => setTimeout(resolve, 200));
+                return HttpResponse.json({
+                    jobs: [{ id: "job_cancelled" }],
+                    outputs: [{ id: "hda_cancelled", name: "cancelled.txt", hid: 1, src: "hda" }],
+                });
+            }),
+        );
+
+        const apiItem = makeUrlItem({ name: "cancelled.txt", url: "https://example.org/cancelled.txt" });
+        const wrapper = mountHarness(buildPreparedUpload([apiItem]));
+        await flushPromises();
+
+        await wrapper.find(SELECTORS.RUN).trigger("click");
+        await flushPromises();
+
+        const itemId = useUploadState().activeItems.value[0]?.id;
+        expect(itemId).toBeDefined();
+        useUploadBatchOperations({ autoRecover: false }).cancelUpload(itemId!);
+
+        await vi.waitFor(() => expect(useUploadState().activeItems.value[0]?.status).toBe("cancelled"));
+        expect(wrapper.find(SELECTORS.RESULT).text()).toBe("");
+        expect(wrapper.find(SELECTORS.ERROR).text()).toBe("");
+    });
+
     it("groups direct collection uploads into a batch in upload state", async () => {
         server.use(
             http.post("/api/tools/fetch", async ({ request }) => {
@@ -193,7 +248,8 @@ describe("useUploadSubmission", () => {
 
                 return HttpResponse.json({
                     jobs: [{ id: "job_1" }],
-                    outputs: [{ id: "hdca_2", name: "Uploaded Collection", src: "hdca" }],
+                    outputs: [],
+                    output_collections: [{ id: "hdca_2", name: "Uploaded Collection" }],
                 });
             }),
         );
@@ -213,7 +269,7 @@ describe("useUploadSubmission", () => {
         const batch = state.activeBatches.value[0];
 
         expect(batch?.name).toBe("Uploaded Collection");
-        expect(batch?.status).toBe("completed");
+        expect(batch?.status).toBe("processing");
         expect(batch?.collectionId).toBe("hdca_2");
         expect(batch?.uploadIds).toHaveLength(2);
         expect(state.standaloneUploads.value).toHaveLength(0);
@@ -272,7 +328,7 @@ describe("useUploadSubmission", () => {
         expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_lib_1"');
 
         const batch = useUploadState().activeBatches.value[0];
-        expect(batch?.status).toBe("completed");
+        expect(batch?.status).toBe("processing");
         expect(batch?.collectionId).toBe("hdca_lib_1");
         expect(batch?.datasetIds).toEqual(["hda_lib_1"]);
     });
@@ -312,7 +368,7 @@ describe("useUploadSubmission", () => {
         expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_lib_2"');
 
         const batch = useUploadState().activeBatches.value[0];
-        expect(batch?.status).toBe("completed");
+        expect(batch?.status).toBe("processing");
         expect(batch?.collectionId).toBe("hdca_mixed_1");
         expect(batch?.datasetIds).toEqual(["hda_api_1", "hda_lib_2"]);
     });
@@ -357,5 +413,49 @@ describe("useUploadSubmission", () => {
             chunkSize: 10485760,
         });
         uploadDatasetsSpy.mockRestore();
+    });
+
+    it("scopes AbortSignals per file for standalone uploads and shared for collection batches", async () => {
+        const uploadDatasetsSpy = vi.spyOn(uploadUtils, "uploadDatasets").mockResolvedValue(undefined);
+        const uploadCollectionDatasetsSpy = vi
+            .spyOn(uploadUtils, "uploadCollectionDatasets")
+            .mockResolvedValue(undefined);
+
+        try {
+            const firstItem = makeUrlItem({ name: "1.txt", url: "https://example.org/1.txt" });
+            const secondItem = makeUrlItem({ name: "2.txt", url: "https://example.org/2.txt" });
+            const standaloneWrapper = mountHarness(buildPreparedUpload([firstItem, secondItem]));
+            await flushPromises();
+
+            await standaloneWrapper.find(SELECTORS.RUN).trigger("click");
+            await flushPromises();
+
+            expect(uploadDatasetsSpy).toHaveBeenCalled();
+            const standaloneConfig = uploadDatasetsSpy.mock.calls[0]?.[1];
+            expect(standaloneConfig?.signal).toBeUndefined();
+            expect(standaloneConfig?.signals).toHaveLength(2);
+            // Each standalone item gets a distinct controller, so cancelling one can't abort the other.
+            expect(standaloneConfig?.signals?.[0]).not.toBe(standaloneConfig?.signals?.[1]);
+
+            useUploadState().clearAll();
+
+            const firstBatched = makeUrlItem({ name: "1.bed", url: "https://example.org/1.bed" });
+            const secondBatched = makeUrlItem({ name: "2.bed", url: "https://example.org/2.bed" });
+            const batchWrapper = mountHarness(
+                buildPreparedUpload([firstBatched, secondBatched], makeSubmissionCollectionConfig()),
+            );
+            await flushPromises();
+
+            await batchWrapper.find(SELECTORS.RUN).trigger("click");
+            await flushPromises();
+
+            expect(uploadCollectionDatasetsSpy).toHaveBeenCalled();
+            const batchConfig = uploadCollectionDatasetsSpy.mock.calls[0]?.[2];
+            expect(batchConfig?.signal).toBeInstanceOf(AbortSignal);
+            expect(batchConfig?.signals).toBeUndefined();
+        } finally {
+            uploadDatasetsSpy.mockRestore();
+            uploadCollectionDatasetsSpy.mockRestore();
+        }
     });
 });

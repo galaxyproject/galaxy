@@ -2,7 +2,7 @@
 import axios from "axios";
 import { BAlert } from "bootstrap-vue";
 import { debounce } from "lodash";
-import { onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
 
@@ -12,12 +12,14 @@ interface Props {
     name: string;
     config: object;
     title?: string;
+    visualizationId?: string;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "change", payload: Record<string, any>): void;
+    (e: "saved", saved: boolean): void;
     (e: "load"): void;
 }>();
 
@@ -28,6 +30,27 @@ const emitChange = debounce((newValue: Record<string, any>) => {
 const errorMessage = ref<string>("");
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 
+function onFrameMessage(event: MessageEvent) {
+    const message = event.data;
+    if (message?.from !== "galaxy-visualization") {
+        return;
+    }
+    // Saved state is reported as it happens, so a guard never runs against a stale answer.
+    if (message.visualization_saved !== undefined) {
+        emit("saved", message.visualization_saved);
+    }
+    // A change rebuilds persisted content from the config, so a message without one is not a change.
+    if (message.visualization_config !== undefined) {
+        emitChange(message);
+    }
+}
+
+function onWindowMessage(event: MessageEvent) {
+    if (event.source === iframeRef.value?.contentWindow) {
+        onFrameMessage(event);
+    }
+}
+
 async function render() {
     if (props.name) {
         try {
@@ -36,6 +59,7 @@ async function render() {
             const dataIncoming = {
                 root: window.location.origin + getAppRoot(),
                 visualization_config: props.config,
+                visualization_id: props.visualizationId,
                 visualization_plugin: plugin,
                 visualization_title: props.title,
             };
@@ -67,11 +91,7 @@ async function render() {
                         iframeDocument.head.appendChild(link);
                     }
 
-                    iframe.contentWindow?.addEventListener("message", (event) => {
-                        if (event.data.from === "galaxy-visualization") {
-                            emitChange(event.data);
-                        }
-                    });
+                    iframe.contentWindow?.addEventListener("message", onFrameMessage);
 
                     emit("load");
                     errorMessage.value = "";
@@ -89,7 +109,16 @@ async function render() {
     }
 }
 
-onMounted(() => render());
+onMounted(() => {
+    window.addEventListener("message", onWindowMessage);
+    render();
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener("message", onWindowMessage);
+    iframeRef.value?.contentWindow?.removeEventListener("message", onFrameMessage);
+    emitChange.cancel();
+});
 </script>
 
 <template>

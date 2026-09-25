@@ -3,6 +3,7 @@ import { BFormCheckbox } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
 
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
+import { useUploadDatasetMonitorStore } from "@/stores/uploadDatasetMonitorStore";
 
 import { useUploadState } from "./uploadState";
 
@@ -13,6 +14,8 @@ import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 const { hasUploads } = useUploadState();
 const { advancedMode } = useUploadAdvancedMode();
 const router = useRouter();
+
+useUploadDatasetMonitorStore();
 
 function showProgressDetails() {
     router.push("/upload/progress");

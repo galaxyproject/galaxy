@@ -423,6 +423,7 @@ interface Rootworkflow_run extends Component {
     history_target_link: SelectorTemplate;
     runtime_setting_button: SelectorTemplate;
     runtime_setting_target: SelectorTemplate;
+    new_history_name_input: SelectorTemplate;
     input_select_field: SelectorTemplate;
     primary_storage_indciator: SelectorTemplate;
     intermediate_storage_indciator: SelectorTemplate;
@@ -462,6 +463,8 @@ interface Rootworkflow_editor extends Component {
     change_datatype: SelectorTemplate;
     select_datatype_text_search: SelectorTemplate;
     select_datatype: SelectorTemplate;
+    select_datatype_option_not_matching: SelectorTemplate;
+    selected_datatype: SelectorTemplate;
     add_tags: SelectorTemplate;
     remove_tags: SelectorTemplate;
     tool_version_button: SelectorTemplate;

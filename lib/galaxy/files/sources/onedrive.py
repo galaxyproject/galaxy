@@ -6,7 +6,6 @@ from typing import (
 )
 from urllib.parse import quote
 
-import requests
 from pydantic import (
     AliasChoices,
     Field,
@@ -27,6 +26,7 @@ from galaxy.files.models import (
     RemoteDirectory,
     RemoteFile,
 )
+from galaxy.util import requests
 from galaxy.util.config_templates import TemplateExpansion
 from . import BaseFilesSource
 
@@ -102,7 +102,7 @@ class OneDriveFilesSource(BaseFilesSource[OneDriveFileSourceTemplateConfiguratio
     ) -> requests.Response:
         try:
             response = requests.request(method, url, headers=self._headers(context.config), timeout=timeout, **kwargs)
-        except requests.RequestException as exc:
+        except requests.exceptions.RequestException as exc:
             raise MessageException(f"Error connecting to OneDrive. Reason: {exc}") from exc
 
         if response.status_code in {401, 403}:

@@ -36,6 +36,14 @@ classifiers = [
 keywords = ["Galaxy"]
 
 [project.optional-dependencies]
+irods = ["python-irodsclient"]
+azure-blob = ["azure-storage-blob"]
+s3 = ["boto3"]
+all = [
+    "python-irodsclient",
+    "azure-storage-blob",
+    "boto3",
+]
 test = [
     "pytest",
     "boto3",

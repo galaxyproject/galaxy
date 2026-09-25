@@ -11,6 +11,7 @@ from galaxy.util import (
 )
 from galaxy.web import statsd_client as statsd
 from galaxy_test.api._framework import ApiTestCase
+from galaxy_test.base.test_http_server import test_http_server  # noqa: F401
 from galaxy_test.driver.driver_util import GalaxyTestDriver
 
 pytest_plugins = ("celery.contrib.pytest",)

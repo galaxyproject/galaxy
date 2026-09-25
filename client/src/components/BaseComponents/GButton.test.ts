@@ -1,6 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import GButton from "./GButton.vue";
@@ -68,11 +68,89 @@ describe("GButton.vue", () => {
     });
 });
 
+describe("GButton.vue click propagation", () => {
+    // A native disabled button dispatches no click at all, so nothing reaches clickable
+    // ancestors. GButton renders `aria-disabled` instead of the native attribute, so the
+    // guard in `onClick` has to stop the event itself.
+    function mountInClickableParent(props: object) {
+        const onParentClick = vi.fn();
+
+        const wrapper = mount(
+            {
+                components: { GButton },
+                props: ["buttonProps"],
+                template: `<div @click="onParentClick"><GButton v-bind="buttonProps">Click me</GButton></div>`,
+                methods: { onParentClick },
+            } as object,
+            { propsData: { buttonProps: props }, localVue },
+        );
+
+        return { wrapper, onParentClick, button: wrapper.getComponent(GButton as object) };
+    }
+
+    it("does not bubble a click to clickable ancestors when disabled", async () => {
+        const { onParentClick, button } = mountInClickableParent({ disabled: true, disabledTitle: "Nope" });
+
+        await button.get("button").trigger("click");
+
+        expect(button.emitted("click")).toBeUndefined();
+        expect(onParentClick).not.toHaveBeenCalled();
+    });
+
+    it("bubbles a click to clickable ancestors when enabled", async () => {
+        const { onParentClick, button } = mountInClickableParent({});
+
+        await button.get("button").trigger("click");
+
+        expect(button.emitted("click")).toHaveLength(1);
+        expect(onParentClick).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("GButton.vue router-link root", () => {
+    function routerWithRoutes() {
+        return new VueRouter({ mode: "abstract", routes: [{ path: "/" }, { path: "/pages/create" }] });
+    }
+
+    // vue-router 3 never emits a `click` component event and does not merge `$listeners`,
+    // so a plain `@click` on the RouterLink root is dead. GButton also binds `@click.native`,
+    // which reaches the rendered anchor.
+    it("emits click exactly once from a router-link root", async () => {
+        const router = routerWithRoutes();
+        const wrapper = mount(GButton as object, {
+            propsData: { to: "/pages/create" },
+            localVue,
+            router,
+        });
+
+        await wrapper.trigger("click");
+
+        expect(wrapper.emitted("click")).toHaveLength(1);
+    });
+
+    // The mirror case: `@click.native` must not double up with `@click` on a plain root,
+    // where Vue 2 ignores `nativeOn`.
+    it("emits click exactly once from a plain button root", async () => {
+        const wrapper = mountGButton({});
+
+        await wrapper.get("button").trigger("click");
+
+        expect(wrapper.emitted("click")).toHaveLength(1);
+    });
+
+    it("emits click exactly once from a plain anchor root", async () => {
+        const wrapper = mountGButton({ href: "https://example.org" });
+
+        await wrapper.get("a").trigger("click");
+
+        expect(wrapper.emitted("click")).toHaveLength(1);
+    });
+});
+
 describe("GButton.vue disabled navigation", () => {
-    // A disabled button with a `to` prop must not navigate. The component-level @click
-    // guard does not run for a RouterLink (Vue 2 treats @click on a component as a
-    // component listener, not a native one), and an empty `to` is not a reliable no-op
-    // in vue-router -- so a disabled GButton renders as a plain button instead.
+    // A disabled button with a `to` prop must not navigate: an empty `to` is not a
+    // reliable no-op in vue-router, so a disabled GButton renders as a plain button
+    // instead and has no navigation behaviour to suppress.
     it("renders an enabled router-link button as an anchor", () => {
         const router = new VueRouter({ mode: "abstract", routes: [{ path: "/" }, { path: "/pages/create" }] });
         const wrapper = mount(GButton as object, {

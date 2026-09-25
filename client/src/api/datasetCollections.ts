@@ -125,9 +125,13 @@ export async function createHistoryDatasetCollectionInstanceSimple(options: NewC
     return createHistoryDatasetCollectionInstanceFull(payload);
 }
 
-export async function createHistoryDatasetCollectionInstanceFull(payload: CreateNewCollectionPayload) {
+export async function createHistoryDatasetCollectionInstanceFull(
+    payload: CreateNewCollectionPayload,
+    signal?: AbortSignal,
+) {
     const { data, error } = await GalaxyApi().POST("/api/dataset_collections", {
         body: payload,
+        signal,
     });
 
     if (error) {

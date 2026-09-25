@@ -10,24 +10,26 @@
             <div v-for="(creator, index) in creatorsCurrent" :key="index">
                 <CreatorViewer :creator="creator">
                     <template v-slot:buttons>
-                        <BButton
+                        <GButton
                             v-g-tooltip.hover
                             class="inline-icon-button"
-                            variant="link"
-                            size="sm"
+                            transparent
+                            icon-only
+                            size="small"
                             title="Edit Creator"
                             @click="onEdit(index)">
                             <FontAwesomeIcon :icon="faEdit" />
-                        </BButton>
-                        <BButton
+                        </GButton>
+                        <GButton
                             v-g-tooltip.hover
                             class="inline-icon-button"
-                            variant="link"
-                            size="sm"
+                            transparent
+                            icon-only
+                            size="small"
                             title="Remove Creator"
                             @click="onRemove(index)">
                             <FontAwesomeIcon :icon="faTimes" />
-                        </BButton>
+                        </GButton>
                     </template>
                 </CreatorViewer>
             </div>
@@ -49,10 +51,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import CreatorViewer from "./CreatorViewer.vue";
 import OrganizationForm from "./OrganizationForm.vue";
 import PersonForm from "./PersonForm.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 export default {
     components: {
         FontAwesomeIcon,
+        GButton,
         PersonForm,
         CreatorViewer,
         OrganizationForm,

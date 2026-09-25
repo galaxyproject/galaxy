@@ -37,7 +37,7 @@ from typing import (
 
 from whoosh import index
 from whoosh.fields import Schema
-from whoosh.writing import AsyncWriter
+from whoosh.index import LockError
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.tools.source_store.search import (
@@ -63,6 +63,11 @@ log = logging.getLogger(__name__)
 
 CanConvertToFloat = str | int | float
 CanConvertToInt = str | int | float
+
+# Galaxy processes on a host share ``tool_search_index_dir`` and index the same
+# toolbox into it, so a rebuild that cannot get the write lock in time can be
+# skipped: the process holding the lock is writing the same documents.
+INDEX_WRITE_LOCK_TIMEOUT = 60.0
 
 
 def get_or_create_index(index_dir: "StrPath", schema: Schema) -> index.FileIndex:
@@ -98,16 +103,46 @@ class ToolBoxSearch:
                 config=toolbox.app.config,
             )
         self.panel_searches = panel_searches
-        # We keep track of how many times the tool index has been rebuilt.
-        # We start at -1, so that after the first index the count is at 0,
-        # which is the same as the toolbox reload count. This way we can skip
-        # reindexing if the index count is equal to the toolbox reload count.
-        self.index_count = -1
+        # ``reindex_tool_search`` reaches ``build_index`` concurrently from
+        # boot, the ``rebuild_toolbox_search_index`` control task and shed
+        # installs, all writing the same on-disk Whoosh dirs.
+        self._init_build_state()
+
+    def _init_build_state(self) -> None:
+        self._build_lock = threading.RLock()
+        self._index_built = threading.Condition(self._build_lock)
+        # The toolbox reload the index was last built from; None until the
+        # first build. Builds that are not reloads (shed installs, tool
+        # removals) record the same reload, so they never make a later
+        # reload look already indexed.
+        self.indexed_reload_count: int | None = None
+
+    def _mark_built(self, toolbox: "ToolBox | SupportsCachedSearch") -> None:
+        self.indexed_reload_count = toolbox._reload_count
+        self._index_built.notify_all()
 
     def build_index(self, tool_cache: "ToolCache", toolbox: "ToolBox", index_help: bool = True) -> None:
-        self.index_count += 1
-        for panel_search in self.panel_searches.values():
-            panel_search.build_index(tool_cache, toolbox, index_help=index_help)
+        with self._build_lock:
+            for panel_search in self.panel_searches.values():
+                panel_search.build_index(tool_cache, toolbox, index_help=index_help)
+            self._mark_built(toolbox)
+
+    def build_index_if_stale(self, tool_cache: "ToolCache", toolbox: "ToolBox", index_help: bool = True) -> bool:
+        """Build unless the index already covers the toolbox's current reload.
+
+        The check runs under the build lock, so a caller arriving while a build
+        is in flight waits for it and then skips instead of building again.
+        """
+        with self._build_lock:
+            if self.indexed_reload_count == toolbox._reload_count:
+                return False
+            self.build_index(tool_cache, toolbox, index_help=index_help)
+            return True
+
+    def wait_until_current(self, toolbox: "ToolBox", timeout: float) -> bool:
+        """Block until an index built from ``toolbox``'s current reload exists."""
+        with self._index_built:
+            return self._index_built.wait_for(lambda: self.indexed_reload_count == toolbox._reload_count, timeout)
 
     def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
         if panel_view not in self.panel_searches:
@@ -119,6 +154,8 @@ class ToolBoxSearch:
 @runtime_checkable
 class SupportsCachedSearch(Protocol):
     """The toolbox surface :class:`CachedToolboxSearch` consumes."""
+
+    _reload_count: int
 
     @property
     def tool_index(self) -> "ToolIndex | None": ...
@@ -136,7 +173,6 @@ class CachedToolboxSearch(ToolBoxSearch):
         self._toolbox: SupportsCachedSearch | None = None
         self.cached_panel_searches: dict[str, ToolWhooshIndex] = {}
         self._panel_view_ids: set[str] = set()
-        self.index_count = -1
         # ``reindex_tool_search`` reaches ``build_index`` concurrently from
         # boot, the ``rebuild_toolbox_search_index`` control task, and
         # ``remove_tool_by_id`` — all writing the same on-disk Whoosh dirs.
@@ -146,7 +182,7 @@ class CachedToolboxSearch(ToolBoxSearch):
         # fatal ``FileNotFoundError`` on the segment TOC (observed killing
         # TestCachedDataManagerIntegration setup in CI). Serialize the whole
         # build so only one rebuild touches the index dirs at a time.
-        self._build_lock = threading.RLock()
+        self._init_build_state()
         if toolbox is not None:
             self._sync_panel_searches(toolbox)
 
@@ -158,7 +194,7 @@ class CachedToolboxSearch(ToolBoxSearch):
             if tool_index is not None:
                 for panel_view_id, searcher in self.cached_panel_searches.items():
                     searcher.build(tool_index, cached_toolbox.panel_view_tool_ids(panel_view_id))
-            self.index_count += 1
+            self._mark_built(cached_toolbox)
 
     def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
         if panel_view not in self._panel_view_ids:
@@ -237,7 +273,17 @@ class ToolPanelViewSearch:
             tool_cache,
         )
 
-        with AsyncWriter(self.index) as writer:
+        # Commit synchronously so the index is complete when this returns and
+        # no writer thread outlives the call (or the app's shutdown).
+        try:
+            writer = self.index.writer(timeout=INDEX_WRITE_LOCK_TIMEOUT)
+        except LockError:
+            log.warning(
+                "Tool search index of panel %s is locked by another writer, skipping this rebuild",
+                self.panel_view_id,
+            )
+            return
+        with writer:
             for tool_id in tool_ids_to_remove:
                 writer.delete_by_term("id", tool_id)
             for tool in tools_to_index:
@@ -262,7 +308,16 @@ class ToolPanelViewSearch:
                 if indexed_tool.is_latest_version:
                     continue
                 latest_version = indexed_tool.latest_version
-                if latest_version and latest_version.hidden:
+                # `Tool.latest_version` resolves the newest revision through the
+                # tool cache under the lineage id `<versionless id>/<version>`.
+                # That key only exists for tools whose id carries their version,
+                # i.e. toolshed guids. A tool whose revisions share one bare id
+                # (`filters/grep.xml` and `filters/grep_1.0.1.xml` both declare
+                # `Grep1`) resolves to None, and the tool cache hands back
+                # whichever revision was parsed last. Both revisions are indexed
+                # under that one id, so an unresolvable latest version means the
+                # entry is still current, not that the tool went away.
+                if latest_version is None or latest_version.hidden:
                     continue
             tool_ids_to_remove.add(indexed_tool_id)
 

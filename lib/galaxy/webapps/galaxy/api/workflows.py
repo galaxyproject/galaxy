@@ -1716,7 +1716,7 @@ class FastAPIInvocations:
         workflow_id: StoredWorkflowIDPathParam,
         invocation_id: InvocationIDPathParam,
         step_id: WorkflowInvocationStepIDPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: ProvidesHistoryContext = DependsOnTrans,
         payload: InvocationUpdatePayload = Body(...),
     ) -> InvocationStep:
         """An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored."""

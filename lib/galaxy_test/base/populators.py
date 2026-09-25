@@ -134,9 +134,16 @@ from .api import (
 )
 from .api_util import random_name
 from .env import REQUIRE_ALL_NEEDED_TOOLS
+from .test_http_server import TestHttpServer
 
 FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
+
+
+def local_file_url(test_http_server: TestHttpServer) -> str:
+    """Local stand-in for ``FILE_URL``, serving the same test-data/4.bed contents."""
+    return test_http_server.get_url(remote_url=FILE_URL, file_path="test-data/4.bed")
+
 
 CWL_TOOL_DIRECTORY = os.path.join(galaxy_root_path, "test", "functional", "tools", "cwl_tools")
 
@@ -528,10 +535,9 @@ class BaseDatasetPopulator(BasePopulator):
     def new_bam_dataset(self, history_id: str, test_data_resolver):
         return self.new_dataset_from_test_data(history_id, test_data_resolver, "1.bam", "bam")
 
-    def new_dataset_from_test_data(self, history_id: str, test_data_resolver, filename: str, file_type: str):
-        return self.new_dataset(
-            history_id, content=open(test_data_resolver.get_filename(filename), "rb"), file_type=file_type, wait=True
-        )
+    def new_dataset_from_test_data(self, history_id: str, test_data_resolver, filename: str, file_type: str, **kwds):
+        with open(test_data_resolver.get_filename(filename), "rb") as content:
+            return self.new_dataset(history_id, content=content, file_type=file_type, wait=True, **kwds)
 
     def new_directory_dataset(
         self, test_data_resolver: TestDataResolver, history_id: str, directory: str, format: str = "directory"
@@ -1297,6 +1303,18 @@ class BaseDatasetPopulator(BasePopulator):
     def get_history_dataset_content(
         self, history_id: str, wait=True, filename=None, type="text", to_ext=None, raw=False, **kwds
     ):
+        display_response = self.get_history_dataset_content_raw(
+            history_id, wait=wait, filename=filename, to_ext=to_ext, raw=raw, **kwds
+        )
+        assert display_response.status_code == 200, display_response.text
+        if type == "text":
+            return display_response.text
+        else:
+            return display_response.content
+
+    def get_history_dataset_content_raw(
+        self, history_id: str, wait=True, filename=None, to_ext=None, raw=False, preview: bool | None = None, **kwds
+    ) -> Response:
         dataset_id = self.__history_content_id(history_id, wait=wait, **kwds)
         data = {}
         if filename:
@@ -1305,12 +1323,9 @@ class BaseDatasetPopulator(BasePopulator):
             data["raw"] = True
         if to_ext is not None:
             data["to_ext"] = to_ext
-        display_response = self._get_contents_request(history_id, f"/{dataset_id}/display", data=data)
-        assert display_response.status_code == 200, display_response.text
-        if type == "text":
-            return display_response.text
-        else:
-            return display_response.content
+        if preview is not None:
+            data["preview"] = preview
+        return self._get_contents_request(history_id, f"/{dataset_id}/display", data=data)
 
     def display_chunk(self, dataset_id: str, offset: int = 0, ck_size: int | None = None) -> dict[str, Any]:
         # use the dataset display API endpoint with the offset parameter to enable chunking
@@ -1367,6 +1382,13 @@ class BaseDatasetPopulator(BasePopulator):
         details_response = self._get_contents_request(history_id, f"/dataset_collections/{hdca_id}")
         assert details_response.status_code == 200, details_response.content
         return details_response.json()
+
+    def get_hdca_implicit_collection_jobs_id(self, history_id: str, hdca_id: str, **kwds) -> str:
+        """Encoded ImplicitCollectionJobs id of a map-over output HDCA."""
+        details = self.get_history_collection_details(history_id, content_id=hdca_id, **kwds)
+        icj_id = details.get("implicit_collection_jobs_id")
+        assert icj_id, f"HDCA {hdca_id} has no implicit_collection_jobs_id"
+        return icj_id
 
     def run_collection_creates_list(self, history_id: str, hdca_id: str) -> Response:
         inputs = {
@@ -2760,7 +2782,7 @@ class BaseWorkflowPopulator(BasePopulator):
     def validate_biocompute_object(
         self, bco, expected_schema_version="https://w3id.org/ieee/ieee-2791-schema/2791object.json"
     ):
-        JsonSchemaValidator.validate_using_schema_url(bco, expected_schema_version)
+        JsonSchemaValidator.validate_using_vendored_schema(bco, expected_schema_version)
 
     def get_ro_crate(self, invocation_id, include_files=False):
         crate_response = self.download_invocation_to_store(
@@ -3655,12 +3677,12 @@ class LibraryPopulator:
         create_response = self.galaxy_interactor.post("libraries", data=data, admin=True, json=True)
         return create_response.json()
 
-    def fetch_single_url_to_folder(self, file_type="auto", assert_ok=True):
+    def fetch_single_url_to_folder(self, file_type="auto", assert_ok=True, url: str = FILE_URL):
         history_id, library, destination = self.setup_fetch_to_folder("single_url")
         items = [
             {
                 "src": "url",
-                "url": FILE_URL,
+                "url": url,
                 "MD5": FILE_MD5,
                 "ext": file_type,
             }
@@ -4503,6 +4525,7 @@ def wait_on_state(
             "stop",
             "stopped",
             "setting_metadata",
+            "finishing",
             "waiting",
             "cancelling",
             "deleting",
@@ -4651,10 +4674,10 @@ class DescribeJob:
         self._job_id = job_id
         self._final_details: dict[str, Any] | None = None
 
-    def _wait_for(self):
+    def _wait_for(self) -> None:
         if self._final_details is None:
             self._dataset_populator.wait_for_job(self._job_id, assert_ok=False)
-            self._final_details = self._dataset_populator.get_job_details(self._job_id).json()
+            self._final_details = self._dataset_populator.get_job_details(self._job_id, full=True).json()
 
     @property
     def final_details(self) -> dict[str, Any]:

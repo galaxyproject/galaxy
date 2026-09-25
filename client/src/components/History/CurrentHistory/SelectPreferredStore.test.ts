@@ -12,13 +12,7 @@ import { setupSelectableMock } from "../../ObjectStore/mockServices";
 import SelectPreferredStore from "./SelectPreferredStore.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 
-vi.mock("@/composables/toast", () => {
-    const toastInstance = { success: vi.fn(), error: vi.fn() };
-    return {
-        Toast: toastInstance,
-        useToast: () => toastInstance,
-    };
-});
+vi.mock("@/composables/toast");
 
 const { server, http } = useServerMock();
 
@@ -26,7 +20,7 @@ setupSelectableMock();
 
 const localVue = getLocalVue(true);
 
-const CONFIRM_BUTTON_SELECTOR = ".g-button.g-blue" as const;
+const CONFIRM_BUTTON_SELECTOR = ".g-modal-confirm-buttons .g-button.g-blue" as const;
 
 const TEST_HISTORY_ID = "myTestHistoryId";
 

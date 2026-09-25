@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { faSpinner, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 
 import type { PageRevisionSummary } from "@/api/pages";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import SidebarList from "@/components/Common/SidebarList.vue";
 
 const props = defineProps<{
@@ -68,16 +68,17 @@ function onSelect(rev: PageRevisionSummary) {
                         </span>
                     </div>
                 </div>
-                <BButton
+                <GButton
                     v-if="index > 0"
-                    variant="outline-primary"
-                    size="sm"
+                    size="small"
+                    color="blue"
+                    outline
                     data-description="restore revision button"
                     :disabled="props.isReverting"
                     @click.stop="emit('restore', rev.id)">
                     <FontAwesomeIcon :icon="props.isReverting ? faSpinner : faUndo" :spin="props.isReverting" />
                     Restore
-                </BButton>
+                </GButton>
             </template>
         </SidebarList>
     </div>

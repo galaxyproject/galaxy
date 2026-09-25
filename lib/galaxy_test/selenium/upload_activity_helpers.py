@@ -465,13 +465,13 @@ class UploadContext(_UploadStaging):
                 try:
                     dropdown.click()
                 except Exception:
-                    self.driver_wrapper.action_chains().move_to_element(dropdown).click().perform()
+                    self.driver_wrapper.move_to_and_click(dropdown)
 
             action_element = visible_action_target.wait_for_visible()
             try:
                 action_element.click()
             except Exception:
-                self.driver_wrapper.action_chains().move_to_element(action_element).click().perform()
+                self.driver_wrapper.move_to_and_click(action_element)
 
             if mode == "local":
                 return

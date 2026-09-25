@@ -1,12 +1,10 @@
 import json
 import re
-import urllib.request
 from typing import (
     Any,
     cast,
     get_args,
 )
-from urllib.error import HTTPError
 from urllib.parse import quote
 
 from typing_extensions import TypedDict
@@ -38,7 +36,7 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     get_charset_from_http_headers,
     requests,
-    stream_to_open_named_file,
+    stream_to_path,
 )
 from galaxy.util.hash_util import HashFunctionNames
 from galaxy.util.user_agent import get_default_headers
@@ -452,25 +450,34 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             # pass the token as a header only when using the API
             headers.update(self._get_request_headers(context))
         try:
-            req = urllib.request.Request(download_file_content_url, headers=headers)
-            with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
-                f = open(file_path, "wb")
-                return stream_to_open_named_file(
-                    page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
-                )
-        except HTTPError as e:
-            if e.code == 401:
+            with requests.Session() as session:
+                with session.get(
+                    download_file_content_url,
+                    headers=headers,
+                    stream=True,
+                    timeout=DEFAULT_SOCKET_TIMEOUT,
+                ) as page:
+                    page.raise_for_status()
+                    page.raw.decode_content = True
+                    return stream_to_path(
+                        page.raw,
+                        file_path,
+                        source_encoding=get_charset_from_http_headers(page.headers),
+                    )
+        except requests.exceptions.HTTPError as e:
+            status_code = e.response.status_code if e.response is not None else None
+            if status_code == 401:
                 raise AuthenticationRequired(
                     f"Authentication required to download file from '{download_file_content_url}'. "
                     f"Please provide a valid API token in your user preferences."
                 )
-            if e.code == 403:
+            if status_code == 403:
                 # Permission denied: dataset may be unpublished or user lacks access rights
                 raise ObjectNotFound(
                     f"Access forbidden when downloading file from '{download_file_content_url}'. "
                     f"You may not have permission to access this file, or the dataset is not published."
                 )
-            if e.code == 404:
+            if status_code == 404:
                 raise ObjectNotFound(
                     f"File not found at '{download_file_content_url}'. "
                     f"Please make sure the dataset and file exist and are published."

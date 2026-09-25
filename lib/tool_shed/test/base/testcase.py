@@ -619,7 +619,7 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
 
 @pytest.mark.usefixtures("shed_browser")
 class ShedTestCase(ShedApiTestCase):
-    """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
+    """Shed test case with a browser fixture, for tests that drive the web UI."""
 
     requires_galaxy: bool = False
     _installation_client: ToolShedInstallationClient | None = None

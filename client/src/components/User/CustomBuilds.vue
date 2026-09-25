@@ -95,15 +95,10 @@
                             </BFormGroup>
                         </div>
 
-                        <BButton
-                            id="save"
-                            v-g-tooltip.bottom.hover
-                            type="submit"
-                            variant="primary"
-                            title="Create new build">
+                        <GButton id="save" v-g-tooltip.bottom.hover type="submit" color="blue" title="Create new build">
                             <FontAwesomeIcon :icon="faSave" />
                             Save
-                        </BButton>
+                        </GButton>
                     </BForm>
                 </BCard>
             </BCol>
@@ -152,7 +147,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import {
     BAlert,
-    BButton,
     BCard,
     BCol,
     BForm,
@@ -170,6 +164,7 @@ import { getGalaxyInstance } from "@/app";
 import { useHistoryStore } from "@/stores/historyStore";
 import { withPrefix } from "@/utils/redirect";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import GTable from "@/components/Common/GTable.vue";
@@ -177,7 +172,6 @@ import GTable from "@/components/Common/GTable.vue";
 export default {
     components: {
         BAlert,
-        BButton,
         BCard,
         BCol,
         BForm,
@@ -190,6 +184,7 @@ export default {
         BreadcrumbHeading,
         BRow,
         FontAwesomeIcon,
+        GButton,
         GLink,
         GTable,
         Multiselect,

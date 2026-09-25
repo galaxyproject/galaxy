@@ -2,8 +2,9 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     title: string;
@@ -22,9 +23,9 @@ const emit = defineEmits(["onClick"]);
 
 <template>
     <span v-g-tooltip.hover.bottom :title="title">
-        <BButton :disabled="disabled" @click="() => emit('onClick')">
+        <GButton :disabled="disabled" @click="() => emit('onClick')">
             <FontAwesomeIcon v-if="isBusy" :icon="faSpinner" spin />
             <FontAwesomeIcon v-else :icon="idleIcon" />
-        </BButton>
+        </GButton>
     </span>
 </template>

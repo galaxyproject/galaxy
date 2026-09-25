@@ -12,6 +12,11 @@ permissions: {}
 
 jobs:
   validate-citation-cff:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

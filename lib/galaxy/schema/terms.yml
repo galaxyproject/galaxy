@@ -295,6 +295,10 @@ galaxy:
         For instance `name:example`. Available tags include `organization` and `name`.
 
   tools:
+    container: |
+      A container packages an application together with the software and files it needs to run. Galaxy starts
+      the container when a tool runs. This helps the application behave consistently without installing all of
+      its supporting software directly on the Galaxy server.
     ontologies:
       # Note: This description is directly copied from https://edamontology.org/
       description: |

@@ -29,8 +29,18 @@ concurrency:
 permissions: {}
 jobs:
   build-client:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     uses: ./.github/workflows/build_client.yaml
   test:
+    if: >-
+      github.event_name != 'push'
+      || github.repository_owner != 'galaxyproject'
+      || github.ref_name == 'dev'
+      || startsWith(github.ref_name, 'release_')
     name: Test
     needs: [build-client]
     runs-on: ubuntu-latest
@@ -58,7 +68,7 @@ jobs:
           path: 'galaxy root'
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.0.0
+        uses: astral-sh/setup-uv@v10.1.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Python
@@ -72,7 +82,7 @@ jobs:
       - name: Run tests
         run: ./run_tests.sh --coverage -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v7.0.0
+      - uses: codecov/codecov-action@v7.1.1
         with:
           flags: selenium
           working-directory: 'galaxy root'

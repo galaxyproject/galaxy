@@ -7,11 +7,6 @@ case "$1" in
         GRAVITY_LOGFILE=database/gravity/log/gunicorn.log
         SUPERVISORD_LOGFILE=database/gravity/supervisor/supervisord.log
         ;;
-    reports)
-        SCRIPT=./run_reports.sh
-        PORT=9001
-        LOGFILE=reports_webapp.log
-        ;;
     *)
         echo "ERROR: Unrecognized app"
         exit 1

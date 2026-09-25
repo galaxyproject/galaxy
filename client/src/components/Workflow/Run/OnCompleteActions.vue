@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BButton, BFormCheckbox, BFormGroup } from "bootstrap-vue";
+import { BFormCheckbox, BFormGroup } from "bootstrap-vue";
 import { computed, reactive, ref, watch } from "vue";
 
 import type { WriteStoreToPayload } from "@/api/exports";
@@ -7,6 +7,7 @@ import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 
 import ExportOnCompleteWizard from "./ExportOnCompleteWizard.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
 import FormCard from "@/components/Form/FormCard.vue";
@@ -158,25 +159,26 @@ const exportSummary = computed(() => {
                             </small>
                         </div>
                         <div>
-                            <BButton size="sm" variant="outline-primary" @click="openExportWizard">
+                            <GButton size="small" color="blue" outline @click="openExportWizard">
                                 <span class="fa fa-edit" /> Edit
-                            </BButton>
-                            <BButton size="sm" variant="outline-danger" class="ml-1" @click="clearExport">
+                            </GButton>
+                            <GButton size="small" color="red" outline class="ml-1" @click="clearExport">
                                 <span class="fa fa-times" /> Remove
-                            </BButton>
+                            </GButton>
                         </div>
                     </div>
                 </div>
 
-                <BButton
+                <GButton
                     v-else
-                    variant="outline-primary"
-                    size="sm"
+                    color="blue"
+                    outline
+                    size="small"
                     class="mt-2 ml-4"
                     data-test-id="configure-export-button"
                     @click="openExportWizard">
                     <span class="fa fa-cog" /> Configure Export
-                </BButton>
+                </GButton>
             </BFormGroup>
 
             <GModal

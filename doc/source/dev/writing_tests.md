@@ -1139,14 +1139,14 @@ class TestWithExternalService(integration_util.IntegrationTestCase):
 
 **Containers used in tests:**
 
-| Image | Purpose | Test Files |
-|-------|---------|------------|
-| ``minio/minio:latest`` | S3-compatible storage | ``objectstore/`` tests |
-| ``keycloak/keycloak:26.2`` | OIDC authentication | ``oidc/test_auth_oidc.py`` |
-| ``mvdbeek/galaxy-integration-docker-images:slurm-22.01`` | Slurm scheduler | ``test_cli_runners.py`` |
+| Image                                                      | Purpose | Test Files |
+|------------------------------------------------------------|---------|------------|
+| ``minio/minio:latest``                                     | S3-compatible storage | ``objectstore/`` tests |
+| ``keycloak/keycloak:26.2``                                 | OIDC authentication | ``oidc/test_auth_oidc.py`` |
+| ``mvdbeek/galaxy-integration-docker-images:slurm-22.01``   | Slurm scheduler | ``test_cli_runners.py`` |
 | ``mvdbeek/galaxy-integration-docker-images:openpbs-22.01`` | PBS scheduler | ``test_cli_runners.py`` |
-| ``savannah.ornl.gov/ndip/public-docker/rucio:40.2.0`` | Rucio data management | ``objectstore/`` tests |
-| ``onedata/onezone:21.02.5-dev`` | Onedata storage | ``objectstore/`` tests |
+| ``savannah.ornl.gov/ndip/public-docker/rucio:40.2.0-pg``   | Rucio data management | ``objectstore/`` tests |
+| ``onedata/onezone:21.02.5-dev``                            | Onedata storage | ``objectstore/`` tests |
 
 **Environment variables for external services:**
 

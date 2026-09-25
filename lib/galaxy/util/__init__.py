@@ -1993,37 +1993,65 @@ def download_to_file(url, dest_file_path, timeout=30, chunk_size=2**20):
                 f.write(chunk)
 
 
-def stream_to_open_named_file(
-    stream, fd, filename, source_encoding=None, source_error="strict", target_encoding=None, target_error="strict"
+def _stream_to_writer(
+    stream, write, source_encoding=None, source_error="strict", target_encoding=None, target_error="strict"
 ):
-    """Writes a stream to the provided file descriptor, returns the file name. Closes file descriptor"""
-    # signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
     CHUNK_SIZE = 1048576
     try:
         codecs.lookup(target_encoding)
     except Exception:
         target_encoding = DEFAULT_ENCODING  # utf-8
     use_source_encoding = source_encoding is not None
+    while True:
+        chunk = stream.read(CHUNK_SIZE)
+        if not chunk:
+            break
+        if use_source_encoding:
+            # If a source encoding is given we use it to convert to the target encoding
+            try:
+                if not isinstance(chunk, str):
+                    chunk = chunk.decode(source_encoding, source_error)
+                write(chunk.encode(target_encoding, target_error))
+            except UnicodeDecodeError:
+                use_source_encoding = False
+                write(chunk)
+        else:
+            # Compressed files must be encoded after they are uncompressed in the upload utility,
+            # while binary files should not be encoded at all.
+            if isinstance(chunk, str):
+                chunk = chunk.encode(target_encoding, target_error)
+            write(chunk)
+
+
+def stream_to_path(
+    stream, filename, source_encoding=None, source_error="strict", target_encoding=None, target_error="strict"
+):
+    """Write a stream to ``filename`` and return the filename."""
+    with open(filename, "wb") as output:
+        _stream_to_writer(stream, output.write, source_encoding, source_error, target_encoding, target_error)
+    return filename
+
+
+def stream_to_open_named_file(
+    stream, fd, filename, source_encoding=None, source_error="strict", target_encoding=None, target_error="strict"
+):
+    """Deprecated: use :func:`stream_to_path` instead.
+
+    Write a stream to an open file descriptor, close it, and return the filename.
+    """
+    # Known external callers retained for compatibility:
+    # - bgruening/galaxytools: tools/mave_tools/mavedb/data_source.py
+    # - galaxyecology/tools-ecology: tools/aquainfra_importer/data_source.py
+    # - galaxyecology/tools-ecology: tools/nfdi4earth_os4a_importer/data_source.py
     try:
-        while True:
-            chunk = stream.read(CHUNK_SIZE)
-            if not chunk:
-                break
-            if use_source_encoding:
-                # If a source encoding is given we use it to convert to the target encoding
-                try:
-                    if not isinstance(chunk, str):
-                        chunk = chunk.decode(source_encoding, source_error)
-                    os.write(fd, chunk.encode(target_encoding, target_error))
-                except UnicodeDecodeError:
-                    use_source_encoding = False
-                    os.write(fd, chunk)
-            else:
-                # Compressed files must be encoded after they are uncompressed in the upload utility,
-                # while binary files should not be encoded at all.
-                if isinstance(chunk, str):
-                    chunk = chunk.encode(target_encoding, target_error)
-                os.write(fd, chunk)
+        _stream_to_writer(
+            stream,
+            lambda chunk: os.write(fd, chunk),
+            source_encoding,
+            source_error,
+            target_encoding,
+            target_error,
+        )
     finally:
         os.close(fd)
     return filename
@@ -2100,20 +2128,17 @@ def lowercase_alphanum_to_hex(lowercase_alphanum: str) -> str:
     return np.base_repr(int(lowercase_alphanum, 36), 16).lower()
 
 
-def to_content_disposition(target: str) -> str:
+def to_content_disposition(target: str, disposition: Literal["attachment", "inline"] = "attachment") -> str:
     target = target.strip()
     filename, ext = os.path.splitext(target)
     character_limit = 255 - len(ext)
     sanitized_filename = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in filename)[0:character_limit] + ext
     utf8_encoded_filename = quote(re.sub(r'[\/\\\?%*:|"<>]', "_", filename), safe="")[0:character_limit] + ext
-    return f"attachment; filename=\"{sanitized_filename}\"; filename*=UTF-8''{utf8_encoded_filename}"
+    return f"{disposition}; filename=\"{sanitized_filename}\"; filename*=UTF-8''{utf8_encoded_filename}"
 
 
 def validate_doi(doi: str) -> bool:
     if len(doi) > DOI_MAX_LENGTH:
         return False
-    prefix = "https://doi.org/|doi.org/|doi:"
-    doi_prefix = r"10\.\d+"
-    doi_suffix = r"\S+"
-    doi_re = re.compile(f"^{prefix}{doi_prefix}/{doi_suffix}$")
-    return bool(doi_re.match(doi))
+    doi_re = re.compile(r"10\.\d+/\S+$")
+    return bool(doi_re.search(doi))

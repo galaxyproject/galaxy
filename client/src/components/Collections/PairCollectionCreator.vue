@@ -11,6 +11,7 @@ import { Toast } from "@/composables/toast";
 import localize from "@/utils/localization";
 
 import { type Mode, useCollectionCreator } from "./common/useCollectionCreator";
+import { invalidElementMessage } from "./common/useElementReconciliation";
 import { guessNameForPair } from "./pairing";
 
 import GButton from "../BaseComponents/GButton.vue";
@@ -19,8 +20,6 @@ import HelpText from "../Help/HelpText.vue";
 import FixedIdentifierDatasetCollectionElementView from "./FixedIdentifierDatasetCollectionElementView.vue";
 import DatasetCollectionElementView from "./ListDatasetCollectionElementView.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
-
-const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this collection");
 
 interface SelectedDatasetPair {
     forward: HDASummary | undefined;
@@ -94,6 +93,7 @@ const {
     hideSourceItems,
     onUpdateHideSourceItems,
     isElementInvalid,
+    reconcileRetainedSlot,
     onCollectionCreate,
     showButtonsForModal,
     onUpdateCollectionName,
@@ -143,29 +143,10 @@ function _elementsSetUp() {
 
     // for inListElements, reset their values (in order) to datasets from workingElements
     const inListElementsPrev = inListElements.value;
-    inListElements.value = { forward: undefined, reverse: undefined };
-
-    for (const key of ["forward", "reverse"]) {
-        const prevElem = inListElementsPrev[key as keyof SelectedDatasetPair];
-        if (!prevElem) {
-            continue;
-        }
-        const matchingElem = workingElements.value.find(
-            (e) => e.id === inListElementsPrev[key as keyof SelectedDatasetPair]?.id,
-        );
-        if (matchingElem) {
-            const problem = isElementInvalid(matchingElem);
-            if (problem) {
-                const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
-                Toast.error(invalidMsg, localize("Invalid element"));
-            } else {
-                inListElements.value[key as keyof SelectedDatasetPair] = matchingElem;
-            }
-        } else {
-            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("has been removed from the collection")}`;
-            Toast.error(invalidMsg, localize("Invalid element"));
-        }
-    }
+    inListElements.value = {
+        forward: reconcileRetainedSlot(inListElementsPrev.forward, workingElements.value),
+        reverse: reconcileRetainedSlot(inListElementsPrev.reverse, workingElements.value),
+    };
 
     // TODO: Next thing to add is: If the user adds an uploaded file, that is eventually nuked from workingElements
     //       because it is invalid, Toast an error for that file by keeping track of uploaded ids in a separate list
@@ -246,7 +227,7 @@ function addUploadedFiles(files: HDASummary[]) {
         if (element) {
             const problem = isElementInvalid(file);
             if (problem) {
-                const invalidMsg = `${element.hid}: ${element.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+                const invalidMsg = invalidElementMessage(element, problem);
                 invalidElements.value.push(invalidMsg);
                 Toast.error(invalidMsg, localize("Uploaded item invalid for pair"));
             } else if (!props.fromSelection) {

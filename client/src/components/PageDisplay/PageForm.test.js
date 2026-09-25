@@ -9,13 +9,7 @@ import { Toast } from "@/composables/toast";
 
 import PageForm from "./PageForm.vue";
 
-vi.mock("@/composables/toast", () => {
-    const toastInstance = { success: vi.fn(), error: vi.fn() };
-    return {
-        Toast: toastInstance,
-        useToast: () => toastInstance,
-    };
-});
+vi.mock("@/composables/toast");
 
 const { server, http } = useServerMock();
 const localVue = getLocalVue();
@@ -34,7 +28,7 @@ function mountTarget(props = {}) {
         propsData: props,
         stubs: {
             FontAwesomeIcon: true,
-            BButton: true,
+            GButton: true,
             BAlert: true,
         },
         directives: {

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faChevronRight, faExchangeAlt, faPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
 
@@ -11,6 +10,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import HistoryOptions from "@/components/History/HistoryOptions.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 
@@ -50,31 +50,31 @@ function userTitle(title: string) {
         <nav
             :class="{ 'd-flex justify-content-between mx-3 my-2': !props.minimal }"
             aria-label="current history management">
-            <GButton v-if="!props.minimal" size="small" transparent @click="emit('show', false)">
+            <GButton v-if="!props.minimal" size="small" transparent color="blue" @click="emit('show', false)">
                 <FontAwesomeIcon fixed-width :icon="faChevronRight" />
                 <span v-localize>History</span>
             </GButton>
 
-            <BButtonGroup>
-                <BButton
+            <GButtonGroup>
+                <GButton
                     v-if="!props.minimal"
                     v-g-tooltip.top.hover
                     class="create-hist-btn"
                     data-description="create new history"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
                     :disabled="isAnonymous"
                     :title="userTitle('Create new history')"
                     @click="historyStore.createNewHistory">
                     <FontAwesomeIcon fixed-width :icon="faPlus" />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="!props.minimal"
                     v-g-tooltip.top.hover
                     data-description="switch to another history"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
                     :disabled="isAnonymous || changingCurrentHistory"
                     :title="userTitle('Switch to history')"
                     @click="showSwitchModal = !showSwitchModal">
@@ -82,10 +82,10 @@ function userTitle(title: string) {
                         fixed-width
                         :icon="changingCurrentHistory ? faSpinner : faExchangeAlt"
                         :spin="changingCurrentHistory" />
-                </BButton>
+                </GButton>
 
                 <HistoryOptions :history="history" :minimal="props.minimal" />
-            </BButtonGroup>
+            </GButtonGroup>
         </nav>
 
         <SelectorModal

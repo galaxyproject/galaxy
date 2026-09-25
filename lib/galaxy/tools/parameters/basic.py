@@ -65,6 +65,7 @@ from galaxy.tool_util_models.tool_source import DrillDownOptionsDict
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.pagination import (
     DataOptionsBuilder,
+    DEFAULT_OPTIONS_PAGE_SIZE,
     make_dce_entry,
     make_hda_entry,
     make_hdca_entry,
@@ -85,6 +86,7 @@ from galaxy.util import (
 from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.hash_util import HASH_NAMES
+from galaxy.util.json import safe_dumps
 from galaxy.util.rules_dsl import RuleSet
 from . import (
     dynamic_options,
@@ -177,7 +179,13 @@ def assert_throws_param_value_error(message):
 
 
 class ParameterValueError(ValueError):
-    def __init__(self, message_suffix, parameter_name, parameter_value=NO_PARAMETER_VALUE, is_dynamic=None):
+    def __init__(
+        self,
+        message_suffix: str,
+        parameter_name: str,
+        parameter_value: Any = NO_PARAMETER_VALUE,
+        is_dynamic: bool | None = None,
+    ) -> None:
         message = f"Parameter '{parameter_name}': {message_suffix}"
         super().__init__(message)
         self.message_suffix = message_suffix
@@ -185,12 +193,17 @@ class ParameterValueError(ValueError):
         self.parameter_value = parameter_value
         self.is_dynamic = is_dynamic
 
-    def to_dict(self):
-        as_dict = {"message": unicodify(self)}
+    def to_dict(self) -> dict[str, Any]:
+        as_dict: dict[str, Any] = {"message": unicodify(self)}
         as_dict["message_suffix"] = self.message_suffix
         as_dict["parameter_name"] = self.parameter_name
         if self.parameter_value is not NO_PARAMETER_VALUE:
-            as_dict["parameter_value"] = self.parameter_value
+            try:
+                safe_dumps(self.parameter_value)
+            except (TypeError, ValueError):
+                pass
+            else:
+                as_dict["parameter_value"] = self.parameter_value
         if self.is_dynamic is not None:
             as_dict["is_dynamic"] = self.is_dynamic
         return as_dict
@@ -637,6 +650,13 @@ class BooleanToolParameter(ToolParameter):
     >>> value = p.to_json(True, trans.app, use_security=False)
     >>> assert isinstance(value, bool)
     >>> assert value == True
+    >>> optional_xml = XML('<param name="_name" type="boolean" optional="true" />')
+    >>> legacy = BooleanToolParameter(Bunch(profile="24.0", app=None), optional_xml)
+    >>> assert legacy.get_initial_value(trans, {}) is False
+    >>> current = BooleanToolParameter(Bunch(profile="26.2", app=None), optional_xml)
+    >>> assert current.get_initial_value(trans, {}) is None
+    >>> required = BooleanToolParameter(Bunch(profile="26.2", app=None), XML('<param name="_name" type="boolean" />'))
+    >>> assert required.get_initial_value(trans, {}) is False
     """
 
     def __init__(self, tool: Optional["Tool"], input_source):
@@ -650,7 +670,7 @@ class BooleanToolParameter(ToolParameter):
         self.truevalue = truevalue
         self.falsevalue = falsevalue
         self.optional = input_source.get_bool("optional", False)
-        self.checked = boolean_is_checked(input_source)
+        self.checked = boolean_is_checked(input_source, profile)
 
     def from_json(self, value, trans: "ProvidesHistoryContext", other_values=None):
         return self.to_python(value)
@@ -983,6 +1003,17 @@ class SelectToolParameter(ToolParameter):
     [('argument', None), ('display', None), ('help', ''), ('help_format', 'html'), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', True)]), ('refresh_on_change', False), ('textable', False), ('type', 'select'), ('value', ['y', 'z'])]
     >>> print(p.to_param_dict_string(["y", "z"]))
     y,z
+    >>> one = SelectToolParameter(None, XML(
+    ... '''
+    ... <param name="_name" type="select" multiple="true">
+    ...     <option value="x">x_label</option>
+    ...     <option value="y" selected="true">y_label</option>
+    ... </param>
+    ... '''))
+    >>> one.get_initial_value(trans, {})
+    ['y']
+    >>> print(one.to_param_dict_string(["y"]))
+    y
     """
 
     value_label: str
@@ -1205,7 +1236,7 @@ class SelectToolParameter(ToolParameter):
                 value2: str | list[str] | None = options[0].value
             else:
                 value2 = None
-        elif len(value) == 1 or not self.multiple:
+        elif not self.multiple:
             value2 = value[0]
         else:
             value2 = value
@@ -1656,7 +1687,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     >>> from galaxy.util import XML
     >>> from galaxy.util.bunch import Bunch
     >>> app = Bunch(config=Bunch(tool_data_path=None))
-    >>> tool = Bunch(app=app)
+    >>> tool = Bunch(app=app, options=Bunch(sanitize=False))
     >>> trans = Bunch(app=app, history=Bunch(genome_build='hg17'), db_builds=read_dbnames(None), security=lambda x: x)
     >>> p = DrillDownSelectToolParameter(tool, XML(
     ... '''
@@ -1693,6 +1724,19 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     >>> assert d['options'][0]['options'][2]['options'][1]['value'] == 'option4'
     >>> assert d['options'][1]['name'] == 'Option 5'
     >>> assert d['options'][1]['value'] == 'option5'
+    >>> assert p.from_json(['option5'], trans) == ['option5']
+    >>> single = DrillDownSelectToolParameter(tool, XML(
+    ... '''
+    ... <param name="_name" type="drill_down" display="checkbox" hierarchy="exact">
+    ...   <options>
+    ...    <option name="Option 1" value="option1" selected="true"/>
+    ...    <option name="Option 2" value="option2"/>
+    ...   </options>
+    ... </param>
+    ... '''))
+    >>> assert single.from_json(['option1'], trans) == 'option1'
+    >>> assert single.get_initial_value(trans, {}) == 'option1'
+    >>> assert single.to_param_dict_string('option1') == 'option1'
     """
 
     def __init__(self, tool: Optional["Tool"], input_source, context=None):
@@ -1777,6 +1821,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                     val,
                 )
             rval.append(val)
+        if not self.multiple:
+            return rval[0] if rval else None
         return rval
 
     def to_param_dict_string(self, value, other_values=None):
@@ -1807,6 +1853,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 
         if value is None:
             return "None"
+        if not isinstance(value, list):
+            value = [value]
         rval = []
         if self.hierarchy == "exact":
             rval = value
@@ -1842,6 +1890,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         recurse_options(initial_values, options)
         if len(initial_values) == 0:
             return None
+        if not self.multiple:
+            return initial_values[0]
         return initial_values
 
     def to_text(self, value):
@@ -1916,9 +1966,10 @@ def _paginated_visible_datasets(
     *,
     extensions: set[str] | None,
     valid_states: tuple[str, ...] | None,
+    tag: str | None = None,
     search: str | None = None,
     offset: int = 0,
-    limit: int = 50,
+    limit: int = DEFAULT_OPTIONS_PAGE_SIZE,
 ) -> tuple[list[HistoryDatasetAssociation], int]:
     """``history.paginated_active_visible_datasets`` memoized on the request.
 
@@ -1936,6 +1987,7 @@ def _paginated_visible_datasets(
         history.id,
         frozenset(extensions) if extensions is not None else None,
         tuple(valid_states) if valid_states is not None else None,
+        tag or None,
         search or None,
         offset,
         limit,
@@ -1943,7 +1995,7 @@ def _paginated_visible_datasets(
     return trans.get_or_set_cache_value(
         key,
         lambda: history.paginated_active_visible_datasets(
-            extensions=extensions, valid_states=valid_states, search=search, offset=offset, limit=limit
+            extensions=extensions, valid_states=valid_states, tag=tag, search=search, offset=offset, limit=limit
         ),
     )
 
@@ -1953,23 +2005,25 @@ def _paginated_dataset_collections(
     history: "History",
     *,
     visible_only: bool,
+    tag: str | None = None,
     search: str | None = None,
     offset: int = 0,
-    limit: int = 50,
+    limit: int = DEFAULT_OPTIONS_PAGE_SIZE,
 ) -> tuple[list[HistoryDatasetCollectionAssociation], int]:
     """``history.paginated_active_dataset_collections`` memoized on the request
     context's short-term cache (see :func:`_paginated_visible_datasets`)."""
-    key = ("data_param_hdca_page", history.id, bool(visible_only), search or None, offset, limit)
+    key = ("data_param_hdca_page", history.id, bool(visible_only), tag or None, search or None, offset, limit)
     return trans.get_or_set_cache_value(
         key,
         lambda: history.paginated_active_dataset_collections(
-            visible_only=visible_only, search=search, offset=offset, limit=limit
+            visible_only=visible_only, tag=tag, search=search, offset=offset, limit=limit
         ),
     )
 
 
 class BaseDataToolParameter(ToolParameter):
     multiple: bool
+    tag: str | None
 
     # Sentinel distinguishing "cache not yet populated" from "cache populated
     # with None" (which is a legitimate return for parameters with no formats).
@@ -2096,6 +2150,7 @@ class BaseDataToolParameter(ToolParameter):
                         history,
                         extensions=self._acceptable_extensions(),
                         valid_states=dataset_matcher_factory.valid_input_states,
+                        tag=self.tag,
                         offset=db_offset,
                         limit=chunk_size,
                     )
@@ -2117,6 +2172,7 @@ class BaseDataToolParameter(ToolParameter):
                         trans,
                         history,
                         visible_only=True,
+                        tag=self.tag,
                         offset=db_offset,
                         limit=chunk_size,
                     )
@@ -2680,6 +2736,7 @@ class DataToolParameter(BaseDataToolParameter):
                 history,
                 extensions=acceptable_extensions,
                 valid_states=valid_states,
+                tag=self.tag,
                 search=hda_search,
                 offset=offset,
                 limit=limit,
@@ -2786,7 +2843,7 @@ class DataToolParameter(BaseDataToolParameter):
 
         def hdca_query(*, offset, limit):
             return _paginated_dataset_collections(
-                trans, history, visible_only=True, search=hdca_search, offset=offset, limit=limit
+                trans, history, visible_only=True, tag=self.tag, search=hdca_search, offset=offset, limit=limit
             )
 
         def hdca_filter(hdca):
@@ -3019,7 +3076,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
 
         def hdca_query(*, offset, limit):
             return _paginated_dataset_collections(
-                trans, history, visible_only=False, search=hdca_search, offset=offset, limit=limit
+                trans, history, visible_only=False, tag=self.tag, search=hdca_search, offset=offset, limit=limit
             )
 
         def hdca_filter(hdca):

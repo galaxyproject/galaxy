@@ -17,6 +17,20 @@ def test_root(appconfig):
     assert appconfig.root == os.path.abspath(".")
 
 
+def test_user_toolbox_filters_default_to_empty(appconfig):
+    assert appconfig.user_tool_filters == []
+    assert appconfig.user_tool_section_filters == []
+    assert appconfig.user_tool_label_filters == []
+    assert not appconfig.has_user_tool_filters
+
+
+@pytest.mark.parametrize("option", ["user_tool_filters", "user_tool_section_filters", "user_tool_label_filters"])
+def test_user_toolbox_filters_preserve_configured_entries(option):
+    appconfig = config.GalaxyAppConfiguration(override_tempdir=False, **{option: "custom:first, custom:second"})
+    assert getattr(appconfig, option) == ["custom:first", "custom:second"]
+    assert appconfig.has_user_tool_filters
+
+
 def test_common_base_config(appconfig):
     assert appconfig.shed_tools_dir == os.path.join(appconfig.data_dir, "shed_tools")
     assert (
@@ -49,6 +63,23 @@ def test_base_config_if_running_not_from_source(monkeypatch):
     assert appconfig.config_dir == os.getcwd()
     assert appconfig.data_dir == os.path.join(appconfig.config_dir, "data")
     assert appconfig.managed_config_dir == os.path.join(appconfig.data_dir, "config")
+
+
+def test_subdomain_switcher_defaults_to_empty_list():
+    appconfig = config.GalaxyAppConfiguration(override_tempdir=False)
+
+    assert appconfig.subdomain_switcher == []
+
+
+def test_subdomain_switcher_preserves_configured_entries():
+    sites = [
+        {"label": "Base site", "url": "https://usegalaxy.example.org"},
+        {"label": "Single Cell Omics", "url": "https://singlecell.usegalaxy.example.org/"},
+    ]
+
+    appconfig = config.GalaxyAppConfiguration(override_tempdir=False, subdomain_switcher=sites)
+
+    assert appconfig.subdomain_switcher == sites
 
 
 def test_assign_email_from(monkeypatch):

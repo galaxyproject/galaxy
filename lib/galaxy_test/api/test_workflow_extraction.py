@@ -150,30 +150,6 @@ class _ExtractionHelpersMixin:
     def _job_id_for_tool(self, jobs, tool_id):
         return self._job_for_tool(jobs, tool_id)["id"]
 
-    def _icj_id_for_hdca(self, history_id, hdca_id):
-        """Look up the ImplicitCollectionJobs id of a map-over output HDCA.
-        Returns the encoded id from the HDCA detail view."""
-        details = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)
-        icj_id = details.get("implicit_collection_jobs_id")
-        assert icj_id, f"HDCA {hdca_id} has no implicit_collection_jobs_id"
-        return icj_id
-
-    def _icj_id_for_job_in_history(self, history_id, job_id):
-        """Walk implicit-output HDCAs in history and find the ICJ that owns
-        the given job. Job API does not expose implicit_collection_jobs_id
-        directly today, so this trawl is the cheapest test-side lookup."""
-        for content in self._history_contents(history_id):
-            if content["history_content_type"] != "dataset_collection":
-                continue
-            details = self.dataset_populator.get_history_collection_details(history_id, content_id=content["id"])
-            icj_id = details.get("implicit_collection_jobs_id")
-            if not icj_id:
-                continue
-            jobs_in_icj = self._get(f"jobs?implicit_collection_jobs_id={icj_id}").json()
-            if any(j["id"] == job_id for j in jobs_in_icj):
-                return icj_id
-        raise AssertionError(f"No ICJ in history {history_id} contains job {job_id}")
-
 
 class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCase, WorkflowStructureAssertions):
     @skip_without_tool("cat1")
@@ -927,8 +903,8 @@ class TestWorkflowExtractionByIdsApi(_ExtractionHelpersMixin, BaseWorkflowsApiTe
     @summarize_instance_history_on_error
     def test_extract_mapping_workflow_by_ids(self, history_id):
         hdca, _, _, implicit_hdca1_id, implicit_hdca2_id = self._run_random_lines_mapped_over_pair(history_id)
-        icj_id1 = self._icj_id_for_hdca(history_id, implicit_hdca1_id)
-        icj_id2 = self._icj_id_for_hdca(history_id, implicit_hdca2_id)
+        icj_id1 = self.dataset_populator.get_hdca_implicit_collection_jobs_id(history_id, implicit_hdca1_id)
+        icj_id2 = self.dataset_populator.get_hdca_implicit_collection_jobs_id(history_id, implicit_hdca2_id)
         downloaded = self._extract_and_download_workflow_by_ids(
             hdca_ids=[hdca["id"]],
             implicit_collection_jobs_ids=[icj_id1, icj_id2],
@@ -968,8 +944,8 @@ test_data:
         input_hdca = next(
             c for c in self._history_contents(history_id) if c["history_content_type"] == "dataset_collection"
         )
-        icj_id1 = self._icj_id_for_job_in_history(history_id, job1_id)
-        icj_id2 = self._icj_id_for_job_in_history(history_id, job2_id)
+        icj_id1 = self.dataset_populator.get_job_details(job1_id).json()["implicit_collection_jobs_id"]
+        icj_id2 = self.dataset_populator.get_job_details(job2_id).json()["implicit_collection_jobs_id"]
         downloaded = self._extract_and_download_workflow_by_ids(
             hdca_ids=[input_hdca["id"]],
             implicit_collection_jobs_ids=[icj_id1, icj_id2],
@@ -1039,7 +1015,7 @@ test_data:
         the validator that filters job_ids fires first because the member
         job carries an ICJ association."""
         _, mapped_job_id, _, implicit_hdca1_id, _ = self._run_random_lines_mapped_over_pair(history_id)
-        icj_id = self._icj_id_for_hdca(history_id, implicit_hdca1_id)
+        icj_id = self.dataset_populator.get_hdca_implicit_collection_jobs_id(history_id, implicit_hdca1_id)
         self._assert_extract_rejected(
             {
                 "workflow_name": "mixed icj and member",
@@ -1053,7 +1029,7 @@ test_data:
     @summarize_instance_history_on_error
     def test_duplicate_icj_ids_rejected(self, history_id):
         _, _, _, implicit_hdca1_id, _ = self._run_random_lines_mapped_over_pair(history_id)
-        icj_id = self._icj_id_for_hdca(history_id, implicit_hdca1_id)
+        icj_id = self.dataset_populator.get_hdca_implicit_collection_jobs_id(history_id, implicit_hdca1_id)
         self._assert_extract_rejected(
             {"workflow_name": "dup icjs", "implicit_collection_jobs_ids": [icj_id, icj_id]},
             (400,),
@@ -1240,7 +1216,7 @@ test_data:
         job_id2 = reduction_run["jobs"][0]["id"]
         self.dataset_populator.wait_for_job(job_id2, assert_ok=True)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        icj_id1 = self._icj_id_for_hdca(history_id, implicit_hdca1["id"])
+        icj_id1 = self.dataset_populator.get_hdca_implicit_collection_jobs_id(history_id, implicit_hdca1["id"])
         downloaded = self._extract_and_download_workflow_by_ids(
             hdca_ids=[hdca["id"]],
             implicit_collection_jobs_ids=[icj_id1],
@@ -1406,8 +1382,8 @@ test_data:
         must attach the workflow_output to the tool step, keyed by the
         implicit collection output name."""
         hdca, _, _, implicit_hdca1_id, implicit_hdca2_id = self._run_random_lines_mapped_over_pair(history_id)
-        icj_id1 = self._icj_id_for_hdca(history_id, implicit_hdca1_id)
-        icj_id2 = self._icj_id_for_hdca(history_id, implicit_hdca2_id)
+        icj_id1 = self.dataset_populator.get_hdca_implicit_collection_jobs_id(history_id, implicit_hdca1_id)
+        icj_id2 = self.dataset_populator.get_hdca_implicit_collection_jobs_id(history_id, implicit_hdca2_id)
         downloaded = self._extract_and_download_workflow_by_ids(
             hdca_ids=[hdca["id"]],
             implicit_collection_jobs_ids=[icj_id1, icj_id2],
@@ -1727,8 +1703,8 @@ class TestWorkflowExtractionSummaryApi(_ExtractionHelpersMixin, BaseWorkflowsApi
         with self.dataset_populator.test_history() as history_id:
             _, _, _, implicit_hdca1_id, implicit_hdca2_id = self._run_random_lines_mapped_over_pair(history_id)
             expected_icj_ids = {
-                self._icj_id_for_hdca(history_id, implicit_hdca1_id),
-                self._icj_id_for_hdca(history_id, implicit_hdca2_id),
+                self.dataset_populator.get_hdca_implicit_collection_jobs_id(history_id, implicit_hdca1_id),
+                self.dataset_populator.get_hdca_implicit_collection_jobs_id(history_id, implicit_hdca2_id),
             }
 
             summary = self._get_extraction_summary(history_id)

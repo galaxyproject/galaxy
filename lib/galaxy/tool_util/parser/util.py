@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from typing import (
+    Literal,
     TYPE_CHECKING,
 )
 
@@ -22,6 +23,10 @@ DEFAULT_EPS = 0.01
 DEFAULT_PIN_LABELS = None
 DEFAULT_SORT = False
 DEFAULT_DECOMPRESS = False
+
+# The ToolSourceTestOutputAttributes entries parsed as floats - the only ones that can hold a
+# non-finite value and so need decoding after a JSON round trip.
+FLOAT_OUTPUT_ATTRIBUTES: tuple[Literal["delta_frac"], Literal["eps"]] = ("delta_frac", "eps")
 
 
 def is_dict(item):
@@ -59,9 +64,13 @@ def parse_tool_version_with_defaults(id: str | None, tool_source: "ToolSource", 
     return version
 
 
-def boolean_is_checked(input_source: "InputSource"):
+def boolean_is_checked(input_source: "InputSource", profile: float | str | None = None):
     nullable = input_source.get_bool("optional", False)
-    return input_source.get_bool("checked", None if nullable else False)
+    if nullable and profile and Version(str(profile)) >= Version("26.2"):
+        # An optional boolean starts unset; get_bool would read that as unchecked.
+        # Covered by parameters/gx_boolean_optional_26_2, and gx_boolean_optional below 26.2.
+        return input_source.get_bool_or_none("checked", None)
+    return input_source.get_bool("checked", False)
 
 
 def boolean_true_and_false_values(input_source, profile: float | str | None = None) -> tuple[str, str]:
@@ -102,7 +111,11 @@ def text_input_is_optional(input_source: "InputSource") -> tuple[bool, bool]:
     return optional, optionality_inferred
 
 
-class ParameterParseException(Exception):
+class ParseException(Exception):
+    """A tool source could not be parsed into a usable tool."""
+
+
+class ParameterParseException(ParseException):
     message: str
 
     def __init__(self, message):

@@ -42,7 +42,7 @@ class DatatypesCustomConf(Linter):
     """
 
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         if not tool_source.source_path:
             return
         tool_xml = getattr(tool_source, "xml_tree", None)
@@ -65,7 +65,7 @@ class ValidDatatypes(Linter):
     """
 
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return

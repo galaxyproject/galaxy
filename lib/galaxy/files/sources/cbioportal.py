@@ -3,7 +3,7 @@ import json
 import posixpath
 import re
 import tarfile
-import urllib.request
+from contextlib import contextmanager
 from typing import (
     Annotated,
 )
@@ -26,7 +26,8 @@ from galaxy.files.sources._defaults import DEFAULT_SCHEME
 from galaxy.files.uris import validate_non_local
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
-    stream_to_open_named_file,
+    requests,
+    stream_to_path,
 )
 from galaxy.util.config_templates import TemplateExpansion
 from . import BaseFilesSource
@@ -211,7 +212,7 @@ class CBioPortalFilesSource(
         config: CBioPortalFileSourceConfiguration,
     ) -> None:
         archive_url = self._archive_url(config, study_id)
-        with self._urlopen(archive_url) as response:
+        with self._open_url(archive_url) as response:
             with tarfile.open(fileobj=response, mode="r|gz") as archive:
                 for member in archive:
                     if not member.isfile():
@@ -228,26 +229,30 @@ class CBioPortalFilesSource(
         raise ObjectNotFound(f"File [{filename}] was not found in cBioPortal study archive [{study_id}].")
 
     def _get_json(self, url: str):
-        with self._urlopen(url) as response:
+        with self._open_url(url) as response:
             return json.load(response)
 
     def _stream_url_to_file(self, url: str, native_path: str) -> None:
-        with self._urlopen(url) as response:
-            f = open(native_path, "wb")  # fd will be .close()ed in stream_to_open_named_file
-            stream_to_open_named_file(response, f.fileno(), native_path)
+        with self._open_url(url) as response:
+            stream_to_path(response, native_path)
 
-    def _urlopen(self, url: str):
+    @contextmanager
+    def _open_url(self, url: str):
         validate_non_local(url, self._allowlist or [])
-        request = urllib.request.Request(
-            url,
-            headers={
-                "Accept": "application/json" if "/api/" in url else "application/octet-stream",
-                "User-Agent": "Galaxy cBioPortal file source",
-            },
-        )
-        response = urllib.request.urlopen(request, timeout=DEFAULT_SOCKET_TIMEOUT)
-        validate_non_local(response.geturl(), self._allowlist or [])
-        return response
+        with requests.Session() as session:
+            with session.get(
+                url,
+                headers={
+                    "Accept": "application/json" if "/api/" in url else "application/octet-stream",
+                    "User-Agent": "Galaxy cBioPortal file source",
+                },
+                stream=True,
+                timeout=DEFAULT_SOCKET_TIMEOUT,
+            ) as response:
+                response.raise_for_status()
+                validate_non_local(response.url, self._allowlist or [])
+                response.raw.decode_content = True
+                yield response.raw
 
     def _api_url(self, config: CBioPortalFileSourceConfiguration, *parts: str) -> str:
         return "/".join([config.api_url.rstrip("/"), *(part.strip("/") for part in parts)])

@@ -487,36 +487,6 @@ access arbitrary datasets in `/galaxy_root/database/files/` .
 Note that if you allow linking datasets from filesystem locations in your data libraries,
 these paths need to exposed in the same way.
 
-{#protect-reports}
-### Use Galaxy Authentication to Protect Custom Paths
-
-You may find it useful to require authentication for access to certain paths on your server.  For example, Galaxy can
-run a separate reports app which gives useful information about your Galaxy instance. See the [Reports Configuration
-documentation](./reports) and [Peter Briggs' blog post on the
-subject](https://galacticengineer.blogspot.com/2015/06/exposing-galaxy-reports-via-nginx-in.html) for more.
-
-After successfully following the blog post, Galaxy reports should be available at e.g. `https://galaxy.example.org/reports`.
-To secure this page to only Galaxy administrators, adjust your nginx config accordingly:
-
-```nginx
-        location /reports {
-            #...
-            satisfy any;            # only one auth method needs to succeed
-            deny all;               # host-based auth is not allowed
-            auth_request /_auth;    # forward authentication
-        }
-
-        location /_auth {
-            #internal; probably?
-            # The used galaxy api endpoint is only available to galaxy admins and thus limits the access
-            # to only logged in admins.
-            proxy_pass http://localhost/api/configuration/dynamic_tool_confs;
-            proxy_pass_request_body off;
-            proxy_set_header Content-Length "";
-            proxy_set_header X-Original-URI $request_uri;
-        }
-```
-
 ### External User Authentication
 
 - [Nginx for External Authentication](https://galaxyproject.org/admin/config/nginx-external-user-auth/)

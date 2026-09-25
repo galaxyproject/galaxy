@@ -5,13 +5,11 @@ Provides search over Galaxy Training Network tutorials and FAQs
 using SQLite FTS5 full-text search with BM25 ranking.
 """
 
-import http.client
 import logging
 import os
 import re
 import shutil
 import sqlite3
-import urllib.request
 from dataclasses import dataclass
 from datetime import (
     datetime,
@@ -23,6 +21,12 @@ from pathlib import Path
 from typing import (
     Any,
 )
+from urllib.parse import (
+    unquote,
+    urlparse,
+)
+
+from galaxy.util import requests
 
 GTN_DATABASE_URL = "https://depot.galaxyproject.org/chatgxy/gtn_search.db"
 GTN_FAQ_BASE_URL = "https://training.galaxyproject.org/training-material/faqs"
@@ -51,6 +55,18 @@ def _parse_last_modified(header: str | None) -> datetime | None:
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed
+
+
+def _file_url_path(url: str) -> Path | None:
+    """Return the local path for a ``file://`` URL, or None for any other scheme."""
+    parsed_url = urlparse(url)
+    if parsed_url.scheme == "file":
+        return Path(unquote(parsed_url.path))
+    return None
+
+
+def _mtime_utc(path: Path) -> datetime:
+    return datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
 
 
 def _escape_like(value: str) -> str:
@@ -251,15 +267,22 @@ class GTNSearchDB:
     @staticmethod
     def _remote_last_modified(url: str) -> datetime | None:
         """HEAD ``url`` and return its parsed Last-Modified, or None on failure."""
+        if (source_path := _file_url_path(url)) is not None:
+            try:
+                return _mtime_utc(source_path)
+            except OSError as e:
+                log.debug(f"GTN freshness check failed for {url}: {e}")
+                return None
         try:
-            req = urllib.request.Request(url, method="HEAD")
-            with urllib.request.urlopen(req, timeout=GTN_FRESHNESS_TIMEOUT_SECONDS) as resp:
-                header = resp.headers.get("Last-Modified")
-        except (OSError, ValueError, http.client.HTTPException) as e:
-            # http.client.HTTPException covers malformed responses
-            # (RemoteDisconnected, BadStatusLine) that urllib doesn't wrap
-            # into URLError -- without it the periodic queue would record a
-            # failed run instead of falling through to a full download.
+            with requests.Session() as session:
+                with session.head(
+                    url,
+                    allow_redirects=True,
+                    timeout=GTN_FRESHNESS_TIMEOUT_SECONDS,
+                ) as response:
+                    response.raise_for_status()
+                    header = response.headers.get("Last-Modified")
+        except (ValueError, requests.exceptions.RequestException) as e:
             log.debug(f"GTN freshness HEAD failed for {url}: {e}")
             return None
         return _parse_last_modified(header)
@@ -271,21 +294,33 @@ class GTNSearchDB:
         tmp_path.unlink(missing_ok=True)
         try:
             log.info(f"Downloading GTN database from {download_url} ...")
-            with urllib.request.urlopen(download_url, timeout=GTN_DOWNLOAD_TIMEOUT_SECONDS) as response:
-                last_modified_header = response.headers.get("Last-Modified")
-                with open(tmp_path, "wb") as out:
-                    shutil.copyfileobj(response, out)
+            remote_dt: datetime | None
+            if (source_path := _file_url_path(download_url)) is not None:
+                remote_dt = _mtime_utc(source_path)
+                with source_path.open("rb") as source, open(tmp_path, "wb") as out:
+                    shutil.copyfileobj(source, out)
+            else:
+                with requests.Session() as session:
+                    with session.get(
+                        download_url,
+                        stream=True,
+                        timeout=GTN_DOWNLOAD_TIMEOUT_SECONDS,
+                    ) as response:
+                        response.raise_for_status()
+                        remote_dt = _parse_last_modified(response.headers.get("Last-Modified"))
+                        response.raw.decode_content = True
+                        with open(tmp_path, "wb") as out:
+                            shutil.copyfileobj(response.raw, out)
             metadata = cls._validate_database_file(tmp_path)
             # Stamp the file with depot's Last-Modified so the next stale check
             # compares against the upstream mtime rather than "right now", which
             # would also drift with any local clock skew.
-            remote_dt = _parse_last_modified(last_modified_header)
             if remote_dt is not None:
                 remote_ts = remote_dt.timestamp()
                 os.utime(tmp_path, (remote_ts, remote_ts))
             tmp_path.replace(db_path)
             return metadata
-        except (OSError, sqlite3.Error) as e:
+        except (OSError, sqlite3.Error, requests.exceptions.RequestException) as e:
             tmp_path.unlink(missing_ok=True)
             raise FileNotFoundError(f"GTN database download failed for {db_path}: {e}") from e
 

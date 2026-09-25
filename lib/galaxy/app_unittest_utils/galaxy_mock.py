@@ -266,6 +266,9 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
 
         # Compliance related config
         self.redact_email_in_job_name = False
+        self.redact_username_during_deletion = False
+        self.redact_email_during_deletion = False
+        self.redact_user_address_during_deletion = False
 
         # Follow two required by GenomeBuilds
         self.len_file_path = os.path.join("tool-data", "shared", "ucsc", "chrom")
@@ -309,6 +312,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.vault_config_file = kwargs.get("vault_config_file")
         self.url_headers_config_file = None
         self.max_discovered_files = 10000
+        self.galaxy_url_prefix = "/"
         self.display_builtin_converters = True
         self.enable_notification_system = True
         self.config_dict = self.dict()

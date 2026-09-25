@@ -19,7 +19,7 @@ class StubTrans:
         )
         self.logged_out = False
 
-    def handle_user_logout(self):
+    def handle_user_logout(self, logout_all=False):
         self.logged_out = True
 
 

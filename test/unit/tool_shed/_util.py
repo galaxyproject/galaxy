@@ -113,7 +113,7 @@ class ProvidesRepositoriesImpl(ProvidesRepositoriesContext):
 def provides_repositories_fixture(
     app: TestToolShedApp,
     user: User,
-):
+) -> ProvidesRepositoriesImpl:
     return ProvidesRepositoriesImpl(app, user)
 
 

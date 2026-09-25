@@ -2,10 +2,13 @@ from typing import (
     Any,
     cast,
 )
+from urllib.parse import quote
 
 from starlette.datastructures import URL
 
 from galaxy.exceptions import ObjectNotFound
+from galaxy.tool_util.version import parse_version
+from galaxy.tools.stock import stock_tool_sources_by_id
 from galaxy.util.tool_shed.common_util import remove_protocol_and_user_from_clone_url
 from galaxy.version import VERSION
 from tool_shed.context import ProvidesRepositoriesContext
@@ -70,16 +73,6 @@ def tool_classes() -> list[ToolClass]:
     return [ToolClass(id="galaxy_tool", name="Galaxy Tool", description="Galaxy XML Tools")]
 
 
-def trs_tool_id_to_guid(trans: ProvidesRepositoriesContext, trs_tool_id: str) -> str:
-    guid = decode_identifier(trans.repositories_hostname, trs_tool_id)
-    guid = remove_protocol_and_user_from_clone_url(guid)
-    return guid
-
-
-def trs_tool_id_to_repository(trans: ProvidesRepositoriesContext, trs_tool_id: str) -> Repository:
-    return guid_to_repository(trans.app, trs_tool_id_to_guid(trans, trs_tool_id))
-
-
 def get_repository_metadata_by_tool_version(
     app: ToolShedApp, repository: Repository, tool_id: str
 ) -> dict[str, RepositoryMetadata]:
@@ -94,12 +87,6 @@ def get_repository_metadata_by_tool_version(
                 continue
             versions[tool_metadata["version"]] = metadata
     return versions
-
-
-def get_tools_for(repository_metadata: RepositoryMetadata) -> list[dict[str, Any]]:
-    tools: list[dict[str, Any]] | None = repository_metadata.metadata.get("tools")
-    assert tools
-    return tools
 
 
 def trs_tool_id_to_repository_metadata(
@@ -118,6 +105,8 @@ def trs_tool_id_to_repository_metadata(
 
 
 def get_tool(trans: ProvidesRepositoriesContext, trs_tool_id: str) -> Tool:
+    if "~" not in trs_tool_id:
+        return _get_stock_tool(trans, trs_tool_id)
     guid = decode_identifier(trans.repositories_hostname, trs_tool_id)
     guid = remove_protocol_and_user_from_clone_url(guid)
     repo_metadata = trs_tool_id_to_repository_metadata(trans, trs_tool_id)
@@ -146,5 +135,37 @@ def get_tool(trans: ProvidesRepositoriesContext, trs_tool_id: str) -> Tool:
         url=url,
         toolclass=tool_classes()[0],
         organization=repo_owner,
+        versions=versions,
+    )
+
+
+def _get_stock_tool(trans: ProvidesRepositoriesContext, tool_id: str) -> Tool:
+    sources = stock_tool_sources_by_id().get(tool_id)
+    if not sources:
+        raise ObjectNotFound()
+    base_url = trans.repositories_hostname.rstrip("/")
+    if "://" not in base_url:
+        base_url = f"https://{base_url}"
+    encoded_id = quote(tool_id, safe="")
+    url = f"{base_url}/api/ga4gh/trs/v2/tools/{encoded_id}"
+    versions = [
+        ToolVersion(
+            author=["galaxyproject"],
+            containerfile=False,
+            descriptor_type=[DescriptorType.GALAXY],
+            id=version,
+            url=f"{base_url}/api/tools/{encoded_id}/versions/{quote(version, safe='')}",
+            verified=False,
+        )
+        for version in sorted(sources, key=parse_version)
+    ]
+    latest_source = sources[versions[-1].id]
+    return Tool(
+        id=tool_id,
+        url=url,
+        toolclass=tool_classes()[0],
+        organization="galaxyproject",
+        name=latest_source.parse_name(),
+        description=latest_source.parse_description(),
         versions=versions,
     )

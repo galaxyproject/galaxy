@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 class OutputsMissing(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -37,7 +37,7 @@ class OutputsMissing(Linter):
 
 class OutputsOutput(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -49,7 +49,7 @@ class OutputsOutput(Linter):
 
 class OutputsNameInvalidCheetah(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -64,7 +64,7 @@ class OutputsNameInvalidCheetah(Linter):
 
 class OutputsNameDuplicated(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -78,7 +78,7 @@ class OutputsNameDuplicated(Linter):
 
 class OutputsFilterExpression(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -95,7 +95,7 @@ class OutputsFilterExpression(Linter):
 
 class OutputsLabelDuplicatedFilter(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -114,7 +114,7 @@ class OutputsLabelDuplicatedFilter(Linter):
 
 class OutputsLabelDuplicatedNoFilter(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -129,7 +129,7 @@ class OutputsLabelDuplicatedNoFilter(Linter):
 
 class OutputsCollectionType(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -140,7 +140,7 @@ class OutputsCollectionType(Linter):
 
 class OutputsNumber(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -153,8 +153,8 @@ class OutputsNumber(Linter):
 
 class OutputsFormatInput(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        def _report(output: "Element"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
+        def _report(output: "Element") -> None:
             message = f"Using format='input' on {output.tag} is deprecated. Use the format_source attribute."
             if Version(str(profile)) <= Version("16.01"):
                 lint_ctx.warn(message, linter=cls.name(), node=output)
@@ -177,7 +177,7 @@ class OutputsFormatInput(Linter):
 
 class OutputsFormat(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -208,8 +208,8 @@ class OutputsFormat(Linter):
 
 class OutputsFormatSourceIncomp(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        def _check_and_report(node):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
+        def _check_and_report(node: "Element") -> None:
             if "format_source" in node.attrib and ("ext" in node.attrib or "format" in node.attrib):
                 lint_ctx.warn(
                     f"Tool {node.tag} output '{node.attrib.get('name', 'with missing name')}' should use either format_source or format/ext",
@@ -260,7 +260,7 @@ def _check_pattern(node):
 
 class OutputsStructuredLikeReference(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
@@ -274,22 +274,15 @@ class OutputsStructuredLikeReference(Linter):
 
 class OutputsFormatSourceReference(Linter):
     @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext") -> None:
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
         param_qualified_paths = _collect_param_qualified_paths(tool_xml)
-        output_names = {
-            o.attrib["name"]
-            for o in tool_xml.findall("./outputs/data[@name]") + tool_xml.findall("./outputs/collection[@name]")
-        }
         for output in tool_xml.findall("./outputs/data[@format_source]") + tool_xml.findall(
             "./outputs/collection[@format_source]"
         ):
             format_source = output.attrib["format_source"]
-            # format_source can reference other outputs, skip if it matches an output name
-            if format_source in output_names:
-                continue
             _check_unqualified_reference(
                 lint_ctx, cls.name(), output, format_source, "format_source", param_qualified_paths
             )
@@ -302,7 +295,7 @@ def _check_unqualified_reference(
     ref_value: str,
     attr_name: str,
     param_qualified_paths: dict,
-):
+) -> None:
     if "|" in ref_value:
         return
     # Check if it matches a top-level param directly

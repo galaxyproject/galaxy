@@ -10,7 +10,7 @@ from galaxy.util.tool_version import remove_version_from_guid
 from .interface import ToolLineage
 
 if TYPE_CHECKING:
-    from galaxy.tools import Tool
+    from galaxy.tool_util.abstract_tool import AbstractTool
     from ..base import AbstractToolBox
 
 
@@ -21,7 +21,7 @@ class LineageMap:
         self.lineage_map: dict[str, ToolLineage] = {}
         self.toolbox = toolbox
 
-    def register(self, tool: "Tool") -> ToolLineage:
+    def register(self, tool: "AbstractTool") -> ToolLineage:
         tool_id = tool.id
         assert tool_id
         # An existing lineage may not have the current tool's version yet, so

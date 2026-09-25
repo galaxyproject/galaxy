@@ -168,6 +168,9 @@ class XmlToolSource(ToolSource):
 
     language = "xml"
 
+    def allows_tool_provided_metadata(self) -> bool:
+        return True
+
     def __init__(
         self, xml_tree: ElementTree, source_path: Optional["StrPath"] = None, macro_paths: list[str] | None = None
     ) -> None:
@@ -457,6 +460,12 @@ class XmlToolSource(ToolSource):
             provided_metadata_file = out_elem.attrib["provided_metadata_file"]
 
         return provided_metadata_file
+
+    def parse_provided_metadata_is_explicit(self) -> bool:
+        out_elem = self.root.find("outputs")
+        return out_elem is not None and any(
+            attribute in out_elem.attrib for attribute in ("provided_metadata_file", "provided_metadata_style")
+        )
 
     def parse_outputs(self, app: ToolOutputActionApp | None = None):
         out_elem = self.root.find("outputs")

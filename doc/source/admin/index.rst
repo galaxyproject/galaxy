@@ -27,10 +27,10 @@ Galaxy Deployment & Administration
    mq
    dependency_resolvers
    container_resolvers
+   containerized_metadata
    conda_faq
    user_defined_tools
    db_migration
-   reports
    useful_scripts
    ga4gh
    options

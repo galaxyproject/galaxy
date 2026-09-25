@@ -1,7 +1,6 @@
 from galaxy_test.base.workflow_fixtures import WORKFLOW_RENAME_ON_INPUT
 from .framework import (
     retry_assertion_during_transitions,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
     TestsGalaxyPagers,
@@ -11,7 +10,6 @@ from .framework import (
 class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
     ensure_registered = True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_grid(self):
         gx_selenium_context = self

@@ -54,12 +54,14 @@ export default defineConfig({
         // Use thread pool for faster test execution
         pool: "threads",
         // Test file patterns
-        include: ["src/**/*.test.{js,ts}", "tests/vitest/**/*.test.{js,ts}"],
+        include: ["src/**/*.test.{js,ts}", "tests/vitest/**/*.test.{js,ts}", "packages/*/src/**/*.test.{js,ts}"],
         // Exclude patterns
         exclude: ["node_modules", "dist", "**/dist/**"],
     },
     resolve: {
         alias: {
+            // galaxy-ui resolves through the workspace symlink and its exports
+            // map, so it needs no alias entry here.
             // Match former Jest's module name mapping
             "@": path.resolve(__dirname, "./src"),
             "@tests": path.resolve(__dirname, "./tests"),

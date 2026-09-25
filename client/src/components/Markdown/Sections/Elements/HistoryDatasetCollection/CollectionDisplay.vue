@@ -5,29 +5,27 @@
     <b-card v-else body-class="p-0">
         <b-card-header>
             <span class="float-right">
-                <b-button
+                <GButton
                     v-g-tooltip.hover
                     :href="downloadUrl"
-                    variant="link"
-                    size="sm"
-                    role="button"
+                    transparent
+                    size="small"
+                    icon-only
                     title="Download Collection"
-                    type="button"
                     class="py-0 px-1">
                     <span class="fa fa-download" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="currentUser && currentHistoryId"
                     v-g-tooltip.hover
-                    href="#"
-                    role="button"
-                    variant="link"
+                    transparent
                     title="Import Collection"
-                    type="button"
+                    size="small"
+                    icon-only
                     class="py-0 px-1"
                     @click="onCopyCollection(currentHistoryId)">
                     <span class="fa fa-file-import" />
-                </b-button>
+                </GButton>
             </span>
             <span>
                 <span>Dataset Collection:</span>
@@ -56,6 +54,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import CollectionTree from "./CollectionTree.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps<{

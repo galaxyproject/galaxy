@@ -7,6 +7,7 @@ import logging
 import random
 import string
 import time
+from collections.abc import Callable
 from typing import (
     Any,
     TYPE_CHECKING,
@@ -27,7 +28,10 @@ from galaxy import (
     schema,
     util,
 )
-from galaxy.config import templates
+from galaxy.config import (
+    GALAXY_APP_NAME,
+    templates,
+)
 from galaxy.managers import (
     base,
     deletable,
@@ -69,10 +73,9 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 PASSWORD_RESET_TEMPLATE = """
-To reset your Galaxy password for the instance at %s use the following link,
-which will expire %s.
+To reset your %s password use the following link, which will expire %s.
 
-%s%s
+%s
 
 If you did not make this request, no action is necessary on your part, though
 you may want to notify an administrator.
@@ -284,6 +287,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # Delete UserAddresses
         for address in user.addresses:
             self.session().delete(address)
+        # Delete UserAuthnzTokens, unlinking any external identities
+        for authnz in user.social_auth:
+            self.session().delete(authnz)
         compliance_log = logging.getLogger("COMPLIANCE")
         compliance_log.info(f"delete-user-event: {user.username}")
         # Maybe there is some case in the future where an admin needs
@@ -507,8 +513,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             message = self.__set_password(trans, user, password, confirm)
             if message:
                 return None, message
-            token_result.expiration_time = now()
-            trans.sa_session.add(token_result)
+            log.info("Password reset token redeemed for user %s.", user.id)
             return user, "Password has been changed. Token has been invalidated."
         else:
             if not isinstance(id, int):
@@ -525,6 +530,11 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             else:
                 return user, "User not found."
 
+    def set_password(self, trans, user, password, confirm=None) -> None:
+        """Set a password for an authorized caller; raise RequestParameterInvalidException if invalid."""
+        if message := self.__set_password(trans, user, password, confirm):
+            raise exceptions.RequestParameterInvalidException(message)
+
     def __set_password(self, trans: ProvidesUserContext, user, password, confirm):
         if not password:
             return "Please provide a new password."
@@ -536,21 +546,23 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             else:
                 # Save new password
                 user.set_password_cleartext(password)
-                # Invalidate all other sessions
-                if trans.galaxy_session:
-                    stmt = select(self.app.model.GalaxySession).where(
-                        and_(
-                            self.app.model.GalaxySession.user_id == user.id,
-                            self.app.model.GalaxySession.is_valid == true(),
-                            self.app.model.GalaxySession.id != trans.galaxy_session.id,
-                        )
+                # Preserve the caller's session, if any.
+                stmt = select(self.app.model.GalaxySession).where(
+                    and_(
+                        self.app.model.GalaxySession.user_id == user.id,
+                        self.app.model.GalaxySession.is_valid == true(),
                     )
-                    for other_galaxy_session in trans.sa_session.scalars(stmt):
-                        other_galaxy_session.is_valid = False
-                        trans.sa_session.add(other_galaxy_session)
+                )
+                if trans.galaxy_session:
+                    stmt = stmt.where(self.app.model.GalaxySession.id != trans.galaxy_session.id)
+                for other_galaxy_session in trans.sa_session.scalars(stmt):
+                    other_galaxy_session.is_valid = False
+                    trans.sa_session.add(other_galaxy_session)
+                self.expire_reset_tokens(trans, user)
                 trans.sa_session.add(user)
                 trans.sa_session.commit()
                 trans.log_event("User change password")
+                log.info("Password changed for user %s.", user.id)
         else:
             return "Failed to determine user, access denied."
 
@@ -617,44 +629,77 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             session.flush()
         return activation_token
 
+    def request_password_reset(self, trans, email: str, *, reset_url_for: Callable[[str], str]):
+        """Email a reset link built by ``reset_url_for``, which must use a trusted base URL.
+
+        Raise ConfigDoesNotAllowException for missing mail configuration or
+        RequestParameterInvalidException for invalid addresses. Unknown accounts
+        and delivery failures return silently to prevent account enumeration.
+        """
+        app_name = "Galaxy" if self.app.name == GALAXY_APP_NAME else "Tool Shed"
+        if self.app.config.smtp_server is None:
+            raise exceptions.ConfigDoesNotAllowException(
+                f"Mail is not configured for this {app_name} instance and password reset information cannot be sent. "
+                "Please contact your local administrator."
+            )
+        if message := validate_email(trans, email, check_dup=False):
+            raise exceptions.RequestParameterInvalidException(message)
+        reset_user, prt = self.get_reset_token(trans, email)
+        if reset_user is None or prt is None:
+            log.warning("Password reset requested for an address without an active account.")
+            return
+        expiration_time = prt.expiration_time
+        assert expiration_time is not None
+        body = PASSWORD_RESET_TEMPLATE % (
+            app_name,
+            expiration_time.strftime(self.app.config.pretty_datetime_format),
+            reset_url_for(prt.token),
+        )
+        try:
+            util.send_mail(self.app.config.email_from, email, f"{app_name} Password Reset", body, self.app.config)
+        except Exception:
+            # Keep delivery errors private and invalidate the undelivered token.
+            log.exception("Failed to send password reset email.")
+            prt.expiration_time = now()
+            trans.sa_session.add(prt)
+            trans.sa_session.commit()
+            return
+        trans.log_event(f"User reset password: {email}")
+        log.info("Sent a password reset email for user %s.", reset_user.id)
+
     def send_reset_email(self, trans: "GalaxyWebTransaction", payload, **kwd):
         """Reset the user's password. Send an email with token that allows a password change."""
-        if self.app.config.smtp_server is None:
-            return "Mail is not configured for this Galaxy instance and password reset information cannot be sent. Please contact your local Galaxy administrator."
         email = payload.get("email")
         if not email:
             return "Please provide your email."
-        message = validate_email(trans, email, check_dup=False)
-        if message:
-            return message
-        else:
-            reset_user, prt = self.get_reset_token(trans, email)
-            if prt:
-                reset_url = trans.url_builder("/login/start", token=prt.token)
-                body = PASSWORD_RESET_TEMPLATE % (
-                    trans.app.config.hostname,
-                    prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
-                    trans.request.host,
-                    reset_url,
-                )
-                subject = "Galaxy Password Reset"
-                try:
-                    util.send_mail(trans.app.config.email_from, email, subject, body, self.app.config)
-                    trans.sa_session.add(reset_user)
-                    trans.sa_session.commit()
-                    trans.log_event(f"User reset password: {email}")
-                except Exception as e:
-                    log.debug(body)
-                    return f"Failed to submit email. Please contact the administrator: {util.unicodify(e)}"
-        if not reset_user:
-            log.warning(f"Failed to produce password reset token. User with email '{email}' not found.")
+        try:
+            self.request_password_reset(
+                trans,
+                email,
+                reset_url_for=lambda token: trans.url_builder("/login/start", token=token, qualified=True),
+            )
+        except exceptions.MessageException as e:
+            return str(e)
         return None
+
+    def expire_reset_tokens(self, trans: ProvidesAppContext, user) -> None:
+        stmt = select(self.app.model.PasswordResetToken).where(
+            and_(
+                self.app.model.PasswordResetToken.user_id == user.id,
+                self.app.model.PasswordResetToken.expiration_time > now(),
+            )
+        )
+        for token in trans.sa_session.scalars(stmt):
+            token.expiration_time = now()
+            trans.sa_session.add(token)
 
     def get_reset_token(self, trans: ProvidesAppContext, email):
         reset_user = self.by_email(email)
         if not reset_user:
             reset_user = self.by_email(email, case_sensitive=False)
         if reset_user and not reset_user.deleted:
+            # Only the most recent link works, so repeated requests cannot pile up live tokens.
+            self.expire_reset_tokens(trans, reset_user)
             prt = self.app.model.PasswordResetToken(reset_user)
             trans.sa_session.add(prt)
             trans.sa_session.commit()

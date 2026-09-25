@@ -158,6 +158,7 @@ doc/build
 doc/schema.md
 doc/source/admin/config_logging_default_yaml.rst
 doc/source/dev/schema.md
+doc/source/dev/user_defined_tools_authoring.md
 doc/source/dev/plantuml.jar
 client/docs/dist
 

@@ -422,6 +422,10 @@ class OMEZarr(data.ZarrDirectory):
 
     file_ext = "ome_zarr"
 
+    def sniff_directory(self, path: str) -> bool:
+        """Require an explicit ``ome_zarr`` extension for OME-Zarr uploads."""
+        return False
+
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "OME-Zarr directory"

@@ -52,16 +52,18 @@ export default defineConfig(({ command }) => ({
     base: "./",
     resolve: {
         tsconfigPaths: true,
-        // In dev, resolve @galaxyproject/* workspace packages directly to
-        // source so edits trigger HMR without a rebuild. Production builds
-        // use the packages' published dist/ via their package.json exports.
-        ...(command === "serve"
-            ? {
-                  alias: {
-                      "@galaxyproject/galaxy-api-client": resolve(__dirname, "packages/api-client/src/index.ts"),
-                  },
-              }
-            : {}),
+        alias: {
+            // galaxy-ui is internal-only (no library build) and always
+            // resolved from source -- the main client consumes the .vue
+            // files directly through @vitejs/plugin-vue2.
+            "@galaxyproject/galaxy-ui": resolve(__dirname, "packages/ui/src/index.ts"),
+            // galaxy-api-client has a real tsup dist/ build and production
+            // uses that via package.json exports. During `vite serve` we
+            // resolve to source so edits trigger HMR without a rebuild.
+            ...(command === "serve"
+                ? { "@galaxyproject/galaxy-api-client": resolve(__dirname, "packages/api-client/src/index.ts") }
+                : {}),
+        },
     },
     define: {
         // Make jQuery available globally for plugins and legacy code
@@ -156,8 +158,12 @@ export default defineConfig(({ command }) => ({
         port: process.env.VITE_PORT || 5173,
         host: "0.0.0.0",
         proxy: {
-            // Proxy everything except Vite's own routes to Galaxy backend
-            "^/(?!(@|src/|node_modules/|__vite))": {
+            // Proxy everything except Vite's own routes to Galaxy backend.
+            // `packages/` is served by Vite as well: the workspace packages are
+            // aliased to their sources (see `resolve.alias`), so proxying them
+            // to Galaxy would leave `@galaxyproject/galaxy-ui` unresolved and
+            // the client would never boot on the dev server.
+            "^/(?!(@|src/|packages/|node_modules/|__vite))": {
                 target: process.env.GALAXY_URL || "http://127.0.0.1:8080",
                 changeOrigin: true,
                 secure: false,

@@ -196,6 +196,54 @@ class TestToolPanelManager(BaseToolBoxTestCase):
         assert guid not in conf_when_removed[guid]
         assert lock_held_when_removed[guid]
 
+    def test_install_populates_index_before_reload_under_lock(self):
+        # The conf watcher's rebuild populates the index from the rewritten
+        # conf and records a never-seen placement at the tail of its section;
+        # the install's partial populate records it at the head. Whichever
+        # runs first wins, so the partial populate has to happen under the
+        # toolbox lock, after the conf is on disk and before waiting for
+        # the reload.
+        self._init_ts_tool(guid=DEFAULT_GUID)
+        self._init_dynamic_tool_conf()
+        self.app.config.use_cached_toolbox = True
+        tool_path = self._tool_path()
+        conf_path = os.path.join(self.test_directory, "tool_conf.xml")
+        recording_lock = _RecordingLock()
+        events: list[tuple[str, bool, bool | None]] = []
+
+        def fake_populate(config, paths, path_guids=None, app=None):
+            with open(conf_path) as fh:
+                conf = fh.read()
+            events.append(("populate", recording_lock.held, DEFAULT_GUID in conf))
+
+        def fake_wait(old_toolbox):
+            events.append(("wait", recording_lock.held, None))
+
+        _, section = self.toolbox.get_section("tid1", create_if_needed=True)
+        tpm = self.tpm
+        tool_panel_dict = tpm.generate_tool_panel_dict_for_new_install(
+            tool_dicts=[{"guid": DEFAULT_GUID, "tool_config": tool_path}],
+            tool_section=section,
+        )
+        with (
+            mock.patch.object(self.app, "_toolbox_lock", recording_lock),
+            mock.patch.object(self.app, "wait_for_toolbox_reload", side_effect=fake_wait),
+            mock.patch.object(self.toolbox, "invalidate_index_cache", create=True),
+            mock.patch.object(tool_panel_manager, "populate_for_paths", side_effect=fake_populate),
+        ):
+            tpm.add_to_tool_panel(
+                repository_name="test_repo",
+                repository_clone_url="http://github.com/galaxyproject/example.git",
+                changeset_revision="0123456789abcde",
+                repository_tools_tups=[(tool_path, DEFAULT_GUID, self.tool)],
+                owner="devteam",
+                shed_tool_conf="tool_conf.xml",
+                tool_panel_dict=tool_panel_dict,
+            )
+
+        assert events == [("populate", True, True), ("wait", False, None)]
+        self._verify_tool_confs()
+
     def _setup_two_versions_remove_one(self, section, uninstall):
         self._init_tool()
         self._setup_two_versions_in_config(section=section)

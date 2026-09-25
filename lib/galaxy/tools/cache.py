@@ -33,10 +33,11 @@ class ToolCache:
         self._hashes_initialized = False
 
     def assert_hashes_initialized(self) -> None:
-        if not self._hashes_initialized:
-            for tool_hash in self._hash_by_tool_paths.values():
-                tool_hash.hash  # noqa: B018
-            self._hashes_initialized = True
+        with self._lock:
+            if not self._hashes_initialized:
+                for tool_hash in self._hash_by_tool_paths.values():
+                    tool_hash.hash  # noqa: B018
+                self._hashes_initialized = True
 
     def cleanup(self) -> list[str]:
         """

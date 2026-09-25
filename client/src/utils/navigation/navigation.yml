@@ -141,6 +141,7 @@ dataset_details:
   selectors:
     _: 'table#dataset-details'
     tool_parameters: 'table#tool-parameters'
+    tool_parameters_row: 'table#tool-parameters tbody tr'
     transform_action: '[data-transform-action="${action}"]'
     deferred_source_uri: '.deferred-dataset-source-uri'
 
@@ -172,6 +173,8 @@ dataset_display:
   selectors:
     container: .dataset-display
     content: body
+    tabular_rows: .dataset-display tbody tr
+    tabular_row: '.dataset-display tbody tr:nth-child(${index})'
 
 history_panel:
   menu:
@@ -526,6 +529,15 @@ histories:
     bulk_delete_button: 'button[id="history-list-footer-bulk-delete-button"]'
     bulk_restore_button: 'button[id="history-list-footer-bulk-restore-button"]'
     bulk_open_multiview_button: 'button[id="history-list-footer-bulk-open-multiview-button"]'
+  multiview:
+    selectors:
+      activity: '#activity-multiview'
+      history_cards: '[data-description="Select Histories"] [id^="g-card-history-"]'
+      reset_button: '[data-description="reset multiview history selection"]'
+    history_card:
+      selectors:
+        _: '[data-description="Select Histories"] #g-card-history-${history_id}'
+        selected: '${_}.g-card-selected'
   sharing:
     selectors:
       unshare_user_button: '.share_with_view .multiselect__tag-icon'
@@ -958,6 +970,7 @@ workflow_run:
     history_target_link: '[data-description="switch to history link"]'
     runtime_setting_button: '.workflow-run-settings'
     runtime_setting_target: '[data-test-id="send-to-new-history-label"]'
+    new_history_name_input: '.history-name-input'
     simplified_input:
       type: xpath
       selector: //div[@data-label="${label}"]//input
@@ -1099,15 +1112,11 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@data-label='Rename dataset']//input
-    change_datatype:
-      type: xpath
-      selector: >
-        //div[@data-label='Change datatype']//div[contains(@class, 'multiselect')]
-    select_datatype_text_search: "div[data-label='Change datatype'] .multiselect__input"
-    select_datatype:
-      type: xpath
-      selector: >
-        //div[@data-label='Change datatype']//div[@role='combobox' and not(@data-filter-pending)]//li[contains(@class,"multiselect__element")]//span[normalize-space()="${datatype}"]
+    change_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [role='combobox']"
+    select_datatype_text_search: "#pja__${output}__ChangeDatatypeAction__newtype [role='combobox'] input"
+    select_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [data-option-value='${datatype}']"
+    select_datatype_option_not_matching: "#pja__${output}__ChangeDatatypeAction__newtype [data-option-value]:not([data-option-value*='${text}' i])"
+    selected_datatype: "#pja__${output}__ChangeDatatypeAction__newtype [data-selected-value]"
     add_tags_button:
       type: xpath
       selector: >
@@ -1246,7 +1255,29 @@ custom_tools:
     save_button:
       selector: 'save custom tool'
       type: data-description
+    clear_button:
+      selector: 'clear custom tool'
+      type: data-description
+    editor: '.custom-tool-editor .monaco-editor'
+    editor_content: '.custom-tool-editor .view-lines'
     tool_link: "#g-card-custom-tool-${tool_uuid}"
+    documentation_button:
+      selector: 'toggle tool documentation'
+      type: data-description
+    documentation_panel: '#custom-tool-documentation-panel'
+    documentation_content: '[aria-label="Tool documentation"]'
+    editor_pane: '[aria-label="Tool editor"]'
+    documentation_expand_button:
+      selector: 'toggle expanded documentation'
+      type: data-description
+    help_section_toggle:
+      selector: 'toggle help section ${section_id}'
+      type: data-description
+    help_section: '#${section_id}'
+    help_section_link: '#${section_id} a[href="#${target_id}"]'
+    example: '#${section_id} .authoring-code-example'
+    example_label: '#${section_id} .authoring-code-example-label'
+    example_copy_button: '#${section_id} .authoring-code-example-copy'
 
 admin:
   allowlist:
@@ -1286,15 +1317,32 @@ admin:
   toolshed:
     selectors:
       repo_search: '#toolshed-repo-search'
-      search_results: '#shed-search-results'
-      upgrade_notification: '#repository-table .badge'
+      search_results: '#g-table-shed-search-results'
+      upgrade_notification: '#g-table-repository-table .badge'
 
   quota:
     selectors:
       add_new: '[data-description="grid action create new quota"]'
       items: '#quotas-grid table tr'
-      add_form: "[url='/admin/create_quota']"
-      add_form_submit: "[url='/admin/create_quota'] #submit:not([aria-disabled])"
+      form: '#admin-quota-form'
+      source_label: '#admin-quota-source-label'
+      groups: '#admin-quota-groups .multiselect'
+      groups_input: '#admin-quota-groups input.multiselect__input'
+      group_option:
+        type: xpath
+        selector: "//div[@id='admin-quota-groups']//span[contains(@class, 'multiselect__option')]/span[text()='${name}']"
+      users: '#admin-quota-users .multiselect'
+      users_input: '#admin-quota-users input.multiselect__input'
+      user_option:
+        type: xpath
+        selector: "//div[@id='admin-quota-users']//span[contains(@class, 'multiselect__option')]/span[text()='${email}']"
+      selected_user:
+        type: xpath
+        selector: "//div[@id='admin-quota-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]"
+      remove_selected_user:
+        type: xpath
+        selector: "//div[@id='admin-quota-users']//span[contains(@class, 'multiselect__tag')][span[text()='${email}']]/i[contains(@class, 'multiselect__tag-icon')]"
+      submit: '#admin-quota-submit'
 
   index:
     selectors:
@@ -1412,7 +1460,7 @@ libraries:
       input_folder_description: '.input_folder_description'
       download_button: '#download-btn'
       delete_btn: '.toolbtn-bulk-delete'
-      toast_msg: '.b-toast'
+      toast_msg: '[data-description="toast message"]'
       alert_not_exists_user_import_dir:
         type: xpath
         selector: //div[contains(@class, "alert-danger") and contains(normalize-space(text()), "Your user import directory does not exist")]

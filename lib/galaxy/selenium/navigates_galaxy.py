@@ -22,6 +22,7 @@ from typing import (
     cast,
     Literal,
     NamedTuple,
+    Protocol,
     TYPE_CHECKING,
 )
 
@@ -29,9 +30,9 @@ import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
-from .playwright_element import (
-    _SELENIUM_KEY_TO_PLAYWRIGHT,
-    _SELENIUM_MODIFIERS,
+from .selenium_keys import (
+    SELENIUM_KEY_TO_PLAYWRIGHT,
+    SELENIUM_MODIFIERS,
 )
 
 if TYPE_CHECKING:
@@ -48,7 +49,10 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,
 )
-from galaxy.util.wait import wait_on
+from galaxy.util.wait import (
+    TimeoutAssertionError,
+    wait_on,
+)
 from .has_driver import (
     exception_indicates_click_intercepted,
     exception_indicates_not_clickable,
@@ -115,8 +119,12 @@ def galaxy_timeout_handler(timeout_multiplier: float = 1):
 DEFAULT_WAIT_TYPE = WAIT_TYPES.DATABASE_OPERATION
 
 
-class NullTourCallback:
-    def handle_step(self, step, step_index: int):
+class TourCallbackProtocol(Protocol):
+    def handle_step(self, step: dict[str, Any], step_index: int) -> None: ...
+
+
+class NullTourCallback(TourCallbackProtocol):
+    def handle_step(self, step: dict[str, Any], step_index: int) -> None:
         pass
 
 
@@ -584,9 +592,26 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.history_panel_create_new()
         self.history_panel_rename(name)
 
+        # A rename typed while the panel is still swapping histories is dropped silently,
+        # leaving "Unnamed history" behind to fail a name lookup in some later test.
+        def renamed(driver=None):
+            return True if self.current_history()["name"] == name else None
+
+        self._wait_on(renamed, f"current history name to become [{name}]", wait_type=WAIT_TYPES.DATABASE_OPERATION)
+
     def history_panel_create_new(self):
-        """Click create new and pause a bit for the history to begin to refresh."""
+        """Click create new and wait for the new history to become the current one."""
+        previous_history_id = self.current_history_id()
         self.history_click_create_new()
+
+        # Callers act on whichever history is current, so wait for the switch rather than
+        # trusting a fixed render delay.
+        def switched(driver=None):
+            return True if self.current_history_id() != previous_history_id else None
+
+        self._wait_on(
+            switched, "current history to switch to the newly created history", wait_type=WAIT_TYPES.DATABASE_OPERATION
+        )
         self.sleep_for(WAIT_TYPES.UX_RENDER)
 
     def history_panel_wait_for_hid_ok(self, hid, allowed_force_refreshes=0):
@@ -613,7 +638,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     ):
         if timeout is None:
             timeout = self.wait_length(wait_type=wait_type)
-        return wait_on(f, on_str or "custom wait", timeout)
+        # Keep polling on any falsy result, like Selenium's WebDriverWait; wait_on alone
+        # stops on anything but None, so a condition returning False would not wait at all.
+        return wait_on(lambda: f() or None, on_str or "custom wait", timeout)
 
     def wait_for_history_to_have_hid(self, history_id, hid):
         def get_hids():
@@ -784,7 +811,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         action_element = target_card.find_element(By.CSS_SELECTOR, action_selector)
         # Hover over parent card first to activate hover state in headless mode
-        self.action_chains().move_to_element(target_card).perform()
+        self.hover(target_card)
         self.move_to_and_click(action_element)
 
     def edit_dataset_dbkey(self, dbkey_text):
@@ -1261,6 +1288,35 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         license_selector_option = self.components.workflow_editor.license_selector_option
         license_selector_option.wait_for_and_click()
 
+    def workflow_editor_change_output_datatype(self, output: str, datatype: str) -> None:
+        """Pick ``datatype`` in the "Change datatype" multiselect of the output card for ``output``.
+
+        Typing into the search box re-filters the option list asynchronously and vue-multiselect
+        keys its option elements by index, so an option located before the filtered list is
+        rendered stays attached but ends up bound to whichever datatype occupies that index
+        afterwards. Only click once every option that does not match the search text is gone, then
+        check what the control reports as selected.
+        """
+        editor = self.components.workflow_editor
+        editor.change_datatype(output=output).wait_for_and_click()
+        editor.select_datatype_text_search(output=output).wait_for_and_send_keys(datatype)
+        editor.select_datatype_option_not_matching(output=output, text=datatype).wait_for_absent()
+        editor.select_datatype(output=output, datatype=datatype).wait_for_and_click()
+
+        selected = editor.selected_datatype(output=output)
+        selected.wait_for_present()
+        try:
+            self._wait_on(
+                lambda: selected.data_value("selected-value") == datatype or None,
+                f"'Change datatype' selection for output [{output}] to be [{datatype}]",
+                wait_type=WAIT_TYPES.UX_TRANSITION,
+            )
+        except TimeoutAssertionError as e:
+            raise AssertionError(
+                f"Selected [{selected.data_value('selected-value')}] in 'Change datatype' for "
+                f"output [{output}] instead of [{datatype}]"
+            ) from e
+
     def workflow_editor_license_text(self) -> str:
         editor = self.components.workflow_editor
         editor.license_selector.wait_for_visible()
@@ -1305,10 +1361,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         found_option = False
         for option_element in option_elements:
             if option_label in option_element.text:
-                action_chains = self.action_chains()
-                action_chains.move_to_element(option_element)
-                action_chains.click()
-                action_chains.perform()
+                self.move_to_and_click(option_element)
                 found_option = True
                 break
 
@@ -1367,12 +1420,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         )
         self.sleep_for(self.wait_types.UX_RENDER)
         # seems like a Galaxy bug that these enter's are needed? - they are not when manually inputting things a human speeds
+        # only send them to <input> fields - the description is a <textarea> where ENTER inserts a literal newline
         self.send_enter(elem)
-        elem = editor.column_definition_description_by_index(index=index).wait_for_and_clear_and_send_keys(
+        editor.column_definition_description_by_index(index=index).wait_for_and_clear_and_send_keys(
             column_definition.description
         )
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.send_enter(elem)
         component = editor.column_definition_type_by_index(index=index)
         self.select_set_value(component, column_definition.type)
         self.sleep_for(self.wait_types.UX_RENDER)
@@ -1499,24 +1552,36 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         quota_component = admin_component.quota
 
         quota_component.add_new.wait_for_and_click()
-        form = quota_component.add_form.wait_for_visible()
+        form = quota_component.form.wait_for_visible()
 
         name = name or self._get_random_name()
         description = description or f"quota description for {name}"
-        amount = amount or ""
+        amount = amount or "unlimited"
         self.fill(
             form,
             {
-                "name": name,
-                "description": description,
-                "amount": amount,
+                "admin-quota-name": name,
+                "admin-quota-description": description,
+                "admin-quota-amount": amount,
             },
         )
         if quota_source_label:
-            self.select_set_value("#quota_source_label", quota_source_label)
+            self.select_set_value(quota_component.source_label, quota_source_label)
         if user:
-            self.select_set_value("#in_users", user, multiple=True)
-        quota_component.add_form_submit.wait_for_and_click()
+            self.quota_form_add_user(user)
+        quota_component.submit.wait_for_and_click()
+
+    def quota_form_add_user(self, email: str):
+        quota_component = self.components.admin.quota
+        quota_component.users.wait_for_and_click()
+        quota_component.users_input.wait_for_and_send_keys(email)
+        quota_component.user_option(email=email).wait_for_and_click()
+
+    def quota_form_add_group(self, name: str):
+        quota_component = self.components.admin.quota
+        quota_component.groups.wait_for_and_click()
+        quota_component.groups_input.wait_for_and_send_keys(name)
+        quota_component.group_option(name=name).wait_for_and_click()
 
     def select_dataset_from_lib_import_modal(self, filenames):
         self.wait_for_selector_visible(".directory-dataset-picker-list")
@@ -1652,14 +1717,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.wait_for_selector_absent_or_hidden(".toast", wait_type=WAIT_TYPES.UX_POPUP)
 
     def clear_tooltips(self, selector_to_move="#center"):
-        if self.backend_type == "selenium":
-            action_chains = self.action_chains()
-            center_element = self.find_element_by_selector(selector_to_move)
-            action_chains.move_to_element(center_element).perform()
-        else:
-            page = self.page
-            center_element = page.locator(selector_to_move)
-            center_element.hover(force=True)
+        self.hover(self.find_element_by_selector(selector_to_move))
         self.wait_for_selector_absent_or_hidden(".g-tooltip-d", wait_type=WAIT_TYPES.UX_POPUP)
 
     def pages_index_table_elements(self):
@@ -1722,8 +1780,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def workflow_rename(self, new_name, workflow_index=0):
         workflow = self.workflow_card_element(workflow_index=workflow_index)
-        action_chains = self.action_chains()
-        action_chains.move_to_element(workflow).perform()
+        self.hover(workflow)
         workflow.find_element(By.CSS_SELECTOR, ".g-card-rename").click()
         self.rename_modal_rename("workflow", new_name)
 
@@ -1851,17 +1908,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         workflow_run.run_workflow.wait_for_visible()
         if workflow_run.expanded_form.is_absent:
             workflow_run.runtime_setting_button.wait_for_and_click()
-            # Wait for the settings panel slideDown animation (0.2s) to complete
-            self.sleep_for(self.wait_types.UX_RENDER)
             expand_link = workflow_run.expand_form_link.wait_for_clickable()
-            # Use ActionChains for Selenium - regular click doesn't work reliably
-            # on GButton components due to internal tooltip element.
-            # Playwright doesn't have this issue and doesn't support ActionChains.
-            if self.backend_type == "selenium":
-                ac = self.action_chains()
-                ac.move_to_element(expand_link).click().perform()
-            else:
-                expand_link.click()
+            # A plain click doesn't work reliably on GButton components due to
+            # an internal tooltip element - move to the element first.
+            self.move_to_and_click(expand_link)
             workflow_run.expanded_form.wait_for_visible()
 
     def workflow_create_new(
@@ -2607,7 +2657,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             not self.is_logged_in()
         ), "Clicked to logged out and UI reflects a logout, but API still thinks a user is logged in."
 
-    def run_tour(self, path, skip_steps=None, sleep_on_steps=None, tour_callback=None):
+    def run_tour(
+        self,
+        path: str,
+        skip_steps: list[str] | None = None,
+        sleep_on_steps: dict[str, int | float] | None = None,
+        tour_callback: TourCallbackProtocol | None = None,
+    ) -> None:
         skip_steps = skip_steps or []
         sleep_on_steps = sleep_on_steps or {}
         if tour_callback is None:
@@ -2642,9 +2698,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         last_timeout: SeleniumTimeoutException | None = None
         for _ in range(2):
             if not tooltip_component.is_absent:
-                move_away_chain = self.action_chains()
-                move_away_chain.move_by_offset(100, 100)
-                move_away_chain.perform()
+                self.hover_away()
             try:
                 tooltip_component.wait_for_absent()
                 return
@@ -2658,9 +2712,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def get_tooltip_text(self, element, sleep=0, click_away=True):
         tooltip_balloon = self.components._.tooltip_balloon
         self._clear_tooltip(tooltip_balloon)
-        action_chains = self.action_chains()
-        action_chains.move_to_element(element)
-        action_chains.perform()
+        self.hover(element)
 
         if sleep > 0:
             time.sleep(sleep)
@@ -2733,7 +2785,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def assert_no_error_message(self):
         self.components._.messages.error.assert_absent_or_hidden()
 
-    def run_tour_step(self, step, step_index: int, tour_callback):
+    def run_tour_step(self, step: dict[str, Any], step_index: int, tour_callback: TourCallbackProtocol) -> None:
         element_str = step.get("element", None)
         if element_str is None:
             component = step.get("component", None)
@@ -2992,14 +3044,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
             page = pw_driver.page
             all_chars = "".join(str(v) for v in value)
-            has_special = any(c in _SELENIUM_KEY_TO_PLAYWRIGHT for c in all_chars)
+            has_special = any(c in SELENIUM_KEY_TO_PLAYWRIGHT for c in all_chars)
             if not has_special:
                 page.keyboard.type(all_chars)
             else:
                 modifiers: list[str] = []
                 for char in all_chars:
-                    pw_key = _SELENIUM_KEY_TO_PLAYWRIGHT.get(char)
-                    if pw_key and char in _SELENIUM_MODIFIERS:
+                    pw_key = SELENIUM_KEY_TO_PLAYWRIGHT.get(char)
+                    if pw_key and char in SELENIUM_MODIFIERS:
                         modifiers.append(pw_key)
                     elif pw_key:
                         combo = "+".join(modifiers + [pw_key])

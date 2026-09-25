@@ -132,6 +132,7 @@ class ConfigSerializer(base.ModelSerializer):
             "logo_url": _use_config,
             "logo_src": _use_config,
             "logo_src_secondary": _use_config,
+            "subdomain_switcher": _use_config,
             "terms_url": _use_config,
             "wiki_url": _use_config,
             "screencasts_url": _use_config,

@@ -39,7 +39,7 @@
 
         <div v-if="items.length" class="external-subheading">
             <h2 class="h-md">Connected External Identities</h2>
-            <b-button
+            <GButton
                 v-for="item in items"
                 :key="item.email"
                 aria-label="Disconnect External Identity"
@@ -48,7 +48,7 @@
                 @click="onDisconnect(item)">
                 Disconnect {{ capitalizeAsTitle(item.provider_label) }} -
                 {{ item.email }}
-            </b-button>
+            </GButton>
 
             <b-alert
                 dismissible
@@ -81,6 +81,7 @@ import { capitalizeFirstLetter } from "@/utils/strings";
 
 import svc from "./service";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
@@ -88,6 +89,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         ExternalLogin,
+        GButton,
     },
     setup() {
         const { confirm } = useConfirmDialog();

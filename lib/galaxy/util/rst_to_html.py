@@ -63,7 +63,7 @@ _publish_lock = threading.Lock()
 
 
 @functools.cache
-def rst_to_html(s, error=False):
+def rst_to_html(s, error=False) -> str:
     if docutils is None:
         raise Exception("Attempted to use rst_to_html but docutils unavailable.")
 

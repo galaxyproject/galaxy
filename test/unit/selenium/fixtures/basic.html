@@ -106,6 +106,16 @@
     <div id="mousedown-target">Press me</div>
     <div id="mousedown-indicator" class="hidden">Mousedown detected!</div>
 
+    <!-- Drag and drop testing elements -->
+    <div id="drag-source" draggable="true">Drag me</div>
+    <div id="drop-target">Drop here</div>
+
+    <!-- Drop target that re-renders its contents when a drag enters, the way a
+         v-if swap does. The inner box is what a caller grabs before dragging. -->
+    <div id="rerender-drop-zone">
+      <div id="rerender-inner">Drop here too</div>
+    </div>
+
     <!-- Frame for iframe testing -->
     <iframe
       name="frame"
@@ -150,6 +160,45 @@
           result.textContent = "Form submitted!";
           document.body.appendChild(result);
         });
+
+      // Drag and drop handlers
+      document
+        .getElementById("drag-source")
+        .addEventListener("dragstart", function (e) {
+          e.dataTransfer.setData("text/plain", "dragged-payload");
+        });
+
+      const dropTarget = document.getElementById("drop-target");
+      dropTarget.addEventListener("dragover", function (e) {
+        e.preventDefault();
+      });
+      dropTarget.addEventListener("drop", function (e) {
+        e.preventDefault();
+        dropTarget.textContent =
+          "Dropped: " + e.dataTransfer.getData("text/plain");
+      });
+
+      // The zone listens, but dragenter replaces the inner box the caller is
+      // holding a reference to - so a non-atomic event sequence loses the drop.
+      const rerenderZone = document.getElementById("rerender-drop-zone");
+      rerenderZone.addEventListener("dragenter", function () {
+        const inner = document.getElementById("rerender-inner");
+        if (inner) {
+          inner.remove();
+          const replacement = document.createElement("div");
+          replacement.id = "rerender-replacement";
+          replacement.textContent = "Release to drop";
+          rerenderZone.appendChild(replacement);
+        }
+      });
+      rerenderZone.addEventListener("dragover", function (e) {
+        e.preventDefault();
+      });
+      rerenderZone.addEventListener("drop", function (e) {
+        e.preventDefault();
+        rerenderZone.textContent =
+          "Dropped: " + e.dataTransfer.getData("text/plain");
+      });
     </script>
   </body>
 </html>

@@ -381,6 +381,39 @@ describe("usePageEditorStore", () => {
             expect(store.isDirty).toBe(false);
         });
 
+        it("keeps edits made during a save dirty", async () => {
+            let releaseSave: () => void = () => {};
+            const saveCanFinish = new Promise<void>((resolve) => {
+                releaseSave = resolve;
+            });
+            const updatedDetails: HistoryPageDetails = {
+                ...TEST_PAGE_DETAILS,
+                content: "submitted content",
+                update_time: "2025-06-16T09:00:00Z",
+            };
+            server.use(
+                http.get("/api/pages/{id}", ({ response }: any) => {
+                    return response(200).json(TEST_PAGE_DETAILS);
+                }) as any,
+                http.put("/api/pages/{id}", async ({ response }: any) => {
+                    await saveCanFinish;
+                    return response(200).json(updatedDetails);
+                }) as any,
+            );
+            const store = usePageEditorStore();
+            store.setCurrentContext(TEST_HISTORY_ID);
+            await store.loadPageById(TEST_PAGE_ID);
+            store.updateContent("submitted content");
+
+            const savePromise = store.savePage();
+            store.updateContent("newer content");
+            releaseSave();
+            await savePromise;
+
+            expect(store.currentContent).toBe("newer content");
+            expect(store.isDirty).toBe(true);
+        });
+
         it("sets isSaving during save", async () => {
             server.use(
                 http.get("/api/pages/{id}", ({ response }: any) => {

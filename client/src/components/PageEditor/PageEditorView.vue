@@ -5,17 +5,16 @@ import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-// import { getGalaxyInstance } from "@/app";
-// import type { RouterPushOptions } from "@/components/History/Content/router-push-options";
 import { PAGE_LABELS } from "@/components/Page/constants";
 import { useConfirmDialog } from "@/composables/confirmDialog.js";
-import { useWindowAwareNavigation } from "@/composables/windowAwareNavigation";
+import { pushIgnoringNavCancel, useWindowAwareNavigation } from "@/composables/windowAwareNavigation";
 import { useHistoryStore } from "@/stores/historyStore";
 import { type PageEditorMode, usePageEditorStore } from "@/stores/pageEditorStore";
 import { useUserStore } from "@/stores/userStore.js";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GModal from "../BaseComponents/GModal.vue";
+import SaveChangesModal from "../Common/SaveChangesModal.vue";
 import ObjectPermissionsModal from "./ObjectPermissionsModal.vue";
 import PageDisplayOnly from "./PageDisplayOnly.vue";
 import PageDisplayToolbar from "./PageDisplayToolbar.vue";
@@ -73,6 +72,8 @@ const isOwnedPage = computed(() => userStore.matchesCurrentUsername(store.curren
 
 const showPermissions = ref(false);
 
+const saveChangesModal = ref<{ guardNavigation: (navigate: () => void) => void } | null>(null);
+
 onMounted(async () => {
     store.mode = editorMode.value;
     if (props.historyId) {
@@ -82,12 +83,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-    if (!props.displayOnly) {
-        // Clear editor-scoped state but leave store.error alone so a save failure
-        // remains visible across the transient unmount/remount that error-state
-        // re-renders trigger in the parent.
-        store.clearCurrentPage();
-    }
+    store.clearCurrentPage();
 });
 
 watch(
@@ -100,13 +96,12 @@ watch(
 );
 
 function handleBack() {
-    store.clearCurrentPage();
     if (props.invocationId) {
-        router.push(`/workflows/invocations/${props.invocationId}/reports`);
+        pushIgnoringNavCancel(router, `/workflows/invocations/${props.invocationId}/reports`);
     } else if (props.historyId) {
-        router.push(`/histories/${props.historyId}/pages`);
+        pushIgnoringNavCancel(router, `/histories/${props.historyId}/pages`);
     } else {
-        router.push("/pages/list");
+        pushIgnoringNavCancel(router, "/pages/list");
     }
 }
 
@@ -123,11 +118,10 @@ function handlePreview() {
         inlineUrl = `/pages/editor?id=${props.pageId}&displayOnly=true`;
     }
 
-    pushToFrameOrPage({
-        framedUrl,
-        inlineUrl,
-        title: `${labels.value.entityName}: ${store.currentTitle || labels.value.defaultTitle}`,
-    });
+    const title = `${labels.value.entityName}: ${store.currentTitle || labels.value.defaultTitle}`;
+    // With the window manager active this opens a frame rather than navigating, so the
+    // router guards never see it -- ask the modal directly.
+    saveChangesModal.value?.guardNavigation(() => pushToFrameOrPage({ framedUrl, inlineUrl, title }));
 }
 
 async function handleEdit() {
@@ -158,40 +152,12 @@ async function handleEdit() {
 
     if (editingPageId) {
         if (props.historyId) {
-            router.push(`/histories/${props.historyId}/pages/${editingPageId}`);
+            pushIgnoringNavCancel(router, `/histories/${props.historyId}/pages/${editingPageId}`);
         } else {
-            router.push(`/pages/editor?id=${editingPageId}`);
+            pushIgnoringNavCancel(router, `/pages/editor?id=${editingPageId}`);
         }
     }
 }
-
-// TODO: Uncomment when router guards with unsaved changes protection are implemented
-//       Before, we had a Save & View button that is now removed.
-// async function handleSaveAndView() {
-//     await store.savePage();
-//     if (props.invocationId) {
-//         router.push(`/workflows/invocations/${props.invocationId}/reports?id=${props.pageId}`);
-//         return;
-//     }
-//     if (store.currentPage) {
-//         const Galaxy = getGalaxyInstance();
-//         const isWmActive = Galaxy?.frame?.active;
-//         if (isWmActive) {
-//             const url = `/published/page?id=${props.pageId}&embed=true`;
-//             const options: RouterPushOptions = {
-//                 title: `${labels.value.entityName}: ${store.currentTitle || labels.value.defaultTitle}`,
-//                 preventWindowManager: false,
-//             };
-//             // @ts-ignore - monkeypatched router
-//             router.push(url, options);
-//         } else {
-//             const data = store.currentPage as any;
-//             if (data.username && data.slug) {
-//                 window.location.href = `/u/${data.username}/p/${data.slug}`;
-//             }
-//         }
-//     }
-// }
 
 function handleContentUpdate(newContent: string) {
     store.updateContent(newContent);
@@ -209,6 +175,12 @@ function handleRevisionRestore(revisionId: string) {
 
 <template>
     <div class="page-editor-view d-flex flex-column h-100" data-description="page editor view">
+        <SaveChangesModal
+            ref="saveChangesModal"
+            :has-changes="store.isDirty"
+            :on-save="() => store.savePage()"
+            :on-discard="() => store.discardChanges()" />
+
         <BAlert v-if="store.error" variant="danger" show dismissible @dismissed="store.error = null">
             {{ store.error }}
         </BAlert>

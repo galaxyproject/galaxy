@@ -18,6 +18,7 @@ from requests import get
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.objectstore import (
+    DeviceSourceMap,
     ObjectStoreAuth,
     persist_extra_files_for_dataset,
 )
@@ -47,6 +48,30 @@ from galaxy.util import (
     unlink,
 )
 from galaxy.util.unittest_utils import skip_unless_environ
+
+
+def test_persist_extra_files_skips_symlink_outside_source_directory(tmp_path):
+    extra_files_path = tmp_path / "extra"
+    extra_files_path.mkdir()
+    valid_path = extra_files_path / "valid.txt"
+    valid_path.write_text("valid")
+    outside_path = tmp_path / "outside.txt"
+    outside_path.write_text("outside")
+    (extra_files_path / "escaped.txt").symlink_to(outside_path)
+
+    with TestConfig(DISK_TEST_CONFIG) as (_directory, object_store):
+        dataset = MockDataset(1)
+        object_store.create(dataset)
+        persist_extra_files_for_dataset(
+            object_store,
+            extra_files_path,
+            dataset,  # type: ignore[arg-type,unused-ignore]
+            dataset._extra_files_rel_path,
+        )
+
+        persisted_extra_files = _extra_file_path(object_store, dataset)
+        assert open(os.path.join(persisted_extra_files, "valid.txt")).read() == "valid"
+        assert not os.path.lexists(os.path.join(persisted_extra_files, "escaped.txt"))
 
 
 # Unit testing the cloud and advanced infrastructure object stores is difficult, but
@@ -510,6 +535,16 @@ def test_distributed_store():
             assert device_source_map
             assert device_source_map.get_device_id("files1") == "primary_disk"
             assert device_source_map.get_device_id("files2") == "primary_disk"
+
+
+def test_device_source_map_user_object_store():
+    """User-defined object stores return their own ID as the device ID."""
+
+    device_map = DeviceSourceMap()
+    user_store_id = "user_objects://abc123"
+    assert device_map.get_device_id(user_store_id) == user_store_id
+    # A non-existent, non-user store still falls back to the default (None).
+    assert device_map.get_device_id("does_not_exist") is None
 
 
 def test_distributed_store_empty_cache_targets():
@@ -1286,6 +1321,13 @@ def test_config_parse_boto3_separated_transfer_options():
 
 CLOUD_AWS_TEST_CONFIG = get_example("cloud_aws_simple.xml")
 CLOUD_AWS_TEST_CONFIG_YAML = get_example("cloud_aws_simple.yml")
+CLOUD_AWS_CUSTOM_ENDPOINT = "http://127.0.0.1:9000"
+CLOUD_AWS_CUSTOM_ENDPOINT_TEST_CONFIG = CLOUD_AWS_TEST_CONFIG.replace(
+    "<bucket ", f'<connection endpoint_url="{CLOUD_AWS_CUSTOM_ENDPOINT}" />\n     <bucket ', 1
+)
+CLOUD_AWS_CUSTOM_ENDPOINT_TEST_CONFIG_YAML = CLOUD_AWS_TEST_CONFIG_YAML.replace(
+    "\nbucket:\n", f"\nconnection:\n  endpoint_url: {CLOUD_AWS_CUSTOM_ENDPOINT}\n\nbucket:\n", 1
+)
 
 CLOUD_AZURE_TEST_CONFIG = get_example("cloud_azure_simple.xml")
 CLOUD_AZURE_TEST_CONFIG_YAML = get_example("cloud_azure_simple.yml")
@@ -1350,6 +1392,32 @@ def test_config_parse_cloud():
 
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_cloud_aws_custom_endpoint():
+    for config_str in [CLOUD_AWS_CUSTOM_ENDPOINT_TEST_CONFIG, CLOUD_AWS_CUSTOM_ENDPOINT_TEST_CONFIG_YAML]:
+        with TestConfig(config_str) as (_, object_store):
+            assert object_store.endpoint_url == CLOUD_AWS_CUSTOM_ENDPOINT
+            assert object_store.to_dict()["connection"]["endpoint_url"] == CLOUD_AWS_CUSTOM_ENDPOINT
+
+            with (
+                patch("galaxy.objectstore.cloud.CloudProviderFactory") as provider_factory,
+                patch("galaxy.objectstore.cloud.ProviderList") as providers,
+            ):
+                connection = object_store._get_connection(
+                    object_store.provider, object_store.credentials, object_store.endpoint_url
+                )
+
+            assert connection is provider_factory.return_value.create_provider.return_value
+            provider_factory.return_value.create_provider.assert_called_once_with(
+                providers.AWS,
+                {
+                    "aws_access_key": "access_moo",
+                    "aws_secret_key": "secret_cow",
+                    "s3_endpoint_url": CLOUD_AWS_CUSTOM_ENDPOINT,
+                },
+            )
 
 
 CLOUD_AWS_NO_AUTH_TEST_CONFIG = get_example("cloud_aws_no_auth.xml")

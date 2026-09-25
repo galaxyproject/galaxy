@@ -39,8 +39,8 @@ if (!latestResponse.value || Object.keys(latestResponse.value).length === 0) {
                 <ToolEntryPoints v-for="job in jobResponse.jobs" :key="job.id" :job-id="job.id" />
             </div>
             <ToolSuccessMessage :job-response="jobResponse" :tool-name="toolName || '...'" />
-            <Webhook v-if="jobDef" type="tool" :tool-id="jobDef.tool_id" />
-            <ToolRecommendation v-if="showRecommendation && jobDef" :tool-id="jobDef.tool_id" />
+            <Webhook v-if="jobDef" type="tool" :tool-id="jobDef.tool_id || undefined" />
+            <ToolRecommendation v-if="showRecommendation && jobDef?.tool_id" :tool-id="jobDef.tool_id" />
         </div>
     </section>
 </template>

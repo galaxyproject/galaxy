@@ -3,10 +3,6 @@
 set -ex
 
 PACKAGE_LIST_FILE=packages_by_dep_dag.txt
-# uv's default index strategy (first-match) won't check other indexes once a package is found,
-# unlike pip which merges all indexes. Use unsafe-best-match to get pip-like behavior and
-# allow wheels.galaxyproject.org wheels to be preferred over PyPI source distributions.
-: "${PIP_EXTRA_ARGS:=--index-strategy unsafe-best-match --extra-index-url https://wheels.galaxyproject.org/simple}"
 FOR_PULSAR=0
 SKIP_PACKAGES=(
     web_client
@@ -43,11 +39,14 @@ if command -v uv >/dev/null; then
     PIP_CMD="$(command -v uv) pip"
     BUILD_WHEEL_CMD="$(command -v uv) build"
     TWINE_CMD="$(command -v uvx) twine"
+    export UV_EXTRA_INDEX_URL=https://wheels.galaxyproject.org/simple
+    export UV_INDEX_STRATEGY=unsafe-best-match
 else
     VENV_CMD="$TEST_PYTHON -m venv"
     PIP_CMD='python -m pip'
     BUILD_WHEEL_CMD='python -m build'
     TWINE_CMD=twine
+    export PIP_EXTRA_INDEX_URL=https://wheels.galaxyproject.org/simple
 fi
 
 # Ensure ordered by dependency DAG
@@ -79,15 +78,14 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
     fi
 
     # Install extras (if needed)
-    # shellcheck disable=SC2086 # word splitting is intentional for PIP_EXTRA_ARGS
     if [ "$package_dir" = "util" ]; then
-        ${PIP_CMD} install ${PIP_EXTRA_ARGS} '.[image-util,template,jstree,config-template,test]'
+        ${PIP_CMD} install '.[image-util,template,jstree,config-template,test]'
     elif [ "$package_dir" = "tool_util" ]; then
-        ${PIP_CMD} install ${PIP_EXTRA_ARGS} '.[cwl,mulled,edam,extended-assertions,test]'
+        ${PIP_CMD} install '.[cwl,mulled,edam,extended-assertions,test]'
     elif grep -q '^test = \[' pyproject.toml 2>/dev/null; then
-        ${PIP_CMD} install ${PIP_EXTRA_ARGS} '.[test]'
+        ${PIP_CMD} install '.[test]'
     else
-        ${PIP_CMD} install ${PIP_EXTRA_ARGS} .
+        ${PIP_CMD} install .
     fi
 
     if [ $FOR_PULSAR -eq 0 ]; then
@@ -98,8 +96,7 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
     # Ignore exit code 5 (no tests ran)
     pytest "${marker_args[@]}" . || test $? -eq 5
     if [ $FOR_PULSAR -eq 0 ]; then
-        # shellcheck disable=SC2086 # word splitting is intentional for PIP_EXTRA_ARGS
-        ${PIP_CMD} install ${PIP_EXTRA_ARGS} -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
+        ${PIP_CMD} install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
         # make mypy uses uv now and so this legacy code should just run mypy
         # directly to use the venv we have already activated
         cd src
@@ -109,9 +106,7 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
             mypy tests
         fi
 
-        # shellcheck disable=SC2086 - word splitting is intentional for BUILD_WHEEL_CMD
         ${BUILD_WHEEL_CMD} -o dist
-        # shellcheck disable=SC2086 - word splitting is intentional for TWINE_CMD
         ${TWINE_CMD} check dist/*
     fi
     cd ..

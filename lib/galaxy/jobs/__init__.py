@@ -87,7 +87,10 @@ from galaxy.model import (
     Task,
 )
 from galaxy.model.store import copy_dataset_instance_metadata_attributes
-from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
+from galaxy.model.store.discover import (
+    MaxDiscoveredFilesExceededError,
+    OutputCollectionSecurityError,
+)
 from galaxy.objectstore import (
     is_user_object_store,
     ObjectStorePopulator,
@@ -99,6 +102,7 @@ from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
+    output_discovery_job_message,
 )
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tools.evaluation import (
@@ -119,6 +123,7 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.path import external_chown
+from galaxy.util.properties import running_from_source
 from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
 from galaxy.work.context import WorkRequestContext
@@ -1213,13 +1218,18 @@ class MinimalJobWrapper(HasResourceParameters):
 
     @property
     def galaxy_lib_dir(self):
-        if self.__galaxy_lib_dir is None:
+        if self.__galaxy_lib_dir is None and running_from_source:
             self.__galaxy_lib_dir = os.path.abspath("lib")  # cwd = galaxy root
         return self.__galaxy_lib_dir
 
     @property
     def galaxy_virtual_env(self):
-        return os.environ.get("VIRTUAL_ENV", None)
+        virtual_env = os.environ.get("VIRTUAL_ENV")
+        if virtual_env:
+            return virtual_env
+        if sys.prefix != sys.base_prefix:
+            return sys.prefix
+        return None
 
     # legacy naming
     get_job_runner = get_job_runner_url
@@ -1607,7 +1617,7 @@ class MinimalJobWrapper(HasResourceParameters):
         self.sa_session.add(job)
         self.sa_session.commit()
 
-    def change_state(self, state, info=False, flush=True, job=None):
+    def change_state(self, state, info=False, flush=True, job=None, update_output_states=True):
         if job is None:
             job = self.get_job()
             self.sa_session.refresh(job)
@@ -1629,7 +1639,7 @@ class MinimalJobWrapper(HasResourceParameters):
             job.info = info
         state_changed = job.set_state(state)
         self.sa_session.add(job)
-        if state_changed:
+        if state_changed and update_output_states:
             job.update_output_states(self.app.application_stack.supports_skip_locked())
         if flush:
             self.sa_session.commit()
@@ -1687,7 +1697,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 if tag_limit := destination_total_concurrent_jobs.get(tag):
                     destination_tag_limits[tag] = tag_limit
 
-        conditions = [Job.id == job.id]
+        conditions = [Job.id == job.id, Job.state.in_((Job.states.NEW, Job.states.RESUBMITTED))]
 
         if job.user_id:
             user_job_count = (
@@ -1799,12 +1809,16 @@ class MinimalJobWrapper(HasResourceParameters):
             )
         )
 
+        # Not committed here: the row lock taken by this update is held until enqueue()
+        # commits, so a concurrent job deletion cannot land between queueing and
+        # update_output_states() and have its dataset state and info overwritten.
         result = cast(CursorResult, self.sa_session.execute(update_stmt))
-        self.sa_session.commit()
         state_updated = result.rowcount > 0
         if state_updated:
             self.sa_session.refresh(job)
             job.state_history.append(model.JobStateHistory(job=job))
+        else:
+            self.sa_session.commit()
 
         return state_updated
 
@@ -2211,9 +2225,11 @@ class MinimalJobWrapper(HasResourceParameters):
                     user=job.user,
                     tag_handler=self.app.tag_handler.create_tag_handler_session(job.galaxy_session),
                 )
-                import_model_store.perform_import(history=job.history, job=job)
-                if job.state == job.states.ERROR:
-                    final_job_state = job.state
+                object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
+                # The import leaves job.state untouched so nothing polling the job can see it finish before
+                # exec_after_process and the final commit below have run.
+                if object_import_tracker.job_states_by_id.get(job.id) == job.states.ERROR:
+                    final_job_state = job.states.ERROR
             except store.FileTracebackException as e:
                 job.traceback = e.traceback
                 log.exception(f"Problem generating command line for Job {job.id}.\n{job.traceback}")
@@ -2233,15 +2249,36 @@ class MinimalJobWrapper(HasResourceParameters):
             # importing metadata will discover outputs if extended metadata
             try:
                 self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
-            except (MaxDiscoveredFilesExceededError, JobOutputNameTooLongError) as e:
+            except (MaxDiscoveredFilesExceededError, JobOutputNameTooLongError, OutputCollectionSecurityError) as e:
+                log.warning("Job %s failed during output discovery: %s", job.id, e)
+                final_job_state = job.states.ERROR
+                message_type = (
+                    "output_collection_security"
+                    if isinstance(e, OutputCollectionSecurityError)
+                    else "max_discovered_files"
+                )
+                job.job_messages = [
+                    *(job.job_messages or []),
+                    {
+                        "type": message_type,
+                        "desc": str(e),
+                        "error_level": StdioErrorLevel.FATAL,
+                    },
+                ]
+            except MessageException as e:
                 log.warning("Job %s failed during output discovery: %s", job.id, e)
                 final_job_state = job.states.ERROR
                 job.job_messages = [
-                    {
-                        "type": "max_discovered_files",
-                        "desc": str(e),
-                        "error_level": StdioErrorLevel.FATAL,
-                    }
+                    *(job.job_messages or []),
+                    output_discovery_job_message(unicodify(e)),
+                ]
+            except Exception:
+                log.exception("Job %s failed unexpectedly during output discovery", job.id)
+                final_job_state = job.states.ERROR
+                job.traceback = unicodify(traceback.format_exc(), strip_null=True)
+                job.job_messages = [
+                    *(job.job_messages or []),
+                    output_discovery_job_message(),
                 ]
 
             for dataset_assoc in output_dataset_associations:
@@ -2464,9 +2501,7 @@ class MinimalJobWrapper(HasResourceParameters):
             except Exception:
                 log.exception("Could not recover job metrics")
                 return
-        per_plugin_properties = self.app.job_metrics.collect_properties(
-            job.destination_id, self.job_id, job_metrics_directory
-        )
+        per_plugin_properties = self.app.job_metrics.collect_properties(job.destination_id, job, job_metrics_directory)
         if per_plugin_properties:
             log.info(
                 f"Collecting metrics for {type(has_metrics).__name__} {getattr(has_metrics, 'id', None)} in {job_metrics_directory}"
@@ -2657,6 +2692,9 @@ class MinimalJobWrapper(HasResourceParameters):
             datatypes_config=datatypes_config,
             job_metadata=job_metadata,
             provided_metadata_style=self.tool.provided_metadata_style,
+            uses_tool_provided_metadata=self.tool.uses_tool_provided_metadata,
+            allows_unnamed_outputs=self.tool.allows_unnamed_outputs,
+            allows_external_output_paths=self.tool.allows_external_output_paths,
             object_store_conf=object_store_conf,
             tool=self.tool,
             job=job,
@@ -2854,7 +2892,9 @@ class MinimalJobWrapper(HasResourceParameters):
 
     def _report_error(self):
         job = self.get_job()
-        tool = self.app.toolbox.tool_for_job(job, check_access=False)
+        tool = self.tool
+        if tool is None and (toolbox := self.app.toolbox_or_none) is not None:
+            tool = toolbox.tool_for_job(job, check_access=False)
         for dataset in job.output_datasets:
             self.app.error_reports.default_error_plugin.submit_report(dataset, job, tool, user_submission=False)
 

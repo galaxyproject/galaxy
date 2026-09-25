@@ -29,6 +29,7 @@ from galaxy.tool_util.linters import (
 )
 from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.interface import ToolSource
+from galaxy.tool_util.parser.util import ParameterParseException
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.util import (
@@ -2597,6 +2598,34 @@ def test_linting_yml_tool(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+def test_parser_failure_does_not_abort_or_repeat():
+    lint_ctx = LintContext("silent")
+
+    def fail_to_parse(tool_source, lint_ctx):
+        raise ParameterParseException("invalid parameter")
+
+    def complete_lint(tool_source, lint_ctx):
+        lint_ctx.valid("Linting continued.")
+
+    lint_ctx.lint("FirstParser", fail_to_parse, None)
+    lint_ctx.lint("SecondParser", fail_to_parse, None)
+    lint_ctx.lint("Complete", complete_lint, None)
+
+    assert lint_ctx.error_messages == ["Tool could not be parsed: invalid parameter"]
+    assert lint_ctx.error_messages[0].linter == "ToolParse"
+    assert lint_ctx.valid_messages == ["Linting continued."]
+
+
+def test_unexpected_linter_failure_is_not_swallowed():
+    lint_ctx = LintContext("silent")
+
+    def fail_unexpectedly(tool_source, lint_ctx):
+        raise RuntimeError("unexpected failure")
+
+    with pytest.raises(RuntimeError, match="unexpected failure"):
+        lint_ctx.lint("Broken", fail_unexpectedly, None)
+
+
 def test_linting_cwl_tool(lint_ctx):
     with tempfile.TemporaryDirectory() as tmp:
         tool_path = os.path.join(tmp, "tool.cwl")
@@ -2647,7 +2676,8 @@ def test_skip_by_module(lint_ctx):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 148
+    # (156 = 148 tool linters + 8 repository data-table linters registered via list_linters)
+    assert len(linter_names) == 156
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [
@@ -2804,3 +2834,26 @@ def test_required_files_glob_no_match(lint_ctx):
         _load_and_run_lint(lint_ctx, tool_path, required_files)
     assert "Required files pattern [*.py] (type glob) does not match any files" in lint_ctx.error_messages
     assert len(lint_ctx.error_messages) == 1
+
+
+# tests tool xml for xsd linter
+REQUIREMENTS_UNORDERED_CHILDREN = """
+<tool id="id" name="name" version="1.0" profile="24.0">
+    <requirements>
+        <container type="docker">quay.io/biocontainers/bwa:0.7.17--hed695b0_7</container>
+        <requirement type="package" version="0.7.17">bwa</requirement>
+        <resource type="cores_min">4</resource>
+        <requirement type="package" version="1.19">samtools</requirement>
+    </requirements>
+    <command>echo</command>
+    <inputs/>
+    <outputs/>
+</tool>
+"""
+
+
+def test_xsd_requirements_children_in_any_order(lint_ctx):
+    """requirements children parse per-tag, so the schema must not impose an order."""
+    tool_source = get_xml_tool_source(REQUIREMENTS_UNORDERED_CHILDREN)
+    run_lint_module(lint_ctx, xsd, tool_source)
+    assert not lint_ctx.error_messages

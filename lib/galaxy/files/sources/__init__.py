@@ -30,6 +30,7 @@ from galaxy.files.models import (
     FilesSourceProperties,
     FilesSourceRuntimeContext,
     FilesSourceTemplateContext,
+    RealizedSourceMetadata,
     resolve_file_source_template,
     TResolvedConfig,
     TTemplateConfig,
@@ -113,6 +114,7 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         native_path: str,
         user_context: "OptionalUserContext" = None,
         opts: FilesSourceOptions | None = None,
+        metadata_out: RealizedSourceMetadata | None = None,
     ):
         """Realize source path (relative to uri root) to local file system path.
 
@@ -124,6 +126,10 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         :type user_context: OptionalUserContext, optional
         :param opts: A set of options to exercise additional control over the realize_to method. Filesource specific, defaults to None
         :type opts: Optional[FilesSourceOptions], optional
+        :param metadata_out: An optional dict the file source may populate with metadata about the
+            realized source that isn't derivable from the URI - currently only a ``name`` key
+            reported by the DRS file source. Filesource specific, defaults to None
+        :type metadata_out: Optional[RealizedSourceMetadata], optional
         """
 
     @abc.abstractmethod
@@ -353,6 +359,12 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         uri_root = self.get_uri_root()
         return uri_join(uri_root, path)
 
+    def uri_from_write_result(self, path_or_uri: str) -> str:
+        """Normalize a write result without prefixing a service-assigned absolute URI."""
+        if "://" in path_or_uri:
+            return path_or_uri
+        return self.uri_from_path(path_or_uri)
+
     def _parse_common_props(self, config: FilesSourceProperties):
         self._file_sources_config = config.file_sources_config
         self.id = config.id
@@ -409,7 +421,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
             "type": self.plugin_type,
             "label": self.label,
             "doc": self.doc,
-            "writable": self.writable,
+            "writable": self.get_writable(),
             "browsable": self.get_browsable(),
             "requires_roles": self.requires_roles,
             "requires_groups": self.requires_groups,
@@ -462,6 +474,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         self,
         opts: FilesSourceOptions | None = None,
         user_context: "OptionalUserContext" = None,
+        metadata_out: RealizedSourceMetadata | None = None,
     ) -> FilesSourceRuntimeContext:
         """
         Get the runtime context for this file source, resolving the template configuration
@@ -479,7 +492,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
             updated_headers = self._inject_oidc_bearer_token(dict(resolved_config.http_headers or {}), user_context)
             if updated_headers is not None:
                 resolved_config = resolved_config.model_copy(update={"http_headers": updated_headers})
-        return FilesSourceRuntimeContext(user_data=user_data, config=resolved_config)
+        return FilesSourceRuntimeContext(user_data=user_data, config=resolved_config, metadata_out=metadata_out)
 
     def _apply_defaults_to_template(
         self, defaults: dict[str, Any], template_config: TTemplateConfig
@@ -596,10 +609,11 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         native_path: str,
         user_context: "OptionalUserContext" = None,
         opts: FilesSourceOptions | None = None,
+        metadata_out: RealizedSourceMetadata | None = None,
     ):
         self._check_user_access(user_context)
         self._check_credentials_fresh()
-        resolved_config = self._get_runtime_context(opts, user_context)
+        resolved_config = self._get_runtime_context(opts, user_context, metadata_out=metadata_out)
         self._realize_to(source_path, native_path, resolved_config)
 
     @abc.abstractmethod

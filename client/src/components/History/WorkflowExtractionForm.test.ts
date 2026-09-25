@@ -26,13 +26,7 @@ vi.mock("@/api/histories", () => ({
     extractWorkflowByIds: vi.fn(),
 }));
 
-vi.mock("@/composables/toast", () => {
-    const toastInstance = { success: vi.fn(), error: vi.fn() };
-    return {
-        Toast: toastInstance,
-        useToast: () => toastInstance,
-    };
-});
+vi.mock("@/composables/toast");
 
 vi.mock("vue-router/composables", () => ({
     useRouter: () => ({ push: vi.fn() }),

@@ -1,0 +1,33 @@
+- id: ckan
+  version: 0
+  name: CKAN
+  description: |
+      [CKAN](https://ckan.org) is an open-source data portal platform for managing and sharing datasets.
+      This configuration allows you to connect Galaxy to a CKAN instance of your choice.
+  variables:
+      url:
+          label: CKAN instance endpoint (e.g. https://demo.ckan.org)
+          type: string
+          help: |
+              The endpoint of the CKAN server you are connecting to. This should be the full URL including the protocol
+              (http or https) and the domain name.
+      writable:
+          label: Allow Galaxy to export data to CKAN?
+          type: boolean
+          optional: true
+          default: true
+          help: |
+              Allow Galaxy to write data to this CKAN instance. Set it to "Yes" if you want to export data from Galaxy to
+              CKAN, set it to "No" if you only need to import data from CKAN to Galaxy.
+  secrets:
+      token:
+          label: CKAN Access Token
+          optional: true
+          help: |
+              The personal access token to use to connect to the CKAN instance. You can generate a new token in your CKAN account settings.
+              This will allow Galaxy to access private datasets if you have the necessary permissions.
+  configuration:
+      type: ckan
+      token: "{{ secrets.token }}"
+      writable: "{{ variables.writable }}"
+      url: "{{ variables.url }}"

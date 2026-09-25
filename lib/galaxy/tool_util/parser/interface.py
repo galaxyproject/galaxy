@@ -61,6 +61,10 @@ if TYPE_CHECKING:
         ToolOutputBase,
         ToolOutputCollection,
     )
+    from .stdio import (
+        ToolStdioExitCode,
+        ToolStdioRegex,
+    )
 
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
@@ -159,6 +163,10 @@ class ToolSource(metaclass=ABCMeta):
         """Parse the class of the tool."""
         return None
 
+    def allows_tool_provided_metadata(self) -> bool:
+        """Return whether this source may enable tool-provided metadata."""
+        return False
+
     def parse_tool_module(self) -> tuple[str, str] | None:
         """Load Tool class from a custom module. (Optional).
 
@@ -224,7 +232,7 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_command(self):
+    def parse_command(self) -> str | None:
         """Return string contianing command to run."""
 
     def parse_shell_command(self) -> str | None:
@@ -244,7 +252,7 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_environment_variables(self):
+    def parse_environment_variables(self) -> list[dict[str, Any]]:
         """Return environment variable templates to expose."""
 
     def parse_home_target(self):
@@ -264,13 +272,15 @@ class ToolSource(metaclass=ABCMeta):
             "GALAXY_SLOTS",
             "GALAXY_MEMORY_MB",
             "GALAXY_MEMORY_MB_PER_SLOT",
+            "GALAXY_MEMORY_GB",
+            "GALAXY_MEMORY_GB_PER_SLOT",
             "HOME",
             "_GALAXY_JOB_HOME_DIR",
             "_GALAXY_JOB_TMP_DIR",
         ] + self.parse_tmp_directory_vars()
 
     @abstractmethod
-    def parse_interpreter(self):
+    def parse_interpreter(self) -> str | None:
         """Return string containing the interpreter to prepend to the command
         (for instance this might be 'python' to run a Python wrapper located
         adjacent to the tool).
@@ -355,6 +365,10 @@ class ToolSource(metaclass=ABCMeta):
         """Return location of provided metadata file (e.g. galaxy.json)."""
         return "galaxy.json"
 
+    def parse_provided_metadata_is_explicit(self) -> bool:
+        """Return whether tool-provided metadata was explicitly configured."""
+        return False
+
     @abstractmethod
     def parse_outputs(
         self, app: Optional["ToolOutputActionApp"]
@@ -370,7 +384,7 @@ class ToolSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def parse_stdio(self):
+    def parse_stdio(self) -> tuple[list["ToolStdioExitCode"], list["ToolStdioRegex"]]:
         """Builds lists of ToolStdioExitCode and ToolStdioRegex objects
         to describe tool execution error conditions.
         """

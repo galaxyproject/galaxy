@@ -261,9 +261,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         else:
             total_matches = None
         sort_column = getattr(Page, payload.sort_by)
-        if payload.sort_desc:
-            sort_column = sort_column.desc()
-        stmt = stmt.order_by(sort_column)
+        stmt = base.apply_sort_column(stmt, sort_column, payload.sort_desc, Page.id)
         if payload.limit is not None:
             stmt = stmt.limit(payload.limit)
         if payload.offset is not None:

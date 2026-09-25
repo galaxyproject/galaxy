@@ -3,7 +3,7 @@
 Whole-file downloads of datasets stored in a backing object store with ``enable_direct_download`` set
 are served from the dedicated ``/download`` route via a 302 redirect to a URL the client fetches
 directly from the store, instead of being pulled through Galaxy's cache. The ``/display`` route keeps
-streaming through Galaxy (no redirect). Uses a boto3 object store backed by a disposable minio container.
+streaming through Galaxy (no redirect). Uses a boto3 object store backed by a disposable SeaweedFS container.
 """
 
 import os
@@ -21,7 +21,7 @@ from ._base import (
     OBJECT_STORE_HOST,
     OBJECT_STORE_PORT,
     OBJECT_STORE_SECRET_KEY,
-    start_minio,
+    start_seaweedfs,
 )
 
 BOTO3_DIRECT_DOWNLOAD_CONFIG = string.Template("""
@@ -44,7 +44,7 @@ class TestDirectDownloadRedirectIntegration(BaseObjectStoreIntegrationTestCase):
     @classmethod
     def setUpClass(cls):
         cls.container_name = f"{cls.__name__}_container"
-        start_minio(cls.container_name)
+        start_seaweedfs(cls.container_name)
         super().setUpClass()
 
     @classmethod

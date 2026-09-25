@@ -39,6 +39,16 @@ function createMockFile(name: string, content: string = "test content"): File {
     return new File([blob], name, { lastModified: Date.now() });
 }
 
+/** Common element fields shared by all upload element types in tests. */
+const commonElementDefaults = {
+    dbkey: "?",
+    ext: "auto",
+    space_to_tab: false,
+    to_posix_lines: false,
+    auto_decompress: false,
+    deferred: false,
+} as const;
+
 // ============================================================================
 // Payload Building Tests
 // ============================================================================
@@ -923,12 +933,7 @@ describe("upload submission", () => {
                                 {
                                     src: "files",
                                     name: "test.txt",
-                                    dbkey: "?",
-                                    ext: "auto",
-                                    space_to_tab: false,
-                                    to_posix_lines: false,
-                                    auto_decompress: false,
-                                    deferred: false,
+                                    ...commonElementDefaults,
                                 },
                             ],
                             auto_decompress: true,
@@ -997,12 +1002,7 @@ describe("upload submission", () => {
                                     src: "url",
                                     url: "https://example.com/file.txt",
                                     name: "file.txt",
-                                    dbkey: "?",
-                                    ext: "auto",
-                                    space_to_tab: false,
-                                    to_posix_lines: false,
-                                    auto_decompress: false,
-                                    deferred: false,
+                                    ...commonElementDefaults,
                                 },
                             ],
                             auto_decompress: true,
@@ -1043,12 +1043,8 @@ describe("upload submission", () => {
                                     src: "pasted",
                                     paste_content: "Hello, world!",
                                     name: "pasted.txt",
-                                    dbkey: "?",
+                                    ...commonElementDefaults,
                                     ext: "txt",
-                                    space_to_tab: false,
-                                    to_posix_lines: false,
-                                    auto_decompress: false,
-                                    deferred: false,
                                 },
                             ],
                             auto_decompress: true,
@@ -1064,6 +1060,127 @@ describe("upload submission", () => {
             const tusCall = vi.mocked(createTusUpload).mock.calls[0];
             expect(tusCall?.[0].file).toBeInstanceOf(Blob);
             expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_paste" }] });
+        });
+
+        it("should keep pasted upload tracking aligned with per-file signals", async () => {
+            const cancelledFile = new AbortController();
+            cancelledFile.abort();
+            const activeFile = new AbortController();
+            const successCallback = vi.fn();
+
+            vi.mocked(createTusUpload).mockResolvedValue({
+                sessionId: "session_active_paste",
+                fileName: "active.txt",
+            });
+
+            server.use(
+                http.post("/api/tools/fetch", () => {
+                    return HttpResponse.json({ jobs: [{ id: "job_paste_partial" }] });
+                }),
+            );
+
+            await submitUpload({
+                data: {
+                    history_id: "hist123",
+                    targets: [
+                        {
+                            destination: { type: "hdas" },
+                            elements: [
+                                {
+                                    src: "pasted",
+                                    paste_content: "cancelled",
+                                    name: "cancelled.txt",
+                                    ...commonElementDefaults,
+                                    ext: "txt",
+                                    auto_decompress: true,
+                                    to_posix_lines: true,
+                                },
+                                {
+                                    src: "pasted",
+                                    paste_content: "active",
+                                    name: "active.txt",
+                                    ...commonElementDefaults,
+                                    ext: "txt",
+                                    auto_decompress: true,
+                                    to_posix_lines: true,
+                                },
+                            ],
+                            auto_decompress: true,
+                        },
+                    ],
+                    auto_decompress: true,
+                    files: [],
+                },
+                uploadIds: ["cancelled", "active"],
+                perFileProgress: vi.fn(),
+                signals: [cancelledFile.signal, activeFile.signal],
+                success: successCallback,
+            });
+
+            expect(createTusUpload).toHaveBeenCalledTimes(1);
+            expect(createTusUpload).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    file: expect.objectContaining({ name: "active.txt" }),
+                    signal: activeFile.signal,
+                }),
+            );
+            expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_paste_partial" }] });
+        });
+
+        it("should not report URL upload success after a later URL fails", async () => {
+            const successCallback = vi.fn();
+            const errorCallback = vi.fn();
+            let requestCount = 0;
+
+            server.use(
+                http.post("/api/tools/fetch", () => {
+                    requestCount += 1;
+                    if (requestCount === 2) {
+                        return HttpResponse.json({ err_msg: "second URL failed" }, { status: 500 });
+                    }
+                    return HttpResponse.json({ jobs: [{ id: "job_url_first" }] });
+                }),
+            );
+
+            await expect(
+                submitUpload({
+                    data: {
+                        history_id: "hist123",
+                        targets: [
+                            {
+                                destination: { type: "hdas" },
+                                elements: [
+                                    {
+                                        src: "url",
+                                        url: "https://example.com/1.txt",
+                                        name: "1.txt",
+                                        ...commonElementDefaults,
+                                        auto_decompress: true,
+                                        to_posix_lines: true,
+                                    },
+                                    {
+                                        src: "url",
+                                        url: "https://example.com/2.txt",
+                                        name: "2.txt",
+                                        ...commonElementDefaults,
+                                        auto_decompress: true,
+                                        to_posix_lines: true,
+                                    },
+                                ],
+                                auto_decompress: true,
+                            },
+                        ],
+                        auto_decompress: true,
+                        files: [],
+                    },
+                    signals: [new AbortController().signal, new AbortController().signal],
+                    success: successCallback,
+                    error: errorCallback,
+                }),
+            ).rejects.toThrow("second URL failed");
+
+            expect(errorCallback).toHaveBeenCalledWith("second URL failed");
+            expect(successCallback).not.toHaveBeenCalled();
         });
 
         it("should use custom chunk size if provided", async () => {
@@ -1131,6 +1248,206 @@ describe("upload submission", () => {
 
             expect(createTusUpload).toHaveBeenCalledTimes(2);
             expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_multi" }] });
+        });
+
+        it("should skip a cancelled file via per-file signals and still submit the rest", async () => {
+            const file1 = new File(["content1"], "file1.txt");
+            const file2 = new File(["content2"], "file2.txt");
+            const successCallback = vi.fn();
+            interface FetchedBody {
+                "files_0|file_data"?: { session_id: string };
+                targets: [{ elements: Array<{ name: string }> }];
+            }
+            let fetchedBody: FetchedBody | null = null;
+
+            vi.mocked(createTusUpload).mockResolvedValueOnce({
+                sessionId: "session2",
+                fileName: "file2.txt",
+            });
+
+            server.use(
+                http.post("/api/tools/fetch", async ({ request }) => {
+                    fetchedBody = (await request.json()) as FetchedBody;
+                    return HttpResponse.json({ jobs: [{ id: "job_partial" }] });
+                }),
+            );
+
+            const cancelledFile = new AbortController();
+            cancelledFile.abort();
+
+            await submitUpload({
+                data: {
+                    history_id: "hist123",
+                    targets: [
+                        {
+                            destination: { type: "hdas" },
+                            auto_decompress: true,
+                            elements: [
+                                {
+                                    src: "files",
+                                    name: "file1.txt",
+                                    ...commonElementDefaults,
+                                },
+                                {
+                                    src: "files",
+                                    name: "file2.txt",
+                                    ...commonElementDefaults,
+                                },
+                            ],
+                        },
+                    ],
+                    auto_decompress: true,
+                    files: [file1, file2],
+                },
+                uploadIds: ["upload1", "upload2"],
+                perFileProgress: () => {},
+                signals: [cancelledFile.signal, undefined],
+                success: successCallback,
+            });
+
+            // Only the non-cancelled file is uploaded via TUS and submitted
+            expect(createTusUpload).toHaveBeenCalledTimes(1);
+            expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_partial" }] });
+            const body = fetchedBody as FetchedBody | null;
+            expect(body?.["files_0|file_data"]).toMatchObject({ session_id: "session2" });
+            expect(body?.targets[0].elements).toHaveLength(1);
+            expect(body?.targets[0].elements[0]).toMatchObject({ name: "file2.txt" });
+        });
+
+        it("should not submit anything when every file is cancelled via per-file signals", async () => {
+            const file1 = new File(["content1"], "file1.txt");
+            const successCallback = vi.fn();
+            const errorCallback = vi.fn();
+            const fetchSpy = vi.fn();
+
+            server.use(
+                http.post("/api/tools/fetch", () => {
+                    fetchSpy();
+                    return HttpResponse.json({ jobs: [{ id: "job_none" }] });
+                }),
+            );
+
+            const cancelledFile = new AbortController();
+            cancelledFile.abort();
+
+            await submitUpload({
+                data: {
+                    history_id: "hist123",
+                    targets: [],
+                    auto_decompress: true,
+                    files: [file1],
+                },
+                signals: [cancelledFile.signal],
+                success: successCallback,
+                error: errorCallback,
+            });
+
+            expect(createTusUpload).not.toHaveBeenCalled();
+            expect(fetchSpy).not.toHaveBeenCalled();
+            expect(successCallback).not.toHaveBeenCalled();
+            expect(errorCallback).not.toHaveBeenCalled();
+        });
+
+        it("should still fail the whole submission on a genuine (non-cancellation) error with per-file signals", async () => {
+            const file1 = new File(["content1"], "file1.txt");
+            const file2 = new File(["content2"], "file2.txt");
+            const errorCallback = vi.fn();
+
+            vi.mocked(createTusUpload).mockRejectedValue(new Error("Upload failed"));
+
+            await submitUpload({
+                data: {
+                    history_id: "hist123",
+                    targets: [],
+                    auto_decompress: true,
+                    files: [file1, file2],
+                },
+                signals: [new AbortController().signal, new AbortController().signal],
+                error: errorCallback,
+            });
+
+            expect(errorCallback).toHaveBeenCalledWith(new Error("Upload failed"));
+        });
+
+        it("should skip a file aborted mid-upload in per-file mode and still submit the rest", async () => {
+            const file1 = new File(["content1"], "file1.txt");
+            const file2 = new File(["content2"], "file2.txt");
+            const file3 = new File(["content3"], "file3.txt");
+            const successCallback = vi.fn();
+            interface FetchedBody {
+                "files_0|file_data"?: { session_id: string };
+                "files_1|file_data"?: { session_id: string };
+                targets: [{ elements: Array<{ name: string }> }];
+            }
+            let fetchedBody: FetchedBody | null = null;
+
+            const controller2 = new AbortController();
+
+            vi.mocked(createTusUpload)
+                .mockImplementationOnce(async () => {
+                    // File 1 uploads successfully; abort file 2 while file 1 is in-flight.
+                    controller2.abort();
+                    return { sessionId: "session1", fileName: "file1.txt" };
+                })
+                .mockResolvedValueOnce({ sessionId: "session3", fileName: "file3.txt" });
+
+            server.use(
+                http.post("/api/tools/fetch", async ({ request }) => {
+                    fetchedBody = (await request.json()) as FetchedBody;
+                    return HttpResponse.json({ jobs: [{ id: "job_partial_mid" }] });
+                }),
+            );
+
+            await submitUpload({
+                data: {
+                    history_id: "hist123",
+                    targets: [
+                        {
+                            destination: { type: "hdas" },
+                            auto_decompress: true,
+                            elements: [
+                                {
+                                    src: "files",
+                                    name: "file1.txt",
+                                    ...commonElementDefaults,
+                                    auto_decompress: true,
+                                    to_posix_lines: true,
+                                },
+                                {
+                                    src: "files",
+                                    name: "file2.txt",
+                                    ...commonElementDefaults,
+                                    auto_decompress: true,
+                                    to_posix_lines: true,
+                                },
+                                {
+                                    src: "files",
+                                    name: "file3.txt",
+                                    ...commonElementDefaults,
+                                    auto_decompress: true,
+                                    to_posix_lines: true,
+                                },
+                            ],
+                        },
+                    ],
+                    auto_decompress: true,
+                    files: [file1, file2, file3],
+                },
+                uploadIds: ["u1", "u2", "u3"],
+                perFileProgress: () => {},
+                signals: [undefined, controller2.signal, undefined],
+                success: successCallback,
+            });
+
+            // File 2 was aborted mid-loop; files 1 and 3 should still be uploaded.
+            expect(createTusUpload).toHaveBeenCalledTimes(2);
+            expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_partial_mid" }] });
+            const body = fetchedBody as FetchedBody | null;
+            expect(body?.["files_0|file_data"]).toMatchObject({ session_id: "session1" });
+            expect(body?.["files_1|file_data"]).toMatchObject({ session_id: "session3" });
+            expect(body?.targets[0].elements).toHaveLength(2);
+            expect(body?.targets[0].elements[0]).toMatchObject({ name: "file1.txt" });
+            expect(body?.targets[0].elements[1]).toMatchObject({ name: "file3.txt" });
         });
 
         it("should invoke progress callback during upload", async () => {
@@ -1211,23 +1528,13 @@ describe("upload submission", () => {
                                     src: "url",
                                     url: "https://example.com/1.txt",
                                     name: "1.txt",
-                                    dbkey: "?",
-                                    ext: "auto",
-                                    space_to_tab: false,
-                                    to_posix_lines: false,
-                                    auto_decompress: false,
-                                    deferred: false,
+                                    ...commonElementDefaults,
                                 },
                                 {
                                     src: "url",
                                     url: "https://example.com/2.txt",
                                     name: "2.txt",
-                                    dbkey: "?",
-                                    ext: "auto",
-                                    space_to_tab: false,
-                                    to_posix_lines: false,
-                                    auto_decompress: false,
-                                    deferred: false,
+                                    ...commonElementDefaults,
                                 },
                             ],
                         },
@@ -1276,22 +1583,12 @@ describe("upload submission", () => {
                                 {
                                     src: "files",
                                     name: "file1.txt",
-                                    dbkey: "?",
-                                    ext: "auto",
-                                    space_to_tab: false,
-                                    to_posix_lines: false,
-                                    auto_decompress: false,
-                                    deferred: false,
+                                    ...commonElementDefaults,
                                 },
                                 {
                                     src: "files",
                                     name: "file2.txt",
-                                    dbkey: "?",
-                                    ext: "auto",
-                                    space_to_tab: false,
-                                    to_posix_lines: false,
-                                    auto_decompress: false,
-                                    deferred: false,
+                                    ...commonElementDefaults,
                                 },
                             ],
                         },

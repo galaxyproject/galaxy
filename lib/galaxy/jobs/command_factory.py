@@ -33,6 +33,14 @@ CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 SETUP_GALAXY_FOR_METADATA = """
 [ "$GALAXY_VIRTUAL_ENV" = "None" ] && GALAXY_VIRTUAL_ENV="$_GALAXY_VIRTUAL_ENV"; _galaxy_setup_environment True"""
+REMOTE_TOOL_EVAL_SOURCE_COMMAND = (
+    'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" "${GALAXY_PYTHON:-python}" "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py'
+)
+REMOTE_TOOL_EVAL_PACKAGE_COMMAND = "galaxy-remote-tool-eval"
+REMOTE_TOOL_EVAL_PULSAR_COMMAND = (
+    'if [ "$GALAXY_LIB" != "None" ] && [ -f "$GALAXY_LIB/galaxy/tools/remote_tool_eval.py" ]; '
+    f"then {REMOTE_TOOL_EVAL_SOURCE_COMMAND}; else {REMOTE_TOOL_EVAL_PACKAGE_COMMAND}; fi"
+)
 
 
 def build_command(
@@ -46,6 +54,7 @@ def build_command(
     remote_command_params=None,
     remote_job_directory=None,
     stream_stdout_stderr: bool = False,
+    metadata_container: Container | None = None,
 ):
     """
     Compose the sequence of commands necessary to execute a job. This will
@@ -154,7 +163,7 @@ def build_command(
 
     if include_metadata and job_wrapper.requires_setting_metadata:
         commands_builder.append_command(f"cd '{working_directory}'")
-        __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)
+        __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params, metadata_container)
 
     return commands_builder.build()
 
@@ -208,14 +217,16 @@ def __externalize_commands(
 def __handle_remote_command_line_building(commands_builder, job_wrapper: "MinimalJobWrapper", for_pulsar=False):
     if job_wrapper.remote_command_line:
         sep = "" if for_pulsar else "&&"
-        command = (
-            'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" '
-            '"${GALAXY_PYTHON:-python}" "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py'
-        )
         if for_pulsar:
+            # Pulsar sets GALAXY_LIB from its own galaxy_home, so this Galaxy's layout says
+            # nothing about the remote's - let the remote pick between the two forms.
             # TODO: that's not how to do this, pulsar doesn't execute an externalized script by default.
             # This also breaks rewriting paths etc, so it doesn't really work if there are no shared paths
-            command = f"{command} && bash ../tool_script.sh"
+            command = f"{REMOTE_TOOL_EVAL_PULSAR_COMMAND} && bash ../tool_script.sh"
+        elif job_wrapper.galaxy_lib_dir:
+            command = REMOTE_TOOL_EVAL_SOURCE_COMMAND
+        else:
+            command = REMOTE_TOOL_EVAL_PACKAGE_COMMAND
         commands_builder.prepend_command(command, sep=sep)
 
 
@@ -247,7 +258,11 @@ def __handle_work_dir_outputs(
 
 
 def __handle_metadata(
-    commands_builder, job_wrapper: "MinimalJobWrapper", runner: "BaseJobRunner", remote_command_params
+    commands_builder,
+    job_wrapper: "MinimalJobWrapper",
+    runner: "BaseJobRunner",
+    remote_command_params,
+    metadata_container: Container | None = None,
 ):
     # Append metadata setting commands, we don't want to overwrite metadata
     # that was copied over in init_meta(), as per established behavior
@@ -282,6 +297,9 @@ def __handle_metadata(
     )
     metadata_command = metadata_command.strip()
     if metadata_command:
+        if metadata_container:
+            commands_builder.append_command(metadata_container.containerize_command("galaxy-set-metadata"))
+            return
         # Place Galaxy and its dependencies in environment for metadata regardless of tool.
         if not job_wrapper.is_cwl_job:
             commands_builder.append_command(SETUP_GALAXY_FOR_METADATA)
