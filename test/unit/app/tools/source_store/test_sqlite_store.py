@@ -67,13 +67,26 @@ def test_delete_returns_false_for_missing(sqlite_path):
 
 def test_index_round_trip(sqlite_path):
     store = SqliteToolSourceStore(url=_sqlite_url(sqlite_path))
-    idx = ToolIndex(entries={"t1": ToolIndexEntry(id="t1", name="T1")})
+    idx = ToolIndex(
+        entries={
+            "t1": ToolIndexEntry(
+                id="t1",
+                name="T1",
+                license="MIT",
+                creators=[{"class": "Person", "name": "Tool Author"}],
+                citations=[{"type": "doi", "content": "10.1234/example"}],
+            )
+        }
+    )
     store.store_index(idx)
     store.invalidate_index_cache()
     loaded = store.load_index()
     assert loaded is not None
     assert "t1" in loaded.entries
     assert loaded.entries["t1"].name == "T1"
+    assert loaded.entries["t1"].license == "MIT"
+    assert loaded.entries["t1"].creators == [{"class": "Person", "name": "Tool Author"}]
+    assert loaded.entries["t1"].citations == [{"type": "doi", "content": "10.1234/example"}]
 
 
 def test_load_index_discards_stale_schema(sqlite_path, monkeypatch):

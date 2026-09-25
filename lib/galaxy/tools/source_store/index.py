@@ -34,6 +34,9 @@ class ToolIndexEntry(BaseModel):
     # === Display ===
     name: str = ""
     description: str = ""
+    license: str | None = None
+    creators: list[dict[str, Any]] = Field(default_factory=list)
+    citations: list[dict[str, str]] = Field(default_factory=list)
     # Capped help text for Whoosh; empty when unavailable.
     help_text: str = ""
 
@@ -77,6 +80,7 @@ class ToolIndexEntry(BaseModel):
 
     # === Requirements (for /api/tools/all_requirements, dependency endpoints) ===
     requirements: list[dict[str, Any]] = Field(default_factory=list)
+    resource_requirements: list[dict[str, Any]] = Field(default_factory=list)
 
     # === Container Info (for container resolution endpoints) ===
     container_requirements: list[dict[str, Any]] = Field(default_factory=list)

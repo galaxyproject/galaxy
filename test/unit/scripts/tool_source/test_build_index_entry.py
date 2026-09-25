@@ -15,6 +15,7 @@ from galaxy.tool_util.deps.requirements import (
     ToolRequirements,
 )
 from galaxy.tool_util.parser.interface import ToolSource
+from galaxy.tool_util_models.tool_source import Citation
 from galaxy.tools.source_store.discover import DiscoveredTool
 from galaxy.tools.source_store.index import ToolIndexEntry
 from galaxy.tools.source_store.interface import StoredToolSource
@@ -45,6 +46,9 @@ class _ToolSourceStub:
         requirements: list[ToolRequirement | dict[str, Any]] | None = None,
         containers: list[ContainerDescription] | None = None,
         test_count: int = 0,
+        license: str | None = None,
+        creators: list[dict[str, str]] | None = None,
+        citations: list[Citation] | None = None,
     ):
         self._id = tool_id
         self._version = version
@@ -58,6 +62,9 @@ class _ToolSourceStub:
         self._requirements = ToolRequirements(requirements)
         self._containers = containers or []
         self._test_count = test_count
+        self._license = license
+        self._creators = creators or []
+        self._citations = citations or []
 
     def parse_id(self) -> str:
         return self._id
@@ -107,6 +114,15 @@ class _ToolSourceStub:
     def parse_tests_to_dict(self):
         return {"tests": [{} for _ in range(self._test_count)]}
 
+    def parse_license(self):
+        return self._license
+
+    def parse_creator(self):
+        return self._creators
+
+    def parse_citations(self):
+        return self._citations
+
 
 def _discovered(**overrides: Any) -> DiscoveredTool:
     base: dict[str, Any] = dict(path="/tools/bowtie2.xml", tool_conf="tool_conf.xml", tool_path="/tools")
@@ -127,7 +143,16 @@ def _entry_optional(discovered: DiscoveredTool, stored: Any, source: Any) -> Too
 
 
 def test_basic_fields_threaded_through():
-    entry = _entry(_discovered(), _StoredStub(), _ToolSourceStub())
+    citation = Citation(type="doi", content="10.1234/example")
+    entry = _entry(
+        _discovered(),
+        _StoredStub(),
+        _ToolSourceStub(
+            license="MIT",
+            creators=[{"class": "Person", "name": "Tool Author"}],
+            citations=[citation],
+        ),
+    )
     assert entry is not None
     assert entry.id == "bowtie2"
     assert entry.version == "2.5.0"
@@ -136,6 +161,9 @@ def test_basic_fields_threaded_through():
     assert entry.source_hash == "abc123"
     assert entry.source_class == "XmlToolSource"
     assert entry.tool_type == "default"
+    assert entry.license == "MIT"
+    assert entry.creators == [{"class": "Person", "name": "Tool Author"}]
+    assert entry.citations == [{"type": "doi", "content": "10.1234/example"}]
 
 
 def test_shed_conf_guid_keys_entry_and_stamps_repository():

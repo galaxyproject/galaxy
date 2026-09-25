@@ -1,8 +1,10 @@
 import abc
 import contextlib
 import datetime
+import hashlib
 import logging
 import os
+import re
 import shutil
 import tarfile
 import tempfile
@@ -11,6 +13,7 @@ from collections.abc import (
     Callable,
     Iterable,
     Iterator,
+    Mapping,
 )
 from dataclasses import dataclass
 from enum import Enum
@@ -18,6 +21,7 @@ from json import (
     dump,
     dumps,
     load,
+    loads,
 )
 from tempfile import mkdtemp
 from types import TracebackType
@@ -35,11 +39,14 @@ from boltons.iterutils import remap
 from pydantic import (
     BaseModel,
     ConfigDict,
+    ValidationError,
 )
 from rocrate.model.computationalworkflow import (
     ComputationalWorkflow,
     WorkflowDescription,
 )
+from rocrate.model.contextentity import ContextEntity
+from rocrate.model.file import File
 from rocrate.rocrate import ROCrate
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -101,6 +108,7 @@ from galaxy.schema.schema import (
     ModelStoreFormat,
 )
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.tool_util_models.parameters import AdaptedDataCollectionRequestInternalTypeAdapter
 from galaxy.util import (
     FILENAME_VALID_CHARS,
     in_directory,
@@ -112,11 +120,34 @@ from galaxy.util.compression_utils import (
     make_fast_zipfile,
 )
 from galaxy.util.path import StrPath
+from galaxy.version import VERSION
 from ._bco_convert_utils import (
     bco_workflow_version,
     SoftwarePrerequisiteTracker,
 )
-from .ro_crate_utils import WorkflowRunCrateProfileBuilder
+from .model_store_constants import (
+    ATTRS_FILENAME_COLLECTIONS,
+    ATTRS_FILENAME_CONVERSIONS,
+    ATTRS_FILENAME_DATASETS,
+    ATTRS_FILENAME_EXPORT,
+    ATTRS_FILENAME_HISTORY,
+    ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS,
+    ATTRS_FILENAME_INVOCATIONS,
+    ATTRS_FILENAME_JOBS,
+    ATTRS_FILENAME_LIBRARIES,
+    ATTRS_FILENAME_LIBRARY_FOLDERS,
+    GALAXY_EXPORT_VERSION,
+    MODEL_STORE_METADATA_FILENAMES,
+)
+from .ro_crate_metadata import (
+    is_publishable_metadata_field,
+    is_publishable_metadata_value,
+)
+from .ro_crate_utils import (
+    RO_CRATE_DATASET_STATUS_FIELDS,
+    ro_crate_parameter_type,
+    WorkflowRunCrateProfileBuilder,
+)
 from ..custom_types import json_encoder
 from ..item_attrs import (
     add_item_annotation,
@@ -135,18 +166,7 @@ log = logging.getLogger(__name__)
 
 ObjectKeyType = str | int
 
-ATTRS_FILENAME_HISTORY = "history_attrs.txt"
-ATTRS_FILENAME_DATASETS = "datasets_attrs.txt"
-ATTRS_FILENAME_JOBS = "jobs_attrs.txt"
-ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS = "implicit_collection_jobs_attrs.txt"
-ATTRS_FILENAME_COLLECTIONS = "collections_attrs.txt"
-ATTRS_FILENAME_EXPORT = "export_attrs.txt"
-ATTRS_FILENAME_LIBRARIES = "libraries_attrs.txt"
-ATTRS_FILENAME_LIBRARY_FOLDERS = "library_folders_attrs.txt"
-ATTRS_FILENAME_INVOCATIONS = "invocation_attrs.txt"
-ATTRS_FILENAME_CONVERSIONS = "implicit_dataset_conversions.txt"
 TRACEBACK = "traceback.txt"
-GALAXY_EXPORT_VERSION = "2"
 
 DICT_STORE_ATTRS_KEY_HISTORY = "history"
 DICT_STORE_ATTRS_KEY_DATASETS = "datasets"
@@ -2025,7 +2045,14 @@ class DirectoryModelExportStore(ModelExportStore):
         ] = {}
         self.included_libraries: list[model.Library] = []
         self.included_library_folders: list[model.LibraryFolder] = []
+        self.included_histories: list[model.History] = []
         self.included_invocations: list[model.WorkflowInvocation] = []
+        self.included_jobs: dict[int, model.Job] = {}
+        self.ro_crate_export_scope: dict[str, Any] = {
+            "includeFiles": export_files is not None,
+            "includeHidden": False,
+            "includeDeleted": False,
+        }
         self.collection_datasets: set[int] = set()
         self.dataset_id_to_path: dict[int, tuple[str | None, str | None]] = {}
 
@@ -2154,6 +2181,8 @@ class DirectoryModelExportStore(ModelExportStore):
         """
         jobs_attrs = jobs_attrs or []
         for job in jobs:
+            if job.id is not None:
+                self.included_jobs[job.id] = job
             job_attrs = job.serialize(self.security, self.serialization_options)
 
             if include_job_data:
@@ -2262,8 +2291,10 @@ class DirectoryModelExportStore(ModelExportStore):
     def export_history(
         self, history: model.History, include_hidden: bool = False, include_deleted: bool = False
     ) -> None:
+        self.ro_crate_export_scope.update(includeHidden=include_hidden, includeDeleted=include_deleted)
         app = self.app
         assert app, "exporting histories requires being bound to a session and Galaxy app object"
+        self.included_histories.append(history)
         export_directory = self.export_directory
 
         history_attrs = history.serialize(app.security, self.serialization_options)
@@ -2274,17 +2305,19 @@ class DirectoryModelExportStore(ModelExportStore):
         sa_session = app.model.session
 
         # Write collections' attributes (including datasets list) to file.
-        stmt_hdca = (
-            select(model.HistoryDatasetCollectionAssociation)
-            .where(model.HistoryDatasetCollectionAssociation.history == history)
-            .where(model.HistoryDatasetCollectionAssociation.deleted == expression.false())
+        stmt_hdca = select(model.HistoryDatasetCollectionAssociation).where(
+            model.HistoryDatasetCollectionAssociation.history == history
         )
+        if not include_deleted:
+            stmt_hdca = stmt_hdca.where(model.HistoryDatasetCollectionAssociation.deleted == expression.false())
         collections = sa_session.scalars(stmt_hdca)
 
         for collection in collections:
             # Skip unpopulated collections (they don't have all elements yet),
             # but export all others regardless of state to preserve error states
             if not collection.populated:
+                if isinstance(self, WriteCrates):
+                    self.add_dataset_collection(collection)
                 continue
             self.export_collection(collection, include_deleted=include_deleted)
 
@@ -2297,8 +2330,9 @@ class DirectoryModelExportStore(ModelExportStore):
             .join(model.Dataset)
             .options(joinedload(model.HistoryDatasetAssociation.dataset).joinedload(actions_backref))
             .order_by(model.HistoryDatasetAssociation.hid)
-            .where(model.Dataset.purged == expression.false())
         )
+        if not isinstance(self, WriteCrates):
+            stmt_hda = stmt_hda.where(model.Dataset.purged == expression.false())
         datasets = sa_session.scalars(stmt_hda).unique()
         for dataset in datasets:
             # Add a new "annotation" attribute so that the user annotation for the dataset can be serialized without needing the user
@@ -2308,6 +2342,8 @@ class DirectoryModelExportStore(ModelExportStore):
             )
             if not dataset.deleted and dataset.id in self.collection_datasets:
                 should_include_file = True
+            if isinstance(self, WriteCrates) and dataset.dataset.purged:
+                should_include_file = False
 
             if dataset not in self.included_datasets:
                 if should_include_file:
@@ -2412,7 +2448,9 @@ class DirectoryModelExportStore(ModelExportStore):
         )
         for collection_dataset in has_collection.dataset_instances:
             # ignoring include_hidden since the datasets will default to hidden for this collection.
-            if collection_dataset.deleted and not include_deleted:
+            if (collection_dataset.deleted and not include_deleted) or (
+                isinstance(self, WriteCrates) and collection_dataset.dataset.purged
+            ):
                 include_files = False
             else:
                 include_files = True
@@ -2443,6 +2481,8 @@ class DirectoryModelExportStore(ModelExportStore):
         self.dataset_implicit_conversions[dataset] = conversion
 
     def add_dataset(self, dataset: model.DatasetInstance, include_files: bool = True) -> None:
+        if isinstance(self, WriteCrates) and dataset in self.included_datasets:
+            return
         self.included_datasets[dataset] = (dataset, include_files)
 
     def _ensure_dataset_file_exists(self, dataset: model.DatasetInstance) -> None:
@@ -2458,6 +2498,8 @@ class DirectoryModelExportStore(ModelExportStore):
 
     def _finalize(self) -> None:
         export_directory = self.export_directory
+        if isinstance(self, WriteCrates):
+            self._prepare_crate_provenance()
 
         datasets_attrs = []
         provenance_attrs = []
@@ -2550,8 +2592,6 @@ class DirectoryModelExportStore(ModelExportStore):
             for hdca in self.included_collections:
                 record_associated_jobs(hdca)
 
-            self.export_jobs(jobs_dict.values(), jobs_attrs=jobs_attrs)
-
             for invocation in self.included_invocations:
                 for step in invocation.steps:
                     for job in step.jobs:
@@ -2559,6 +2599,8 @@ class DirectoryModelExportStore(ModelExportStore):
                     if step.implicit_collection_jobs:
                         implicit_collection_jobs = step.implicit_collection_jobs
                         implicit_collection_jobs_dict[implicit_collection_jobs.id] = implicit_collection_jobs
+
+            self.export_jobs(jobs_dict.values(), jobs_attrs=jobs_attrs)
 
             # Get jobs' attributes.
 
@@ -2611,11 +2653,494 @@ class DirectoryModelExportStore(ModelExportStore):
 
 
 class WriteCrates:
+    included_histories: list[model.History]
     included_invocations: list[model.WorkflowInvocation]
     export_directory: StrPath
     included_datasets: dict[model.DatasetInstance, tuple[model.DatasetInstance, bool]]
     dataset_implicit_conversions: dict[model.DatasetInstance, model.ImplicitlyConvertedDatasetAssociation]
     dataset_id_to_path: dict[int, tuple[str | None, str | None]]
+    included_jobs: dict[int, model.Job]
+    ro_crate_export_scope: dict[str, Any]
+
+    def _prepare_crate_provenance(self):
+        """Freeze export focus and discover contextual inputs before serializing attrs files."""
+        self._crate_requested_datasets = list(self.included_datasets)
+        self._crate_requested_collections = list(self.included_collections.values())
+        if not self.serialize_jobs:
+            return
+        pending = list(self.included_jobs.values())
+        seen_datasets = set()
+
+        def discover_dataset(dataset):
+            # Copies may have no creating job of their own. Discover their ancestry
+            # before attrs serialization, just like direct job inputs and outputs.
+            ancestors = [dataset]
+            while ancestors:
+                current = ancestors.pop()
+                if current is None or current in seen_datasets:
+                    continue
+                seen_datasets.add(current)
+                self.add_dataset(current, include_files=False)
+                pending.extend(association.job for association in current.creating_job_associations)
+                for relation in (
+                    "copied_from_history_dataset_association",
+                    "copied_from_library_dataset_dataset_association",
+                ):
+                    parent = getattr(current, relation, None)
+                    if parent is not None:
+                        ancestors.append(parent)
+
+        for invocation in self.included_invocations:
+            for step in invocation.steps:
+                pending.extend(step.jobs)
+        for dataset in self._crate_requested_datasets:
+            discover_dataset(dataset)
+        seen = set()
+        while pending:
+            job = pending.pop()
+            if job is None or job.id in seen:
+                continue
+            seen.add(job.id)
+            self.included_jobs[job.id] = job
+            for association in [
+                *job.input_datasets,
+                *job.output_datasets,
+                *job.input_library_datasets,
+                *job.output_library_datasets,
+            ]:
+                dataset = association.dataset
+                if dataset is None:
+                    continue
+                discover_dataset(dataset)
+            for association in [
+                *job.input_dataset_collections,
+                *job.output_dataset_collections,
+                *job.output_dataset_collection_instances,
+            ]:
+                collection = getattr(association, "dataset_collection", None) or getattr(
+                    association, "dataset_collection_instance", None
+                )
+                if collection is not None:
+                    self.add_dataset_collection(collection)
+                    underlying = (
+                        collection.collection
+                        if isinstance(collection, model.HistoryDatasetCollectionAssociation)
+                        else collection
+                    )
+                    for dataset in underlying.dataset_instances:
+                        discover_dataset(dataset)
+            for association in job.input_dataset_collection_elements:
+                element = association.dataset_collection_element
+                if element is not None:
+                    self.add_dataset_collection(element.collection)
+                    for dataset in element.collection.dataset_instances:
+                        discover_dataset(dataset)
+
+    @staticmethod
+    def _date_properties(**values):
+        properties = {}
+        for name, value in values.items():
+            if value is None:
+                continue
+            if value.tzinfo is None:
+                value = value.replace(tzinfo=datetime.timezone.utc)
+            properties[name] = value.isoformat(timespec="milliseconds")
+        return properties
+
+    @staticmethod
+    def _metadata_only_dataset_id(dataset: model.DatasetInstance) -> str:
+        assert dataset.dataset is not None
+        return f"#dataset-{dataset.dataset.uuid}"
+
+    @staticmethod
+    def _valid_checksum(algorithm, value):
+        normalized = (algorithm or "").lower().replace("-", "")
+        lengths = {"md5": 32, "sha1": 40, "sha256": 64, "sha384": 96, "sha512": 128}
+        length = lengths.get(normalized)
+        return bool(length and isinstance(value, str) and re.fullmatch(rf"[0-9a-fA-F]{{{length}}}", value))
+
+    @staticmethod
+    def _tool_entity_id(tool_id, version):
+        digest = hashlib.sha256(dumps([tool_id, version]).encode()).hexdigest()[:16]
+        return f"urn:galaxy:tool:{digest}"
+
+    @staticmethod
+    def _add_metadata_property(crate, entity, name, value):
+        if value is None or (isinstance(value, (str, list, tuple, dict)) and not value):
+            return
+        if not is_publishable_metadata_field(name, value):
+            return
+        identifier = hashlib.sha256(dumps([entity.id, name, value], sort_keys=True).encode()).hexdigest()
+        existing = crate.get(f"#property-{identifier}")
+        if existing is not None and existing in (entity.get("additionalProperty") or []):
+            return
+        entity.append_to(
+            "additionalProperty",
+            crate.add(
+                ContextEntity(
+                    crate,
+                    f"#property-{identifier}",
+                    properties={
+                        "@type": "PropertyValue",
+                        "name": name,
+                        "value": dumps(value, sort_keys=True) if isinstance(value, (dict, list)) else value,
+                    },
+                )
+            ),
+        )
+
+    def _exact_tool_metadata(self, tool_id, version):
+        app = getattr(self, "app", None)
+        missing = object()
+        toolbox = getattr(app, "toolbox_or_none", missing)
+        if toolbox is missing:
+            toolbox = getattr(app, "toolbox", None)
+        if toolbox is not None:
+            try:
+                tool = toolbox.get_tool(tool_id, tool_version=version, exact=True)
+                if tool is not None:
+                    materialize = getattr(toolbox, "materialize_tool", None)
+                    if materialize is not None:
+                        tool = materialize(tool, reason="serialization")
+                    if str(tool.version) == str(version):
+                        return tool, "installed definition"
+            except Exception:
+                log.warning("RO-Crate tool metadata unavailable from toolbox")
+        source_store = getattr(app, "tool_source_store", None)
+        if source_store is not None:
+            try:
+                cached_index = getattr(self, "_ro_crate_tool_index", missing)
+                if cached_index is missing:
+                    invalidate = getattr(source_store, "invalidate_index_cache", None)
+                    if invalidate is not None:
+                        invalidate()
+                    cached_index = source_store.load_index()
+                    self._ro_crate_tool_index = cached_index
+                tool_index = cached_index
+                if tool_index is not None:
+                    entry = tool_index.get(tool_id, version)
+                    if entry is not None and str(entry.version) == str(version):
+                        return entry, "persisted tool source index"
+            except Exception:
+                log.warning("RO-Crate tool metadata unavailable from tool source store")
+        return None, None
+
+    @staticmethod
+    def _tool_citation(citation):
+        if isinstance(citation, dict):
+            citation_type = citation.get("type")
+            content = citation.get("content")
+            return citation_type, content
+        if citation.has_doi():
+            return "doi", citation.doi()
+        return "bibtex", getattr(citation, "raw_bibtex", None)
+
+    @staticmethod
+    def _tool_metadata_field(source, name):
+        return source.get(name) if isinstance(source, Mapping) else getattr(source, name, None)
+
+    def _enrich_tool_entity(self, crate, entity, tool_id, version):
+        entity["identifier"] = tool_id
+        if version:
+            entity["softwareVersion"] = version
+            entity.properties().pop("version", None)
+        cache = getattr(crate, "_galaxy_enriched_tools", None)
+        if cache is None:
+            cache = crate._galaxy_enriched_tools = set()
+        key = (tool_id, version)
+        if key in cache:
+            return
+        cache.add(key)
+        if not version:
+            self._add_metadata_property(
+                crate, entity, "Tool metadata availability", "No recorded tool version is available"
+            )
+            return
+        tool, source = self._exact_tool_metadata(tool_id, version)
+        if tool is None:
+            self._add_metadata_property(
+                crate, entity, "Tool metadata availability", "Exact recorded tool version unavailable"
+            )
+            return
+        self._add_metadata_property(
+            crate,
+            entity,
+            "Tool metadata source",
+            f"{source.capitalize()} matching the recorded ID and version; not an execution-time snapshot",
+        )
+        if tool.name:
+            entity["name"] = tool.name
+        if getattr(tool, "description", None) and self._safe_metadata_value(tool.description):
+            entity["description"] = tool.description
+        if getattr(tool, "license", None):
+            entity["license"] = tool.license
+        for attribute, relation in (("edam_operations", "featureList"), ("edam_topics", "about")):
+            for term in getattr(tool, attribute, None) or []:
+                uri = term if term.startswith(("http://", "https://")) else f"http://edamontology.org/{term}"
+                concept = crate.add(ContextEntity(crate, uri, properties={"@type": "DefinedTerm", "name": term}))
+                entity.append_to(relation, concept)
+        for citation in getattr(tool, "citations", None) or []:
+            citation_type, content = self._tool_citation(citation)
+            if citation_type == "doi" and isinstance(content, str):
+                doi = content.strip()
+                doi = re.sub(r"^(?:https?://(?:dx\.)?doi\.org/|doi:\s*)", "", doi, flags=re.IGNORECASE)
+                if not doi:
+                    continue
+                reference = crate.add(
+                    ContextEntity(
+                        crate,
+                        f"https://doi.org/{doi}",
+                        properties={
+                            "@type": "ScholarlyArticle",
+                            "identifier": f"https://doi.org/{doi}",
+                            "name": doi,
+                        },
+                    )
+                )
+            else:
+                bibtex = content
+                if not isinstance(bibtex, str) or not bibtex:
+                    continue
+                digest = hashlib.sha256(bibtex.encode()).hexdigest()
+                reference = crate.add(
+                    ContextEntity(
+                        crate,
+                        f"#citation-{digest}",
+                        properties={
+                            "@type": "CreativeWork",
+                            "name": "Tool citation",
+                            "encodingFormat": "application/x-bibtex",
+                            "text": bibtex,
+                        },
+                    )
+                )
+            entity.append_to("citation", reference)
+        for xref in getattr(tool, "xrefs", None) or []:
+            if xref.get("type") == "bio.tools" and xref.get("value"):
+                entity.append_to("sameAs", {"@id": f"https://bio.tools/{xref['value']}"})
+            else:
+                self._add_metadata_property(
+                    crate, entity, f"Tool cross-reference ({xref.get('type')})", xref.get("value")
+                )
+        creators = getattr(tool, "creator", None)
+        if creators is None:
+            creators = getattr(tool, "creators", None)
+        for index, creator in enumerate(creators or []):
+            if not isinstance(creator, dict):
+                continue
+            properties = {"@type": "Organization" if creator.get("class") == "Organization" else "Person"}
+            for key in ("name", "givenName", "familyName", "url"):
+                if creator.get(key) and self._safe_metadata_value(creator[key]):
+                    properties[key] = creator[key]
+            identifier = creator.get("identifier")
+            if identifier and self._safe_metadata_value(identifier):
+                if re.fullmatch(r"\d{4}-\d{4}-\d{4}-[\dX]{4}", identifier):
+                    identifier = f"https://orcid.org/{identifier}"
+                properties["identifier"] = identifier
+            if len(properties) > 1:
+                entity.append_to(
+                    "creator", crate.add(ContextEntity(crate, f"{entity.id}-creator-{index}", properties=properties))
+                )
+        for index, requirement in enumerate(getattr(tool, "requirements", None) or []):
+            requirement_name = self._tool_metadata_field(requirement, "name")
+            if not requirement_name:
+                continue
+            requirement_version = self._tool_metadata_field(requirement, "version")
+            properties = {"@type": "SoftwareApplication", "name": requirement_name}
+            if requirement_version:
+                properties["softwareVersion"] = requirement_version
+            identifier = hashlib.sha256(f"{entity.id}:requirement:{index}".encode()).hexdigest()[:16]
+            dependency = crate.add(
+                ContextEntity(crate, f"urn:galaxy:tool-requirement:{identifier}", properties=properties)
+            )
+            entity.append_to("softwareRequirements", dependency)
+            requirement_type = self._tool_metadata_field(requirement, "type")
+            self._add_metadata_property(crate, dependency, "Requirement type", requirement_type)
+            if not isinstance(requirement, dict):
+                for specification in getattr(requirement, "specs", None) or []:
+                    self._add_metadata_property(crate, dependency, "Requirement specification", specification.to_dict())
+        for key in (
+            "tool_shed",
+            "repository_name",
+            "repository_owner",
+            "changeset_revision",
+            "installed_changeset_revision",
+        ):
+            self._add_metadata_property(crate, entity, f"ToolShed {key}", getattr(tool, key, None))
+        resource_requirements = getattr(tool, "resource_requirements", None) or []
+        for requirement in resource_requirements:
+            value = requirement if isinstance(requirement, dict) else requirement.to_dict()
+            self._add_metadata_property(crate, entity, "Declared resource requirement", value)
+        if hasattr(tool, "inputs") or hasattr(tool, "outputs"):
+            self._add_tool_ports(crate, entity, tool)
+        containers = getattr(tool, "containers", None)
+        if containers is None:
+            containers = getattr(tool, "container_requirements", None)
+        for index, container in enumerate(containers or []):
+            identifier = self._tool_metadata_field(container, "identifier")
+            container_type = self._tool_metadata_field(container, "type")
+            if not self._safe_metadata_value(identifier):
+                continue
+            self._add_metadata_property(
+                crate,
+                entity,
+                f"Declared container {index + 1}",
+                {
+                    "identifier": identifier,
+                    "type": container_type,
+                },
+            )
+
+    def _add_tool_ports(self, crate, tool_entity, tool):
+        """Describe static ports without evaluating dynamic options or execution defaults."""
+
+        def add_ports(ports, direction, prefix=""):
+            if not isinstance(ports, dict):
+                return
+            for name, definition in ports.items():
+                path = f"{prefix}{name}"
+                identifier = hashlib.sha256(f"{tool_entity.id}:{direction}:{path}".encode()).hexdigest()
+                parameter_type = getattr(definition, "type", None) or getattr(definition, "output_type", None)
+                properties = {
+                    "@type": "FormalParameter",
+                    "name": path,
+                    "additionalType": ro_crate_parameter_type(parameter_type),
+                }
+                optional = getattr(definition, "optional", None)
+                if isinstance(optional, bool):
+                    properties["valueRequired"] = not optional
+                label = getattr(definition, "label", None)
+                if isinstance(label, str) and self._safe_metadata_value(label):
+                    properties["description"] = label
+                port = crate.add(ContextEntity(crate, f"#port-{identifier}", properties=properties))
+                tool_entity.append_to(direction, port)
+                self._add_metadata_property(crate, port, "Galaxy parameter type", parameter_type)
+                for field in ("min", "max", "multiple", "format", "collection_type", "hidden", "is_dynamic"):
+                    value = getattr(definition, field, None)
+                    if isinstance(value, (str, int, float, bool, list, dict)):
+                        self._add_metadata_property(crate, port, f"Galaxy {field}", value)
+                if not getattr(definition, "is_dynamic", False):
+                    default = getattr(definition, "value", None)
+                    if isinstance(default, (str, int, float, bool, list, dict)) and is_publishable_metadata_field(
+                        path, default
+                    ):
+                        port["defaultValue"] = default
+                    options = getattr(definition, "static_options", None)
+                    if isinstance(options, (list, tuple)):
+                        self._add_metadata_property(crate, port, "Galaxy static options", list(options))
+                selector = getattr(definition, "test_param", None)
+                if selector is not None:
+                    add_ports({selector.name: selector}, direction, f"{path}|")
+                add_ports(getattr(definition, "inputs", None), direction, f"{path}|")
+                add_ports(getattr(definition, "outputs", None), direction, f"{path}|")
+                for index, case in enumerate(getattr(definition, "cases", None) or []):
+                    case_path = f"{path}|case-{index}"
+                    if selector is not None:
+                        self._add_metadata_property(
+                            crate,
+                            port,
+                            "Galaxy conditional branch",
+                            {
+                                "path": case_path,
+                                "selector": selector.name,
+                                "value": getattr(case, "value", None),
+                            },
+                        )
+                    add_ports(getattr(case, "inputs", None), direction, f"{case_path}|")
+
+        add_ports(getattr(tool, "inputs", None), "input")
+        add_ports(getattr(tool, "outputs", None), "output")
+
+    def _add_dynamic_tool_metadata(self, crate, entity, dynamic_tool):
+        if dynamic_tool is None or not dynamic_tool.uuid:
+            return
+        identifier = f"urn:uuid:{dynamic_tool.uuid}"
+        definition = crate.get(identifier)
+        if definition is None:
+            definition = crate.add(
+                ContextEntity(
+                    crate,
+                    identifier,
+                    properties={
+                        "@type": "SoftwareSourceCode",
+                        "name": dynamic_tool.tool_id or "Galaxy dynamic tool",
+                        "identifier": identifier,
+                        **self._date_properties(
+                            dateCreated=dynamic_tool.create_time, dateModified=dynamic_tool.update_time
+                        ),
+                    },
+                )
+            )
+            for field in ("tool_format", "tool_version"):
+                self._add_metadata_property(crate, definition, f"Galaxy {field}", getattr(dynamic_tool, field, None))
+            for key in ("name", "label", "description", "doc", "license", "edam_operations", "edam_topics"):
+                self._add_metadata_property(
+                    crate, definition, f"Recorded definition {key}", (dynamic_tool.value or {}).get(key)
+                )
+        if definition not in (entity.get("isBasedOn") or []):
+            entity.append_to("isBasedOn", definition)
+
+    def _job_input_entity(self, crate, association, file_entities):
+        dataset = association.dataset
+        current = self._ensure_provenance_dataset(crate, dataset, file_entities)
+        version = getattr(association, "dataset_version", None)
+        if version is None or version == dataset.version or not isinstance(dataset, model.HistoryDatasetAssociation):
+            return current
+        identifier = f"#dataset-revision-{self.security.encode_id(dataset.id)}-{version}"
+        existing = crate.get(identifier)
+        if existing is not None:
+            return existing
+        snapshot = self.app.model.session.scalar(
+            select(model.HistoryDatasetAssociationHistory).where(
+                model.HistoryDatasetAssociationHistory.history_dataset_association_id == dataset.id,
+                model.HistoryDatasetAssociationHistory.version == version,
+            )
+        )
+        properties = {
+            "@type": "PropertyValue",
+            "name": "Historical Galaxy dataset revision",
+            "propertyID": "https://galaxyproject.org/terms/datasetRevision",
+            "value": version,
+            "version": version,
+            "conditionsOfAccess": "Historical metadata only. Historical payload bytes have not been reconstructed.",
+            "about": current,
+        }
+        if snapshot is not None:
+            properties.update(
+                name=snapshot.name or properties["name"], **self._date_properties(dateModified=snapshot.update_time)
+            )
+            if snapshot.extension:
+                properties["additionalType"] = f"https://galaxyproject.org/datatypes/{snapshot.extension}"
+        entity = crate.add(ContextEntity(crate, identifier, properties=properties))
+        self._add_metadata_property(crate, entity, "Galaxy dataset association", self.security.encode_id(dataset.id))
+        if snapshot is not None:
+            self._add_scientific_metadata(crate, entity, snapshot._metadata or {})
+        else:
+            self._add_metadata_property(
+                crate, entity, "Metadata availability", "The referenced revision is not available."
+            )
+        crate.root_dataset.append_to("mentions", entity)
+        return entity
+
+    def _add_scientific_metadata(self, crate, entity, metadata, prefix="Galaxy"):
+        if not isinstance(metadata, Mapping):
+            return
+        element_is_set = getattr(metadata, "element_is_set", None)
+        for key in metadata:
+            if not isinstance(key, str) or key.startswith("_"):
+                continue
+            try:
+                if element_is_set is not None and not element_is_set(key):
+                    continue
+                value = getattr(metadata, key) if element_is_set is not None else metadata[key]
+            except (AttributeError, KeyError, TypeError):
+                continue
+            if (
+                value is not None
+                and not (isinstance(value, str) and value == "?")
+                and is_publishable_metadata_field(key, value)
+            ):
+                self._add_metadata_property(crate, entity, f"{prefix} {key}", value)
 
     @property
     @abc.abstractmethod
@@ -2631,9 +3156,755 @@ class WriteCrates:
             markdown_parts.append("")
             markdown_parts.append(f"This crate describes the invocation of workflow {name} executed at {create_time}.")
         else:
-            markdown_parts.append("# Galaxy Dataset Export")
+            markdown_parts.append(f"# {self._generic_crate_name()}")
 
+        markdown_parts.extend(
+            [
+                "",
+                "## Publication and privacy",
+                "",
+                "This is a Galaxy export, not an anonymized public release. Semantic metadata uses "
+                "conservative filters, but payloads, workflow definitions and Galaxy model-store "
+                "attributes can contain private information. Review the complete archive before sharing. "
+                "No license assertion grants reuse permission. Publishing, assigning persistent "
+                "identifiers and indexing the crate are separate operations.",
+            ]
+        )
         return "\n".join(markdown_parts)
+
+    def _generic_crate_name(self) -> str:
+        if self.included_histories:
+            return self.included_histories[0].name or "Galaxy history export"
+        collections = getattr(self, "_crate_requested_collections", list(self.included_collections.values()))
+        datasets = getattr(self, "_crate_requested_datasets", list(self.included_datasets))
+        if len(collections) == 1:
+            collection = collections[0]
+            return getattr(collection, "name", None) or "Galaxy dataset collection export"
+        if not collections and len(datasets) == 1:
+            dataset = datasets[0]
+            return dataset.name or "Galaxy dataset export"
+        return "Galaxy dataset export"
+
+    @staticmethod
+    def _dataset_ro_crate_properties(dataset: model.DatasetInstance, source_path: str | None = None) -> dict[str, Any]:
+        assert dataset.dataset is not None
+        stored_dataset = dataset.dataset
+        properties: dict[str, Any] = {
+            "name": dataset.name,
+            "encodingFormat": dataset.datatype.get_mime(),
+            "identifier": f"urn:uuid:{stored_dataset.uuid}",
+            **WriteCrates._date_properties(dateCreated=dataset.create_time, dateModified=dataset.update_time),
+            "additionalType": f"https://galaxyproject.org/datatypes/{dataset.extension}",
+            "version": dataset.version,
+            "conditionsOfAccess": "Access is governed by the permissions of the source Galaxy dataset.",
+        }
+        additional_types = [properties["additionalType"]]
+        if edam_format := getattr(dataset.datatype, "edam_format", None):
+            additional_types.append(f"http://edamontology.org/{edam_format}")
+        properties["additionalType"] = additional_types
+        if edam_data := getattr(dataset.datatype, "edam_data", None):
+            properties["about"] = {"@id": f"http://edamontology.org/{edam_data}"}
+        description = getattr(dataset, "annotation", None)
+        owner = getattr(getattr(dataset, "history", None), "user", None)
+        if not description and owner is not None:
+            description = next(
+                (annotation.annotation for annotation in dataset.annotations if annotation.user_id == owner.id), None
+            )
+        description = description or dataset.info
+        if description and WriteCrates._safe_metadata_value(description):
+            properties["description"] = description
+        if source_path and os.path.isfile(source_path):
+            properties["contentSize"] = str(os.path.getsize(source_path))
+        elif stored_dataset.file_size is not None:
+            properties["contentSize"] = str(stored_dataset.file_size)
+        tags = [
+            f"{tag.user_tname}:{tag.user_value}" if tag.user_value else tag.user_tname
+            for tag in dataset.tags
+            if tag.user_tname
+        ]
+        if tags:
+            properties["keywords"] = tags
+        sha256 = next(
+            (
+                dataset_hash.hash_value
+                for dataset_hash in stored_dataset.hashes
+                if not dataset_hash.extra_files_path
+                and dataset_hash.hash_function
+                and dataset_hash.hash_function.lower().replace("-", "") == "sha256"
+                and WriteCrates._valid_checksum(dataset_hash.hash_function, dataset_hash.hash_value)
+            ),
+            None,
+        )
+        if source_path and os.path.isfile(source_path):
+            # Embedded checksums describe these bytes, not a potentially stale database record.
+            digest = hashlib.sha256()
+            with open(source_path, "rb") as source:
+                for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            sha256 = digest.hexdigest()
+        if sha256:
+            properties["_galaxy_sha256"] = sha256
+        safe_sources = []
+        for dataset_source in stored_dataset.sources:
+            source_uri = dataset_source.source_uri
+            if not source_uri:
+                continue
+            if source_uri.startswith(("http://", "https://", "ftp://")) and WriteCrates._safe_metadata_value(
+                source_uri
+            ):
+                safe_sources.append({"@id": source_uri})
+        if safe_sources:
+            properties["isBasedOn"] = safe_sources
+        if dataset.deleted or stored_dataset.purged:
+            properties["conditionsOfAccess"] = (
+                "The dataset payload is deleted or unavailable in the source Galaxy instance."
+            )
+        return properties
+
+    @staticmethod
+    def _attach_dataset_checksum(ro_crate: ROCrate, entity: File | ContextEntity, properties: dict[str, Any]) -> None:
+        if sha256 := properties.pop("_galaxy_sha256", None):
+            checksum = ro_crate.add(
+                ContextEntity(
+                    ro_crate,
+                    f"#checksum-{sha256}",
+                    properties={
+                        "@type": "PropertyValue",
+                        "name": "SHA-256",
+                        "propertyID": "https://spdx.org/rdf/terms#checksumValue",
+                        "value": sha256,
+                    },
+                )
+            )
+            entity.append_to("additionalProperty", checksum)
+
+    def _attach_dataset_metadata(self, crate, entity, dataset):
+        extended = getattr(dataset, "extended_metadata", None)
+        if extended is not None:
+            self._add_scientific_metadata(crate, entity, extended.data, prefix="Extended Galaxy")
+        self._add_scientific_metadata(crate, entity, dataset.metadata)
+        for name in RO_CRATE_DATASET_STATUS_FIELDS:
+            self._add_metadata_property(crate, entity, f"Galaxy {name}", getattr(dataset, name, None))
+        for dataset_hash in dataset.dataset.hashes:
+            if not dataset_hash.extra_files_path and self._valid_checksum(
+                dataset_hash.hash_function, dataset_hash.hash_value
+            ):
+                self._add_metadata_property(
+                    crate,
+                    entity,
+                    f"Recorded source checksum ({dataset_hash.hash_function}; not verified against exported bytes)",
+                    dataset_hash.hash_value,
+                )
+        for index, source in enumerate(dataset.dataset.sources):
+            uri = source.source_uri
+            if not uri or not uri.startswith(("http://", "https://", "ftp://")) or not self._safe_metadata_value(uri):
+                continue
+            source_entity = crate.add(
+                ContextEntity(
+                    crate,
+                    f"{entity.id}#source-record-{index}",
+                    properties={"@type": "CreativeWork", "name": "Galaxy dataset source record", "url": uri},
+                )
+            )
+            entity.append_to("isBasedOn", source_entity)
+            component_path = getattr(source, "extra_files_path", None)
+            if component_path and self._safe_metadata_value(component_path):
+                self._add_metadata_property(crate, source_entity, "Source component path", component_path)
+            for source_hash in source.hashes:
+                if not self._valid_checksum(source_hash.hash_function, source_hash.hash_value):
+                    continue
+                self._add_metadata_property(
+                    crate, source_entity, f"Source checksum ({source_hash.hash_function})", source_hash.hash_value
+                )
+            for field in ("transform", "requested_transform"):
+                value = getattr(source, field, None)
+                if self._safe_metadata_value(value):
+                    self._add_metadata_property(crate, source_entity, field, value)
+
+        for relation in ("copied_from_history_dataset_association", "copied_from_library_dataset_dataset_association"):
+            parent = getattr(dataset, relation, None)
+            if parent is None or parent.dataset is None:
+                continue
+            identifier = self.security.encode_id(parent.id)
+            original = crate.add(
+                ContextEntity(
+                    crate,
+                    f"#source-{parent.__class__.__name__}-{identifier}",
+                    properties={
+                        "@type": "CreativeWork",
+                        "name": parent.name,
+                        "identifier": f"urn:uuid:{parent.dataset.uuid}",
+                        "version": parent.version,
+                    },
+                )
+            )
+            entity.append_to("isBasedOn", original)
+            self._add_metadata_property(crate, original, "Galaxy relationship", relation)
+
+    def _add_instance_metadata(self, crate):
+        # JSON-LD reference arrays are sets here; repeated invocations can reuse a definition.
+        for entity in crate.get_entities():
+            for key, values in list(entity.properties().items()):
+                if isinstance(values, list) and all(isinstance(value, dict) and "@id" in value for value in values):
+                    entity.properties()[key] = list({value["@id"]: value for value in values}.values())
+        self._add_metadata_property(
+            crate,
+            crate.root_dataset,
+            "Galaxy publication policy",
+            "Not anonymized. Review payloads, workflow files and model-store attributes before publication; "
+            "semantic privacy filters do not sanitize the archive.",
+        )
+        for dataset, _ in getattr(self, "included_datasets", {}).values():
+            if dataset.dataset is None:
+                continue
+            encoded_association_id = self.security.encode_id(dataset.id)
+            identifier = f"#galaxy-{dataset.__class__.__name__}-{encoded_association_id}"
+            if crate.get(identifier) is not None:
+                continue
+            properties = self._dataset_ro_crate_properties(dataset)
+            properties.pop("_galaxy_sha256", None)
+            properties["@type"] = "CreativeWork"
+            properties["identifier"] = identifier[1:]
+            properties["description"] = properties.get(
+                "description", "Galaxy dataset association; metadata describes its current recorded revision."
+            )
+            instance = crate.add(ContextEntity(crate, identifier, properties=properties))
+            self._attach_dataset_metadata(crate, instance, dataset)
+            crate.root_dataset.append_to("mentions", instance)
+            filename, _ = self.dataset_id_to_path.get(dataset.dataset.id, (None, None))
+            payload = crate.get(filename or self._metadata_only_dataset_id(dataset))
+            if payload is not None and payload is not instance:
+                instance["about"] = payload
+        config = getattr(getattr(self, "app", None), "config", None)
+        if config is None:
+            return
+        name = getattr(config, "organization_name", None)
+        url = getattr(config, "organization_url", None)
+        if name:
+            properties = {"@type": "Organization", "name": name}
+            if url and self._safe_metadata_value(url):
+                properties["url"] = url
+            crate.root_dataset["publisher"] = crate.add(
+                ContextEntity(crate, "#galaxy-instance-operator", properties=properties)
+            )
+        for field in ("ga4gh_service_id", "brand"):
+            value = getattr(config, field, None)
+            if self._safe_metadata_value(value):
+                self._add_metadata_property(crate, crate.root_dataset, f"Galaxy instance {field}", value)
+
+    def _add_composite_dataset_parts(
+        self, ro_crate: ROCrate, dataset_entity: File | ContextEntity, extra_files_path: str | None
+    ) -> None:
+        if not extra_files_path:
+            return
+        source_directory = os.path.join(self.export_directory, extra_files_path)
+        if not os.path.isdir(source_directory):
+            return
+        for directory, _, filenames in os.walk(source_directory):
+            for filename in filenames:
+                source_path = os.path.join(directory, filename)
+                relative_path = os.path.relpath(source_path, self.export_directory)
+                part_properties: dict[str, Any] = {
+                    "name": filename,
+                    "encodingFormat": "application/octet-stream",
+                    "contentSize": str(os.path.getsize(source_path)),
+                }
+                part = ro_crate.add_file(source_path, dest_path=relative_path, properties=part_properties)
+                digest = hashlib.sha256()
+                with open(source_path, "rb") as source:
+                    for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                        digest.update(chunk)
+                checksum_properties = {"_galaxy_sha256": digest.hexdigest()}
+                self._attach_dataset_checksum(ro_crate, part, checksum_properties)
+                dataset_entity.append_to("hasPart", part)
+
+    def _add_generic_collections(
+        self, ro_crate: ROCrate, file_entities: dict[int, File | ContextEntity], collections=None
+    ) -> dict[int, ContextEntity]:
+        collection_entities: dict[int, ContextEntity] = {}
+
+        def add_collection(dataset_collection: model.DatasetCollection, name: str | None = None) -> ContextEntity:
+            if dataset_collection.id in collection_entities:
+                return collection_entities[dataset_collection.id]
+            existing = ro_crate.get(f"#dataset-collection-{dataset_collection.id}")
+            if existing is not None:
+                collection_entities[dataset_collection.id] = existing
+                return existing
+            collection_type = dataset_collection.collection_type or "unknown"
+            collection_entity = ro_crate.add(
+                ContextEntity(
+                    ro_crate,
+                    f"#dataset-collection-{dataset_collection.id}",
+                    properties={
+                        "@type": "Collection",
+                        "name": name or "Galaxy dataset collection",
+                        "identifier": f"galaxy-dataset-collection:{dataset_collection.id}",
+                        "additionalType": f"https://galaxyproject.org/collection/{collection_type}",
+                        **self._date_properties(
+                            dateCreated=dataset_collection.create_time, dateModified=dataset_collection.update_time
+                        ),
+                        "numberOfItems": dataset_collection.element_count or len(dataset_collection.elements),
+                        "conditionsOfAccess": "Access is governed by the permissions of the source Galaxy collection.",
+                    },
+                )
+            )
+            collection_entities[dataset_collection.id] = collection_entity
+            for field in ("populated_state", "fields", "column_definitions"):
+                value = getattr(dataset_collection, field, None)
+                if self._safe_metadata_value(value):
+                    self._add_metadata_property(ro_crate, collection_entity, f"Galaxy collection {field}", value)
+            item_list = []
+            members = []
+            for element in dataset_collection.elements:
+                element_object = element.element_object
+                member = None
+                if isinstance(element_object, model.DatasetCollection):
+                    member = add_collection(element_object, element.element_identifier)
+                elif element_object and element_object.dataset:
+                    member = self._ensure_provenance_dataset(ro_crate, element_object, file_entities)
+                element_properties: dict[str, Any] = {
+                    "@type": "ListItem",
+                    "name": element.element_identifier,
+                    "position": (element.element_index or 0) + 1,
+                    "additionalType": f"https://galaxyproject.org/collection-element/{element.element_type}",
+                }
+                if member:
+                    element_properties["item"] = member
+                    members.append(member)
+                if element.columns and self._safe_metadata_value(element.columns):
+                    element_properties["description"] = f"Sample-sheet columns: {element.columns}"
+                item_list.append(
+                    ro_crate.add(
+                        ContextEntity(
+                            ro_crate,
+                            f"#dataset-collection-element-{element.id}",
+                            properties=element_properties,
+                        )
+                    )
+                )
+            collection_entity["hasPart"] = members
+            collection_entity["itemListElement"] = item_list
+            return collection_entity
+
+        for collection in collections if collections is not None else self.included_collections.values():
+            hdca = collection if isinstance(collection, model.HistoryDatasetCollectionAssociation) else None
+            dataset_collection = hdca.collection if hdca else collection
+            collection_entity = add_collection(dataset_collection, getattr(collection, "name", None))
+            if hdca:
+                collection_entity["identifier"] = hdca.type_id
+                for key, value in self._date_properties(
+                    dateCreated=hdca.create_time, dateModified=hdca.update_time
+                ).items():
+                    collection_entity[key] = value
+                description = hdca.annotations[0].annotation if hdca.annotations else None
+                if description:
+                    collection_entity["description"] = description
+                tags = [
+                    f"{tag.user_tname}:{tag.user_value}" if tag.user_value else tag.user_tname
+                    for tag in hdca.tags
+                    if tag.user_tname
+                ]
+                if tags:
+                    collection_entity["keywords"] = tags
+            ro_crate.root_dataset.append_to("mentions", collection_entity)
+        return collection_entities
+
+    def _ensure_provenance_dataset(self, crate, dataset, file_entities):
+        existing = file_entities.get(dataset.dataset.id)
+        if existing is not None:
+            return existing
+        properties = self._dataset_ro_crate_properties(dataset)
+        checksum = properties.pop("_galaxy_sha256", None)
+        properties["conditionsOfAccess"] = "Only metadata is included for this provenance dataset."
+        entity = crate.add(
+            ContextEntity(crate, self._metadata_only_dataset_id(dataset), properties={"@type": "Dataset", **properties})
+        )
+        self._attach_dataset_checksum(crate, entity, {"_galaxy_sha256": checksum})
+        self._attach_dataset_metadata(crate, entity, dataset)
+        crate.root_dataset.append_to("hasPart", entity)
+        file_entities[dataset.dataset.id] = entity
+        return entity
+
+    @staticmethod
+    def _job_action_status(job: model.Job) -> str | None:
+        if job.state in {"error", "failed", "deleted"}:
+            return "http://schema.org/FailedActionStatus"
+        if job.state in {"ok", "skipped"}:
+            return "http://schema.org/CompletedActionStatus"
+        return None
+
+    @staticmethod
+    def _safe_metadata_value(value):
+        return is_publishable_metadata_value(value)
+
+    def _safe_adapter_metadata(self, adapter):
+        try:
+            validated = AdaptedDataCollectionRequestInternalTypeAdapter.validate_python(adapter)
+        except ValidationError:
+            return None
+
+        def encode_ids(value):
+            if isinstance(value, dict):
+                return {
+                    key: self.security.encode_id(item) if key == "id" and isinstance(item, int) else encode_ids(item)
+                    for key, item in value.items()
+                }
+            if isinstance(value, list):
+                return [encode_ids(item) for item in value]
+            return value
+
+        return encode_ids(validated.model_dump(mode="json"))
+
+    def _job_tool_entity(self, ro_crate: ROCrate, job: model.Job) -> ContextEntity:
+        tool_id = job.tool_id or "unknown-tool"
+        tool_entity_id = self._tool_entity_id(tool_id, job.tool_version or "unknown")
+        tool = ro_crate.get(tool_entity_id)
+        if tool is None:
+            tool = ro_crate.add(
+                ContextEntity(
+                    ro_crate,
+                    tool_entity_id,
+                    properties={
+                        "@type": "SoftwareApplication",
+                        "name": tool_id,
+                        "identifier": tool_id,
+                        **({"softwareVersion": job.tool_version} if job.tool_version else {}),
+                        **(
+                            {"url": f"https://{tool_id}"}
+                            if "/repos/" in tool_id and not tool_id.startswith(("http://", "https://"))
+                            else ({"url": tool_id} if tool_id.startswith(("http://", "https://")) else {})
+                        ),
+                    },
+                )
+            )
+        self._enrich_tool_entity(ro_crate, tool, tool_id, job.tool_version)
+        self._add_dynamic_tool_metadata(ro_crate, tool, job.dynamic_tool)
+        return tool
+
+    def _job_container_entity(self, ro_crate: ROCrate, job: model.Job) -> ContextEntity | None:
+        if not (job.container and job.container.container_name):
+            return None
+        container_name = job.container.container_name
+        if not self._safe_metadata_value(container_name):
+            return None
+        container = ro_crate.add(
+            ContextEntity(
+                ro_crate,
+                f"#container-{job.id}",
+                properties={
+                    "@type": "SoftwareApplication",
+                    "name": container_name,
+                    "identifier": f"{job.container.container_type or 'container'}://{container_name}",
+                    "applicationCategory": "Container image",
+                },
+            )
+        )
+        self._add_metadata_property(ro_crate, container, "Container type", job.container.container_type)
+        container.properties()["@type"] = "https://w3id.org/ro/terms/workflow-run#ContainerImage"
+        return container
+
+    def _add_job_provenance(
+        self,
+        ro_crate: ROCrate,
+        file_entities: dict[int, File | ContextEntity],
+        link_outputs_to_actions: bool = True,
+    ) -> dict[int, ContextEntity]:
+        workflow_run_context = "https://w3id.org/ro/terms/workflow-run/context"
+        if workflow_run_context not in ro_crate.metadata.extra_contexts:
+            ro_crate.metadata.extra_contexts.append(workflow_run_context)
+        ro_crate.metadata.extra_terms["wasInformedBy"] = "http://www.w3.org/ns/prov#wasInformedBy"
+        actions: dict[int, ContextEntity] = {}
+        for job in self.included_jobs.values():
+            if job.state == "skipped":
+                self._add_metadata_property(ro_crate, ro_crate.root_dataset, "Skipped Galaxy job", str(job.id))
+                continue
+            tool_id = job.tool_id or "unknown-tool"
+            tool = self._job_tool_entity(ro_crate, job)
+            container = self._job_container_entity(ro_crate, job)
+            parameters = []
+            for index, parameter in enumerate(job.parameters):
+                parameters.append(
+                    ro_crate.add(
+                        ContextEntity(
+                            ro_crate,
+                            f"#job-{job.id}-parameter-{index}",
+                            properties={
+                                "@type": "PropertyValue",
+                                "name": parameter.name or "Unnamed parameter",
+                                "description": "Value withheld because Galaxy job parameters can contain credentials.",
+                            },
+                        )
+                    )
+                )
+            inputs = [
+                self._job_input_entity(ro_crate, association, file_entities)
+                for association in [*job.input_datasets, *job.input_library_datasets]
+                if association.dataset and association.dataset.dataset
+            ]
+            outputs = [
+                self._ensure_provenance_dataset(ro_crate, association.dataset, file_entities)
+                for association in [*job.output_datasets, *job.output_library_datasets]
+                if association.dataset and association.dataset.dataset
+            ]
+            for associations, target in (
+                (job.input_dataset_collections, inputs),
+                ([*job.output_dataset_collections, *job.output_dataset_collection_instances], outputs),
+            ):
+                for association in associations:
+                    collection = getattr(association, "dataset_collection", None) or getattr(
+                        association, "dataset_collection_instance", None
+                    )
+                    if collection is None:
+                        continue
+                    dataset_collection = (
+                        collection.collection
+                        if isinstance(collection, model.HistoryDatasetCollectionAssociation)
+                        else collection
+                    )
+                    collection_entity = ro_crate.get(f"#dataset-collection-{dataset_collection.id}")
+                    if collection_entity is None:
+                        collection_entity = self._add_generic_collections(
+                            ro_crate, file_entities, collections=[collection]
+                        )[dataset_collection.id]
+                    if collection_entity is not None:
+                        target.append(collection_entity)
+            for association in job.input_dataset_collection_elements:
+                element = association.dataset_collection_element
+                if element is None:
+                    continue
+                element_entity = ro_crate.get(f"#dataset-collection-element-{element.id}")
+                if element_entity is None:
+                    self._add_generic_collections(ro_crate, file_entities, collections=[element.collection])
+                    element_entity = ro_crate.get(f"#dataset-collection-element-{element.id}")
+                if element_entity is not None:
+                    inputs.append(element_entity)
+            properties: dict[str, Any] = {
+                "@type": "CreateAction",
+                "name": f"Galaxy job {job.id}: {tool_id}",
+                "description": f'Execution of Galaxy tool "{tool_id}".',
+                "identifier": f"galaxy-job:{job.id}",
+                "instrument": tool,
+                "object": [*inputs, *parameters],
+                "result": outputs,
+                **(
+                    {"actionStatus": action_status}
+                    if (action_status := self._job_action_status(job)) is not None
+                    else {}
+                ),
+            }
+            running_times = [
+                state.create_time for state in job.state_history if state.state == "running" and state.create_time
+            ]
+            terminal_times = [
+                state.create_time for state in job.state_history if state.state == job.state and state.create_time
+            ]
+            if running_times:
+                properties.update(self._date_properties(startTime=min(running_times)))
+            if job.state in {"ok", "error", "failed", "deleted", "skipped"} and terminal_times:
+                properties.update(self._date_properties(endTime=max(terminal_times)))
+            elif job.state in {"ok", "error", "failed", "deleted", "skipped"}:
+                properties.update(self._date_properties(endTime=job.update_time))
+            if job.info and job.state in {"error", "failed", "deleted"} and self._safe_metadata_value(job.info):
+                properties["error"] = job.info
+            if job.runner_name and self._safe_metadata_value(job.runner_name):
+                properties["description"] = f"Executed using Galaxy runner {job.runner_name}."
+            action = ro_crate.add(ContextEntity(ro_crate, f"#galaxy-job-{job.id}", properties=properties))
+            self._add_metadata_property(ro_crate, action, "Recorded Galaxy execution version", job.galaxy_version)
+            self._add_metadata_property(ro_crate, action, "Galaxy destination identifier", job.destination_id)
+            adapter_associations = [
+                *job.input_datasets,
+                *job.input_dataset_collections,
+                *job.input_dataset_collection_elements,
+            ]
+            for index, association in enumerate(adapter_associations):
+                adapter = getattr(association, "adapter", None)
+                if not adapter:
+                    continue
+                target = None
+                if dataset := getattr(association, "dataset", None):
+                    if dataset.dataset:
+                        target = self._job_input_entity(ro_crate, association, file_entities)
+                elif collection := getattr(association, "dataset_collection", None):
+                    target = ro_crate.get(f"#dataset-collection-{collection.collection.id}")
+                elif element := getattr(association, "dataset_collection_element", None):
+                    target = ro_crate.get(f"#dataset-collection-element-{element.id}")
+                adapter_properties = {
+                    "@type": "PropertyValue",
+                    "name": f"Galaxy input adapter for {association.name or 'unnamed input'}",
+                    "propertyID": "https://galaxyproject.org/terms/inputAdapter",
+                    **({"about": target} if target is not None else {}),
+                }
+                if safe_adapter := self._safe_adapter_metadata(adapter):
+                    adapter_properties["value"] = dumps(safe_adapter, sort_keys=True)
+                else:
+                    adapter_properties["description"] = "Adapter metadata withheld by export privacy policy."
+                adapter_entity = ro_crate.add(
+                    ContextEntity(
+                        ro_crate,
+                        f"#job-{job.id}-input-adapter-{index}",
+                        properties=adapter_properties,
+                    )
+                )
+                action.append_to("object", adapter_entity)
+            if container is not None:
+                action["containerImage"] = container
+            if job.dependencies and self._safe_metadata_value(job.dependencies):
+                self._add_metadata_property(ro_crate, action, "Recorded resolved dependencies", job.dependencies)
+            for metric in job.numeric_metrics:
+                if (
+                    metric.metric_name in {"runtime_seconds", "galaxy_slots", "galaxy_memory_mb"}
+                    and metric.metric_value is not None
+                ):
+                    value = float(metric.metric_value)
+                    if not self._safe_metadata_value(value):
+                        continue
+                    usage = ro_crate.add(
+                        ContextEntity(
+                            ro_crate,
+                            f"#job-{job.id}-metric-{metric.plugin}-{metric.metric_name}",
+                            properties={
+                                "@type": "PropertyValue",
+                                "name": metric.metric_name,
+                                "propertyID": f"https://galaxyproject.org/job-metrics/{metric.plugin}/{metric.metric_name}",
+                                "value": value,
+                                "unitText": {
+                                    "runtime_seconds": "seconds",
+                                    "galaxy_slots": "slots",
+                                    "galaxy_memory_mb": "MB",
+                                }[metric.metric_name],
+                            },
+                        )
+                    )
+                    action.append_to("resourceUsage", usage)
+            if job.copied_from_job_id:
+                source_job = ro_crate.get(f"#galaxy-job-{job.copied_from_job_id}") or ro_crate.add(
+                    ContextEntity(
+                        ro_crate,
+                        f"#galaxy-job-{job.copied_from_job_id}",
+                        properties={"@type": "CreateAction", "name": "Original Galaxy job"},
+                    )
+                )
+                action["wasInformedBy"] = source_job
+            bindings = []
+            for direction, associations in (
+                ("input", [*job.input_datasets, *job.input_library_datasets]),
+                ("output", [*job.output_datasets, *job.output_library_datasets]),
+            ):
+                for association in associations:
+                    if association.dataset and association.dataset.dataset:
+                        bindings.append(
+                            {
+                                "direction": direction,
+                                "port": association.name,
+                                "dataset": f"urn:uuid:{association.dataset.dataset.uuid}",
+                                "version": getattr(association, "dataset_version", None),
+                            }
+                        )
+                        name = association.name or "Unnamed port"
+                        port_id = hashlib.sha256(f"{tool.id}:{direction}:{name}".encode()).hexdigest()
+                        port = ro_crate.get(f"#port-{port_id}")
+                        if port is None:
+                            port = ro_crate.add(
+                                ContextEntity(
+                                    ro_crate,
+                                    f"#port-{port_id}",
+                                    properties={
+                                        "@type": "FormalParameter",
+                                        "name": name,
+                                        "additionalType": "File",
+                                    },
+                                )
+                            )
+                            tool.append_to(direction, port)
+                        data_entity = (
+                            self._job_input_entity(ro_crate, association, file_entities)
+                            if direction == "input"
+                            else file_entities[association.dataset.dataset.id]
+                        )
+                        if "File" in data_entity.type:
+                            port["additionalType"] = "File"
+                        elif "Dataset" in data_entity.type:
+                            port["additionalType"] = "Dataset"
+                        else:
+                            port["additionalType"] = "PropertyValue"
+                        if port not in (data_entity.get("exampleOfWork") or []):
+                            data_entity.append_to("exampleOfWork", port)
+            self._add_metadata_property(ro_crate, action, "Galaxy dataset port bindings", bindings)
+            self._add_metadata_property(ro_crate, action, "Galaxy exit code", job.exit_code)
+            self._add_metadata_property(
+                ro_crate, action, "Galaxy job creation time", job.create_time.isoformat() if job.create_time else None
+            )
+            self._add_metadata_property(ro_crate, action, "Galaxy resubmissions", job.resubmission_count)
+            timeline = [
+                {"state": state.state, "time": state.create_time.isoformat()}
+                for state in job.state_history
+                if state.create_time
+            ]
+            self._add_metadata_property(ro_crate, action, "Galaxy job state history", timeline)
+            if job.user:
+                action["agent"] = self._add_user_entity(ro_crate, job.user)
+            actions[job.id] = action
+            ro_crate.root_dataset.append_to("mentions", action)
+        return actions
+
+    def _add_dataset_conversion_provenance(
+        self, ro_crate: ROCrate, file_entities: dict[int, File | ContextEntity]
+    ) -> None:
+        for conversion in self.dataset_implicit_conversions.values():
+            converted_dataset = conversion.dataset or conversion.dataset_ldda
+            parent_dataset = conversion.parent_hda or conversion.parent_ldda
+            if (
+                not converted_dataset
+                or not parent_dataset
+                or not converted_dataset.dataset
+                or not parent_dataset.dataset
+            ):
+                continue
+            converted_entity = file_entities.get(converted_dataset.dataset.id)
+            parent_entity = file_entities.get(parent_dataset.dataset.id)
+            if not converted_entity or not parent_entity:
+                continue
+            converted_entity.append_to("isBasedOn", parent_entity)
+            conversion_metadata = ro_crate.add(
+                ContextEntity(
+                    ro_crate,
+                    f"#dataset-conversion-{conversion.id}",
+                    properties={
+                        "@type": "PropertyValue",
+                        "name": "Galaxy implicit dataset conversion",
+                        "value": conversion.type or "unknown conversion type",
+                    },
+                )
+            )
+            converted_entity.append_to("additionalProperty", conversion_metadata)
+
+    def _add_user_entity(self, ro_crate: ROCrate, user: model.User) -> ContextEntity:
+        encoded_user_id = self.security.encode_id(user.id)
+        return ro_crate.add(
+            ContextEntity(
+                ro_crate,
+                f"#galaxy-user-{encoded_user_id}",
+                properties={
+                    "@type": "Person",
+                    "name": user.username or "Galaxy user",
+                    "identifier": f"galaxy-user:{encoded_user_id}",
+                },
+            )
+        )
+
+    def _add_galaxy_model_metadata_files(self, ro_crate: ROCrate) -> None:
+        for filename in MODEL_STORE_METADATA_FILENAMES:
+            path = os.path.join(self.export_directory, filename)
+            if os.path.exists(path):
+                ro_crate.add_file(
+                    path,
+                    dest_path=filename,
+                    properties={
+                        "encodingFormat": "application/json",
+                        "description": "Galaxy model-store metadata used for lossless re-import.",
+                        "version": GALAXY_EXPORT_VERSION,
+                    },
+                )
 
     def _is_invocation_export(self) -> bool:
         # Maybe we need to have more complicated logic here to discriminate a history export from a workflow invocation export.
@@ -2647,14 +3918,92 @@ class WriteCrates:
             return invocation_crate_builder.build_crate()
 
         ro_crate = ROCrate()
-        # TODO: allow user to set the name, or get the name of the history
-        ro_crate.name = "Galaxy dataset export"
-        ro_crate.description = (
-            "This is a Galaxy dataset export "
-            f"including {len(self.included_datasets)} datasets. "
-            "This RO-Crate was automatically generated by Galaxy."
+        no_license_asserted = ro_crate.add(
+            ContextEntity(
+                ro_crate,
+                "#license-not-specified",
+                properties={
+                    "@type": "CreativeWork",
+                    "name": "No license asserted",
+                    "description": "No license was supplied for this Galaxy export.",
+                },
+            )
         )
-        ro_crate.license = ""
+        ro_crate.root_dataset["license"] = no_license_asserted
+        galaxy_generator = ro_crate.add(
+            ContextEntity(
+                ro_crate,
+                f"https://galaxyproject.org/version/{VERSION}",
+                properties={
+                    "@type": "SoftwareApplication",
+                    "name": "Galaxy",
+                    "softwareVersion": VERSION,
+                    "url": "https://galaxyproject.org/",
+                },
+            )
+        )
+        galaxy_publisher = ro_crate.add(
+            ContextEntity(
+                ro_crate,
+                "https://galaxyproject.org/",
+                properties={
+                    "@type": "Organization",
+                    "name": "Galaxy Project",
+                    "url": "https://galaxyproject.org/",
+                },
+            )
+        )
+        ro_crate.root_dataset["version"] = GALAXY_EXPORT_VERSION
+        ro_crate.root_dataset["sdPublisher"] = galaxy_generator
+        ro_crate.root_dataset["publisher"] = galaxy_publisher
+        ro_crate.root_dataset["author"] = galaxy_publisher
+        galaxy_generator["publisher"] = galaxy_publisher
+        ro_crate.root_dataset["additionalProperty"] = ro_crate.add(
+            ContextEntity(
+                ro_crate,
+                "#galaxy-export-scope",
+                properties={
+                    "@type": "PropertyValue",
+                    "name": "Galaxy export scope",
+                    "value": json_encoder.encode(
+                        {
+                            **self.ro_crate_export_scope,
+                            "includedDatasets": len(self.included_datasets),
+                            "includedCollections": len(self.included_collections),
+                        }
+                    ),
+                },
+            )
+        )
+        ro_crate.name = self._generic_crate_name()
+        if self.included_histories:
+            history = self.included_histories[0]
+            assert self.app
+            annotation = get_item_annotation_str(self.app.model.session, history.user, history)
+            ro_crate.description = annotation or (
+                f'Export of Galaxy history "{history.name}" including {len(self.included_datasets)} datasets. '
+                "This RO-Crate was automatically generated by Galaxy."
+            )
+            ro_crate.root_dataset["identifier"] = f"galaxy-history:{self.security.encode_id(history.id)}"
+            for key, value in self._date_properties(
+                dateCreated=history.create_time, dateModified=history.update_time
+            ).items():
+                ro_crate.root_dataset[key] = value
+            keywords = [
+                f"{tag.user_tname}:{tag.user_value}" if tag.user_value else tag.user_tname
+                for tag in history.tags
+                if tag.user_tname
+            ]
+            if keywords:
+                ro_crate.root_dataset["keywords"] = keywords
+            if history.user:
+                creator = self._add_user_entity(ro_crate, history.user)
+                ro_crate.root_dataset["creator"] = creator
+        else:
+            ro_crate.description = (
+                f"Galaxy export including {len(self.included_datasets)} datasets. "
+                "This RO-Crate was automatically generated by Galaxy."
+            )
         markdown_path = os.path.join(self.export_directory, "README.md")
         with open(markdown_path, "w") as f:
             f.write(self._generate_markdown_readme())
@@ -2670,30 +4019,99 @@ class WriteCrates:
             properties=properties,
         )
 
-        for dataset, _ in self.included_datasets.values():
+        file_entities: dict[int, File | ContextEntity] = {}
+        unavailable_entities = []
+        for dataset, include_files in self.included_datasets.values():
             assert dataset.dataset is not None
             if dataset.dataset.id in self.dataset_id_to_path:
-                file_name, _ = self.dataset_id_to_path[dataset.dataset.id]
+                file_name, extra_files_path = self.dataset_id_to_path[dataset.dataset.id]
                 if file_name is None:
-                    # The dataset was discarded or no longer exists. No file to export.
-                    # TODO: should this be registered in the crate as a special case?
                     log.warning(
-                        "RO-Crate export: skipping dataset [%s] with state [%s] because file does not exist.",
+                        "RO-Crate export: describing dataset [%s] with state [%s] without a local payload.",
                         dataset.id,
                         dataset.state,
                     )
+                    properties = self._dataset_ro_crate_properties(dataset)
+                    checksum_properties = properties.copy()
+                    checksum_properties.pop("_galaxy_sha256", None)
+                    unavailable = ro_crate.add(
+                        ContextEntity(
+                            ro_crate,
+                            self._metadata_only_dataset_id(dataset),
+                            properties={
+                                "@type": "Dataset",
+                                **checksum_properties,
+                                "license": no_license_asserted,
+                                "conditionsOfAccess": "The dataset payload was unavailable or excluded from this export.",
+                            },
+                        )
+                    )
+                    unavailable_entities.append(unavailable)
+                    file_entities[dataset.dataset.id] = unavailable
+                    self._attach_dataset_checksum(ro_crate, unavailable, properties)
+                    self._attach_dataset_metadata(ro_crate, unavailable, dataset)
                     continue
-                name = dataset.name
-                encoding_format = dataset.datatype.get_mime()
-                properties = {
-                    "name": name,
-                    "encodingFormat": encoding_format,
-                }
-                ro_crate.add_file(
-                    os.path.join(self.export_directory, file_name),
-                    dest_path=file_name,
-                    properties=properties,
+                source_path = os.path.join(self.export_directory, file_name)
+                properties = self._dataset_ro_crate_properties(dataset, source_path)
+                properties["license"] = no_license_asserted
+                properties["conditionsOfAccess"] = (
+                    "The payload is embedded in this RO-Crate."
+                    if include_files
+                    else "The payload is not embedded in this RO-Crate."
                 )
+                checksum_properties = properties.copy()
+                checksum_properties.pop("_galaxy_sha256", None)
+                file_entity = ro_crate.add_file(
+                    source_path,
+                    dest_path=file_name,
+                    properties=checksum_properties,
+                )
+                file_entities[dataset.dataset.id] = file_entity
+                self._attach_dataset_checksum(ro_crate, file_entity, properties)
+                self._attach_dataset_metadata(ro_crate, file_entity, dataset)
+                self._add_composite_dataset_parts(ro_crate, file_entity, extra_files_path)
+            else:
+                properties = self._dataset_ro_crate_properties(dataset)
+                checksum_properties = properties.copy()
+                checksum_properties.pop("_galaxy_sha256", None)
+                unavailable = ro_crate.add(
+                    ContextEntity(
+                        ro_crate,
+                        self._metadata_only_dataset_id(dataset),
+                        properties={
+                            "@type": "Dataset",
+                            **checksum_properties,
+                            "license": no_license_asserted,
+                            "conditionsOfAccess": "The payload is not embedded in this metadata-only export.",
+                        },
+                    )
+                )
+                unavailable_entities.append(unavailable)
+                file_entities[dataset.dataset.id] = unavailable
+                self._attach_dataset_checksum(ro_crate, unavailable, properties)
+                self._attach_dataset_metadata(ro_crate, unavailable, dataset)
+
+        collection_entities = self._add_generic_collections(ro_crate, file_entities)
+        self._add_dataset_conversion_provenance(ro_crate, file_entities)
+        self._add_job_provenance(ro_crate, file_entities)
+        self._add_galaxy_model_metadata_files(ro_crate)
+        self._add_instance_metadata(ro_crate)
+        for unavailable in unavailable_entities:
+            ro_crate.root_dataset.append_to("hasPart", unavailable)
+
+        if not self.included_histories:
+            requested_collections = getattr(self, "_crate_requested_collections", [])
+            requested_datasets = getattr(self, "_crate_requested_datasets", [])
+            if len(requested_collections) == 1:
+                collection = requested_collections[0]
+                dataset_collection = (
+                    collection.collection
+                    if isinstance(collection, model.HistoryDatasetCollectionAssociation)
+                    else collection
+                )
+                ro_crate.root_dataset["mainEntity"] = collection_entities[dataset_collection.id]
+            elif not requested_collections and len(requested_datasets) == 1:
+                ro_crate.root_dataset["mainEntity"] = file_entities[requested_datasets[0].dataset.id]
 
         workflows_directory = self.workflows_directory
         if os.path.exists(workflows_directory):

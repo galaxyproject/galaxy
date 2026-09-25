@@ -142,7 +142,9 @@ def build_app():
             kwargs["use_converters"] = True
             import galaxy.app
 
-            galaxy_app = galaxy.app.GalaxyManagerApplication(configure_logging=False, **kwargs)
+            galaxy_app = galaxy.app.GalaxyManagerApplication(
+                configure_logging=False, initialize_tool_source_store=True, **kwargs
+            )
             # GalaxyManagerApplication has no toolbox, so the converter tools the async
             # execution path relies on must be loaded directly into the datatypes registry.
             galaxy_app.datatypes_registry.load_datatype_converters_without_toolbox(galaxy_app)

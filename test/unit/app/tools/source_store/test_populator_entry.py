@@ -16,10 +16,12 @@ from galaxy.tools.source_store.populator import (
 )
 from galaxy.tools.source_store.search import MAX_TOOL_SEARCH_HELP_CHARS
 
-_TOOL_XML = """<tool id="help_tool" name="Help Tool" version="1.0">
+_TOOL_XML = """<tool id="help_tool" name="Help Tool" version="1.0" license="MIT">
   <command>echo</command>
   <inputs/>
   <outputs/>
+  <creator><person name="Tool Author" /></creator>
+  <citations><citation type="doi">10.1234/example</citation></citations>
   <help>This wraps the quaxifier subroutine.</help>
 </tool>
 """
@@ -67,6 +69,9 @@ def test_entry_captures_help_text(tmp_path):
     entry = _build(tmp_path, _TOOL_XML)
     assert entry is not None
     assert "quaxifier" in entry.help_text
+    assert entry.license == "MIT"
+    assert entry.creators == [{"class": "Person", "name": "Tool Author"}]
+    assert entry.citations == [{"type": "doi", "content": "10.1234/example"}]
 
 
 def test_entry_help_text_empty_without_help_block(tmp_path):
