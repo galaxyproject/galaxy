@@ -110,10 +110,9 @@ class DataManager(BaseUIController):
             )
         message = kwd.get("message", "")
         status = kwd.get("status", "info")
-        job_id = kwd.get("id", None)
+        job_id = kwd.get("id", "")
         try:
-            job_id = trans.security.decode_id(job_id)
-            job = trans.sa_session.query(Job).get(job_id)
+            job = trans.sa_session.query(Job).get(trans.security.decode_id(job_id))
         except Exception as e:
             job = None
             log.error(f"Bad job id ({job_id}) passed to job_info: {e}")
