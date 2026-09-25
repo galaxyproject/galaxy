@@ -1484,7 +1484,13 @@ def get_test_fname(fname):
     return full_path
 
 
-def get_file_peek(file_name, width=256, line_count=5, skipchars=None, line_wrap=True):
+def get_file_peek(
+    file_name: str,
+    width: int | Literal["unlimited"] = 256,
+    line_count: int = 5,
+    skipchars: list[str] | None = None,
+    line_wrap: bool = True,
+) -> str:
     """
     Returns the first line_count lines wrapped to width.
 
@@ -1500,8 +1506,7 @@ def get_file_peek(file_name, width=256, line_count=5, skipchars=None, line_wrap=
     # Set size for file.readline() to a negative number to force it to
     # read until either a newline or EOF.  Needed for datasets with very
     # long lines.
-    if width == "unlimited":
-        width = -1
+    read_width = -1 if width == "unlimited" else width
     if skipchars is None:
         skipchars = []
     lines = []
@@ -1511,7 +1516,7 @@ def get_file_peek(file_name, width=256, line_count=5, skipchars=None, line_wrap=
     with compression_utils.get_fileobj(file_name) as temp:
         while count < line_count:
             try:
-                line = temp.readline(width)
+                line = temp.readline(read_width)
             except UnicodeDecodeError:
                 return "binary file"
             if line == "":
