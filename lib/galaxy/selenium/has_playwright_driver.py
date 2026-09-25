@@ -875,9 +875,9 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
         Fires dragenter and dragover, which a real drag does and which drop zones
         use to reveal themselves. A zone that swaps its contents in response
-        replaces the element the caller grabbed, so drop goes to whatever now sits
-        under the pointer - as it would in a browser - rather than to a node that
-        may since have been detached.
+        detaches the element the caller grabbed, so drop goes to the nearest
+        ancestor still in the document - the zone itself, which is where the
+        handler lives - rather than to a node nothing can hear any more.
 
         Uses a real DataTransfer so setData/getData work across the sequence,
         unlike synthetic DragEvents where Chrome restricts getData to return empty.
@@ -889,15 +889,16 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
                     element.dispatchEvent(
                         new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer })
                     );
-                const box = target.getBoundingClientRect();
-                const x = box.left + box.width / 2;
-                const y = box.top + box.height / 2;
+                const ancestors = [];
+                for (let node = target; node; node = node.parentElement) {
+                    ancestors.push(node);
+                }
 
                 source.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
                 drag(source, "dragstart");
                 drag(target, "dragenter");
                 drag(target, "dragover");
-                drag(document.elementFromPoint(x, y) || target, "drop");
+                drag(ancestors.find((node) => node.isConnected) || target, "drop");
                 drag(source, "dragend");
                 source.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
             }""",
