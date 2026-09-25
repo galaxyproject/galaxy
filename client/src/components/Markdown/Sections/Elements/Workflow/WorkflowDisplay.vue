@@ -1,14 +1,18 @@
 <script setup lang="ts">
+import { faWrench } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import { useUid } from "@/composables/utils/uid";
 import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
 
 import WorkflowTree from "./WorkflowTree.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
 import WorkflowStepIcon from "@/components/WorkflowInvocationState/WorkflowStepIcon.vue";
@@ -31,6 +35,9 @@ type ItemContent = {
     name: string;
     steps: Array<any>; // This isn't actually a proper workflow step type, right?  TODO, unify w/ workflowStepStore?
 };
+
+// Per instance, as a Page or report can show the same workflow twice.
+const stepIdPrefix = useUid("workflow-display-");
 
 const errorContent = ref();
 const itemContent = ref<ItemContent | null>(null);
@@ -72,6 +79,10 @@ watch(
     },
     { immediate: true },
 );
+
+function toolButtonId(orderIndex: number) {
+    return `${stepIdPrefix.value}-step-${orderIndex}`;
+}
 </script>
 
 <template>
@@ -117,12 +128,21 @@ watch(
             <div v-else :class="!expanded && 'content-height'">
                 <div v-if="itemContent !== null">
                     <div v-for="step in itemContent?.steps" :key="step.order_index" class="mb-2">
-                        <span :id="`step-icon-${step.order_index}`">
-                            <WorkflowStepIcon v-if="step.type" :step-type="step.type" />
-                        </span>
+                        <GLink
+                            v-if="step.type == 'tool'"
+                            :id="toolButtonId(step.order_index)"
+                            dark
+                            thin
+                            aria-label="Tool details"
+                            class="mr-1"
+                            type="button">
+                            <FontAwesomeIcon :icon="faWrench" />
+                        </GLink>
+                        <WorkflowStepIcon v-else-if="step.type" :step-type="step.type" />
                         <ToolLinkPopover
                             v-if="step.type == 'tool'"
-                            :target="`step-icon-${step.order_index}`"
+                            interactive
+                            :target="toolButtonId(step.order_index)"
                             :tool-id="step.tool_id"
                             :tool-version="step.tool_version" />
                         <WorkflowStepTitle :workflow-step="step" />

@@ -1,11 +1,13 @@
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getLocalVue } from "@tests/vitest/helpers";
-import { mount } from "@vue/test-utils";
+import { mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import MountTarget from "./WorkflowDisplay.vue";
+import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
 
 const localVue = getLocalVue(true);
 const { server, http } = useServerMock();
@@ -55,7 +57,53 @@ function mountError(errContent) {
     });
 }
 
+function mountWithSteps(steps) {
+    server.use(
+        http.untyped.get("/api/workflows/workflow_id/download", () => {
+            return HttpResponse.json({ name: "workflow_name", steps });
+        }),
+    );
+    return shallowMount(MountTarget, {
+        props: {
+            workflowId: "workflow_id",
+            embedded: false,
+            expanded: false,
+        },
+        // The real GLink, so the assertions see the button users get.
+        global: { ...localVue, stubs: { ...localVue.stubs, GLink: false } },
+    });
+}
+
 describe("WorkflowDisplay", () => {
+    it("opens a tool step's popover from a named button", async () => {
+        const wrapper = mountWithSteps([
+            { order_index: 0, type: "data_input" },
+            { order_index: 1, type: "tool", tool_id: "cat1", tool_version: "1.0.0" },
+        ]);
+        await flushPromises();
+
+        const buttons = wrapper.findAll("button[aria-label='Tool details']");
+        expect(buttons).toHaveLength(1);
+        const button = buttons.at(0);
+        expect(button.attributes("type")).toBe("button");
+        // Drawn from an icon definition, so the button is never empty.
+        expect(button.findComponent(FontAwesomeIcon).exists()).toBe(true);
+        const popover = wrapper.findComponent(ToolLinkPopover);
+        expect(popover.props("target")).toBe(button.attributes("id"));
+        expect(popover.props("interactive")).toBe(true);
+    });
+
+    it("gives each instance its own step button ids", async () => {
+        const steps = [{ order_index: 1, type: "tool", tool_id: "cat1", tool_version: "1.0.0" }];
+        const first = mountWithSteps(steps);
+        const second = mountWithSteps(steps);
+        await flushPromises();
+
+        const id = (wrapper) => wrapper.find("[aria-label='Tool details']").attributes("id");
+        expect(id(first)).toMatch(/-step-1$/);
+        expect(id(first)).not.toBe(id(second));
+    });
+
     it("basics", async () => {
         const wrapper = mountDefault();
         await flushPromises();
