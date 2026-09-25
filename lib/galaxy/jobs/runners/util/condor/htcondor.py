@@ -153,7 +153,7 @@ def import_htcondor():
     except Exception as exc:
         raise ImportError(
             "The htcondor2 Python package is required to use this feature, please install it or correct the "
-            f"following error:\n{exc.__class__.__name__}: {str(exc)}"
+            f"following error:\n{exc.__class__.__name__}: {exc!s}"
         ) from exc
     return htcondor2
 
@@ -507,24 +507,24 @@ class HTCondorSubprocessClient(HTCondorClient):
 
     def submit(self, submit_description: str, collector: str | None, schedd_name: str | None) -> str:
         response = self._request(
-            dict(
-                command="submit",
-                collector=collector,
-                schedd_name=schedd_name,
-                submit_description=submit_description,
-            )
+            {
+                "command": "submit",
+                "collector": collector,
+                "schedd_name": schedd_name,
+                "submit_description": submit_description,
+            }
         )
         return str(response["cluster"])
 
     def remove(self, job_spec: int | str, collector: str | None, schedd_name: str | None) -> None:
         self._request(
-            dict(
-                command="remove",
-                collector=collector,
-                schedd_name=schedd_name,
-                job_spec=job_spec,
-                reason=self.remove_reason,
-            )
+            {
+                "command": "remove",
+                "collector": collector,
+                "schedd_name": schedd_name,
+                "job_spec": job_spec,
+                "reason": self.remove_reason,
+            }
         )
 
     def shutdown(self) -> None:
@@ -535,7 +535,7 @@ class HTCondorSubprocessClient(HTCondorClient):
             try:
                 stdin = process.stdin
                 if stdin is not None and not stdin.closed:
-                    stdin.write(json.dumps(dict(command="shutdown")) + "\n")
+                    stdin.write(json.dumps({"command": "shutdown"}) + "\n")
                     stdin.flush()
             except Exception:
                 pass
