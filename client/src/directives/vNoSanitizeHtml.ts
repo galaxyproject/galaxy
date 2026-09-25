@@ -5,9 +5,9 @@
  * alter (see `v-sanitize-html` for everything else). Admin-only content entered
  * through the UI still goes through `v-sanitize-html`.
  *
- * Every use needs an HTML comment directly above it explaining where the
- * content comes from and why `v-sanitize-html` does not fit, so reviewers can
- * judge the claim.
+ * Lint flags every use, so each one needs a disable directly above it that
+ * says where the content comes from and why `v-sanitize-html` does not fit:
+ *   <!-- eslint-disable-next-line vue/no-restricted-syntax -- <reason> -->
  */
 
 import type { DirectiveBinding, ObjectDirective } from "vue";
