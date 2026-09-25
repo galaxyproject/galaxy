@@ -9,6 +9,11 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from sqlalchemy import (
+    case,
+    func,
+    select,
+)
 from sqlalchemy.orm import Session
 
 import galaxy.workflow.schedulers
@@ -36,6 +41,11 @@ from galaxy.util.monitors import Monitors
 from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
 from galaxy.web_stack.message import WorkflowSchedulingMessage
+from galaxy.workflow.modules import (
+    DependencyType,
+    SchedulingDependencies,
+    SchedulingDependency,
+)
 
 if TYPE_CHECKING:
     from galaxy.structured_app import MinimalManagerApp
@@ -308,9 +318,14 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
 
 
 class InvocationUpdateSnapshot(NamedTuple):
-    schedule_time: datetime
+    """State of an invocation as observed by its last scheduling attempt."""
+
+    # Observed before the attempt schedules anything, so that changes committed
+    # while it runs are seen by the next attempt.
     history_update_time: datetime | None
     step_update_time: datetime | None
+    schedule_time: datetime
+    pending: SchedulingDependencies | None = None
 
 
 class WorkflowRequestMonitor(Monitors):
@@ -344,34 +359,121 @@ class WorkflowRequestMonitor(Monitors):
 
     def invocation_update_snapshot(self, invocation: model.WorkflowInvocation) -> InvocationUpdateSnapshot:
         return InvocationUpdateSnapshot(
-            schedule_time=now(),
             history_update_time=invocation.history.update_time,
             step_update_time=invocation.get_last_workflow_invocation_step_update_time(),
+            schedule_time=now(),
         )
 
-    def ready_to_schedule_more(self, invocation_id: int, snapshot: InvocationUpdateSnapshot) -> bool:
-        # Improve reactivity of scheduling using the history update_time as a heuristic.
-        # If there wasn't a change in the history we're unlikely to be able to make more progress.
-        # The update times are stamped when a transaction flushes but only become visible when it
-        # commits, so a transaction can commit after an attempt started with an update time older
-        # than the attempt. Compare against the values observed by the previous attempt rather than
-        # against the time of that attempt.
-        previous = self.update_time_tracking_dict.get(invocation_id)
-        if previous is None:
+    def ready_to_schedule_more(self, invocation: model.WorkflowInvocation, snapshot: InvocationUpdateSnapshot) -> bool:
+        previous = self.update_time_tracking_dict.get(invocation.id)
+        # Nothing tracked (e.g. after a restart): schedule so dependencies get captured.
+        if previous is None or previous.pending is None:
             return True
-        if (
-            snapshot.history_update_time != previous.history_update_time
-            or snapshot.step_update_time != previous.step_update_time
-        ):
+
+        # Always allow scheduling if maximum duration has been exceeded,
+        # so invoke() can fail the invocation with the appropriate state.
+        maximum_duration = self.app.config.maximum_workflow_invocation_duration
+        if maximum_duration > 0 and invocation.seconds_since_created > maximum_duration:
             return True
-        if (snapshot.schedule_time - previous.schedule_time) > self.timedelta:
-            # If we haven't scheduled in a while, schedule anyway.
+
+        # Fallback for a dependency that was missed or changed without leaving a trace.
+        since_last_schedule = snapshot.schedule_time - previous.schedule_time
+        if since_last_schedule > self.timedelta:
             log.debug(
                 "Scheduling workflow invocation [%s] after %s seconds without scheduling.",
-                invocation_id,
-                (snapshot.schedule_time - previous.schedule_time).total_seconds(),
+                invocation.id,
+                since_last_schedule.total_seconds(),
             )
             return True
+
+        pending = previous.pending
+        if pending.more_work or pending.untracked:
+            return True
+        if pending.tracked and self._any_dependency_satisfied(pending.tracked, invocation):
+            return True
+
+        # Changes not tied to a tracked dependency, e.g. the history being deleted.
+        # The update times are stamped when a transaction flushes but only become
+        # visible when it commits, so compare them against the values the last
+        # attempt observed.
+        return (
+            snapshot.history_update_time != previous.history_update_time
+            or snapshot.step_update_time != previous.step_update_time
+        )
+
+    def _any_dependency_satisfied(
+        self, dependencies: frozenset[SchedulingDependency], invocation: model.WorkflowInvocation
+    ) -> bool:
+        session = Session.object_session(invocation)
+        if session is None:
+            return True
+
+        # Group dependencies by type for batch queries
+        job_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.JOB}
+        hda_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.HDA}
+        collection_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.DATASET_COLLECTION}
+        step_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.WORKFLOW_INVOCATION_STEP}
+
+        if job_ids:
+            # Mirrors Job.finished, which is what delayed the step.
+            finished_count = session.execute(
+                select(func.count())
+                .select_from(model.Job)
+                .where(
+                    model.Job.id.in_(job_ids),
+                    model.Job.state.in_(model.Job.finished_states),
+                )
+            ).scalar()
+            if finished_count:
+                return True
+
+        if hda_ids:
+            # HDA.state = HDA._state if set, else Dataset.state
+            ready_count = session.execute(
+                select(func.count())
+                .select_from(model.HistoryDatasetAssociation)
+                .join(model.Dataset)
+                .where(
+                    model.HistoryDatasetAssociation.id.in_(hda_ids),
+                    case(
+                        (
+                            model.HistoryDatasetAssociation._state.isnot(None),
+                            model.HistoryDatasetAssociation._state,
+                        ),
+                        else_=model.Dataset.state,
+                    ).notin_(model.Dataset.non_ready_states),
+                )
+            ).scalar()
+            if ready_count:
+                return True
+
+        if collection_ids:
+            # A collection that failed to populate must be rescheduled too, so the
+            # invocation can fail instead of waiting forever.
+            populated_count = session.execute(
+                select(func.count())
+                .select_from(model.DatasetCollection)
+                .where(
+                    model.DatasetCollection.id.in_(collection_ids),
+                    model.DatasetCollection.populated_state != model.DatasetCollection.populated_states.NEW,
+                )
+            ).scalar()
+            if populated_count:
+                return True
+
+        if step_ids:
+            # Check if any tracked step has had its action set (e.g. pause step reviewed)
+            action_count = session.execute(
+                select(func.count())
+                .select_from(model.WorkflowInvocationStep)
+                .where(
+                    model.WorkflowInvocationStep.id.in_(step_ids),
+                    model.WorkflowInvocationStep.action.isnot(None),
+                )
+            ).scalar()
+            if action_count:
+                return True
+
         return False
 
     def __monitor(self):
@@ -475,9 +577,10 @@ class WorkflowRequestMonitor(Monitors):
                 # Take the snapshot before scheduling so that anything committed while
                 # scheduling is picked up by the next attempt.
                 snapshot = self.invocation_update_snapshot(workflow_invocation)
-                if self.ready_to_schedule_more(invocation_id, snapshot):
-                    self.update_time_tracking_dict[invocation_id] = snapshot
-                    workflow_scheduler.schedule(workflow_invocation)
+                if self.ready_to_schedule_more(workflow_invocation, snapshot):
+                    pending = workflow_scheduler.schedule(workflow_invocation)
+                    self._log_untracked_delays(invocation_id, pending)
+                    self.update_time_tracking_dict[invocation_id] = snapshot._replace(pending=pending)
                     log.debug("Workflow invocation [%s] scheduled", invocation_id)
             except Exception:
                 self.update_time_tracking_dict.pop(invocation_id, None)
@@ -487,6 +590,18 @@ class WorkflowRequestMonitor(Monitors):
 
         # A workflow was obtained and scheduled...
         return True
+
+    def _log_untracked_delays(self, invocation_id: int, pending: SchedulingDependencies) -> None:
+        if not pending.untracked:
+            return
+        previous = self.update_time_tracking_dict.get(invocation_id)
+        if previous and previous.pending and previous.pending.untracked == pending.untracked:
+            return
+        log.warning(
+            "Workflow invocation [%s] delayed for reasons that cannot be tracked, scheduling every iteration: %s",
+            invocation_id,
+            "; ".join(pending.untracked),
+        )
 
     def __active_invocation_ids(self, scheduler_id):
         handler = self.app.config.server_name
