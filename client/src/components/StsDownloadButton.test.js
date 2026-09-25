@@ -48,7 +48,7 @@ describe("StsDownloadButton", () => {
         const windowSpy = vi.spyOn(window, "open");
         windowSpy.mockImplementation(() => {});
         const wrapper = await mountStsDownloadButtonWrapper(NO_TASKS_CONFIG);
-        wrapper.vm.onDownload(NO_TASKS_CONFIG);
+        await wrapper.find("button").trigger("click");
         await flushPromises();
         expect(window.open).toHaveBeenCalled();
     });
@@ -64,7 +64,7 @@ describe("StsDownloadButton", () => {
         );
         const wrapper = await mountStsDownloadButtonWrapper(TASKS_CONFIG);
 
-        wrapper.vm.onDownload(TASKS_CONFIG);
+        await wrapper.find("button").trigger("click");
         await flushPromises();
         expect(window.location).toBeAt(`api/short_term_storage/${STORAGE_REQUEST_ID}`);
     });
@@ -80,9 +80,9 @@ describe("StsDownloadButton", () => {
         );
         const wrapper = await mountStsDownloadButtonWrapper(TASKS_CONFIG);
 
-        expect(wrapper.vm.waiting).toBeFalsy();
-        wrapper.vm.onDownload(TASKS_CONFIG);
+        expect(wrapper.find(".fa-spinner").exists()).toBeFalsy();
+        await wrapper.find("button").trigger("click");
         await flushPromises();
-        expect(wrapper.vm.waiting).toBeTruthy();
+        expect(wrapper.find(".fa-spinner").exists()).toBeTruthy();
     });
 });
