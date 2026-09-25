@@ -1233,7 +1233,7 @@ def filesystem_safe_string(
     valid_chars=None,
     portable=False,
     strip_leading_hyphen=False,
-    fallback="_",
+    fallback="",
 ):
     """
     Strip unicode null chars, truncate at 255 characters.
@@ -1242,7 +1242,8 @@ def filesystem_safe_string(
     If ``valid_chars`` is supplied, replace every character outside that
     collection. ``portable`` additionally excludes Windows path separators,
     reserved device names, control characters, and trailing dots or spaces.
-    The result is always non-empty and no longer than ``max_len``.
+    An empty result is replaced with ``fallback``. The result is no longer
+    than ``max_len``.
 
     Defaults are probably only safe on linux / osx.
     Needs further escaping if used in shell commands
@@ -1268,11 +1269,8 @@ def filesystem_safe_string(
     if not sanitized_string:
         sanitized_string = fallback
     if len(sanitized_string) > max_len:
-        effective_truncation_chars = "__" if portable and truncation_chars == ".." else truncation_chars
-        effective_truncation_chars = effective_truncation_chars[:max_len]
-        sanitized_string = (
-            f"{sanitized_string[: max_len - len(effective_truncation_chars)]}{effective_truncation_chars}"
-        )
+        truncation_chars = truncation_chars[:max_len]
+        sanitized_string = f"{sanitized_string[: max_len - len(truncation_chars)]}{truncation_chars}"
     return sanitized_string
 
 
@@ -1286,10 +1284,12 @@ def safe_filename_component(s: str, max_len: int = 255) -> str:
     return filesystem_safe_string(
         s,
         max_len=max_len,
+        truncation_chars="__",
         invalid_chars=(),
         valid_chars=valid_chars,
         portable=True,
         strip_leading_hyphen=True,
+        fallback="_",
     )
 
 

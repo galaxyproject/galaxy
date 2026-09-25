@@ -49,7 +49,8 @@ def test_stream_to_open_named_file_compatibility(tmp_path):
 def test_filesystem_safe_string():
     assert util.filesystem_safe_string(".sample/data") == "sample_data"
     assert util.filesystem_safe_string("café") == "café"
-    assert util.filesystem_safe_string("...") == "_"
+    assert util.filesystem_safe_string("...") == ""
+    assert util.filesystem_safe_string("...", fallback="_") == "_"
     assert util.filesystem_safe_string("a" * 256).endswith("..")
     assert len(util.filesystem_safe_string("a" * 256)) == 255
 
