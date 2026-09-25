@@ -182,19 +182,25 @@ const emit = defineEmits<{
  * @function onTitleClick
  */
 async function onTitleClick() {
-    await historyStore.setCurrentHistory(props.history.id);
+    if (isMyHistory(props.history)) {
+        await historyStore.setCurrentHistory(props.history.id);
+    }
 }
 
 /**
  * Computed property that creates the title configuration for the history card
- * @returns {Object} Title configuration with label, tooltip, and click handler
+ * @returns {Object | string} A string title for an unowned history or a title
+ * configuration with label, tooltip, and click handler
  */
 const historyCardTitle = computed(() => {
-    return {
-        label: props.history.name,
-        title: localize("Click to set as current"),
-        handler: onTitleClick,
-    };
+    if (isMyHistory(props.history)) {
+        return {
+            label: props.history.name,
+            title: localize("Click to set as current"),
+            handler: onTitleClick,
+        };
+    }
+    return props.history.name;
 });
 
 /**
@@ -211,7 +217,7 @@ const { historyCardExtraActions, historyCardSecondaryActions, historyCardPrimary
  */
 const { historyCardIndicators } = useHistoryCardIndicators(
     computed(() => props.history),
-    props.archivedView,
+    props.archivedView || props.publishedView,
     (k, v) => emit("updateFilter", k, v),
 );
 
