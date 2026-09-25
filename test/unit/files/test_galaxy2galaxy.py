@@ -117,6 +117,19 @@ def test_plugin_identity(recorder):
     assert source.to_dict()["supports"] == {"pagination": True, "search": True, "sorting": False}
 
 
+def test_a_source_a_user_created_lists_under_its_own_address(recorder):
+    """A source made from the template gets the gxuserfiles scheme, and its paths are relative to it.
+
+    With the scheme fixed to galaxy2galaxy, the whole gxuserfiles URI reached the remote server as a
+    path, so a user's own source could never list anything.
+    """
+    sources = configured_file_sources([_conf(id="a1b2", scheme="gxuserfiles")], FileSourcePluginsConfig())
+    file_source_path = sources.get_file_source_path("gxuserfiles://a1b2/histories")
+    assert file_source_path.path == "/histories"
+    entries, _ = _list(file_source_path.file_source, file_source_path.path)
+    assert [entry.uri for entry in entries] == ["gxuserfiles://a1b2/histories/My History"]
+
+
 def test_the_api_key_is_not_in_the_client_facing_dict(recorder):
     """``to_dict()`` without ``for_serialization`` fills the client's file source list."""
     as_dict = _source().to_dict()

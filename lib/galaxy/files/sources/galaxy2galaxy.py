@@ -36,6 +36,7 @@ from galaxy.files.models import (
     AnyRemoteEntry,
     FilesSourceRuntimeContext,
 )
+from galaxy.files.sources._defaults import DEFAULT_SCHEME
 from galaxy.files.sources._fsspec import (
     CacheOptionsDictType,
     FsspecBaseFileSourceConfiguration,
@@ -270,7 +271,8 @@ class Galaxy2GalaxyFilesSource(
         return self.template_config.base_url if isinstance(self.template_config.base_url, str) else None
 
     def get_scheme(self) -> str:
-        return "galaxy2galaxy"
+        # A source a user creates from the template is given gxuserfiles, and its URIs use that.
+        return self.scheme if self.scheme and self.scheme != DEFAULT_SCHEME else "galaxy2galaxy"
 
 
 __all__ = ("Galaxy2GalaxyFilesSource",)
