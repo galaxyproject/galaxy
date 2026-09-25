@@ -15,6 +15,7 @@ import zipfile
 from collections.abc import (
     Callable,
     Iterable,
+    Iterator,
 )
 from functools import partial
 from typing import (
@@ -234,7 +235,9 @@ def convert_newlines_sep2tabs(
     return convert_newlines(fname, in_place, tmp_dir, tmp_prefix, regexp=regexp)
 
 
-def iter_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
+def iter_headers(
+    fname_or_file_prefix: "str | FilePrefix", sep: str | None, count: int = 60, comment_designator: str | None = None
+) -> Iterator[list[str]]:
     idx = 0
     if isinstance(fname_or_file_prefix, FilePrefix):
         file_iterator = fname_or_file_prefix.line_iterator()
