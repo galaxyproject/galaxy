@@ -45,7 +45,6 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.model import (
-    GalaxySession,
     Job,
     User,
     UserAddress,
@@ -583,6 +582,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if message := validate_password(trans, password, password if confirm is None else confirm):
             raise exceptions.RequestParameterInvalidException(message)
         user.set_password_cleartext(password)
+        # The tool shed maps its own GalaxySession, so take the class from the app's model.
+        GalaxySession = self.app.model.GalaxySession
         stmt = update(GalaxySession).where(GalaxySession.user_id == user.id, GalaxySession.is_valid == true())
         if trans.galaxy_session:
             stmt = stmt.where(GalaxySession.id != trans.galaxy_session.id)
