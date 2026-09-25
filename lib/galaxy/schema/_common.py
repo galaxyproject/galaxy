@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 from pydantic import (
     BaseModel,
@@ -16,7 +17,7 @@ class BootstrapAdminUser(BaseModel):
     preferences: dict[str, str] = {}
     bootstrap_admin_user: bool = True
 
-    def all_roles(*args) -> list:
+    def all_roles(*args) -> list[Any]:
         return []
 
 

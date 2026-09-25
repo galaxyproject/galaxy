@@ -1,5 +1,6 @@
 """State types shared by Galaxy models and API schemas."""
 
+from collections.abc import ValuesView
 from enum import Enum
 from typing import Literal
 
@@ -25,7 +26,7 @@ class DatasetState(str, Enum):
     DISCARDED = "discarded"
 
     @classmethod
-    def values(self):
+    def values(self) -> ValuesView["DatasetState"]:
         return self.__members__.values()
 
 
