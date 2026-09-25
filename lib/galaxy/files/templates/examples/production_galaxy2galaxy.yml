@@ -1,0 +1,36 @@
+- id: galaxy2galaxy
+  version: 0
+  name: Galaxy instance
+  description: |
+      Browse the histories and data libraries of another Galaxy server and import files from them
+      into this one. Datasets appear as files and collections as folders, so a paired collection
+      opens like a directory.
+
+      This is read only. Nothing is written back to the other server.
+  variables:
+      base_url:
+          label: Galaxy server URL (e.g. https://usegalaxy.org)
+          type: string
+          help: |
+              The address of the Galaxy server you want to browse, including the protocol. This is
+              the same address you use in a browser, for example https://usegalaxy.eu.
+      show_hid_in_names:
+          label: Show the history item number in names?
+          type: boolean
+          optional: true
+          default: false
+          help: |
+              Show entries the way the history panel does, with the item number first, as in
+              "1-my-uploaded-dataset".
+  secrets:
+      api_key:
+          label: API key for that Galaxy server
+          help: |
+              Create this on the other server, under User then Preferences then Manage API Key.
+              It gives access to everything that account can see.
+  configuration:
+      type: galaxy2galaxy
+      base_url: "{{ variables.base_url }}"
+      api_key: "{{ secrets.api_key }}"
+      show_hid_in_names: "{{ variables.show_hid_in_names }}"
+      writable: false
