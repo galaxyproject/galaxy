@@ -269,7 +269,7 @@ if TYPE_CHECKING:
     )
     from galaxy.model.tool_shed_install import ToolShedRepository
     from galaxy.objectstore import ObjectStore
-    from galaxy.schema.schema import JobState
+    from galaxy.schema.states import JobState
     from galaxy.tool_util.provided_metadata import BaseToolProvidedMetadata
     from galaxy.tools.actions.metadata import SetMetadataToolAction
     from galaxy.tools.parameters import ToolInputsT

@@ -50,6 +50,12 @@ TEST_PATH_2_CONVERTED = TESTCASE_DIRECTORY / "2.txt"
 DEFAULT_OBJECT_STORE_BY = "id"
 
 
+def test_dataset_attribute_import_model_coerces_deleted_state():
+    attributes = store.DatasetAttributeImportModel(state="deleted")
+
+    assert attributes.state == model.Dataset.states.DISCARDED
+
+
 def test_get_export_dataset_filename_truncates_long_name():
     long_name = "https___example.com_" + "a" * 2000 + ".fastq.gz"
     filename = store.get_export_dataset_filename(long_name, "fastqsanger.gz", "abcdef1234567890", conversion_key=None)
