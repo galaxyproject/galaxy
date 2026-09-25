@@ -19,7 +19,10 @@ fetched whole and paged in memory, so a large history costs one request per page
 
 import functools
 import ipaddress
-from typing import cast
+from typing import (
+    Any,
+    cast,
+)
 from urllib.parse import (
     ParseResult,
     urlparse,
@@ -34,6 +37,8 @@ from galaxy.exceptions import (
 )
 from galaxy.files.models import (
     AnyRemoteEntry,
+    Entry,
+    EntryData,
     FilesSourceRuntimeContext,
 )
 from galaxy.files.sources._defaults import DEFAULT_SCHEME
@@ -195,7 +200,7 @@ class Galaxy2GalaxyFilesSource(
         to_entry = functools.partial(self._info_to_entry, config=config)
         pending = [path]
         while pending:
-            listing = cast(list[dict], fs.ls(pending.pop(), detail=True))
+            listing = cast(list[dict[str, Any]], fs.ls(pending.pop(), detail=True))
             entries.extend(map(to_entry, listing))
             if len(entries) >= MAX_ITEMS_LIMIT:
                 self._on_listing_exceeded()
@@ -208,12 +213,12 @@ class Galaxy2GalaxyFilesSource(
         source_path: str,
         native_path: str,
         context: FilesSourceRuntimeContext[Galaxy2GalaxyFileSourceConfiguration],
-    ):
+    ) -> None:
         # The shared _realize_to wraps nothing, so a backend error reaches the API untranslated and
         # is reported as a bare 500 with a traceback. Importing a dataset that is still running is
         # an ordinary thing for a user to try, so it has to say so instead.
         try:
-            return super()._realize_to(source_path, native_path, context)
+            super()._realize_to(source_path, native_path, context)
         except MessageException:
             raise
         except FileNotFoundError as e:
@@ -233,23 +238,25 @@ class Galaxy2GalaxyFilesSource(
         target_path: str,
         native_path: str,
         context: FilesSourceRuntimeContext[Galaxy2GalaxyFileSourceConfiguration],
-    ):
+    ) -> None:
         raise MessageException(READ_ONLY_MESSAGE)
 
-    def _create_entry(self, entry_data, context):
+    def _create_entry(
+        self, entry_data: EntryData, context: FilesSourceRuntimeContext[Galaxy2GalaxyFileSourceConfiguration]
+    ) -> Entry:
         raise MessageException(READ_ONLY_MESSAGE)
 
     def _list(
         self,
         context: FilesSourceRuntimeContext[Galaxy2GalaxyFileSourceConfiguration],
-        path="/",
-        recursive=False,
+        path: str = "/",
+        recursive: bool = False,
         write_intent: bool = False,
         limit: int | None = None,
         offset: int | None = None,
         query: str | None = None,
         sort_by: str | None = None,
-    ):
+    ) -> tuple[list[AnyRemoteEntry], int]:
         if write_intent:
             raise MessageException(READ_ONLY_MESSAGE)
         try:

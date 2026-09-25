@@ -402,11 +402,11 @@ class ConditionalDependencies(BaseConditionalDependencies):
     def check_arcfs_fsspec(self):
         return "gitlab" in self.file_sources or "arc" in self.file_sources
 
-    def check_galaxy_fsspec(self):
+    def check_galaxy_fsspec(self) -> bool:
         return "galaxy2galaxy" in self.file_sources
 
 
-def strip_comment(line):
+def strip_comment(line: str) -> str:
     # lifted from https://github.com/tox-dev/tox/commit/3c6b4f204e89852c4b7536b246a66d20be6d39ec
     # xref https://github.com/pyupio/dparse/issues/34
     return re.sub(r"\s+#.*", "", line).strip()
@@ -423,7 +423,7 @@ APPS = {
 }
 
 
-def optional(config_file=None, app=GALAXY_APP):
+def optional(config_file: str | None = None, app: str = GALAXY_APP) -> list[str]:
     try:
         dependencies_class, config_file_names = APPS[app]
     except KeyError:

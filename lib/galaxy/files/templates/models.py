@@ -754,14 +754,14 @@ class FileSourceTemplate(FileSourceTemplateBase):
     environment: list[TemplateEnvironmentEntry] | None = None
 
     @property
-    def type(self):
+    def type(self) -> str:
         return self.configuration.type
 
 
 FileSourceTemplateCatalog = RootModel[list[FileSourceTemplate]]
 
 
-class FileSourceTemplateSummaries(RootModel):
+class FileSourceTemplateSummaries(RootModel[list[FileSourceTemplateSummary]]):
     root: list[FileSourceTemplateSummary]
 
 
