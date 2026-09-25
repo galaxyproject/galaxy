@@ -9,6 +9,7 @@ import { useJobStore } from "@/stores/jobStore";
 import { useMappingJobs } from "./handlesMappingJobs";
 
 import JobSelection from "./JobSelection.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import JobParameters from "@/components/JobParameters/JobParameters.vue";
 import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
 
@@ -67,8 +68,10 @@ watch(
     <BCard nobody>
         <BCardTitle v-if="title">
             <b>{{ title }}</b>
-            <FontAwesomeIcon ref="info" :icon="faInfoCircle" size="sm" />
-            <ToolLinkPopover :target="() => $refs.info" :tool-id="toolId" :tool-version="toolVersion" />
+            <GLink ref="info" dark thin type="button" aria-label="Tool details">
+                <FontAwesomeIcon :icon="faInfoCircle" size="sm" />
+            </GLink>
+            <ToolLinkPopover interactive :target="() => $refs.info" :tool-id="toolId" :tool-version="toolVersion" />
         </BCardTitle>
         <JobSelection
             v-model="selectedJob"
