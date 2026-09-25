@@ -366,7 +366,7 @@ class UsersService(ServiceBase):
 
     def get_user_roles(self, trans: ProvidesUserContext, user_id: int) -> RoleListResponse:
         user = self.get_user(trans, user_id)
-        roles = [ura.role for ura in user.roles]
+        roles = [ura.role for ura in user.roles if not ura.role.deleted]
         return RoleListResponse(root=[role_to_model(r) for r in roles])
 
     def set_user_roles(

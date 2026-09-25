@@ -593,6 +593,18 @@ class TestUsersApi(ApiTestCase):
         assert user_roles[0]["type"] == PRIVATE_ROLE_TYPE
 
     @requires_admin
+    @requires_new_user
+    def test_user_roles_leave_out_deleted_roles(self):
+        user = self._setup_user(TEST_USER_EMAIL_ROLES_AND_GROUPS)
+        populator = DatasetPopulator(self.galaxy_interactor)
+        deleted_role_id = populator.create_role([user["id"]])["id"]
+        self._assert_status_code_is(self._delete(f"roles/{deleted_role_id}", admin=True), 200)
+
+        response = self._get(f"users/{user['id']}/roles", admin=True)
+        self._assert_status_code_is(response, 200)
+        assert deleted_role_id not in [role["id"] for role in response.json()]
+
+    @requires_admin
     def test_user_roles_404_for_unknown_user(self):
         unknown_user_id = self._unknown_user_id()
         self._assert_status_code_is(self._get(f"users/{unknown_user_id}/roles", admin=True), 404)
