@@ -17,10 +17,13 @@ import { mockOffset } from "./test_fixtures";
 import Node from "./Node.vue";
 import NodeInput from "./NodeInput.vue";
 import NodeOutput from "./NodeOutput.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
+
+const galaxyConfig = vi.hoisted(() => ({ enable_tool_recommendations: false }));
 
 vi.mock("@/app", () => ({
     getGalaxyInstance: vi.fn(() => ({
-        config: { enable_tool_recommendations: false },
+        config: galaxyConfig,
     })),
 }));
 
@@ -125,6 +128,18 @@ describe("Node", () => {
             expect(wrapper.find(".node-error").classes()).toContain("rounded-bottom");
             expect(wrapper.find(".node-body").exists()).toBe(false);
         });
+    });
+
+    it("lets keyboard users into the tool recommendations popover", async () => {
+        galaxyConfig.enable_tool_recommendations = true;
+        try {
+            const { wrapper } = mountNode(shallowMount);
+            await flushPromises();
+
+            expect(wrapper.findComponent(GPopover).props("interactive")).toBe(true);
+        } finally {
+            galaxyConfig.enable_tool_recommendations = false;
+        }
     });
 
     describe("double click", () => {

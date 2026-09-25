@@ -72,6 +72,7 @@
             <GPopover
                 v-if="isEnabled && !readonly"
                 v-model:show="popoverShow"
+                interactive
                 :target="popoverId"
                 triggers="hover"
                 placement="bottom">
