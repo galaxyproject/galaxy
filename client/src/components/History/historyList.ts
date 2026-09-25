@@ -1,7 +1,7 @@
-import Filtering, { contains, equals, expandNameTag, toBool } from "@/utils/filtering";
+import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 
-export function getHistoryListFilters(activeList = "my") {
-    const validFilters = {
+export function getHistoryListFilters(activeList = "my"): Filtering<string | boolean | undefined> {
+    const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = {
         name: {
             placeholder: "name",
             type: String,
@@ -14,6 +14,20 @@ export function getHistoryListFilters(activeList = "my") {
             handler: contains("tag", "tag", expandNameTag),
             menuItem: true,
         },
+        tool_id: {
+            placeholder: "tool ID",
+            type: String,
+            handler: contains("tool_id"),
+            menuItem: true,
+            disablesFilters: { tool_name: null },
+        },
+        tool_name: {
+            placeholder: "tool name",
+            type: String,
+            handler: contains("tool_name"),
+            menuItem: true,
+            disablesFilters: { tool_id: null },
+        },
         published: {
             placeholder: "Published",
             type: Boolean,
@@ -21,7 +35,7 @@ export function getHistoryListFilters(activeList = "my") {
             handler: equals("published", "published", toBool),
             menuItem: true,
         },
-    } as const;
+    };
 
     if (activeList === "my") {
         return new Filtering(

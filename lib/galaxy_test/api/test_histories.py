@@ -383,6 +383,51 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 3
 
+    @skip_without_tool("cat1")
+    @skip_without_tool("random_lines1")
+    def test_index_search_tool_id(self):
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            history_id_1 = self._create_history(f"History with cat1 job_{uuid4()}")["id"]
+            hda_id = self.dataset_populator.new_dataset(history_id_1, content="1 2 3")["id"]
+            self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": hda_id}}, history_id_1)
+            self.dataset_populator.wait_for_history_jobs(history_id_1, assert_ok=True)
+
+            history_id_2 = self._create_history(f"History with random_lines1 job_{uuid4()}")["id"]
+            hda_id_2 = self.dataset_populator.new_dataset(history_id_2, content="1\n2\n3\n4\n5")["id"]
+            self.dataset_populator.run_tool(
+                "random_lines1",
+                {"input": {"src": "hda", "id": hda_id_2}, "num_lines": 2},
+                history_id_2,
+            )
+            self.dataset_populator.wait_for_history_jobs(history_id_2, assert_ok=True)
+
+            data = dict(search="tool_id:cat1", show_published=False)
+            index_ids = [h["id"] for h in self._get("histories", data=data).json()]
+            assert history_id_1 in index_ids
+            assert history_id_2 not in index_ids
+
+            data = dict(search="tool_id:random_lines1", show_published=False)
+            index_ids = [h["id"] for h in self._get("histories", data=data).json()]
+            assert history_id_1 not in index_ids
+            assert history_id_2 in index_ids
+
+            # unquoted is a substring match...
+            data = dict(search="tool_id:cat", show_published=False)
+            index_ids = [h["id"] for h in self._get("histories", data=data).json()]
+            assert history_id_1 in index_ids
+            assert history_id_2 not in index_ids
+
+            # ...quoting requires an exact match of a job's tool_id.
+            data = dict(search="tool_id:'cat'", show_published=False)
+            index_ids = [h["id"] for h in self._get("histories", data=data).json()]
+            assert history_id_1 not in index_ids
+            assert history_id_2 not in index_ids
+
+            data = dict(search="tool_id:'cat1'", show_published=False)
+            index_ids = [h["id"] for h in self._get("histories", data=data).json()]
+            assert history_id_1 in index_ids
+            assert history_id_2 not in index_ids
+
     def _create_history_then_publish_and_archive_it(self, name):
         history_id = self._create_history(name)["id"]
         response = self._update(history_id, {"published": True})

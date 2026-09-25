@@ -39,8 +39,10 @@ import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { updateHistoryFields } from "@/stores/services/history.services";
+import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { getShortToolId } from "@/utils/tool";
 
 import { getHistoryListFilters } from "./historyList";
 
@@ -87,6 +89,7 @@ const breadcrumbItems = [{ title: "Histories", to: "/histories/list" }];
 const router = useRouter();
 const userStore = useUserStore();
 const historyStore = useHistoryStore();
+const toolStore = useToolStore();
 const { confirm } = useConfirmDialog();
 
 const limit = ref(24);
@@ -237,10 +240,27 @@ async function load(overlayLoading: boolean = false, silent: boolean = false) {
         return;
     }
 
+    let search = validatedFilterText();
+    // If we have a valid length `tool_name` filter, find the first `tool_id` returned
+    // by `toolStore.getToolIdsByName`
+    let toolName = historyListFilters.value.getFilterValue(search, "tool_name");
+    if (toolName && typeof toolName === "string" && toolName.trim().length > 2) {
+        const isQuoted = /^(['"]).*\1$/.test(toolName);
+        toolName = isQuoted ? toolName.slice(1, -1) : toolName;
+        const toolIds = toolStore.getToolIdsByName(toolName, isQuoted);
+        if (toolIds.length > 0 && toolIds[0]) {
+            // Tool ID found, replace the `tool_name` filter with the corresponding `tool_id` filter
+            const toolId = toolIds[0];
+
+            search = historyListFilters.value.setFilterValue(search, "tool_id", getShortToolId(toolId));
+            search = historyListFilters.value.applyFiltersToText({ tool_name: toolName }, search, true);
+        }
+    }
+
     const options = {
         limit: limit.value,
         offset: offset.value,
-        search: validatedFilterText(),
+        search,
         sortBy: sortBy.value,
         sortDesc: sortDesc.value,
     };

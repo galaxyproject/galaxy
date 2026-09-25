@@ -38824,6 +38824,9 @@ export interface operations {
                  *     `tag`
                  *     : The history's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
                  *
+                 *     `tool_id`
+                 *     : The id of a tool used by a job in the history.
+                 *
                  *     ## Free Text
                  *
                  *     Free text search terms will be searched against the following attributes of the
