@@ -128,7 +128,7 @@ onUnmounted(() => {
                 <div v-if="dataset.peek">
                     <Heading id="dataset-peek-heading" h2 separator inline size="md"> Dataset Peek </Heading>
 
-                    <div class="dataset-peek" v-html="dataset.peek" />
+                    <div v-sanitize-html="dataset.peek" class="dataset-peek" />
                 </div>
             </div>
 
