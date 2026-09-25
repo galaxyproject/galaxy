@@ -163,8 +163,7 @@ function returnToLogin() {
             <template v-if="!confirmURL">
                 <div>
                     <BAlert :show="!!messageText" :variant="messageVariant">
-                        <!-- eslint-disable-next-line vue/no-v-html -->
-                        <span v-html="messageText" />
+                        <span v-sanitize-html="messageText" />
                     </BAlert>
 
                     <BAlert :show="!!connectExternalProvider" variant="info">

@@ -5,6 +5,7 @@ import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import MountTarget from "./LoginForm.vue";
 
@@ -190,6 +191,20 @@ describe("LoginForm", () => {
         expect(alert.exists()).toBe(true);
         expect(alert.text()).toContain("auth-error");
         expect(alert.classes()).toContain("alert-info");
+
+        window.location.href = originalHref;
+    });
+
+    it("renders the message through v-sanitize-html", async () => {
+        const originalHref = window.location.href;
+        window.location.href = `${window.location.origin}/login/start?message=${encodeURIComponent("<b>note</b>")}`;
+        vi.mocked(sanitizeHtml).mockClear();
+
+        const wrapper = await mountLoginForm();
+        await flushPromises();
+
+        expect(sanitizeHtml).toHaveBeenCalledWith("<b>note</b>", "default");
+        expect(wrapper.find(".alert b").text()).toBe("note");
 
         window.location.href = originalHref;
     });

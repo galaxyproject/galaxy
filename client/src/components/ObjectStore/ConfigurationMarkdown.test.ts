@@ -1,6 +1,8 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
 
@@ -31,5 +33,17 @@ describe("ConfigurationMarkdown.vue", () => {
             localVue,
         });
         expect(wrapper.html()).not.toContain("<b>content</b>");
+    });
+
+    it("renders through v-sanitize-html with the links profile", () => {
+        vi.mocked(sanitizeHtml).mockClear();
+        shallowMount(ConfigurationMarkdown as object, {
+            propsData: { markdown: 'the <a href="https://example.org" target="_blank">link</a>', admin: true },
+            localVue,
+        });
+        expect(sanitizeHtml).toHaveBeenCalledWith(
+            '<p>the <a href="https://example.org" target="_blank">link</a></p>\n',
+            "links",
+        );
     });
 });
