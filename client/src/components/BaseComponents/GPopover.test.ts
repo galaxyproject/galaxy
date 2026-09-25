@@ -1100,6 +1100,19 @@ describe("GPopover click dialog", () => {
         expect(document.activeElement).toBe(target);
     });
 
+    it("treats the last shown control as the end when a hidden one follows it", async () => {
+        const target = await openByClick();
+        const link = popoverEl().querySelector("a")!;
+        const hidden = document.createElement("button");
+        popoverEl().querySelector(".popover-body")!.appendChild(hidden);
+        // happy-dom has no layout, so stand in for display: none.
+        vi.spyOn(hidden, "getClientRects").mockReturnValue([] as unknown as DOMRectList);
+        link.focus();
+
+        expect(pressTab(link).defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(target);
+    });
+
     it("restores the trigger's attributes when unmounted", async () => {
         const target = await mountWithTrigger({ triggers: "click blur", title: "Person" });
 

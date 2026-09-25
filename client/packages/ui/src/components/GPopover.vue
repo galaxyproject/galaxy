@@ -521,9 +521,6 @@ function removeIdReference(el: Element, attribute: string, id: string) {
     }
 }
 
-const TABBABLE_SELECTOR =
-    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
 // :focus-visible tells keyboard focus apart from the focus a mouse click leaves on a button.
 function isKeyboardFocus(element: EventTarget | null) {
     return element instanceof Element && element.matches(":focus-visible");
@@ -637,7 +634,7 @@ function setupListeners() {
             if (keyEvent.key !== "Tab") {
                 return;
             }
-            const tabbable = popover.querySelectorAll<HTMLElement>(TABBABLE_SELECTOR);
+            const tabbable = tabbableElements(popover);
             const edge = keyEvent.shiftKey ? tabbable[0] : tabbable[tabbable.length - 1];
             const onContainer = document.activeElement === popover;
             if (!edge || document.activeElement === edge || (onContainer && keyEvent.shiftKey)) {
