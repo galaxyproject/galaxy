@@ -550,6 +550,7 @@ class Data(metaclass=DataMeta):
         providers?).
         """
         headers = kwd.get("headers", {})
+        as_image = util.string_as_bool(kwd.get("as_image", False)) and to_ext is None
         # Prevent IE8 from sniffing content type since we're explicit about it.  This prevents intentionally text/plain
         # content from being rendered in the browser
         headers["X-Content-Type-Options"] = "nosniff"
@@ -591,11 +592,14 @@ class Data(metaclass=DataMeta):
                         mime = trans.app.datatypes_registry.get_mimetype_by_extension(file_path.split(".")[-1])
                     except Exception:
                         mime = "text/plain"
-                self._clean_and_set_mime_type(trans, mime, headers)
+                self._clean_and_set_mime_type(trans, mime, headers, as_image=as_image)
                 return self._yield_user_file_content(trans, dataset, file_path, headers), headers
             else:
                 raise ObjectNotFound(f"Could not find '{filename}' on the extra files path {file_path}.")
-        self._clean_and_set_mime_type(trans, dataset.get_mime(), headers)
+        self._clean_and_set_mime_type(trans, dataset.get_mime(), headers, as_image=as_image)
+        if as_image and headers["content-type"] == "image/svg+xml":
+            # An image needs the entire SVG, including its closing tags.
+            preview = False
 
         downloading = to_ext is not None
         file_size = _get_file_size(dataset)
@@ -1020,8 +1024,13 @@ class Data(metaclass=DataMeta):
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.chunk.Base64ChunkDataProvider(dataset_source, **settings)
 
-    def _clean_and_set_mime_type(self, trans, mime: str, headers: Headers) -> None:
-        if mime.lower() in XSS_VULNERABLE_MIME_TYPES:
+    def _clean_and_set_mime_type(self, trans, mime: str, headers: Headers, *, as_image: bool = False) -> None:
+        if as_image and mime.lower() == "image/svg+xml":
+            # Also disable active content when the image URL is opened directly.
+            headers["Content-Security-Policy"] = (
+                "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:"
+            )
+        elif mime.lower() in XSS_VULNERABLE_MIME_TYPES:
             if not getattr(trans.app.config, "serve_xss_vulnerable_mimetypes", True):
                 mime = DEFAULT_MIME_TYPE
         headers["content-type"] = mime
