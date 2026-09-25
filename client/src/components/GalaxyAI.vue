@@ -222,6 +222,25 @@ function showWelcome() {
     });
 }
 
+/** The message to show for a failed chat request. */
+function chatFailureMessage(error: unknown, status?: number): string {
+    // A gateway answers about itself, so its body says nothing about this chat.
+    switch (status) {
+        case 504:
+            return `GalaxyAI took too long to respond (${status}). Please try again.`;
+        case 502:
+        case 503:
+            return `GalaxyAI is temporarily unavailable (${status}). Please try again in a few minutes.`;
+    }
+
+    const fallback =
+        status === undefined
+            ? "Failed to get response from GalaxyAI."
+            : `GalaxyAI could not answer that request (${status}). Please try again.`;
+    // A string means nothing parsed the body, so there is no message to find in it.
+    return error !== null && typeof error === "object" ? errorMessageAsString(error, fallback) : fallback;
+}
+
 async function submitQuery() {
     if (!query.value.trim()) {
         return;
@@ -253,7 +272,7 @@ async function submitQuery() {
         const resolved = resolveMentions(parsed);
         const entityContext = buildEntityContext(resolved);
 
-        const { data, error } = await GalaxyApi().POST("/api/chat", {
+        const { data, error, response } = await GalaxyApi().POST("/api/chat", {
             params: {
                 query: {
                     agent_type: selectedAgentType.value,
@@ -272,7 +291,7 @@ async function submitQuery() {
         }
 
         if (error) {
-            const errorText = errorMessageAsString(error, "Failed to get response from GalaxyAI.");
+            const errorText = chatFailureMessage(error, response?.status);
             const errorMsg: ChatMessage = {
                 id: generateId(),
                 role: "assistant",
