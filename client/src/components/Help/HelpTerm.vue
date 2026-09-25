@@ -25,7 +25,7 @@ const { loading, hasHelp, help } = useHelpForTerm(toRef(props, "term"));
             <ConfigurationMarkdown :markdown="help" :admin="true" />
         </div>
         <div v-else>
-            <GAlert variant="error"> Something went wrong, no Galaxy help found for term or URI {{ term }}. </GAlert>
+            <GAlert variant="danger"> Something went wrong, no Galaxy help found for term or URI {{ term }}. </GAlert>
         </div>
     </div>
 </template>

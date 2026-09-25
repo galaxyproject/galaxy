@@ -95,7 +95,7 @@ onUnmounted(() => {
         <GAlert v-if="loading" variant="info" show>
             <LoadingSpan message="Loading dataset details..." />
         </GAlert>
-        <GAlert v-else-if="datasetLoadingError" variant="error">
+        <GAlert v-else-if="datasetLoadingError" variant="danger">
             {{ datasetLoadingError }}
         </GAlert>
         <div v-else-if="dataset">
