@@ -49,23 +49,25 @@ async function loadRecommendations() {
         tool_sequence: toolId,
     };
     try {
-        const responsePred = (await getToolPredictions(requestData)) as ToolPredictionsResponse;
+        const responsePred = (await getToolPredictions(requestData)) as ToolPredictionsResponse | null | undefined;
         const datatypesMapper = await getDatatypesMapper(false);
-        const predData = responsePred.predicted_data;
-        deprecated.value = predData.is_deprecated;
-        deprecatedMessage.value = predData.message;
-        if (responsePred !== null && predData.children.length > 0) {
-            const outputDatatypes = predData.o_extensions;
-            const children = predData.children;
-            const compatibleTools = getCompatibleRecommendations(children, outputDatatypes, datatypesMapper);
-            if (compatibleTools.length > 0 && deprecated.value === false) {
-                showMessage.value = true;
-                const filteredData: PredictedTools = {
-                    o_extensions: predData.o_extensions,
-                    name: predData.name,
-                    children: compatibleTools,
-                };
-                renderD3Tree(filteredData);
+        if (responsePred) {
+            const predData = responsePred.predicted_data;
+            deprecated.value = predData.is_deprecated;
+            deprecatedMessage.value = predData.message;
+            if (predData.children.length > 0) {
+                const outputDatatypes = predData.o_extensions;
+                const children = predData.children;
+                const compatibleTools = getCompatibleRecommendations(children, outputDatatypes, datatypesMapper);
+                if (compatibleTools.length > 0 && deprecated.value === false) {
+                    showMessage.value = true;
+                    const filteredData: PredictedTools = {
+                        o_extensions: predData.o_extensions,
+                        name: predData.name,
+                        children: compatibleTools,
+                    };
+                    renderD3Tree(filteredData);
+                }
             }
         }
 
@@ -225,7 +227,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div v-if="!errorMessage">
+    <div v-if="!errorMessage && (deprecated || showMessage)">
         <h2 id="tool-recommendation-heading" class="h-sm">Tool recommendation</h2>
         <div v-if="!deprecated && showMessage">
             You have used {{ getShortToolId(props.toolId) }} tool. For further analysis, you could try using the
