@@ -439,6 +439,11 @@ class GalaxyAppConfigurationAttributes:
     ai_api_key: str | None
     ai_api_base_url: str | None
     ai_model: str
+    embedding_api_key: str | None
+    embedding_api_base_url: str | None
+    embedding_model: str
+    vector_database_path: str
+    vector_database_url: str | None
     inference_services: Any
     agent_model_capabilities_file: str
     gtn_database_path: str

@@ -84,7 +84,8 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
     _TOOL_BUDGET_MESSAGE = (
         "SEARCH BUDGET REACHED. You already have enough information to recommend. "
         "Do NOT call search_galaxy_tools, get_galaxy_tool_details, "
-        "get_galaxy_tool_categories, search_iwc_workflows, or "
+        "search_gtn_tutorial_vectors, search_gtn_workflow_vectors, "
+        "search_gtn_faq_vectors, get_galaxy_tool_categories, search_iwc_workflows, or "
         "get_iwc_workflow_details again. Produce your final structured "
         "recommendation now from the tools and workflows already found above. If "
         "nothing is a strong match, say so and recommend the closest option."

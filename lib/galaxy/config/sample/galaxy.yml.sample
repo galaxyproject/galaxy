@@ -3190,6 +3190,30 @@ galaxy:
   # AI model to enable the wizard. Global fallback for all AI agents.
   #ai_model: gpt-4o
 
+  # API key for the OpenAI-compatible embedding provider used by vector
+  # search agents.
+  #embedding_api_key: null
+
+  # Embedding API base URL. Needs to be OpenAI compatible.
+  #embedding_api_base_url: null
+
+  # Embedding model used by vector search agents.
+  #embedding_model: BAAI/bge-large-en-v1.5
+
+  # Path to the Chroma vector database used by vector search agents.
+  # Resolves against ``data_dir`` so admins can place it in a
+  # mutable-data directory. The database archive is downloaded
+  # automatically on first use from ``vector_database_url`` if it does
+  # not exist.
+  # The value of this option will be resolved with respect to
+  # <data_dir>.
+  #vector_database_path: gtn/chroma_db_composite
+
+  # URL used to download the Chroma vector database archive when the
+  # local directory at ``vector_database_path`` is missing. Supported
+  # archive formats are zip, tar, tar.gz, and tgz.
+  #vector_database_url: null
+
   # Configuration for AI inference services used by agents and
   # visualization plugins. Supports per-agent or per-plugin model,
   # temperature, max_tokens, retries, api_key, api_base_url, and enabled
