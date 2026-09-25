@@ -2,11 +2,8 @@
 
 import platform
 
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.keys import Keys
-
+from galaxy.selenium.keys import Key
 from .framework import (
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -20,7 +17,6 @@ class TestCustomTools(SeleniumTestCase, UsesUploadActivity):
         """Skip accessibility checks for custom tools tests due to Monaco editor issues."""
         pass
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_create_custom_tool(self):
         """Test creating a new custom tool through the UI."""
@@ -29,7 +25,6 @@ class TestCustomTools(SeleniumTestCase, UsesUploadActivity):
             assert tool_uuid, "Tool UUID should be returned after saving."
             self.components.custom_tools.tool_link(tool_uuid=tool_uuid).wait_for_clickable()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_custom_tool(self):
         test_path = self.get_filename("1.fasta")
@@ -139,11 +134,18 @@ class TestCustomTools(SeleniumTestCase, UsesUploadActivity):
 
     def save_tool(self) -> str:
         self.components.custom_tools.save_button.wait_for_and_click()
-        # Wait for save operation to complete
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        # Verify save was successful
-        current_url = self.driver.current_url
-        return current_url.split("/tools/editor/")[1]
+
+        # The editor rewrites its route to carry the new tool's UUID once the save
+        # round-trip lands, and that URL is the test's only handle on the id.
+        def saved_tool_uuid(driver=None):
+            _, _, uuid = self.current_url.partition("/tools/editor/")
+            return uuid or None
+
+        return self._wait_on_custom(
+            saved_tool_uuid,
+            "custom tool editor URL to carry the saved tool UUID",
+            wait_type=self.wait_types.DATABASE_OPERATION,
+        )
 
     def paste_tool(self):
         # Define a simple custom tool YAML
@@ -181,28 +183,14 @@ from_work_dir: output.txt
         editor_container.click()
         self.sleep_for(self.wait_types.UX_RENDER)  # Allow editor to focus
 
-        is_mac = platform.system() == "Darwin"
-        modifier_key = Keys.COMMAND if is_mac else Keys.CONTROL
+        select_all = Key.META if platform.system() == "Darwin" else Key.CONTROL
 
-        action_chains = ActionChains(self.driver)
+        self.press("a", modifiers=[select_all])
+        self.press(Key.DELETE)
 
-        # Select all content
-        action_chains.key_down(modifier_key)
-        action_chains.send_keys("a")
-        action_chains.key_up(modifier_key)
-        action_chains.perform()
-
-        # Delete selected content
-        action_chains = ActionChains(self.driver)
-        action_chains.send_keys(Keys.DELETE)
-        action_chains.perform()
-
-        # Now insert the new content
         # yaml is split in funky was to accomodate guided yaml text input in monaco
-        action_chains = ActionChains(self.driver)
-        action_chains.send_keys(tool_yaml_one)
-        action_chains.send_keys(Keys.BACKSPACE)
-        action_chains.send_keys(tool_yaml_two)
-        action_chains.send_keys(Keys.BACKSPACE)
-        action_chains.send_keys(tool_yaml_three)
-        action_chains.perform()
+        self.send_keys_to_page(tool_yaml_one)
+        self.press(Key.BACKSPACE)
+        self.send_keys_to_page(tool_yaml_two)
+        self.press(Key.BACKSPACE)
+        self.send_keys_to_page(tool_yaml_three)
