@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { setMockConfig } from "@/composables/__mocks__/config";
+import { sanitizeHtml } from "@/directives/sanitizeHtml";
 
 import CitationItem from "./CitationItem.vue";
 import MountTarget from "./CitationsList.vue";
@@ -19,6 +20,7 @@ vi.mock("@/composables/config");
 setMockConfig({
     citation_bibtex:
         "@article{Galaxy2024, title={The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update}, author={{The Galaxy Community}}, journal={Nucleic Acids Research}, year={2024}, doi={10.1093/nar/gkae410}, url={https://doi.org/10.1093/nar/gkae410}}",
+    citations_export_message_html: 'Please <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.',
 });
 
 vi.mock("@/components/Citation/services", () => ({
@@ -76,5 +78,16 @@ describe("CitationsList", () => {
         expect(citationItems.at(1).text()).toContain(
             "DFTB$\\mathplus$, a software package for efficient approximate density functional theory based atomistic simulations",
         );
+    });
+
+    it("renders citation html through v-sanitize-html", () => {
+        const calls = vi.mocked(sanitizeHtml).mock.calls;
+        expect(calls).toContainEqual([expect.stringContaining("csl-entry"), "default"]);
+    });
+
+    it("renders the configured export message as written", () => {
+        const message = 'Please <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.';
+        expect(vi.mocked(sanitizeHtml).mock.calls.map(([html]) => html)).not.toContain(message);
+        expect(wrapper.find(".infomessage div").element.innerHTML).toBe(message);
     });
 });
