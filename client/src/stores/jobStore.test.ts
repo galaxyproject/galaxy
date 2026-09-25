@@ -87,6 +87,45 @@ describe("useJobStore", () => {
         expect(callCount).toBe(2);
     });
 
+    it("a stale stopWatchingJob handle from an ended poll does not stop a newer poll for the same id", async () => {
+        let callCount = 0;
+        server.use(
+            http.get("/api/jobs/{job_id}", ({ response }) => {
+                callCount++;
+                return response(200).json(buildJob("job9", "running"));
+            }),
+        );
+
+        const store = useJobStore();
+
+        // Consumer A starts a poll and later stops it; this ends the *first* poll entry for
+        // "job9" (refCount drops to 0, entry removed from `activePolls`).
+        const a = store.pollJobUntilTerminal({ id: "job9" });
+        await flushPromises();
+        expect(callCount).toBe(1);
+        a.stopWatchingJob();
+
+        // Consumer B starts a brand new poll for the same id: a *second*, independent entry.
+        const b = store.pollJobUntilTerminal({ id: "job9" });
+        await flushPromises();
+        expect(callCount).toBe(2);
+
+        // A's handle is invoked again here (e.g. a component unmounting late, calling its cleanup
+        // a second time, or having queued the call before A originally stopped). If `activePolls`
+        // were keyed only by id, this would decrement *B's* entry (the only one now at "job9") and
+        // could stop it even though B still needs it.
+        a.stopWatchingJob();
+
+        // B's poll must still be running: we keep fetching.
+        await advanceTimersAndFlush(1000);
+        expect(callCount).toBe(3);
+
+        b.stopWatchingJob();
+        await advanceTimersAndFlush(1000);
+        // Now that B has actually released it, the poll really does stop.
+        expect(callCount).toBe(3);
+    });
+
     it("stops polling once the job reaches a terminal state", async () => {
         let callCount = 0;
         server.use(
