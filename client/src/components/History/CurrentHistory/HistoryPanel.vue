@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, set as VueSet, unref, watch } from "vue";
 
@@ -29,6 +28,7 @@ import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog.vue";
 import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning.vue";
 import HistorySelectionOperations from "./HistoryOperations/SelectionOperations.vue";
 import HistorySelectionStatus from "./HistoryOperations/SelectionStatus.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import ContentItem from "@/components/History/Content/ContentItem.vue";
 import ListingLayout from "@/components/History/Layout/ListingLayout.vue";
@@ -501,23 +501,23 @@ const {
                 <HistoryDropZone v-if="showDropZone" />
                 <div class="h-100">
                     <div v-if="isLoading && historyItems && historyItems.length === 0">
-                        <BAlert class="m-2" variant="info" show>
+                        <GAlert class="m-2" variant="info" show>
                             <LoadingSpan message="Loading History" />
-                        </BAlert>
+                        </GAlert>
                     </div>
-                    <BAlert v-else-if="isProcessing" class="m-2" variant="info" show>
+                    <GAlert v-else-if="isProcessing" class="m-2" variant="info" show>
                         <LoadingSpan message="Processing operation" />
-                    </BAlert>
+                    </GAlert>
                     <div v-else-if="historyItems.length === 0">
                         <HistoryEmpty v-if="queryDefault" :writable="canEditHistory" class="m-2" />
 
-                        <BAlert v-else-if="formattedSearchError" class="m-2" variant="danger" show>
+                        <GAlert v-else-if="formattedSearchError" class="m-2" variant="danger" show>
                             Error in filter:
                             <a href="javascript:void(0)" @click="showAdvanced = true">
                                 {{ formattedSearchError.filter }}'{{ formattedSearchError.value }}'
                             </a>
-                        </BAlert>
-                        <BAlert v-else class="m-2" variant="info" show> No data found for selected filter. </BAlert>
+                        </GAlert>
+                        <GAlert v-else class="m-2" variant="info" show> No data found for selected filter. </GAlert>
                     </div>
                     <ListingLayout
                         v-else

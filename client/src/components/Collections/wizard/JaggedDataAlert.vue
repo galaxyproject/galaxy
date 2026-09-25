@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 interface Props {
     jaggedDataWarning?: string;
@@ -10,8 +10,8 @@ defineProps<Props>();
 
 <template>
     <span>
-        <BAlert v-if="jaggedDataWarning" show variant="warning">
+        <GAlert v-if="jaggedDataWarning" show variant="warning">
             {{ jaggedDataWarning }}
-        </BAlert>
+        </GAlert>
     </span>
 </template>

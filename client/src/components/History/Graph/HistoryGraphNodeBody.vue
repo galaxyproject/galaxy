@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { useCreatingJob } from "@/composables/useCreatingJob";
@@ -9,6 +8,7 @@ import type { HistoryGraphNode } from "./historyGraphMapper";
 
 import JobDetailsTabs from "./JobDetailsTabs.vue";
 import ToolExecutionJobs from "./ToolExecutionJobs.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";
 import RerunJobButton from "@/components/JobInformation/RerunJobButton.vue";
 import JobState from "@/components/JobStates/JobState.vue";
@@ -43,7 +43,7 @@ const { job } = useJobBasic(creatingJobId);
         :info-icon="infoIcon" />
     <div v-else>
         <LoadingSpan v-if="isDatasetLike && lookupLoading" message="Loading job details" />
-        <BAlert v-else-if="isDatasetLike && lookupError" variant="info" show class="mb-0">{{ lookupError }}</BAlert>
+        <GAlert v-else-if="isDatasetLike && lookupError" variant="info" show class="mb-0">{{ lookupError }}</GAlert>
         <GTabs v-else-if="isDatasetLike && creatingJobId">
             <template v-slot:nav-end>
                 <JobState v-if="job" :job="job" class="mr-2" />
@@ -55,6 +55,6 @@ const { job } = useJobBasic(creatingJobId);
                 :info-title="infoTitle"
                 :info-icon="infoIcon" />
         </GTabs>
-        <BAlert v-else show variant="info" class="mb-0">No details available for this node.</BAlert>
+        <GAlert v-else show variant="info" class="mb-0">No details available for this node.</GAlert>
     </div>
 </template>

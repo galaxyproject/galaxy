@@ -2,7 +2,7 @@
 import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BAlert, BDropdown, BDropdownDivider, BDropdownGroup, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
+import { BDropdown, BDropdownDivider, BDropdownGroup, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
 import { computed, reactive, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -19,6 +19,7 @@ import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
 import { useUserStore } from "@/stores/userStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 import FolderDetails from "@/components/Libraries/LibraryFolder/FolderDetails/FolderDetails.vue";
@@ -403,7 +404,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
             </div>
         </div>
 
-        <BAlert v-model="progress" :dismissible="progressStatus.runningCount === 0" variant="info" class="mb-1">
+        <GAlert v-model="progress" :dismissible="progressStatus.runningCount === 0" variant="info" class="mb-1">
             <ProgressBar
                 :loading="progressStatus.runningCount > 0"
                 :note="progressNote"
@@ -411,7 +412,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                 :ok-count="progressStatus.okCount"
                 :error-count="progressStatus.errorCount"
                 :running-count="progressStatus.runningCount" />
-        </BAlert>
+        </GAlert>
 
         <LibraryBreadcrumb
             v-if="props.metadata && props.metadata.full_path"

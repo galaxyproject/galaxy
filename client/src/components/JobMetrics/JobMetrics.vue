@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed, ref, unref, watch } from "vue";
 
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
@@ -9,6 +8,7 @@ import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./Ca
 import Heading from "../Common/Heading.vue";
 import AwsEstimate from "./AwsEstimate.vue";
 import CarbonEmissions from "./CarbonEmissions/CarbonEmissions.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 interface Props {
     datasetFilesize?: number;
@@ -204,5 +204,5 @@ const estimatedServerInstance = computed(() => {
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
     </div>
-    <BAlert v-else variant="info" show> No metrics available for this job. </BAlert>
+    <GAlert v-else variant="info" show> No metrics available for this job. </GAlert>
 </template>

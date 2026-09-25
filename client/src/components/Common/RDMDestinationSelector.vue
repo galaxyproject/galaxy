@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BCard, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
+import { BCard, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -9,6 +9,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { fileSourcePluginToItem } from "../FilesDialog/utilities";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
@@ -163,7 +164,7 @@ defineExpose({
                     You need to create the new record in a repository before exporting the {{ props.what }} to it.
                 </p>
 
-                <BAlert
+                <GAlert
                     v-if="errorCreatingRecord"
                     variant="danger"
                     show
@@ -171,7 +172,7 @@ defineExpose({
                     @dismissed="errorCreatingRecord = undefined">
                     An error occurred while creating the record:
                     {{ errorCreatingRecord }}
-                </BAlert>
+                </GAlert>
 
                 <GButton
                     id="create-record-button"

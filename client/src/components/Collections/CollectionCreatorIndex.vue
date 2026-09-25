@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCheckCircle, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BLink } from "bootstrap-vue";
+import { BLink } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { type CreateNewCollectionPayload, type HDCASummary, type HistoryItemSummary, isHDCA } from "@/api";
@@ -21,6 +21,7 @@ import ListCollectionCreator from "./ListCollectionCreator.vue";
 import PairCollectionCreator from "./PairCollectionCreator.vue";
 import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
 import SampleSheetCollectionCreator from "./SampleSheetCollectionCreator.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import Heading from "@/components/Common/Heading.vue";
 import GenericItem from "@/components/History/Content/GenericItem.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -222,28 +223,28 @@ defineExpose({ redrawCreator });
             </Heading>
         </template>
 
-        <BAlert v-if="isFetchingItems && !initialFetch" variant="info" show>
+        <GAlert v-if="isFetchingItems && !initialFetch" variant="info" show>
             <LoadingSpan :message="localize('Loading items')" />
-        </BAlert>
-        <BAlert v-else-if="!fromSelection && historyItemsError" variant="danger" show>
+        </GAlert>
+        <GAlert v-else-if="!fromSelection && historyItemsError" variant="danger" show>
             {{ historyItemsError }}
-        </BAlert>
-        <BAlert v-else-if="creatingCollection" variant="info" show>
+        </GAlert>
+        <GAlert v-else-if="creatingCollection" variant="info" show>
             <LoadingSpan :message="localize('Creating collection')" />
-        </BAlert>
-        <BAlert v-else-if="createCollectionError" variant="danger" show>
+        </GAlert>
+        <GAlert v-else-if="createCollectionError" variant="danger" show>
             {{ createCollectionError }}
             <BLink class="text-decoration-none" @click.stop.prevent="resetCreator">
                 <FontAwesomeIcon :icon="faUndo" fixed-width />
                 {{ localize("Try again") }}
             </BLink>
-        </BAlert>
+        </GAlert>
         <div v-else-if="createdCollection">
-            <BAlert v-if="!createdCollectionInReadyState" variant="info" show>
+            <GAlert v-if="!createdCollectionInReadyState" variant="info" show>
                 <LoadingSpan :message="localize('Waiting for collection to be ready')" />
-            </BAlert>
+            </GAlert>
             <template v-else>
-                <BAlert variant="success" show>
+                <GAlert variant="success" show>
                     <FontAwesomeIcon :icon="faCheckCircle" class="text-success" fixed-width />
                     {{ localize("Collection created successfully.") }}
                     {{ localize("It might still not be a valid input based on individual element properties.") }}
@@ -252,7 +253,7 @@ defineExpose({ redrawCreator });
                         <FontAwesomeIcon :icon="faUndo" fixed-width />
                         {{ localize("Create another collection") }}
                     </BLink>
-                </BAlert>
+                </GAlert>
 
                 <GenericItem
                     v-if="createdCollection.history_content_type === 'dataset_collection'"

@@ -26,9 +26,9 @@
                 </div>
             </b-col>
             <b-col>
-                <b-alert show variant="info">
+                <GAlert show variant="info">
                     <div v-html="alert" />
-                </b-alert>
+                </GAlert>
             </b-col>
         </b-row>
     </div>
@@ -43,9 +43,12 @@ import VueObserveVisibility from "vue-observe-visibility";
 
 import { Services } from "@/components/Libraries/LibraryPermissions/services";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+
 Vue.use(VueObserveVisibility);
 export default {
     components: {
+        GAlert,
         Multiselect,
     },
     props: {

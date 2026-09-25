@@ -25,6 +25,7 @@ import { linkedAuthoringHelpSection } from "./authoringHelp";
 import { CLEAR_TOOL_YAML, NEW_TOOL_YAML } from "./customToolEditorDefaults";
 import { setupMonaco } from "./YamlJs";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import AuthoringHelpPanel from "@/components/Tool/AuthoringHelpPanel.vue";
@@ -223,9 +224,9 @@ async function generateViaLLM() {
 
 <template>
     <div class="custom-tool-editor">
-        <b-alert v-if="errorMsg" variant="danger" show dismissible>
+        <GAlert v-if="errorMsg" variant="danger" show dismissible>
             {{ errorMsg.err_msg }}
-        </b-alert>
+        </GAlert>
         <div class="d-flex flex-gapx-1">
             <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Tool Editor</Heading>
             <GButton

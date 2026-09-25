@@ -2,11 +2,11 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faInfoCircle, faSignOutAlt, faSlidersH } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed, watch } from "vue";
 
 import { useJobParametersStore } from "@/stores/jobParametersStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTab from "@/components/BaseComponents/GTab.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";
 import JobOutputs from "@/components/JobInformation/JobOutputs.vue";
@@ -68,7 +68,7 @@ watch(
                 <span>Outputs</span>
             </template>
             <JobOutputs v-if="hasOutputs" :key="jobId" :job-outputs="paramsDisplay?.outputs" paginate />
-            <BAlert v-else show variant="info" class="mb-0">No outputs.</BAlert>
+            <GAlert v-else show variant="info" class="mb-0">No outputs.</GAlert>
         </GTab>
     </div>
 </template>

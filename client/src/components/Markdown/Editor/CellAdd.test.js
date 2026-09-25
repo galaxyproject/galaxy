@@ -1,11 +1,11 @@
 import { mount } from "@vue/test-utils";
-import { BAlert } from "bootstrap-vue";
 import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
 import CellAdd from "./CellAdd.vue";
 import CellOption from "./CellOption.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import Popper from "@/components/Popper/Popper.vue";
@@ -33,7 +33,7 @@ const mountTarget = () => {
     return mount(CellAdd, {
         attachTo: createContainer(),
         global: {
-            components: { BAlert, GButton, CellOption, DelayedInput, Popper },
+            components: { GAlert, GButton, CellOption, DelayedInput, Popper },
         },
     });
 };
@@ -68,8 +68,8 @@ describe("CellAdd.vue", () => {
         await wrapper.vm.$nextTick();
         wrapper.findComponent(DelayedInput).vm.$emit("change", "nonexistent");
         await wrapper.vm.$nextTick();
-        expect(wrapper.findComponent(BAlert).exists()).toBe(true);
-        expect(wrapper.findComponent(BAlert).text()).toContain('No results found for "nonexistent".');
+        expect(wrapper.findComponent(GAlert).exists()).toBe(true);
+        expect(wrapper.findComponent(GAlert).text()).toContain('No results found for "nonexistent".');
     });
 
     it("emits a 'click' event when a cell option is selected", async () => {

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -7,6 +6,7 @@ import { useTargetHistoryUploadState } from "@/composables/history/useTargetHist
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 import TargetHistoryLink from "@/components/History/TargetHistoryLink.vue";
 
@@ -72,9 +72,9 @@ function handleHistorySelected(history: { id: string }) {
             </a>
         </div>
 
-        <BAlert v-if="warningMessage" show variant="warning" class="mb-2 py-1">
+        <GAlert v-if="warningMessage" show variant="warning" class="mb-2 py-1">
             {{ warningMessage }}
-        </BAlert>
+        </GAlert>
 
         <SelectorModal
             v-if="canChangeHistory"

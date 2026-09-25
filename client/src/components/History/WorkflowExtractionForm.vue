@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faCheck, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -32,6 +31,7 @@ import JobDetails from "../JobInformation/JobDetails.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import WorkflowExtractionCard from "./WorkflowExtraction/WorkflowExtractionCard.vue";
 import WorkflowExtractionMessages from "./WorkflowExtraction/WorkflowExtractionMessages.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const props = defineProps<{
     historyId: string;
@@ -408,10 +408,10 @@ function stepKind(job: ExtractionRow): string {
         <div class="workflow-extraction-header">
             <BreadcrumbHeading :items="breadcrumbItems" />
 
-            <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-            <BAlert v-if="loading" variant="info" show>
+            <GAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
+            <GAlert v-if="loading" variant="info" show>
                 <LoadingSpan message="Extracting workflow from history" />
-            </BAlert>
+            </GAlert>
             <div v-if="!loading && jobsList.length" class="d-flex flex-column flex-gapy-1">
                 <div class="workflow-extraction-actions">
                     <GFormInput
@@ -435,13 +435,13 @@ function stepKind(job: ExtractionRow): string {
                 </div>
                 <WorkflowExtractionMessages :warnings="warnings" />
             </div>
-            <BAlert
+            <GAlert
                 v-if="!loading && !errorMessage && !jobsList.length"
                 data-description="no-workflow-message"
                 variant="info"
                 show>
                 No workflow could be extracted from this history.
-            </BAlert>
+            </GAlert>
         </div>
 
         <div v-if="jobsList.length" class="workflow-extraction-list">

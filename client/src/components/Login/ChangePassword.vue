@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BAlert, BCard, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BCard, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
@@ -46,9 +47,9 @@ async function submit() {
 
 <template>
     <BForm @submit.prevent="submit">
-        <BAlert v-if="!!message" :variant="variant" show>
+        <GAlert v-if="!!message" :variant="variant" show>
             {{ message }}
-        </BAlert>
+        </GAlert>
 
         <BCard header="Change your password">
             <BFormGroup v-if="expiredUser" label="Current Password">

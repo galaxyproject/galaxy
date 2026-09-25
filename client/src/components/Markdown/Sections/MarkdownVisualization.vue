@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
 import type { DatasetLabel, Invocation } from "@/components/Markdown/Editor/types";
@@ -8,6 +7,7 @@ import { stringify } from "@/components/Markdown/Utilities/stringify";
 import { useInvocationStore } from "@/stores/invocationStore";
 
 import VisualizationWrapper from "./VisualizationWrapper.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const DEFAULT_HEIGHT = 400;
@@ -101,12 +101,12 @@ watch(
 
 <template>
     <div class="markdown-visualization">
-        <BAlert v-if="errorMessage" v-localize class="m-0" variant="danger" show>
+        <GAlert v-if="errorMessage" v-localize class="m-0" variant="danger" show>
             {{ errorMessage }}
-        </BAlert>
-        <BAlert v-else-if="invocationLoadError" v-localize class="m-0" variant="danger" show>
+        </GAlert>
+        <GAlert v-else-if="invocationLoadError" v-localize class="m-0" variant="danger" show>
             {{ invocationLoadError }}
-        </BAlert>
+        </GAlert>
         <LoadingSpan v-else-if="invocationLoading" />
         <VisualizationWrapper
             v-else-if="visualizationConfig"

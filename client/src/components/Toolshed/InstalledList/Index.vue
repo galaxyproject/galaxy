@@ -4,7 +4,7 @@
         <div v-else>
             <LoadingSpan v-if="loading" message="Loading installed repositories" />
             <div v-else>
-                <BAlert :variant="messageVariant" :show="showMessage">{{ message }}</BAlert>
+                <GAlert :variant="messageVariant" :show="showMessage">{{ message }}</GAlert>
 
                 <div class="m-1">
                     <span class="installed-message text-muted">
@@ -61,7 +61,7 @@
 <script>
 import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BBadge } from "bootstrap-vue";
+import { BBadge } from "bootstrap-vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
 
@@ -69,13 +69,14 @@ import { Services } from "../services";
 
 import RepositoryDetails from "./Details.vue";
 import Monitor from "./Monitor.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 export default {
     components: {
-        BAlert,
+        GAlert,
         BBadge,
         FontAwesomeIcon,
         GLink,
