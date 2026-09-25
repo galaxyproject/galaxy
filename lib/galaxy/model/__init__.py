@@ -15,6 +15,7 @@ import operator
 import os
 import pwd
 import random
+import secrets
 import string
 from collections import defaultdict
 from collections.abc import Iterable
@@ -208,7 +209,6 @@ from galaxy.util import (
     now,
     ready_name_for_url,
     unicodify,
-    unique_id,
 )
 from galaxy.util.config_templates import (
     EnvironmentDict,
@@ -1428,7 +1428,7 @@ class PasswordResetToken(Base):
         if token:
             self.token = token
         else:
-            self.token = unique_id()
+            self.token = secrets.token_hex(16)
         self.user = user
         self.expiration_time = now() + timedelta(hours=24)
 

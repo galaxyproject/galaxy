@@ -21,7 +21,6 @@ from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
 )
-from galaxy.security.validate_user_input import validate_password
 from galaxy.structured_app import StructuredApp
 from galaxy.util.search import (
     FilteredTerm,
@@ -670,13 +669,11 @@ class AdminGalaxy(controller.BaseUIController):
             else:
                 password = payload.get("password")
                 confirm = payload.get("confirm")
-                message = validate_password(trans, password, confirm)
-                if message:
-                    return self.message_exception(trans, message)
-                for user in users.values():
-                    user.set_password_cleartext(password)
-                    trans.sa_session.add(user)
-                    trans.sa_session.commit()
+                try:
+                    for user in users.values():
+                        self.user_manager.set_password(trans, user, password, confirm)
+                except RequestParameterInvalidException as e:
+                    return self.message_exception(trans, str(e))
                 return {"message": f"Passwords reset for {len(users)} user(s)."}
         else:
             return self.message_exception(trans, "Please specify user ids.")
