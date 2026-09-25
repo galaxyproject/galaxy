@@ -8,18 +8,18 @@ Run `make mypy` (or `tox -e mypy`) from the root of Galaxy. This checks `lib/` a
 
 ## New code must be fully typed
 
-The following flags are enabled for the whole codebase:
+The following flags are enabled by default:
 
 - `disallow_untyped_defs`: every function needs annotations for all its arguments and its return type. Use `-> None` for functions that don't return a value.
 - `disallow_any_generics`: generic types need type arguments, e.g. `dict[str, Any]` instead of `dict`, `list[str]` instead of `list`.
 - `disallow_untyped_decorators`: a typed function must not be wrapped by an untyped decorator.
 - `warn_return_any`: a function declared to return a specific type must not return a value of type `Any` (for example the result of `json.loads()`). Narrow or validate the value, or use `typing.cast()` if you know its type.
 
-A new module is checked with all of these flags, and so is new code in an existing module unless that module has an entry in the legacy list described below.
+A new production module is checked with all of these flags, and so is new code in an existing module unless that module has an entry in the red list described below. Test code has separate exemptions, also described below.
 
-## The legacy list
+## The red list
 
-Modules that predated these defaults are listed at the end of `mypy.ini`, under the comment "legacy modules that predate the strict defaults". Each entry turns off only the flags that module doesn't pass yet, for example:
+Existing modules that need relaxed checks are listed under the comment "red list" in `mypy.ini`. This includes modules that predated the strict defaults. Each entry turns off only the flags that module doesn't pass yet, for example:
 
 ```ini
 [mypy-galaxy.managers.example]
@@ -33,7 +33,7 @@ This list should only get shorter:
 
 ## Test code
 
-Test code is exempt from the strict defaults: `galaxy_test`, `tool_shed.test` and the packages under `test/` (which are seen as `tests.*` in the per-package runs). Annotating tests is still welcome.
+Test code is generally exempt from the strict defaults: `galaxy_test`, `tool_shed.test` and the packages under `test/` (which are seen as `tests.*` in the per-package runs). The exemptions appear between the general `[mypy]` section and the green list. Test modules already on the green list explicitly retain the strict flags. Annotating other tests is still welcome.
 
 ## The green list
 
