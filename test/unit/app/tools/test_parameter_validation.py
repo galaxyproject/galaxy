@@ -147,6 +147,7 @@ class TestParameterValidation(BaseParameterTestCase):
     <validator type="regex">[0-9]+</validator>
 </param>""")
         p.validate(10)
+        p.validate(0)
         with self.assertRaisesRegex(
             ValueError, r"Parameter 'blah': Value '10' does not match regular expression '\[a-z\]\+'"
         ):
