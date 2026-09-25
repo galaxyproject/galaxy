@@ -89,7 +89,7 @@ describe("LoginForm", () => {
     });
 
     it("prefills the password reset route with the entered email", async () => {
-        const push = vi.spyOn(router, "push").mockResolvedValue(router.currentRoute);
+        const push = vi.spyOn(router, "push").mockImplementation(async () => {});
         const wrapper = mount(MountTarget as object, {
             propsData: {
                 sessionCsrfToken: "sessionCsrfToken",
@@ -115,7 +115,7 @@ describe("LoginForm", () => {
 
     it("routes expired-password responses to the current-password form", async () => {
         loginResponse = { expired_user: "expired-user-id" };
-        const push = vi.spyOn(router, "push").mockResolvedValue(router.currentRoute);
+        const push = vi.spyOn(router, "push").mockImplementation(async () => {});
         const wrapper = await mountLoginForm();
 
         await wrapper.find("#login-form-name").setValue("test_user");
