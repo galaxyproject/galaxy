@@ -100,6 +100,13 @@ class SessionRequestContext(ProvidesRepositoriesContext, Protocol):
     @abc.abstractmethod
     def session_csrf_token(self) -> str: ...
 
+    @property
+    @abc.abstractmethod
+    def galaxy_session(self) -> GalaxySession | None: ...
+
+    @abc.abstractmethod
+    def log_event(self, message: str) -> None: ...
+
 
 class SessionRequestContextImpl(SessionRequestContext):
     _app: ToolShedApp
@@ -168,5 +175,5 @@ class SessionRequestContextImpl(SessionRequestContext):
     def galaxy_session(self) -> GalaxySession | None:
         return self._galaxy_session
 
-    def log_event(self, str):
+    def log_event(self, message: str) -> None:
         pass

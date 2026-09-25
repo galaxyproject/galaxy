@@ -10,6 +10,7 @@ import time
 from collections.abc import Callable
 from typing import (
     Any,
+    Protocol,
     TYPE_CHECKING,
 )
 
@@ -57,6 +58,7 @@ from galaxy.model.db.user import (
     get_user_groups,
 )
 from galaxy.security.validate_user_input import (
+    UserValidationContext,
     VALID_EMAIL_RE,
     validate_display_name_str,
     validate_email,
@@ -89,6 +91,15 @@ can also copy and paste it into your browser.
 """
 TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH = "mail/activation-email.txt"
 HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH = "mail/activation-email.html"
+
+
+class PasswordChangeContext(UserValidationContext, Protocol):
+    """What setting a password needs from a transaction, in Galaxy or the tool shed."""
+
+    @property
+    def galaxy_session(self) -> Any: ...
+
+    def log_event(self, message: str) -> None: ...
 
 
 class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
@@ -567,7 +578,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             return "Failed to determine user, access denied."
 
-    def set_password(self, trans: ProvidesUserContext, user: User, password: str, confirm: str | None = None) -> None:
+    def set_password(self, trans: PasswordChangeContext, user: User, password: str, confirm: str | None = None) -> None:
         """Validate and set a new password, and log the user out of every other session."""
         if message := validate_password(trans, password, password if confirm is None else confirm):
             raise exceptions.RequestParameterInvalidException(message)
@@ -713,7 +724,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return str(e)
         return None
 
-    def expire_reset_tokens(self, trans: ProvidesAppContext, user) -> None:
+    def expire_reset_tokens(self, trans: UserValidationContext, user) -> None:
         stmt = select(self.app.model.PasswordResetToken).where(
             and_(
                 self.app.model.PasswordResetToken.user_id == user.id,
