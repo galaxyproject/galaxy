@@ -4,7 +4,9 @@
  * Styled with Bootstrap's popover classes until Bootstrap CSS goes.
  *
  * Hover popovers also open on keyboard focus (WCAG 2.1 SC 2.1.1), persist while hovered or focused and close on
- * Escape (SC 1.4.13). Click popovers are non-modal dialogs (APG disclosure pattern).
+ * Escape (SC 1.4.13). Click popovers are non-modal dialogs (APG disclosure pattern). So are `interactive` hover
+ * popovers: Tab from the trigger enters them, tabbing out of the end continues after the trigger, and Enter or Space
+ * on a button trigger toggles them.
  */
 
 import { arrow, type ComputePositionConfig, flip, offset, type Placement, shift } from "@floating-ui/dom";
@@ -13,6 +15,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useFloatingPosition } from "../composables/floatingPosition";
 import { useUid } from "../composables/uid";
 import { closeEscapeLayer, isTopEscapeLayer, openEscapeLayer } from "../utils/escapeStack";
+import { nextTabbableAfter, tabbableElements } from "../utils/focusOrder";
 import { computeHoverBridge, computeHoverGap, isPointInPolygon, type Point } from "../utils/hoverBridge";
 import {
     DEFAULT_TOOLTIP_HOVER_DELAY_MS,
@@ -44,8 +47,13 @@ const props = withDefaults(
         show?: boolean;
         /** Custom CSS class on the popover element */
         customClass?: string;
-        /** Accessible name for a click popover without a title; falls back to the trigger */
+        /** Accessible name for a dialog popover without a title; falls back to the trigger */
         ariaLabel?: string;
+        /**
+         * Content holds links or buttons, so a hover or focus popover is a dialog that Tab can enter.
+         * Needs a focusable trigger such as a button or link; nesting one inside another is not supported.
+         */
+        interactive?: boolean;
     }>(),
     {
         target: undefined,
@@ -57,6 +65,7 @@ const props = withDefaults(
         show: undefined,
         customClass: undefined,
         ariaLabel: undefined,
+        interactive: false,
     },
 );
 
@@ -69,7 +78,12 @@ const emit = defineEmits<{
 const popoverId = useUid("g-popover-");
 const popoverEl = ref<HTMLDivElement>();
 const arrowEl = ref<HTMLDivElement>();
+const startGuard = ref<HTMLSpanElement>();
+const endGuard = ref<HTMLSpanElement>();
 const isVisible = ref(false);
+// Set while focus came in from the trigger; only then do the guards stand in for the trigger's place in the focus
+// order, so focus arriving from elsewhere (e.g. Tab past the page's last control) moves through as in the DOM.
+const guardsActive = ref(false);
 
 // Two-way binding: if show prop is provided, use it; otherwise manage internally
 const showState = computed({
@@ -341,6 +355,66 @@ function restoreFocus() {
     }
 }
 
+function isFocusGuard(element: Element) {
+    return element === startGuard.value || element === endGuard.value;
+}
+
+function focusCameFrom(event: Event, element: Element | null | undefined) {
+    const from = (event as FocusEvent).relatedTarget;
+    return from instanceof Node && !!element?.contains(from);
+}
+
+// The popover renders at the end of the page, so Tab from the trigger of an open one is sent to its first control.
+function onTriggerKeydown(event: Event) {
+    const keyEvent = event as KeyboardEvent;
+    if (keyEvent.key !== "Tab" || keyEvent.shiftKey || keyEvent.defaultPrevented || !showState.value) {
+        return;
+    }
+    const first = popoverEl.value && tabbableElements(popoverEl.value).find((element) => !isFocusGuard(element));
+    if (first) {
+        keyEvent.preventDefault();
+        first.focus();
+    }
+}
+
+// The trigger announces a popup, so Enter and Space toggle it, as for a disclosure; pointer clicks are left to hover.
+function onTriggerClick(event: Event) {
+    // Keyboard activation dispatches a click with no pointer detail.
+    if ((event as MouseEvent).detail !== 0) {
+        return;
+    }
+    if (showState.value) {
+        hidePopover();
+    } else {
+        focusInside = (event.currentTarget as Element).contains(document.activeElement);
+        showPopover();
+    }
+}
+
+// Shift+Tab out of the first control lands on this guard and goes back to the trigger.
+function onStartGuardFocus(event: Event) {
+    const target = resolveTarget();
+    // From the trigger (nothing to focus inside) this would bounce straight back, so only focus from inside counts.
+    if (target instanceof HTMLElement && focusCameFrom(event, popoverEl.value)) {
+        target.focus();
+    }
+}
+
+// Tab past the last control lands on this guard and goes on to whatever follows the trigger in the page.
+function onEndGuardFocus(event: Event) {
+    const target = resolveTarget();
+    const popover = popoverEl.value;
+    if (!focusCameFrom(event, popover) && !focusCameFrom(event, target)) {
+        return;
+    }
+    if (target && popover) {
+        const scope = target.closest("dialog") ?? document.body;
+        nextTabbableAfter(target, scope, (element) => popover.contains(element))?.focus();
+    }
+    // With nothing after the trigger, focus is still inside and hiding returns it to the trigger.
+    hidePopover();
+}
+
 async function onVisibilityChange(visible: boolean) {
     toggleEscapeListener(visible);
     if (isDialog.value) {
@@ -355,6 +429,7 @@ async function onVisibilityChange(visible: boolean) {
         // A popover hidden under the pointer or focus never sees the matching leave event.
         pointerInside = false;
         focusInside = false;
+        guardsActive.value = false;
         emit("hidden");
     }
 }
@@ -396,7 +471,10 @@ const parsedTriggers = computed(() => {
 });
 
 // Click popovers hold content the user acts on, so they are non-modal dialogs rather than tooltips.
-const isDialog = computed(() => parsedTriggers.value.has("click"));
+const isClickDialog = computed(() => parsedTriggers.value.has("click"));
+// APG tooltips hold nothing focusable, so an interactive hover or focus popover is a non-modal dialog too.
+const isHoverDialog = computed(() => props.interactive && !isClickDialog.value);
+const isDialog = computed(() => isClickDialog.value || isHoverDialog.value);
 // Only popovers the page opens and closes on its own ("manual" alone) leave Escape to the page.
 const opensOnInteraction = computed(() => ["hover", "focus", "click"].some((t) => parsedTriggers.value.has(t)));
 const titleId = computed(() => `${popoverId.value}-title`);
@@ -486,8 +564,10 @@ function setupListeners() {
 
     // Hover popovers also open on keyboard focus; explicit focus triggers open on mouse-click focus too.
     if (opensOnHover || opensOnFocus) {
-        // Screen readers announce the popover content as the trigger's description, as for GTooltip.
-        linkIdReference(target, "aria-describedby");
+        // Screen readers announce a tooltip's content as the trigger's description, as for GTooltip.
+        if (!isDialog.value) {
+            linkIdReference(target, "aria-describedby");
+        }
 
         const onFocusOut = (event: Event) => {
             const next = (event as FocusEvent).relatedTarget;
@@ -495,6 +575,7 @@ function setupListeners() {
                 return;
             }
             focusInside = false;
+            guardsActive.value = false;
             scheduleClose();
         };
         listen(target, "focusin", (event) => {
@@ -505,27 +586,43 @@ function setupListeners() {
         });
         listen(target, "focusout", onFocusOut);
         if (popoverEl.value) {
+            const popover = popoverEl.value;
             // As on the trigger: focus a mouse click leaves inside a hover popover mustn't hold it open.
-            listen(popoverEl.value, "focusin", (event) => {
+            listen(popover, "focusin", (event) => {
                 if (opensOnFocus || isKeyboardFocus(event.target)) {
                     focusInside = true;
                     closeDelay.clear();
+                }
+                if (focusCameFrom(event, target)) {
+                    guardsActive.value = true;
+                } else if (!focusCameFrom(event, popover)) {
+                    guardsActive.value = false;
                 }
             });
             listen(popoverEl.value, "focusout", onFocusOut);
         }
     }
 
-    if (isDialog.value && popoverEl.value) {
-        const popover = popoverEl.value;
-        const closesOnBlur = parsedTriggers.value.has("blur");
-
-        // Opening moves focus in, as the popover renders at the end of the page, out of keyboard order.
+    if (isDialog.value) {
         triggerId.value = target.id || undefined;
         setTriggerAttribute(target, "aria-haspopup", "dialog");
         setTriggerAttribute(target, "aria-expanded", String(showState.value));
         linkIdReference(target, "aria-controls");
+    }
 
+    if (isHoverDialog.value) {
+        listen(target, "keydown", onTriggerKeydown);
+        // A link keeps Enter for navigating.
+        if (!target.matches("a[href]")) {
+            listen(target, "click", onTriggerClick);
+        }
+    }
+
+    if (isClickDialog.value && popoverEl.value) {
+        const popover = popoverEl.value;
+        const closesOnBlur = parsedTriggers.value.has("blur");
+
+        // Opening moves focus in, as the popover renders at the end of the page, out of keyboard order.
         listen(target, "click", () => {
             const opening = !showState.value;
             togglePopover();
@@ -664,6 +761,12 @@ defineExpose({
             :tabindex="isDialog ? -1 : undefined"
             v-bind="isDialog ? dialogName(Boolean(title || $slots.title)) : {}"
             :style="{ transform: `translate(${x}px, ${y}px)` }">
+            <span
+                v-if="isHoverDialog"
+                ref="startGuard"
+                class="g-popover-focus-guard"
+                :tabindex="guardsActive ? 0 : -1"
+                @focus="onStartGuardFocus" />
             <div ref="arrowEl" class="arrow" :style="arrowStyle" />
             <div v-if="title || $slots.title" :id="titleId" class="popover-header">
                 <slot name="title">{{ title }}</slot>
@@ -671,6 +774,12 @@ defineExpose({
             <div class="popover-body">
                 <slot>{{ content }}</slot>
             </div>
+            <span
+                v-if="isHoverDialog"
+                ref="endGuard"
+                class="g-popover-focus-guard"
+                :tabindex="guardsActive ? 0 : -1"
+                @focus="onEndGuardFocus" />
         </div>
     </span>
 </template>
@@ -687,6 +796,15 @@ defineExpose({
     .arrow {
         // arrow() already centres it; Bootstrap's margin would shift it off-centre.
         margin: 0;
+    }
+
+    // Invisible Tab stops that catch focus leaving either end of an interactive hover popover.
+    .g-popover-focus-guard {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
     }
 
     // GTable's inline-size containment gives it no intrinsic width, collapsing this shrink-to-fit box.
