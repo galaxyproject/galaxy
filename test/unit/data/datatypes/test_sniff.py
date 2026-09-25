@@ -12,6 +12,7 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
     get_test_fname,
     handle_composite_file,
+    handle_uploaded_dataset_file_internal,
 )
 
 
@@ -158,3 +159,25 @@ def test_handle_composite_file_rejects_escaping_name(tmp_path, path_kind):
     assert not escaped_path.exists()
     assert list(extra_files.iterdir()) == []
     assert src.read_text() == "content\n"
+
+
+@pytest.mark.parametrize(
+    "contents,expected,converted",
+    [
+        (b"a\tb\r\nc\td\r\n", b"a\tb\nc\td\n", True),
+        (b"\x89HDF\r\n\x1a\n\x00\x00\r\x00", b"\x89HDF\r\n\x1a\n\x00\x00\r\x00", False),
+    ],
+)
+def test_upload_converts_newlines_of_text_only(tmp_path, contents, expected, converted):
+    path = tmp_path / "upload"
+    path.write_bytes(contents)
+    response = handle_uploaded_dataset_file_internal(
+        FilePrefix(str(path)),
+        example_datatype_registry_for_sample(),
+        ext="data",
+        tmp_dir=str(tmp_path),
+        convert_to_posix_lines=True,
+    )
+    assert response.converted_newlines is converted
+    with open(response.converted_path, "rb") as f:
+        assert f.read() == expected
