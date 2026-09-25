@@ -8751,6 +8751,11 @@ export interface components {
              */
             message_count: number;
             /**
+             * Name
+             * @description Initially AI generated or user assigned name for the chat exchange.
+             */
+            name?: string | null;
+            /**
              * Query
              * @description The user's query that started or continued this exchange.
              */

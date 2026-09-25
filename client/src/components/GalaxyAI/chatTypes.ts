@@ -1,4 +1,7 @@
+import type { components } from "@/api";
 import type { ActionSuggestion, AgentResponse } from "@/composables/agentActions";
+
+export type ChatHistoryItem = components["schemas"]["ChatHistoryItemResponse"];
 
 export interface ChatMessage {
     id: string;
@@ -11,15 +14,4 @@ export interface ChatMessage {
     agentResponse?: AgentResponse;
     suggestions?: ActionSuggestion[];
     isSystemMessage?: boolean;
-}
-
-export interface ChatHistoryItem {
-    id: string;
-    query: string;
-    response: string;
-    agent_type: string;
-    agent_response?: AgentResponse;
-    timestamp: string;
-    feedback?: number | null;
-    message_count?: number;
 }
