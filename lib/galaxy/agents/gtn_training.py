@@ -360,10 +360,12 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         self.embeddings = embeddings
         return embeddings, persist_dir
 
-    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         validation_error = self._validate_query(query)
         if validation_error:
             return self._validation_error_response(validation_error)
+
+        self._tool_calls = 0
 
         if not self.gtn_db:
             return self._build_response(

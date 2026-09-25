@@ -2067,9 +2067,13 @@ class TestAgentUnitLiveLLM:
         self.mock_config.ai_model = os.environ.get("GALAXY_TEST_AI_MODEL", "llama-4-scout")
         self.mock_config.ai_api_base_url = os.environ.get("GALAXY_TEST_AI_API_BASE_URL", "http://localhost:4000/v1/")
         self.mock_config.gtn_database_path = os.environ.get("GALAXY_TEST_GTN_DATABASE_PATH", "gtn/gtn_search.db")
-        self.mock_config.vector_database_path = os.environ.get("GALAXY_TEST_VECTOR_DATABASE_PATH", "gtn/chroma_db_composite")
+        self.mock_config.vector_database_path = os.environ.get(
+            "GALAXY_TEST_VECTOR_DATABASE_PATH", "gtn/chroma_db_composite"
+        )
         self.mock_config.embedding_api_key = os.environ.get("GALAXY_TEST_EMBEDDING_API_KEY", "embedding-test-key")
-        self.mock_config.embedding_api_base_url = os.environ.get("GALAXY_TEST_EMBEDDING_API_BASE_URL", "http://localhost:4000/v1/")
+        self.mock_config.embedding_api_base_url = os.environ.get(
+            "GALAXY_TEST_EMBEDDING_API_BASE_URL", "http://localhost:4000/v1/"
+        )
         self.mock_config.embedding_model = os.environ.get("GALAXY_TEST_EMBEDDING_MODEL", "BAAI/bge-large-en-v1.5")
 
         self.mock_user = mock.Mock()
