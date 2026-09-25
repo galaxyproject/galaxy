@@ -65,7 +65,7 @@ def main() -> int:
             request = json.loads(line)
             command = request["command"]
             if command == "shutdown":
-                response = dict(ok=True)
+                response = {"ok": True}
                 sys.stdout.write(json.dumps(response) + "\n")
                 sys.stdout.flush()
                 return 0
@@ -75,18 +75,18 @@ def main() -> int:
             schedd = locate_schedd(htcondor2, schedd_cache, schedd_lock, collector, schedd_name)
             if command == "submit":
                 submit_result = schedd.submit(htcondor2.Submit(request["submit_description"]))
-                response = dict(ok=True, cluster=str(submit_result.cluster()))
+                response = {"ok": True, "cluster": str(submit_result.cluster())}
             elif command == "remove":
                 schedd.act(
                     htcondor2.JobAction.Remove,
                     request["job_spec"],
                     reason=request.get("reason") or DEFAULT_REMOVE_REASON,
                 )
-                response = dict(ok=True)
+                response = {"ok": True}
             else:
                 raise RuntimeError(f"Unknown HTCondor helper command: {command}")
         except Exception as exc:
-            response = dict(ok=False, error=str(exc))
+            response = {"ok": False, "error": str(exc)}
 
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
