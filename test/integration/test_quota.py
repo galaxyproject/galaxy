@@ -105,6 +105,13 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
         assert json_response["name"] == quota_name
         assert json_response["description"] == quota_description
 
+        put_response = self._put(f"quotas/{quota_id}", data={"name": quota_name, "description": ""}, json=True)
+        put_response.raise_for_status()
+
+        show_response = self._get(f"quotas/{quota_id}")
+        show_response.raise_for_status()
+        assert show_response.json()["description"] == ""
+
     def test_update_users(self):
         user_email = "test-update-quota-users@galaxy.test"
         user = self.galaxy_interactor.ensure_user_with_email(user_email)

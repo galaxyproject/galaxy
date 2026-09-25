@@ -122,7 +122,7 @@ class QuotaManager:
         else:
             old_name = quota.name
             quota.name = params.name
-            if params.description:
+            if params.description is not None:
                 quota.description = params.description
             self.sa_session.add(quota)
             self.sa_session.commit()
