@@ -1,12 +1,7 @@
-"""Tests for the Galaxy instance file source.
+"""Checks the integration test cannot reach: refusals, error translation and what the backend is given.
 
-The plugin wraps ``galaxy_fsspec.fs.GalaxyFileSystem`` from the optional ``galaxy-fsspec``
-package. These replace that class with an in-memory fake, so the suite runs without the package
-and without network access. That works because ``_open_fs`` reads the class off
-``required_module``, which is also what the dependency guard checks.
+``required_module`` is swapped for a fake, so these need neither ``galaxy-fsspec`` nor a network.
 """
-
-import ipaddress
 
 import pytest
 
@@ -28,254 +23,83 @@ from ._util import (
 REMOTE = "https://galaxy.example"
 API_KEY = "test-key"
 
-TREE = {
-    "": [
-        {"name": "histories", "type": "directory", "size": 0},
-        {"name": "libraries", "type": "directory", "size": 0},
-    ],
-    "histories": [{"name": "histories/My History", "type": "directory", "size": 0, "mtime": 1.0}],
-    "histories/My History": [{"name": "histories/My History/reads.fastq", "type": "file", "size": 11, "mtime": 2.0}],
-    "libraries": [],
-}
-FILES = {"histories/My History/reads.fastq": b"hello world"}
 
-
-class FakeRecorder:
-    def __init__(self):
-        self.init_kwargs: list[dict] = []
-        self.closed = 0
-
-
-def _fake_class(recorder: FakeRecorder):
+def _fake(init_kwargs: list, read_error: Exception | None = None):
     class FakeGalaxyFileSystem:
         def __init__(self, **kwargs):
-            recorder.init_kwargs.append(dict(kwargs))
+            init_kwargs.append(kwargs)
             self.dircache = {}
 
-        @staticmethod
-        def _key(path):
-            return (path or "").strip("/")
-
         def ls(self, path, detail=True, **kwargs):
-            key = self._key(path)
-            if key not in TREE:
-                raise FileNotFoundError(key)
-            entries = TREE[key]
-            return entries if detail else [e["name"] for e in entries]
-
-        def walk(self, path, detail=True, **kwargs):
-            pending = [self._key(path)]
-            while pending:
-                key = pending.pop(0)
-                entries = TREE.get(key, [])
-                dirs = {e["name"]: e for e in entries if e["type"] == "directory"}
-                files = {e["name"]: e for e in entries if e["type"] == "file"}
-                yield key, dirs, files
-                pending.extend(dirs)
+            return [{"name": "histories", "type": "directory", "size": 0}]
 
         def get_file(self, rpath, lpath, **kwargs):
-            with open(lpath, "wb") as handle:
-                handle.write(FILES[self._key(rpath)])
-
-        def close(self):
-            recorder.closed += 1
+            if read_error:
+                raise read_error
 
     return FakeGalaxyFileSystem
 
 
 @pytest.fixture
-def recorder(monkeypatch) -> FakeRecorder:
-    rec = FakeRecorder()
-    monkeypatch.setattr(Galaxy2GalaxyFilesSource, "required_module", _fake_class(rec))
-    return rec
+def init_kwargs(monkeypatch) -> list:
+    recorded: list = []
+    monkeypatch.setattr(Galaxy2GalaxyFilesSource, "required_module", _fake(recorded))
+    return recorded
 
 
-def _conf(**overrides) -> dict:
-    conf = {"type": "galaxy2galaxy", "id": "test1", "base_url": REMOTE, "api_key": API_KEY}
-    conf.update(overrides)
-    return conf
-
-
-def _source(conf=None, allowlist=None):
-    plugins = FileSourcePluginsConfig(fetch_url_allowlist=allowlist or [])
-    sources = configured_file_sources([conf or _conf()], plugins)
+def _source(**overrides):
+    conf = {"type": "galaxy2galaxy", "id": "test1", "base_url": REMOTE, "api_key": API_KEY, **overrides}
+    sources = configured_file_sources([conf], FileSourcePluginsConfig())
     return sources.get_file_source_path("galaxy2galaxy://test1").file_source
 
 
-def _list(source, path="/", **kwargs):
-    kwargs.setdefault("limit", 50)
-    kwargs.setdefault("offset", 0)
-    return source.list(path, user_context=user_context_fixture(), **kwargs)
+def _list(source):
+    return source.list("/", user_context=user_context_fixture(), limit=50, offset=0)
 
 
-def test_plugin_identity(recorder):
-    source = _source()
-    assert source.plugin_type == "galaxy2galaxy"
-    assert source.get_scheme() == "galaxy2galaxy"
-    assert source.get_url() == REMOTE
-    assert source.writable is False
-    assert source.to_dict()["supports"] == {"pagination": True, "search": True, "sorting": False}
+def test_the_api_key_stays_out_of_the_client_list(init_kwargs):
+    assert API_KEY not in str(_source().to_dict())
 
 
-def test_a_source_a_user_created_lists_under_its_own_address(recorder):
-    """A source made from the template gets the gxuserfiles scheme, and its paths are relative to it.
-
-    With the scheme fixed to galaxy2galaxy, the whole gxuserfiles URI reached the remote server as a
-    path, so a user's own source could never list anything.
-    """
-    sources = configured_file_sources([_conf(id="a1b2", scheme="gxuserfiles")], FileSourcePluginsConfig())
-    file_source_path = sources.get_file_source_path("gxuserfiles://a1b2/histories")
-    assert file_source_path.path == "/histories"
-    entries, _ = _list(file_source_path.file_source, file_source_path.path)
-    assert [entry.uri for entry in entries] == ["gxuserfiles://a1b2/histories/My History"]
-
-
-def test_the_api_key_is_not_in_the_client_facing_dict(recorder):
-    """``to_dict()`` without ``for_serialization`` fills the client's file source list."""
-    as_dict = _source().to_dict()
-    assert API_KEY not in str(as_dict)
-
-
-def test_the_api_key_reaches_the_job(recorder):
-    """``_serialize_config`` is what a job gets, and it needs both to read anything."""
-    serialized = _source().to_dict(for_serialization=True, user_context=user_context_fixture())
-    assert serialized["api_key"] == API_KEY
-    assert serialized["base_url"] == REMOTE
-
-
-def test_a_writable_source_is_refused(recorder):
-    """The backend raises on every write, so a writable source would fail after being chosen."""
+def test_it_is_read_only(init_kwargs):
     with pytest.raises(ValueError, match="read-only"):
-        _source(_conf(writable=True))
-
-
-def test_listing_the_root(recorder):
-    entries, total = _list(_source())
-    assert [entry.name for entry in entries] == ["histories", "libraries"]
-    assert total == 2
-
-
-def test_a_dataset_keeps_its_size_and_date(recorder):
-    entries, _ = _list(_source(), "histories/My History")
-    assert entries[0].size == 11
-    assert entries[0].ctime
-
-
-def test_realizing_a_dataset(recorder, tmp_path):
-    target = tmp_path / "staged"
-    _source().realize_to("histories/My History/reads.fastq", str(target), user_context=user_context_fixture())
-    assert target.read_bytes() == b"hello world"
-
-
-def test_writing_is_refused(recorder, tmp_path):
-    source_file = tmp_path / "local"
-    source_file.write_text("x")
-    with pytest.raises(Exception, match="(?i)writ"):
-        _source().write_from("histories/My History/x", str(source_file), user_context=user_context_fixture())
-
-
-def test_a_write_intent_listing_is_refused(recorder):
-    """Export pickers ask with this, and a read-only source must not offer itself."""
+        _source(writable=True)
     with pytest.raises(MessageException, match="read-only"):
         _source().list("/", user_context=user_context_fixture(), opts=FilesSourceOptions(write_intent=True))
 
 
-def test_a_missing_path_is_a_404(recorder):
-    """The shared fsspec layer wraps everything as a generic error, which reads as 400.
-
-    The cause survives on ``__cause__``, so a missing history can still be reported as missing.
-    """
-    with pytest.raises(ObjectNotFound):
-        _list(_source(), "histories/No Such History")
-
-
-@pytest.mark.parametrize("configured", ["galaxy.example", "ftp://galaxy.example", "https://", ""])
-def test_an_address_without_a_protocol_and_host_says_so(recorder, configured):
-    """Leaving the protocol off is the obvious thing to do and fails obscurely without this."""
+@pytest.mark.parametrize("configured", ["galaxy.example", "https://"])
+def test_an_address_without_a_protocol_and_host_says_so(init_kwargs, configured):
     with pytest.raises(RequestParameterInvalidException, match="protocol and a host"):
-        _list(_source(_conf(base_url=configured)))
+        _list(_source(base_url=configured))
 
 
-def test_a_missing_api_key_says_so(recorder):
-    """The backend's own error names an environment variable, which is not where this is set."""
+def test_a_missing_api_key_says_so(init_kwargs):
     with pytest.raises(AuthenticationRequired, match="API key"):
-        _list(_source(_conf(api_key="")))
+        _list(_source(api_key=""))
 
 
 @pytest.mark.parametrize(
     "configured",
-    [
-        "http://127.0.0.1:8080",
-        "http://169.254.169.254",
-        "http://10.0.0.5",
-        "HTTP://127.0.0.1",
-        "http://[::1]:9200",
-    ],
+    ["http://127.0.0.1:8080", "http://169.254.169.254", "http://10.0.0.5", "HTTP://127.0.0.1", "http://[::1]:9200"],
 )
-def test_an_address_on_this_servers_network_is_refused(recorder, configured):
-    """``base_url`` is a user-supplied template variable, so it decides where the key is sent.
-
-    ``validate_non_local`` cannot be handed the raw URL: it tests the scheme with a case-sensitive
-    ``startswith``, and it resolves an IPv6 literal with the brackets still on.
-    """
+def test_an_address_on_this_servers_network_is_refused(init_kwargs, configured):
+    """base_url is user supplied, so it decides where the key goes. The odd spellings get past
+    validate_non_local when it is handed the raw URL."""
     with pytest.raises(ConfigDoesNotAllowException, match="fetch_url_allowlist"):
-        _list(_source(_conf(base_url=configured)))
+        _list(_source(base_url=configured))
 
 
-def test_an_allowlisted_private_address_is_allowed(recorder):
-    """A Galaxy on a private network is an ordinary thing for an admin to configure."""
-    source = _source(
-        _conf(base_url="http://127.0.0.1:8080"),
-        allowlist=[ipaddress.ip_network("127.0.0.0/8")],
-    )
-    assert _list(source)[1] == 2
-
-
-def test_the_filesystem_is_not_shared_between_requests(recorder):
-    """fsspec caches one instance per set of arguments for the whole process.
-
-    Without ``skip_instance_cache`` one request's filesystem, and its credentials, would be handed
-    to every other request configured the same way.
-    """
-    _list(_source())
-    assert recorder.init_kwargs[0]["skip_instance_cache"] is True
-    assert recorder.init_kwargs[0]["url"] == REMOTE
-    assert recorder.init_kwargs[0]["api_key"] == API_KEY
-
-
-def test_the_cache_options_reach_the_filesystem(recorder):
-    """Galaxy persists these, so a source must not offer settings that do nothing."""
-    _list(_source(_conf(use_listings_cache=False, listings_expiry_time=5, max_paths=7)))
-    passed = recorder.init_kwargs[0]
-    assert passed["use_listings_cache"] is False
-    assert passed["listings_expiry_time"] == 5
-    assert passed["max_paths"] == 7
-
-
-class FakeNoDataError(OSError):
-    """Stands in for ``galaxy_fsspec.exceptions.GalaxyApiError``, which is an OSError."""
+def test_each_request_gets_its_own_filesystem_with_the_cache_options(init_kwargs):
+    _list(_source(use_listings_cache=False, listings_expiry_time=5, max_paths=7))
+    passed = init_kwargs[0]
+    assert passed["skip_instance_cache"] is True
+    assert (passed["url"], passed["api_key"]) == (REMOTE, API_KEY)
+    assert (passed["use_listings_cache"], passed["listings_expiry_time"], passed["max_paths"]) == (False, 5, 7)
 
 
 class FakeBioblendConnectionError(Exception):
-    """Stands in for ``bioblend.ConnectionError``.
-
-    It shadows the name of the builtin, which *is* an OSError, while deriving from Exception. That
-    is why the realize path cannot catch OSError alone.
-    """
-
-
-def _failing_fake(exc: BaseException):
-    class FailingFileSystem:
-        def __init__(self, **kwargs):
-            self.dircache = {}
-
-        def ls(self, path, detail=True, **kwargs):
-            return TREE.get((path or "").strip("/"), [])
-
-        def get_file(self, rpath, lpath, **kwargs):
-            raise exc
-
-    return FailingFileSystem
+    """Like bioblend.ConnectionError: named after the builtin, but not an OSError."""
 
 
 @pytest.mark.parametrize(
@@ -283,35 +107,14 @@ def _failing_fake(exc: BaseException):
     [
         (FileNotFoundError("gone"), ObjectNotFound),
         (PermissionError("refused"), AuthenticationRequired),
-        (FakeNoDataError("has no data to read yet (state 'running')"), MessageException),
+        (OSError("has no data to read yet (state 'running')"), MessageException),
         (FakeBioblendConnectionError("GET: error 401: Provided API key is not valid."), MessageException),
     ],
 )
 def test_a_failed_read_is_explained_rather_than_a_server_error(monkeypatch, tmp_path, raised, expected):
-    """The shared _realize_to wraps nothing, so anything from the backend reaches the API raw.
-
-    Importing a dataset that is still running is an ordinary thing to try, and it used to answer
-    with a bare 500 and a traceback.
-    """
-    monkeypatch.setattr(Galaxy2GalaxyFilesSource, "required_module", _failing_fake(raised))
+    monkeypatch.setattr(Galaxy2GalaxyFilesSource, "required_module", _fake([], read_error=raised))
     with pytest.raises(expected) as caught:
-        _source().realize_to(
-            "histories/My History/reads.fastq",
-            str(tmp_path / "staged"),
-            user_context=user_context_fixture(),
-        )
+        _source().realize_to("histories/h/reads.fastq", str(tmp_path / "staged"), user_context=user_context_fixture())
     assert caught.value.__cause__ is raised
-
-
-def test_a_read_failure_keeps_the_reason(monkeypatch, tmp_path):
-    monkeypatch.setattr(
-        Galaxy2GalaxyFilesSource,
-        "required_module",
-        _failing_fake(FakeNoDataError("has no data to read yet (state 'running')")),
-    )
-    with pytest.raises(MessageException, match="no data to read yet"):
-        _source().realize_to(
-            "histories/My History/reads.fastq",
-            str(tmp_path / "staged"),
-            user_context=user_context_fixture(),
-        )
+    if expected is MessageException:
+        assert str(raised) in str(caught.value)
