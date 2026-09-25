@@ -1,6 +1,7 @@
 <template>
     <div v-if="firstOutput">
         <FormElement
+            v-if="supportsJobBasedActions"
             :id="emailActionKey"
             :value="emailActionValue"
             title="Email notification"
@@ -8,6 +9,7 @@
             help="An email notification will be sent when the job has completed."
             @input="onInput" />
         <FormElement
+            v-if="supportsJobBasedActions"
             :id="deleteActionKey"
             :value="deleteActionValue"
             title="Output cleanup"
@@ -61,6 +63,10 @@ export default {
         postJobActions: {
             type: Object,
             required: true,
+        },
+        supportsJobBasedActions: {
+            type: Boolean,
+            default: true,
         },
     },
     data() {
