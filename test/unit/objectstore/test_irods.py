@@ -96,6 +96,7 @@ class FakeSession:
 
 
 def test_soft_shutdown_stops_monitor_and_keeps_session_open():
+    pytest.importorskip("irods")
     with open(CONFIG_FILE) as f:
         config_xml = f.read()
     with Config(config_xml) as (_, object_store):
