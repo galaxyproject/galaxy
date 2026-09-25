@@ -103,7 +103,7 @@ jobs:
       - name: Run tests
         run: ./run_tests.sh --coverage -playwright lib/galaxy_test/selenium/test_tool_form_harness.py
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v7.0.0
+      - uses: codecov/codecov-action@v7.1.1
         with:
           flags: tool-form-harness
           working-directory: 'galaxy root'

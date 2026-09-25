@@ -390,6 +390,9 @@ class ConditionalDependencies(BaseConditionalDependencies):
     def check_iiif_fsspec(self):
         return "iiif" in self.file_sources
 
+    def check_ipfsspec(self):
+        return "ipfs" in self.file_sources
+
     def check_mavedb_fsspec(self):
         return "mavedb" in self.file_sources
 

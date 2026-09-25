@@ -118,10 +118,12 @@ describe("useUploadSubmission", () => {
         const pastedEntry = state.activeItems.value.find((item) => item.name === "remote.txt");
         const libraryEntry = state.activeItems.value.find((item) => item.name === "library.txt");
 
-        expect(pastedEntry?.status).toBe("completed");
+        expect(pastedEntry?.status).toBe("processing");
         expect(pastedEntry?.progress).toBe(100);
-        expect(libraryEntry?.status).toBe("completed");
+        expect(pastedEntry?.datasetIds).toEqual(["hda_1"]);
+        expect(libraryEntry?.status).toBe("processing");
         expect(libraryEntry?.progress).toBe(100);
+        expect(libraryEntry?.datasetIds).toEqual(["hda_2"]);
     });
 
     it("preserves every dataset from standalone URL uploads", async () => {
@@ -145,7 +147,8 @@ describe("useUploadSubmission", () => {
 
         expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_url_1"');
         expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_url_2"');
-        expect(useUploadState().activeItems.value.every((item) => item.status === "completed")).toBe(true);
+        expect(useUploadState().activeItems.value.every((item) => item.status === "processing")).toBe(true);
+        expect(useUploadState().activeItems.value.every((item) => item.datasetIds.length === 1)).toBe(true);
     });
 
     it("marks all tracked uploads as errored when the fetch request fails", async () => {
@@ -245,7 +248,8 @@ describe("useUploadSubmission", () => {
 
                 return HttpResponse.json({
                     jobs: [{ id: "job_1" }],
-                    outputs: [{ id: "hdca_2", name: "Uploaded Collection", src: "hdca" }],
+                    outputs: [],
+                    output_collections: [{ id: "hdca_2", name: "Uploaded Collection" }],
                 });
             }),
         );
@@ -265,7 +269,7 @@ describe("useUploadSubmission", () => {
         const batch = state.activeBatches.value[0];
 
         expect(batch?.name).toBe("Uploaded Collection");
-        expect(batch?.status).toBe("completed");
+        expect(batch?.status).toBe("processing");
         expect(batch?.collectionId).toBe("hdca_2");
         expect(batch?.uploadIds).toHaveLength(2);
         expect(state.standaloneUploads.value).toHaveLength(0);
@@ -324,7 +328,7 @@ describe("useUploadSubmission", () => {
         expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_lib_1"');
 
         const batch = useUploadState().activeBatches.value[0];
-        expect(batch?.status).toBe("completed");
+        expect(batch?.status).toBe("processing");
         expect(batch?.collectionId).toBe("hdca_lib_1");
         expect(batch?.datasetIds).toEqual(["hda_lib_1"]);
     });
@@ -364,7 +368,7 @@ describe("useUploadSubmission", () => {
         expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_lib_2"');
 
         const batch = useUploadState().activeBatches.value[0];
-        expect(batch?.status).toBe("completed");
+        expect(batch?.status).toBe("processing");
         expect(batch?.collectionId).toBe("hdca_mixed_1");
         expect(batch?.datasetIds).toEqual(["hda_api_1", "hda_lib_2"]);
     });
@@ -411,49 +415,47 @@ describe("useUploadSubmission", () => {
         uploadDatasetsSpy.mockRestore();
     });
 
-    it("gives each standalone item its own AbortSignal instead of one shared for the whole submission", async () => {
+    it("scopes AbortSignals per file for standalone uploads and shared for collection batches", async () => {
         const uploadDatasetsSpy = vi.spyOn(uploadUtils, "uploadDatasets").mockResolvedValue(undefined);
-
-        const firstItem = makeUrlItem({ name: "1.txt", url: "https://example.org/1.txt" });
-        const secondItem = makeUrlItem({ name: "2.txt", url: "https://example.org/2.txt" });
-        const prepared = buildPreparedUpload([firstItem, secondItem]);
-        const wrapper = mountHarness(prepared);
-        await flushPromises();
-
-        await wrapper.find(SELECTORS.RUN).trigger("click");
-        await flushPromises();
-
-        expect(uploadDatasetsSpy).toHaveBeenCalled();
-        const config = uploadDatasetsSpy.mock.calls[0]?.[1];
-
-        expect(config?.signal).toBeUndefined();
-        expect(config?.signals).toHaveLength(2);
-        // Each standalone item gets a distinct controller, so cancelling one can't abort the other.
-        expect(config?.signals?.[0]).not.toBe(config?.signals?.[1]);
-
-        uploadDatasetsSpy.mockRestore();
-    });
-
-    it("shares a single AbortSignal across every item in a collection batch", async () => {
         const uploadCollectionDatasetsSpy = vi
             .spyOn(uploadUtils, "uploadCollectionDatasets")
             .mockResolvedValue(undefined);
 
-        const firstItem = makeUrlItem({ name: "1.bed", url: "https://example.org/1.bed" });
-        const secondItem = makeUrlItem({ name: "2.bed", url: "https://example.org/2.bed" });
-        const prepared = buildPreparedUpload([firstItem, secondItem], makeSubmissionCollectionConfig());
-        const wrapper = mountHarness(prepared);
-        await flushPromises();
+        try {
+            const firstItem = makeUrlItem({ name: "1.txt", url: "https://example.org/1.txt" });
+            const secondItem = makeUrlItem({ name: "2.txt", url: "https://example.org/2.txt" });
+            const standaloneWrapper = mountHarness(buildPreparedUpload([firstItem, secondItem]));
+            await flushPromises();
 
-        await wrapper.find(SELECTORS.RUN).trigger("click");
-        await flushPromises();
+            await standaloneWrapper.find(SELECTORS.RUN).trigger("click");
+            await flushPromises();
 
-        expect(uploadCollectionDatasetsSpy).toHaveBeenCalled();
-        const config = uploadCollectionDatasetsSpy.mock.calls[0]?.[2];
+            expect(uploadDatasetsSpy).toHaveBeenCalled();
+            const standaloneConfig = uploadDatasetsSpy.mock.calls[0]?.[1];
+            expect(standaloneConfig?.signal).toBeUndefined();
+            expect(standaloneConfig?.signals).toHaveLength(2);
+            // Each standalone item gets a distinct controller, so cancelling one can't abort the other.
+            expect(standaloneConfig?.signals?.[0]).not.toBe(standaloneConfig?.signals?.[1]);
 
-        expect(config?.signal).toBeInstanceOf(AbortSignal);
-        expect(config?.signals).toBeUndefined();
+            useUploadState().clearAll();
 
-        uploadCollectionDatasetsSpy.mockRestore();
+            const firstBatched = makeUrlItem({ name: "1.bed", url: "https://example.org/1.bed" });
+            const secondBatched = makeUrlItem({ name: "2.bed", url: "https://example.org/2.bed" });
+            const batchWrapper = mountHarness(
+                buildPreparedUpload([firstBatched, secondBatched], makeSubmissionCollectionConfig()),
+            );
+            await flushPromises();
+
+            await batchWrapper.find(SELECTORS.RUN).trigger("click");
+            await flushPromises();
+
+            expect(uploadCollectionDatasetsSpy).toHaveBeenCalled();
+            const batchConfig = uploadCollectionDatasetsSpy.mock.calls[0]?.[2];
+            expect(batchConfig?.signal).toBeInstanceOf(AbortSignal);
+            expect(batchConfig?.signals).toBeUndefined();
+        } finally {
+            uploadDatasetsSpy.mockRestore();
+            uploadCollectionDatasetsSpy.mockRestore();
+        }
     });
 });

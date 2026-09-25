@@ -23,7 +23,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { canMutateHistory, type HistorySummary } from "@/api";
+import { canMutateHistory, type HistorySummary, userOwnsHistory } from "@/api";
 import { useToast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -49,7 +49,7 @@ const props = withDefaults(defineProps<Props>(), {
 const toast = useToast();
 
 const userStore = useUserStore();
-const { isAnonymous } = storeToRefs(userStore);
+const { currentUser, isAnonymous } = storeToRefs(userStore);
 
 const historyStore = useHistoryStore();
 const { totalHistoryCount, historiesLoading } = storeToRefs(historyStore);
@@ -64,6 +64,10 @@ const canEditHistory = computed(() => {
 
 const isDeletedNotPurged = computed(() => {
     return props.history.deleted && !props.history.purged;
+});
+
+const isUnownedHistory = computed(() => {
+    return !userOwnsHistory(currentUser.value, props.history);
 });
 
 const historyState = computed(() => {
@@ -156,6 +160,7 @@ watch(
             <BDropdownDivider v-if="!canEditHistory" />
 
             <BDropdownItem
+                v-if="!isUnownedHistory"
                 :disabled="!canEditHistory"
                 :title="localize('Resume all Paused Jobs in this History')"
                 @click="resumePausedJobs()">
@@ -163,10 +168,10 @@ watch(
                 <span v-localize>Resume Paused Jobs</span>
             </BDropdownItem>
 
-            <BDropdownDivider />
+            <BDropdownDivider v-if="!isUnownedHistory" />
 
             <BDropdownItem
-                :disabled="isAnonymous"
+                :disabled="isAnonymous || !canEditHistory"
                 :title="userTitle('Copy History to a New History')"
                 @click="showCopyModal = !showCopyModal">
                 <FontAwesomeIcon fixed-width :icon="faClone" />
@@ -174,6 +179,7 @@ watch(
             </BDropdownItem>
 
             <BDropdownItem
+                v-if="!isUnownedHistory"
                 data-description="copy datasets"
                 :disabled="isAnonymous"
                 :title="userTitle('Copy Datasets to Another History')"
@@ -183,6 +189,7 @@ watch(
             </BDropdownItem>
 
             <BDropdownItem
+                v-if="!isUnownedHistory"
                 :disabled="!canEditHistory"
                 :title="localize(isDeletedNotPurged ? 'Permanently Delete History' : 'Delete History')"
                 @click="showDeleteModal = !showDeleteModal">
@@ -208,6 +215,7 @@ watch(
             </BDropdownItem>
 
             <BDropdownItem
+                v-if="!isUnownedHistory"
                 :disabled="isAnonymous || history.archived || history.purged"
                 data-description="archive history"
                 :title="userTitle('Archive this History')"
@@ -246,9 +254,10 @@ watch(
                 <span v-localize>Show History Notebooks</span>
             </BDropdownItem>
 
-            <BDropdownDivider />
+            <BDropdownDivider v-if="!isUnownedHistory" />
 
             <BDropdownItem
+                v-if="!isUnownedHistory"
                 :disabled="isAnonymous || !canEditHistory"
                 data-description="share and manage access"
                 :title="userTitle('Share, Publish, or Set Permissions for this History')"

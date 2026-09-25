@@ -554,7 +554,7 @@ class GroupModel(Model, WithModelClass):
     """User group model"""
 
     model_class: GROUP_MODEL_CLASS = ModelClassField(GROUP_MODEL_CLASS)
-    id: DecodedDatabaseIdField = Field(
+    id: EncodedDatabaseIdField = Field(
         ...,  # ...
         title="ID",
         description="Encoded group ID",

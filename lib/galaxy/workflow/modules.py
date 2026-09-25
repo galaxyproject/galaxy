@@ -20,7 +20,10 @@ from typing import (
     TypeAlias,
 )
 
-from typing_extensions import TypedDict
+from typing_extensions import (
+    NotRequired,
+    TypedDict,
+)
 
 from galaxy import (
     exceptions,
@@ -46,9 +49,7 @@ from galaxy.model import (
     WorkflowStepConnection,
 )
 from galaxy.model.base import ensure_object_added_to_session
-from galaxy.model.dataset_collections import matching
 from galaxy.model.dataset_collections.adapters import PromoteCollectionElementToCollectionAdapter
-from galaxy.model.dataset_collections.query import HistoryQuery
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.model.dataset_collections.types.sample_sheet_util import validate_column_definitions
 from galaxy.objectstore import ObjectStorePopulator
@@ -153,6 +154,9 @@ from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
 from galaxy.util.tool_version import remove_version_from_guid
+from galaxy.workflow.map_over import (
+    MapOverPlanner,
+)
 from galaxy.workflow.workflow_parameter_input_definitions import (
     get_default_parameter,
     INPUT_PARAMETER_TYPES,
@@ -163,6 +167,7 @@ if TYPE_CHECKING:
         ProvidesAppContext,
         ProvidesHistoryContext,
     )
+    from galaxy.model.dataset_collections import matching
     from galaxy.schema.invocation import InvocationMessageUnion
     from galaxy.structured_app import StructuredApp
     from galaxy.work.context import WorkRequestContext
@@ -184,6 +189,26 @@ class OptionDict(TypedDict):
     label: str
     value: str
     selected: bool
+
+
+class InputDescription(TypedDict):
+    """One input description as returned by ``WorkflowModule.get_all_inputs``."""
+
+    name: str
+    label: str
+    input_type: str  # "dataset", "dataset_collection" or "parameter"
+    multiple: bool
+    optional: NotRequired[bool]
+    # PauseModule supplies the bare string "input" and get_filter_set()
+    # compares against that string form, so both shapes are load-bearing.
+    extensions: NotRequired[list[str] | str]
+    # dataset_collection inputs
+    collection_type: NotRequired[str | None]
+    collection_types: NotRequired[list[str] | None]
+    # parameter inputs
+    type: NotRequired[str]
+    # subworkflow inputs
+    input_subworkflow_step_id: NotRequired[int]
 
 
 class ConditionalStepWhen(BooleanToolParameter):
@@ -536,10 +561,10 @@ class WorkflowModule:
         """This returns inputs displayed in the workflow editor"""
         return {}
 
-    def get_all_inputs(self, data_only=False, connectable_only=False):
+    def get_all_inputs(self, data_only=False, connectable_only=False) -> list[InputDescription]:
         return []
 
-    def get_data_inputs(self):
+    def get_data_inputs(self) -> list[InputDescription]:
         """Get configure time data input descriptions."""
         return self.get_all_inputs(data_only=True)
 
@@ -697,119 +722,14 @@ class WorkflowModule:
 
         return []
 
-    def compute_collection_info(self, progress: "WorkflowProgress", step, all_inputs):
+    def plan_map_over(
+        self, progress: "WorkflowProgress", step: WorkflowStep, all_inputs: list[InputDescription]
+    ) -> "matching.MatchingCollections | None":
+        """Build the map-over plan for this step.
+
+        See :mod:`galaxy.workflow.map_over` for the model and the algorithm.
         """
-        Use get_all_inputs (if implemented) to determine collection mapping for execution.
-        """
-        collections_to_match = self._find_collections_to_match(progress, step, all_inputs)
-        # Have implicit collections...
-        collection_info = self.trans.app.dataset_collection_manager.match_collections(collections_to_match)
-        if collection_info:
-            if progress.subworkflow_collection_info:
-                # We've mapped over a subworkflow. Slices of the invocation might be conditional
-                # and progress.subworkflow_collection_info.when_values holds the appropriate when_values
-                collection_info.when_values = progress.subworkflow_collection_info.when_values
-            else:
-                # The invocation is not mapped over, but it might still be conditional.
-                # Multiplication and linking should be handled by slice_collection()
-                collection_info.when_values = progress.when_values
-        return collection_info or progress.subworkflow_collection_info
-
-    def _find_collections_to_match(self, progress: "WorkflowProgress", step, all_inputs) -> matching.CollectionsToMatch:
-        collections_to_match = matching.CollectionsToMatch()
-        dataset_collection_type_descriptions = self.trans.app.dataset_collection_manager.collection_type_descriptions
-
-        for input_dict in all_inputs:
-            name = input_dict["name"]
-            data = progress.replacement_for_input(self.trans, step, input_dict)
-            if not isinstance(data, (model.DatasetCollectionInstance, model.DatasetCollectionElement)):
-                continue
-            if not data.collection.allow_implicit_mapping:
-                continue
-
-            is_data_param = input_dict["input_type"] == "dataset"
-            is_data_collection_param = input_dict["input_type"] == "dataset_collection"
-            if is_data_param or is_data_collection_param:
-                multiple = input_dict["multiple"]
-                if is_data_param:
-                    if multiple:
-                        # multiple="true" data input, acts like "list" collection_type.
-                        effective_input_collection_type = ["list"]
-                    else:
-                        collections_to_match.add(name, data)
-                        continue
-                else:
-                    effective_input_collection_type = input_dict.get("collection_types")
-                    if not effective_input_collection_type:
-                        if progress.subworkflow_structure:
-                            effective_input_collection_type = [
-                                progress.subworkflow_structure.collection_type_description.collection_type
-                            ]
-                        elif input_dict.get("collection_type"):
-                            effective_input_collection_type = [input_dict.get("collection_type")]
-                type_list = []
-                if progress.subworkflow_structure:
-                    # If we have progress.subworkflow_structure were mapping a subworkflow invocation over a higher-dimension input
-                    # e.g an outer list:list over an inner list. Whatever we do, the inner workflow cannot reduce the outer list.
-                    # This is what we're setting up here.
-                    type_list = progress.subworkflow_structure.collection_type_description.collection_type.split(":")
-                    leaf_type = type_list.pop(0)
-                    if type_list and type_list[-1] == effective_input_collection_type:
-                        effective_input_collection_type = [":".join(type_list[:-1])] if ":".join(type_list[:-1]) else []
-                history_query = HistoryQuery.from_collection_types(
-                    effective_input_collection_type,
-                    dataset_collection_type_descriptions,
-                )
-                if not progress.subworkflow_structure and history_query.direct_match(data):
-                    continue
-
-                subcollection_type_description = history_query.can_map_over(data) or None
-                if subcollection_type_description:
-                    # Translate paired_or_unpaired to concrete mapping type for
-                    # flat collections. Mirrors logic in basic.py:2675-2679 that
-                    # the API tool execution path uses.
-                    _sub_ct = subcollection_type_description.collection_type
-                    _hdca_ct = data.collection.collection_type
-                    if _sub_ct == "paired_or_unpaired" and not _hdca_ct.endswith("paired_or_unpaired"):
-                        if _hdca_ct.endswith("paired"):
-                            subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
-                                "paired"
-                            )
-                        else:
-                            subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
-                                "single_datasets"
-                            )
-                    subcollection_type_list = subcollection_type_description.collection_type.split(":")
-                    for collection_type in reversed(subcollection_type_list):
-                        if type_list:
-                            leaf_type = type_list.pop(0)
-                            assert collection_type == leaf_type
-                    if type_list:
-                        subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
-                            ":".join(type_list)
-                        )
-                    collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
-                elif is_data_param and progress.subworkflow_structure:
-                    collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
-                continue
-
-            collections_to_match.add(name, data)
-
-        known_input_names = {input_dict["name"] for input_dict in all_inputs}
-
-        if step.when_expression:
-            for step_input in step.inputs:
-                step_input_name = step_input.name
-                input_in_execution_state = step_input_name not in known_input_names
-                if input_in_execution_state:
-                    maybe_collection = progress.replacement_for_connection(
-                        step.input_connections_by_name[step_input_name][0]
-                    )
-                    if hasattr(maybe_collection, "collection"):
-                        # Is that always right ?
-                        collections_to_match.add(step_input_name, maybe_collection)
-
-        return collections_to_match
+        return MapOverPlanner(self.trans).plan_map_over(progress, step, all_inputs)
 
 
 class SubWorkflowModule(WorkflowModule):
@@ -854,17 +774,17 @@ class SubWorkflowModule(WorkflowModule):
             return self.subworkflow.name
         return self.name
 
-    def get_all_inputs(self, data_only=False, connectable_only=False):
+    def get_all_inputs(self, data_only=False, connectable_only=False) -> list[InputDescription]:
         """Get configure time data input descriptions."""
         # Filter subworkflow steps and get inputs
-        inputs = []
+        inputs: list[InputDescription] = []
         if hasattr(self.subworkflow, "input_steps"):
             for step in self.subworkflow.input_steps:
                 name = step.label
                 if not name:
                     step_module = module_factory.from_workflow_step(self.trans, step)
                     name = f"{step.order_index}:{step_module.get_name()}"
-                input = dict(
+                input = InputDescription(
                     input_subworkflow_step_id=step.order_index,
                     name=name,
                     label=name,
@@ -975,7 +895,7 @@ class SubWorkflowModule(WorkflowModule):
         """
         step = invocation_step.workflow_step
         all_inputs = self.get_all_inputs()
-        collection_info = self.compute_collection_info(progress, step, all_inputs)
+        collection_info = self.plan_map_over(progress, step, all_inputs)
 
         if collection_info:
             iteration_elements_iter = collection_info.slice_collections()
@@ -1148,7 +1068,7 @@ class InputModule(WorkflowModule):
         state.inputs = dict(input=NO_REPLACEMENT)
         return state
 
-    def get_all_inputs(self, data_only=False, connectable_only=False):
+    def get_all_inputs(self, data_only=False, connectable_only=False) -> list[InputDescription]:
         return []
 
     def execute(
@@ -2015,8 +1935,8 @@ class PauseModule(WorkflowModule):
     type = "pause"
     name = "Pause for dataset review"
 
-    def get_all_inputs(self, data_only=False, connectable_only=False):
-        input = dict(
+    def get_all_inputs(self, data_only=False, connectable_only=False) -> list[InputDescription]:
+        input = InputDescription(
             name="input",
             label="Dataset for Review",
             multiple=False,
@@ -2140,12 +2060,12 @@ class PickValueModule(WorkflowModule):
             num_from_connections = len(self.workflow_step.input_connections_by_name)
         return max(2, num_from_state, num_from_connections)
 
-    def get_all_inputs(self, data_only=False, connectable_only=False):
-        inputs = []
+    def get_all_inputs(self, data_only=False, connectable_only=False) -> list[InputDescription]:
+        inputs: list[InputDescription] = []
         # N connected terminals + 1 empty terminal for grow-on-connect
         for i in range(self._num_inputs + 1):
             inputs.append(
-                dict(
+                InputDescription(
                     name=f"input_{i}",
                     label=f"Input {i}",
                     multiple=False,
@@ -2238,7 +2158,7 @@ class PickValueModule(WorkflowModule):
         mode = step.tool_inputs.get("mode", "first_non_null") if step.tool_inputs else "first_non_null"
         all_inputs = self.get_all_inputs()
 
-        collection_info = self.compute_collection_info(progress, step, all_inputs)
+        collection_info = self.plan_map_over(progress, step, all_inputs)
 
         if collection_info:
             output = self._execute_mapped(trans, invocation_step, mode, all_inputs, collection_info)
@@ -2780,11 +2700,11 @@ class ToolModule(WorkflowModule):
     def get_inputs(self):
         return self.tool.inputs if self.tool else {}
 
-    def get_all_inputs(self, data_only=False, connectable_only=False):
+    def get_all_inputs(self, data_only=False, connectable_only=False) -> list[InputDescription]:
         if data_only and connectable_only:
             raise Exception("Must specify at most one of data_only and connectable_only as True.")
 
-        inputs = []
+        inputs: list[InputDescription] = []
         if self.tool:
 
             def callback(input, prefixed_name, prefixed_label, value=None, **kwargs):
@@ -2803,7 +2723,7 @@ class ToolModule(WorkflowModule):
                 if not skip:
                     if isinstance(input, DataToolParameter):
                         inputs.append(
-                            dict(
+                            InputDescription(
                                 name=prefixed_name,
                                 label=prefixed_label,
                                 multiple=input.multiple,
@@ -2819,7 +2739,7 @@ class ToolModule(WorkflowModule):
                             # that we should probably want to represent as a None.
                             raw_collection_types = None
                         inputs.append(
-                            dict(
+                            InputDescription(
                                 name=prefixed_name,
                                 label=prefixed_label,
                                 multiple=input.multiple,
@@ -2831,7 +2751,7 @@ class ToolModule(WorkflowModule):
                         )
                     else:
                         inputs.append(
-                            dict(
+                            InputDescription(
                                 name=prefixed_name,
                                 label=prefixed_label,
                                 multiple=False,
@@ -3099,7 +3019,7 @@ class ToolModule(WorkflowModule):
         all_inputs_by_name = {}
         for input_dict in all_inputs:
             all_inputs_by_name[input_dict["name"]] = input_dict
-        collection_info = self.compute_collection_info(progress, step, all_inputs)
+        collection_info = self.plan_map_over(progress, step, all_inputs)
 
         param_combinations = []
         if collection_info:

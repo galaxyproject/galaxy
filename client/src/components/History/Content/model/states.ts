@@ -9,7 +9,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 import type { DCESummary, HDADetailed, HDCADetailed } from "@/api";
-import { ERROR_DATASET_STATES, NON_TERMINAL_DATASET_STATES } from "@/api/datasets";
+import { ERROR_DATASET_STATES, NON_TERMINAL_DATASET_STATES, TERMINAL_DATASET_STATES } from "@/api/datasets";
 import type { HistoryContentsResult } from "@/api/histories";
 import type { components } from "@/api/schema";
 
@@ -261,4 +261,17 @@ export function getContentItemState(item: HistoryContentItem | HDADetailed | HDC
         return item.state;
     }
     return "ok";
+}
+
+export function isTerminalCollectionState(state: string): boolean {
+    return state === "failed_populated_state" || TERMINAL_DATASET_STATES.includes(state);
+}
+
+export function isErrorCollectionState(state: string): boolean {
+    return state === "failed_populated_state" || ERROR_DATASET_STATES.includes(state);
+}
+
+export function stateText(state: string): string {
+    const representation = STATES[state as State];
+    return representation?.text ?? representation?.displayName ?? state;
 }

@@ -49,7 +49,7 @@ watch(
             expandedRevisions.value.add(revision)
         }
     },
-    { immediate: true }
+    { immediate: true },
 )
 </script>
 
@@ -86,7 +86,8 @@ watch(
                         <div class="text-subtitle2 text-negative">Invalid Tools:</div>
                         <ul class="q-my-none">
                             <li v-for="tool in rev.data.invalid_tools" :key="tool.tool_config">
-                                <code>{{ tool.tool_config }}</code>: {{ tool.error_message }}
+                                <code>{{ tool.tool_config }}</code
+                                >: {{ tool.error_message }}
                             </li>
                         </ul>
                     </q-card-section>

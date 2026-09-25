@@ -158,7 +158,7 @@ jobs:
           . .ci/minikube-test-setup/start_services.sh
           ./run_tests.sh -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v7.0.0
+      - uses: codecov/codecov-action@v7.1.1
         if: github.event_name == 'schedule'
         with:
           flags: integration

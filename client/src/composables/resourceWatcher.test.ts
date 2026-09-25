@@ -422,6 +422,25 @@ describe("useResourceWatcher", () => {
             expect(isWatchingResource.value).toBe(false);
         });
 
+        it("should remove the visibility listener on dispose and stay stopped", async () => {
+            const { startWatchingResource, dispose } = useResourceWatcher(mockWatchHandler);
+
+            startWatchingResource();
+            await flushPromises();
+            expect(mockWatchHandler).toHaveBeenCalledTimes(1);
+
+            const visibilityChangeHandler = getVisibilityChangeHandler();
+            dispose();
+
+            expect(mockRemoveEventListener).toHaveBeenCalledWith("visibilitychange", visibilityChangeHandler);
+
+            mockWatchHandler.mockClear();
+            vi.advanceTimersByTime(60000);
+            await flushPromises();
+
+            expect(mockWatchHandler).not.toHaveBeenCalled();
+        });
+
         it("should not schedule new timeout if current polling interval is undefined", async () => {
             const customOptions: WatchOptions = {
                 enableBackgroundPolling: false,

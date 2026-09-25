@@ -82,6 +82,7 @@ from galaxy.schema.schema import (
     JobIdResponse,
     JobImportHistoryResponse,
     LabelValuePair,
+    ObjectExportTaskResponse,
     ShareHistoryWithStatus,
     ShareWithPayload,
     StoreExportPayload,
@@ -655,17 +656,21 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         citations, errors = self.citations_manager.citations_for_tool_ids(tool_ids)
         return [citation.to_dict("bibtex") for citation in citations] + errors
 
-    def index_exports(
+    def index_job_exports(
         self,
         trans: ProvidesHistoryContext,
         history_id: DecodedDatabaseIdField,
-        use_tasks: bool = False,
+    ) -> list[JobExportHistoryArchiveModel]:
+        return self.history_export_manager.get_exports(trans, history_id)
+
+    def index_task_exports(
+        self,
+        trans: ProvidesHistoryContext,
+        history_id: DecodedDatabaseIdField,
         limit: int | None = None,
         offset: int | None = None,
-    ):
-        if use_tasks:
-            return self.history_export_manager.get_task_exports(trans, history_id, limit, offset)
-        return self.history_export_manager.get_exports(trans, history_id)
+    ) -> list[ObjectExportTaskResponse]:
+        return self.history_export_manager.get_task_exports(trans, history_id, limit, offset)
 
     def archive_export(
         self,
@@ -712,13 +717,11 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             return (JobIdResponse(job_id=job.id), ready)
 
         if up_to_date and jeha.ready:
-            serialized_jeha = self.history_export_manager.serialize(trans, history_id, jeha)
-            return (JobExportHistoryArchiveModel(**serialized_jeha), ready)
+            return (self.history_export_manager.serialize(trans, history_id, jeha), ready)
         else:
             # Valid request, just resource is not ready yet.
             if jeha:
-                serialized_jeha = self.history_export_manager.serialize(trans, history_id, jeha)
-                return (JobExportHistoryArchiveModel(**serialized_jeha), ready)
+                return (self.history_export_manager.serialize(trans, history_id, jeha), ready)
             else:
                 assert job is not None, "logic error, don't have a jeha or a job"
                 return (JobIdResponse(job_id=job.id), ready)

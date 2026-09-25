@@ -592,8 +592,8 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             self._frame_or_page.wait_for_selector(selector, state="visible", timeout=timeout_ms)
 
             # Wait for element to be enabled
-            def is_enabled() -> bool:
-                return locator.is_enabled()
+            def is_enabled() -> bool | None:
+                return True if locator.is_enabled() else None
 
             wait_on(is_enabled, "locator to be enabled", timeout=timeout_ms / 1000)
 
@@ -631,8 +631,9 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         selector = self._selenium_locator_to_playwright_selector(*locator_tuple)
         locator = self._frame_or_page.locator(selector)
 
-        def enough_elements() -> bool:
-            return locator.count() >= n
+        # wait_on keeps polling only while the condition returns None.
+        def enough_elements() -> bool | None:
+            return True if locator.count() >= n else None
 
         try:
             wait_on(enough_elements, message, timeout=timeout_ms / 1000)
@@ -647,7 +648,9 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         if timeout is UNSPECIFIED_TIMEOUT:
             timeout = self.timeout_handler(kwds.get("wait_type"))
 
-        return wait_on(condition_func, message, timeout)
+        # Match Selenium's WebDriverWait, which keeps polling on any falsy result;
+        # wait_on alone stops on anything but None.
+        return wait_on(lambda: condition_func() or None, message, timeout)
 
     def _unwrap_element(self, element: WebElementProtocol) -> ElementHandle:
         """
