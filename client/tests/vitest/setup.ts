@@ -8,6 +8,7 @@ import { vi } from "vitest";
 import Vue from "vue";
 
 import { vSanitizeHtml } from "@/directives/vSanitizeHtml";
+import { vNoSanitizeHtml } from "@/directives/vNoSanitizeHtml";
 
 Vue.config.productionTip = false;
 Vue.config.devtools = false;
@@ -23,6 +24,7 @@ Vue.directive("g-tooltip", {
 // replaced with a pass-through spy (see directives/__mocks__/sanitizeHtml.ts).
 vi.mock("@/directives/sanitizeHtml");
 Vue.directive("sanitize-html", vSanitizeHtml);
+Vue.directive("no-sanitize-html", vNoSanitizeHtml);
 
 // Mock hashedUserId and userLocalStorage by default
 vi.mock("@/composables/hashedUserId");
