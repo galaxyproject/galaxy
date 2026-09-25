@@ -368,6 +368,7 @@ def get_install_info(trans: ProvidesRepositoriesContext, name, owner, changeset_
             )
             changeset_revision = new_changeset_revision
         if repository_metadata is not None:
+            assert repository_metadata.id is not None
             encoded_repository_metadata_id = app.security.encode_id(repository_metadata.id)
             repository_metadata_dict: RepositoryMetadataInstallInfoDict = cast(
                 RepositoryMetadataInstallInfoDict,

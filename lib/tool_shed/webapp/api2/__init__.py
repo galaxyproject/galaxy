@@ -374,7 +374,7 @@ def set_auth_cookie(trans: SessionRequestContext, session):
     set_cookie(trans, trans.app.security.encode_guid(session.session_key), cookie_name)
 
 
-def set_cookie(trans: SessionRequestContext, value: str, key, path="/", age=90) -> None:
+def set_cookie(trans: SessionRequestContext, value: str | bytes, key, path="/", age=90) -> None:
     """Convenience method for setting a session cookie"""
     # In wsgi we were setting both a max_age and and expires, but
     # all browsers support max_age now.
