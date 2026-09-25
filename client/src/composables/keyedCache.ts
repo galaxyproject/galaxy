@@ -53,18 +53,13 @@ export function useKeyedCache<T>(
 
     const fetchQueue = new LastQueue<FetchHandler<T>>();
 
-    /** Whether a failed fetch for `id` is worth retrying: the error is a retryable status
-     * and we haven't already retried it `MAX_RETRIES` times. */
-    function canRetry(id: string): boolean {
-        const existingError = loadingErrors.value[id];
-        return !!existingError && isRetryableApiError(existingError) && (retryCounts[id] ?? 0) <= MAX_RETRIES;
-    }
-
     const getItemById = computed(() => {
         return (id: string) => {
             const item = storedItems.value[id];
             const existingError = loadingErrors.value[id];
-            if (shouldFetch(item) && (!existingError || canRetry(id))) {
+            const canRetry =
+                existingError && isRetryableApiError(existingError) && (retryCounts[id] ?? 0) <= MAX_RETRIES;
+            if (shouldFetch(item) && (!existingError || canRetry)) {
                 fetchItemById({ id: id });
             }
             return item ?? null;
@@ -100,7 +95,7 @@ export function useKeyedCache<T>(
         const fetchPromise = (async () => {
             try {
                 const fetchItem = unref(fetchItemHandler);
-                const item = await fetchQueue.enqueue(fetchItem, params, itemId);
+                const item = await fetchQueue.enqueue(fetchItem, { id: itemId }, itemId);
                 storedItems.value[itemId] = item;
                 delete loadingErrors.value[itemId];
                 delete retryCounts[itemId];
@@ -115,16 +110,6 @@ export function useKeyedCache<T>(
 
         loadingRequests.value[itemId] = fetchPromise;
         return fetchPromise;
-    }
-
-    /**
-     * Removes a stored item (and any associated error/retry state) from the cache, e.g. for
-     * callers implementing their own eviction policy. Does not affect any in-flight request.
-     */
-    function removeItemById(id: string) {
-        del(storedItems.value, id);
-        del(loadingErrors.value, id);
-        delete retryCounts[id];
     }
 
     return {
@@ -151,13 +136,5 @@ export function useKeyedCache<T>(
          * And reactively updates the stored item when the fetch completes.
          */
         fetchItemById,
-        /**
-         * Whether a failed fetch for `id` is worth retrying (retryable status, retries left).
-         */
-        canRetry,
-        /**
-         * Removes a stored item from the cache.
-         */
-        removeItemById,
     };
 }

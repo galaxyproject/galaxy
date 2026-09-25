@@ -3,11 +3,11 @@ import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { type ResponseVal, type ShowFullJobResponse, TERMINAL_STATES } from "@/api/jobs";
-import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
-import { rethrowSimpleWithStatus } from "@/utils/simple-error";
+import { isRetryableApiError, MAX_RETRIES, rethrowSimpleWithStatus } from "@/utils/simple-error";
 
-interface JobFetchParams extends FetchParams {
+interface JobFetchParams {
+    id: string;
     /** Whether to request the full job representation. Defaults to `true`. */
     full?: boolean;
 }
@@ -21,6 +21,8 @@ export const MAX_CACHED_JOBS = 40;
  *
  * - Caches fetched jobs, capped at `MAX_CACHED_JOBS` via LRU (Least Recently Used) eviction.
  *   Once over the cap, the longest-untouched job is dropped first.
+ * - Allows both base and full requests for the same job id to be tracked independently, but merges
+ *   the full response into the cached job rather than overwriting it entirely.
  * - Polls a job until it reaches a terminal state, deduped so multiple callers watching the same
  *   job share one poll.
  * - Stores the latest tool-run response (used by the post-run "success" view).
@@ -28,7 +30,45 @@ export const MAX_CACHED_JOBS = 40;
 export const useJobStore = defineStore("jobStore", () => {
     const latestResponse = ref<ResponseVal | null>(null);
 
-    async function fetchJobById(params: JobFetchParams): Promise<ShowFullJobResponse> {
+    const storedJobs = ref<{ [id: string]: ShowFullJobResponse }>({});
+    const loadingErrors = ref<{ [id: string]: Error }>({});
+    const retryCounts: { [id: string]: number } = {};
+
+    /** Keyed by `id:full` so a base and a full request for the same job id are tracked separately.
+     * Otherwise whichever one resolved first would be (wrongly) treated as satisfying both.
+     */
+    const loadingRequests = new Map<string, Promise<ShowFullJobResponse | undefined>>();
+
+    /** Counts in-flight requests per job id (a base and a full request can be in flight for the
+     * same id at once, under separate `loadingRequests` keys) so `isLoadingJob` stays true until
+     * *all* of them finish, not just whichever happens to resolve first. */
+    const loadingCountsByJobId = ref<{ [id: string]: number }>({});
+
+    function saveLatestResponse(newResponse: ResponseVal) {
+        latestResponse.value = newResponse;
+    }
+
+    /** Keys a request by `id:full` so that base and full **requests** for the same job id are tracked separately. */
+    function requestKey(params: JobFetchParams): string {
+        return `${params.id}:${params.full ?? true}`;
+    }
+
+    /** Whether a failed fetch for `id` is worth retrying: the error is a retryable status and we
+     * haven't already retried it `MAX_RETRIES` times. */
+    function canRetryJob(id: string): boolean {
+        const existingError = loadingErrors.value[id];
+        return !!existingError && isRetryableApiError(existingError) && (retryCounts[id] ?? 0) <= MAX_RETRIES;
+    }
+
+    const getJobLoadError = computed(() => (id: string) => loadingErrors.value[id] ?? null);
+
+    const isLoadingJob = computed(() => (id: string) => (loadingCountsByJobId.value[id] ?? 0) > 0);
+
+    function mergeJob(freshJob: ShowFullJobResponse, existingJob?: ShowFullJobResponse): ShowFullJobResponse {
+        return existingJob ? { ...existingJob, ...freshJob } : freshJob;
+    }
+
+    async function fetchJobFromApi(params: JobFetchParams): Promise<ShowFullJobResponse> {
         const { data, error, response } = await GalaxyApi().GET("/api/jobs/{job_id}", {
             params: { path: { job_id: params.id }, query: { full: params.full ?? true } },
         });
@@ -38,19 +78,51 @@ export const useJobStore = defineStore("jobStore", () => {
         return data;
     }
 
-    function saveLatestResponse(newResponse: ResponseVal) {
-        latestResponse.value = newResponse;
+    /** Fetches a job, deduping concurrent requests for the same id+`full` shape, merging the
+     * result into the cache, and tracking loading/retry state. */
+    async function fetchAndCacheJob(params: JobFetchParams): Promise<ShowFullJobResponse | undefined> {
+        const key = requestKey(params);
+        const inFlight = loadingRequests.get(key);
+        if (inFlight) {
+            return inFlight;
+        }
+
+        // Increment the count of in-flight requests for this job id. This ensures that `isLoadingJob`
+        // remains true until all concurrent requests for the same job id (base and full) have completed.
+        loadingCountsByJobId.value[params.id] = (loadingCountsByJobId.value[params.id] ?? 0) + 1;
+
+        const fetchPromise = (async () => {
+            try {
+                const freshJob = await fetchJobFromApi(params);
+                const job = mergeJob(freshJob, storedJobs.value[params.id]);
+                storedJobs.value[params.id] = job;
+                delete loadingErrors.value[params.id];
+                delete retryCounts[params.id];
+                return job;
+            } catch (error) {
+                retryCounts[params.id] = (retryCounts[params.id] ?? 0) + 1;
+                loadingErrors.value[params.id] = error as Error;
+                return undefined;
+            } finally {
+                loadingRequests.delete(key);
+                const remaining = (loadingCountsByJobId.value[params.id] ?? 1) - 1;
+                if (remaining <= 0) {
+                    delete loadingCountsByJobId.value[params.id];
+                } else {
+                    loadingCountsByJobId.value[params.id] = remaining;
+                }
+            }
+        })();
+
+        loadingRequests.set(key, fetchPromise);
+        return fetchPromise;
     }
 
-    const {
-        storedItems: storedJobs,
-        fetchItemById: fetchJobKeyedCache,
-        getItemById: getJob,
-        getItemLoadError: getJobLoadError,
-        isLoadingItem: isLoadingJob,
-        removeItemById: removeJob,
-        canRetry: canRetryJob,
-    } = useKeyedCache<ShowFullJobResponse>(fetchJobById);
+    function removeJob(id: string) {
+        delete storedJobs.value[id];
+        delete loadingErrors.value[id];
+        delete retryCounts[id];
+    }
 
     // LRU tracking for `MAX_CACHED_JOBS`: a Map's keys iterate oldest-to-newest, and re-`set`ting
     // a key moves it to the end, so this alone tracks recency order without extra bookkeeping.
@@ -76,26 +148,26 @@ export const useJobStore = defineStore("jobStore", () => {
         }
     }
 
-    /** An overloaded fetch function that ensures the job is retrieved from the keyed cache,
-     * but with the additional, optional `full` option for requesting the full job representation.
-     */
+    /** An overloaded fetch function that ensures the job is retrieved from the cache, but with the
+     * additional, optional `full` option for requesting the full job representation. */
     async function fetchJob(params: JobFetchParams) {
         markUsed(params.id);
-        const job = await fetchJobKeyedCache(params as FetchParams);
+        const job = await fetchAndCacheJob(params);
         evictIfOverCap();
         return job;
     }
 
-    // Wraps `getJob` so reading a cached job also marks it recently-used, not just fetching one --
-    // otherwise a job that's displayed but never re-fetched (already terminal) could get evicted
-    // while still on screen.
-    //
-    // Kept as a `computed`, matching what `useKeyedCache`'s own `getItemById` returns, so Pinia's
-    // testing plugin still treats it as a getter rather than stubbing it like an action.
-    const getJobAndMarkUsed = computed(() => (id: string) => {
-        const job = getJob.value(id);
+    const getJob = computed(() => (id: string) => {
+        const job = storedJobs.value[id] ?? null;
         if (job) {
+            // Getting a cached job also marks it recently-used. Otherwise a job that's displayed
+            // but never re-fetched (already terminal) could get evicted while still on screen.
             markUsed(id);
+        } else if (id && !loadingRequests.has(requestKey({ id })) && !getJobLoadError.value(id)) {
+            // Auto-fetch on read, same as the old `useKeyedCache`-backed `getJob`: a reader that
+            // never calls `pollJobUntilTerminal` (e.g. wants a one-off, non-polled lookup) still
+            // gets the job fetched the first time it's read.
+            fetchJob({ id });
         }
         return job;
     });
@@ -161,11 +233,22 @@ export const useJobStore = defineStore("jobStore", () => {
                 // Read (not close over) the current requested level as a later call may have
                 // upgraded this poll to `full: true` since it started.
                 const requestFull = activePolls.get(id)?.full ?? full;
-                const job = await fetchJob({ id, full: requestFull });
+                let job = await fetchJob({ id, full: requestFull });
                 if (job && requestFull) {
                     fullyLoadedJobIds.add(id);
                 }
                 if (job && TERMINAL_STATES.indexOf(job.state) !== -1) {
+                    // The poll may have been upgraded to `full` *after* the fetch above was
+                    // already made with the pre-upgrade value, in which case a terminal result
+                    // here would otherwise stop polling having only ever fetched the base
+                    // representation. Fetch full once more before disposing so the upgrade is
+                    // still honored.
+                    if (activePolls.get(id)?.full && !fullyLoadedJobIds.has(id)) {
+                        job = await fetchJob({ id, full: true });
+                        if (job) {
+                            fullyLoadedJobIds.add(id);
+                        }
+                    }
                     // Terminal jobs never poll again; dispose (not just stop) to release the
                     // watcher's listener, since a new watcher is made if this job is polled again.
                     watcher.dispose();
@@ -201,7 +284,7 @@ export const useJobStore = defineStore("jobStore", () => {
     return {
         fetchJob,
         saveLatestResponse,
-        getJob: getJobAndMarkUsed,
+        getJob,
         getJobLoadError,
         isLoadingJob,
         latestResponse,
