@@ -9,11 +9,19 @@ execution:
   environments:
     local_docker:
       runner: local
+      env:
+        - name: 'JOBCONF_ENV_VAR'
+          value: 'YEAH'
+        - execute: 'true' # just check that this does not confuse env setup
       docker_enabled: true
+      docker_env_CONTAINER_ENV_VAR: "CONTAINER_VAR_VALUE"
       require_container: true
       tmp_dir: '$(mktemp -d)'
     local_docker_inline_container_resolvers:
       runner: local
+      env:
+        - name: 'JOBCONF_ENV_VAR'
+          value: 'YEAH'
       docker_enabled: true
       container_resolvers:
         - type: fallback
