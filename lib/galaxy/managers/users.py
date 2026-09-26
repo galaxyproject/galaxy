@@ -57,6 +57,7 @@ from galaxy.model.db.user import (
     get_user_groups,
 )
 from galaxy.security.validate_user_input import (
+    canonicalize_display_name,
     UserValidationContext,
     VALID_EMAIL_RE,
     validate_display_name_str,
@@ -245,10 +246,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Update a user's display name after validating it. Raises RequestParameterInvalidException on validation errors.
 
         Unlike the username this needs no transaction: display names are not unique, so there is nothing to look up.
-        Surrounding whitespace is stripped rather than rejected, and a name that is empty once stripped clears the
-        field - an invisible difference is a poor reason to fail a save.
+        The name is stored in the form ``canonicalize_display_name`` returns, so a blank name clears the field.
         """
-        normalized = (new_display_name or "").strip() or None
+        normalized = canonicalize_display_name(new_display_name)
         if message := validate_display_name_str(normalized):
             raise exceptions.RequestParameterInvalidException(message)
         if user.display_name == normalized:

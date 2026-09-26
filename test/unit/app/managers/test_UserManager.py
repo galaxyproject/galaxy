@@ -432,6 +432,10 @@ class TestUserManager(BaseTestCase):
         self.user_manager.update_display_name(user, "  Ada Lovelace  ")
         assert_user_display_name_is(user, "Ada Lovelace")
 
+        self.log("composed and decomposed spellings should be stored alike")
+        self.user_manager.update_display_name(user, "Zoe\u0308 Mu\u0308ller")
+        assert_user_display_name_is(user, "Zo\u00eb M\u00fcller")
+
         self.log("an empty display name should clear the field")
         self.user_manager.update_display_name(user, "")
         assert_user_display_name_is(user, None)

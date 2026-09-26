@@ -7,6 +7,7 @@ user inputs - so these methods do not need to be escaped.
 
 import logging
 import re
+import unicodedata
 from typing import (
     Any,
     Protocol,
@@ -65,14 +66,22 @@ FILL_CHAR = "-"
 
 # Display name validity parameters
 #
-# Display names are free-form and may contain any script, so the rule is a
-# denylist rather than an allowlist. It covers C0/C1 control characters, the
-# zero-width characters, and the bidirectional formatting characters. The bidi
-# overrides are the reason this check exists: U+202E and friends let a name
-# render as text entirely unrelated to what is stored, which makes a display
-# name a viable impersonation vector wherever it is shown.
+# Display names are free-form and may be in any script, so the rule rejects
+# what cannot be seen rather than listing what may be used. Bidirectional
+# formatting characters are the main reason the check exists: U+202E and
+# friends let a name render as text entirely unrelated to what is stored, which
+# makes a display name a viable impersonation vector wherever it is shown. The
+# other control, format, line and paragraph separator, private-use, surrogate
+# and unassigned code points go with them, as do the letters and marks that
+# render as blank space.
+#
+# The zero-width joiner and non-joiner are the exception. Persian, the Indic
+# scripts and emoji sequences need them, so they are allowed where they can do
+# that job: between two visible characters.
 DISPLAY_NAME_MAX_LEN = 255
-INVALID_DISPLAY_NAME_RE = re.compile("[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]")
+DISPLAY_NAME_REJECTED_CATEGORIES = frozenset({"Cc", "Cf", "Cn", "Co", "Cs", "Zl", "Zp"})
+DISPLAY_NAME_BLANK_CHARACTERS = frozenset("\u034f\u115f\u1160\u17b4\u17b5\u2800\u3164\uffa0")
+DISPLAY_NAME_JOINERS = frozenset("\u200c\u200d")
 
 # Password validity parameters
 PASSWORD_MIN_LEN = 6
@@ -111,20 +120,49 @@ def validate_publicname_str(publicname):
     return ""
 
 
-def validate_display_name_str(display_name):
+def canonicalize_display_name(display_name: str | None) -> str | None:
+    """Return the form of a display name that is validated and stored.
+
+    The name is NFC-normalized so that composed and decomposed spellings are
+    stored (and measured) alike, and surrounding whitespace is stripped rather
+    than rejected. A name that is empty once stripped becomes None, which
+    clears the field - an invisible difference is a poor reason to fail a save.
+    """
+    return unicodedata.normalize("NFC", display_name or "").strip() or None
+
+
+def validate_display_name_str(display_name: str | None) -> str:
     """Validates a string containing a user's display name.
 
-    Callers are expected to have stripped the value already; an empty display
-    name means "unset" and is accepted here so that clearing the field is not
-    an error.
+    Callers are expected to have passed the value through
+    canonicalize_display_name; an empty display name means "unset" and is
+    accepted here so that clearing the field is not an error.
     """
     if not display_name:
         return ""
     if len(display_name) > DISPLAY_NAME_MAX_LEN:
         return f"Display name cannot be more than {DISPLAY_NAME_MAX_LEN} characters in length."
-    if INVALID_DISPLAY_NAME_RE.search(display_name):
-        return "Display name cannot contain control or text-direction characters."
+    last = len(display_name) - 1
+    for i, char in enumerate(display_name):
+        if char in DISPLAY_NAME_JOINERS:
+            if not (0 < i < last and _is_joinable(display_name[i - 1]) and _is_joinable(display_name[i + 1])):
+                return "Display name cannot contain control, formatting or invisible characters."
+        elif unicodedata.category(char) in DISPLAY_NAME_REJECTED_CATEGORIES or char in DISPLAY_NAME_BLANK_CHARACTERS:
+            return "Display name cannot contain control, formatting or invisible characters."
+    if not any(_is_visible(char) for char in display_name):
+        return "Display name must contain at least one visible character."
     return ""
+
+
+def _is_visible(char: str) -> bool:
+    # Letters, numbers, punctuation and symbols; not marks, separators or other.
+    return unicodedata.category(char)[0] in "LNPS" and char not in DISPLAY_NAME_BLANK_CHARACTERS
+
+
+def _is_joinable(char: str) -> bool:
+    # A joiner may follow or precede a combining mark (a virama, an emoji
+    # variation selector) but not a space, a format character or another joiner.
+    return unicodedata.category(char)[0] not in "CZ" and char not in DISPLAY_NAME_BLANK_CHARACTERS
 
 
 def validate_email(
