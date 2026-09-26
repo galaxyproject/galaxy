@@ -14,7 +14,6 @@ spectroscopy (XPS, also known as ESCA). Two related formats are provided:
 """
 
 import logging
-from typing import Optional
 
 import h5py
 
@@ -68,7 +67,7 @@ class Vamas(Text):
     (``XPS`` for X-ray photoelectron spectroscopy).
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('test.vms')
+    >>> fname = get_test_fname('test.vamas')
     >>> Vamas().sniff(fname)
     True
     >>> fname = get_test_fname('sequence.fasta')
@@ -116,7 +115,7 @@ class NXxps(H5):
     See https://manual.nexusformat.org/classes/applications/NXxps.html
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('test.nxs.xps')
+    >>> fname = get_test_fname('test.nxxps')
     >>> NXxps().sniff(fname)
     True
     >>> fname = get_test_fname('test.mz5')
@@ -147,7 +146,7 @@ class NXxps(H5):
             return f"NeXus NXxps XPS data ({nice_size(dataset.get_size())})"
 
 
-def _read_definition(group: h5py.Group) -> Optional[str]:
+def _read_definition(group: h5py.Group) -> str | None:
     """Return the ``definition`` field of *group* as text, or ``None``."""
     if not isinstance(group, h5py.Group):
         return None

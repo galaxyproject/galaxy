@@ -88,8 +88,8 @@ def test_xps_sniffers_precede_generic_datatypes():
     datatypes_registry = example_datatype_registry_for_sample()
     sniff_order = datatypes_registry.sniff_order
 
-    assert sniff.guess_ext(sniff.get_test_fname("test.vms"), sniff_order) == "vamas"
-    assert sniff.guess_ext(sniff.get_test_fname("test.nxs.xps"), sniff_order) == "nxxps"
+    assert sniff.guess_ext(sniff.get_test_fname("test.vamas"), sniff_order) == "vamas"
+    assert sniff.guess_ext(sniff.get_test_fname("test.nxxps"), sniff_order) == "nxxps"
     assert sniff.guess_ext(sniff.get_test_fname("test.mz5"), sniff_order) == "h5"
 
 
