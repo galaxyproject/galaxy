@@ -22,6 +22,7 @@ from pydantic_evals.evaluators import (
     EvaluatorContext,
 )
 
+from galaxy.agents.gtn.search import plain_excerpt
 from .tutor import JOB_ID
 from .tutor_claims import review_claims
 
@@ -103,7 +104,12 @@ class TutorEvidence(Evaluator[dict, dict, dict]):
                         if visible in call["result"].get("sources", []) and any(
                             source.get("url") == record.get("url")
                             and source.get("title") == record.get("title")
-                            and source.get("excerpt") == (record.get("snippet") or record.get("description", ""))
+                            and source.get("excerpt")
+                            in {
+                                # Frozen answers predate plain_excerpt and carry the raw snippet.
+                                record.get("snippet") or record.get("description", ""),
+                                plain_excerpt(record.get("snippet") or "") or record.get("description", ""),
+                            }
                             for record in attempts[-1]["retrieved_materials"]
                         ):
                             supported.update(_urls(source["url"]))
