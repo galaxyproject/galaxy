@@ -589,9 +589,7 @@ class WorkflowProgress:
                 # Modules waiting on data wait the way DatabaseOperationTool.check_inputs_ready
                 # does - a paused input can still be resumed by the user, so delay rather than
                 # fail the invocation over it.
-                if dataset_instance.is_pending:
-                    return True
-                return require_ready and dataset_instance.state == model.Dataset.states.PAUSED
+                return dataset_instance.is_pending_or_paused if require_ready else dataset_instance.is_pending
 
             if isinstance(replacement, model.HistoryDatasetAssociation):
                 if not_yet_available(replacement):

@@ -2116,14 +2116,9 @@ class PickValueModule(WorkflowModule):
         if value is NO_REPLACEMENT:
             return True
         if isinstance(value, model.HistoryDatasetAssociation):
-            if value.extension == "expression.json":
-                if value.blurb == "skipped":
-                    return True
-                if not value.is_ok:
-                    # A failed expression output has no readable value, but failure is
-                    # not null. Preserve it so downstream failure filters can handle it.
-                    return False
-                return read_expression_json(value, step=step) is None
+            # A failed expression output is not null. Preserve it so downstream failure
+            # filters can handle it.
+            return value.is_null_expression(read_value=lambda dataset: read_expression_json(dataset, step=step))
         return False
 
     def _pick_from_replacements(self, trans: "ProvidesHistoryContext", invocation_step, mode, replacements):

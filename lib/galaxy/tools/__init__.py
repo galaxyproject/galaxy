@@ -4242,10 +4242,7 @@ class KeepSuccessDatasetsTool(FilterDatasetsTool):
     def element_is_valid(element: model.DatasetCollectionElement):
         element_object = element.element_object
         assert isinstance(element_object, model.DatasetInstance)
-        if (
-            element_object.state != model.Dataset.states.PAUSED
-            and element_object.state in model.Dataset.non_ready_states
-        ):
+        if element_object.is_pending:
             raise ToolInputsNotReadyException("An input dataset is pending.")
         return element_object.is_ok
 
@@ -4275,15 +4272,7 @@ class FilterNullTool(FilterDatasetsTool):
     def element_is_valid(element: model.DatasetCollectionElement):
         element_object = element.element_object
         assert isinstance(element_object, model.DatasetInstance)
-        if element_object.extension == "expression.json":
-            if element_object.peek == "null":
-                # shortcut
-                return False
-            else:
-                with open(element_object.get_file_name()) as fh:
-                    if fh.read(5) == "null":
-                        return False
-        return True
+        return not element_object.is_null_expression()
 
 
 class FlattenTool(DatabaseOperationTool):

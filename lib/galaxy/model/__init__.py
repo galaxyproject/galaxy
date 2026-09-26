@@ -18,7 +18,10 @@ import random
 import secrets
 import string
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from dataclasses import dataclass
 from datetime import (
     datetime,
@@ -6023,6 +6026,31 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             self.states.RUNNING,
             self.states.SETTING_METADATA,
         )
+
+    @property
+    def is_pending_or_paused(self):
+        """
+        Return true if the dataset has not been produced yet, including a paused job the
+        user can still resume.
+        """
+        return self.is_pending or self.state == self.states.PAUSED
+
+    def is_null_expression(self, read_value: Callable[["DatasetInstance"], Any] | None = None) -> bool:
+        """
+        Return true for an ``expression.json`` dataset holding JSON ``null``, which
+        includes skipped outputs. A dataset that is not ok has no value and is not null.
+
+        ``read_value`` parses the contents when the peek does not settle it; by default
+        only their start is compared.
+        """
+        if self.extension != "expression.json" or not self.is_ok:
+            return False
+        if self.blurb == "skipped" or self.peek == "null":
+            return True
+        if read_value is not None:
+            return read_value(self) is None
+        with open(self.get_file_name()) as fh:
+            return fh.read(5) == "null"
 
     @property
     def source_library_dataset(self):
