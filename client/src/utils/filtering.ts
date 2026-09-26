@@ -506,11 +506,14 @@ export default class Filtering<T> {
             if (!isValid) {
                 continue;
             }
-            // A quoted value keeps its original case (exact, case-sensitive match); an unquoted
-            // value is folded to lower case. Either way surrounding quotes are stripped here --
-            // `getQueryDict`/`getFilterText` recover quoted-ness from the source text.
+            // A quoted value, or one written for a key whose own handler is an equals match (e.g.
+            // `tool_id_eq`), keeps its original case; anything else is folded to lower case.
+            // Surrounding quotes are stripped here either way and `getQueryDict`/`getFilterText`
+            // recover quoted-ness from the source text.
             const value = this.quoteStrings
-                ? ((token.quoted ? stripQuotes(token.value) : toLowerNoQuotes(token.value)) as T)
+                ? ((token.quoted || this.isEqualsKey(key)
+                      ? stripQuotes(token.value)
+                      : toLowerNoQuotes(token.value)) as T)
                 : (token.value as T);
             if (this.validFilters[key]?.type === "MultiTags") {
                 if (result[key] === undefined) {
@@ -552,6 +555,11 @@ export default class Filtering<T> {
      */
     private exactMatchKeyFor(key: string): string {
         return this.validFilters[`${key}_eq`] !== undefined ? `${key}_eq` : key;
+    }
+
+    /** Whether `key`'s own handler resolves to a backend equals match (`-eq`) query. */
+    private isEqualsKey(key: string): boolean {
+        return this.validFilters[key]?.handler.query.endsWith("-eq") ?? false;
     }
 
     /** Build a text filter from filters {filter: "value", ...} => "filter:value"

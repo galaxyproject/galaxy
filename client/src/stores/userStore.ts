@@ -61,7 +61,11 @@ export const useUserStore = defineStore("userStore", () => {
         hashedUserId,
     );
 
-    const hasSeenUploadHelp = useUserLocalStorageFromHashId("user-store-seen-upload-help", false, hashedUserId);
+    const showToolNamesInJobPanel = useUserLocalStorageFromHashId(
+        "user-store-show-tool-names-in-job-panel",
+        false,
+        hashedUserId,
+    );
 
     const historyPanelWidth = useUserLocalStorageFromHashId("user-store-history-panel-width", 300, hashedUserId);
 
@@ -372,7 +376,7 @@ export const useUserStore = defineStore("userStore", () => {
         currentTheme,
         currentFavorites,
         currentListViewPreferences,
-        hasSeenUploadHelp,
+        showToolNamesInJobPanel,
         historyPanelWidth,
         chatPanelWidth,
         recentTools,

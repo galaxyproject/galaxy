@@ -4,6 +4,7 @@ import { computed, ref, watch } from "vue";
 import { GalaxyApi } from "@/api";
 import { type JobConsoleOutput, NON_TERMINAL_STATES, type ShowFullJobResponse } from "@/api/jobs";
 import { JobConsoleOutputProvider, JobDetailsProvider } from "@/components/providers/JobProvider";
+import { useJobStore } from "@/stores/jobStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import type { JobMessage } from "../../api/jobs";
@@ -15,6 +16,7 @@ import CodeRow from "./CodeRow.vue";
 import RerunJobButton from "./RerunJobButton.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import HelpText from "@/components/Help/HelpText.vue";
+import TargetHistoryLink from "@/components/History/TargetHistoryLink.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 const props = withDefaults(
@@ -27,10 +29,11 @@ const props = withDefaults(
         /** If provided, this component will skip fetching the invocation ID for the job. */
         invocationId?: string;
     }>(),
-    { includeTitle: true },
+    { includeTitle: true, invocationId: undefined },
 );
 
-const job = ref<ShowFullJobResponse | null>(null);
+const jobStore = useJobStore();
+const job = computed<ShowFullJobResponse | null>(() => jobStore.getJob(props.jobId) ?? null);
 const fetchedInvocationId = ref<string | null | undefined>(props.invocationId);
 
 const stdout_length = ref(50000);
@@ -72,7 +75,7 @@ const metadataDetail = ref<Record<string, string>>({
 });
 
 function updateJob(newJob: ShowFullJobResponse) {
-    job.value = newJob;
+    jobStore.updateJob(newJob.id, newJob);
     if (jobStateIsTerminal(newJob?.state)) {
         if (newJob.tool_stdout) {
             stdout_text.value = newJob.tool_stdout;
@@ -197,6 +200,12 @@ watch(
                     <td>Updated</td>
                     <td v-if="job.update_time" id="updated">
                         <UtcDate :date="job.update_time" mode="pretty" />
+                    </td>
+                </tr>
+                <tr v-if="!props.invocationId && job && job.history_id">
+                    <td>History</td>
+                    <td v-if="job.history_id" id="history">
+                        <TargetHistoryLink :target-history-id="job.history_id" :has-leading-indicator="false" />
                     </td>
                 </tr>
                 <CodeRow

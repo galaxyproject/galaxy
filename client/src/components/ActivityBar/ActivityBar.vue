@@ -30,6 +30,7 @@ import AdminPanel from "@/components/admin/AdminPanel.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import HistoryGraphPanel from "@/components/Panels/HistoryGraphPanel.vue";
 import InteractiveToolsPanel from "@/components/Panels/InteractiveToolsPanel.vue";
+import JobPanel from "@/components/Panels/JobPanel.vue";
 import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
@@ -483,6 +484,7 @@ defineExpose({
             <HistoryGraphPanel v-else-if="isActiveSideBar('historygraph')" />
             <ChatHistoryPanel v-else-if="isActiveSideBar('galaxyai')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
+            <JobPanel v-else-if="isActiveSideBar('jobs')" in-panel />
             <UserToolPanel v-if="isActiveSideBar('user-defined-tools')" in-panel />
             <InteractiveToolsPanel v-else-if="isActiveSideBar('interactivetools')" />
             <SettingsPanel

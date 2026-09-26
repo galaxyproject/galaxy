@@ -15,7 +15,7 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
 
-const CLICK_TO_RETRY_MSG = "Click on the button at the bottom of the list to retry." as const;
+const CLICK_TO_RETRY_MSG = "Clear your search or click the button at the bottom of the list to retry." as const;
 
 interface LoaderResult<T> {
     items: T[];

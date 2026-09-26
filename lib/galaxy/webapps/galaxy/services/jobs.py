@@ -145,7 +145,8 @@ class JobsService(ServiceBase):
         self,
         trans: ProvidesUserContext,
         payload: JobIndexPayload,
-    ):
+        include_total_count: bool = False,
+    ) -> tuple[list[dict[str, Any]], int | None]:
         is_admin = trans.user_is_admin
         view = payload.view
         if view == JobIndexViewEnum.admin_job_list:
@@ -160,7 +161,7 @@ class JobsService(ServiceBase):
             or payload.implicit_collection_jobs_id is not None
             or payload.history_id is not None
         )
-        jobs = self.job_manager.index_query(trans, payload)
+        jobs, total_matches = self.job_manager.index_query(trans, payload, include_total_count)
         out: list[dict[str, Any]] = []
         for job in jobs.yield_per(model.YIELD_PER_ROWS):
             # TODO: optimize if this crucial
@@ -174,7 +175,7 @@ class JobsService(ServiceBase):
                 job_dict["user_id"] = job.user_id
             out.append(job_dict)
 
-        return out
+        return out, total_matches
 
     def _check_nonadmin_access(
         self,
