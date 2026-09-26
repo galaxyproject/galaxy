@@ -4,12 +4,10 @@ on:
     paths-ignore:
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
   pull_request:
     paths-ignore:
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
-      - 'packages/**'
 env:
   YARN_INSTALL_OPTS: --frozen-lockfile
 concurrency:
@@ -54,4 +52,29 @@ jobs:
         run: uv tool install tox --with tox-uv
       - name: run tests
         run: tox -e first_startup
+        working-directory: 'galaxy root'
+  installed-test:
+    name: Installed startup test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: 'galaxy root'
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Install release tooling
+        run: uv tool install galaxy-release-util==0.4.2
+      - name: Build and install Galaxy packages
+        run: make install-packages VENV="$RUNNER_TEMP/galaxy-installed"
+        working-directory: 'galaxy root'
+      - name: Start installed Galaxy
+        run: .ci/installed_startup.sh "$RUNNER_TEMP/galaxy-installed"
         working-directory: 'galaxy root'
