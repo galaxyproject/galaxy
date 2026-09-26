@@ -29,7 +29,7 @@ dependencies = [
     "circus",
     "conda-package-streaming",
     "CT3>=3.3.3",  # Python 3.13 support
-    "cwl-utils>=0.13",
+    "cwl-utils>=0.13,!=0.44",  # 0.44 configures root logging on import: https://github.com/common-workflow-language/cwl-utils/pull/471
     "cwltool>=3.1.20230624081518",  # save time, minimum needed by cwl-1.0 branch
     "dictobj",
     "dnspython",
@@ -264,7 +264,6 @@ constraint-dependencies = [
     "limits>=2.5.0",  # prefer not downgrading this to upgrading packaging
     "mirakuru!=3.0.0",  # https://github.com/dbfixtures/mirakuru/pull/949
     "scipy>=1.14.1; python_version>='3.10'",  # Python 3.13 support
-    "cwl-utils!=0.44",  # configures root logging on import: https://github.com/common-workflow-language/cwl-utils/pull/471
 ]
 default-groups = []
 extra-index-url = ["https://wheels.galaxyproject.org/simple"]
