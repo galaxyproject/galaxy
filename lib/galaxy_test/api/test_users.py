@@ -369,6 +369,29 @@ class TestUsersApi(ApiTestCase):
         assert response["addresses"][0]["desc"] == "_desc"
 
     @requires_new_user
+    def test_information_addresses_of_another_user(self):
+        owner_email = "address_owner@bx.psu.edu"
+        owner = self._setup_user(owner_email)
+        owner_url = f"users/{owner['id']}/information/inputs"
+        with self._different_user(email=owner_email):
+            self._assert_status_code_is(self._put(owner_url, data={"address_0|desc": "owner"}, json=True), 200)
+            address_id = self._get(owner_url).json()["addresses"][0]["id"]
+            response = self._put(owner_url, data={"address_0|id": address_id, "address_0|desc": "owner2"}, json=True)
+            self._assert_status_code_is(response, 200)
+
+        other_email = "address_other@bx.psu.edu"
+        other = self._setup_user(other_email)
+        other_url = f"users/{other['id']}/information/inputs"
+        with self._different_user(email=other_email):
+            response = self._put(other_url, data={"address_0|id": address_id, "address_0|desc": "other"}, json=True)
+            self._assert_status_code_is(response, 404)
+            response = self._put(other_url, data={"address_0|id": "notanid", "address_0|desc": "other"}, json=True)
+            self._assert_status_code_is(response, 400)
+
+        owner_addresses = self._get(owner_url, admin=True).json()["addresses"]
+        assert [(address["id"], address["desc"]) for address in owner_addresses] == [(address_id, "owner2")]
+
+    @requires_new_user
     def test_manage_api_key(self):
         with self._different_user("manage-api-key-test@user.com"):
             user_id = self._get_current_user_id()

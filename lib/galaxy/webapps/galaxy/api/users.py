@@ -1050,14 +1050,15 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     address_dicts[index] = address_dicts.get(index) or {}
                     address_dicts[index][attribute] = payload[item]
                     address_count = max(address_count, index + 1)
+            existing_addresses = {address.id: address for address in user.addresses}
             user.addresses = []
             for index in range(0, address_count):
                 d = address_dicts[index]
                 if d.get("id"):
-                    try:
-                        user_address = trans.sa_session.get(UserAddress, trans.security.decode_id(d["id"]))
-                    except Exception as e:
-                        raise exceptions.ObjectNotFound(f"Failed to access user address ({d['id']}). {e}")
+                    # Only the user's own addresses can be updated; any other id is treated as unknown.
+                    user_address = existing_addresses.get(trans.security.decode_id(d["id"]))
+                    if user_address is None:
+                        raise exceptions.ObjectNotFound(f"User address ({d['id']}) not found.")
                 else:
                     user_address = UserAddress()
                     trans.log_event("User address added")
