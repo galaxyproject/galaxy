@@ -70,6 +70,7 @@ from galaxy.managers.tools import DynamicToolManager
 from galaxy.model import (
     History,
     StoredWorkflow,
+    StoredWorkflowAnnotationAssociation,
     StoredWorkflowTagAssociation,
     StoredWorkflowUserShareAssociation,
     to_json,
@@ -81,6 +82,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.index_filter_util import (
+    owner_annotation_exists_filter,
     raw_text_column_filter,
     tag_exists_filter,
     text_column_filter,
@@ -390,8 +392,17 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                         # Collections are an IWC grouping; nothing curated here belongs to one.
                         stmt = stmt.where(false())
                 elif isinstance(term, RawTextTerm):
+                    owner_annotation_exists = owner_annotation_exists_filter(
+                        StoredWorkflowAnnotationAssociation,
+                        StoredWorkflowAnnotationAssociation.stored_workflow_id,
+                        StoredWorkflow.id,
+                        StoredWorkflow.user_id,
+                        term.text,
+                    )
                     stmt = stmt.where(
-                        raw_text_column_filter([StoredWorkflow.name, w_tag_exists(term.text, False)], term)
+                        raw_text_column_filter(
+                            [StoredWorkflow.name, w_tag_exists(term.text, False), owner_annotation_exists], term
+                        )
                     )
 
         # Counted before the eager-load options go on, so the count statement is
