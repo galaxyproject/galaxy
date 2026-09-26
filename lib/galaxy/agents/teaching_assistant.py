@@ -49,6 +49,26 @@ _REFERENCE = re.compile(r"\[\[tutorial:([a-f0-9]{12})\]\]")
 _GTN_LINK = re.compile(r"training\.galaxyproject\.org([^\s<>`\"'\[\]()]*)", re.IGNORECASE)
 
 
+_HTML_EMPHASIS = {"i": "*", "em": "*", "b": "**", "strong": "**", "code": "`", "kbd": "`"}
+_CODE_SPANS = re.compile(r"(```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)|`[^`\n]*`)")
+
+
+def _html_to_markdown(content: str) -> str:
+    """Rewrite inline HTML the model writes as markdown; chat rendering escapes raw HTML."""
+
+    def convert(text: str) -> str:
+        text = re.sub(
+            r"<(i|em|b|strong|code|kbd)>(.*?)</\1>",
+            lambda m: f"{_HTML_EMPHASIS[m.group(1).lower()]}{m.group(2)}{_HTML_EMPHASIS[m.group(1).lower()]}",
+            text,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
+        return re.sub(r"</?(?:a|span|div|p|u|sup|sub|small|mark|font)\b[^>]*>", "", text, flags=re.IGNORECASE)
+
+    return "".join(part if i % 2 else convert(part) for i, part in enumerate(_CODE_SPANS.split(content)))
+
+
 def _plain_markdown(value: str) -> str:
     return re.sub(f"([{re.escape(string.punctuation)}])", r"\\\1", " ".join(value.split()))
 
@@ -104,7 +124,7 @@ def _render_tutorial_references(ctx: RunContext[GalaxyAgentDependencies], conten
         excerpt = _plain_markdown(source["excerpt"])
         return f"\n\n[{title}](<{source['url']}>)" + (f"\n\n> {excerpt}" if excerpt else "") + "\n\n"
 
-    return _REFERENCE.sub(render, content).strip()
+    return _html_to_markdown(_REFERENCE.sub(render, content)).strip()
 
 
 class TeachingAssistantAgent(BaseGalaxyAgent):
