@@ -2116,8 +2116,6 @@ class PickValueModule(WorkflowModule):
         if value is NO_REPLACEMENT:
             return True
         if isinstance(value, model.HistoryDatasetAssociation):
-            # A failed expression output is not null. Preserve it so downstream failure
-            # filters can handle it.
             return value.is_null_expression(read_value=lambda dataset: read_expression_json(dataset, step=step))
         return False
 
@@ -2195,16 +2193,10 @@ class PickValueModule(WorkflowModule):
         mode: str,
         all_inputs: list[InputDescription],
     ) -> None:
-        """Delay this step until the inputs it picks from have been produced.
+        """Delay until the inputs that could be picked are produced.
 
-        A tool step can be scheduled against a dataset that is still running - the job queue
-        orders the work. This module cannot. It reads the inputs to decide which one to pick,
-        and the picked output aliases that dataset rather than copying it, so a post job
-        action on this step mutates an upstream job's output. Both need that job finished.
-
-        The first_* modes stop at the first ready, non-null dataset: inputs after it cannot
-        be picked, so waiting on them could stall the invocation on a paused input for good.
-        Collections are picked from element by element, so they never settle it.
+        Picking reads the inputs, and the output aliases the picked dataset (so post job
+        actions would mutate it). first_* modes stop at the first ready non-null dataset.
         """
         stops_at_first_value = mode in ("first_non_null", "first_or_skip")
         for input_dict in all_inputs:

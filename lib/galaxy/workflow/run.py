@@ -577,18 +577,13 @@ class WorkflowProgress:
 
         if isinstance(replacement, model.DatasetCollection):
             raise NotImplementedError
-        # A parameter connection needs the value itself, so it always waits. A data connection
-        # normally does not - the tool framework hands the job a dataset that is still being
-        # produced and the job queue sorts out the ordering. Modules that read or mutate the
-        # data while scheduling opt in with require_ready.
+        # Data connections normally don't wait - the job queue orders them. Modules that
+        # read or mutate data while scheduling opt in with require_ready.
         if (not is_data or require_ready) and isinstance(
             replacement, (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation)
         ):
 
             def not_yet_available(dataset_instance: model.DatasetInstance) -> bool:
-                # Modules waiting on data wait the way DatabaseOperationTool.check_inputs_ready
-                # does - a paused input can still be resumed by the user, so delay rather than
-                # fail the invocation over it.
                 return dataset_instance.is_pending_or_paused if require_ready else dataset_instance.is_pending
 
             if isinstance(replacement, model.HistoryDatasetAssociation):

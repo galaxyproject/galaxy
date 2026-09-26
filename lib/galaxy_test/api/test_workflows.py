@@ -3392,9 +3392,7 @@ input_data:
     @skip_without_tool("expression_parse_int")
     @skip_without_tool("expression_forty_two")
     def test_pick_value_runtime_null(self):
-        # Expression tools run as jobs and can compute null: parseInt produces NaN for
-        # this input, which the expression runtime serializes as null. The picker must
-        # wait for that value before it can reject it and use the fallback.
+        # parseInt yields NaN, serialized as null - pick must wait for it, then fall back.
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
                 """class: GalaxyWorkflow
@@ -3430,8 +3428,7 @@ test_data: {}
     @skip_without_tool("__BUILD_LIST__")
     @skip_without_tool("__FILTER_FAILED_DATASETS__")
     def test_pick_value_input_failed(self):
-        # Failure is terminal, not null. Preserve the failed dataset as the picked
-        # output so downstream failure filters can handle it without failing scheduling.
+        # Failed is not null - the failed dataset is picked for downstream filters.
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
                 """class: GalaxyWorkflow
@@ -3497,8 +3494,7 @@ exit_code:
     @skip_without_tool("job_properties")
     @skip_without_tool("cat1")
     def test_pick_value_input_paused(self):
-        # A paused input can be resumed by the user, so pick_value waits for it the way
-        # DatabaseOperationTool inputs do rather than failing the invocation over it.
+        # A paused input is resumable, so pick waits rather than failing.
         workflow_id = self._upload_yaml_workflow("""class: GalaxyWorkflow
 steps:
   job_props:
@@ -3566,8 +3562,7 @@ outputs:
     @skip_without_tool("cat1")
     @skip_without_tool("expression_forty_two")
     def test_pick_value_first_non_null_ignores_paused_later_input(self):
-        # Once an earlier input is ready and non-null, later inputs cannot be picked, so a
-        # paused later input must not hold up the invocation.
+        # A paused input after the picked one must not block the invocation.
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
                 """class: GalaxyWorkflow

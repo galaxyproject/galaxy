@@ -6029,20 +6029,11 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     @property
     def is_pending_or_paused(self):
-        """
-        Return true if the dataset has not been produced yet, including a paused job the
-        user can still resume.
-        """
+        """Pending, or paused and resumable by the user."""
         return self.is_pending or self.state == self.states.PAUSED
 
     def is_null_expression(self, read_value: Callable[["DatasetInstance"], Any] | None = None) -> bool:
-        """
-        Return true for an ``expression.json`` dataset holding JSON ``null``, which
-        includes skipped outputs. A dataset that is not ok has no value and is not null.
-
-        ``read_value`` parses the contents when the peek does not settle it; by default
-        only their start is compared.
-        """
+        """True for an ok ``expression.json`` dataset holding ``null``, including skipped outputs."""
         if self.extension != "expression.json" or not self.is_ok:
             return False
         if self.blurb == "skipped" or self.peek == "null":
