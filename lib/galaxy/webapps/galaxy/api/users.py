@@ -1014,13 +1014,8 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         # Update email
         if "email" in payload:
             email = payload.get("email")
-            self.user_manager.update_email(
-                trans,
-                user,
-                email,
-                commit=False,
-                send_activation_email=True,  # commit at the end of the handler
-            )
+            # Committed at the end of the handler, or earlier by send_activation_email once the mail is sent.
+            self.user_manager.update_email(trans, user, email, commit=False, send_activation_email=True)
         # Update public name
         if "username" in payload:
             username = payload.get("username")

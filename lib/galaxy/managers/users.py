@@ -933,8 +933,10 @@ class UserDeserializer(base.ModelDeserializer):
         if trans is None:
             raise base.ModelDeserializingError("Email addresses cannot be changed in this context.")
         # update_email keeps the private role in sync and honours user_activation_on.
-        # commit=False because ModelDeserializer.deserialize commits once at the end,
-        # which is also what lets update_email roll back if the activation mail fails.
+        # Without activation the change is committed by ModelDeserializer.deserialize.
+        # With activation, send_activation_email commits once the mail is sent, and a
+        # failed send rolls the session back, which also drops the fields this payload
+        # set before the email.
         self.manager.update_email(trans, item, email, commit=False, send_activation_email=True)
         return email
 
