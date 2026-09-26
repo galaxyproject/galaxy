@@ -30,6 +30,7 @@ import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
+from .keys import Key
 from .selenium_keys import (
     SELENIUM_KEY_TO_PLAYWRIGHT,
     SELENIUM_MODIFIERS,
@@ -2219,6 +2220,78 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         else:
             option_component = option_label_or_component
             option_component.wait_for_and_click()
+
+    # --- Command palette helpers ---
+
+    def platform_modifier_key(self) -> Key:
+        """Return the modifier the client binds shortcuts to on this browser's platform.
+
+        The browser decides this, not the machine running the tests, so the check
+        is the one behind ``eventStore.isMac``.
+        """
+        is_mac = self.execute_script("return navigator.userAgent.toUpperCase().indexOf('MAC') >= 0;")
+        return Key.META if is_mac else Key.CONTROL
+
+    def command_palette_open(self) -> None:
+        """Open the command palette from the masthead search button."""
+        self.components.masthead.search.wait_for_and_click()
+        self.command_palette_wait_for_open()
+
+    def command_palette_toggle_with_shortcut(self) -> None:
+        """Send ctrl/cmd + k, the palette's global shortcut, to whatever has focus."""
+        self.press("k", modifiers=[self.platform_modifier_key()])
+
+    def command_palette_wait_for_open(self) -> None:
+        self.components.command_palette.input.wait_for_visible()
+
+    def command_palette_wait_for_closed(self) -> None:
+        self.components.command_palette._.wait_for_absent_or_hidden()
+
+    def command_palette_type(self, text: str) -> None:
+        """Append to the palette input a character at a time, the way a user types.
+
+        Tokens are parsed as they arrive, so ``h:`` leaves the input empty behind
+        a scope badge and whatever follows is a query inside that scope.
+        """
+        self.components.command_palette.input.wait_for_and_send_keys(text)
+
+    def command_palette_badge_text(self) -> str:
+        """Text of the scope or action badge in front of the input."""
+        return self.components.command_palette.badge.wait_for_text()
+
+    def command_palette_option_titles(self) -> list[str]:
+        """Titles of the rendered result rows, in the order they are shown."""
+        return [element.text for element in self.components.command_palette.option_title.all()]
+
+    def command_palette_section_count(self) -> int:
+        """Number of result sections currently rendered."""
+        return len(self.components.command_palette.sections.all())
+
+    def command_palette_wait_for_option(self, title: str) -> None:
+        """Wait for a result row with this exact title.
+
+        Searches are debounced and most of them reach the API, so this waits
+        longer than a render.
+        """
+        self._wait_on(
+            lambda: title in self.command_palette_option_titles(),
+            f"command palette result titled [{title}]",
+            wait_type=WAIT_TYPES.DATABASE_OPERATION,
+        )
+
+    @retry_during_transitions
+    def command_palette_click_option(self, title: str) -> None:
+        """Run the result row with this title; the click bubbles from the title to the row."""
+        self.command_palette_wait_for_option(title)
+        for element in self.components.command_palette.option_title.all():
+            if element.text == title:
+                element.click()
+                return
+        raise AssertionError(f"No command palette result titled [{title}]")
+
+    def command_palette_click_category(self, category_id: str) -> None:
+        """Narrow the current root query to one category tab of the category row."""
+        self.components.command_palette.category(category=category_id).wait_for_and_click()
 
     # --- Window Manager helpers ---
 

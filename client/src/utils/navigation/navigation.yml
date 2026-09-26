@@ -51,6 +51,7 @@ masthead:
     preferences: '#user .dropdown-menu [data-description="user preferences"]'
     login_masthead_button: '[data-description="login masthead button"]'
     register_masthead_button: '[data-description="register masthead button"]'
+    search: '[data-description="masthead search button"]'
     storage_dashboard_link:
       selector: 'storage dashboard link'
       type: data-description
@@ -60,6 +61,20 @@ masthead:
       selector: '//a[contains(text(), "Signed in as")]'
     window_manager: '#enable-window-manager > .nav-link'
     workflow: '#workflow .nav-link'
+
+command_palette:
+
+  selectors:
+    _: 'dialog.command-palette'
+
+    badge: '[data-description="palette badge"]'
+    category: '[data-description="palette category ${category}"]'
+    input: '[data-description="palette input"]'
+    option: '[data-description="palette option"]'
+    option_title: '[data-description="palette option"] .item-title'
+    section: '[data-description="palette section ${section}"]'
+    # every other palette selector is unique on its own, this one is not
+    sections: 'dialog.command-palette [role="group"]'
 
 preferences:
   selectors:
