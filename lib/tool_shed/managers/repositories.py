@@ -151,11 +151,13 @@ def search(trans: ProvidesUserContext, q: str, page: int = 1, page_size: int = 1
     )
 
     results = repo_search.search(trans, search_term, page, page_size, boosts)
-    results["hostname"] = deprecated_hostname()
+    results["hostname"] = deprecated_hostname(app)
     return results
 
 
-def deprecated_hostname() -> str:
+def deprecated_hostname(app: ToolShedApp) -> str:
+    if tool_shed_url := app.config.tool_shed_url:
+        return tool_shed_url.rstrip("/") + "/"
     return web.url_for("/", qualified=True)
 
 
@@ -224,7 +226,10 @@ def check_updates(app: ToolShedApp, request: UpdatesRequest) -> str | dict[str, 
 
 def guid_to_repository(app: ToolShedApp, tool_id: str) -> Repository:
     # tool_id = remove_protocol_and_user_from_clone_url(tool_id)
-    shed, _, owner, name, rest = tool_id.split("/", 5)
+    parts = tool_id.split("/", 5)
+    if len(parts) < 5:
+        raise RequestParameterInvalidException(f"Malformed tool id '{tool_id}'")
+    _shed, _, owner, name = parts[:4]
     return _get_repository_by_name_and_owner(app.model.context, name, owner)
 
 
@@ -310,7 +315,7 @@ def index_repositories_paginated(
         page=index_request.page,
         page_size=index_request.page_size,
         hits=list(results),
-        hostname=deprecated_hostname(),
+        hostname=deprecated_hostname(app),
     )
 
 
@@ -366,6 +371,7 @@ def get_install_info(trans: ProvidesRepositoriesContext, name, owner, changeset_
             )
             changeset_revision = new_changeset_revision
         if repository_metadata is not None:
+            assert repository_metadata.id is not None
             encoded_repository_metadata_id = app.security.encode_id(repository_metadata.id)
             repository_metadata_dict: RepositoryMetadataInstallInfoDict = cast(
                 RepositoryMetadataInstallInfoDict,

@@ -5,6 +5,7 @@ Copy of fastapi/openapi/utils.py from https://github.com/fastapi/fastapi/pull/13
 from collections.abc import Sequence
 from typing import (
     Any,
+    cast,
 )
 
 from fastapi import routing
@@ -119,4 +120,4 @@ def get_openapi(
         output["tags"] = tags
     if external_docs:
         output["externalDocs"] = external_docs
-    return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)
+    return cast(dict[str, Any], jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True))

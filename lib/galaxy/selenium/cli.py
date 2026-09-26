@@ -6,6 +6,7 @@ GALAXY_URL_DESCRIPTION = "URL of Galaxy instance to target."
 HEADLESS_DESCRIPTION = "Use local selenium headlessly (native in chrome, otherwise this requires pyvirtualdisplay)."
 BACKEND_DESCRIPTION = "Browser automation backend to use (selenium or playwright)."
 
+import argparse
 from typing import Literal
 from urllib.parse import urljoin
 
@@ -19,7 +20,7 @@ from .navigates_galaxy import (
 )
 
 
-def add_selenium_arguments(parser):
+def add_selenium_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """Add common selenium arguments for argparse driver utility."""
 
     parser.add_argument(
@@ -67,7 +68,7 @@ def add_selenium_arguments(parser):
 class DriverWrapper(NavigatesGalaxy):
     """Adapt argparse command-line options to a browser automation driver."""
 
-    def __init__(self, args):
+    def __init__(self, args: argparse.Namespace) -> None:
         browser = args.selenium_browser
         backend_type: Literal["selenium", "playwright"] = args.backend
 

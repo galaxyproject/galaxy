@@ -160,6 +160,7 @@ class GalaxyAppConfigurationAttributes:
     inactivity_box_content: str
     password_expiration_period: timedelta
     enable_account_interface: bool
+    enable_user_addresses: bool
     session_duration: int
     ga_code: str | None
     plausible_server: str | None
@@ -341,6 +342,7 @@ class GalaxyAppConfigurationAttributes:
     flush_per_n_datasets: int
     max_discovered_files: int
     history_local_serial_workflow_scheduling: bool
+    expression_evaluation_isolation_command: str
     enable_oidc: bool
     oidc_config_file: str
     oidc_backends_config_file: str

@@ -154,6 +154,16 @@ class TestCommandFactory(TestCase):
         )
         self._assert_command_is(expected_command)
 
+    def test_containerized_metadata_command(self):
+        self.include_metadata = True
+        self.include_work_dir_outputs = False
+        self.job_wrapper.metadata_line = TEST_METADATA_LINE
+        container = Bunch(containerize_command=lambda command: f"docker run site/metadata:1 {command}")
+        expected_command = self._surround_command(
+            MOCK_COMMAND_LINE, f"; cd '{self.job_dir}'; docker run site/metadata:1 galaxy-set-metadata"
+        )
+        self._assert_command_is(expected_command, metadata_container=container)
+
     def test_empty_metadata(self):
         """
         Test empty metadata as produced by TaskWrapper.

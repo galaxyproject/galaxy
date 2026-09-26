@@ -428,6 +428,10 @@ class ObjectStore(metaclass=abc.ABCMeta):
         return None
 
     @abc.abstractmethod
+    def get_concrete_store_backends(self) -> list[ConcreteObjectStore]:
+        """Return list of concrete objectstore backends."""
+
+    @abc.abstractmethod
     def get_store_usage_percent(self):
         """Return the percentage indicating how full the store is."""
         raise NotImplementedError()
@@ -747,6 +751,9 @@ class BaseObjectStore(ObjectStore):
         # Stores that cannot stream their objects remotely (e.g. disk) get this no-op default.
         return None
 
+    def get_concrete_store_backends(self) -> list[ConcreteObjectStore]:
+        return self._invoke("get_concrete_store_backends")
+
     def get_concrete_store_name(self, obj):
         return self._invoke("get_concrete_store_name", obj)
 
@@ -799,6 +806,13 @@ class BaseObjectStore(ObjectStore):
         return DeviceSourceMap()
 
 
+@dataclass
+class DiskPath:
+    file_path: str | None = None
+    object_store_cache_paths: list[str] | None = None
+    extra_dirs: dict[str, str] | None = None
+
+
 class ConcreteObjectStore(BaseObjectStore):
     """Subclass of ObjectStore for stores that don't delegate (non-nested).
 
@@ -844,6 +858,12 @@ class ConcreteObjectStore(BaseObjectStore):
         # _get_object_url returns a usable URL.
         self.enable_direct_download = asbool(config_dict.get("enable_direct_download", False))
         self.badges = read_badges(config_dict)
+
+    def get_concrete_store_backends(self):
+        return [self]
+
+    def get_disk_paths(self) -> DiskPath:
+        return DiskPath()
 
     def to_dict(self):
         rval = super().to_dict()
@@ -997,6 +1017,9 @@ class DiskObjectStore(ConcreteObjectStore):
         as_dict = super().to_dict()
         as_dict["files_dir"] = self.file_path
         return as_dict
+
+    def get_disk_paths(self) -> DiskPath:
+        return DiskPath(file_path=self.file_path, extra_dirs=self.extra_dirs)
 
     def __get_filename(
         self,
@@ -1366,6 +1389,12 @@ class NestedObjectStore(BaseObjectStore):
     def _get_data_stream(self, obj, **kwargs) -> DataStream | None:
         """For the first backend that has this `obj`, stream it from that backend."""
         return self._call_method("_get_data_stream", obj, None, False, **kwargs)
+
+    def _get_concrete_store_backends(self, **kwargs):
+        backends = []
+        for backend in self.backends.values():
+            backends.extend(backend.get_concrete_store_backends())
+        return backends
 
     def _get_concrete_store_name(self, obj):
         return self._call_method("_get_concrete_store_name", obj, None, False)
@@ -2264,3 +2293,18 @@ def persist_extra_files_for_dataset(
                 create=True,
                 preserve_symlinks=True,
             )
+
+
+def get_disk_paths(objectstore: BaseObjectStore, include_extra_dirs: bool = False) -> set[str]:
+    backends = objectstore.get_concrete_store_backends()
+    paths = set()
+    for backend in backends:
+        disk_path = backend.get_disk_paths()
+        if disk_path.file_path:
+            paths.add(disk_path.file_path)
+        if disk_path.object_store_cache_paths:
+            paths.update(disk_path.object_store_cache_paths)
+        if include_extra_dirs and disk_path.extra_dirs:
+            for extra_dir in disk_path.extra_dirs.values():
+                paths.add(extra_dir)
+    return paths

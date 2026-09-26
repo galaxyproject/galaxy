@@ -376,17 +376,6 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         assert self._genome_builds is not None
         return self._genome_builds
 
-    def wait_for_toolbox_reload(self, old_toolbox):
-        timer = ExecutionTimer()
-        log.debug("Waiting for toolbox reload")
-        while timer.elapsed < INSTALLATION_RELOAD_TIMEOUT:
-            if self.toolbox.has_reloaded(old_toolbox):
-                log.debug("Finished waiting for toolbox reload %s", timer)
-                break
-            time.sleep(0.1)
-        else:
-            log.warning("Waiting for toolbox reload timed out after %s seconds", INSTALLATION_RELOAD_TIMEOUT)
-
     def _configure_tool_config_files(self):
         self.config.tool_configs = self.config.all_tool_config_files()
 
@@ -714,6 +703,17 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
     model: GalaxyModelMapping
 
+    def wait_for_toolbox_reload(self, old_toolbox):
+        timer = ExecutionTimer()
+        log.debug("Waiting for toolbox reload")
+        while timer.elapsed < INSTALLATION_RELOAD_TIMEOUT:
+            if self.toolbox.has_reloaded(old_toolbox):
+                log.debug("Finished waiting for toolbox reload %s", timer)
+                break
+            time.sleep(0.1)
+        else:
+            log.warning("Waiting for toolbox reload timed out after %s seconds", INSTALLATION_RELOAD_TIMEOUT)
+
     def __init__(
         self,
         configure_logging=True,
@@ -857,6 +857,12 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self._register_singleton(tool_shed_registry.Registry, self.tool_shed_registry)
         self._register_celery_galaxy_task_components()
 
+        # Celery manager apps also finish jobs and submit automatic error reports.
+        self._error_reports = self._register_singleton(
+            ErrorReports, ErrorReports(self.config.error_report_file, app=self)
+        )
+        self.tool_cache = self._register_singleton(ToolCache)
+
     def _register_celery_galaxy_task_components(self):
         """
         Register subtype class instances for user rate limiting and concurrency
@@ -921,16 +927,34 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
             self.config.track_jobs_in_database and self.job_config.is_handler
         ) or not self.config.track_jobs_in_database
 
+    @property
+    def error_reports(self) -> ErrorReports:
+        return self._error_reports
+
     def reindex_tool_search(self) -> None:
         # Call this when tools are added or removed. Defined here rather than on
         # MinimalGalaxyApplication so it wins over the MinimalManagerApp
         # interface stub in the MRO, the same way is_job_handler does.
+        # Celery manager apps intentionally have no toolbox or search index.
+        if self.toolbox_or_none is None:
+            return
         self.toolbox_search.build_index(
             tool_cache=self.tool_cache,
             toolbox=self.toolbox,
             index_help=self.config.index_tool_help,
         )
         self.tool_cache.reset_status()
+
+    def ensure_tool_search_index(self) -> None:
+        """Index the toolbox once per toolbox reload."""
+        if self.toolbox_or_none is None:
+            return
+        if self.toolbox_search.build_index_if_stale(
+            tool_cache=self.tool_cache,
+            toolbox=self.toolbox,
+            index_help=self.config.index_tool_help,
+        ):
+            self.tool_cache.reset_status()
 
 
 class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationTarget[tools.ToolBox]):
@@ -996,13 +1020,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # Data providers registry.
         self.data_provider_registry = self._register_singleton(DataProviderRegistry)
 
-        # Initialize error report plugins.
-        self.error_reports = self._register_singleton(
-            ErrorReports, ErrorReports(self.config.error_report_file, app=self)
-        )
-
-        # Setup a Tool Cache
-        self.tool_cache = self._register_singleton(ToolCache)
         self.tool_shed_repository_cache = self._register_singleton(ToolShedRepositoryCache)
         # Watch various config files for immediate reload
         self.watchers = self._register_singleton(ConfigWatchers)
@@ -1122,6 +1139,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             app_type=WEBAPP if self.is_webapp else None,
         )
         self.database_heartbeat.add_change_callback(self.watchers.change_state)
+        self.database_heartbeat.add_change_callback(self._on_config_watcher_change)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
 
         # History audit monitor for SSE-based history updates. The monitor only
@@ -1189,6 +1207,13 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
 
     def _shutdown_watcher(self):
         self.watchers.shutdown()
+
+    def _on_config_watcher_change(self, is_config_watcher: bool) -> None:
+        # The election runs on the heartbeat thread and can land after the
+        # postfork ``rebuild_toolbox_search_index`` task has already skipped
+        # this not-yet-elected process, so the new watcher queues its own.
+        if is_config_watcher:
+            send_local_control_task(self, "rebuild_toolbox_search_index")
 
     def _shutdown_database_heartbeat(self):
         self.database_heartbeat.shutdown()

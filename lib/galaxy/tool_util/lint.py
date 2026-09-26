@@ -52,12 +52,15 @@ from abc import (
 from collections.abc import Callable
 from enum import IntEnum
 from typing import (
+    Generic,
     TYPE_CHECKING,
-    TypeVar,
 )
+
+from typing_extensions import TypeVar
 
 import galaxy.tool_util.linters
 from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util.parser.interface import ToolSource
 from galaxy.tool_util.parser.util import ParseException
 from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.util import (
@@ -67,8 +70,10 @@ from galaxy.util import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.tool_util.parser.interface import ToolSource
     from galaxy.tool_util_models import UserToolSource
+
+# The object classified by a linter.
+LintTargetType = TypeVar("LintTargetType", default=ToolSource)
 
 
 class LintLevel(IntEnum):
@@ -80,15 +85,17 @@ class LintLevel(IntEnum):
     ALL = 0
 
 
-class Linter(ABC):
+class Linter(ABC, Generic[LintTargetType]):
     """
     a linter. needs to define a lint method and the code property.
     optionally a fix method can be given
+
+    Generic over the lint target so non-tool linters can specialize it.
     """
 
     @classmethod
     @abstractmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+    def lint(cls, tool_source: LintTargetType, lint_ctx: "LintContext") -> None:
         """
         should add at most one message to the lint context
         """
@@ -107,6 +114,9 @@ class Linter(ABC):
         list the names of all linter derived from Linter
         """
         submodules.import_submodules(galaxy.tool_util.linters)
+        # Register repository linters without introducing a module-level cycle.
+        from galaxy.tool_util.data.bundles import lint as _repo_lint  # noqa: F401
+
         return [s.__name__ for s in cls.__subclasses__()]
 
     list_listers: Callable[[], list[str]]  # deprecated alias
@@ -182,9 +192,6 @@ class XMLLintMessageXPath(LintMessage):
         if self.xpath is not None:
             rval += f" [{self.xpath}]"
         return rval
-
-
-LintTargetType = TypeVar("LintTargetType")
 
 
 # TODO: Nothing inherently tool-y about LintContext and in fact

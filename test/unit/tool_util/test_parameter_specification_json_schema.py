@@ -24,10 +24,7 @@ import pytest
 import yaml
 from pydantic_extra_types.color import Color as _Color
 
-pytestmark = pytest.mark.skipif(
-    sys.version_info < (3, 9), reason="jsonschema<4.24 on Python 3.8 mishandles additionalProperties in anyOf"
-)
-
+from galaxy.tool_util.parameters.convert import OPENAPI_REF_TEMPLATE
 from galaxy.tool_util.parameters.json import to_json_schema
 from galaxy.tool_util.unittest_utils.parameters import (
     parameter_bundle_for_file,
@@ -39,6 +36,10 @@ from galaxy.tool_util_models.parameters import (
     ToolParameterBundleModel,
 )
 from galaxy.util.resources import resource_string
+
+pytestmark = pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="jsonschema<4.24 on Python 3.8 mishandles additionalProperties in anyOf"
+)
 
 REPRESENTATION_KEYS = [
     "relaxed_request",
@@ -204,3 +205,60 @@ def test_job_internal_no_discriminator():
     defs = schema.get("$defs", {})
     for def_schema in defs.values():
         assert "discriminator" not in def_schema
+
+
+def _resolve_json_pointer(document: dict[str, Any], pointer: str) -> Any:
+    assert pointer.startswith("#/"), f"Expected a local JSON pointer, got {pointer!r}"
+    node: Any = document
+    for token in pointer[2:].split("/"):
+        token = token.replace("~1", "/").replace("~0", "~")
+        node = node[token]
+    return node
+
+
+def _collect_pointers(node: Any, path: str = "#") -> list[tuple[str, str]]:
+    """Return (location, pointer) for every $ref and every discriminator mapping value."""
+    pointers: list[tuple[str, str]] = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            location = f"{path}/{key}"
+            if key == "$ref" and isinstance(value, str):
+                pointers.append((location, value))
+            elif key == "discriminator" and isinstance(value, dict):
+                for tag, target in value.get("mapping", {}).items():
+                    pointers.append((f"{location}/mapping/{tag}", target))
+            else:
+                pointers.extend(_collect_pointers(value, location))
+    elif isinstance(node, list):
+        for index, item in enumerate(node):
+            pointers.extend(_collect_pointers(item, f"{path}/{index}"))
+    return pointers
+
+
+def _assert_pointers_resolve(document: dict[str, Any]) -> None:
+    pointers = _collect_pointers(document)
+    mapping_pointers = [pointer for location, pointer in pointers if "/discriminator/mapping/" in location]
+    assert mapping_pointers, "expected the collection element union to carry a discriminator mapping"
+    dangling = []
+    for location, pointer in pointers:
+        try:
+            _resolve_json_pointer(document, pointer)
+        except (KeyError, IndexError, TypeError, AssertionError):
+            dangling.append(f"{location} -> {pointer}")
+    assert not dangling, "pointers that do not resolve within the document:\n" + "\n".join(dangling)
+
+
+@pytest.mark.parametrize("file", ["gx_data_multiple", "gx_data_collection"])
+def test_request_schema_pointers_resolve(file: str):
+    bundle = parameter_bundle_for_file(file)
+    schema = _json_schema_for(bundle, "request")
+    _assert_pointers_resolve(schema)
+
+
+@pytest.mark.parametrize("file", ["gx_data_multiple", "gx_data_collection"])
+def test_openapi_schema_pointers_resolve(file: str):
+    bundle = parameter_bundle_for_file(file)
+    model = create_field_model(bundle.parameters, name="TestModel", state_representation="request")
+    schema = model.model_json_schema(ref_template=OPENAPI_REF_TEMPLATE)
+    document = {"components": {"schemas": schema.pop("$defs")}, "paths": {"/": schema}}
+    _assert_pointers_resolve(document)

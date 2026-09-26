@@ -33,7 +33,6 @@ from .framework import (
     managed_history,
     retry_assertion_during_transitions,
     RunsWorkflows,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesHistoryItemAssertions,
@@ -55,7 +54,6 @@ steps:
 class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows, UsesUploadActivity):
     ensure_registered = True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_workflow_export_file_rocrate(self):
@@ -81,7 +79,6 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         invocations.export_download_link.wait_for_present()
         self.screenshot("invocation_export_crate_download_ready")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_workflow_export_file_native(self):
@@ -107,7 +104,6 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         invocations.export_download_link.wait_for_present()
         self.screenshot("invocation_export_native_download_ready")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_simple_execution(self):
@@ -272,7 +268,6 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
 
         assert_more_options_loaded()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_expanded_execution_of_simple_workflow(self):
@@ -314,89 +309,90 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         sample_sheet = workflow_run.input.sample_sheet
 
         sample_sheet.grid_cell_input(row_index=0, column_name="Condition").assert_absent()
-        sample_sheet.grid_cell(row_index=0, column_name="Condition").wait_for_and_double_click()
+        condition_cell = sample_sheet.grid_cell(row_index=0, column_name="Condition")
+        condition_cell.wait_for_and_double_click()
         sample_sheet.grid_cell_input(row_index=0, column_name="Condition").wait_for_visible()
-        action_chains = self.action_chains()
+        keys: list[str] = []
 
         def tab_if_element_identifier_mutable():
             if element_identifier_mutable:
-                return action_chains.send_keys(Keys.TAB)
+                keys.append(Keys.TAB)
 
         # 0: row for SRR5680995
-        action_chains.send_keys("input")
-        action_chains.send_keys(Keys.TAB)
+        keys.append("input")
+        keys.append(Keys.TAB)
         # no replicate here...
-        action_chains.send_keys(Keys.TAB)
+        keys.append(Keys.TAB)
         # no control here...
-        action_chains.send_keys(Keys.TAB)
+        keys.append(Keys.TAB)
 
         # 1: row for SRR5680996
         tab_if_element_identifier_mutable()
-        action_chains.send_keys("H3K4me3")
-        action_chains.send_keys(Keys.TAB)
-        action_chains.send_keys("1")
-        action_chains.send_keys(Keys.TAB)
-        # action_chains.send_keys("SRR5680995")
-        action_chains.send_keys(Keys.TAB)
+        keys.append("H3K4me3")
+        keys.append(Keys.TAB)
+        keys.append("1")
+        keys.append(Keys.TAB)
+        # keys.append("SRR5680995")
+        keys.append(Keys.TAB)
 
         # 2: row for SRR5680997
         # identifier correct...
         tab_if_element_identifier_mutable()
-        action_chains.send_keys("H3K27me3")
-        action_chains.send_keys(Keys.TAB)
-        action_chains.send_keys("1")
-        action_chains.send_keys(Keys.TAB)
-        # action_chains.send_keys("SRR5680995")
-        action_chains.send_keys(Keys.TAB)
+        keys.append("H3K27me3")
+        keys.append(Keys.TAB)
+        keys.append("1")
+        keys.append(Keys.TAB)
+        # keys.append("SRR5680995")
+        keys.append(Keys.TAB)
 
         # 3: row for SRR5681007
         # identifier correct...
         tab_if_element_identifier_mutable()
-        action_chains.send_keys("H3K27me3")
-        action_chains.send_keys(Keys.TAB)
-        action_chains.send_keys("2")
-        action_chains.send_keys(Keys.TAB)
-        # action_chains.send_keys("SRR5681005")
-        action_chains.send_keys(Keys.TAB)
+        keys.append("H3K27me3")
+        keys.append(Keys.TAB)
+        keys.append("2")
+        keys.append(Keys.TAB)
+        # keys.append("SRR5681005")
+        keys.append(Keys.TAB)
 
         # 4: row for SRR5681006
         # identifier correct...
         tab_if_element_identifier_mutable()
-        action_chains.send_keys("H3K4me3")
-        action_chains.send_keys(Keys.TAB)
-        action_chains.send_keys("2")
-        action_chains.send_keys(Keys.TAB)
-        # action_chains.send_keys("SRR5681005")
-        action_chains.send_keys(Keys.TAB)
+        keys.append("H3K4me3")
+        keys.append(Keys.TAB)
+        keys.append("2")
+        keys.append(Keys.TAB)
+        # keys.append("SRR5681005")
+        keys.append(Keys.TAB)
 
         # 5: row for SRR5680998
         # identifier correct...
         tab_if_element_identifier_mutable()
-        action_chains.send_keys("CTCF")
-        action_chains.send_keys(Keys.TAB)
-        action_chains.send_keys("1")
-        action_chains.send_keys(Keys.TAB)
-        # action_chains.send_keys("SRR5680995")
-        action_chains.send_keys(Keys.TAB)
+        keys.append("CTCF")
+        keys.append(Keys.TAB)
+        keys.append("1")
+        keys.append(Keys.TAB)
+        # keys.append("SRR5680995")
+        keys.append(Keys.TAB)
 
         # 6: row for SRR5681008
         # identifier correct...
         tab_if_element_identifier_mutable()
-        action_chains.send_keys("CTCF")
-        action_chains.send_keys(Keys.TAB)
-        action_chains.send_keys("2")
-        action_chains.send_keys(Keys.TAB)
-        # action_chains.send_keys("SRR5681005")
-        action_chains.send_keys(Keys.TAB)
+        keys.append("CTCF")
+        keys.append(Keys.TAB)
+        keys.append("2")
+        keys.append(Keys.TAB)
+        # keys.append("SRR5681005")
+        keys.append(Keys.TAB)
 
         # 7: row for SRR5681005
         # identifier correct...
         tab_if_element_identifier_mutable()
-        action_chains.send_keys("input")
-        action_chains.send_keys(Keys.TAB)
+        keys.append("input")
+        keys.append(Keys.TAB)
 
-        action_chains.click()
-        action_chains.perform()
+        self.send_keys_to_page("".join(keys))
+        self.move_to_and_click(condition_cell.wait_for_visible())
 
         controls = {
             1: "SRR5680995",
@@ -412,7 +408,6 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
             sample_sheet.select_picker.wait_for_and_click()
             sample_sheet.select_item(item=control).wait_for_and_click()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_collection_input_sample_sheet_chipseq_example_from_uris(self):
@@ -483,7 +478,6 @@ SRR5681005\tinput\t\t
             contents == expected_contents
         ), f"Expected chipseq sample sheet table:\n{expected_contents}\nGot:\n{contents}"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_collection_input_sample_sheet_chipseq_example_from_list_pairs(self):
@@ -546,7 +540,6 @@ SRR5681005\tinput\t\t
         self.workflow_run_submit()
         self._expect_chipseq_table(history_id, 51)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_runtime_parameters_simple(self):
@@ -561,7 +554,6 @@ SRR5681005\tinput\t\t
 
         self._assert_has_3_lines_after_run(hid=2)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_runtime_parameters_simple_optional(self):
@@ -583,7 +575,6 @@ steps:
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=1)
         assert json.loads(content) == 3
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_subworkflows_expanded(self):
@@ -596,7 +587,6 @@ steps:
         self.components.workflow_run.subworkflow_step_icon.wait_for_and_click()
         self.screenshot("workflow_run_nested_open")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_subworkflow_runtime_parameters(self):
@@ -613,7 +603,6 @@ steps:
 
         self._assert_has_3_lines_after_run(hid=2)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_replacement_parameters(self):
@@ -631,7 +620,6 @@ steps:
         details = self.dataset_populator.get_history_dataset_details(history_id, hid=output_hid)
         assert details["name"] == "moocow suffix", details
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_step_parameter_inputs(self):
@@ -666,7 +654,6 @@ steps:
         assert "12345" in content, content
         assert "chr6_hla_hap2" in content
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_replacement_parameters_on_subworkflows(self):
@@ -684,7 +671,6 @@ steps:
         details = self.dataset_populator.get_history_dataset_details(history_id, hid=output_hid)
         assert details["name"] == "moocow suffix", details
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_execution_with_tool_upgrade(self):
         name = self.workflow_upload_yaml_with_random_name(WORKFLOW_WITH_OLD_TOOL_VERSION, exact_tools=True)
@@ -694,7 +680,6 @@ steps:
         self.assert_message(self.components.workflow_run.warning, contains="tools which have changed")
         self.screenshot("workflow_run_tool_upgrade")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_form_safe_upgrade_handling(self):
         workflow_with_rules = yaml.safe_load(WORKFLOW_WITH_RULES_1)
@@ -727,7 +712,6 @@ steps:
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
         assert "10.0\n30.0\n20.0\n40.0\n" == content
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_execution_with_text_default_value_connected_to_restricted_select(self):
@@ -860,7 +844,6 @@ steps: {}
         invocation = self.workflow_populator.get_invocation(invocations[-1]["id"])
         assert invocation["inputs"]["0"]["id"] == dataset["id"]
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_workflow_run_list_paired_or_unpaired_with_paired_list(self):
@@ -876,7 +859,6 @@ steps: {}
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=4)
         assert content.strip() == "forward content\nreverse content"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_workflow_run_list_paired_or_unpaired_with_flat_list(self):
@@ -893,7 +875,6 @@ steps: {}
         # The elements are reversed to match the history panel display order (newest HID first)
         assert content.strip() == "reverse content\nforward content"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_workflow_run_list_paired_or_unpaired_with_mixed_list(self):
@@ -914,7 +895,6 @@ steps: {}
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=8)
         assert content.strip() == "forward content\nreverse content\nunpaired content"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_upload_dataset_from_workflow_simple(self):
@@ -929,7 +909,6 @@ steps: {}
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=2)
         assert content.strip() == "hello world\nhello world"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_inline_upload_updates_form(self):
@@ -960,7 +939,6 @@ steps: {}
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=6)
         assert content.strip() == "hello world"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_upload_list_from_workflow_simple(self):
@@ -975,7 +953,6 @@ steps: {}
         self.workflow_run_submit()
         self.history_panel_wait_for_hid_ok(6)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_upload_list_paired_from_workflow(self):
@@ -993,7 +970,6 @@ steps: {}
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
         assert content.strip() == "hello world\nhello world"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_upload_list_paired_or_unpaired_from_workflow(self):

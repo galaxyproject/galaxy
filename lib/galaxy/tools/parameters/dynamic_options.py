@@ -895,16 +895,19 @@ class DynamicOptions:
 
     @staticmethod
     def hda_to_table_entries(hda, table_name):
-        # No processor description at hand here, so path columns fall back to the naming convention.
+        extra_files_path = hda.extra_files_path
         path_headers = get_path_headers(None, table_name)
-        table_entries = {}
         entries = hda._metadata["data_tables"][table_name]
+        table_entries = {}
         if isinstance(entries, dict):
             # Some data managers record a single entry as a bare dict rather than
             # a one-element list (e.g. motus); iterating that dict would yield its
             # column names. Normalize so both shapes are consumable.
             entries = [entries]
-        for value in entries:
+        for entry in entries:
+            # Resolved paths and the HDA reference belong only to this read, never
+            # to metadata that can be persisted or reused at another location.
+            value = entry.copy()
             # Key entries by dbkey when the table has one; otherwise fall back to
             # the ``value`` column so tables without a dbkey column (e.g. motus,
             # dada2_species) are still consumable from a data-manager bundle.
@@ -913,7 +916,7 @@ class DynamicOptions:
             for header in path_headers:
                 if path := value.get(header):
                     # maybe a hack, should probably pass around dataset or src id combinations ?
-                    value[header] = os.path.join(hda.extra_files_path, path)
+                    value[header] = os.path.join(extra_files_path, path)
                     value["__hda__"] = hda
         return table_entries
 

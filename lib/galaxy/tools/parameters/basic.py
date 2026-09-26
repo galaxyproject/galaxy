@@ -86,6 +86,7 @@ from galaxy.util import (
 from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.hash_util import HASH_NAMES
+from galaxy.util.json import safe_dumps
 from galaxy.util.rules_dsl import RuleSet
 from . import (
     dynamic_options,
@@ -178,7 +179,13 @@ def assert_throws_param_value_error(message):
 
 
 class ParameterValueError(ValueError):
-    def __init__(self, message_suffix, parameter_name, parameter_value=NO_PARAMETER_VALUE, is_dynamic=None):
+    def __init__(
+        self,
+        message_suffix: str,
+        parameter_name: str,
+        parameter_value: Any = NO_PARAMETER_VALUE,
+        is_dynamic: bool | None = None,
+    ) -> None:
         message = f"Parameter '{parameter_name}': {message_suffix}"
         super().__init__(message)
         self.message_suffix = message_suffix
@@ -186,12 +193,17 @@ class ParameterValueError(ValueError):
         self.parameter_value = parameter_value
         self.is_dynamic = is_dynamic
 
-    def to_dict(self):
-        as_dict = {"message": unicodify(self)}
+    def to_dict(self) -> dict[str, Any]:
+        as_dict: dict[str, Any] = {"message": unicodify(self)}
         as_dict["message_suffix"] = self.message_suffix
         as_dict["parameter_name"] = self.parameter_name
         if self.parameter_value is not NO_PARAMETER_VALUE:
-            as_dict["parameter_value"] = self.parameter_value
+            try:
+                safe_dumps(self.parameter_value)
+            except (TypeError, ValueError):
+                pass
+            else:
+                as_dict["parameter_value"] = self.parameter_value
         if self.is_dynamic is not None:
             as_dict["is_dynamic"] = self.is_dynamic
         return as_dict

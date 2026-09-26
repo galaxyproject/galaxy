@@ -18,6 +18,7 @@ from queue import (
 from typing import (
     Any,
     Generic,
+    Literal,
     TYPE_CHECKING,
     TypeVar,
     Union,
@@ -42,11 +43,18 @@ from galaxy.jobs.runners.util.job_script import (
     write_script,
 )
 from galaxy.model.base import check_database_connection
+from galaxy.objectstore import get_disk_paths
 from galaxy.tool_util.deps.dependencies import (
     JobInfo,
     ToolInfo,
 )
-from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
+from galaxy.tool_util.deps.requirements import ContainerDescription
+from galaxy.tool_util.output_checker import (
+    DETECTED_JOB_STATE,
+    StdioReadErrorJobMessage,
+)
+from galaxy.tool_util.parser.stdio import StdioErrorLevel
+from galaxy.tools.expressions import ExpressionTemplateError
 from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.util import (
     asbool,
@@ -60,6 +68,10 @@ from galaxy.util import (
 )
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
+from galaxy.version import (
+    VERSION,
+    VERSION_MAJOR,
+)
 from .state_handler_factory import build_state_handlers
 
 if TYPE_CHECKING:
@@ -68,7 +80,7 @@ if TYPE_CHECKING:
         JobWrapper,
         MinimalJobWrapper,
     )
-    from galaxy.schema.schema import JobState as JobStateEnum
+    from galaxy.schema.states import JobState as JobStateEnum
 
 log = get_logger(__name__)
 
@@ -100,6 +112,9 @@ class BaseJobRunner:
     runner_name = "BaseJobRunner"
 
     start_methods = ["_init_monitor_thread", "_init_worker_threads"]
+    #: Whether ``recover()`` knows how to resume a job left in the FINISHING state by an
+    #: interrupted ``_handle_metadata_externally``.
+    recovers_finishing_jobs = False
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs) -> None:
@@ -200,7 +215,7 @@ class BaseJobRunner:
                 self.app.model.session().add(job)
 
     # Causes a runner's `queue_job` method to be called from a worker thread
-    def put(self, job_wrapper: "MinimalJobWrapper") -> None:
+    def put(self, job_wrapper: "MinimalJobWrapper") -> bool:
         """Add a job to the queue (by job identifier), indicate that the job is ready to run."""
         put_timer = ExecutionTimer()
         try:
@@ -212,10 +227,12 @@ class BaseJobRunner:
             message = e.client_message if hasattr(e, "client_message") else str(e)
             job_wrapper.fail(message, exception=e)
             log.debug(f"Job [{job_wrapper.job_id}] failed to queue {put_timer}")
-            return
+            return False
         if queue_job:
             self.mark_as_queued(job_wrapper)
             log.debug(f"Job [{job_wrapper.job_id}] queued {put_timer}")
+            return True
+        return False
 
     def mark_as_queued(self, job_wrapper: "MinimalJobWrapper"):
         self.work_queue.put((self.queue_job, job_wrapper))
@@ -308,8 +325,8 @@ class BaseJobRunner:
                 modify_command_for_container=modify_command_for_container,
                 stream_stdout_stderr=stream_stdout_stderr,
             )
-        except ParameterValueError as e:
-            log.info("(%s) parameter validation error preparing job: %s", job_id, unicodify(e))
+        except (ParameterValueError, ExpressionTemplateError) as e:
+            log.info("(%s) validation error preparing job: %s", job_id, unicodify(e))
             job_wrapper.fail(unicodify(e), exception=False)
             return False
         except Exception as e:
@@ -344,6 +361,7 @@ class BaseJobRunner:
         container = self._find_container(job_wrapper)
         if not container and job_wrapper.requires_containerization:
             raise Exception("Failed to find a container when required, contact Galaxy admin.")
+        metadata_container = self._get_metadata_container(job_wrapper)
         return build_command(
             self,
             job_wrapper,
@@ -352,6 +370,7 @@ class BaseJobRunner:
             modify_command_for_container=modify_command_for_container,
             container=container,
             stream_stdout_stderr=stream_stdout_stderr,
+            metadata_container=metadata_container,
         )
 
     def get_work_dir_outputs(
@@ -467,9 +486,12 @@ class BaseJobRunner:
                 self._verify_celery_config()
                 from galaxy.celery.tasks import set_job_metadata
 
+                if self.recovers_finishing_jobs:
+                    job_wrapper.change_state(model.Job.states.FINISHING, update_output_states=False)
                 # We're synchronously waiting for a task here. This means we have to have a result backend.
                 # That is bad practice and also means this can never become part of another task.
                 try:
+                    log.debug("Dispatching external metadata execution to celery for job: %d", job_wrapper.job_id)
                     set_job_metadata.delay(
                         tool_job_working_directory=job_wrapper.working_directory,
                         job_id=job_wrapper.job_id,
@@ -500,7 +522,7 @@ class BaseJobRunner:
                     shell=True,
                     cwd=job_wrapper.working_directory,
                     env=os.environ,
-                    preexec_fn=os.setpgrp,
+                    start_new_session=True,
                 )
             log.debug("execution of external set_meta for job %d finished", job_wrapper.job_id)
 
@@ -547,7 +569,7 @@ class BaseJobRunner:
         compute_job_directory: str | None = None,
         compute_tmp_directory: str | None = None,
     ):
-        job_directory_type = "galaxy" if compute_working_directory is None else "pulsar"
+        job_directory_type: Literal["galaxy", "pulsar"] = "galaxy" if compute_working_directory is None else "pulsar"
         if not compute_working_directory:
             compute_working_directory = job_wrapper.tool_working_directory
 
@@ -580,6 +602,7 @@ class BaseJobRunner:
             tmp_directory=compute_tmp_directory,
             home_directory=job_wrapper.home_directory(),
             job_directory_type=job_directory_type,
+            output_paths=get_disk_paths(self.app.object_store) if job_directory_type == "galaxy" else set(),
         )
 
         destination_info = job_wrapper.job_destination.params
@@ -587,6 +610,48 @@ class BaseJobRunner:
         if container:
             job_wrapper.set_container(container)
         return container
+
+    def _get_metadata_container(
+        self,
+        job_wrapper,
+        job_directory_type: Literal["galaxy", "pulsar"] = "galaxy",
+        working_directory: str | None = None,
+    ):
+        destination_info = job_wrapper.job_destination.params
+        if destination_info.get("metadata_config", {}).get("containerize"):
+            image = destination_info["metadata_config"].get(
+                "image", f"quay.io/galaxyproject/galaxy-job-execution:{VERSION}"
+            )
+            container_type = destination_info["metadata_config"].get("engine", "docker")
+            tool_info = ToolInfo(
+                [ContainerDescription(image, type=container_type)],
+                [],
+                False,
+                [],
+                guest_ports=None,
+                tool_id="__SET_METADATA__",
+                tool_version=VERSION,
+                profile=float(VERSION_MAJOR),
+            )
+            job_info = JobInfo(
+                working_directory=working_directory or job_wrapper.working_directory,
+                tool_directory=None,
+                job_directory=working_directory or job_wrapper.working_directory,
+                tmp_directory=None,
+                home_directory=None,
+                job_directory_type=job_directory_type,
+                job_type="epilog",
+                output_paths=get_disk_paths(self.app.object_store) if job_directory_type == "galaxy" else set(),
+            )
+
+            container = self.app.container_finder.find_container(tool_info, destination_info, job_info)
+            if container is None:
+                raise ConfigurationError(
+                    f"Cannot resolve metadata container {image!r} using {container_type!r}. "
+                    "Check that the container engine is enabled and the destination's container resolvers "
+                    "can resolve the metadata image. Disable metadata_config.containerize to use host metadata."
+                )
+            return container
 
     def _handle_runner_state(self, runner_state, job_state: "JobState"):
         try:
@@ -648,25 +713,35 @@ class BaseJobRunner:
             if not os.path.exists(outputs_directory):
                 outputs_directory = job_wrapper.working_directory
 
-            tool_stdout_path = os.path.join(outputs_directory, "tool_stdout")
-            tool_stderr_path = os.path.join(outputs_directory, "tool_stderr")
-            try:
-                with open(tool_stdout_path, "rb") as stdout_file:
-                    tool_stdout = self._job_io_for_db(stdout_file)
-                with open(tool_stderr_path, "rb") as stderr_file:
-                    tool_stderr = self._job_io_for_db(stderr_file)
-            except FileNotFoundError:
-                if job.state in (model.Job.states.DELETING, model.Job.states.DELETED):
-                    # We killed the job, so we may not even have the tool stdout / tool stderr
-                    tool_stdout = ""
-                    tool_stderr = "Job cancelled"
-                else:
-                    # Should we instead just move on ?
-                    # In the end the only consequence here is that we won't be able to determine
-                    # if the job failed for known tool reasons (check_tool_output).
-                    # OTOH I don't know if this can even be reached
-                    # Deal with it if we ever get reports about this.
-                    raise
+            tool_streams = {"stdout": "", "stderr": ""}
+            stdio_errors: list[StdioReadErrorJobMessage] = []
+            cancelled = False
+            for stream in tool_streams:
+                path = os.path.join(outputs_directory, f"tool_{stream}")
+                try:
+                    with open(path, "rb") as stream_file:
+                        tool_streams[stream] = self._job_io_for_db(stream_file)
+                except OSError as exc:
+                    if isinstance(exc, FileNotFoundError) and job.state in (
+                        model.Job.states.DELETING,
+                        model.Job.states.DELETED,
+                    ):
+                        # Cancellation can prevent the tool streams from being created.
+                        cancelled = True
+                        continue
+                    desc = f"Job failed because the tool {stream} file could not be read: {exc.strerror or type(exc).__name__}"
+                    stdio_errors.append(
+                        StdioReadErrorJobMessage(
+                            type="stdio_read_error",
+                            stream=stream,
+                            errno=exc.errno,
+                            desc=desc,
+                            error_level=StdioErrorLevel.FATAL,
+                        )
+                    )
+                    log.warning("(%s/%s) %s (%s)", job_id, external_job_id, desc, path)
+            tool_stdout = tool_streams["stdout"]
+            tool_stderr = tool_streams["stderr"] or ("Job cancelled" if cancelled else "")
 
             check_output_detected_state = job_wrapper.check_tool_output(
                 tool_stdout,
@@ -676,6 +751,11 @@ class BaseJobRunner:
                 job_stdout=job_stdout,
                 job_stderr=job_stderr,
             )
+            if stdio_errors:
+                # check_tool_output replaces job_messages, so append collection errors afterwards.
+                job.job_messages = [*(job.job_messages or []), *stdio_errors]
+                if check_output_detected_state == DETECTED_JOB_STATE.OK:
+                    check_output_detected_state = DETECTED_JOB_STATE.GENERIC_ERROR
             job_ok = check_output_detected_state == DETECTED_JOB_STATE.OK
 
             # clean up the job files
@@ -696,6 +776,19 @@ class BaseJobRunner:
                 # Was resubmitted or something - I think we are done with it.
                 if job_state.runner_state_handled:
                     return
+
+            if stdio_errors:
+                # Finishing may require metadata that was never produced. Fail with the
+                # collected diagnostics before another collection error can obscure them.
+                job_wrapper.fail(
+                    "\n".join(error["desc"] for error in stdio_errors if error["desc"]),
+                    tool_stdout=tool_stdout,
+                    tool_stderr=tool_stderr,
+                    exit_code=exit_code,
+                    job_stdout=job_stdout,
+                    job_stderr=job_stderr,
+                )
+                return
 
             job_wrapper.finish(
                 tool_stdout,
@@ -862,6 +955,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors, Generic[T]):
 
     monitor_queue: Queue[T]
     watched: list[T]
+    always_handle_metadata_externally = False
 
     def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs) -> None:
         super().__init__(app, nworkers, **kwargs)
@@ -970,9 +1064,19 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors, Generic[T]):
         return collect_output_success, stdout, stderr
 
     def finish_job(self, job_state: T) -> None:
+        """Handle external metadata (if needed), then call _finish_job."""
+        external_metadata = self.always_handle_metadata_externally or not asbool(
+            job_state.job_wrapper.job_destination.params.get("embed_metadata_in_job", True)
+        )
+        if external_metadata:
+            self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
+        self._finish_job(job_state)
+
+    def _finish_job(self, job_state: T) -> None:
         """
         Get the output/error for a finished job, pass to `job_wrapper.finish`
         and cleanup all the job's temporary files.
+        Subclasses override this for post-metadata work.
         """
         galaxy_id_tag = job_state.job_wrapper.get_id_tag()
         external_job_id = job_state.job_id

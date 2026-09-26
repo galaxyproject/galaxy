@@ -20,7 +20,10 @@ import shutil
 import tempfile
 from datetime import datetime
 from re import Match
-from typing import Any
+from typing import (
+    Any,
+    Literal,
+)
 
 import markdown
 
@@ -48,6 +51,7 @@ from galaxy.managers.jobs import (
 from galaxy.managers.licenses import LicensesManager
 from galaxy.model import (
     ImplicitCollectionJobs,
+    IoDicts,
     Job,
 )
 from galaxy.model.item_attrs import get_item_annotation_str
@@ -1259,6 +1263,24 @@ def resolve_invocation_markdown(trans: ProvidesUserContext, workflow_markdown):
     return workflow_markdown
 
 
+def _resolve_job_reference(io_dicts: IoDicts, kind: Literal["output", "input"], name: str):
+    """Resolve an output= or input= label against the datasets a job actually consumed or produced."""
+    if kind == "output":
+        if name in io_dicts.out_data:
+            return io_dicts.out_data[name]
+        if name in io_dicts.out_collections:
+            return io_dicts.out_collections[name]
+        valid_names = sorted({*io_dicts.out_data, *io_dicts.out_collections})
+    else:
+        if name in io_dicts.inp_data:
+            return io_dicts.inp_data[name]
+        valid_names = sorted(io_dicts.inp_data)
+    raise MalformedContents(
+        f"Failed to find job {kind} named [{name}] referenced by this Galaxy Markdown, "
+        f"valid {kind} names are {valid_names}."
+    )
+
+
 def resolve_job_markdown(trans: ProvidesHistoryContext, job, job_markdown):
     """Resolve job objects to convert tool markdown to 'internal' representation.
 
@@ -1293,17 +1315,10 @@ def resolve_job_markdown(trans: ProvidesHistoryContext, job, job_markdown):
         ref_object: Any | None
         if output_match := re.search(OUTPUT_LABEL_PATTERN, line):
             target_match = output_match
-            name = find_non_empty_group(target_match)
-            if name in io_dicts.out_data:
-                ref_object = io_dicts.out_data[name]
-            elif name in io_dicts.out_collections:
-                ref_object = io_dicts.out_collections[name]
-            else:
-                raise Exception("Unknown exception")
+            ref_object = _resolve_job_reference(io_dicts, "output", find_non_empty_group(target_match))
         elif input_match := re.search(INPUT_LABEL_PATTERN, line):
             target_match = input_match
-            name = find_non_empty_group(target_match)
-            ref_object = io_dicts.inp_data[name]
+            ref_object = _resolve_job_reference(io_dicts, "input", find_non_empty_group(target_match))
         else:
             target_match = None
             ref_object = None

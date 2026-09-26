@@ -36,7 +36,6 @@ from galaxy.webapps.galaxy.api import (
     GalaxyASGIRequest,
     GalaxyASGIResponse,
     T,
-    UrlBuilder,
 )
 from tool_shed.context import (
     SessionRequestContext,
@@ -127,7 +126,6 @@ def get_trans(
     user=cast(User | None, Depends(get_user)),
     galaxy_session=cast(GalaxySession | None, Depends(get_session)),
 ) -> SessionRequestContext:
-    url_builder = UrlBuilder(request)
     galaxy_request = GalaxyASGIRequest(request)
     galaxy_response = GalaxyASGIResponse(response)
     return SessionRequestContextImpl(
@@ -136,7 +134,6 @@ def get_trans(
         galaxy_response,
         user=user,
         galaxy_session=galaxy_session,
-        url_builder=url_builder,
     )
 
 
@@ -377,7 +374,7 @@ def set_auth_cookie(trans: SessionRequestContext, session):
     set_cookie(trans, trans.app.security.encode_guid(session.session_key), cookie_name)
 
 
-def set_cookie(trans: SessionRequestContext, value: str, key, path="/", age=90) -> None:
+def set_cookie(trans: SessionRequestContext, value: str | bytes, key, path="/", age=90) -> None:
     """Convenience method for setting a session cookie"""
     # In wsgi we were setting both a max_age and and expires, but
     # all browsers support max_age now.

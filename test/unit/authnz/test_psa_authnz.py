@@ -16,6 +16,7 @@ from unittest.mock import (
     MagicMock,
     patch,
 )
+from urllib import parse
 
 import jwt
 import pytest
@@ -54,9 +55,11 @@ from galaxy.authnz.psa_authnz import (
     Strategy,
     sync_user_profile,
 )
+from galaxy.config import GalaxyAppConfiguration
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesAppContext
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 
 @pytest.fixture(scope="module")
@@ -335,7 +338,7 @@ def test_oidc_config_custom_auth_pipeline(mock_oidc_config_file, mock_oidc_backe
         provider="oidc",
         oidc_config=manager.oidc_config,
         oidc_backend_config=manager.oidc_backends_config,
-        app_config=mock_app.config,
+        app_config=cast(GalaxyAppConfiguration, mock_app.config),
     )
     assert psa_authnz.config["SOCIAL_AUTH_PIPELINE"] == custom_auth_pipeline
 
@@ -382,7 +385,7 @@ def test_oidc_config_auth_pipeline_extra(mock_oidc_config_file, mock_oidc_backen
         provider="oidc",
         oidc_config=manager.oidc_config,
         oidc_backend_config=manager.oidc_backends_config,
-        app_config=mock_app.config,
+        app_config=cast(GalaxyAppConfiguration, mock_app.config),
     )
     assert psa_authnz.config["SOCIAL_AUTH_PIPELINE"] == AUTH_PIPELINE + tuple(custom_auth_pipeline_extra)
 
@@ -408,9 +411,55 @@ def test_oidc_config_custom_auth_pipeline_and_extra(mock_oidc_config_file, mock_
         provider="oidc",
         oidc_config=manager.oidc_config,
         oidc_backend_config=manager.oidc_backends_config,
-        app_config=mock_app.config,
+        app_config=cast(GalaxyAppConfiguration, mock_app.config),
     )
     assert psa_authnz.config["SOCIAL_AUTH_PIPELINE"] == custom_auth_pipeline + tuple(custom_auth_pipeline_extra)
+
+
+def test_logout_uses_id_token_hint_and_post_logout_redirect_uri():
+    app_config = SimpleNamespace(
+        oidc_auth_pipeline=None,
+        oidc_auth_pipeline_extra=None,
+        fixed_delegated_auth=False,
+    )
+    psa_authnz = PSAAuthnz(
+        provider="keycloak",
+        oidc_config={},
+        oidc_backend_config={
+            "client_id": "gxyclient",
+            "client_secret": "dummyclientsecret",
+            "redirect_uri": "http://localhost/authnz/keycloak/callback",
+        },
+        app_config=cast(GalaxyAppConfiguration, app_config),
+    )
+    backend = MagicMock()
+    backend.oidc_config.return_value = {"end_session_endpoint": "https://keycloak.example.com/logout"}
+    trans = SimpleNamespace(
+        request=SimpleNamespace(host="http://localhost"),
+        session={},
+        sa_session=MagicMock(),
+        user=SimpleNamespace(
+            social_auth=[SimpleNamespace(provider="keycloak", extra_data={"id_token": "header.payload.signature"})]
+        ),
+    )
+
+    with (
+        patch("galaxy.authnz.psa_authnz.on_the_fly_config"),
+        patch.object(PSAAuthnz, "_load_backend", return_value=backend),
+        patch("galaxy.authnz.psa_authnz.is_oidc_backend", return_value=True),
+    ):
+        logout_url = psa_authnz.logout(
+            cast("GalaxyWebTransaction", trans), post_user_logout_href="http://galaxy.example.com/root/login"
+        )
+
+    parsed_url = parse.urlparse(logout_url)
+    query_params = parse.parse_qs(parsed_url.query)
+    assert parsed_url.scheme == "https"
+    assert parsed_url.netloc == "keycloak.example.com"
+    assert parsed_url.path == "/logout"
+    assert query_params["id_token_hint"] == ["header.payload.signature"]
+    assert query_params["post_logout_redirect_uri"] == ["http://galaxy.example.com/root/login"]
+    assert "redirect_uri" not in query_params
 
 
 def make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file):

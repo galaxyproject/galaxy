@@ -47,6 +47,14 @@ from galaxy.schema.fields import (
     literal_to_value,
     ModelClassField,
 )
+from galaxy.schema.states import (
+    DatasetCollectionPopulatedState,
+    DatasetSourceTransformActionType,
+    DatasetState,
+    DatasetValidatedState,
+    JobState,
+    ToolRequestState,
+)
 from galaxy.schema.tours import TourDetails
 from galaxy.schema.types import (
     OffsetNaiveDatetime,
@@ -61,6 +69,8 @@ from galaxy.tool_util_models.tool_source import FieldDict
 from galaxy.util.config_templates import partial_model
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
+
+MAX_ANNOTATION_SIZE = 65536  # Unicode characters, not UTF-8 bytes.
 
 USER_MODEL_CLASS = Literal["User"]
 GROUP_MODEL_CLASS = Literal["Group"]
@@ -82,31 +92,6 @@ OptionalNumberT = int | float | None
 TAG_ITEM_PATTERN = r"^([^\s.:])+(\.[^\s.:]+)*(:\S+)?$"
 
 
-class DatasetState(str, Enum):
-    NEW = "new"
-    UPLOAD = "upload"
-    QUEUED = "queued"
-    RUNNING = "running"
-    OK = "ok"
-    EMPTY = "empty"
-    ERROR = "error"
-    PAUSED = "paused"
-    SETTING_METADATA = "setting_metadata"
-    FAILED_METADATA = "failed_metadata"
-    # Non-deleted, non-purged datasets that don't have physical files.
-    # These shouldn't have objectstores attached -
-    # 'deferred' can be materialized for jobs using
-    # attached DatasetSource objects but 'discarded'
-    # cannot (e.g. imported histories). These should still
-    # be able to have history contents associated (normal HDAs?)
-    DEFERRED = "deferred"
-    DISCARDED = "discarded"
-
-    @classmethod
-    def values(self):
-        return self.__members__.values()
-
-
 # Create dictionary for ElementsStatesDict using class syntax
 class ElementsStatesDict(TypedDict, total=False):
     # Add fields for each DatasetState value
@@ -122,41 +107,6 @@ class ElementsStatesDict(TypedDict, total=False):
     failed_metadata: NotRequired[int]
     deferred: NotRequired[int]
     discarded: NotRequired[int]
-
-
-class JobState(str, Enum):
-    NEW = "new"
-    RESUBMITTED = "resubmitted"
-    UPLOAD = "upload"
-    WAITING = "waiting"
-    QUEUED = "queued"
-    RUNNING = "running"
-    OK = "ok"
-    ERROR = "error"
-    FAILED = "failed"
-    PAUSED = "paused"
-    DELETING = "deleting"
-    DELETED = "deleted"
-    STOPPING = "stop"
-    STOPPED = "stopped"
-    SKIPPED = "skipped"
-
-
-class DatasetCollectionPopulatedState(str, Enum):
-    NEW = "new"  # New dataset collection, unpopulated elements
-    OK = "ok"  # Collection elements populated (HDAs may or may not have errors)
-    FAILED = "failed"  # some problem populating state, won't be populated
-
-
-# we use TypedDicts in the model layer and I don't know how to type with that enum
-# in the dict - it doesn't have the enum value magic that pydantic has.
-DatasetSourceTransformActionTypeLiteral = Literal["to_posix_lines", "spaces_to_tabs", "datatype_groom"]
-
-
-class DatasetSourceTransformActionType(str, Enum):
-    TO_POSIX_LINES = "to_posix_lines"
-    SPACES_TO_TABLES = "spaces_to_tabs"
-    DATATYPE_GROOM = "datatype_groom"
 
 
 # Generic and common Field annotations that can be reused across models
@@ -303,6 +253,14 @@ UserId = Annotated[EncodedDatabaseIdField, Field(title="ID", description="Encode
 UserEmailField = Field(title="Email", description="Email of the user")
 UserDescriptionField = Field(title="Description", description="Description of the user")
 UserNameField = Field(default=..., title="user_name", description="The name of the user.")
+UserDisplayNameField = Field(
+    default=None,
+    title="Display name",
+    description=(
+        "Free-form name shown in place of the username. Not unique, and never used in URLs, slugs or as an identifier."
+    ),
+    max_length=255,
+)
 QuotaPercentField = Field(
     default=None, title="Quota percent", description="Percentage of the storage quota applicable to the user."
 )
@@ -397,6 +355,7 @@ class AnonUserModel(DiskUsageUserModel):
 
 
 class DetailedUserModel(BaseUserModel, AnonUserModel):
+    display_name: str | None = UserDisplayNameField
     is_admin: bool = Field(default=..., title="Is admin", description="User is admin")
     purged: bool = Field(default=..., title="Purged", description="User is purged")
     preferences: dict[Any, Any] = Field(default=..., title="Preferences", description="Preferences of the user")
@@ -408,9 +367,54 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
 
 
 class UserUpdatePayload(Model):
-    active: Annotated[bool | None, Field(title="Active", description="User is active")] = None
+    active: Annotated[
+        bool | None,
+        Field(title="Active", description="Whether the account is active. Only an administrator can change this."),
+    ] = None
     username: Annotated[str | None, Field(title="Username", description="The name of the user.")] = None
+    display_name: Annotated[str | None, UserDisplayNameField] = None
     preferred_object_store_id: Annotated[str | None, PreferredObjectStoreIdField]
+    # Declared last so that a payload combining it with `active` ends on the
+    # deactivation, not on a stale activation. UserDeserializer only lets an
+    # administrator set `active`, so this ordering is belt and braces.
+    email: Annotated[
+        str | None,
+        Field(
+            title="Email",
+            description=(
+                "New email address. When `user_activation_on` is set, changing the email deactivates the account "
+                "and sends an activation link to the new address."
+            ),
+        ),
+    ] = None
+
+
+class UserExtraPreferencesInputs(Model):
+    """Form-builder inputs for the admin-defined extra user preferences.
+
+    The sections come from ``user_preferences_extra_conf.yml``, so their shape is
+    whatever an administrator wrote. Modelling it any further would be fiction.
+    """
+
+    inputs: list[dict[str, Any]] = Field(
+        default_factory=list,
+        title="Inputs",
+        description="One form-builder section per configured group of extra preferences.",
+    )
+
+
+class UserExtraPreferencesPayload(RootModel):
+    """Flat map of ``<section>|<input>`` to value, as produced by the generic form."""
+
+    root: dict[str, Any] = {}
+
+
+class UserExtraPreferencesUpdated(Model):
+    message: str = Field(
+        default=...,
+        title="Message",
+        description="Human readable confirmation that the preferences were saved.",
+    )
 
 
 class UserCreationPayload(Model):
@@ -551,7 +555,7 @@ class GroupModel(Model, WithModelClass):
     """User group model"""
 
     model_class: GROUP_MODEL_CLASS = ModelClassField(GROUP_MODEL_CLASS)
-    id: DecodedDatabaseIdField = Field(
+    id: EncodedDatabaseIdField = Field(
         ...,  # ...
         title="ID",
         description="Encoded group ID",
@@ -795,12 +799,6 @@ HdaLddaField = Field(
     title="HDA or LDDA",
     description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
 )
-
-
-class DatasetValidatedState(str, Enum):
-    UNKNOWN = "unknown"
-    INVALID = "invalid"
-    OK = "ok"
 
 
 class DatasetHash(Model):
@@ -1423,6 +1421,7 @@ class UpdateHistoryContentsPayload(Model):
         None,
         title="Annotation",
         description="A user-defined annotation for this item.",
+        max_length=MAX_ANNOTATION_SIZE,
     )
     tags: TagCollection | None = Field(
         None,
@@ -1615,7 +1614,7 @@ AnyHistoryView = Annotated[
 
 class UpdateHistoryPayload(Model):
     name: str | None = None
-    annotation: str | None = None
+    annotation: str | None = Field(default=None, max_length=MAX_ANNOTATION_SIZE)
     tags: TagCollection | None = None
     published: bool | None = None
     importable: bool | None = None
@@ -4114,6 +4113,7 @@ class CreatePagePayload(PageSummaryBase):
         default=None,
         title="Annotation",
         description="Annotation that will be attached to the page.",
+        max_length=MAX_ANNOTATION_SIZE,
     )
     invocation_id: DecodedDatabaseIdField | None = Field(
         None,
@@ -4148,6 +4148,7 @@ class UpdatePagePayload(PageSummaryBase):
         default=None,
         title="Annotation",
         description="Annotation that will be attached to the page.",
+        max_length=MAX_ANNOTATION_SIZE,
     )
     edit_source: str | None = Field(
         default=None,
@@ -4185,12 +4186,6 @@ ArchivedHistoryDetailed.model_rebuild()
 CustomArchivedHistoryView.model_rebuild()
 
 ToolRequestIdField = Field(title="ID", description="Encoded ID of the role")
-
-
-class ToolRequestState(str, Enum):
-    NEW = "new"
-    SUBMITTED = "submitted"
-    FAILED = "failed"
 
 
 class ToolRequestStateMessage(Model):

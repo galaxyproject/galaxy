@@ -76,6 +76,9 @@ class ToolSearch:
                 results["page"] = str(page)
                 results["page_size"] = str(page_size)
                 results["hits"] = []
+                # Whoosh clamps out-of-range requests to the last available page.
+                if page > hits.pagecount:
+                    return results
                 for hit in hits:
                     hit_dict = {}
                     hit_dict["id"] = hit.get("id")

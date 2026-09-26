@@ -2,14 +2,12 @@ from selenium.webdriver.common.by import By
 
 from .framework import (
     retry_assertion_during_transitions,
-    selenium_only,
     selenium_test,
     SharedStateSeleniumTestCase,
 )
 
 
 class TestPublishedHistories(SharedStateSeleniumTestCase):
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_published_histories(self):
         self._login()
@@ -17,7 +15,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         expected_history_names = self.get_published_history_names_from_server()
         self.assert_histories_present(expected_history_names)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_published_histories_sort_by_name(self):
         self._login()
@@ -30,7 +27,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         sorted_histories = self.get_published_history_names_from_server(order="name-asc")
         self.assert_histories_present(sorted_histories, sort_by_matters=True)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_published_histories_sort_by_last_update(self):
         self._login()
@@ -42,7 +38,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         expected_history_names = self.get_published_history_names_from_server(order="update_time-asc")
         self.assert_histories_present(expected_history_names, sort_by_matters=True)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_published_histories_tag_click(self):
         self._login()
@@ -63,7 +58,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
 
         self.assert_histories_present([self.history3_name, self.history1_name])
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_published_histories_username_filter(self):
         self._login()
@@ -72,7 +66,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.components.published_histories.search_input.wait_for_and_send_keys(f"user:{username}")
         self.assert_histories_present([self.history2_name])
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_published_histories_search_standard(self):
         self._login()
@@ -80,7 +73,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.components.published_histories.search_input.wait_for_and_send_keys(self.history1_name)
         self.assert_histories_present([self.history1_name])
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_published_histories_search_advanced(self):
         self._login()

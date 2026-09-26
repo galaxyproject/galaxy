@@ -16,9 +16,9 @@ from typing import ClassVar
 import pytest
 
 from galaxy import model
+from galaxy.app_unittest_utils.job_runner_support import MockJobWrapper
 from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import htcondor
-from galaxy.util import bunch
 from galaxy_test.base.populators import (
     DatasetPopulator,
     skip_without_tool,
@@ -43,6 +43,7 @@ execution:
   environments:
     htcondor_environment:
       runner: htcondor
+      embed_metadata_in_job: false
     local_environment:
       runner: local
 tools:
@@ -651,9 +652,9 @@ class FakeHTCondorJobIntegrationInstance(FakeHTCondorIntegrationInstance):
 fake_job_instance = integration_util.integration_module_instance(FakeHTCondorJobIntegrationInstance)
 
 
-def test_fake_end_to_end_job(fake_job_instance):
-    """Full Galaxy job lifecycle via the htcondor runner backed by the fake module."""
-    fake_job_instance._run_tool_test("simple_constructs")
+def test_fake_end_to_end_job_with_external_metadata(fake_job_instance):
+    """Run a real job and external metadata lifecycle through the HTCondor runner."""
+    fake_job_instance._run_tool_test("metadata_columns")
 
 
 class FakeHTCondorCancelIntegrationInstance(FakeHTCondorIntegrationInstance):
@@ -800,9 +801,11 @@ def _job_wrapper(fake_instance, job_id, destination_params=None, *, state=model.
         fake_instance._app,
         fake_instance._tempdir,
         _tool(fake_instance),
-        destination_params or {},
-        job_id,
+        destination_params=destination_params or {},
+        destination_id=f"htcondor_destination_{job_id}",
+        job_id=job_id,
         state=state,
+        use_unique_working_directory=True,
     )
 
 
@@ -1337,6 +1340,10 @@ def test_finish_handles_external_metadata(fake_instance, fake_htcondor, runner_f
     method, job_state_record = runner.work_queue.get_nowait()
     assert method == runner.finish_job
     assert job_state_record.job_id == cjs.job_id
+    assert metadata_calls == []
+
+    method(job_state_record)
+
     assert metadata_calls == [(job_wrapper, True)]
     assert runner.watched == []
 
@@ -1566,137 +1573,6 @@ def test_held_job_max_count_is_configurable(fake_instance, fake_htcondor, runner
     assert len(runner.watched) == 0
     method, _ = runner.work_queue.get_nowait()
     assert method == runner.fail_job
-
-
-class MockJobWrapper:
-    def __init__(
-        self,
-        app,
-        test_directory,
-        tool,
-        destination_params,
-        job_id,
-        state=model.Job.states.QUEUED,
-    ):
-        working_directory = tempfile.mkdtemp(prefix="htcondor_workdir_", dir=test_directory)
-        tool_working_directory = os.path.join(working_directory, "working")
-        os.makedirs(tool_working_directory)
-        self.app = app
-        self.tool = tool
-        self.requires_containerization = False
-        self.state = state
-        self.command_line = "echo HelloWorld"
-        self.environment_variables = []
-        self.commands_in_new_shell = False
-        self.prepare_called = False
-        self.dependency_shell_commands = None
-        self.working_directory = working_directory
-        self.tool_working_directory = tool_working_directory
-        self.requires_setting_metadata = True
-        self.job_destination = JobDestination(id=f"htcondor_destination_{job_id}", params=destination_params)
-        self.galaxy_lib_dir = os.path.abspath("lib")
-        self.job = model.Job()
-        self.job_id = job_id
-        self.job.id = job_id
-        self.job.container = None
-        self.output_paths = ["/tmp/output1.dat"]
-        self.mock_metadata_path = os.path.join(working_directory, f"METADATA_SET_{job_id}")
-        self.metadata_command = f"touch {self.mock_metadata_path}"
-        self.galaxy_virtual_env = None
-        self.shell = "/bin/bash"
-        self.cleanup_job = "never"
-        self.tmp_dir_creation_statement = ""
-        self.use_metadata_binary = False
-        self.guest_ports = []
-        self.metadata_strategy = "directory"
-        self.remote_command_line = False
-        self.entry_points_checked = False
-        self.cleanup_called = False
-        self.user = None
-
-        self.external_output_metadata = bunch.Bunch()
-        self.app.datatypes_registry.set_external_metadata_tool = bunch.Bunch(build_dependency_shell_commands=lambda: [])
-
-    def check_tool_output(*args, **kwds):
-        return "ok"
-
-    def prepare(self):
-        self.prepare_called = True
-
-    def set_external_id(self, external_id, **kwd):
-        self.job.job_runner_external_id = external_id
-
-    def get_command_line(self):
-        return self.command_line
-
-    def container_monitor_command(self, *args, **kwds):
-        return None
-
-    def check_for_entry_points(self):
-        self.entry_points_checked = True
-
-    def get_id_tag(self):
-        return str(self.job_id)
-
-    def get_state(self):
-        return self.state
-
-    def change_state(self, state, job=None):
-        self.state = state
-
-    @property
-    def job_io(self):
-        return bunch.Bunch(
-            get_output_fnames=lambda: [],
-            check_job_script_integrity=False,
-            version_path="/tmp/version_path",
-        )
-
-    def get_job(self):
-        return self.job
-
-    def setup_external_metadata(self, **kwds):
-        return self.metadata_command
-
-    def get_env_setup_clause(self):
-        return ""
-
-    def has_limits(self):
-        return False
-
-    def fail(
-        self,
-        message,
-        exception=False,
-        tool_stdout="",
-        tool_stderr="",
-        exit_code=None,
-        job_stdout=None,
-        job_stderr=None,
-    ):
-        self.fail_message = message
-        self.fail_exception = exception
-
-    def finish(self, stdout, stderr, exit_code, **kwds):
-        self.stdout = stdout
-        self.stderr = stderr
-        self.exit_code = exit_code
-
-    def cleanup(self):
-        self.cleanup_called = True
-
-    def tmp_directory(self):
-        return None
-
-    def home_directory(self):
-        return None
-
-    def reclaim_ownership(self):
-        pass
-
-    @property
-    def is_cwl_job(self):
-        return False
 
 
 # ---------------------------------------------------------------------------

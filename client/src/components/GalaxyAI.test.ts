@@ -42,9 +42,7 @@ vi.mock("@/composables/confirmDialog", () => ({
     useConfirmDialog: () => ({ confirm: vi.fn() }),
 }));
 
-vi.mock("@/composables/toast", () => ({
-    useToast: () => ({ error: vi.fn(), success: vi.fn() }),
-}));
+vi.mock("@/composables/toast");
 
 vi.mock("@/composables/useEntityMentions", () => ({
     parseMentions: (s: string) => s,

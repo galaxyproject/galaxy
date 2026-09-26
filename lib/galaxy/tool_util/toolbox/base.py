@@ -1776,7 +1776,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     def _looks_like_a_tool(self, path: str) -> bool: ...
 
 
-def _filter_for_panel(item, item_type, filters, context):
+def _filter_for_panel(item, item_type, filters, context: Bunch):
     """
     Filters tool panel elements so that only those that are compatible
     with provided filters are kept.

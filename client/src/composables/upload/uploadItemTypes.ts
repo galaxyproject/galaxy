@@ -5,6 +5,7 @@
 
 import type { HistoryContentSource } from "@/api/datasets";
 import type { FetchDatasetHash } from "@/api/tools";
+import type { State } from "@/components/History/Content/model/states";
 import type { UploadMethod } from "@/components/Panels/Upload/types";
 
 /** Upload lifecycle status */
@@ -121,10 +122,33 @@ export interface UploadState {
     createdAt: number;
     /** Optional reference to parent batch */
     batchId?: string;
+    /** Dataset ID(s) produced by this upload, used for lifecycle monitoring */
+    datasetIds: string[];
+    /** Latest known dataset state (for display during processing) */
+    datasetState?: State;
 }
 
 /** Upload item with state tracking (used in active upload queue) */
 export type UploadItem = NewUploadItem & UploadState;
+
+// Abortable only while bytes are still transferring; progress 100 means the
+// fetch response is pending and the item must resolve via monitoring.
+const CANCELLABLE_STATUSES: UploadStatus[] = ["queued", "uploading"];
+
+export function isCancellableUpload(item: { status: UploadStatus; progress: number }): boolean {
+    return CANCELLABLE_STATUSES.includes(item.status) && item.progress < 100;
+}
+
+/** Abortable only during the transfer phase. */
+export function isCancellableBatchStatus(status: string): boolean {
+    return status === "uploading" || status === "creating-collection";
+}
+
+const ACTIVE_UPLOAD_STATUSES: UploadStatus[] = ["uploading", "processing"];
+
+export function isActiveUpload(status: UploadStatus): boolean {
+    return ACTIVE_UPLOAD_STATUSES.includes(status);
+}
 
 /** Sources returned for uploaded history contents. */
 export type UploadedDatasetSource = Extract<HistoryContentSource, "hda" | "hdca">;

@@ -48,10 +48,8 @@ from .display_applications.application import DisplayApplication
 
 if TYPE_CHECKING:
     from galaxy.datatypes.data import Data
-    from galaxy.tools import (
-        SetMetadataTool,
-        Tool,
-    )
+    from galaxy.tool_util.abstract_tool import AbstractTool
+    from galaxy.tools import SetMetadataTool
 
 
 class ConfigurationError(Exception):
@@ -91,10 +89,10 @@ class Registry:
         self.datatypes_by_extension: dict[str, Data] = {}
         self.datatypes_by_suffix_inferences = {}
         self.mimetypes_by_extension = {}
-        self.datatype_converters: dict[str, dict[str, Tool]] = {}
+        self.datatype_converters: dict[str, dict[str, AbstractTool]] = {}
         # Converters defined in local datatypes_conf.xml
         self.converters = []
-        self.converter_tools: set[Tool] = set()
+        self.converter_tools: set[AbstractTool] = set()
         self.converter_deps = {}
         self.available_tracks = []
         self.set_external_metadata_tool: SetMetadataTool | None = None
@@ -747,7 +745,7 @@ class Registry:
         # Drop any cached (empty) converter lookups computed before registration.
         self._converters_by_datatype = {}
 
-    def _register_converter_tool(self, converter: "Tool", source_datatype: str, target_datatype: str) -> None:
+    def _register_converter_tool(self, converter: "AbstractTool", source_datatype: str, target_datatype: str) -> None:
         self.converter_tools.add(converter)
         self.datatype_converters.setdefault(source_datatype, {})[target_datatype] = converter
 

@@ -79,13 +79,14 @@ FRAMEWORK_DATATYPES_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "sample_datatypes_c
 MIGRATED_TOOL_PANEL_CONFIG = "config/migrated_tools_conf.xml"
 INSTALLED_TOOL_PANEL_CONFIGS = [os.environ.get("GALAXY_TEST_SHED_TOOL_CONF", "config/shed_tool_conf.xml")]
 DEFAULT_LOCALES = "en"
+TOOL_SEARCH_INDEX_TIMEOUT = 300
 DEFAULT_TOOL_TEST_WAIT: int = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 60))
 
 log = logging.getLogger("test_driver")
 
 
-# Global variable to pass database contexts around - only needed for older
-# Tool Shed twill tests that didn't utilize the API for such interactions.
+# Global variable to pass database contexts around - only needed for the numbered
+# Tool Shed tests that assert against the database instead of the API.
 install_context = None
 
 
@@ -304,7 +305,7 @@ backends:
     tool_dependency_dir = os.environ.get("GALAXY_TOOL_DEPENDENCY_DIR")
     if tool_dependency_dir:
         config["tool_dependency_dir"] = tool_dependency_dir
-    # Used by shed's twill dependency stuff
+    # Used by the shed's tool dependency tests.
     # TODO: read from Galaxy's config API.
     os.environ["GALAXY_TEST_TOOL_DEPENDENCY_DIR"] = tool_dependency_dir or os.path.join(tmpdir, "dependencies")
 
@@ -595,12 +596,11 @@ def build_galaxy_web_app(simple_kwargs, init_fast_app: FastAppFactory = init_gal
     global install_context
     install_context = app.install_model.context
 
-    # Toolbox indexing happens via the work queue out of band recently, and,
-    # beyond potentially running async after tests execute doesn't execute
-    # without building a webapp (app.is_webapp = False for this test kit).
-    # We need to ensure to build an index for the test galaxy app -- this is
-    # pretty fast with the limited toolset
-    app.reindex_tool_search()
+    # The config watcher indexes the toolbox out of band via the
+    # ``rebuild_toolbox_search_index`` control task; wait for it so tests never
+    # search a missing or half-built index.
+    if not app.toolbox_search.wait_until_current(app.toolbox, timeout=TOOL_SEARCH_INDEX_TIMEOUT):
+        raise RuntimeError(f"Tool search index was not built within {TOOL_SEARCH_INDEX_TIMEOUT} seconds")
 
     return web_app
 

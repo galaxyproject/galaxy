@@ -81,6 +81,7 @@ def upload_tar(
                 if error_message:
                     return False, error_message, [], "", 0, 0
                 elif altered:
+                    assert root_elem is not None
                     tmp_filename = xml_util.create_and_write_tmp_file(root_elem)
                     shutil.move(tmp_filename, uploaded_file_name)
             elif os.path.split(uploaded_file_name)[-1] == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
@@ -90,6 +91,7 @@ def upload_tar(
                 if error_message:
                     return False, error_message, [], "", 0, 0
                 if altered:
+                    assert root_elem is not None
                     tmp_filename = xml_util.create_and_write_tmp_file(root_elem)
                     shutil.move(tmp_filename, uploaded_file_name)
         return handle_directory_changes(

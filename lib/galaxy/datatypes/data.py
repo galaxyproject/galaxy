@@ -248,6 +248,10 @@ class Data(metaclass=DataMeta):
     # "download" (always triggers download), or None (default behavior)
     display_behavior: Literal["inline", "download"] | None = None
 
+    # Keep-compressed datatypes whose payload legitimately embeds HTML (e.g. web archives)
+    # bypass the compressed-upload HTML check, but only when their sniffer claims the file.
+    allow_compressed_html_content = False
+
     # Trackster track type.
     track_type: str | None = None
 
@@ -462,14 +466,7 @@ class Data(metaclass=DataMeta):
         headers["content-type"] = (
             "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
         )
-        filename = self._download_filename(
-            dataset,
-            to_ext,
-            hdca=kwd.get("hdca"),
-            element_identifier=kwd.get("element_identifier"),
-            filename_pattern=kwd.get("filename_pattern"),
-        )
-        headers["Content-Disposition"] = to_content_disposition(filename)
+        headers["Content-Disposition"] = self.content_disposition(dataset, to_ext, **kwd)
         return open(file_name, mode="rb"), headers
 
     def to_archive(self, dataset: DatasetProtocol, name: str = "", auth: ObjectStoreAuth | None = None) -> Iterable:
@@ -510,10 +507,12 @@ class Data(metaclass=DataMeta):
         composite_extensions.append("zarr")  # for downloading zarr directories.
         return extension in composite_extensions
 
-    def download_content_disposition(self, dataset, to_ext, **kwd) -> str:
-        """Build the Content-Disposition header value used when downloading `dataset`.
+    def content_disposition(
+        self, dataset, to_ext=None, disposition: Literal["attachment", "inline"] = "attachment", /, **kwd
+    ) -> str:
+        """Build a consistent filename for display, streamed downloads, and direct object-store downloads.
 
-        Shared so direct (e.g. presigned URL) downloads receive the same filename as streamed ones.
+        Use inline disposition for previews so browsers can display the content without forcing a download.
         """
         filename = self._download_filename(
             dataset,
@@ -522,7 +521,7 @@ class Data(metaclass=DataMeta):
             element_identifier=kwd.get("element_identifier"),
             filename_pattern=kwd.get("filename_pattern"),
         )
-        return to_content_disposition(filename)
+        return to_content_disposition(filename, disposition=disposition)
 
     def _serve_file_download(self, headers, data, trans: "GalaxyWebTransaction", to_ext, file_size, **kwd):
         if self.is_archive_download(trans.app.datatypes_registry, data.extension):
@@ -532,7 +531,7 @@ class Data(metaclass=DataMeta):
             headers["content-type"] = (
                 "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
             )
-            headers["Content-Disposition"] = self.download_content_disposition(data, to_ext, **kwd)
+            headers["Content-Disposition"] = self.content_disposition(data, to_ext, **kwd)
             return open(data.get_file_name(auth=ObjectStoreAuth(user=trans.user)), "rb"), headers
 
     def _serve_binary_file_contents_as_text(
@@ -643,6 +642,7 @@ class Data(metaclass=DataMeta):
             trans.log_event(f"Download dataset id: {str(dataset.id)}")
             return self._serve_file_download(headers, dataset, trans, to_ext, file_size, **kwd)
         else:  # displaying
+            headers["Content-Disposition"] = self.content_disposition(dataset, None, "inline", **kwd)
             trans.log_event(f"Display dataset id: {str(dataset.id)}")
             max_peek_size = _get_max_peek_size(dataset)
             if _is_binary_file(dataset) and preview:
@@ -1484,7 +1484,13 @@ def get_test_fname(fname):
     return full_path
 
 
-def get_file_peek(file_name, width=256, line_count=5, skipchars=None, line_wrap=True):
+def get_file_peek(
+    file_name: str,
+    width: int | Literal["unlimited"] = 256,
+    line_count: int = 5,
+    skipchars: list[str] | None = None,
+    line_wrap: bool = True,
+) -> str:
     """
     Returns the first line_count lines wrapped to width.
 
@@ -1500,8 +1506,7 @@ def get_file_peek(file_name, width=256, line_count=5, skipchars=None, line_wrap=
     # Set size for file.readline() to a negative number to force it to
     # read until either a newline or EOF.  Needed for datasets with very
     # long lines.
-    if width == "unlimited":
-        width = -1
+    read_width = -1 if width == "unlimited" else width
     if skipchars is None:
         skipchars = []
     lines = []
@@ -1511,7 +1516,7 @@ def get_file_peek(file_name, width=256, line_count=5, skipchars=None, line_wrap=
     with compression_utils.get_fileobj(file_name) as temp:
         while count < line_count:
             try:
-                line = temp.readline(width)
+                line = temp.readline(read_width)
             except UnicodeDecodeError:
                 return "binary file"
             if line == "":

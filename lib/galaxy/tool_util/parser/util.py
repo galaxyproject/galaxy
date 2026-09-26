@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from typing import (
+    Literal,
     TYPE_CHECKING,
 )
 
@@ -22,6 +23,10 @@ DEFAULT_EPS = 0.01
 DEFAULT_PIN_LABELS = None
 DEFAULT_SORT = False
 DEFAULT_DECOMPRESS = False
+
+# The ToolSourceTestOutputAttributes entries parsed as floats - the only ones that can hold a
+# non-finite value and so need decoding after a JSON round trip.
+FLOAT_OUTPUT_ATTRIBUTES: tuple[Literal["delta_frac"], Literal["eps"]] = ("delta_frac", "eps")
 
 
 def is_dict(item):

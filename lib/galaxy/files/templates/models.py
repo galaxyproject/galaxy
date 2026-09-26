@@ -21,6 +21,7 @@ from galaxy.util.config_templates import (
     OAuth2Configuration,
     populate_default_variables,
     SecretsDict,
+    split_ftp_host_path,
     StrictModel,
     TemplateEnvironmentEntry,
     TemplateExpansion,
@@ -51,10 +52,15 @@ FileSourceTemplateType = Literal[
     "huggingface",
     "github",
     "iiif",
+    "ipfs",
     "mavedb",
     "omero",
     "ssh",
+    "openbis",
     "ckan",
+    "commoncrawl",
+    "gitlab",
+    "arc",
 ]
 
 FileSourceTemplateAlertVariant = Literal[
@@ -172,7 +178,14 @@ class S3FSFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
-class FtpFileSourceTemplateConfiguration(StrictModel):
+class FtpConfigMixin:
+    @model_validator(mode="before")
+    @classmethod
+    def split_host_path(cls, data: Any) -> Any:
+        return split_ftp_host_path(data)
+
+
+class FtpFileSourceTemplateConfiguration(FtpConfigMixin, StrictModel):
     type: Literal["ftp"]
     host: str | TemplateExpansion
     port: int | TemplateExpansion = 21
@@ -180,11 +193,12 @@ class FtpFileSourceTemplateConfiguration(StrictModel):
     passwd: str | TemplateExpansion | None = None
     writable: bool | TemplateExpansion = False
     tls: bool | TemplateExpansion = False
+    root: str | TemplateExpansion | None = None
     template_start: str | None = None
     template_end: str | None = None
 
 
-class FtpFileSourceConfiguration(StrictModel):
+class FtpFileSourceConfiguration(FtpConfigMixin, StrictModel):
     type: Literal["ftp"]
     host: str
     port: int = 21
@@ -192,6 +206,7 @@ class FtpFileSourceConfiguration(StrictModel):
     passwd: str | None = None
     writable: bool = False
     tls: bool = False
+    root: str | None = None
 
 
 class SshFileSourceTemplateConfiguration(StrictModel):
@@ -490,6 +505,20 @@ class IIIFFileSourceConfiguration(StrictModel):
     manifest_url: str
 
 
+class IPFSFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["ipfs"]
+    root: str | TemplateExpansion
+    gateway_url: str | TemplateExpansion
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class IPFSFileSourceConfiguration(StrictModel):
+    type: Literal["ipfs"]
+    root: str
+    gateway_url: str
+
+
 class MaveDBFileSourceTemplateConfiguration(StrictModel):
     type: Literal["mavedb"]
     base_url: str | TemplateExpansion = "https://api.mavedb.org/api/v1"
@@ -526,6 +555,16 @@ class OmeroFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
+class OpenBisFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["openbis"]
+    base_url: str | TemplateExpansion
+    token: str | TemplateExpansion
+    verify_certificates: bool | TemplateExpansion = True
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
 class CKANFileSourceTemplateConfiguration(StrictModel):
     type: Literal["ckan"]
     url: str | TemplateExpansion
@@ -535,11 +574,63 @@ class CKANFileSourceTemplateConfiguration(StrictModel):
     template_end: str | None = None
 
 
+class OpenBisFileSourceConfiguration(StrictModel):
+    type: Literal["openbis"]
+    base_url: str
+    token: str
+    verify_certificates: bool = True
+    writable: bool = False
+
+
 class CKANFileSourceConfiguration(StrictModel):
     type: Literal["ckan"]
     url: str
     token: str | None = None
     writable: bool = True
+
+
+class CommonCrawlFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["commoncrawl"]
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class GitLabFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["gitlab"]
+    base_url: str | TemplateExpansion
+    token: str | TemplateExpansion | None = None
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class GitLabFileSourceConfiguration(StrictModel):
+    type: Literal["gitlab"]
+    base_url: str
+    token: str | None = None
+    writable: bool = False
+
+
+class ARCFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["arc"]
+    base_url: str | TemplateExpansion
+    token: str | TemplateExpansion | None = None
+    writable: bool | TemplateExpansion = False
+    template_start: str | None = None
+    template_end: str | None = None
+
+
+class CommonCrawlFileSourceConfiguration(StrictModel):
+    type: Literal["commoncrawl"]
+    writable: bool = False
+
+
+class ARCFileSourceConfiguration(StrictModel):
+    type: Literal["arc"]
+    base_url: str
+    token: str | None = None
+    writable: bool = False
 
 
 FileSourceTemplateConfiguration = Annotated[
@@ -563,10 +654,15 @@ FileSourceTemplateConfiguration = Annotated[
     | HuggingFaceFileSourceTemplateConfiguration
     | GithubFileSourceTemplateConfiguration
     | IIIFFileSourceTemplateConfiguration
+    | IPFSFileSourceTemplateConfiguration
     | MaveDBFileSourceTemplateConfiguration
     | OmeroFileSourceTemplateConfiguration
     | SshFileSourceTemplateConfiguration
-    | CKANFileSourceTemplateConfiguration,
+    | OpenBisFileSourceTemplateConfiguration
+    | CKANFileSourceTemplateConfiguration
+    | CommonCrawlFileSourceTemplateConfiguration
+    | GitLabFileSourceTemplateConfiguration
+    | ARCFileSourceTemplateConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -591,10 +687,15 @@ FileSourceConfiguration = Annotated[
     | HuggingFaceFileSourceConfiguration
     | GithubFileSourceConfiguration
     | IIIFFileSourceConfiguration
+    | IPFSFileSourceConfiguration
     | MaveDBFileSourceConfiguration
     | OmeroFileSourceConfiguration
     | SshFileSourceConfiguration
-    | CKANFileSourceConfiguration,
+    | OpenBisFileSourceConfiguration
+    | CKANFileSourceConfiguration
+    | CommonCrawlFileSourceConfiguration
+    | GitLabFileSourceConfiguration
+    | ARCFileSourceConfiguration,
     Field(discriminator="type"),
 ]
 
@@ -679,10 +780,15 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "huggingface": HuggingFaceFileSourceConfiguration,
     "github": GithubFileSourceConfiguration,
     "iiif": IIIFFileSourceConfiguration,
+    "ipfs": IPFSFileSourceConfiguration,
     "mavedb": MaveDBFileSourceConfiguration,
     "omero": OmeroFileSourceConfiguration,
     "ssh": SshFileSourceConfiguration,
+    "openbis": OpenBisFileSourceConfiguration,
     "ckan": CKANFileSourceConfiguration,
+    "commoncrawl": CommonCrawlFileSourceConfiguration,
+    "gitlab": GitLabFileSourceConfiguration,
+    "arc": ARCFileSourceConfiguration,
 }
 
 

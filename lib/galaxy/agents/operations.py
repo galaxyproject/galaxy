@@ -63,6 +63,7 @@ ID_FIELDS = {
     "hdca_id",
     "collection_id",
     "creating_job",
+    "implicit_collection_jobs_id",
 }
 
 

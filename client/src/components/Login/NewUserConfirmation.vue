@@ -37,6 +37,11 @@ function login() {
 }
 
 async function submit() {
+    // Enter-key form submission bypasses the button's click guard.
+    if (!termsRead.value) {
+        return;
+    }
+
     if (!provider.value || !token.value) {
         messageVariant.value = "danger";
         messageText.value = "Missing provider and/or token.";

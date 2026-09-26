@@ -10,6 +10,7 @@ import {
     faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 
+import { STATES } from "@/components/History/Content/model/states";
 import type { UploadItem } from "@/composables/upload/uploadItemTypes";
 
 import type { UploadMethod } from "./types";
@@ -78,6 +79,19 @@ export function getFileProgressUi(file: UploadItem): FileProgressUi {
     return FILE_PROGRESS_UI[file.status];
 }
 
+const FILE_STATUS_MESSAGES: Record<UploadItem["status"], (file: UploadItem) => string | undefined> = {
+    queued: () => "Queued",
+    uploading: () => "Uploading file",
+    processing: (file) => STATES[file.datasetState ?? "new"]?.text ?? "Upload complete. Processing dataset…",
+    completed: () => "Upload complete",
+    error: () => undefined,
+    cancelled: () => "Cancelled",
+};
+
+export function getFileStatusMessage(file: UploadItem): string | undefined {
+    return FILE_STATUS_MESSAGES[file.status](file);
+}
+
 const BATCH_PROGRESS_UI: Record<BatchStatus, (batch: BatchWithProgress) => BatchProgressUi> = {
     uploading: (batch) => ({
         icon: faLayerGroup,
@@ -91,6 +105,13 @@ const BATCH_PROGRESS_UI: Record<BatchStatus, (batch: BatchWithProgress) => Batch
         barClass: "bg-primary",
         spin: true,
         label: "Creating collection...",
+    }),
+    processing: () => ({
+        icon: faSpinner,
+        textClass: "text-primary",
+        barClass: "bg-primary",
+        spin: true,
+        label: "Processing collection...",
     }),
     completed: () => ({
         icon: faCheck,
@@ -131,10 +152,11 @@ export interface UploadItemDisplayInfo {
     icon?: IconDefinition;
     iconTitle?: string;
     badges: UploadItemDisplayBadge[];
+    sourceUrl?: string;
 }
 
 /**
- * Get display information for an upload item (method icon, deferred badge, etc.).
+ * Get display information for an upload item (method icon, deferred badge, source URL, etc.).
  */
 export function getUploadItemDisplayInfo(item: UploadItem): UploadItemDisplayInfo {
     const badges: UploadItemDisplayBadge[] = [];
@@ -157,7 +179,15 @@ export function getUploadItemDisplayInfo(item: UploadItem): UploadItemDisplayInf
         icon: uploadMethod?.icon,
         iconTitle: uploadMethod?.name,
         badges,
+        sourceUrl: getUploadItemSourceUrl(item),
     };
+}
+
+function getUploadItemSourceUrl(item: UploadItem): string | undefined {
+    if (item.uploadMode !== "paste-links" && item.uploadMode !== "remote-files") {
+        return undefined;
+    }
+    return item.url || undefined;
 }
 
 export interface BatchDisplayInfo {

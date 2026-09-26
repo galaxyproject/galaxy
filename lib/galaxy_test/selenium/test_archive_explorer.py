@@ -10,6 +10,16 @@ REMOTE_ZIP_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/tes
 
 
 class TestArchiveExplorer(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivity):
+    @property
+    def remote_zip_url(self) -> str:
+        return self.test_http_server.get_url(
+            remote_url=REMOTE_ZIP_URL,
+            file_path="test-data/rocrate-test.zip",
+            content_type="application/zip",
+            support_head=True,
+            support_ranges=True,
+        )
+
     @selenium_test
     def test_import_from_local_zip(self):
         self.login()
@@ -49,7 +59,7 @@ class TestArchiveExplorer(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploa
         self.ensure_empty_history()
         (
             self.upload_context("explore-zip")
-            .explore_remote_zip(REMOTE_ZIP_URL)
+            .explore_remote_zip(self.remote_zip_url)
             .go_next()
             .wait_for_preview()
             .expect_preview_title("Simple Workflow")
@@ -71,7 +81,7 @@ class TestArchiveExplorer(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploa
         self.ensure_empty_history()
         (
             self.upload_context("explore-zip")
-            .explore_remote_zip(REMOTE_ZIP_URL)
+            .explore_remote_zip(self.remote_zip_url)
             .go_next()
             .wait_for_preview()
             .expect_preview_title("Simple Workflow")

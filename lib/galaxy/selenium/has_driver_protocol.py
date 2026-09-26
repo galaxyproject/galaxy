@@ -5,7 +5,10 @@ allowing NavigatesGalaxy to work with either backend via composition.
 """
 
 from abc import abstractmethod
-from collections.abc import Callable
+from collections.abc import (
+    Callable,
+    Sequence,
+)
 from contextlib import AbstractContextManager
 from typing import (
     Any,
@@ -18,11 +21,15 @@ from typing import (
 
 from galaxy.navigation.components import Target
 from .axe_results import AxeResults
+from .keys import Key
 from .web_element_protocol import WebElementProtocol
 
 # Type for element locators - can be either a Target or a Selenium-style (locator_type, value) tuple
 ElementLocatorTuple = tuple[str, str]  # e.g., ("css selector", "#id") or ("id", "test")
 HasElementLocator = Target | ElementLocatorTuple
+
+# Pixels of clearance hover_away() puts between the pointer and the element it left.
+HOVER_AWAY_OFFSET = 100
 
 
 class Cookie(TypedDict, total=False):
@@ -342,6 +349,11 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         ...
 
     @abstractmethod
+    def hover_away(self) -> None:
+        """Move the mouse off whatever element it is currently over."""
+        ...
+
+    @abstractmethod
     def move_to_and_click(self, element: WebElementProtocol) -> None:
         """Move mouse to element and click."""
         ...
@@ -367,6 +379,27 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         ...
 
     # Keyboard interactions
+    @abstractmethod
+    def active_element(self) -> WebElementProtocol:
+        """Return the element that currently has focus."""
+        ...
+
+    @abstractmethod
+    def press(
+        self,
+        *keys: Key | str,
+        modifiers: Sequence[Key] = (),
+        element: WebElementProtocol | None = None,
+    ) -> None:
+        """Press named keys or single printable characters in order.
+
+        Focus element once if supplied, then send to the current focus. Hold
+        distinct modifier Keys across the sequence and release them afterward.
+        Invalid keys or modifiers raise ValueError before browser interaction.
+        A valid empty sequence does nothing.
+        """
+        ...
+
     @abstractmethod
     def send_enter(self, element: WebElementProtocol | None = None):
         """Send ENTER key to element or active element."""
@@ -422,6 +455,17 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         Args:
             selector_template: Either a Target or a (locator_type, value) tuple for the select element
             value: The value attribute of the option to select
+        """
+        ...
+
+    @abstractmethod
+    def select_by_visible_text(self, selector_template: HasElementLocator, text: str) -> None:
+        """
+        Select an option from a <select> element by the text shown to the user.
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple for the select element
+            text: The visible text of the option to select
         """
         ...
 

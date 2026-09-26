@@ -78,8 +78,14 @@ class QuotasService(ServiceBase):
     def update(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, params: UpdateQuotaParams) -> str:
         """Modifies a quota."""
         payload = params.model_dump()
-        self.validate_in_users_and_groups(trans, payload)
         quota = self.quota_manager.get_quota(trans, id, deleted=False)
+        manage_associations = params.in_users is not None or params.in_groups is not None
+        # An omitted list leaves the current associations of that kind unchanged.
+        if params.in_users is None:
+            payload["in_users"] = [trans.security.encode_id(a.user_id) for a in quota.users]
+        if params.in_groups is None:
+            payload["in_groups"] = [trans.security.encode_id(a.group_id) for a in quota.groups]
+        self.validate_in_users_and_groups(trans, payload)
 
         params = UpdateQuotaParams(**payload)
         # FIXME: Doing it this way makes the update non-atomic if a method fails after an earlier one has succeeded.
@@ -92,7 +98,7 @@ class QuotasService(ServiceBase):
             methods.append(self.quota_manager.unset_quota_default)
         elif params.default:
             methods.append(self.quota_manager.set_quota_default)
-        if params.in_users or params.in_groups:
+        if manage_associations:
             methods.append(self.quota_manager.manage_users_and_groups_for_quota)
 
         messages = []

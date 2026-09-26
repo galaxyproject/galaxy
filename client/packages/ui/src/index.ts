@@ -33,6 +33,7 @@ export { type HasTitleProps, useCurrentTitle } from "./composables/currentTitle"
 export { useMarkdown } from "./composables/markdown";
 export { useResolveElement } from "./composables/resolveElement";
 export { type ToastOptions, type ToastProps, type ToastVariant, useToast } from "./composables/toast";
+export { activeToastHost, registerToastHost, unregisterToastHost } from "./composables/toastHost";
 export { useUid } from "./composables/uid";
 export {
     DEFAULT_TOOLTIP_HOVER_DELAY_MS,

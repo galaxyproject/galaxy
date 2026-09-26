@@ -23,7 +23,7 @@ from galaxy.exceptions import MessageException
 log = logging.getLogger(__name__)
 
 
-class AscpFileSystem(AbstractFileSystem):
+class AscpFileSystem(AbstractFileSystem):  # type: ignore[misc]  # fsspec is untyped
     """Custom fsspec filesystem implementation for Aspera ascp transfers.
 
     This module implements fsspec.AbstractFileSystem for the ascp command-line tool.

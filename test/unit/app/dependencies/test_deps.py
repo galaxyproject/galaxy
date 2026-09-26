@@ -82,6 +82,8 @@ FILES_SOURCES_CONFIG = """
 - type: dropbox
 - type: googledrive
 - type: irods
+- type: gitlab
+- type: arc
 """
 JOB_CONF_YAML = """
 runners:
@@ -265,6 +267,7 @@ def test_fs_default():
         assert not cds.check_gdrive_fsspec()
         assert not cds.check_dropboxdrivefs()
         assert not cds.check_webdav4()
+        assert not cds.check_arcfs_fsspec()
 
 
 def test_fs_configured():
@@ -277,6 +280,7 @@ def test_fs_configured():
         assert cds.check_gdrive_fsspec()
         assert cds.check_dropboxdrivefs()
         assert cds.check_webdav4()
+        assert cds.check_arcfs_fsspec()
         assert cds.check_fs_irods()
 
 

@@ -12,6 +12,9 @@ from threading import (
 )
 from typing import (
     Any,
+    cast,
+    overload,
+    Protocol,
 )
 
 import pebble
@@ -61,7 +64,7 @@ serialization.register(
 )
 
 
-class GalaxyCelery(Celery):
+class GalaxyCelery(Celery):  # type: ignore[misc]  # celery is untyped
     fork_pool: pebble.ProcessPool
 
     def __init__(self, *args, **kwargs):
@@ -82,7 +85,7 @@ class GalaxyCelery(Celery):
         return module
 
 
-class GalaxyTask(Task):
+class GalaxyTask(Task):  # type: ignore[misc]  # celery is untyped
     """
     Custom celery task used to enforce per-user rate limits and
     concurrency limits on task executions.
@@ -194,7 +197,41 @@ def tear_down_pool(sig, how, exitcode, **kwargs):
     celery_app.fork_pool.join(timeout=5)
 
 
-def galaxy_task(*args, action=None, **celery_task_kwd):
+class GalaxyTaskFunction(Protocol):
+    """A function decorated with ``galaxy_task``.
+
+    Arguments are not checked: ``app.magic_partial`` injects the DI arguments
+    when the task runs, so callers pass fewer arguments than the function takes.
+    """
+
+    name: str
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def delay(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def apply_async(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def s(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def si(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def signature(self, *args: Any, **kwargs: Any) -> Any: ...
+
+
+@overload
+def galaxy_task(func: Callable[..., Any], /) -> GalaxyTaskFunction: ...
+
+
+@overload
+def galaxy_task(
+    *, action: str | None = None, **celery_task_kwd: Any
+) -> Callable[[Callable[..., Any]], GalaxyTaskFunction]: ...
+
+
+def galaxy_task(
+    *args: Any, action: str | None = None, **celery_task_kwd: Any
+) -> GalaxyTaskFunction | Callable[[Callable[..., Any]], GalaxyTaskFunction]:
     if "serializer" not in celery_task_kwd:
         celery_task_kwd["serializer"] = PYDANTIC_AWARE_SERIALIZER_NAME
     # Galaxy tasks rely on ``app.magic_partial(func)`` (below) to inject
@@ -208,10 +245,9 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
     # individual call sites still pass their non-DI args explicitly.
     celery_task_kwd.setdefault("typing", False)
 
-    def decorate(func: Callable):
-        @shared_task(base=GalaxyTask, **celery_task_kwd)
+    def decorate(func: Callable[..., Any]) -> GalaxyTaskFunction:
         @wraps(func)
-        def wrapper(*args, **kwds):
+        def wrapper(*args: Any, **kwds: Any) -> Any:
             app = get_galaxy_app()
             assert app
 
@@ -240,7 +276,8 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
                 # Close and remove any open session this task has created
                 app.model.unset_request_id(scoped_id)
 
-        return wrapper
+        # celery is untyped, so shared_task returns Any
+        return cast(GalaxyTaskFunction, shared_task(base=GalaxyTask, **celery_task_kwd)(wrapper))
 
     if len(args) == 1 and callable(args[0]):
         return decorate(args[0])

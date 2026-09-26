@@ -2676,7 +2676,8 @@ def test_skip_by_module(lint_ctx):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 148
+    # (156 = 148 tool linters + 8 repository data-table linters registered via list_linters)
+    assert len(linter_names) == 156
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [
@@ -2833,3 +2834,26 @@ def test_required_files_glob_no_match(lint_ctx):
         _load_and_run_lint(lint_ctx, tool_path, required_files)
     assert "Required files pattern [*.py] (type glob) does not match any files" in lint_ctx.error_messages
     assert len(lint_ctx.error_messages) == 1
+
+
+# tests tool xml for xsd linter
+REQUIREMENTS_UNORDERED_CHILDREN = """
+<tool id="id" name="name" version="1.0" profile="24.0">
+    <requirements>
+        <container type="docker">quay.io/biocontainers/bwa:0.7.17--hed695b0_7</container>
+        <requirement type="package" version="0.7.17">bwa</requirement>
+        <resource type="cores_min">4</resource>
+        <requirement type="package" version="1.19">samtools</requirement>
+    </requirements>
+    <command>echo</command>
+    <inputs/>
+    <outputs/>
+</tool>
+"""
+
+
+def test_xsd_requirements_children_in_any_order(lint_ctx):
+    """requirements children parse per-tag, so the schema must not impose an order."""
+    tool_source = get_xml_tool_source(REQUIREMENTS_UNORDERED_CHILDREN)
+    run_lint_module(lint_ctx, xsd, tool_source)
+    assert not lint_ctx.error_messages

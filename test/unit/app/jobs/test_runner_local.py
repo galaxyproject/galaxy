@@ -1,7 +1,6 @@
-import datetime
 import os
+import signal
 import threading
-import time
 from typing import (
     cast,
     TYPE_CHECKING,
@@ -9,16 +8,14 @@ from typing import (
 from unittest.mock import MagicMock
 
 import psutil
+import pytest
 
-from galaxy import (
-    job_metrics,
-    model,
-)
+from galaxy import job_metrics
+from galaxy.app_unittest_utils.job_runner_support import MockJobWrapper
 from galaxy.app_unittest_utils.tools_support import UsesTools
+from galaxy.job_execution.output_collect import default_exit_code_file
 from galaxy.jobs import MinimalJobWrapper
-from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import local
-from galaxy.util import bunch
 from galaxy.util.unittest import TestCase
 
 if TYPE_CHECKING:
@@ -35,11 +32,62 @@ class TestLocalJobRunner(TestCase, UsesTools):
     def tearDown(self):
         self.tear_down_app()
 
-    def test_run(self):
+    def test_run(self, caplog):
         self.job_wrapper.command_line = "echo HelloWorld"
         runner = local.LocalJobRunner(self.app, 1)
         runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert self.job_wrapper.stdout.strip() == "HelloWorld"
+        assert any("return code: 0" in message for message in caplog.messages)
+        assert not any(record.name == local.log.name and record.levelname == "ERROR" for record in caplog.records)
+
+    def test_early_process_exit_is_logged(self, caplog):
+        self.job_wrapper.dependency_shell_commands = ["echo setup stdout", "echo setup stderr >&2", "exit 7"]
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
+
+        assert not os.path.exists(default_exit_code_file(self.job_wrapper.working_directory, "1"))
+        assert any("(1) execution finished:" in message and "return code: 7" in message for message in caplog.messages)
+        assert any(
+            record.levelname == "ERROR" and record.message == "(1) job process exited with return code 7"
+            for record in caplog.records
+        )
+        assert not any("killed by signal" in message for message in caplog.messages)
+        assert self.job_wrapper.exit_code == 7
+        assert self.job_wrapper.fail_message == "job process exited with return code 7"
+        assert self.job_wrapper.fail_exception is False
+        assert self.job_wrapper.job_stdout == "setup stdout\n"
+        assert self.job_wrapper.job_stderr == "setup stderr\njob process exited with return code 7"
+
+    @pytest.mark.parametrize("has_limits", [False, True])
+    def test_signal_death_before_job_script_outputs_is_logged(self, caplog, has_limits):
+        self.job_wrapper.dependency_shell_commands = ["kill -TERM $$"]
+        self.job_wrapper.job_destination.params["embed_metadata_in_job"] = False
+        if has_limits:
+            self.tool.timelimit = 60
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
+
+        assert not os.path.exists(default_exit_code_file(self.job_wrapper.working_directory, "1"))
+        assert not os.path.exists(os.path.join(self.job_wrapper.working_directory, "outputs", "tool_stdout"))
+        assert any(f"return code: {-signal.SIGTERM}" in message for message in caplog.messages)
+        assert any(
+            record.levelname == "ERROR" and record.message == f"(1) job process was killed by signal {signal.SIGTERM}"
+            for record in caplog.records
+        )
+        assert self.job_wrapper.exit_code == -signal.SIGTERM
+        assert self.job_wrapper.fail_message == f"job process was killed by signal {signal.SIGTERM}"
+        assert self.job_wrapper.job_stderr == self.job_wrapper.fail_message
+        assert self.job_wrapper.fail_exception is False
+        assert not os.path.exists(self.job_wrapper.mock_metadata_path)
+
+    def test_signal_after_tool_exit_preserves_tool_exit_code(self):
+        self.job_wrapper.command_line = '''sh -c "exit 4"'''
+        self.job_wrapper.metadata_command = "kill -TERM $$"
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
+
+        assert self.job_wrapper.exit_code == 4
+        assert not hasattr(self.job_wrapper, "fail_message")
 
     def test_galaxy_lib_on_path(self):
         self.job_wrapper.command_line = '''python -c "import galaxy.util"'''
@@ -142,130 +190,3 @@ class TestLocalJobRunner(TestCase, UsesTools):
         assert not psutil.pid_exists(external_id)
         assert hasattr(self.job_wrapper, "fail_message")
         assert "time limit" in self.job_wrapper.fail_message
-
-
-class MockJobWrapper:
-    def __init__(self, app, test_directory, tool):
-        working_directory = os.path.join(test_directory, "workdir")
-        tool_working_directory = os.path.join(working_directory, "working")
-        os.makedirs(tool_working_directory)
-        self.app = app
-        self.tool = tool
-        self.requires_containerization = False
-        self.state = model.Job.states.QUEUED
-        self.command_line = "echo HelloWorld"
-        self.environment_variables = []
-        self.commands_in_new_shell = False
-        self.prepare_called = False
-        self.dependency_shell_commands = None
-        self.working_directory = working_directory
-        self.tool_working_directory = tool_working_directory
-        self.requires_setting_metadata = True
-        self.job_destination = JobDestination(id="default", params={})
-        self.galaxy_lib_dir = os.path.abspath("lib")
-        self.job = model.Job()
-        self.job_id = 1
-        self.job.id = 1
-        self.output_paths = ["/tmp/output1.dat"]
-        self.mock_metadata_path = os.path.abspath(os.path.join(test_directory, "METADATA_SET"))
-        self.metadata_command = f"touch {self.mock_metadata_path}"
-        self.galaxy_virtual_env = None
-        self.shell = "/bin/bash"
-        self.cleanup_job = "never"
-        self.tmp_dir_creation_statement = ""
-        self.use_metadata_binary = False
-        self.guest_ports = []
-        self.metadata_strategy = "directory"
-        self.remote_command_line = False
-
-        # Cruft for setting metadata externally, axe at some point.
-        self.external_output_metadata: bunch.Bunch | None = bunch.Bunch()
-        self.app.datatypes_registry.set_external_metadata_tool = bunch.Bunch(build_dependency_shell_commands=lambda: [])
-
-    def check_tool_output(*args, **kwds):
-        return "ok"
-
-    def wait_for_external_id(self):
-        """Test method for waiting until an external id has been registered."""
-        external_id = None
-        for _ in range(50):
-            external_id = self.job.job_runner_external_id
-            if external_id:
-                break
-            time.sleep(0.1)
-        return external_id
-
-    def prepare(self):
-        self.prepare_called = True
-
-    def set_external_id(self, external_id, **kwd):
-        self.job.job_runner_external_id = external_id
-
-    def get_command_line(self):
-        return self.command_line
-
-    def container_monitor_command(self, *args, **kwds):
-        return None
-
-    def get_id_tag(self):
-        return "1"
-
-    def get_state(self):
-        return self.state
-
-    def change_state(self, state, job=None):
-        self.state = state
-
-    @property
-    def job_io(self):
-        return bunch.Bunch(
-            get_output_fnames=lambda: [], check_job_script_integrity=False, version_path="/tmp/version_path"
-        )
-
-    def get_job(self):
-        return self.job
-
-    def setup_external_metadata(self, **kwds):
-        return self.metadata_command
-
-    def get_env_setup_clause(self):
-        return ""
-
-    def has_limits(self):
-        return self.tool.timelimit is not None
-
-    def check_limits(self, runtime=None):
-        if runtime is not None and self.tool:
-            timelimit = self.tool.timelimit
-            if timelimit and timelimit > 0:
-                timelimit_delta = datetime.timedelta(seconds=timelimit)
-                if runtime > timelimit_delta:
-                    return (
-                        "tool_timelimit_reached",
-                        f"Job exceeded tool time limit (limit: {timelimit}s)",
-                    )
-        return None
-
-    def fail(
-        self, message, exception=False, tool_stdout="", tool_stderr="", exit_code=None, job_stdout=None, job_stderr=None
-    ):
-        self.fail_message = message
-        self.fail_exception = exception
-
-    def finish(self, stdout, stderr, exit_code, **kwds):
-        self.stdout = stdout
-        self.stderr = stderr
-        self.exit_code = exit_code
-
-    def tmp_directory(self):
-        return None
-
-    def home_directory(self):
-        return None
-
-    def reclaim_ownership(self):
-        pass
-
-    @property
-    def is_cwl_job(self):
-        return False

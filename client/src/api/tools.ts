@@ -148,6 +148,8 @@ export async function fetchDatasets(
 export interface FetchDataResponse {
     jobs: { id: string }[];
     outputs?: unknown;
+    /** Created dataset collection instances (e.g. from direct HDCA creation). Not nested under `outputs`. */
+    output_collections?: unknown;
 }
 
 /**

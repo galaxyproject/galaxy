@@ -121,8 +121,7 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         # Consider exposing handler via the API to reduce breaking
         # into Galaxy's internal state.
         app = self._app
-        history_id = app.security.decode_id(history_id)
-        history = app.model.session.get(model.History, history_id)
+        history = app.model.session.get(model.History, app.security.decode_id(history_id))
         assert history is not None
         workflow_invocations = history.workflow_invocations
         return workflow_invocations

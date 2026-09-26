@@ -38,7 +38,7 @@ describe("useUploadBatchOperations", () => {
                         },
                     ],
                 });
-                return HttpResponse.json({ outputs: [{ id: "hdca_1", src: "hdca" }] });
+                return HttpResponse.json({ outputs: [], output_collections: [{ id: "hdca_1" }] });
             }),
         );
 
@@ -53,8 +53,9 @@ describe("useUploadBatchOperations", () => {
 
         await operations.processDirectBatch(batchId, [id1, id2], [first, second]);
 
-        expect(state.getBatch(batchId)?.status).toBe("completed");
-        expect(state.activeItems.value.every((item) => item.status === "completed")).toBe(true);
+        expect(state.getBatch(batchId)?.status).toBe("processing");
+        expect(state.getBatch(batchId)?.collectionId).toBe("hdca_1");
+        expect(state.activeItems.value.every((item) => item.status === "processing")).toBe(true);
     });
 
     it("retries collection creation after an earlier two-step failure", async () => {
@@ -64,7 +65,7 @@ describe("useUploadBatchOperations", () => {
         const state = useUploadState();
         const operations = useUploadBatchOperations({ autoRecover: false });
         const uploadId = state.addUploadItem(makePastedItem());
-        state.updateProgress(uploadId, 100);
+        state.setStatus(uploadId, "completed");
 
         const batchId = state.addBatch(makeCollectionConfig(), [uploadId], false);
         state.addBatchDatasetId(batchId, "ds_1");
@@ -77,7 +78,7 @@ describe("useUploadBatchOperations", () => {
 
         await operations.retryCollectionCreation(batchId);
 
-        expect(state.getBatch(batchId)?.status).toBe("completed");
+        expect(state.getBatch(batchId)?.status).toBe("processing");
         expect(state.getBatch(batchId)?.collectionId).toBe("col_retried");
         expect(state.activeItems.value.find((entry) => entry.id === uploadId)?.error).toBeUndefined();
     });
@@ -87,8 +88,7 @@ describe("useUploadBatchOperations", () => {
 
         const state = useUploadState();
         const itemId = state.addUploadItem(makePastedItem({ name: "recovered.txt" }));
-        state.setStatus(itemId, "uploading");
-        state.updateProgress(itemId, 100);
+        state.setStatus(itemId, "completed");
 
         const batchId = state.addBatch(
             { name: "Recovery Collection", type: "list", hideSourceItems: false, historyId: "hist_1" },
@@ -102,6 +102,6 @@ describe("useUploadBatchOperations", () => {
         await flushPromises();
 
         expect(state.getBatch(batchId)?.collectionId).toBe("col_recovered");
-        expect(state.getBatch(batchId)?.status).toBe("completed");
+        expect(state.getBatch(batchId)?.status).toBe("processing");
     });
 });

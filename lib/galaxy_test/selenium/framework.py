@@ -17,6 +17,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import pytest
 import requests
 import yaml
 from requests.models import Response
@@ -69,6 +70,7 @@ from galaxy_test.base.populators import (
     load_data_dict,
     stage_inputs,
 )
+from galaxy_test.base.test_http_server import TestHttpServer
 from galaxy_test.base.testcase import FunctionalTestCase
 
 try:
@@ -417,6 +419,13 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     # boolean used to skip axe testing, might be useful to speed up
     # tests or may be required if you have no external internet access
     axe_skip = GALAXY_TEST_SKIP_AXE
+
+    test_http_server: TestHttpServer
+
+    @pytest.fixture(autouse=True)
+    def _attach_test_http_server(self, test_http_server: TestHttpServer) -> None:
+        """Expose the session test HTTP server to every Selenium test as ``self.test_http_server``."""
+        self.test_http_server = test_http_server
 
     def assert_baseline_accessibility(self):
         axe_results = self.axe_eval()
@@ -1279,16 +1288,31 @@ EXAMPLE_WORKFLOW_URL_1 = (
 
 
 class UsesWorkflowAssertions(NavigatesGalaxyMixin):
+    # Attached by TestWithSeleniumMixin._attach_test_http_server.
+    test_http_server: TestHttpServer
+    _example_workflow_url: str | None = None
+
     @retry_assertion_during_transitions
     def _assert_showing_n_workflows(self, n):
         if (actual_count := len(self.workflow_card_elements())) != n:
             message = f"Expected {n} workflows to be displayed, based on DOM found {actual_count} workflow rows."
             raise AssertionError(message)
 
+    @property
+    def example_workflow_url(self) -> str:
+        """URL the workflow import tests import from, served locally unless targeting a remote Galaxy."""
+        if self._example_workflow_url is None:
+            self._example_workflow_url = self.test_http_server.get_url(
+                remote_url=EXAMPLE_WORKFLOW_URL_1,
+                file_path="lib/galaxy_test/base/data/test_workflow_1.ga",
+                content_type="application/json",
+            )
+        return self._example_workflow_url
+
     @skip_if_github_down
-    def _workflow_import_from_url(self, url=EXAMPLE_WORKFLOW_URL_1):
+    def _workflow_import_from_url(self, url: str | None = None):
         self.workflow_index_click_import()
-        self.workflow_import_submit_url(url)
+        self.workflow_import_submit_url(url or self.example_workflow_url)
 
     @retry_assertion_during_transitions
     def assert_wf_annotation_is(self, expected_annotation):

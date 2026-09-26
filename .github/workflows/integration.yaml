@@ -51,7 +51,7 @@ jobs:
           persist-credentials: false
       - name: Install uv
         if: steps.restore-mulled-cache.outputs.cache-hit != 'true'
-        uses: astral-sh/setup-uv@v10.0.1
+        uses: astral-sh/setup-uv@v10.1.0
         with:
           python-version: '3.10'
       - name: Fetch Biocontainers repository index
@@ -114,7 +114,11 @@ jobs:
         run: rm -Rf /usr/share/dotnet
       - name: Install packages
         # ffmpeg: ffprobe needed by media datatypes
-        run: sudo apt-get update && sudo apt-get -y install ffmpeg
+        # bubblewrap: exercises the expression-evaluation isolation sandbox integration test.
+        # Ubuntu >=24.04 restricts unprivileged user namespaces (which bwrap needs); allow them.
+        run: |
+          sudo apt-get update && sudo apt-get -y install ffmpeg bubblewrap
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
       - name: Create the CNI config directory minikube's none driver expects
         # The action chmods /etc/cni/net.d without creating it, and current
         # runner images no longer ship the directory. See
@@ -133,7 +137,7 @@ jobs:
           path: 'galaxy root'
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.0.1
+        uses: astral-sh/setup-uv@v10.1.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Python
@@ -154,7 +158,7 @@ jobs:
           . .ci/minikube-test-setup/start_services.sh
           ./run_tests.sh -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v7.0.0
+      - uses: codecov/codecov-action@v7.1.1
         if: github.event_name == 'schedule'
         with:
           flags: integration

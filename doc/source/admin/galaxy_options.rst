@@ -2095,6 +2095,21 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_user_addresses``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow users to store postal addresses on their account, through
+    the deprecated /api/users/{id}/information/inputs endpoint.
+    This feature is deprecated and the user_address table will be
+    removed in a future release. Galaxy's own interface no longer
+    offers these addresses, so this option only affects that endpoint;
+    set it to false to stop accepting them ahead of the removal.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~
 ``session_duration``
 ~~~~~~~~~~~~~~~~~~~~
@@ -4417,6 +4432,55 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``expression_evaluation_isolation_command``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Optionally wrap workflow ``when`` JavaScript workers in an
+    OS-level jail. JavaScript always runs in a separate Python worker
+    using QuickJS, with no host bindings, a 200 MiB QuickJS allocator
+    limit, a 1 MiB stack limit, and a parent-enforced wall-clock
+    timeout (the expression timeout plus 10 seconds). Requests and
+    responses are limited to 16 MiB each. These limits do not cap
+    total Python RSS or aggregate memory across concurrent workers;
+    parent-side JSON decoding also adds overhead. Simple parameter
+    references resolve in Python without starting a worker. When empty
+    (the default), the worker runs without an OS-level jail.
+    Full JavaScript evaluation requires Python 3.10+ and the
+    quickjs-ng package. Without QuickJS, expressions requiring
+    JavaScript fail with an error; literals and simple parameter
+    references continue to work without it.
+    Set this to ``bubblewrap`` to use a built-in bubblewrap jail. It
+    clears the environment, unshares the PID/IPC/UTS namespaces, and
+    read-only-binds only what the worker needs to run: the Python
+    runtime, the worker script, and the system library/binary
+    directories (``/usr``, ``/lib``, ``/lib64``, ...). Galaxy's
+    config, database and the rest of the filesystem are NOT mounted,
+    so a compromised worker cannot read secrets from disk; it gets
+    ``/proc``, a minimal ``/dev`` and a private in-memory ``/tmp``
+    only. This is applied only on Linux and only when ``bwrap``
+    (bubblewrap) is found on PATH; on any other platform, or if bwrap
+    is missing, an ordinary worker subprocess is used instead.
+    bubblewrap requires unprivileged user namespaces. On distributions
+    that restrict them (Ubuntu >= 24.04,
+    ``kernel.apparmor_restrict_unprivileged_userns=1``), install the
+    bubblewrap AppArmor profile (shipped with the package) or relax
+    the restriction, otherwise bwrap fails with "setting up uid map:
+    Permission denied" and evaluation would error.
+    The network namespace is not unshared, because ``--unshare-net``
+    requires bubblewrap to configure a loopback interface, which fails
+    on many container and CI hosts. Control egress at the network
+    layer, or add ``--unshare-net`` via a custom command on hosts that
+    support it.
+    Advanced: set this to a full command prefix to use a custom jail
+    (e.g. a specific bwrap invocation, nsjail, or firejail). The value
+    is tokenized and used verbatim on all platforms, with the
+    configured Python interpreter and worker script appended.
+:Default: ``""``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~
 ``enable_oidc``
 ~~~~~~~~~~~~~~~
@@ -5162,11 +5226,19 @@
 
 :Description:
     If your network filesystem's caching prevents the Galaxy server
-    from seeing the job's stdout and stderr files when it completes,
-    you can retry reading these files.  The job runner will retry the
-    number of times specified below, waiting 1 second between tries.
-    For NFS, you may want to try the -noac mount option (Linux) or
-    -actimeo=0 (Solaris).
+    from seeing a job's output when it completes, you can retry
+    reading it.  This covers both the job's stdout and stderr files
+    and its output datasets, waiting 1 second between tries.  0 means
+    no retries: stdout and stderr are still read once, but the
+    cache-busting stat of each output dataset is skipped entirely, so
+    raise this if you see datasets marked ok with empty or truncated
+    content. This is most likely on a deployment where a job's output
+    is written by a host other than the one running Galaxy, since
+    nothing guarantees Galaxy's client has a coherent view of the file
+    the moment the job reports done.  For NFS, you may also want to
+    try the -noac mount option (Linux) or -actimeo=0 (Solaris), or a
+    low -actimeo to shrink the staleness window without disabling
+    caching.
 :Default: ``0``
 :Type: int
 
@@ -5584,7 +5656,7 @@
     Define toolbox filters
     (https://galaxyproject.org/user-defined-toolbox-filters/) that
     users may use to restrict the tools to display.
-:Default: ``examples:restrict_upload_to_admins, examples:restrict_encode``
+:Default: ``None``
 :Type: str
 
 
@@ -5596,7 +5668,7 @@
     Define toolbox filters
     (https://galaxyproject.org/user-defined-toolbox-filters/) that
     users may use to restrict the tool sections to display.
-:Default: ``examples:restrict_text``
+:Default: ``None``
 :Type: str
 
 
@@ -5608,7 +5680,7 @@
     Define toolbox filters
     (https://galaxyproject.org/user-defined-toolbox-filters/) that
     users may use to restrict the tool labels to display.
-:Default: ``examples:restrict_upload_to_admins, examples:restrict_encode``
+:Default: ``None``
 :Type: str
 
 
@@ -6418,6 +6490,3 @@
     for user defined tools.
 :Default: ``false``
 :Type: bool
-
-
-

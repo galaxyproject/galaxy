@@ -1617,7 +1617,7 @@ class MinimalJobWrapper(HasResourceParameters):
         self.sa_session.add(job)
         self.sa_session.commit()
 
-    def change_state(self, state, info=False, flush=True, job=None):
+    def change_state(self, state, info=False, flush=True, job=None, update_output_states=True):
         if job is None:
             job = self.get_job()
             self.sa_session.refresh(job)
@@ -1639,7 +1639,7 @@ class MinimalJobWrapper(HasResourceParameters):
             job.info = info
         state_changed = job.set_state(state)
         self.sa_session.add(job)
-        if state_changed:
+        if state_changed and update_output_states:
             job.update_output_states(self.app.application_stack.supports_skip_locked())
         if flush:
             self.sa_session.commit()
@@ -1697,7 +1697,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 if tag_limit := destination_total_concurrent_jobs.get(tag):
                     destination_tag_limits[tag] = tag_limit
 
-        conditions = [Job.id == job.id]
+        conditions = [Job.id == job.id, Job.state.in_((Job.states.NEW, Job.states.RESUBMITTED))]
 
         if job.user_id:
             user_job_count = (
@@ -1809,12 +1809,16 @@ class MinimalJobWrapper(HasResourceParameters):
             )
         )
 
+        # Not committed here: the row lock taken by this update is held until enqueue()
+        # commits, so a concurrent job deletion cannot land between queueing and
+        # update_output_states() and have its dataset state and info overwritten.
         result = cast(CursorResult, self.sa_session.execute(update_stmt))
-        self.sa_session.commit()
         state_updated = result.rowcount > 0
         if state_updated:
             self.sa_session.refresh(job)
             job.state_history.append(model.JobStateHistory(job=job))
+        else:
+            self.sa_session.commit()
 
         return state_updated
 
@@ -2221,9 +2225,11 @@ class MinimalJobWrapper(HasResourceParameters):
                     user=job.user,
                     tag_handler=self.app.tag_handler.create_tag_handler_session(job.galaxy_session),
                 )
-                import_model_store.perform_import(history=job.history, job=job)
-                if job.state == job.states.ERROR:
-                    final_job_state = job.state
+                object_import_tracker = import_model_store.perform_import(history=job.history, job=job)
+                # The import leaves job.state untouched so nothing polling the job can see it finish before
+                # exec_after_process and the final commit below have run.
+                if object_import_tracker.job_states_by_id.get(job.id) == job.states.ERROR:
+                    final_job_state = job.states.ERROR
             except store.FileTracebackException as e:
                 job.traceback = e.traceback
                 log.exception(f"Problem generating command line for Job {job.id}.\n{job.traceback}")
@@ -2886,7 +2892,9 @@ class MinimalJobWrapper(HasResourceParameters):
 
     def _report_error(self):
         job = self.get_job()
-        tool = self.app.toolbox.tool_for_job(job, check_access=False)
+        tool = self.tool
+        if tool is None and (toolbox := self.app.toolbox_or_none) is not None:
+            tool = toolbox.tool_for_job(job, check_access=False)
         for dataset in job.output_datasets:
             self.app.error_reports.default_error_plugin.submit_report(dataset, job, tool, user_submission=False)
 

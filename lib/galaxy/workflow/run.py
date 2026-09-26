@@ -67,8 +67,11 @@ def schedule(
     workflow: "Workflow",
     workflow_run_config: WorkflowRunConfig,
     workflow_invocation: WorkflowInvocation,
-) -> tuple[WorkflowOutputsType, WorkflowInvocation]:
-    return __invoke(trans, workflow, workflow_run_config, workflow_invocation)
+) -> modules.SchedulingDependencies:
+    _outputs, _workflow_invocation, scheduling_dependencies = __invoke(
+        trans, workflow, workflow_run_config, workflow_invocation
+    )
+    return scheduling_dependencies
 
 
 def __invoke(
@@ -77,7 +80,7 @@ def __invoke(
     workflow_run_config: WorkflowRunConfig,
     workflow_invocation: WorkflowInvocation | None = None,
     populate_state: bool = False,
-) -> tuple[WorkflowOutputsType, WorkflowInvocation]:
+) -> tuple[WorkflowOutputsType, WorkflowInvocation, modules.SchedulingDependencies]:
     """Run the supplied workflow in the supplied target_history."""
     if populate_state:
         modules.populate_module_and_state(
@@ -117,11 +120,13 @@ def __invoke(
         workflow_invocation.fail()
         workflow_invocation.add_message(failure)
 
+    scheduling_dependencies = invoker.progress.scheduling_dependencies()
+
     # Be sure to update state of workflow_invocation.
     trans.sa_session.add(workflow_invocation)
     trans.sa_session.commit()
 
-    return outputs, workflow_invocation
+    return outputs, workflow_invocation, scheduling_dependencies
 
 
 def queue_invoke(
@@ -234,6 +239,7 @@ class WorkflowInvoker:
             max_jobs_to_schedule = self.progress.maximum_jobs_to_schedule_or_none
             if max_jobs_to_schedule is not None and max_jobs_to_schedule <= 0:
                 max_jobs_per_iteration_reached = True
+                self.progress.more_work = True
                 break
             step_delayed = False
             step_timer = ExecutionTimer()
@@ -254,11 +260,13 @@ class WorkflowInvoker:
                     step_delayed = delayed_steps = True
                     workflow_invocation_step.state = "ready"
                     self.progress.mark_step_outputs_delayed(step, why="Not all jobs scheduled for state.")
+                    self.progress.more_work = True
                 else:
                     workflow_invocation_step.state = "scheduled"
             except modules.DelayedWorkflowEvaluation as de:
                 step_delayed = delayed_steps = True
                 self.progress.mark_step_outputs_delayed(step, why=de.why)
+                self.progress.record_delay(de)
             except Exception as e:
                 log_function = log.error
                 failure_details = []
@@ -336,11 +344,11 @@ class WorkflowInvoker:
         # No steps created yet - have to delay evaluation.
         if not step_invocation:
             delayed_why = f"depends on step [{output_id}] but that step has not been invoked yet"
-            raise modules.DelayedWorkflowEvaluation(why=delayed_why)
+            raise modules.DelayedWorkflowEvaluation(why=delayed_why, inherited=True)
 
         if step_invocation.state != "scheduled":
             delayed_why = f"depends on step [{output_id}] job has not finished scheduling yet"
-            raise modules.DelayedWorkflowEvaluation(delayed_why)
+            raise modules.DelayedWorkflowEvaluation(delayed_why, inherited=True)
 
         # TODO: Handle implicit dependency on stuff like pause steps.
         for job in step_invocation.jobs:
@@ -349,7 +357,10 @@ class WorkflowInvoker:
                 delayed_why = (
                     f"depends on step [{output_id}] but one or more jobs created from that step have not finished yet"
                 )
-                raise modules.DelayedWorkflowEvaluation(why=delayed_why)
+                raise modules.DelayedWorkflowEvaluation(
+                    why=delayed_why,
+                    dependencies=[modules.SchedulingDependency(modules.DependencyType.JOB, job.id)],
+                )
 
             if job.state != job.states.OK:
                 raise modules.FailWorkflowEvaluation(
@@ -403,6 +414,9 @@ class WorkflowProgress:
         when_values=None,
     ) -> None:
         self.outputs: dict[int, Any] = {}
+        self.tracked_dependencies: set[modules.SchedulingDependency] = set()
+        self.untracked_delays: list[str] = []
+        self.more_work = False
         self.module_injector = module_injector
         self.workflow_invocation = workflow_invocation
         self.inputs_by_step_id = inputs_by_step_id
@@ -460,7 +474,7 @@ class WorkflowProgress:
         return remaining_steps
 
     def replacement_for_input(
-        self, trans: "ProvidesHistoryContext", step: "WorkflowStep", input_dict: dict[str, Any]
+        self, trans: "ProvidesHistoryContext", step: "WorkflowStep", input_dict: modules.InputDescription
     ) -> modules.StepInputReplacement:
         replacement: modules.StepInputReplacement = NO_REPLACEMENT
         prefixed_name = input_dict["name"]
@@ -512,7 +526,7 @@ class WorkflowProgress:
         step_outputs = self.outputs[output_step_id]
         if step_outputs is STEP_OUTPUT_DELAYED:
             delayed_why = f"dependent step [{output_step_id}] delayed, so this step must be delayed"
-            raise modules.DelayedWorkflowEvaluation(why=delayed_why)
+            raise modules.DelayedWorkflowEvaluation(why=delayed_why, inherited=True)
         try:
             replacement = step_outputs[output_name]
         except KeyError:
@@ -548,7 +562,10 @@ class WorkflowProgress:
                         )
 
                 delayed_why = f"dependent collection [{replacement.id}] not yet populated with datasets"
-                raise modules.DelayedWorkflowEvaluation(why=delayed_why)
+                raise modules.DelayedWorkflowEvaluation(
+                    why=delayed_why,
+                    dependencies=modules.unpopulated_collection_dependencies(replacement.collection),
+                )
 
         if isinstance(replacement, model.DatasetCollection):
             raise NotImplementedError
@@ -557,7 +574,9 @@ class WorkflowProgress:
         ):
             if isinstance(replacement, model.HistoryDatasetAssociation):
                 if replacement.is_pending:
-                    raise modules.DelayedWorkflowEvaluation()
+                    raise modules.DelayedWorkflowEvaluation(
+                        dependencies=[modules.SchedulingDependency(modules.DependencyType.HDA, replacement.id)]
+                    )
                 if not replacement.is_ok:
                     raise modules.FailWorkflowEvaluation(
                         why=InvocationFailureDatasetFailed(
@@ -569,11 +588,15 @@ class WorkflowProgress:
                     )
             else:
                 if not replacement.collection.populated:
-                    raise modules.DelayedWorkflowEvaluation()
+                    raise modules.DelayedWorkflowEvaluation(
+                        dependencies=modules.unpopulated_collection_dependencies(replacement.collection)
+                    )
                 pending = False
+                pending_dataset_instance = None
                 for dataset_instance in replacement.dataset_instances:
                     if dataset_instance.is_pending:
                         pending = True
+                        pending_dataset_instance = dataset_instance
                     elif not dataset_instance.is_ok:
                         raise modules.FailWorkflowEvaluation(
                             why=InvocationFailureDatasetFailed(
@@ -584,7 +607,12 @@ class WorkflowProgress:
                             )
                         )
                 if pending:
-                    raise modules.DelayedWorkflowEvaluation()
+                    assert pending_dataset_instance is not None
+                    raise modules.DelayedWorkflowEvaluation(
+                        dependencies=[
+                            modules.SchedulingDependency(modules.DependencyType.HDA, pending_dataset_instance.id)
+                        ]
+                    )
 
         return replacement
 
@@ -594,7 +622,7 @@ class WorkflowProgress:
         step_outputs = self.outputs[step.id]
         if step_outputs is STEP_OUTPUT_DELAYED:
             delayed_why = f"depends on workflow output [{output_name}] but that output has not been created yet"
-            raise modules.DelayedWorkflowEvaluation(why=delayed_why)
+            raise modules.DelayedWorkflowEvaluation(why=delayed_why, inherited=True)
         else:
             return step_outputs[output_name]
 
@@ -837,6 +865,25 @@ class WorkflowProgress:
             step_invocation.workflow_step.module.recover_mapping(step_invocation, self)
         except modules.DelayedWorkflowEvaluation as de:
             self.mark_step_outputs_delayed(step_invocation.workflow_step, de.why)
+            self.record_delay(de)
+
+    def record_delay(self, delay: modules.DelayedWorkflowEvaluation) -> None:
+        if delay.dependencies:
+            self.tracked_dependencies.update(delay.dependencies)
+        elif not delay.inherited:
+            self.untracked_delays.append(delay.why or "no reason given")
+
+    def record_subworkflow_delays(self, subworkflow_progress: "WorkflowProgress") -> None:
+        self.tracked_dependencies.update(subworkflow_progress.tracked_dependencies)
+        self.untracked_delays.extend(subworkflow_progress.untracked_delays)
+        self.more_work = self.more_work or subworkflow_progress.more_work
+
+    def scheduling_dependencies(self) -> modules.SchedulingDependencies:
+        return modules.SchedulingDependencies(
+            tracked=frozenset(self.tracked_dependencies),
+            untracked=tuple(self.untracked_delays),
+            more_work=self.more_work,
+        )
 
 
 __all__ = ("queue_invoke", "WorkflowRunConfig")

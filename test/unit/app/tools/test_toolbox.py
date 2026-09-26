@@ -13,6 +13,7 @@ import pytest
 import routes
 
 from galaxy import model
+from galaxy.app import UniverseApplication
 from galaxy.app_unittest_utils.toolbox_support import BaseToolBoxTestCase
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.tool_util.ontologies import ontology_data
@@ -53,6 +54,17 @@ class TestToolBox(BaseToolBoxTestCase):
         tool = toolbox.get_tool("tool_with_macro")
         assert tool is not None
         assert len(tool._macro_paths) == 1
+
+    def test_wait_for_toolbox_reload_times_out_without_reload(self, caplog, monkeypatch):
+        self._init_tool()
+        self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")
+        toolbox = self.toolbox
+
+        monkeypatch.setattr("galaxy.app.INSTALLATION_RELOAD_TIMEOUT", 0.01)
+        with caplog.at_level(logging.WARNING, logger="galaxy.app"):
+            UniverseApplication.wait_for_toolbox_reload(self.app, toolbox)
+
+        assert "Waiting for toolbox reload timed out" in caplog.text
 
     @pytest.mark.xfail(raises=AssertionError)
     def test_tool_reload_when_macro_is_altered(self):

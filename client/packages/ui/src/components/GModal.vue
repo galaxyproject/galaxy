@@ -8,11 +8,13 @@ import { watchImmediate } from "@vueuse/core";
 import { faXmark } from "font-awesome-6";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
+import { registerToastHost, unregisterToastHost } from "../composables/toastHost";
 import { useUid } from "../composables/uid";
 import { type ComponentColor, type ComponentSize, type ComponentSizeClassList, prefix } from "./componentVariants";
 
 import GButton from "./GButton.vue";
 import GHeading from "./GHeading.vue";
+import GToast from "./GToast.vue";
 
 const HEADING_SIZE_BY_MODAL_SIZE = { small: "sm", medium: "md", large: "lg" } as const;
 
@@ -86,6 +88,9 @@ const sizeClass = computed(() => {
 });
 
 const dialog = ref<HTMLDialogElement | null>(null);
+const uid = useUid("g-modal");
+const currentId = computed(() => props.id ?? uid.value);
+const toastHost = computed(() => `${uid.value}-toast-host`);
 
 onMounted(() => {
     if (dialog.value) {
@@ -97,6 +102,8 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+    unregisterToastHost(toastHost.value);
+
     if (dialog.value) {
         dialog.value.removeEventListener("close", onClose);
     }
@@ -143,6 +150,7 @@ function onClickDialog(event: MouseEvent) {
 }
 
 function onOpen() {
+    registerToastHost(toastHost.value);
     emit("update:show", true);
     emit("open");
 
@@ -150,6 +158,7 @@ function onOpen() {
 }
 
 function onClose() {
+    unregisterToastHost(toastHost.value);
     emit("update:show", false);
     emit("close");
 
@@ -161,9 +170,6 @@ function onClose() {
 }
 
 const headingSize = computed(() => HEADING_SIZE_BY_MODAL_SIZE[props.size ?? "medium"]);
-
-const uid = useUid("g-modal");
-const currentId = computed(() => props.id ?? uid.value);
 
 defineExpose({ showModal, hideModal });
 </script>
@@ -177,6 +183,7 @@ defineExpose({ showModal, hideModal });
         class="g-dialog"
         :class="[sizeClass, { 'g-overflow-visible': props.overflowVisible }]"
         @click="onClickDialog">
+        <GToast :host="toastHost" />
         <section>
             <header>
                 <GHeading

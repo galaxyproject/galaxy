@@ -39,7 +39,9 @@
                     @insert="() => repeatInsert(input)"
                     @delete="(id) => repeatDelete(input, id)"
                     @clone="(id) => repeatClone(input, id)"
-                    @swap="(a, b) => repeatSwap(input, a, b)" />
+                    @swap="(a, b) => repeatSwap(input, a, b)"
+                    @load-more="$emit('load-more', $event)"
+                    @search-change="$emit('search-change', $event)" />
             </div>
             <div v-else-if="input.type == 'section'">
                 <FormCard

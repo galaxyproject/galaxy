@@ -23,7 +23,6 @@ from .basic import (
     DataCollectionToolParameter,
     DataToolParameter,
     DirectoryUriToolParameter,
-    ParameterValueError,
     SelectToolParameter,
     TextToolParameter,
     ToolParameter,
@@ -388,10 +387,8 @@ def params_from_strings(params: dict[str, Group | ToolParameter], param_values, 
             # This would resolve a lot of back and forth in the various to/from methods.
             value = safe_loads(value)
         if param:
-            try:
-                value = param.value_from_basic(value, app, ignore_errors)
-            except ParameterValueError:
-                continue
+            # if ignore_error is true we return the value unmodified
+            value = param.value_from_basic(value, app, ignore_errors)
         rval[key] = value
     return rval
 
@@ -437,6 +434,23 @@ def update_dataset_ids(input_values, translate_values, src):
         return key, value
 
     return remap(input_values, visit=replace_dataset_ids)
+
+
+def _runtime_values_to_json(state):
+    """Replace ``RuntimeValue`` objects in ``state`` with their JSON representation.
+
+    ``check_param`` does this for every value it validates, which is what keeps
+    populated state JSON serializable. The state a conditional falls back to when
+    its case cannot be resolved comes straight from ``get_initial_value``, so it
+    never reaches ``check_param`` and has to be converted here instead.
+    """
+
+    def replace_runtime_values(path, key, value):
+        if is_runtime_value(value):
+            value = runtime_to_json(value)
+        return key, value
+
+    return remap(state, visit=replace_runtime_values)
 
 
 def populate_state(
@@ -509,6 +523,7 @@ def populate_state(
                     if check
                     else [test_param_value, None]
                 )
+                case_populated = False
                 if error:
                     errors[test_param.name] = error
                 else:
@@ -531,8 +546,11 @@ def populate_state(
                         if cast_errors:
                             errors[input_name] = cast_errors
                         group_state["__current_case__"] = current_case
+                        case_populated = True
                     except Exception:
                         errors[test_param.name] = "The selected case is unavailable/invalid."
+                if not case_populated and check:
+                    group_state = state[input.name] = _runtime_values_to_json(group_state)
                 group_state[test_param.name] = value
 
             elif isinstance(input, Section):
@@ -636,6 +654,7 @@ def _populate_state_legacy(
                 if check
                 else [test_param_value, None]
             )
+            case_populated = False
             if error:
                 errors[test_param_key] = error
             else:
@@ -654,8 +673,11 @@ def _populate_state_legacy(
                         simple_errors=simple_errors,
                     )
                     group_state["__current_case__"] = current_case
+                    case_populated = True
                 except Exception:
                     errors[test_param_key] = "The selected case is unavailable/invalid."
+            if not case_populated and check:
+                group_state = state[input.name] = _runtime_values_to_json(group_state)
             group_state[test_param.name] = value
         elif isinstance(input, Section):
             _populate_state_legacy(

@@ -52,6 +52,7 @@ from .convert import (
     landing_encode,
     MappedCollectionInput,
     RequestInternalToWorkflowStateError,
+    restore_non_finite_floats,
     strictify,
     to_workflow_step_state,
 )
@@ -62,6 +63,7 @@ from .factory import (
     input_models_from_json,
     ParameterDefinitionError,
     tool_parameter_bundle_from_json,
+    UnmodelableToolInputs,
 )
 from .json import to_json_schema_string
 from .model_validation import (
@@ -108,6 +110,7 @@ __all__ = (
     "from_input_source",
     "input_models_for_pages",
     "input_models_for_tool_source",
+    "UnmodelableToolInputs",
     "tool_parameter_bundle_from_json",
     "input_models_from_json",
     "ParameterDefinitionError",
@@ -188,6 +191,7 @@ __all__ = (
     "landing_decode",
     "landing_encode",
     "dereference",
+    "restore_non_finite_floats",
     "strictify",
     "to_workflow_step_state",
     "from_workflow_execution_state",
