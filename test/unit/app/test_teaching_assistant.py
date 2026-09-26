@@ -242,6 +242,22 @@ class TestTeachingAssistantAgent:
         assert sources[0]["excerpt"] == "...1. FastQC on the reads..."
         assert sources[1]["excerpt"] == "Inspect reads before mapping"
 
+    @pytest.mark.parametrize(
+        "content, expected",
+        [
+            ("Click the <i>i</i> icon on the dataset.", "Click the *i* icon on the dataset."),
+            ("Pick <b>FastQC</b> or <strong>Falco</strong>.", "Pick **FastQC** or **Falco**."),
+            ("Set <code>c3>100</code><br>then run it.", "Set `c3>100`\nthen run it."),
+            ('See <a href="https://example.org">the docs</a>.', "See the docs."),
+            ("Use `<i>` for italics in HTML.", "Use `<i>` for italics in HTML."),
+            ("```html\n<b>kept</b>\n```", "```html\n<b>kept</b>\n```"),
+            ("Replace <input> with your dataset.", "Replace <input> with your dataset."),
+        ],
+    )
+    def test_inline_html_in_answers_becomes_markdown(self, content, expected):
+        ctx = SimpleNamespace(run_id="current", messages=[])
+        assert _render_tutorial_references(ctx, content) == expected
+
     @pytest.mark.parametrize("tool_name, run_id", [("recommend_tools", "current"), ("suggest_tutorials", None)])
     def test_only_current_search_records_authorize_references(self, tool_name, run_id):
         part = SimpleNamespace(
