@@ -3562,6 +3562,57 @@ outputs:
             )
             assert picked["state"] == "ok", picked
 
+    @skip_without_tool("job_properties")
+    @skip_without_tool("cat1")
+    @skip_without_tool("expression_forty_two")
+    def test_pick_value_first_non_null_ignores_paused_later_input(self):
+        # Once an earlier input is ready and non-null, later inputs cannot be picked, so a
+        # paused later input must not hold up the invocation.
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+steps:
+  job_props:
+    tool_id: job_properties
+    state:
+      thebool: true
+      failbool: true
+  branch:
+    tool_id: cat1
+    in:
+      input1: job_props/out_file1
+  first:
+    tool_id: expression_forty_two
+    state: {}
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: first/out1
+      input_1: branch/out_file1
+outputs:
+  picked:
+    outputSource: pick/output
+  paused:
+    outputSource: branch/out_file1
+test_data: {}
+""",
+                history_id=history_id,
+                assert_ok=False,
+                wait=True,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert invocation["state"] in ("scheduled", "completed"), invocation
+            paused = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=invocation["outputs"]["paused"]["id"], assert_ok=False
+            )
+            assert paused["state"] == "paused", paused
+            picked_content = self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=invocation["outputs"]["picked"]["id"], wait=False
+            )
+            assert picked_content == "42"
+
     def test_pick_value_first_or_skip(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(

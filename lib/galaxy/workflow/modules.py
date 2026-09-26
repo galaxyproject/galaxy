@@ -2168,7 +2168,7 @@ class PickValueModule(WorkflowModule):
         mode = step.tool_inputs.get("mode", "first_non_null") if step.tool_inputs else "first_non_null"
         all_inputs = self.get_all_inputs()
 
-        self._ensure_inputs_ready(trans, progress, step, all_inputs)
+        self._ensure_inputs_ready(trans, progress, step, mode, all_inputs)
 
         collection_info = self.plan_map_over(progress, step, all_inputs)
 
@@ -2192,6 +2192,7 @@ class PickValueModule(WorkflowModule):
         trans: "WorkRequestContext",
         progress: "WorkflowProgress",
         step: WorkflowStep,
+        mode: str,
         all_inputs: list[InputDescription],
     ) -> None:
         """Delay this step until the inputs it picks from have been produced.
@@ -2200,9 +2201,20 @@ class PickValueModule(WorkflowModule):
         orders the work. This module cannot. It reads the inputs to decide which one to pick,
         and the picked output aliases that dataset rather than copying it, so a post job
         action on this step mutates an upstream job's output. Both need that job finished.
+
+        The first_* modes stop at the first ready, non-null dataset: inputs after it cannot
+        be picked, so waiting on them could stall the invocation on a paused input for good.
+        Collections are picked from element by element, so they never settle it.
         """
+        stops_at_first_value = mode in ("first_non_null", "first_or_skip")
         for input_dict in all_inputs:
-            progress.replacement_for_input(trans, step, input_dict, require_ready=True)
+            replacement = progress.replacement_for_input(trans, step, input_dict, require_ready=True)
+            if (
+                stops_at_first_value
+                and isinstance(replacement, model.HistoryDatasetAssociation)
+                and not self._is_null_or_skipped(replacement, step)
+            ):
+                return
 
     def _execute_mapped(self, trans: "ProvidesHistoryContext", invocation_step, mode, all_inputs, collection_info):
         """Execute pick_value mapped over collection inputs."""
