@@ -324,7 +324,17 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         Args:
             url: The URL to navigate to
         """
-        self.page.goto(url)
+        try:
+            self.page.goto(url)
+        except PlaywrightError as e:
+            if "ERR_ABORTED" not in str(e):
+                raise
+            # The page navigated itself - an async form submit assigning
+            # window.location, say - and the browser cancels whichever
+            # navigation lost the race. Selenium's get() accepts wherever that
+            # leaves it; go where the caller asked instead. The competing load
+            # has committed by now, so this one has the page to itself.
+            self.page.goto(url)
 
     def refresh(self) -> None:
         """Reload the current page."""
