@@ -92,10 +92,19 @@ describe("Masthead.vue", () => {
     }
 
     it("should render simple tab item links", () => {
-        expect(wrapper.findAll("li.nav-item").length).toBe(4);
+        // window manager, extension tab, command palette search, help, user
+        expect(wrapper.findAll("li.nav-item").length).toBe(5);
         // Ensure specified link title respected.
         expect(wrapper.find("#help").text()).toBe("Support, Contact, and Community");
         expect(wrapper.find("#help a").attributes("href")).toBe("/about");
+    });
+
+    it("should open the command palette from the search button", async () => {
+        const { useCommandPalette } = await import("@/composables/useCommandPalette");
+        useCommandPalette().closePalette();
+        await wrapper.find("[data-description='masthead search button']").trigger("click");
+        expect(useCommandPalette().isPaletteOpen.value).toBe(true);
+        useCommandPalette().closePalette();
     });
 
     it("should display window manager button", async () => {

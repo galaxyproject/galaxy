@@ -1,4 +1,5 @@
 import flushPromises from "flush-promises";
+import { http as rawHttp, HttpResponse } from "msw";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -190,5 +191,65 @@ describe("historyStore — config-driven SSE vs polling", () => {
             const deltaAfterSecond = mockWatchHistory.mock.calls.length - pollsAfterFirst;
             expect(deltaAfterSecond).toBe(1);
         });
+    });
+});
+
+describe("historyStore — createNewHistory", () => {
+    let requested: string[];
+
+    beforeEach(() => {
+        setActivePinia(createPinia());
+        requested = [];
+        server.use(
+            http.post("/api/histories", async ({ request, response }) => {
+                const { name } = (await request.json()) as { name?: string };
+                requested.push(`create ${name}`);
+                return response(200).json({ id: "named-history", name } as never);
+            }),
+            http.get("/api/histories/count", ({ response }) => response(200).json(4)),
+            rawHttp.get("/history/create_new_current", () => {
+                requested.push("create default");
+                return HttpResponse.json({ id: "default-history", name: "Unnamed history" });
+            }),
+            rawHttp.get("/history/set_as_current", ({ request }) => {
+                const id = new URL(request.url).searchParams.get("id");
+                requested.push(`select ${id}`);
+                return HttpResponse.json({ id, name: "RNA run" });
+            }),
+        );
+    });
+
+    it("creates a history with the server's default name", async () => {
+        const store = useHistoryStore();
+
+        await store.createNewHistory();
+
+        expect(requested).toEqual(["create default"]);
+        expect(store.currentHistoryId).toBe("default-history");
+        expect(store.totalHistoryCount).toBe(4);
+    });
+
+    it("creates a named history and switches to it", async () => {
+        const store = useHistoryStore();
+
+        await store.createNewHistory("RNA run");
+
+        expect(requested).toEqual(["create RNA run", "select named-history"]);
+        expect(store.currentHistoryId).toBe("named-history");
+        expect(store.totalHistoryCount).toBe(4);
+    });
+
+    it("still switches to a named history when the count refresh fails", async () => {
+        server.use(
+            http.get("/api/histories/count", ({ response }) =>
+                response("5XX").json({ err_msg: "count is down", err_code: 500 }, { status: 500 }),
+            ),
+        );
+        const store = useHistoryStore();
+
+        await expect(store.createNewHistory("RNA run")).resolves.toBeUndefined();
+
+        expect(requested).toEqual(["create RNA run", "select named-history"]);
+        expect(store.currentHistoryId).toBe("named-history");
     });
 });

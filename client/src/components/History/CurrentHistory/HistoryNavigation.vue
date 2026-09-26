@@ -65,7 +65,7 @@ function userTitle(title: string) {
                     transparent
                     :disabled="isAnonymous"
                     :title="userTitle('Create new history')"
-                    @click="historyStore.createNewHistory">
+                    @click="historyStore.createNewHistory()">
                     <FontAwesomeIcon fixed-width :icon="faPlus" />
                 </GButton>
 

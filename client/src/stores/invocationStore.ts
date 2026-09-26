@@ -272,6 +272,12 @@ export const useInvocationStore = defineStore("invocationStore", () => {
     /** Ids of the most recently created invocations, in the order the server returned them. */
     const latestInvocationIds = ref<string[]>([]);
     const isLoadingLatestInvocations = ref(false);
+    /**
+     * Whether the latest invocations have been fetched at least once. An empty
+     * result counts as loaded, so consumers can tell "nothing invoked yet" from
+     * "not fetched yet" instead of requesting the list over and over.
+     */
+    const hasLoadedLatestInvocations = ref(false);
     let latestInvocationsPromise: Promise<WorkflowInvocation[]> | null = null;
 
     /**
@@ -308,6 +314,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
                     }
                 }
                 latestInvocationIds.value = ids;
+                hasLoadedLatestInvocations.value = true;
                 return latestInvocations.value;
             } finally {
                 isLoadingLatestInvocations.value = false;
@@ -335,6 +342,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         getInvocationRequestById,
         getInvocationRequestByIdError,
         getInvocationCountByWorkflowId,
+        hasLoadedLatestInvocations,
         isLoadingInvocation,
         isLoadingInvocationStep,
         isLoadingLatestInvocations,

@@ -13,6 +13,7 @@ import {
 } from "@/api";
 import {
     type AnyHistoryEntry,
+    createNewHistory as createHistoryOnServer,
     getArchivedHistories,
     getPublishedHistories,
     getSharedHistories,
@@ -338,7 +339,19 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return setCurrentHistory(newHistory.id);
     }
 
-    async function createNewHistory() {
+    /** Creates a history, named when `name` is given, and makes it current */
+    async function createNewHistory(name?: string) {
+        if (name) {
+            const namedHistory = await createHistoryOnServer(name);
+            await setCurrentHistory(namedHistory.id);
+            // the history exists, so a failed count refresh must not read as a failed creation
+            try {
+                await handleTotalCountChange(1);
+            } catch (error) {
+                console.debug("Could not refresh the history count", error);
+            }
+            return;
+        }
         const newHistory = (await createAndSelectNewHistory()) as HistoryDevDetailed;
         await handleTotalCountChange(1);
         return selectHistory(newHistory);
@@ -469,9 +482,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * - not handling filters with pagination for now
      *   "pausing" pagination at the existing offset if a filter exists
      */
-    async function fetchHistories(paginate: boolean, queryString?: string) {
+    async function fetchHistories(paginate: boolean, queryString?: string, requestedLimit?: number) {
         setHistoriesLoading(true);
-        let limit: number | null = null;
+        let limit: number | null = requestedLimit ?? null;
         if (!queryString || queryString == "") {
             if (paginate) {
                 await loadTotalHistoryCount();
@@ -506,9 +519,14 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * fetch is in flight (the command palette) sees the filled cache instead of
      * an empty one. A *different* load started meanwhile is still skipped: the
      * store fetches one own-history list at a time.
+     *
+     * @param paginate whether to page through the list with the store's offset
+     * @param queryString backend filter, e.g. built by `HistoriesFilters`
+     * @param limit caps an unpaginated load, for consumers that only render a
+     * handful of rows; leave it unset to load the whole list
      */
-    function loadHistories(paginate = true, queryString?: string): Promise<void> {
-        const key = `${paginate}|${queryString ?? ""}`;
+    function loadHistories(paginate = true, queryString?: string, limit?: number): Promise<void> {
+        const key = `${paginate}|${queryString ?? ""}|${limit ?? ""}`;
         const inFlight = loadHistoriesPromises.get(key);
         if (inFlight) {
             return inFlight;
@@ -516,7 +534,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         if (historiesLoading.value) {
             return Promise.resolve();
         }
-        const promise = fetchHistories(paginate, queryString).finally(() => {
+        const promise = fetchHistories(paginate, queryString, limit).finally(() => {
             loadHistoriesPromises.delete(key);
         });
         loadHistoriesPromises.set(key, promise);

@@ -38,6 +38,7 @@
         <template v-if="!embedded">
             <div id="dd-helper" />
             <GToast />
+            <CommandPalette />
             <ConfirmDialog ref="confirmDialogRef" />
             <BroadcastsOverlay />
             <DragGhost />
@@ -67,6 +68,7 @@ import { useWindowManagerStore } from "@/stores/windowManagerStore";
 
 import Alert from "@/components/Alert.vue";
 import GToast from "@/components/BaseComponents/GToast.vue";
+import CommandPalette from "@/components/CommandPalette/CommandPalette.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import DragGhost from "@/components/DragGhost.vue";
 import Masthead from "@/components/Masthead/Masthead.vue";
@@ -77,6 +79,7 @@ import WindowManagerWindow from "@/components/WindowManager/WindowManagerWindow.
 export default {
     components: {
         Alert,
+        CommandPalette,
         DragGhost,
         Masthead,
         WindowManagerWindow,

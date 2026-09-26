@@ -173,6 +173,15 @@ describe("stores/invocationStore", () => {
             expect(requestedLimits).toEqual(["5"]);
         });
 
+        it("marks the latest invocations as loaded once fetched", async () => {
+            const store = useInvocationStore();
+            expect(store.hasLoadedLatestInvocations).toBe(false);
+
+            await store.fetchLatestInvocations();
+
+            expect(store.hasLoadedLatestInvocations).toBe(true);
+        });
+
         it("merges the fetched invocations into the shared cache instead of duplicating them", async () => {
             const store = useInvocationStore();
 
