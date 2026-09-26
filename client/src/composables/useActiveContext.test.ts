@@ -229,7 +229,7 @@ describe("useActiveContext", () => {
 
         it("labels standalone page editor context without historyId", () => {
             const { contextLabel } = withRoute("/pages/editor", { id: "test-page-id" }, {});
-            expect(contextLabel.value).toBe("Report: test-page-id");
+            expect(contextLabel.value).toBe("Notebook: test-page-id");
         });
 
         it("labels invocation notebook context", () => {

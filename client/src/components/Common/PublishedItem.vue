@@ -27,7 +27,17 @@ const plural = computed(() => {
     if (modelTitle.value === "History") {
         return "Histories";
     }
+    if (modelTitle.value === "Page") {
+        return "Notebooks";
+    }
     return `${modelTitle.value}s`;
+});
+
+const pluralSlug = computed(() => {
+    if (modelTitle.value === "History") {
+        return "histories";
+    }
+    return `${modelTitle.value.toLowerCase()}s`;
 });
 
 const owner = computed(() => {
@@ -38,7 +48,7 @@ const owner = computed(() => {
 });
 
 const gravatarSource = computed(() => `https://secure.gravatar.com/avatar/${props.item?.email_hash}?d=identicon`);
-const pluralPath = computed(() => props.overridePath ?? plural.value.toLowerCase());
+const pluralPath = computed(() => props.overridePath ?? pluralSlug.value);
 const publishedByUser = computed(() => `/${pluralPath.value}/list_published?f-username=${owner.value}`);
 const urlAll = computed(() => `/${pluralPath.value}/list_published`);
 </script>
@@ -69,7 +79,7 @@ const urlAll = computed(() => `/${pluralPath.value}/list_published`);
 
                 <hr />
 
-                <h2 class="h-sm">Related Pages</h2>
+                <h2 class="h-sm">Related {{ plural }}</h2>
 
                 <div>
                     <router-link :to="urlAll">All published {{ plural }}</router-link>
