@@ -42,6 +42,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from galaxy import model
+from galaxy.app_unittest_utils.galaxy_mock import MockTrans
 from galaxy.authnz.managers import AuthnzManager
 from galaxy.authnz.oidc_utils import decode_access_token as decode_access_token_oidc
 from galaxy.authnz.psa_authnz import (
@@ -680,6 +681,20 @@ def test_sync_user_profile_updates_when_account_interface_disabled():
     manager.update_username.assert_called_once_with(trans, user, "newname", commit=False)
     assert session.commit.call_count == 1
     notify.assert_called_once()
+
+
+def test_sync_user_profile_may_assign_an_admin_address():
+    trans = MockTrans(admin_users="admin@example.com", admin_users_list=["admin@example.com"])
+    trans.app.config.enable_account_interface = False
+    trans.app.notification_manager = SimpleNamespace(notifications_enabled=False)
+    trans.user_is_admin = False
+    user = trans.app.user_manager.create(email="old@example.com", username="oldname", password="123456")
+    strategy = SimpleNamespace(config={"GALAXY_TRANS": trans, "FIXED_DELEGATED_AUTH": True})
+
+    sync_user_profile(strategy=strategy, details={"email": "Admin@example.com", "username": "newname"}, user=user)
+
+    assert user.email == "Admin@example.com"
+    assert trans.app.security_agent.get_private_user_role(user).name == "Admin@example.com"
 
 
 def test_authenticate_does_not_mutate_backend_default_scope(psa_authnz):

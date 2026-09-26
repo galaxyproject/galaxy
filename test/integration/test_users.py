@@ -151,3 +151,35 @@ class TestAdminResendActivationEmail(integration_util.IntegrationTestCase):
         link = match.group(1)
         assert "activation_token=" in link
         assert "email=" in link
+
+
+class TestUnclaimedAdminEmailIntegration(integration_util.IntegrationTestCase):
+    unclaimed_admin_email = "unclaimed-admin@test.gx"
+    assigned_admin_email = "assigned-admin@test.gx"
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["admin_users"] = f"{config['admin_users']},{cls.unclaimed_admin_email},{cls.assigned_admin_email}"
+
+    def test_non_admin_cannot_claim_an_admin_email(self):
+        email = "admin-claimer@test.gx"
+        user = self._setup_user(email)
+        with self._different_user(email=email):
+            for claimed in (self.unclaimed_admin_email, self.unclaimed_admin_email.upper()):
+                response = self._put(f"users/{user['id']}", data={"email": claimed}, json=True)
+                self._assert_status_code_is(response, 400)
+                assert "already exists" in response.json()["err_msg"]
+            response = self._put(
+                f"users/{user['id']}/information/inputs", data={"email": self.unclaimed_admin_email}, json=True
+            )
+            self._assert_status_code_is(response, 400)
+            current = self._get("users/current").json()
+        assert current["email"] == email
+        assert current["is_admin"] is False
+
+    def test_admin_can_assign_an_admin_email(self):
+        user = self._setup_user("admin-assignee@test.gx")
+        response = self._put(f"users/{user['id']}", data={"email": self.assigned_admin_email}, json=True, admin=True)
+        self._assert_status_code_is(response, 200)
+        assert response.json()["is_admin"] is True

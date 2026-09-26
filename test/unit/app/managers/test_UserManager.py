@@ -414,6 +414,28 @@ class TestUserManager(BaseTestCase):
         self.user_manager.update_email(self.trans, user, "changed@example.com")
         assert user.email == "changed@example.com"
 
+    def test_update_email_to_an_admin_address_requires_an_admin_or_identity_provider(self):
+        self.app.config.admin_users_list = [
+            *self.app.config.admin_users_list,
+            "first-admin@example.com",
+            "second-admin@example.com",
+        ]
+        user = self.user_manager.create(**user2_data)
+        self.trans.set_user(user)
+        self.mock_trans.user_is_admin = False
+
+        with pytest.raises(exceptions.RequestParameterInvalidException):
+            self.user_manager.update_email(self.trans, user, "First-Admin@example.com")
+        assert user.email == user2_data["email"]
+
+        self.user_manager.update_email(self.trans, user, "first-admin@example.com", asserted_by_identity_provider=True)
+        assert user.email == "first-admin@example.com"
+
+        self.trans.set_user(self.admin_user)
+        self.mock_trans.user_is_admin = True
+        self.user_manager.update_email(self.trans, user, "second-admin@example.com")
+        assert user.email == "second-admin@example.com"
+
     def test_update_email_changes_only_the_case(self):
         user = self.user_manager.create(**user2_data)
         self.user_manager.update_email(self.trans, user, user2_data["email"].upper())

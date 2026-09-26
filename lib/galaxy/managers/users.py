@@ -222,6 +222,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 # Remote user and OIDC logins resolve accounts by email, so a self-chosen address would claim
                 # the account that someone else's first login lands in.
                 raise exceptions.ConfigDoesNotAllowException("Email changes are not allowed in this Galaxy instance")
+            if self._is_admin_email(new_email):
+                # admin_users grants administrator rights by address alone. The message is the one for a
+                # taken address, so that it does not reveal which addresses belong to administrators.
+                raise exceptions.RequestParameterInvalidException(f"User with email '{new_email}' already exists.")
         private_role = trans.app.security_agent.get_private_user_role(user)
         private_role.name = new_email
         private_role.description = f"Private role for {new_email}"
@@ -461,6 +465,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             # return True.
             return bool(trans and trans.user_is_admin)
         return self.app.config.is_admin_user(user)
+
+    def _is_admin_email(self, email: str) -> bool:
+        return email.lower() in (admin_email.lower() for admin_email in self.app.config.admin_users_list)
 
     def admins(self, filters=None, **kwargs):
         """
