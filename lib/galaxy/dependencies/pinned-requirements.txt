@@ -59,8 +59,8 @@ conda-package-streaming==0.13.0
 cryptography==50.0.1
 ct3==3.4.0.post5
 cwl-upgrader==1.2.15
-cwl-utils==0.43
-cwltool==3.2.20260720092025
+cwl-utils==0.45
+cwltool==3.3.20260925135507
 cyclopts==4.25.3 ; python_full_version < '3.11'
 cyclopts==5.0.0 ; python_full_version >= '3.11'
 defusedxml==0.7.1
