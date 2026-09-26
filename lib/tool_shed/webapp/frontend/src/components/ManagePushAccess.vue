@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { useRepositoryStore, useAuthStore } from "@/stores"
+import { useRepositoryStore } from "@/stores"
 import { storeToRefs } from "pinia"
 import SelectUser from "@/components/SelectUser.vue"
 
 const repositoryStore = useRepositoryStore()
-const { repositoryPermissions } = storeToRefs(repositoryStore)
+const { repository, repositoryPermissions } = storeToRefs(repositoryStore)
 
 interface ManagePushAccessProps {
     repositoryId: string
 }
-const authStore = useAuthStore()
 
 defineProps<ManagePushAccessProps>()
 
@@ -22,21 +21,27 @@ function removeUserAccess(username: string) {
 }
 </script>
 <template>
-    <q-list bordered padding class="rounded-borders" style="max-width: 325px" v-if="repositoryPermissions">
+    <q-list
+        bordered
+        padding
+        class="rounded-borders push-access"
+        style="max-width: 325px"
+        v-if="repository && repositoryPermissions"
+    >
         <q-item-label header>Who can push to this repository?</q-item-label>
-        <q-item>
+        <q-item class="push-access-owner">
             <q-item-section>
-                <q-item-label>{{ authStore.user.username }}</q-item-label>
+                <q-item-label>{{ repository.owner }} (owner)</q-item-label>
             </q-item-section>
         </q-item>
-        <q-item v-for="username in repositoryPermissions.allow_push" :key="username">
+        <q-item class="push-access-user" v-for="username in repositoryPermissions.allow_push" :key="username">
             <q-item-section>
-                <q-item-label>{{ username }}</q-item-label>
+                <q-item-label class="push-access-username">{{ username }}</q-item-label>
             </q-item-section>
             <q-item-section avatar>
-                <q-icon name="delete" @click="removeUserAccess(username)" />
+                <q-icon class="push-access-remove" name="delete" @click="removeUserAccess(username)" />
             </q-item-section>
         </q-item>
-        <select-user @selected-user="addUserAccess" class="q-ma-md"> </select-user>
+        <select-user @selected-user="addUserAccess" class="q-ma-md push-access-add"> </select-user>
     </q-list>
 </template>
