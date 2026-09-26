@@ -3389,6 +3389,225 @@ input_data:
             invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
             assert invocation["state"] == "failed"
 
+    @skip_without_tool("expression_parse_int")
+    @skip_without_tool("expression_forty_two")
+    def test_pick_value_runtime_null(self):
+        # parseInt yields NaN, serialized as null - pick must wait for it, then fall back.
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+steps:
+  runtime_null:
+    tool_id: expression_parse_int
+    state:
+      input1: not a number
+  fallback:
+    tool_id: expression_forty_two
+    state: {}
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: runtime_null/out1
+      input_1: fallback/out1
+outputs:
+  picked:
+    outputSource: pick/output
+test_data: {}
+""",
+                history_id=history_id,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            picked_content = self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=invocation["outputs"]["picked"]["id"]
+            )
+            assert picked_content == "42"
+
+    @skip_without_tool("exit_code_from_file")
+    @skip_without_tool("__BUILD_LIST__")
+    @skip_without_tool("__FILTER_FAILED_DATASETS__")
+    def test_pick_value_input_failed(self):
+        # Failed is not null - the failed dataset is picked for downstream filters.
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  exit_code:
+    type: data
+steps:
+  branch:
+    tool_id: exit_code_from_file
+    in:
+      input: exit_code
+  pick:
+    type: pick_value
+    state:
+      mode: first_or_skip
+    in:
+      input_0: branch/out_file1
+  list:
+    tool_id: __BUILD_LIST__
+    in:
+      datasets_0|input: pick/output
+      datasets_1|input: exit_code
+    state:
+      datasets:
+      - id_cond:
+          id_select: id
+      - id_cond:
+          id_select: id
+  filter_failed:
+    tool_id: __FILTER_FAILED_DATASETS__
+    in:
+      input: list/output
+outputs:
+  picked:
+    outputSource: pick/output
+  filtered:
+    outputSource: filter_failed/output
+""",
+                test_data="""
+exit_code:
+  content: "1"
+  type: File
+""",
+                history_id=history_id,
+                assert_ok=False,
+                wait=True,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert invocation["state"] in ("scheduled", "completed"), invocation
+            assert invocation["messages"] == [], invocation
+            picked = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=invocation["outputs"]["picked"]["id"], assert_ok=False
+            )
+            assert picked["state"] == "error", picked
+            filtered = self.dataset_populator.get_history_collection_details(
+                history_id,
+                content_id=invocation["output_collections"]["filtered"]["id"],
+                assert_ok=False,
+            )
+            assert len(filtered["elements"]) == 1, filtered
+            assert filtered["elements"][0]["object"]["state"] == "ok", filtered
+
+    @skip_without_tool("job_properties")
+    @skip_without_tool("cat1")
+    def test_pick_value_input_paused(self):
+        # A paused input is resumable, so pick waits rather than failing.
+        workflow_id = self._upload_yaml_workflow("""class: GalaxyWorkflow
+steps:
+  job_props:
+    tool_id: job_properties
+    state:
+      thebool: true
+      failbool: true
+  branch:
+    tool_id: cat1
+    in:
+      input1: job_props/out_file1
+  pick:
+    type: pick_value
+    state:
+      mode: first_or_skip
+    in:
+      input_0: branch/out_file1
+outputs:
+  picked:
+    outputSource: pick/output
+""")
+        with self.dataset_populator.test_history() as history_id:
+            invocation_id = self.workflow_populator.invoke_workflow(workflow_id, history_id=history_id).json()["id"]
+
+            def step_output_id(step_label):
+                invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+                invocation_step = next(
+                    (step for step in invocation["steps"] if step["workflow_step_label"] == step_label), None
+                )
+                if invocation_step and (output := invocation_step["outputs"].get("out_file1")):
+                    return output["id"]
+                return None
+
+            failed_dataset_id = wait_on(lambda: step_output_id("job_props"), "job_props output to be created")
+            failed_state = self.dataset_populator.wait_for_dataset(history_id, failed_dataset_id, assert_ok=False)
+            assert failed_state == "error", failed_state
+            failed_dataset = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=failed_dataset_id, wait=False
+            )
+            paused_dataset_id = wait_on(lambda: step_output_id("branch"), "branch output to be created")
+            paused_state = self.dataset_populator.wait_for_dataset(history_id, paused_dataset_id, assert_ok=False)
+            assert paused_state == "paused", paused_state
+            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+            pick_step = next(step for step in invocation["steps"] if step["workflow_step_label"] == "pick")
+            assert pick_step["state"] == "new", pick_step
+            assert pick_step["outputs"] == {}, pick_step
+            self.dataset_populator.run_tool(
+                tool_id="job_properties",
+                inputs={
+                    "thebool": "false",
+                    "failbool": "false",
+                    "rerun_remap_job_id": failed_dataset["creating_job"],
+                },
+                history_id=history_id,
+            )
+            self.workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=False)
+            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+            assert invocation["state"] in ("scheduled", "completed"), invocation
+            picked = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=invocation["outputs"]["picked"]["id"], assert_ok=False
+            )
+            assert picked["state"] == "ok", picked
+
+    @skip_without_tool("job_properties")
+    @skip_without_tool("cat1")
+    @skip_without_tool("expression_forty_two")
+    def test_pick_value_first_non_null_ignores_paused_later_input(self):
+        # A paused input after the picked one must not block the invocation.
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+steps:
+  job_props:
+    tool_id: job_properties
+    state:
+      thebool: true
+      failbool: true
+  branch:
+    tool_id: cat1
+    in:
+      input1: job_props/out_file1
+  first:
+    tool_id: expression_forty_two
+    state: {}
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: first/out1
+      input_1: branch/out_file1
+outputs:
+  picked:
+    outputSource: pick/output
+  paused:
+    outputSource: branch/out_file1
+test_data: {}
+""",
+                history_id=history_id,
+                assert_ok=False,
+                wait=True,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert invocation["state"] in ("scheduled", "completed"), invocation
+            paused = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=invocation["outputs"]["paused"]["id"], assert_ok=False
+            )
+            assert paused["state"] == "paused", paused
+            picked_content = self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=invocation["outputs"]["picked"]["id"], wait=False
+            )
+            assert picked_content == "42"
+
     def test_pick_value_first_or_skip(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(

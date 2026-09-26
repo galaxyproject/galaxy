@@ -474,7 +474,11 @@ class WorkflowProgress:
         return remaining_steps
 
     def replacement_for_input(
-        self, trans: "ProvidesHistoryContext", step: "WorkflowStep", input_dict: modules.InputDescription
+        self,
+        trans: "ProvidesHistoryContext",
+        step: "WorkflowStep",
+        input_dict: modules.InputDescription,
+        require_ready: bool = False,
     ) -> modules.StepInputReplacement:
         replacement: modules.StepInputReplacement = NO_REPLACEMENT
         prefixed_name = input_dict["name"]
@@ -483,7 +487,7 @@ class WorkflowProgress:
         if prefixed_name in step.input_connections_by_name:
             connection = step.input_connections_by_name[prefixed_name]
             if input_dict["input_type"] == "dataset" and multiple:
-                temp = [self.replacement_for_connection(c) for c in connection]
+                temp = [self.replacement_for_connection(c, require_ready=require_ready) for c in connection]
                 # If replacement is just one dataset collection, replace tool
                 # input_dict with dataset collection - tool framework will extract
                 # datasets properly.
@@ -495,7 +499,9 @@ class WorkflowProgress:
                 else:
                     replacement = temp
             else:
-                replacement = self.replacement_for_connection(connection[0], is_data=is_data)
+                replacement = self.replacement_for_connection(
+                    connection[0], is_data=is_data, require_ready=require_ready
+                )
         elif (
             step.state
             and (state_input := get_path(step.state.inputs, nested_key_to_path(prefixed_name), None))
@@ -511,7 +517,9 @@ class WorkflowProgress:
                 replacement = raw_to_galaxy(trans.app, trans.history, step_input.default_value)
         return replacement
 
-    def replacement_for_connection(self, connection: "WorkflowStepConnection", is_data: bool = True):
+    def replacement_for_connection(
+        self, connection: "WorkflowStepConnection", is_data: bool = True, require_ready: bool = False
+    ):
         output_step_id = connection.output_step.id
         output_name = connection.output_name
         if output_step_id not in self.outputs:
@@ -569,15 +577,21 @@ class WorkflowProgress:
 
         if isinstance(replacement, model.DatasetCollection):
             raise NotImplementedError
-        if not is_data and isinstance(
+        # Data connections normally don't wait - the job queue orders them. Modules that
+        # read or mutate data while scheduling opt in with require_ready.
+        if (not is_data or require_ready) and isinstance(
             replacement, (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation)
         ):
+
+            def not_yet_available(dataset_instance: model.DatasetInstance) -> bool:
+                return dataset_instance.is_pending_or_paused if require_ready else dataset_instance.is_pending
+
             if isinstance(replacement, model.HistoryDatasetAssociation):
-                if replacement.is_pending:
+                if not_yet_available(replacement):
                     raise modules.DelayedWorkflowEvaluation(
                         dependencies=[modules.SchedulingDependency(modules.DependencyType.HDA, replacement.id)]
                     )
-                if not replacement.is_ok:
+                if not is_data and not replacement.is_ok:
                     raise modules.FailWorkflowEvaluation(
                         why=InvocationFailureDatasetFailed(
                             reason=FailureReason.dataset_failed,
@@ -594,10 +608,10 @@ class WorkflowProgress:
                 pending = False
                 pending_dataset_instance = None
                 for dataset_instance in replacement.dataset_instances:
-                    if dataset_instance.is_pending:
+                    if not_yet_available(dataset_instance):
                         pending = True
                         pending_dataset_instance = dataset_instance
-                    elif not dataset_instance.is_ok:
+                    elif not is_data and not dataset_instance.is_ok:
                         raise modules.FailWorkflowEvaluation(
                             why=InvocationFailureDatasetFailed(
                                 reason=FailureReason.dataset_failed,
