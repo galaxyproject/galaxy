@@ -66,6 +66,7 @@ from galaxy.tool_util_models.sample_sheet import (
     SampleSheetRows,
 )
 from galaxy.tool_util_models.tool_source import FieldDict
+from galaxy.util import string_as_bool
 from galaxy.util.config_templates import partial_model
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
@@ -389,32 +390,96 @@ class UserUpdatePayload(Model):
     ] = None
 
 
-class UserExtraPreferencesInputs(Model):
-    """Form-builder inputs for the admin-defined extra user preferences.
+ExtraPreferenceScalar = str | int | float | bool
+# A list is the value of a `select` input with `multiple: true`.
+ExtraPreferenceValue = ExtraPreferenceScalar | list[ExtraPreferenceScalar]
 
-    The sections come from ``user_preferences_extra_conf.yml``, so their shape is
-    whatever an administrator wrote. Modelling it any further would be fiction.
+SENSITIVE_EXTRA_PREFERENCE_TYPES = frozenset({"password", "secret"})
+
+
+class ExtraPreferenceInputDefinition(Model):
+    """One input of an administrator-defined extra preferences section.
+
+    Keys beyond the declared fields are form options the administrator set in
+    ``user_preferences_extra_conf.yml`` and are passed through unchanged.
     """
 
-    inputs: list[dict[str, Any]] = Field(
-        default_factory=list,
-        title="Inputs",
-        description="One form-builder section per configured group of extra preferences.",
+    model_config = ConfigDict(extra="allow", coerce_numbers_to_str=True)
+
+    name: str = Field(..., title="Name", description="Name of the input within its section.")
+    label: str | None = Field(default=None, title="Label")
+    type: str | None = Field(
+        default=None,
+        title="Type",
+        description=(
+            "Form input type, such as `text`, `select`, `boolean`, `password` or `secret`. Without a type, an input "
+            "with `options` is a `select` and any other input is `text`. The extra preferences endpoints never "
+            "return values of `password` and `secret` inputs."
+        ),
+    )
+    help: str | None = Field(default=None, title="Help")
+    required: Annotated[bool, BeforeValidator(lambda v: string_as_bool(v) if isinstance(v, str) else v)] = Field(
+        default=False,
+        title="Required",
+        description="Whether a stored value is protected from being cleared or set to an empty string.",
+    )
+    store: str | None = Field(
+        default=None,
+        title="Store",
+        description="`vault` when the value is kept in Galaxy's vault rather than in the user's preferences.",
+    )
+    options: list[tuple[str, ExtraPreferenceScalar] | tuple[str, ExtraPreferenceScalar, bool]] | None = Field(
+        default=None,
+        title="Options",
+        description="`[label, value]` or `[label, value, selected]` entries of a `select` input.",
+    )
+    multiple: bool = Field(
+        default=False, title="Multiple", description="Whether a `select` input takes a list of its options."
+    )
+    value: ExtraPreferenceValue | None = Field(default=None, title="Default value")
+
+    @property
+    def kind(self) -> str:
+        return self.type or ("select" if self.options else "text")
+
+    @property
+    def sensitive(self) -> bool:
+        return self.kind in SENSITIVE_EXTRA_PREFERENCE_TYPES
+
+    @property
+    def in_vault(self) -> bool:
+        return self.store == "vault"
+
+    @property
+    def option_values(self) -> set[ExtraPreferenceScalar]:
+        return {option[1] for option in self.options or []}
+
+
+class ExtraPreferenceSectionDefinition(Model):
+    name: str = Field(..., title="Name", description="Name of the section, the first part of each stored key.")
+    description: str = Field(..., title="Description")
+    inputs: list[ExtraPreferenceInputDefinition] = Field(default_factory=list, title="Inputs")
+
+
+class ExtraPreferenceSecretState(Model):
+    is_set: bool = Field(
+        ..., title="Is set", description="Whether a value is stored. The value itself is never returned."
     )
 
 
-class UserExtraPreferencesPayload(RootModel):
-    """Flat map of ``<section>|<input>`` to value, as produced by the generic form."""
+class UserExtraPreferences(RootModel[dict[str, dict[str, ExtraPreferenceValue | ExtraPreferenceSecretState | None]]]):
+    """A user's values for the extra preferences, by section and input name.
 
-    root: dict[str, Any] = {}
+    Inputs without a stored value are null. `password` and `secret` inputs report
+    whether a value is stored instead of the value.
+    """
 
 
-class UserExtraPreferencesUpdated(Model):
-    message: str = Field(
-        default=...,
-        title="Message",
-        description="Human readable confirmation that the preferences were saved.",
-    )
+class UserExtraPreferencesUpdatePayload(RootModel[dict[str, dict[str, ExtraPreferenceValue | None]]]):
+    """Values to change, by section and input name.
+
+    Inputs that are left out keep their stored value; null clears one.
+    """
 
 
 class UserCreationPayload(Model):

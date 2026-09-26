@@ -30,6 +30,7 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.extra_preferences import ExtraPreferencesManager
 from galaxy.managers.favorites import FavoritesManager
 from galaxy.model import (
     Dataset,
@@ -64,9 +65,8 @@ from galaxy.schema.schema import (
     UserBeaconSetting,
     UserCreationPayload,
     UserDeletionPayload,
-    UserExtraPreferencesInputs,
-    UserExtraPreferencesPayload,
-    UserExtraPreferencesUpdated,
+    UserExtraPreferences,
+    UserExtraPreferencesUpdatePayload,
     UserGroupsUpdatePayload,
     UserPasswordResetPayload,
     UserRolesUpdatePayload,
@@ -189,6 +189,7 @@ class FastAPIUsers:
     service: UsersService = depends(UsersService)
     user_serializer: users.UserSerializer = depends(users.UserSerializer)
     favorites_manager: FavoritesManager = depends(FavoritesManager)
+    extra_preferences_manager: ExtraPreferencesManager = depends(ExtraPreferencesManager)
 
     @router.put(
         "/api/users/current/recalculate_disk_usage",
@@ -464,33 +465,38 @@ class FastAPIUsers:
         return FavoriteObjectsSummary.model_validate(favorites)
 
     @router.get(
-        "/api/users/{user_id}/extra_preferences/inputs",
+        "/api/users/{user_id}/extra_preferences",
         name="get_extra_preferences",
-        summary="Return the administrator-defined extra user preferences as form inputs",
+        summary="Return the user's values for the administrator-defined extra preferences",
     )
     def get_extra_preferences(
         self,
         user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> UserExtraPreferencesInputs:
+    ) -> UserExtraPreferences:
+        """The sections and inputs are described by `GET /api/configuration/extra_preferences`."""
         user = self.service.get_user(trans, user_id)
-        return UserExtraPreferencesInputs(inputs=self.service.build_extra_preferences_inputs(trans, user))
+        return self.extra_preferences_manager.values(user)
 
     @router.put(
-        "/api/users/{user_id}/extra_preferences/inputs",
-        name="set_extra_preferences",
-        summary="Save values for the administrator-defined extra user preferences",
+        "/api/users/{user_id}/extra_preferences",
+        name="update_extra_preferences",
+        summary="Change values of the administrator-defined extra preferences",
     )
-    def set_extra_preferences(
+    def update_extra_preferences(
         self,
         user_id: UserIdPathParam,
+        payload: UserExtraPreferencesUpdatePayload,
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: UserExtraPreferencesPayload = Body(default_factory=UserExtraPreferencesPayload),
-    ) -> UserExtraPreferencesUpdated:
+    ) -> UserExtraPreferences:
+        """Inputs left out of the payload keep their stored value; null clears one.
+
+        Unlike account data, these stay writable when `enable_account_interface` is
+        off: they configure integrations such as file sources, not the account.
+        """
         user = self.service.get_user(trans, user_id)
-        self.service.save_extra_preferences(trans, user, payload.root)
-        trans.sa_session.commit()
-        return UserExtraPreferencesUpdated(message="Extra preferences have been saved.")
+        self.extra_preferences_manager.update(user, payload.root)
+        return self.extra_preferences_manager.values(user)
 
     @router.put(
         "/api/users/{user_id}/theme/{theme}",
@@ -862,6 +868,7 @@ class FastAPIUsers:
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
     service: UsersService = depends(UsersService)
     user_manager: users.UserManager = depends(users.UserManager)
+    extra_preferences_manager: ExtraPreferencesManager = depends(ExtraPreferencesManager)
 
     def _get_user_full(self, trans: ProvidesUserContext, user_id, **kwd):
         """Return referenced user or None if anonymous user is referenced."""
@@ -877,7 +884,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
 
         .. deprecated::
             Use ``GET /api/users/{user_id}`` for email, username and display name,
-            and ``GET /api/users/{user_id}/extra_preferences/inputs`` for the
+            and ``GET /api/users/{user_id}/extra_preferences`` for the
             administrator-defined extra preferences.
 
         :param id: the encoded id of the user
@@ -975,7 +982,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 user_info["addresses"] = [address.to_dict(trans) for address in user.addresses]
 
             # Build input sections for extra user preferences
-            for item in self.service.build_extra_preferences_inputs(trans, user):
+            for item in self.extra_preferences_manager.legacy_form_inputs(user):
                 inputs.append(item)
         else:
             if user.active_repositories:
@@ -1011,7 +1018,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
 
         .. deprecated::
             Use ``PUT /api/users/{user_id}`` for email, username and display name,
-            and ``PUT /api/users/{user_id}/extra_preferences/inputs`` for the
+            and ``PUT /api/users/{user_id}/extra_preferences`` for the
             administrator-defined extra preferences.
 
         :param id: the encoded id of the user
@@ -1051,7 +1058,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             user.values = form_values
 
         # Update values for extra user preference items
-        self.service.save_extra_preferences(trans, user, payload)
+        self.extra_preferences_manager.update_from_legacy_form(user, payload, commit=False)
 
         # Update user addresses. The whole block is gated, not just the parsing:
         # it rebuilds user.addresses from the payload, so running it while the

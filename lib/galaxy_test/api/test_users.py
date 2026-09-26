@@ -206,24 +206,27 @@ class TestUsersApi(ApiTestCase):
         self._assert_status_code_is(update_response, 400)
 
     @requires_new_user
-    def test_extra_preferences_inputs(self):
+    def test_extra_preferences(self):
         user = self._setup_user(TEST_USER_EMAIL)
         with self._different_user(email=TEST_USER_EMAIL):
-            response = self._get(f"users/{user['id']}/extra_preferences/inputs")
-            self._assert_status_code_is(response, 200)
             # The default test instance configures no extra preferences.
-            assert response.json()["inputs"] == []
-
-            response = self._put(f"users/{user['id']}/extra_preferences/inputs", data={}, json=True)
+            response = self._get("configuration/extra_preferences")
             self._assert_status_code_is(response, 200)
-            assert "message" in response.json()
+            assert response.json() == []
+
+            response = self._get(f"users/{user['id']}/extra_preferences")
+            self._assert_status_code_is(response, 200)
+            assert response.json() == {}
+
+            response = self._put(f"users/{user['id']}/extra_preferences", data={"no_such_section": {}}, json=True)
+            self._assert_status_code_is(response, 400)
 
     @requires_new_user
-    def test_extra_preferences_inputs_other_user_forbidden(self):
+    def test_extra_preferences_other_user_forbidden(self):
         user = self._setup_user(TEST_USER_EMAIL)
         self._setup_user("extra_prefs_other@bx.psu.edu")
         with self._different_user(email="extra_prefs_other@bx.psu.edu"):
-            response = self._get(f"users/{user['id']}/extra_preferences/inputs")
+            response = self._get(f"users/{user['id']}/extra_preferences")
             self._assert_status_code_is(response, 403)
 
     @requires_admin
