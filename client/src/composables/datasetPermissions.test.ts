@@ -4,7 +4,10 @@ import { Toast } from "@/composables/toast";
 
 import { useCallbacks } from "./datasetPermissions";
 
-vi.mock("@/composables/toast");
+vi.mock("@/composables/toast", () => {
+    const toast = { error: vi.fn(), success: vi.fn() };
+    return { Toast: toast, useToast: () => toast };
+});
 
 describe("dataset permissions callbacks", () => {
     afterEach(() => vi.clearAllMocks());
