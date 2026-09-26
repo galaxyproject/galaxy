@@ -60,7 +60,7 @@ import Toast from "@/components/Toast";
 import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
 import { setGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useRouteQueryBool } from "@/composables/route";
-import { setToastComponentRef } from "@/composables/toast";
+import { setToastComponentRef, useToast } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -68,6 +68,7 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWindowManagerStore } from "@/stores/windowManagerStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import Alert from "@/components/Alert.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
@@ -97,6 +98,7 @@ export default {
         const tourStore = useTourStore();
         const { currentTour } = storeToRefs(tourStore);
 
+        const { error: toastError } = useToast();
         const userStore = useUserStore();
         const { currentTheme } = storeToRefs(userStore);
 
@@ -141,7 +143,9 @@ export default {
                 if (embedded.value) {
                     userStore.$reset();
                 } else {
-                    userStore.loadUser();
+                    userStore.loadUser().catch((error) => {
+                        toastError(errorMessageAsString(error), "Failed to load user or histories");
+                    });
                 }
             },
             { immediate: true },
