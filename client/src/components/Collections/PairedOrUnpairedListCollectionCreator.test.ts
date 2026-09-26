@@ -8,6 +8,7 @@ import { ref } from "vue";
 
 import type { HDASummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
 
@@ -68,6 +69,7 @@ function buildFakeDataset(id: string, name: string): HDASummary {
 async function mountCreator(initialElements: HDASummary[]) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
+    vi.mocked(useDatatypesMapperStore().createMapper).mockResolvedValue(undefined);
 
     const wrapper = mount(PairedOrUnpairedListCollectionCreator as object, {
         propsData: {

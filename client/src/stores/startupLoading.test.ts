@@ -1,3 +1,4 @@
+import { http as mswHttp } from "msw";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,6 +11,7 @@ import { useUserStore } from "@/stores/userStore";
 vi.mock("@/composables/toast");
 
 const { server, http } = useServerMock();
+const anonymousUser = { nice_total_disk_usage: "0 bytes", total_disk_usage: 0 };
 
 beforeEach(() => {
     setActivePinia(createPinia());
@@ -22,7 +24,7 @@ describe("startup request failures", () => {
         const request = vi
             .fn()
             .mockReturnValueOnce(HttpResponse.error())
-            .mockImplementation(() => HttpResponse.json({}));
+            .mockImplementation(() => HttpResponse.json(anonymousUser));
         server.use(http.get("/api/users/{user_id}", request));
         const store = useUserStore();
 
@@ -37,7 +39,7 @@ describe("startup request failures", () => {
     });
 
     it("clears history loading after a count failure and allows user initialization to retry", async () => {
-        server.use(http.get("/api/users/{user_id}", () => HttpResponse.json({})));
+        server.use(http.get("/api/users/{user_id}", () => HttpResponse.json(anonymousUser)));
         const count = vi
             .fn()
             .mockReturnValueOnce(HttpResponse.error())
@@ -56,10 +58,10 @@ describe("startup request failures", () => {
 
     it.each(["network", "http"])("handles a %s configuration failure and permits retry", async (failure) => {
         server.use(
-            http.get("/api/configuration", () =>
+            mswHttp.get("/api/configuration", () =>
                 failure === "network"
                     ? HttpResponse.error()
-                    : HttpResponse.json({ err_msg: "Unavailable" }, { status: 503 }),
+                    : HttpResponse.json({ err_code: 503, err_msg: "Unavailable" }, { status: 503 }),
             ),
         );
         const store = useConfigStore();
