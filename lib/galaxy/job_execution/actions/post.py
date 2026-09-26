@@ -7,7 +7,12 @@ import datetime
 
 from markupsafe import escape
 
-from galaxy.model import PostJobActionAssociation
+from galaxy.model import (
+    DatasetInstance,
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
+    PostJobActionAssociation,
+)
 from galaxy.util import send_mail
 from galaxy.util.custom_logging import get_logger
 
@@ -31,6 +36,22 @@ class DefaultJobAction:
         cls, trans, sa_session, action, step_inputs, step_outputs, replacement_dict, final_job_state=None
     ):
         pass
+
+    @staticmethod
+    def mapped_over_dataset_instances(
+        step_output: HistoryDatasetAssociation | HistoryDatasetCollectionAssociation,
+    ) -> list[DatasetInstance]:
+        """Dataset instances an action should act on for a mapped over step output.
+
+        Handles both collection and single dataset outputs, and drops skipped
+        placeholders - mutating those breaks skip detection downstream.
+        """
+        instances: list[DatasetInstance | None]
+        if isinstance(step_output, HistoryDatasetCollectionAssociation):
+            instances = step_output.dataset_instances
+        else:
+            instances = [step_output]
+        return [instance for instance in instances if instance is not None and not instance.is_skipped]
 
     @classmethod
     def get_short_str(cls, pja):
@@ -115,12 +136,8 @@ class ChangeDatatypeAction(DefaultJobAction):
             newtype = action.action_arguments["newtype"]
             for name, step_output in step_outputs.items():
                 if action.output_name == "" or name == action.output_name:
-                    if hasattr(step_output, "dataset_instances"):
-                        for element in step_output.dataset_instances:
-                            if element:
-                                trans.app.datatypes_registry.change_datatype(element, newtype)
-                    else:
-                        trans.app.datatypes_registry.change_datatype(step_output, newtype)
+                    for dataset_instance in cls.mapped_over_dataset_instances(step_output):
+                        trans.app.datatypes_registry.change_datatype(dataset_instance, newtype)
 
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict=None, final_job_state=None):
@@ -364,7 +381,8 @@ class ColumnSetAction(DefaultJobAction):
         if action.action_arguments:
             for name, step_output in step_outputs.items():
                 if action.output_name == "" or name == action.output_name:
-                    cls._apply_column_set(step_output, action.action_arguments)
+                    for dataset_instance in cls.mapped_over_dataset_instances(step_output):
+                        cls._apply_column_set(dataset_instance, action.action_arguments)
 
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict=None, final_job_state=None):
