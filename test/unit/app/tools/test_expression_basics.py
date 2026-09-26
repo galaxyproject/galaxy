@@ -16,7 +16,9 @@ from cwl_utils.errors import (
 from galaxy.tools.expressions import (
     do_eval,
     evaluate,
+    ExpressionTemplateError,
     js_engine,
+    validate_expression_template,
 )
 from galaxy.tools.expressions.js_engine import (
     _bubblewrap_command,
@@ -399,3 +401,41 @@ def test_bubblewrap_real_execution():
         'JSON.stringify((function(){return String(globalThis.constructor.constructor("return typeof process")());})())'
     )
     assert evaluate_program(escape, sandbox_command=sandbox) == "undefined"
+
+
+UNTERMINATED_SHELL_COMMAND = """for f in *.txt; do
+  n="$(wc -l < "$f)"
+  echo "$f $n"
+done
+"""
+
+
+def test_unterminated_expression_is_rejected_before_evaluation():
+    with pytest.raises(ExpressionTemplateError) as exc:
+        do_eval(UNTERMINATED_SHELL_COMMAND, {})
+    message = str(exc.value)
+    assert "line 2, column 6" in message
+    assert '$(wc -l < "$f)"' in message
+    assert "\\$(" in message
+
+
+def test_unterminated_expression_reports_a_description():
+    with pytest.raises(ExpressionTemplateError, match="in tool shell_command at line 1"):
+        validate_expression_template('echo "$(date"', "shell_command")
+
+
+def test_escaped_command_substitution_survives_evaluation():
+    # What the error message tells authors to write has to actually work.
+    assert do_eval("echo \\$(date) > $(inputs.out)", {"out": "out.txt"}) == "echo $(date) > out.txt"
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "echo hello > out.txt",
+        'echo "$(inputs.name)" > out.txt',
+        "printf '%s' \"$(inputs.name)\" | tr -d '()' > out.txt",
+    ],
+)
+def test_parseable_templates_are_left_alone(expression):
+    validate_expression_template(expression)

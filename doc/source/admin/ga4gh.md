@@ -21,7 +21,7 @@ The GA4GH standards provide standardized APIs for accessing and executing workfl
 
 The {{ GA4GH_DRS }} enables standardized access to datasets stored in Galaxy.
 
-For detailed API specifications, see the [GA4GH DRS specification](https://ga4gh.github.io/data-repository-service/).
+For detailed API specifications, see the [GA4GH DRS specification](https://ga4gh.github.io/data-repository-service-schemas/).
 
 ### Configuration
 

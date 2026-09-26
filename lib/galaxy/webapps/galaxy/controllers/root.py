@@ -3,6 +3,7 @@ Contains the main interface in the Universe class
 """
 
 import logging
+from html import escape
 
 from webob.exc import HTTPNotFound
 
@@ -88,7 +89,12 @@ class RootController(controller.BaseUIController, UsesAnnotations):
         """
         # TODO: unencoded id
         authz_method = kwd.get("authz_method", "rbac")
-        if data := trans.sa_session.query(HistoryDatasetAssociation).get(id):
+        try:
+            decoded_id = int(id)
+        except (TypeError, ValueError):
+            trans.response.status = 400
+            return f"Invalid dataset id: {escape(str(id))}"
+        if data := trans.sa_session.get(HistoryDatasetAssociation, decoded_id):
             if authz_method == "rbac" and trans.app.security_agent.can_access_dataset(
                 trans.get_current_user_roles(), data.dataset
             ):

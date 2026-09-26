@@ -6,6 +6,9 @@ from typing import (
     cast,
 )
 
+import pytest
+
+from galaxy.exceptions import ConfigurationError
 from galaxy.jobs.runners.pulsar import PulsarJobRunner
 
 
@@ -161,3 +164,84 @@ def test_stop_job_supplies_recorded_external_id_to_kill_client():
     _destination_params, kill_kwargs = runner.client_manager.calls[-1]
     assert kill_kwargs["external_id"] == external_id
     assert runner.client_manager.clients[-1].killed
+
+
+@pytest.mark.parametrize("remote", [False, True])
+def test_metadata_container_uses_execution_host_paths(monkeypatch, remote):
+    """Pulsar's staging directory need not exist on the Galaxy host, or vice versa."""
+    storage_paths = {"/galaxy/objects"}
+
+    def get_disk_paths(object_store):
+        assert not remote, "Remote metadata must not query Galaxy's disk object store"
+        return storage_paths
+
+    monkeypatch.setattr("galaxy.jobs.runners.get_disk_paths", get_disk_paths)
+    finder = SimpleNamespace(find_container=lambda tool_info, destination_info, job_info: job_info)
+    runner = _runner()
+    runner.app = SimpleNamespace(container_finder=finder, object_store=object())
+    wrapper = SimpleNamespace(
+        working_directory="/galaxy/jobs/1",
+        job_destination=SimpleNamespace(params={"metadata_config": {"containerize": True}}),
+    )
+    job_info = runner._get_metadata_container(
+        wrapper,
+        job_directory_type="pulsar" if remote else "galaxy",
+        working_directory="/pulsar/staging/1" if remote else None,
+    )
+    expected_directory = "/pulsar/staging/1" if remote else "/galaxy/jobs/1"
+    assert job_info.working_directory == expected_directory
+    assert job_info.job_directory == expected_directory
+    assert job_info.output_paths == (set() if remote else storage_paths)
+
+
+@pytest.mark.parametrize("version", ["26.1.1", "26.2.dev0"])
+@pytest.mark.parametrize("image", [None, "registry.example/metadata@sha256:custom"])
+def test_metadata_container_tracks_galaxy_release(monkeypatch, version, image):
+    profile = float(".".join(version.split(".")[:2]))
+    monkeypatch.setattr("galaxy.jobs.runners.VERSION", version)
+    monkeypatch.setattr("galaxy.jobs.runners.VERSION_MAJOR", str(profile))
+    runner = _runner()
+    captured = []
+
+    def find_container(tool_info, destination_info, job_info):
+        captured.append(tool_info)
+        return object()
+
+    runner.app = SimpleNamespace(container_finder=SimpleNamespace(find_container=find_container))
+    config = {"containerize": True}
+    if image is not None:
+        config["image"] = image
+    wrapper = SimpleNamespace(
+        working_directory="/galaxy/jobs/1",
+        job_destination=SimpleNamespace(params={"metadata_config": config}),
+    )
+    runner._get_metadata_container(wrapper, job_directory_type="pulsar", working_directory="/pulsar/staging/1")
+    tool_info = captured[0]
+    assert tool_info.profile == profile
+    assert tool_info.tool_version == version
+    assert tool_info.container_descriptions[0].identifier == (
+        image or f"quay.io/galaxyproject/galaxy-job-execution:{version}"
+    )
+
+
+@pytest.mark.parametrize("remote", [False, True])
+def test_requested_metadata_container_must_resolve(monkeypatch, remote):
+    monkeypatch.setattr("galaxy.jobs.runners.get_disk_paths", lambda _: set())
+    runner = _runner()
+    runner.app = SimpleNamespace(
+        object_store=object(),
+        container_finder=SimpleNamespace(find_container=lambda *args: None),
+    )
+    wrapper = SimpleNamespace(
+        working_directory="/jobs/1",
+        job_destination=SimpleNamespace(params={"metadata_config": {"containerize": True, "image": "site/metadata:1"}}),
+    )
+    with pytest.raises(ConfigurationError, match="Cannot resolve metadata container 'site/metadata:1' using 'docker'"):
+        runner._get_metadata_container(wrapper, job_directory_type="pulsar" if remote else "galaxy")
+
+
+@pytest.mark.parametrize("config", [{}, {"metadata_config": {"containerize": False}}])
+def test_host_metadata_does_not_resolve_container(config):
+    runner = _runner()
+    wrapper = SimpleNamespace(job_destination=SimpleNamespace(params=config))
+    assert runner._get_metadata_container(wrapper) is None

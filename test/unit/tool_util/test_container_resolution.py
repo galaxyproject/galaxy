@@ -63,7 +63,7 @@ def test_docker_container_resolver_detects_docker_cli(appinfo, mocker):
     """
     - CachedMulledDockerContainerResolver properly detects present docker binary
     """
-    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled", return_value="/bin/docker")
+    mocker.patch("galaxy.tool_util.deps.container_resolvers.mulled.which", return_value="/bin/docker")
     resolver = CachedMulledDockerContainerResolver(appinfo)
     assert resolver.cli_available
 

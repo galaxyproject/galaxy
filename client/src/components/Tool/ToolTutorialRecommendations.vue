@@ -81,10 +81,8 @@ function toggleCategory(category: string) {
 </template>
 
 <style scoped lang="scss">
-// GButton's transparent-blue hover repaints the label near-white, and `.ui-link` keeps
-// the background transparent, so without this the toggles vanish on hover. The extra
-// `.g-*` classes are not decoration: they are what lifts this rule above
-// `.g-button.g-transparent:not(.g-pressed).g-blue:hover`.
+// Transparent-blue hover repaints the label near-white; keep it a visible link.
+// Extra classes out-rank `.g-button.g-transparent:not(.g-pressed).g-blue:hover`.
 .ui-link.g-button.g-transparent.g-blue:not(.g-pressed) {
     &:hover,
     &:focus-visible {

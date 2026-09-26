@@ -638,7 +638,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     ):
         if timeout is None:
             timeout = self.wait_length(wait_type=wait_type)
-        return wait_on(f, on_str or "custom wait", timeout)
+        # Keep polling on any falsy result, like Selenium's WebDriverWait; wait_on alone
+        # stops on anything but None, so a condition returning False would not wait at all.
+        return wait_on(lambda: f() or None, on_str or "custom wait", timeout)
 
     def wait_for_history_to_have_hid(self, history_id, hid):
         def get_hids():
@@ -1550,24 +1552,36 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         quota_component = admin_component.quota
 
         quota_component.add_new.wait_for_and_click()
-        form = quota_component.add_form.wait_for_visible()
+        form = quota_component.form.wait_for_visible()
 
         name = name or self._get_random_name()
         description = description or f"quota description for {name}"
-        amount = amount or ""
+        amount = amount or "unlimited"
         self.fill(
             form,
             {
-                "name": name,
-                "description": description,
-                "amount": amount,
+                "admin-quota-name": name,
+                "admin-quota-description": description,
+                "admin-quota-amount": amount,
             },
         )
         if quota_source_label:
-            self.select_set_value("#quota_source_label", quota_source_label)
+            self.select_set_value(quota_component.source_label, quota_source_label)
         if user:
-            self.select_set_value("#in_users", user, multiple=True)
-        quota_component.add_form_submit.wait_for_and_click()
+            self.quota_form_add_user(user)
+        quota_component.submit.wait_for_and_click()
+
+    def quota_form_add_user(self, email: str):
+        quota_component = self.components.admin.quota
+        quota_component.users.wait_for_and_click()
+        quota_component.users_input.wait_for_and_send_keys(email)
+        quota_component.user_option(email=email).wait_for_and_click()
+
+    def quota_form_add_group(self, name: str):
+        quota_component = self.components.admin.quota
+        quota_component.groups.wait_for_and_click()
+        quota_component.groups_input.wait_for_and_send_keys(name)
+        quota_component.group_option(name=name).wait_for_and_click()
 
     def select_dataset_from_lib_import_modal(self, filenames):
         self.wait_for_selector_visible(".directory-dataset-picker-list")

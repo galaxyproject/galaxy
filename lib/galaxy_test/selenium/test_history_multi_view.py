@@ -1,10 +1,7 @@
-from seletools.actions import drag_and_drop
-
 from galaxy.util.unittest_utils import transient_failure
 from .framework import (
     managed_history,
     retry_assertion_during_transitions,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -72,7 +69,6 @@ class TestHistoryMultiView(SeleniumTestCase):
         dataset_selector.wait_for_and_click()
         self.screenshot("multi_history_list_list")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @transient_failure(issue=21380, potentially_fixed=True)
     @selenium_test
     @managed_history
@@ -90,7 +86,7 @@ class TestHistoryMultiView(SeleniumTestCase):
         # We just create a new history with the dropped element here.
         drop_target = self.find_element_by_selector("div.history-picker-box.select-picker")
         dataset_element = self.history_panel_wait_for_hid_state(list_of_list_source_hid, None).wait_for_visible()
-        drag_and_drop(self.driver, source=dataset_element, target=drop_target)
+        self.drag_and_drop(dataset_element, drop_target)
         self._wait_on(lambda *driver: self.current_history_id() != source_history_id)
         target_history_id = self.current_history_id()
         self.wait_for_history_to_have_hid(target_history_id, list_of_list_target_hid)

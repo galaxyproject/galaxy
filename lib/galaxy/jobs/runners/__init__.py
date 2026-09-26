@@ -18,6 +18,7 @@ from queue import (
 from typing import (
     Any,
     Generic,
+    Literal,
     TYPE_CHECKING,
     TypeVar,
     Union,
@@ -42,15 +43,18 @@ from galaxy.jobs.runners.util.job_script import (
     write_script,
 )
 from galaxy.model.base import check_database_connection
+from galaxy.objectstore import get_disk_paths
 from galaxy.tool_util.deps.dependencies import (
     JobInfo,
     ToolInfo,
 )
+from galaxy.tool_util.deps.requirements import ContainerDescription
 from galaxy.tool_util.output_checker import (
     DETECTED_JOB_STATE,
     StdioReadErrorJobMessage,
 )
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
+from galaxy.tools.expressions import ExpressionTemplateError
 from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.util import (
     asbool,
@@ -64,6 +68,10 @@ from galaxy.util import (
 )
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
+from galaxy.version import (
+    VERSION,
+    VERSION_MAJOR,
+)
 from .state_handler_factory import build_state_handlers
 
 if TYPE_CHECKING:
@@ -72,7 +80,7 @@ if TYPE_CHECKING:
         JobWrapper,
         MinimalJobWrapper,
     )
-    from galaxy.schema.schema import JobState as JobStateEnum
+    from galaxy.schema.states import JobState as JobStateEnum
 
 log = get_logger(__name__)
 
@@ -317,8 +325,8 @@ class BaseJobRunner:
                 modify_command_for_container=modify_command_for_container,
                 stream_stdout_stderr=stream_stdout_stderr,
             )
-        except ParameterValueError as e:
-            log.info("(%s) parameter validation error preparing job: %s", job_id, unicodify(e))
+        except (ParameterValueError, ExpressionTemplateError) as e:
+            log.info("(%s) validation error preparing job: %s", job_id, unicodify(e))
             job_wrapper.fail(unicodify(e), exception=False)
             return False
         except Exception as e:
@@ -353,6 +361,7 @@ class BaseJobRunner:
         container = self._find_container(job_wrapper)
         if not container and job_wrapper.requires_containerization:
             raise Exception("Failed to find a container when required, contact Galaxy admin.")
+        metadata_container = self._get_metadata_container(job_wrapper)
         return build_command(
             self,
             job_wrapper,
@@ -361,6 +370,7 @@ class BaseJobRunner:
             modify_command_for_container=modify_command_for_container,
             container=container,
             stream_stdout_stderr=stream_stdout_stderr,
+            metadata_container=metadata_container,
         )
 
     def get_work_dir_outputs(
@@ -559,7 +569,7 @@ class BaseJobRunner:
         compute_job_directory: str | None = None,
         compute_tmp_directory: str | None = None,
     ):
-        job_directory_type = "galaxy" if compute_working_directory is None else "pulsar"
+        job_directory_type: Literal["galaxy", "pulsar"] = "galaxy" if compute_working_directory is None else "pulsar"
         if not compute_working_directory:
             compute_working_directory = job_wrapper.tool_working_directory
 
@@ -592,6 +602,7 @@ class BaseJobRunner:
             tmp_directory=compute_tmp_directory,
             home_directory=job_wrapper.home_directory(),
             job_directory_type=job_directory_type,
+            output_paths=get_disk_paths(self.app.object_store) if job_directory_type == "galaxy" else set(),
         )
 
         destination_info = job_wrapper.job_destination.params
@@ -599,6 +610,48 @@ class BaseJobRunner:
         if container:
             job_wrapper.set_container(container)
         return container
+
+    def _get_metadata_container(
+        self,
+        job_wrapper,
+        job_directory_type: Literal["galaxy", "pulsar"] = "galaxy",
+        working_directory: str | None = None,
+    ):
+        destination_info = job_wrapper.job_destination.params
+        if destination_info.get("metadata_config", {}).get("containerize"):
+            image = destination_info["metadata_config"].get(
+                "image", f"quay.io/galaxyproject/galaxy-job-execution:{VERSION}"
+            )
+            container_type = destination_info["metadata_config"].get("engine", "docker")
+            tool_info = ToolInfo(
+                [ContainerDescription(image, type=container_type)],
+                [],
+                False,
+                [],
+                guest_ports=None,
+                tool_id="__SET_METADATA__",
+                tool_version=VERSION,
+                profile=float(VERSION_MAJOR),
+            )
+            job_info = JobInfo(
+                working_directory=working_directory or job_wrapper.working_directory,
+                tool_directory=None,
+                job_directory=working_directory or job_wrapper.working_directory,
+                tmp_directory=None,
+                home_directory=None,
+                job_directory_type=job_directory_type,
+                job_type="epilog",
+                output_paths=get_disk_paths(self.app.object_store) if job_directory_type == "galaxy" else set(),
+            )
+
+            container = self.app.container_finder.find_container(tool_info, destination_info, job_info)
+            if container is None:
+                raise ConfigurationError(
+                    f"Cannot resolve metadata container {image!r} using {container_type!r}. "
+                    "Check that the container engine is enabled and the destination's container resolvers "
+                    "can resolve the metadata image. Disable metadata_config.containerize to use host metadata."
+                )
+            return container
 
     def _handle_runner_state(self, runner_state, job_state: "JobState"):
         try:

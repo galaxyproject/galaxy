@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import pytest
 from requests import (
+    get,
     post,
     put,
     Session,
@@ -138,6 +139,13 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         history_id = self._create_history("TestHistoryRecent")["id"]
         show_response = self._get("histories/most_recently_used").json()
         assert show_response["id"] == history_id
+
+    def test_show_most_recently_used_without_session(self):
+        # A request with neither an API key nor a galaxysession cookie has no user and no current
+        # history, so there is no most recently used history to serialize.
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/23439.
+        response = get(urljoin(self.url, "api/histories/most_recently_used"))
+        self._assert_status_code_is(response, 404)
 
     def test_index_order(self):
         slightly_older_history_id = self._create_history("TestHistorySlightlyOlder")["id"]
@@ -1025,6 +1033,21 @@ class TestImportExportHistory(ApiTestCase, ImportExportTests):
     def setUp(self):
         super().setUp()
         self._set_up_populators()
+
+    def test_history_exports_job_id_resolves(self):
+        history_id = self.dataset_populator.new_history()
+        self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
+        self.dataset_populator.prepare_export(history_id, {})
+
+        exports_response = self._get(f"histories/{history_id}/exports")
+        exports_response.raise_for_status()
+        exports = exports_response.json()
+        assert exports, "Expected at least one export record"
+        job_id = exports[0]["job_id"]
+
+        job_response = self._get(f"jobs/{job_id}")
+        job_response.raise_for_status()
+        assert job_response.json()["id"] == job_id
 
 
 class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):

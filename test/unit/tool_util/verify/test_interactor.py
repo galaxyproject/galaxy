@@ -303,7 +303,9 @@ def _dropping_server(drop_first: bool = True):
 
     SO_LINGER 0 forces an RST rather than a clean FIN, which is what a
     pooled connection looks like when the server has closed it and urllib3
-    has not noticed yet.
+    has not noticed yet. The request is read before the reset so urllib3
+    sees a read error; a reset that lands while it is still connecting is a
+    connect error, which urllib3 retries for every method, POST included.
     """
     accepts = []
     listener = socket.socket()
@@ -320,6 +322,7 @@ def _dropping_server(drop_first: bool = True):
                 return
             accepts.append(1)
             if not dropped:
+                conn.recv(65536)
                 conn.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
                 conn.close()
                 dropped = True

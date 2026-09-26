@@ -43,6 +43,7 @@ from fastapi.security import (
     HTTPAuthorizationCredentials,
     HTTPBearer,
 )
+from fastapi.types import DecoratedCallable
 from pydantic import (
     UUID4,
     ValidationError,
@@ -448,7 +449,9 @@ class FrameworkRouter(APIRouter):
 
     admin_user_dependency: Any
 
-    def wrap_with_alias(self, verb: RestVerb, *args, alias: str | None = None, **kwd):
+    def wrap_with_alias(
+        self, verb: RestVerb, *args: Any, alias: str | None = None, **kwd: Any
+    ) -> Callable[[DecoratedCallable], DecoratedCallable]:
         """
         Wraps FastAPI methods with additional alias keyword, require_admin and CORS handling.
 
@@ -500,7 +503,7 @@ class FrameworkRouter(APIRouter):
             else:
                 routes.append(decorate_route(path))
 
-        def dec(f):
+        def dec(f: DecoratedCallable) -> DecoratedCallable:
             for route in routes:
                 f = route(f)
             return f
@@ -517,30 +520,30 @@ class FrameworkRouter(APIRouter):
             if not alias == "/" and not alias.endswith("/"):
                 yield f"{alias}/"
 
-    def get(self, *args, **kwd):
+    def get(self, *args: Any, **kwd: Any) -> Callable[[DecoratedCallable], DecoratedCallable]:
         """Extend FastAPI.get to accept a require_admin Galaxy flag."""
         return self.wrap_with_alias(RestVerb.get, *args, **kwd)
 
-    def patch(self, *args, **kwd):
+    def patch(self, *args: Any, **kwd: Any) -> Callable[[DecoratedCallable], DecoratedCallable]:
         """Extend FastAPI.patch to accept a require_admin Galaxy flag."""
         return self.wrap_with_alias(RestVerb.patch, *args, **kwd)
 
-    def put(self, *args, **kwd):
+    def put(self, *args: Any, **kwd: Any) -> Callable[[DecoratedCallable], DecoratedCallable]:
         """Extend FastAPI.put to accept a require_admin Galaxy flag."""
         return self.wrap_with_alias(RestVerb.put, *args, **kwd)
 
-    def post(self, *args, **kwd):
+    def post(self, *args: Any, **kwd: Any) -> Callable[[DecoratedCallable], DecoratedCallable]:
         """Extend FastAPI.post to accept a require_admin Galaxy flag."""
         return self.wrap_with_alias(RestVerb.post, *args, **kwd)
 
-    def delete(self, *args, **kwd):
+    def delete(self, *args: Any, **kwd: Any) -> Callable[[DecoratedCallable], DecoratedCallable]:
         """Extend FastAPI.delete to accept a require_admin Galaxy flag."""
         return self.wrap_with_alias(RestVerb.delete, *args, **kwd)
 
-    def options(self, *args, **kwd):
+    def options(self, *args: Any, **kwd: Any) -> Callable[[DecoratedCallable], DecoratedCallable]:
         return self.wrap_with_alias(RestVerb.options, *args, **kwd)
 
-    def head(self, *args, **kwd):
+    def head(self, *args: Any, **kwd: Any) -> Callable[[DecoratedCallable], DecoratedCallable]:
         return self.wrap_with_alias(RestVerb.head, *args, **kwd)
 
     def _handle_galaxy_kwd(self, kwd):
@@ -569,7 +572,7 @@ class FrameworkRouter(APIRouter):
         return kwd
 
     @property
-    def cbv(self):
+    def cbv(self) -> Callable[[type[T]], type[T]]:
         """Short-hand for frequently used Galaxy-pattern of FastAPI class based views.
 
         Creates a class-based view for for this router, for more information see:

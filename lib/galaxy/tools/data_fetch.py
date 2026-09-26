@@ -544,9 +544,7 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                 assert path
                 datatype.groom_dataset_content(path)
 
-            # if length is 0, we should probably persist the empty list? -John
-            if len(transform) > 0:
-                source_dict["transform"] = transform
+            source_dict["transform"] = transform
         elif not error_message:
             effective_state = "deferred"
             registry = upload_config.registry

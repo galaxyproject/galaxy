@@ -135,7 +135,7 @@ watch(
         <span>Dataset is unavailable. Please check the history panel for details.</span>
     </BAlert>
     <LoadingSpan v-else-if="!previewLoaded" message="Loading dataset content" />
-    <div v-else class="dataset-display h-100">
+    <div v-else class="dataset-display d-flex flex-column h-100">
         <Alert v-if="sanitizedMessage" :dismissible="true" variant="warning" data-description="sanitization warning">
             {{ sanitizedMessage }}
             <span v-if="isAdmin && sanitizedToolId">

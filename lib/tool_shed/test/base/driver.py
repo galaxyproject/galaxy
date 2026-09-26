@@ -125,6 +125,8 @@ class ToolShedTestDriver(driver_util.TestDriver):
         new_repos_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
         galaxy_shed_tool_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
         galaxy_migrated_tool_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
+        shed_email_path = os.path.join(tool_shed_test_tmp_dir, "email.json")
+        os.environ["TOOL_SHED_TEST_EMAIL_PATH"] = shed_email_path
         os.environ["TEST_HG_WEB_CONFIG_DIR"] = hgweb_config_dir
         print("Directory location for hgweb.config:", hgweb_config_dir)
         toolshed_database_conf = driver_util.database_conf(shed_db_path, prefix="TOOL_SHED")
@@ -142,7 +144,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
             new_file_path=new_repos_path,
             running_functional_tests=True,
             shed_tool_data_table_config=shed_tool_data_table_conf_file,
-            smtp_server="smtp.dummy.string.tld",
+            smtp_server=f"mock_emails_to_path://{shed_email_path}",
             email_from="functional@localhost",
             use_heartbeat=False,
             whoosh_index_dir=whoosh_index_dir,
@@ -166,6 +168,8 @@ class ToolShedTestDriver(driver_util.TestDriver):
         tool_shed_test_host = tool_shed_server_wrapper.host
         tool_shed_test_port = tool_shed_server_wrapper.port
         log.info(f"Functional tests will be run against {tool_shed_test_host}:{tool_shed_test_port}")
+        # The assigned port is only available after startup.
+        tool_shed_server_wrapper.app.config.tool_shed_url = f"http://{tool_shed_test_host}:{tool_shed_test_port}"
 
         # Used by get_filename in tool shed's testcase
         if "TOOL_SHED_TEST_FILE_DIR" not in os.environ:

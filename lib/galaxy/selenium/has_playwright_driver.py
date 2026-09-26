@@ -592,8 +592,8 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             self._frame_or_page.wait_for_selector(selector, state="visible", timeout=timeout_ms)
 
             # Wait for element to be enabled
-            def is_enabled() -> bool:
-                return locator.is_enabled()
+            def is_enabled() -> bool | None:
+                return True if locator.is_enabled() else None
 
             wait_on(is_enabled, "locator to be enabled", timeout=timeout_ms / 1000)
 
@@ -631,8 +631,9 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         selector = self._selenium_locator_to_playwright_selector(*locator_tuple)
         locator = self._frame_or_page.locator(selector)
 
-        def enough_elements() -> bool:
-            return locator.count() >= n
+        # wait_on keeps polling only while the condition returns None.
+        def enough_elements() -> bool | None:
+            return True if locator.count() >= n else None
 
         try:
             wait_on(enough_elements, message, timeout=timeout_ms / 1000)
@@ -647,7 +648,9 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         if timeout is UNSPECIFIED_TIMEOUT:
             timeout = self.timeout_handler(kwds.get("wait_type"))
 
-        return wait_on(condition_func, message, timeout)
+        # Match Selenium's WebDriverWait, which keeps polling on any falsy result;
+        # wait_on alone stops on anything but None.
+        return wait_on(lambda: condition_func() or None, message, timeout)
 
     def _unwrap_element(self, element: WebElementProtocol) -> ElementHandle:
         """
@@ -870,18 +873,37 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         Internal implementation of drag and drop.
 
-        Creates a real DataTransfer via evaluate_handle so setData/getData
-        work across the full drag event sequence (unlike synthetic DragEvents
-        where Chrome restricts getData to return empty).
+        Fires dragenter and dragover, which a real drag does and which drop zones
+        use to reveal themselves. A zone that swaps its contents in response
+        detaches the element the caller grabbed, so drop goes to the nearest
+        ancestor still in the document - the zone itself, which is where the
+        handler lives - rather than to a node nothing can hear any more.
+
+        Uses a real DataTransfer so setData/getData work across the sequence,
+        unlike synthetic DragEvents where Chrome restricts getData to return empty.
         """
-        dt = self.page.evaluate_handle("() => new DataTransfer()")
-        source.dispatch_event("pointerdown")
-        source.dispatch_event("dragstart", {"dataTransfer": dt})
-        target.dispatch_event("dragenter", {"dataTransfer": dt})
-        target.dispatch_event("dragover", {"dataTransfer": dt})
-        target.dispatch_event("drop", {"dataTransfer": dt})
-        source.dispatch_event("dragend", {"dataTransfer": dt})
-        source.dispatch_event("pointerup")
+        self._frame_or_page.evaluate(
+            """([source, target]) => {
+                const dataTransfer = new DataTransfer();
+                const drag = (element, type) =>
+                    element.dispatchEvent(
+                        new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer })
+                    );
+                const ancestors = [];
+                for (let node = target; node; node = node.parentElement) {
+                    ancestors.push(node);
+                }
+
+                source.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+                drag(source, "dragstart");
+                drag(target, "dragenter");
+                drag(target, "dragover");
+                drag(ancestors.find((node) => node.isConnected) || target, "drop");
+                drag(source, "dragend");
+                source.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+            }""",
+            [source, target],
+        )
 
     def action_chains(self):
         """

@@ -54,11 +54,13 @@ from enum import IntEnum
 from typing import (
     Generic,
     TYPE_CHECKING,
-    TypeVar,
 )
+
+from typing_extensions import TypeVar
 
 import galaxy.tool_util.linters
 from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util.parser.interface import ToolSource
 from galaxy.tool_util.parser.util import ParseException
 from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.util import (
@@ -71,7 +73,7 @@ if TYPE_CHECKING:
     from galaxy.tool_util_models import UserToolSource
 
 # The object classified by a linter.
-LintTargetType = TypeVar("LintTargetType")
+LintTargetType = TypeVar("LintTargetType", default=ToolSource)
 
 
 class LintLevel(IntEnum):
@@ -93,7 +95,7 @@ class Linter(ABC, Generic[LintTargetType]):
 
     @classmethod
     @abstractmethod
-    def lint(cls, tool_source: LintTargetType, lint_ctx: "LintContext"):
+    def lint(cls, tool_source: LintTargetType, lint_ctx: "LintContext") -> None:
         """
         should add at most one message to the lint context
         """

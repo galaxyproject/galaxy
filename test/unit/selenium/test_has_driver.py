@@ -696,23 +696,32 @@ class TestActionChainsAndKeys:
             assert has_driver_instance.action_chains() is not None
 
     def test_drag_and_drop(self, has_driver_instance, base_url):
-        """Test drag and drop functionality."""
+        """The drop handler runs and reads what dragstart put on the dataTransfer."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
 
-        # TODO: Add actual draggable elements to basic.html for proper testing
-        # For example, add:
-        #   <div id="draggable" draggable="true" style="width:100px;height:100px;background:blue;">Drag me</div>
-        #   <div id="droptarget" style="width:200px;height:200px;background:gray;">Drop here</div>
-        # Then verify with JavaScript that droptarget contains draggable after drag_and_drop
-        # e.g., assert has_driver_instance.execute_script("return document.getElementById('droptarget').contains(document.getElementById('draggable'))")
+        source = has_driver_instance.find_element_by_id("drag-source")
+        target = has_driver_instance.find_element_by_id("drop-target")
 
-        # For now, just verify the method can be called without error
-        source = has_driver_instance.find_element_by_id("test-div")
-        target = has_driver_instance.find_element_by_id("visible-element")
-
-        # Call drag_and_drop - it should not raise an exception
-        # (even though these aren't actually draggable elements, the JS will execute)
         has_driver_instance.drag_and_drop(source, target)
+
+        assert target.text == "Dropped: dragged-payload"
+
+    def test_drag_and_drop_target_rerenders_on_dragenter(self, has_driver_instance, base_url):
+        """A zone that swaps its contents on dragenter still receives the drop.
+
+        The caller holds the inner box, which dragenter removes. Unless the whole
+        sequence is dispatched without yielding, the later events land on a
+        detached element and never reach the zone.
+        """
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        source = has_driver_instance.find_element_by_id("drag-source")
+        target = has_driver_instance.find_element_by_id("rerender-inner")
+
+        has_driver_instance.drag_and_drop(source, target)
+
+        zone = has_driver_instance.find_element_by_id("rerender-drop-zone")
+        assert zone.text == "Dropped: dragged-payload"
 
     def test_move_to_and_click(self, has_driver_instance, base_url):
         """Test moving to element and clicking via ActionChains."""

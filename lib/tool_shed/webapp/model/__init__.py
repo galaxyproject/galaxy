@@ -1,6 +1,7 @@
 import logging
 import os
 import random
+import secrets
 import string
 import weakref
 from collections.abc import Mapping
@@ -51,10 +52,7 @@ from galaxy.model.custom_types import (
 )
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.security.validate_user_input import validate_password_str
-from galaxy.util import (
-    now,
-    unique_id,
-)
+from galaxy.util import now
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_insecure_hash
@@ -212,7 +210,7 @@ class PasswordResetToken(Base):
         if token:
             self.token = token
         else:
-            self.token = unique_id()
+            self.token = secrets.token_hex(16)
         add_object_to_object_session(self, user)
         self.user = user
         self.expiration_time = now() + timedelta(hours=24)

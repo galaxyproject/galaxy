@@ -68,9 +68,7 @@ vi.mock("@/composables/markdown", () => ({
     useMarkdown: () => ({ renderMarkdown: (content: string) => content }),
 }));
 
-vi.mock("@/composables/toast", () => ({
-    useToast: () => ({ error: vi.fn(), success: vi.fn(), warning: vi.fn(), info: vi.fn() }),
-}));
+vi.mock("@/composables/toast");
 
 vi.mock("@/composables/useEntityMentions", () => ({
     MENTION_PATTERN_SOURCE: "@(dataset|history):(\\S+)",

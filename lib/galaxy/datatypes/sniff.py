@@ -15,6 +15,7 @@ import zipfile
 from collections.abc import (
     Callable,
     Iterable,
+    Iterator,
 )
 from functools import partial
 from typing import (
@@ -234,7 +235,9 @@ def convert_newlines_sep2tabs(
     return convert_newlines(fname, in_place, tmp_dir, tmp_prefix, regexp=regexp)
 
 
-def iter_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
+def iter_headers(
+    fname_or_file_prefix: "str | FilePrefix", sep: str | None, count: int = 60, comment_designator: str | None = None
+) -> Iterator[list[str]]:
     idx = 0
     if isinstance(fname_or_file_prefix, FilePrefix):
         file_iterator = fname_or_file_prefix.line_iterator()
@@ -809,7 +812,7 @@ class HandleCompressedFileResponse(NamedTuple):
     ext: str
     uncompressed_path: str
     compressed_type: str | None
-    is_compressed: bool | None
+    is_compressed: bool
 
 
 def handle_compressed_file(
@@ -848,6 +851,8 @@ def handle_compressed_file(
     if check_compressed_function:
         is_compressed, is_valid = check_compressed_function(filename, check_content=check_content)
         compressed_type = file_prefix.compressed_format
+    if is_compressed and not is_valid:
+        is_valid = _sniffs_as_compressed_html_container(file_prefix, datatypes_registry, ext)
     if is_compressed and is_valid:
         if ext in AUTO_DETECT_EXTENSIONS:
             # attempt to sniff for a keep-compressed datatype (observing the sniff order)
@@ -887,6 +892,15 @@ def handle_compressed_file(
     return HandleCompressedFileResponse(is_valid, ext, uncompressed_path, compressed_type, is_compressed)
 
 
+def _sniffs_as_compressed_html_container(file_prefix: FilePrefix, datatypes_registry, ext: str) -> bool:
+    if ext in AUTO_DETECT_EXTENSIONS:
+        candidates = datatypes_registry.sniff_order
+    else:
+        candidates = [datatypes_registry.get_datatype_by_extension(ext)]
+    candidates = [d for d in candidates if d is not None and d.allow_compressed_html_content]
+    return bool(candidates) and run_sniffers_raw(file_prefix, candidates) is not None
+
+
 def handle_uploaded_dataset_file(filename, *args, **kwds) -> str:
     """Legacy wrapper about handle_uploaded_dataset_file_internal for tools using it."""
     file_prefix = FilePrefix(filename)
@@ -910,6 +924,11 @@ def convert_function(convert_to_posix_lines, convert_spaces_to_tabs) -> ConvertF
     else:
         convert_fxn = convert_sep2tabs
     return convert_fxn
+
+
+def should_convert_text(file_prefix: FilePrefix, is_compressed: bool) -> bool:
+    """Newline and space conversion only applies to uncompressed text content."""
+    return not file_prefix.binary and not is_compressed
 
 
 def handle_uploaded_dataset_file_internal(
@@ -952,7 +971,7 @@ def handle_uploaded_dataset_file_internal(
                 auto_decompress=file_prefix.auto_decompress,
             )
 
-        if not is_binary and not is_compressed and (convert_to_posix_lines or convert_spaces_to_tabs):
+        if (convert_to_posix_lines or convert_spaces_to_tabs) and should_convert_text(file_prefix, is_compressed):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
             convert_fxn = convert_function(convert_to_posix_lines, convert_spaces_to_tabs)
             line_count, _converted_path, converted_newlines, converted_spaces = convert_fxn(
