@@ -414,6 +414,17 @@ class TestUserManager(BaseTestCase):
         self.user_manager.update_email(self.trans, user, "changed@example.com")
         assert user.email == "changed@example.com"
 
+    def test_update_email_changes_only_the_case(self):
+        user = self.user_manager.create(**user2_data)
+        self.user_manager.update_email(self.trans, user, user2_data["email"].upper())
+        assert user.email == user2_data["email"].upper()
+
+    def test_update_email_rejects_another_users_address_in_any_case(self):
+        user2 = self.user_manager.create(**user2_data)
+        user3 = self.user_manager.create(**user3_data)
+        with pytest.raises(exceptions.RequestParameterInvalidException):
+            self.user_manager.update_email(self.trans, user3, user2.email.upper())
+
     def test_reset_email(self):
         self.log("should produce the password reset email")
         self.user_manager.create(email="user@nopassword.com", username="nopassword")

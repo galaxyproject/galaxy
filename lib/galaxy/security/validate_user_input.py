@@ -94,8 +94,12 @@ def validate_email(
             message = "This email address has been banned."
 
     if not message and check_dup:
-        stmt = select(trans.app.model.User).filter(func.lower(trans.app.model.User.email) == email.lower()).limit(1)
-        if trans.sa_session.scalars(stmt).first():
+        user_class = trans.app.model.User
+        stmt = select(user_class).filter(func.lower(user_class.email) == email.lower())
+        if user is not None:
+            # Changing only the case of one's own address is not a duplicate.
+            stmt = stmt.filter(user_class.id != user.id)
+        if trans.sa_session.scalars(stmt.limit(1)).first():
             message = f"User with email '{email}' already exists."
 
     if not message:
