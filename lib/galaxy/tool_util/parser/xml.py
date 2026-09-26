@@ -833,7 +833,7 @@ class XmlToolSource(ToolSource):
             grant_as_dict = {}
             if grant_el.tag == "grant":
                 grant_as_dict["class"] = "Grant"
-                grant_as_dict.update(grant_el.attrib)
+                grant_as_dict.update(_element_to_dict(grant_el))
                 funding.append(grant_as_dict)
         return funding
 
