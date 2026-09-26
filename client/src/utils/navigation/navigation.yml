@@ -73,8 +73,6 @@ command_palette:
     option: '[data-description="palette option"]'
     option_title: '[data-description="palette option"] .item-title'
     section: '[data-description="palette section ${section}"]'
-    # every other palette selector is unique on its own, this one is not
-    sections: 'dialog.command-palette [role="group"]'
 
 preferences:
   selectors:

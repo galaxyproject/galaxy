@@ -2221,7 +2221,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             option_component = option_label_or_component
             option_component.wait_for_and_click()
 
-    # --- Command palette helpers ---
+    # --- Keyboard helpers ---
 
     def platform_modifier_key(self) -> Key:
         """Return the modifier the client binds shortcuts to on this browser's platform.
@@ -2231,6 +2231,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         """
         is_mac = self.execute_script("return navigator.userAgent.toUpperCase().indexOf('MAC') >= 0;")
         return Key.META if is_mac else Key.CONTROL
+
+    # --- Command palette helpers ---
 
     def command_palette_open(self) -> None:
         """Open the command palette from the masthead search button."""
@@ -2259,13 +2261,22 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         """Text of the scope or action badge in front of the input."""
         return self.components.command_palette.badge.wait_for_text()
 
+    @retry_during_transitions
     def command_palette_option_titles(self) -> list[str]:
-        """Titles of the rendered result rows, in the order they are shown."""
+        """Titles of the rendered result rows, in the order they are shown.
+
+        The rows are replaced on every search, so the read is retried rather
+        than left to raise out of whatever wait is polling it.
+        """
         return [element.text for element in self.components.command_palette.option_title.all()]
 
-    def command_palette_section_count(self) -> int:
-        """Number of result sections currently rendered."""
-        return len(self.components.command_palette.sections.all())
+    def command_palette_wait_for_input_value(self, value: str) -> None:
+        """Wait for the palette input to hold exactly this text."""
+        self._wait_on(
+            lambda: self.components.command_palette.input.wait_for_value() == value,
+            f"command palette input to hold [{value}]",
+            wait_type=WAIT_TYPES.UX_TRANSITION,
+        )
 
     def command_palette_wait_for_option(self, title: str) -> None:
         """Wait for a result row with this exact title.
@@ -2279,10 +2290,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             wait_type=WAIT_TYPES.DATABASE_OPERATION,
         )
 
-    @retry_during_transitions
     def command_palette_click_option(self, title: str) -> None:
         """Run the result row with this title; the click bubbles from the title to the row."""
         self.command_palette_wait_for_option(title)
+        self._command_palette_click_rendered_option(title)
+
+    @retry_during_transitions
+    def _command_palette_click_rendered_option(self, title: str) -> None:
+        """Click a row already known to be rendered - the wait stays outside the retry."""
         for element in self.components.command_palette.option_title.all():
             if element.text == title:
                 element.click()
