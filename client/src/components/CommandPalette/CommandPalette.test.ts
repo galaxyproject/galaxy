@@ -6,8 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { Toast } from "@/composables/toast";
 import { useCommandPalette } from "@/composables/useCommandPalette";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
+import { useHistoryStore } from "@/stores/historyStore";
 import { usePageStore } from "@/stores/pageStore";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
@@ -23,6 +25,7 @@ import type { CommandPaletteProvider } from "./types";
 import MountTarget from "./CommandPalette.vue";
 
 vi.mock("@/composables/config");
+vi.mock("@/composables/toast");
 
 const localVue = getLocalVue(true);
 localVue.use(VueRouter);
@@ -967,6 +970,22 @@ describe("CommandPalette", () => {
 
         window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, cancelable: true }));
         expect(useCommandPalette().isPaletteOpen.value).toBe(false);
+    });
+
+    it("surfaces a failing action instead of dropping it", async () => {
+        useUserStore().currentUser = { id: "u1", email: "user@galaxy.org", username: "user" } as never;
+        vi.mocked(useHistoryStore().createNewHistory).mockRejectedValue(new Error("history quota exceeded"));
+
+        await type("> new history");
+        expect(wrapper.findAll("[role='option']").at(0).text()).toContain("Create new history");
+
+        await press("Enter");
+
+        // the palette closes on run, so a rejection has nowhere else to surface
+        expect(Toast.error).toHaveBeenCalledWith(
+            expect.stringContaining("history quota exceeded"),
+            expect.stringContaining("Create new history"),
+        );
     });
 
     it("ignores plain 'k' without the platform modifier", () => {

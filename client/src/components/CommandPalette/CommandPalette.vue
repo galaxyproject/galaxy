@@ -8,6 +8,7 @@ import { useRouter } from "vue-router/composables";
 import { useStartNewChat } from "@/components/GalaxyAI/useStartNewChat";
 import { useFilteredUploadMethods } from "@/components/Panels/Upload/uploadMethodRegistry";
 import { useConfig } from "@/composables/config";
+import { Toast } from "@/composables/toast";
 import { useCommandPalette } from "@/composables/useCommandPalette";
 import { useRecentPaletteItems } from "@/composables/useRecentPaletteItems";
 import { useUid } from "@/composables/utils/uid";
@@ -15,13 +16,14 @@ import { useToolStore } from "@/stores/toolStore";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { useUserStore } from "@/stores/userStore";
 import { localize } from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { helpSections } from "./paletteHelp";
 import { findPaletteProvider, paletteProviders } from "./providers";
 import { ALL_CATEGORY, availableCategories, categoryProviderId, type PaletteCategory } from "./providers/categories";
 import { isPaletteFetchError } from "./providers/errors";
 import type { ScopeDefinition } from "./providers/scopes";
-import type { CommandPaletteProvider, PaletteContext, PaletteItem, ResultSection } from "./types";
+import type { CommandPaletteProvider, PaletteContext, PaletteItem, PaletteItemRun, ResultSection } from "./types";
 import { usePaletteDialog } from "./usePaletteDialog";
 import { secondaryLabelFor, usePaletteFooter } from "./usePaletteFooter";
 import { type PaletteMode, usePaletteMachine } from "./usePaletteMachine";
@@ -399,9 +401,32 @@ function runSecondary(item: PaletteItem) {
             // duplicate navigation to the current route is fine
         });
     } else {
-        secondary.run?.(buildContext());
+        runHandler(secondary.run, secondary.label);
     }
     closePalette();
+}
+
+/**
+ * Runs an item's imperative action and reports a failure.
+ *
+ * Handlers may be async and the palette closes as soon as one starts, so a
+ * rejection has nowhere left to surface. Catching here rather than in each
+ * provider means an action cannot fail silently just because its provider
+ * forgot to; a provider wanting a more specific message still catches first.
+ */
+function runHandler(run: PaletteItemRun | undefined, label: string) {
+    if (!run) {
+        return;
+    }
+    try {
+        void Promise.resolve(run(buildContext())).catch((error) => reportFailedRun(error, label));
+    } catch (error) {
+        reportFailedRun(error, label);
+    }
+}
+
+function reportFailedRun(error: unknown, label: string) {
+    Toast.error(errorMessageAsString(error), `Failed to run "${label}"`);
 }
 
 /**
@@ -421,7 +446,7 @@ function runItem(item: PaletteItem | undefined, event?: KeyboardEvent | MouseEve
     }
     if (mode.value.type === "help") {
         // help rows only rewrite the input, the palette stays open
-        item.handler?.(buildContext());
+        runHandler(item.handler, item.title);
         refocusInput();
         return;
     }
@@ -445,7 +470,7 @@ function runItem(item: PaletteItem | undefined, event?: KeyboardEvent | MouseEve
             // duplicate navigation to the current route is fine
         });
     } else {
-        item.handler?.(buildContext());
+        runHandler(item.handler, item.title);
     }
     closePalette();
 }
