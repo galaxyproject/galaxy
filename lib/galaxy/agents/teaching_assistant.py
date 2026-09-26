@@ -195,7 +195,7 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
 
         @agent.tool
         async def check_user_context(ctx) -> str:
-            """Inspect the user's current history to understand their work context."""
+            """Inspect the user's current history. Failed items include the job ID to pass to analyze_error."""
             history = teaching_assistant.deps.trans.get_history()
             if history is None:
                 return "The user has no active history."
@@ -207,10 +207,20 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             summary_lines = []
             for ds in datasets[:15]:
                 state_indicator = ds.get("state", "?")
-                summary_lines.append(
+                line = (
                     f"- [{state_indicator}] HID {ds.get('hid', '?')}: "
                     f"{ds.get('name', 'unnamed')} ({ds.get('extension', '?')})"
                 )
+                # Collection IDs decode into a different table, so only datasets are looked up.
+                if state_indicator == "error" and ds.get("history_content_type") == "dataset" and ds.get("id"):
+                    try:
+                        job_id = teaching_assistant.ops.get_job_details(ds["id"]).get("job_id")
+                    except Exception as e:
+                        log.warning(f"Could not find the job for failed dataset: {e}")
+                        job_id = None
+                    if job_id:
+                        line += f" -- failed job {job_id}, use analyze_error"
+                summary_lines.append(line)
             total = result.get("pagination", {}).get("total_items", len(datasets))
             shown = min(len(datasets), 15)
             header = f"User's current history has {total} datasets"
