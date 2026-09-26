@@ -70,7 +70,7 @@ export function updateRefs(
     accessPermissions.value = accessInput.value;
 }
 
-export function useCallbacks(init: () => void) {
+export function useCallbacks(init: () => Promise<void>) {
     const toast = useToast();
 
     async function onError(e: unknown) {
@@ -79,10 +79,18 @@ export function useCallbacks(init: () => void) {
 
     async function onSuccess(data: AxiosResponse) {
         toast.success(data.data.message);
-        init();
+        await load();
     }
 
-    init();
+    async function load() {
+        try {
+            await init();
+        } catch (e) {
+            await onError(e);
+        }
+    }
+
+    void load();
 
     return { onSuccess, onError };
 }
