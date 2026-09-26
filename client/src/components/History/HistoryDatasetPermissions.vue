@@ -4,9 +4,11 @@ import { useRoute } from "vue-router/composables";
 
 import { initRefs, updateRefs, useCallbacks } from "@/composables/datasetPermissions";
 import { useHistoryBreadCrumbsToForProps } from "@/composables/historyBreadcrumbs";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getPermissions, getPermissionsUrl, setPermissions } from "./services";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import DatasetPermissionsForm from "@/components/Dataset/DatasetPermissionsForm.vue";
 
@@ -19,6 +21,7 @@ const props = defineProps<HistoryDatasetPermissionsProps>();
 const route = useRoute();
 
 const loading = ref(true);
+const loadError = ref("");
 
 const {
     managePermissionsOptions,
@@ -60,9 +63,23 @@ async function change(value: unknown) {
 }
 
 async function init() {
-    const { data } = await getPermissions(props.historyId);
-    updateRefs(data.inputs, managePermissionsOptions, accessPermissionsOptions, managePermissions, accessPermissions);
-    loading.value = false;
+    loading.value = true;
+    loadError.value = "";
+    try {
+        const { data } = await getPermissions(props.historyId);
+        updateRefs(
+            data.inputs,
+            managePermissionsOptions,
+            accessPermissionsOptions,
+            managePermissions,
+            accessPermissions,
+        );
+    } catch (error) {
+        loadError.value = errorMessageAsString(error);
+        throw error;
+    } finally {
+        loading.value = false;
+    }
 }
 
 const { onSuccess, onError } = useCallbacks(init);
@@ -72,7 +89,9 @@ const { onSuccess, onError } = useCallbacks(init);
     <div>
         <BreadcrumbHeading v-if="route.path === '/histories/permissions'" :items="breadcrumbItems" />
 
+        <GAlert v-if="loadError" variant="danger">{{ loadError }}</GAlert>
         <DatasetPermissionsForm
+            v-else
             :loading="loading"
             :simple-permissions="simplePermissions"
             :title="title"
