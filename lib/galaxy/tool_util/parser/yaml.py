@@ -295,7 +295,9 @@ class YamlToolSource(ToolSource):
             inputs = test_dict.get("inputs", {})
             state = TestCaseJsonToolState(inputs)
             parameters = self._parse_parameters()
-            state.validate(parameters, name=f"test case json {i}")
+            if not test_dict.get("expect_failure", False):
+                # tests expecting failure may supply values the tool rejects
+                state.validate(parameters, name=f"test case json {i}")
 
             flat_inputs: dict[str, Any] = {}
             self._flatten_parameters(inputs, parameters, flat_inputs=flat_inputs)
@@ -399,7 +401,7 @@ def __parse_test_inputs(i: int, test_inputs: list | dict) -> ToolSourceTestInput
 
 def _parse_test(i: int, test_dict: dict) -> ToolSourceTest:
     test_dict["inputs"] = __parse_test_inputs(i, deepcopy(test_dict["inputs"]))
-    outputs = test_dict["outputs"]
+    outputs = test_dict.get("outputs") or {}
 
     new_outputs = []
     if is_dict(outputs):
