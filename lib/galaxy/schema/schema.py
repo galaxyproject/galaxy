@@ -61,6 +61,7 @@ from galaxy.schema.states import (
 from galaxy.schema.tours import TourDetails
 from galaxy.schema.types import (
     OffsetNaiveDatetime,
+    OmittableNotNull,
     RelativeUrl,
 )
 from galaxy.tool_util_models.sample_sheet import (
@@ -397,17 +398,17 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
 
 class UserUpdatePayload(Model):
     active: Annotated[
-        bool | None,
+        OmittableNotNull[bool],
         Field(title="Active", description="Whether the account is active. Only an administrator can change this."),
     ] = None
-    username: Annotated[str | None, Field(title="Username", description="The name of the user.")] = None
+    username: Annotated[OmittableNotNull[str], Field(title="Username", description="The name of the user.")] = None
     display_name: Annotated[DisplayName, UserDisplayNameField] = None
     preferred_object_store_id: Annotated[str | None, PreferredObjectStoreIdField]
     # Declared last so that a payload combining it with `active` ends on the
     # deactivation, not on a stale activation. UserDeserializer only lets an
     # administrator set `active`, so this ordering is belt and braces.
     email: Annotated[
-        str | None,
+        OmittableNotNull[str],
         Field(
             title="Email",
             description=(

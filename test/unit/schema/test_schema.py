@@ -1,12 +1,17 @@
 import re
 from uuid import uuid4
 
-from pydantic import BaseModel
+import pytest
+from pydantic import (
+    BaseModel,
+    ValidationError,
+)
 
 from galaxy.schema.schema import (
     DatasetStateField,
     OAuth2State,
     TAG_ITEM_PATTERN,
+    UserUpdatePayload,
 )
 from galaxy.schema.tasks import (
     GenerateInvocationDownload,
@@ -85,3 +90,15 @@ def test_oauth_state():
     state_out = OAuth2State.decode(state_in.encode())
     assert state_out.route == "/file_sources/dropbox"
     assert state_out.nonce == "abcde56"
+
+
+@pytest.mark.parametrize("field", ["active", "email", "username"])
+def test_user_update_payload_rejects_null(field):
+    with pytest.raises(ValidationError):
+        UserUpdatePayload.model_validate({field: None})
+    assert "anyOf" not in UserUpdatePayload.model_json_schema()["properties"][field]
+
+
+def test_user_update_payload_null_clears():
+    payload = UserUpdatePayload.model_validate({"display_name": None, "preferred_object_store_id": None})
+    assert payload.model_dump(exclude_unset=True) == {"display_name": None, "preferred_object_store_id": None}

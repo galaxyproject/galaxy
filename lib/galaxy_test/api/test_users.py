@@ -113,6 +113,11 @@ class TestUsersApi(ApiTestCase):
             update_response = self.__update(user, data={"username": ""})
             self._assert_status_code_is(update_response, 400)
 
+            # the field may be left out, but null is not a username
+            update_response = self.__update(user, data={"username": None})
+            self._assert_status_code_is(update_response, 400)
+            self._assert_error_code_is(update_response, INVALID_PARAMETER)
+
             # not them
             update_response = self.__update(not_the_user, data=payload)
             self._assert_status_code_is(update_response, 400)
@@ -191,9 +196,10 @@ class TestUsersApi(ApiTestCase):
             update_response = self.__update(user, data={"email": other_user["email"]})
             self._assert_status_code_is(update_response, 400)
 
-            # null passes the schema because the field is optional
+            # null is not an email address
             update_response = self.__update(user, data={"email": None})
             self._assert_status_code_is(update_response, 400)
+            self._assert_error_code_is(update_response, INVALID_PARAMETER)
 
     @requires_admin
     @requires_new_user
@@ -216,6 +222,7 @@ class TestUsersApi(ApiTestCase):
         # null is not a bool; reject it before it reaches the NOT NULL column
         update_response = self._put(update_url, data={"active": None}, admin=True, json=True)
         self._assert_status_code_is(update_response, 400)
+        self._assert_error_code_is(update_response, INVALID_PARAMETER)
 
     @requires_new_user
     def test_extra_preferences_inputs(self):
