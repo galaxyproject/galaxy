@@ -377,6 +377,11 @@ class TestUserManager(BaseTestCase):
         assert refreshed.activation_token is not None
         assert refreshed.active is False
 
+    def test_update_email_strips_whitespace(self):
+        user = self.user_manager.create(email="original@example.com", username="updater")
+        self.user_manager.update_email(self.trans, user, "  updated@example.com  ", send_activation_email=False)
+        assert user.email == "updated@example.com"
+
     def test_reset_email(self):
         self.log("should produce the password reset email")
         self.user_manager.create(email="user@nopassword.com", username="nopassword")

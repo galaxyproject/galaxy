@@ -183,6 +183,25 @@ class TestUsersApi(ApiTestCase):
             self._assert_status_code_is(update_response, 200)
             assert update_response.json()["email"] == TEST_USER_EMAIL_UPDATED
 
+            # surrounding whitespace is stripped rather than rejected
+            update_response = self.__update(user, data={"email": f"  {TEST_USER_EMAIL_UPDATE}  "})
+            self._assert_status_code_is(update_response, 200)
+            assert update_response.json()["email"] == TEST_USER_EMAIL_UPDATE
+
+    @requires_admin
+    @requires_new_user
+    def test_create_email(self):
+        email = "user_for_create_padded_email_test@bx.psu.edu"
+        payload = {"email": f"  {email}  ", "username": "padded-email", "password": "testpass"}
+        create_response = self._post("users", data=payload, admin=True, json=True)
+        self._assert_status_code_is(create_response, 200)
+        assert create_response.json()["email"] == email
+
+        payload = {"email": "not-an-email", "username": "malformed-email", "password": "testpass"}
+        create_response = self._post("users", data=payload, admin=True, json=True)
+        self._assert_status_code_is(create_response, 400)
+        self._assert_error_code_is(create_response, INVALID_PARAMETER)
+
     @requires_new_user
     def test_update_email_invalid(self):
         user = self._setup_user(TEST_USER_EMAIL)
@@ -332,7 +351,8 @@ class TestUsersApi(ApiTestCase):
         response = self._get(url).json()
         assert response["username"] == "newname"
         assert response["email"] == "new@email.email"
-        payload = {"username": user["username"], "email": TEST_USER_EMAIL}
+        # surrounding whitespace is stripped here too, not only on PUT /api/users/{id}
+        payload = {"username": user["username"], "email": f"  {TEST_USER_EMAIL}  "}
         self._put(url, data=payload, json=True)
         response = self._get(url).json()
         assert response["username"] == user["username"]

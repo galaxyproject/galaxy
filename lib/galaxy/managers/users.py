@@ -58,7 +58,6 @@ from galaxy.model.db.user import (
 )
 from galaxy.security.validate_user_input import (
     UserValidationContext,
-    VALID_EMAIL_RE,
     validate_email,
     validate_password,
     validate_preferred_object_store_id,
@@ -72,6 +71,8 @@ from galaxy.util import now
 from galaxy.util.hash_util import new_secure_hash_v2
 from galaxy.util.user_input import (
     canonicalize_display_name,
+    canonicalize_email,
+    VALID_EMAIL_RE,
     validate_display_name_str,
 )
 
@@ -207,6 +208,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Update a user's email address, keeping the private role in sync and honoring activation settings.
         Raises RequestParameterInvalidException on validation errors.
         """
+        new_email = canonicalize_email(new_email)
         if message := validate_email(trans, new_email, user):
             raise exceptions.RequestParameterInvalidException(message)
         if user.email == new_email:

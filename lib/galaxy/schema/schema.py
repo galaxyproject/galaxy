@@ -75,8 +75,11 @@ from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.user_input import (
     canonicalize_display_name,
+    canonicalize_email,
     DISPLAY_NAME_MAX_LEN,
+    EMAIL_MAX_LEN,
     validate_display_name_str,
+    validate_email_str,
 )
 
 MAX_ANNOTATION_SIZE = 65536  # Unicode characters, not UTF-8 bytes.
@@ -260,6 +263,28 @@ ContentsUrlField = Annotated[
 
 UserId = Annotated[EncodedDatabaseIdField, Field(title="ID", description="Encoded ID of the user")]
 UserEmailField = Field(title="Email", description="Email of the user")
+
+
+def _canonicalize_email_input(value: Any) -> Any:
+    # Anything that is not a string is left for the str schema to reject.
+    return canonicalize_email(value) if isinstance(value, str) else value
+
+
+def _check_email(email: str) -> str:
+    if message := validate_email_str(email):
+        raise RequestParameterInvalidException(message)
+    return email
+
+
+# An email address as a client may submit it, checked for format only. Whether
+# it is taken, banned or on an allowed domain depends on the server's
+# configuration and database, so the managers check that.
+EmailAddress = Annotated[
+    Annotated[str, Field(max_length=EMAIL_MAX_LEN)],
+    BeforeValidator(_canonicalize_email_input),
+    AfterValidator(validation_message_wrapper(_check_email)),
+]
+
 UserDescriptionField = Field(title="Description", description="Description of the user")
 UserNameField = Field(default=..., title="user_name", description="The name of the user.")
 UserDisplayNameField = Field(
@@ -408,7 +433,7 @@ class UserUpdatePayload(Model):
     # deactivation, not on a stale activation. UserDeserializer only lets an
     # administrator set `active`, so this ordering is belt and braces.
     email: Annotated[
-        OmittableNotNull[str],
+        OmittableNotNull[EmailAddress],
         Field(
             title="Email",
             description=(
@@ -449,12 +474,12 @@ class UserExtraPreferencesUpdated(Model):
 
 class UserCreationPayload(Model):
     password: str = Field(default=..., title="user_password", description="The password of the user.")
-    email: str = UserEmailField
+    email: Annotated[EmailAddress, UserEmailField]
     username: str = UserNameField
 
 
 class RemoteUserCreationPayload(Model):
-    remote_user_email: str = UserEmailField
+    remote_user_email: Annotated[EmailAddress, UserEmailField]
 
 
 class UserPasswordResetPayload(Model):

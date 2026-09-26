@@ -7,7 +7,20 @@ galaxy.security.validate_user_input, the validate_* functions return a
 user-facing message, or "" for a valid value, and never echo the input.
 """
 
+import re
 import unicodedata
+
+# Email validity parameters
+#
+# Many words (and regexes) have been written about validating email addresses and there is no perfect answer on how it
+# should be done. We choose to use the HTML5 spec (and corresponding regex) that engages in a "willful violation" of RFC
+# 5322 to provide a reasonably good validation. Additionally, we allow Unicode characters in both the user and domain
+# parts of the email by using re's '\w' character. Note that \w includes "word" characters but appears to exclude emoji
+# characters, which should in fact be valid.
+#
+# https://html.spec.whatwg.org/multipage/input.html#e-mail-state-(type%3Demail)
+VALID_EMAIL_RE = re.compile(r"^[\w.!#$%&'*+\/=?^_`{|}~-]+@[\w](?:[\w-]{0,61}[\w])?(?:\.[\w](?:[\w-]{0,61}[\w])?)*$")
+EMAIL_MAX_LEN = 255
 
 # Display name validity parameters
 #
@@ -27,6 +40,30 @@ DISPLAY_NAME_MAX_LEN = 255
 DISPLAY_NAME_REJECTED_CATEGORIES = frozenset({"Cc", "Cf", "Cn", "Co", "Cs", "Zl", "Zp"})
 DISPLAY_NAME_BLANK_CHARACTERS = frozenset("\u034f\u115f\u1160\u17b4\u17b5\u2800\u3164\uffa0")
 DISPLAY_NAME_JOINERS = frozenset("\u200c\u200d")
+
+
+def canonicalize_email(email: str | None) -> str:
+    """Return the form of an email address that is validated and stored.
+
+    Surrounding whitespace is stripped; None becomes "", which validate_email_str reports as missing.
+    """
+    return (email or "").strip()
+
+
+def is_valid_email_str(email: str | None) -> bool:
+    """Validates a string containing an email address and returns a boolean result."""
+    return validate_email_str(email) == ""
+
+
+def validate_email_str(email: str | None) -> str:
+    """Validates a string containing an email address."""
+    if not email:
+        return "No email address was provided."
+    if not (VALID_EMAIL_RE.match(email)):
+        return "The format of the email address is not correct."
+    elif len(email) > EMAIL_MAX_LEN:
+        return f"Email address cannot be more than {EMAIL_MAX_LEN} characters in length."
+    return ""
 
 
 def canonicalize_display_name(display_name: str | None) -> str | None:
