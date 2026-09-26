@@ -33,6 +33,11 @@
                 </Alert>
             </template>
 
+            <Alert v-if="userLoadError && !embedded" id="user-load-error" variant="danger">
+                Unable to load your user data: {{ userLoadError }}
+                <button type="button" class="btn btn-link" @click="loadUser">Retry</button>
+            </Alert>
+
             <router-view @update:confirmation="confirmation = $event" />
         </div>
         <template v-if="!embedded">
@@ -60,7 +65,7 @@ import Toast from "@/components/Toast";
 import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
 import { setGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useRouteQueryBool } from "@/composables/route";
-import { setToastComponentRef, useToast } from "@/composables/toast";
+import { setToastComponentRef } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -98,7 +103,6 @@ export default {
         const tourStore = useTourStore();
         const { currentTour } = storeToRefs(tourStore);
 
-        const { error: toastError } = useToast();
         const userStore = useUserStore();
         const { currentTheme } = storeToRefs(userStore);
 
@@ -137,15 +141,23 @@ export default {
             historyStore.startWatchingHistory();
         }
 
+        const userLoadError = ref("");
+        async function loadUser() {
+            userLoadError.value = "";
+            try {
+                await userStore.loadUser();
+            } catch (error) {
+                userLoadError.value = errorMessageAsString(error);
+            }
+        }
+
         watch(
             () => embedded.value,
             () => {
                 if (embedded.value) {
                     userStore.$reset();
                 } else {
-                    userStore.loadUser().catch((error) => {
-                        toastError(errorMessageAsString(error), "Failed to load user or histories");
-                    });
+                    loadUser();
                 }
             },
             { immediate: true },
@@ -171,6 +183,8 @@ export default {
         );
 
         return {
+            userLoadError,
+            loadUser,
             confirmation,
             toastRef,
             confirmDialogRef,
